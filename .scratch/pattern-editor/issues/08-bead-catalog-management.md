@@ -1,4 +1,4 @@
-# 06: Bead catalog management
+# 08: Bead catalog management
 
 **What to build:** A view listing all Bead catalog entries (starting with the seeded TOHO/Miyuki beads), plus the ability to add, edit, and remove custom Bead entries (brand, name, size, form factor, color).
 
