@@ -20,4 +20,10 @@ export const ru: Translations = {
   languageSwitcher: {
     ariaLabel: 'Язык интерфейса',
   },
+  patterns: {
+    heading: 'Сохранённые схемы',
+    newPatternButton: 'Новая схема',
+    removeButton: 'Удалить',
+    currentLabel: 'Сейчас редактируется',
+  },
 }

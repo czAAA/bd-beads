@@ -18,4 +18,10 @@ export interface Translations {
   languageSwitcher: {
     ariaLabel: string
   }
+  patterns: {
+    heading: string
+    newPatternButton: string
+    removeButton: string
+    currentLabel: string
+  }
 }

@@ -18,4 +18,10 @@ export const en: Translations = {
   languageSwitcher: {
     ariaLabel: 'Language',
   },
+  patterns: {
+    heading: 'Saved Patterns',
+    newPatternButton: 'New Pattern',
+    removeButton: 'Remove',
+    currentLabel: 'Currently editing',
+  },
 }

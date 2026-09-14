@@ -57,3 +57,10 @@ export function createPattern(input: CreatePatternInput): Pattern {
     updatedAt: now,
   }
 }
+
+/** A short, language-neutral identifier for a Pattern in UI lists (bead names are proper nouns, not translated). */
+export function summarizePattern(pattern: Pattern): string {
+  const bead = findBead(pattern.beadId)
+  const beadLabel = bead ? `${bead.brand} ${bead.name} ${bead.size}` : pattern.beadId
+  return `${beadLabel} · ${pattern.columns}×${pattern.rows}`
+}

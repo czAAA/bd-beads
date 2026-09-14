@@ -1,52 +1,69 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPattern } from './pattern'
-import { loadPattern, savePattern } from './patternStorage'
+import { loadPatterns, removePattern, savePattern } from './patternStorage'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+
+function makePattern() {
+  return createPattern({
+    technique: 'loom',
+    beadId: cubeBead.id,
+    size: { width: 15, height: 15, unit: 'mm' },
+  })
+}
 
 beforeEach(() => {
   localStorage.clear()
 })
 
 describe('patternStorage', () => {
-  it('returns undefined when nothing has been saved yet', () => {
-    expect(loadPattern()).toBeUndefined()
+  it('returns no patterns when nothing has been saved yet', () => {
+    expect(loadPatterns()).toEqual([])
   })
 
-  it('round-trips a saved pattern unchanged', () => {
-    const pattern = createPattern({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
+  it('saves a pattern and lists it back', () => {
+    const pattern = makePattern()
 
     savePattern(pattern)
 
-    expect(loadPattern()).toEqual(pattern)
+    expect(loadPatterns()).toEqual([pattern])
   })
 
-  it('overwrites a previously saved pattern', () => {
-    const first = createPattern({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
-    const second = createPattern({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 30, height: 30, unit: 'mm' },
-    })
+  it('accumulates multiple saved patterns instead of overwriting them', () => {
+    const first = makePattern()
+    const second = makePattern()
 
     savePattern(first)
     savePattern(second)
 
-    expect(loadPattern()).toEqual(second)
+    expect(loadPatterns()).toEqual([first, second])
+  })
+
+  it('overwrites an existing pattern with the same id instead of duplicating it', () => {
+    const pattern = makePattern()
+    savePattern(pattern)
+
+    const updated = { ...pattern, updatedAt: pattern.updatedAt + 1 }
+    savePattern(updated)
+
+    expect(loadPatterns()).toEqual([updated])
+  })
+
+  it('removes a pattern by id, leaving the others untouched', () => {
+    const first = makePattern()
+    const second = makePattern()
+    savePattern(first)
+    savePattern(second)
+
+    removePattern(first.id)
+
+    expect(loadPatterns()).toEqual([second])
   })
 
   it('ignores corrupted data in storage instead of throwing', () => {
-    localStorage.setItem('bd-beads:pattern', 'not json')
+    localStorage.setItem('bd-beads:patterns', 'not json')
 
-    expect(loadPattern()).toBeUndefined()
+    expect(loadPatterns()).toEqual([])
   })
 })
