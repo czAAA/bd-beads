@@ -4,7 +4,13 @@ import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PatternGrid from './components/PatternGrid.vue'
 import PatternList from './components/PatternList.vue'
-import { createPattern, summarizePattern, type CreatePatternInput, type Pattern } from './domain/pattern'
+import {
+  createPattern,
+  mostRecentlyUpdated,
+  summarizePattern,
+  type CreatePatternInput,
+  type Pattern,
+} from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
 import { provideI18n } from './i18n/useI18n'
 
@@ -16,13 +22,6 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
-
-function mostRecentlyUpdated(list: Pattern[]): Pattern | undefined {
-  return list.reduce<Pattern | undefined>(
-    (latest, pattern) => (!latest || pattern.updatedAt > latest.updatedAt ? pattern : latest),
-    undefined,
-  )
-}
 
 function onCreatePattern(payload: CreatePatternInput) {
   const created = createPattern(payload)

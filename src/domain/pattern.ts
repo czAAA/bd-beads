@@ -64,3 +64,10 @@ export function summarizePattern(pattern: Pattern): string {
   const beadLabel = bead ? `${bead.brand} ${bead.name} ${bead.size}` : pattern.beadId
   return `${beadLabel} · ${pattern.columns}×${pattern.rows}`
 }
+
+export function mostRecentlyUpdated(patterns: Pattern[]): Pattern | undefined {
+  return patterns.reduce<Pattern | undefined>(
+    (latest, pattern) => (!latest || pattern.updatedAt > latest.updatedAt ? pattern : latest),
+    undefined,
+  )
+}
