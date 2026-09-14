@@ -1,8 +1,8 @@
-# 07: Mirror/reflect command
+# 09: Mirror/reflect command
 
 **What to build:** A mirror toggle with independent horizontal/vertical axis checkboxes; triggering it reflects the drawn half of the Pattern across the selected axis/axes.
 
-**Blocked by:** 05
+**Blocked by:** 07
 
 **Status:** ready-for-agent
 
