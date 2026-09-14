@@ -1,4 +1,4 @@
-# 05: Manual cell painting with undo
+# 07: Manual cell painting with undo
 
 **What to build:** User picks a color from the Palette and clicks grid cells to paint them; a separate undo action reverts the most recent painting action.
 
