@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import type { Technique } from '../domain/pattern'
+import type { CreatePatternInput } from '../domain/pattern'
 import type { SizeUnit } from '../domain/grid'
 
-export interface NewPatternSubmitPayload {
-  technique: Technique
-  beadId: string
-  size: { width: number; height: number; unit: SizeUnit }
-}
-
 const emit = defineEmits<{
-  submit: [payload: NewPatternSubmitPayload]
+  submit: [payload: CreatePatternInput]
 }>()
 
 const beadId = ref(BEAD_CATALOG[0]!.id)

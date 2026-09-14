@@ -1,8 +1,8 @@
-# 07: Color-to-bead mapping and quantity calculation
+# 09: Color-to-bead mapping and quantity calculation
 
 **What to build:** A universal default mapping from each Palette color to one Bead, overridable per Pattern, plus a computed shopping list showing the total bead count needed per color for a given Pattern. See [ADR 0002](../../../docs/adr/0002-palette-separate-from-bead-catalog.md).
 
-**Blocked by:** 03, 06
+**Blocked by:** 05, 08
 
 **Status:** ready-for-agent
 
