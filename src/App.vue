@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import NewPatternForm, { type NewPatternSubmitPayload } from './components/NewPatternForm.vue'
+import NewPatternForm from './components/NewPatternForm.vue'
 import PatternGrid from './components/PatternGrid.vue'
-import { createPattern, type Pattern } from './domain/pattern'
+import { createPattern, type CreatePatternInput, type Pattern } from './domain/pattern'
 import { loadPattern, savePattern } from './domain/patternStorage'
 
 const pattern = ref<Pattern | undefined>(loadPattern())
 
-function onCreatePattern(payload: NewPatternSubmitPayload) {
+function onCreatePattern(payload: CreatePatternInput) {
   const created = createPattern(payload)
   savePattern(created)
   pattern.value = created
