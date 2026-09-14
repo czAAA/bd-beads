@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NewPatternForm from './NewPatternForm.vue'
 import { BEAD_CATALOG } from '../domain/beads'
+import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('NewPatternForm', () => {
   it('lists every bead in the catalog as an option', () => {
@@ -46,6 +51,6 @@ describe('NewPatternForm', () => {
     const wrapper = mount(NewPatternForm)
 
     expect(wrapper.find<HTMLSelectElement>('[data-testid="unit-select"]').element.value).toBe('mm')
-    expect(wrapper.find('[data-testid="technique-select"]').text()).toContain('Loom')
+    expect(wrapper.find('[data-testid="technique-select"]').text()).toContain(ru.form.techniqueLoom)
   })
 })
