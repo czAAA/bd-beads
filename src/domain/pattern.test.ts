@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPattern } from './pattern'
+import { createPattern, summarizePattern } from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -58,5 +58,17 @@ describe('createPattern', () => {
         size: { width: 3, height: 3, unit: 'mm' },
       }),
     ).toThrow()
+  })
+})
+
+describe('summarizePattern', () => {
+  it('describes the pattern by its bead and grid dimensions', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    expect(summarizePattern(pattern)).toBe('TOHO Cube 1.5mm · 10×20')
   })
 })
