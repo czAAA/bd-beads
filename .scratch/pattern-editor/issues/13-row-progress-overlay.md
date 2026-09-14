@@ -1,4 +1,4 @@
-# 11: Row progress overlay
+# 13: Row progress overlay
 
 **What to build:** A toggle inside the Pattern editor that turns on a Row progress overlay: a sequential current-row pointer (advanceable and manually movable backward), with finished rows dimmed, the current row highlighted, and remaining rows shown normally. State persists with the Pattern.
 
