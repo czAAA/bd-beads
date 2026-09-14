@@ -1,4 +1,4 @@
-# 10: Export and import a pattern file
+# 12: Export and import a pattern file
 
 **What to build:** User can export the current Pattern (technique, bead, dimensions, painted cells, color mappings) as a file, and import a previously exported file to restore/open it. See [ADR 0001](../../../docs/adr/0001-local-only-persistence.md).
 
