@@ -1,4 +1,4 @@
-# 02: Peyote and Brick stitch grid geometry
+# 04: Peyote and Brick stitch grid geometry
 
 **What to build:** Extend Pattern creation so Peyote and Brick stitch can be chosen as the Technique, each rendering its own offset-row grid geometry instead of Loom's straight grid.
 
