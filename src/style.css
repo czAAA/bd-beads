@@ -1,20 +1,16 @@
 :root {
   /* Neutrals */
-  --color-ink: #241c15;
-  --color-paper: #fff8f0;
+  --color-ink: #1d3658;
+  --color-paper: #f2faef;
   --color-paper-solid: #ffffff;
 
-  /* Anchor palette: flat, saturated color-blocking, no gradients */
-  --color-cobalt: #2a4fd7;
-  --color-cobalt-ink: #ffffff;
-  --color-mustard: #e7a93c;
-  --color-mustard-ink: var(--color-ink);
-  --color-coral: #f2643b;
-  --color-coral-ink: var(--color-ink);
-  --color-pink: #f4a6c1;
-  --color-pink-ink: var(--color-ink);
-  --color-terracotta: #a8501f;
-  --color-terracotta-ink: #ffffff;
+  /* Anchor palette (Japan Color Palette): flat, saturated color-blocking, no gradients */
+  --color-amaranth: #e63746;
+  --color-amaranth-ink: #ffffff;
+  --color-wedgewood: #447a9c;
+  --color-wedgewood-ink: #ffffff;
+  --color-aqua-island: #a7dadc;
+  --color-aqua-island-ink: var(--color-ink);
 
   /* Typography */
   --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;
@@ -57,8 +53,8 @@ label {
   margin-bottom: 6px;
   padding: 2px 10px;
   font-weight: 700;
-  color: var(--color-mustard-ink);
-  background: var(--color-mustard);
+  color: var(--color-aqua-island-ink);
+  background: var(--color-aqua-island);
   border-radius: var(--radius-pill);
 }
 
@@ -75,15 +71,15 @@ select {
 input:focus-visible,
 select:focus-visible,
 button:focus-visible {
-  outline: 3px solid var(--color-cobalt);
+  outline: 3px solid var(--color-wedgewood);
   outline-offset: 2px;
 }
 
 button {
   font: inherit;
   font-weight: 700;
-  color: var(--color-coral-ink);
-  background: var(--color-coral);
+  color: var(--color-amaranth-ink);
+  background: var(--color-amaranth);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-pill);
   padding: 10px 22px;
@@ -91,8 +87,8 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: var(--color-terracotta);
-  color: var(--color-terracotta-ink);
+  background: var(--color-wedgewood);
+  color: var(--color-wedgewood-ink);
 }
 
 button:disabled {

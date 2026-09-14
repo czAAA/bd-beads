@@ -88,14 +88,14 @@ main {
   gap: 16px;
   margin-bottom: 24px;
   padding: 16px 24px;
-  background: var(--color-pink);
+  background: var(--color-aqua-island);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
 }
 
 .app-header h1 {
   margin: 0;
-  color: var(--color-pink-ink);
+  color: var(--color-aqua-island-ink);
 }
 
 .pattern-toolbar {

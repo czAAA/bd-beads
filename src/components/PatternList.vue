@@ -74,7 +74,7 @@ const { t } = useI18n()
 }
 
 .pattern-list__item--active {
-  border-color: var(--color-cobalt);
+  border-color: var(--color-wedgewood);
 }
 
 .pattern-list__select {
@@ -86,8 +86,8 @@ const { t } = useI18n()
 }
 
 .pattern-list__item--active .pattern-list__select {
-  color: var(--color-cobalt-ink);
-  background: var(--color-cobalt);
+  color: var(--color-wedgewood-ink);
+  background: var(--color-wedgewood);
 }
 
 .pattern-list__remove {
@@ -100,7 +100,7 @@ const { t } = useI18n()
 }
 
 .pattern-list__remove:hover {
-  background: var(--color-terracotta);
-  color: var(--color-terracotta-ink);
+  background: var(--color-amaranth);
+  color: var(--color-amaranth-ink);
 }
 </style>
