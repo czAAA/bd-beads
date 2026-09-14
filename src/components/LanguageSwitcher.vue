@@ -62,11 +62,11 @@ function isActive(candidate: Locale) {
 }
 
 .language-switcher__option--active {
-  color: var(--color-cobalt-ink);
-  background: var(--color-cobalt);
+  color: var(--color-wedgewood-ink);
+  background: var(--color-wedgewood);
 }
 
 .language-switcher__option--active:hover {
-  background: var(--color-cobalt);
+  background: var(--color-wedgewood);
 }
 </style>
