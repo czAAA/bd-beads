@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPattern, summarizePattern } from './pattern'
+import { createPattern, mostRecentlyUpdated, summarizePattern } from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -70,5 +70,19 @@ describe('summarizePattern', () => {
     })
 
     expect(summarizePattern(pattern)).toBe('TOHO Cube 1.5mm · 10×20')
+  })
+})
+
+describe('mostRecentlyUpdated', () => {
+  it('returns undefined for an empty list', () => {
+    expect(mostRecentlyUpdated([])).toBeUndefined()
+  })
+
+  it('returns the pattern with the greatest updatedAt', () => {
+    const older = { ...createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 3, unit: 'mm' } }), updatedAt: 100 }
+    const newer = { ...createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 3, unit: 'mm' } }), updatedAt: 200 }
+
+    expect(mostRecentlyUpdated([older, newer])).toBe(newer)
+    expect(mostRecentlyUpdated([newer, older])).toBe(newer)
   })
 })
