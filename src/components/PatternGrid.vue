@@ -22,7 +22,10 @@ defineProps<{ pattern: Pattern }>()
 .pattern-grid {
   display: inline-flex;
   flex-direction: column;
-  border: 1px solid #ccc;
+  background: var(--color-paper-solid);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .pattern-grid__row {
@@ -33,7 +36,7 @@ defineProps<{ pattern: Pattern }>()
   width: 20px;
   height: 20px;
   box-sizing: border-box;
-  border: 1px solid #ddd;
-  background-color: #fff;
+  border: 1px solid var(--color-paper);
+  background-color: var(--color-paper-solid);
 }
 </style>

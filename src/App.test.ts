@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { loadPattern } from './domain/patternStorage'
+import { en } from './i18n/en'
+import { ru } from './i18n/ru'
 
 beforeEach(() => {
   localStorage.clear()
@@ -51,5 +53,26 @@ describe('App', () => {
     const rows = afterReload.findAll('[data-testid="grid-row"]')
     expect(rows).toHaveLength(20)
     expect(rows[0]!.findAll('[data-testid="grid-cell"]')).toHaveLength(10)
+  })
+
+  it('defaults to Russian on first visit with no saved language preference', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('label[for="bead-select"]').text()).toBe(ru.form.beadLabel)
+    expect(wrapper.find('button[type="submit"]').text()).toBe(ru.form.submit)
+  })
+
+  it('switches every translated label when the language switcher is used, and persists the choice across a reload', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    expect(wrapper.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
+    expect(wrapper.find('button[type="submit"]').text()).toBe(en.form.submit)
+
+    wrapper.unmount()
+    const afterReload = mount(App)
+
+    expect(afterReload.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
   })
 })
