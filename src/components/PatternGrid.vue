@@ -1,12 +1,44 @@
 <script setup lang="ts">
-import { CELL_SIZE_PX, rowHeightPx, rowOffsetPx } from '../domain/grid'
+import { computed } from 'vue'
+import { CELL_SIZE_PX, positionKey, rowHeightPx, rowOffsetPx, type GridPosition } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
 const emit = defineEmits<{
-  'cell-click': [row: number, column: number]
+  'cell-primary-down': [row: number, column: number]
+  'cell-primary-move': [row: number, column: number]
+  'cell-secondary-down': [row: number, column: number]
+  'cell-secondary-move': [row: number, column: number]
+  'cell-hover': [row: number, column: number]
+  'hover-end': []
 }>()
 
-const props = defineProps<{ pattern: Pattern }>()
+const props = defineProps<{
+  pattern: Pattern
+  /** Cells to show a hover preview on (ticket 23): the hovered cell plus its live-mirror counterpart(s), if any. */
+  previewCells?: GridPosition[]
+  /** The color to preview, faintly, on previewCells; null for a neutral outline when no Palette color is selected. */
+  previewColor?: string | null
+}>()
+
+const previewKeys = computed(() => new Set((props.previewCells ?? []).map(positionKey)))
+
+function isPreviewCell(row: number, column: number): boolean {
+  return previewKeys.value.has(positionKey({ row, column }))
+}
+
+/**
+ * Reports the hover for the preview, plus a drag move when a mouse button is held: primary continues a paint/fill
+ * stroke (ticket 24), secondary an erase stroke (ticket 25).
+ */
+function onCellEnter(event: MouseEvent, row: number, column: number) {
+  emit('cell-hover', row, column)
+  if (event.buttons & 1) {
+    emit('cell-primary-move', row, column)
+  }
+  if (event.buttons & 2) {
+    emit('cell-secondary-move', row, column)
+  }
+}
 
 /** Rows after the first pull up to sit rowHeightPx apart instead of a full cell apart; 0 for techniques that stack at full height. */
 function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number {
@@ -24,7 +56,12 @@ function rowProgressClass(rowIndex: number): string | null {
 </script>
 
 <template>
-  <div class="pattern-grid" :class="`pattern-grid--${pattern.technique}`">
+  <div
+    class="pattern-grid"
+    :class="`pattern-grid--${pattern.technique}`"
+    @mouseleave="emit('hover-end')"
+    @contextmenu.prevent
+  >
     <div
       v-for="(row, rowIndex) in pattern.grid"
       :key="rowIndex"
@@ -40,14 +77,24 @@ function rowProgressClass(rowIndex: number): string | null {
         v-for="(cell, columnIndex) in row"
         :key="columnIndex"
         class="pattern-grid__cell"
+        :class="{ 'pattern-grid__cell--preview-neutral': isPreviewCell(rowIndex, columnIndex) && !previewColor }"
         data-testid="grid-cell"
         :style="{
           width: `${CELL_SIZE_PX}px`,
           height: `${CELL_SIZE_PX}px`,
           backgroundColor: cell.color ?? undefined,
         }"
-        @click="emit('cell-click', rowIndex, columnIndex)"
-      />
+        @mousedown.left="emit('cell-primary-down', rowIndex, columnIndex)"
+        @mousedown.right="emit('cell-secondary-down', rowIndex, columnIndex)"
+        @mouseenter="onCellEnter($event, rowIndex, columnIndex)"
+      >
+        <span
+          v-if="isPreviewCell(rowIndex, columnIndex) && previewColor"
+          class="pattern-grid__cell-preview"
+          data-testid="cell-preview"
+          :style="{ backgroundColor: previewColor }"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -67,10 +114,24 @@ function rowProgressClass(rowIndex: number): string | null {
 }
 
 .pattern-grid__cell {
+  position: relative;
   box-sizing: border-box;
   border: 1px solid var(--color-paper);
   background-color: var(--color-paper-solid);
   cursor: pointer;
+}
+
+/* Faint preview of where paint will land (ticket 23): overlaid on top of whatever the cell already holds, purely visual. */
+.pattern-grid__cell-preview {
+  position: absolute;
+  inset: 0;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* No Palette color selected: a neutral outline instead of a color preview. */
+.pattern-grid__cell--preview-neutral {
+  box-shadow: inset 0 0 0 2px var(--color-ink);
 }
 
 /* Rows already woven step back so the eye lands on what's left to do. */
