@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { beadLabel, type Bead, type FormFactor } from '../domain/beads'
-import { findPaletteColor, PALETTE } from '../domain/palette'
 import { useI18n } from '../i18n/useI18n'
-import PalettePicker from './PalettePicker.vue'
+
+/** A bead's own color is a real-world physical property, independent of the Palette used to paint cells (ADR 0002) — so it gets its own color input rather than reusing PalettePicker/PALETTE. */
+const DEFAULT_COLOR = '#e63746'
 
 defineProps<{ seededBeads: readonly Bead[]; customBeads: Bead[] }>()
 const emit = defineEmits<{
@@ -24,7 +25,7 @@ const brand = ref('')
 const name = ref('')
 const size = ref('')
 const formFactor = ref<FormFactor>('round')
-const colorId = ref<string | undefined>()
+const color = ref(DEFAULT_COLOR)
 const widthText = ref('')
 const heightText = ref('')
 
@@ -45,7 +46,7 @@ function resetForm() {
   name.value = ''
   size.value = ''
   formFactor.value = 'round'
-  colorId.value = undefined
+  color.value = DEFAULT_COLOR
   widthText.value = ''
   heightText.value = ''
 }
@@ -56,7 +57,7 @@ function onEdit(bead: Bead) {
   name.value = bead.name
   size.value = bead.size
   formFactor.value = bead.formFactor
-  colorId.value = PALETTE.find((color) => color.hex === bead.color)?.id
+  color.value = bead.color ?? DEFAULT_COLOR
   widthText.value = String(bead.widthMm)
   heightText.value = String(bead.heightMm)
 }
@@ -72,7 +73,7 @@ function onSubmit() {
     name: name.value.trim(),
     size: size.value.trim(),
     formFactor: formFactor.value,
-    color: colorId.value ? (findPaletteColor(colorId.value)?.hex ?? null) : null,
+    color: color.value,
     widthMm: width.value,
     heightMm: height.value,
   }
@@ -180,8 +181,8 @@ function onSubmit() {
       </div>
 
       <div class="field">
-        <span>{{ t.catalog.colorLabel }}</span>
-        <PalettePicker :selected-color-id="colorId" @select="colorId = $event" />
+        <label for="catalog-color-input">{{ t.catalog.colorLabel }}</label>
+        <input id="catalog-color-input" v-model="color" data-testid="catalog-color-input" type="color" />
       </div>
 
       <div class="bead-catalog__form-actions">
