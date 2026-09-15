@@ -27,4 +27,12 @@ export const ru: Translations = {
     removeButton: 'Удалить',
     currentLabel: 'Сейчас редактируется',
   },
+  canvas: {
+    zoomInLabel: 'Увеличить',
+    zoomOutLabel: 'Уменьшить',
+    zoomResetLabel: 'Сбросить масштаб по размеру схемы',
+  },
+  shell: {
+    mainPanelPlaceholder: 'Инструменты — скоро',
+  },
 }
