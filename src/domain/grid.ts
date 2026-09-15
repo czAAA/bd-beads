@@ -76,6 +76,11 @@ export interface GridPosition {
   column: number
 }
 
+/** A stable string key for a grid position, for deduping/indexing positions in a Set or Map. */
+export function positionKey(position: GridPosition): string {
+  return `${position.row},${position.column}`
+}
+
 /** Columns in `toRow` whose cells visually overlap `column` of `fromRow`, given each row's horizontal offset. Loom rows share one offset, so only the same column overlaps; offset techniques' rows interlock, so a row's cell overlaps two columns of a differently-offset neighbor. */
 function overlappingColumns(technique: Technique, fromRow: number, toRow: number, column: number): number[] {
   const fromOffset = rowOffsetPx(technique, fromRow, 1)

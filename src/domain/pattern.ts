@@ -1,7 +1,15 @@
 import { beadLabel } from './beads'
 import { withColorBeadMapping } from './beadMapping'
 import { findBead } from './beadStorage'
-import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
+import {
+  computeGridDimensions,
+  neighborsOf,
+  positionKey,
+  toMillimeters,
+  type GridPosition,
+  type SizeUnit,
+  type Technique,
+} from './grid'
 
 export type { Technique } from './grid'
 
@@ -180,6 +188,73 @@ export function fillArea(pattern: Pattern, row: number, column: number, color: s
 export interface MirrorAxes {
   horizontal: boolean
   vertical: boolean
+}
+
+/**
+ * Every cell a live-mirrored stroke touches when painting `position` (ADR 0006/ticket 22): itself, plus its
+ * reflection(s) across whichever axes are on, fixed to the grid's exact center rather than mirrorPattern's adaptive
+ * "bigger half" (there's no drawn-so-far content to judge a source half from mid-stroke). 1 cell with neither axis
+ * on, 2 with one, 4 with both — fewer if the position sits on the exact center of an odd dimension, where a cell
+ * mirrors onto itself.
+ */
+export function mirroredCells(
+  pattern: Pick<Pattern, 'rows' | 'columns'>,
+  position: GridPosition,
+  axes: MirrorAxes,
+): GridPosition[] {
+  const mirroredRow = pattern.rows - 1 - position.row
+  const mirroredColumn = pattern.columns - 1 - position.column
+
+  const rows = axes.vertical ? [position.row, mirroredRow] : [position.row]
+  const columns = axes.horizontal ? [position.column, mirroredColumn] : [position.column]
+
+  const seen = new Set<string>()
+  const cells: GridPosition[] = []
+  for (const row of rows) {
+    for (const column of columns) {
+      const key = positionKey({ row, column })
+      if (!seen.has(key)) {
+        seen.add(key)
+        cells.push({ row, column })
+      }
+    }
+  }
+  return cells
+}
+
+/**
+ * Paints every position in `positions` plus each one's live-mirror counterpart(s) (see mirroredCells) as a single
+ * Pattern edit, so a whole stroke — mirrored or not, one cell or a whole dragged path (ticket 24) — is one undo
+ * step rather than one per cell. Returns the same Pattern instance, unchanged, if every touched cell is already
+ * that color.
+ */
+export function paintCells(
+  pattern: Pattern,
+  positions: GridPosition[],
+  color: string | null,
+  axes: MirrorAxes,
+): Pattern {
+  const targets = new Map<string, GridPosition>()
+  for (const position of positions) {
+    for (const cell of mirroredCells(pattern, position, axes)) {
+      targets.set(positionKey(cell), cell)
+    }
+  }
+
+  const changed = [...targets.values()].some(
+    ({ row, column }) => pattern.grid[row]?.[column]?.color !== color,
+  )
+  if (!changed) {
+    return pattern
+  }
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((cell, columnIndex) =>
+      targets.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell,
+    ),
+  )
+
+  return restoreGrid(pattern, grid)
 }
 
 function isInFirstHalf(index: number, dimension: number): boolean {

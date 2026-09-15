@@ -4,14 +4,25 @@ import {
   CANVAS_MAX_PX,
   canvasContentHeightPx,
   canvasContentWidthPx,
+  type GridPosition,
 } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import PatternGrid from './PatternGrid.vue'
 import PatternRuler from './PatternRuler.vue'
 
-const props = defineProps<{ pattern: Pattern; zoom: number }>()
+const props = defineProps<{
+  pattern: Pattern
+  zoom: number
+  previewCells?: GridPosition[]
+  previewColor?: string | null
+}>()
 const emit = defineEmits<{
-  'cell-click': [row: number, column: number]
+  'cell-primary-down': [row: number, column: number]
+  'cell-primary-move': [row: number, column: number]
+  'cell-secondary-down': [row: number, column: number]
+  'cell-secondary-move': [row: number, column: number]
+  'cell-hover': [row: number, column: number]
+  'hover-end': []
 }>()
 
 /**
@@ -49,7 +60,14 @@ const frameStyle = computed(() => ({
           <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" />
           <PatternGrid
             :pattern="pattern"
-            @cell-click="(row, column) => emit('cell-click', row, column)"
+            :preview-cells="previewCells"
+            :preview-color="previewColor"
+            @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
+            @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
+            @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
+            @cell-secondary-move="(row, column) => emit('cell-secondary-move', row, column)"
+            @cell-hover="(row, column) => emit('cell-hover', row, column)"
+            @hover-end="emit('hover-end')"
           />
           <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" />
 

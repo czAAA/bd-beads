@@ -78,10 +78,10 @@ export const ru: Translations = {
   },
   mirror: {
     heading: 'Отражение',
-    enabledLabel: 'Отражение включено',
     horizontalLabel: 'Горизонталь',
     verticalLabel: 'Вертикаль',
-    applyButton: 'Применить отражение',
+    mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
+    mirrorCurrentVerticalButton: 'Отразить текущее (по вертикали)',
   },
   catalog: {
     heading: 'Каталог бисера',
