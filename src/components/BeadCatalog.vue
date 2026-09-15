@@ -119,6 +119,7 @@ function onSubmit() {
         </button>
         <button
           type="button"
+          class="button--danger"
           :data-testid="`catalog-remove-${bead.id}`"
           @click="emit('remove', bead.id)"
         >
