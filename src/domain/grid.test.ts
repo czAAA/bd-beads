@@ -4,6 +4,7 @@ import {
   computeGridDimensions,
   gridHeightPx,
   gridWidthPx,
+  neighborsOf,
   rowHeightPx,
   rowOffsetPx,
   toMillimeters,
@@ -174,5 +175,80 @@ describe('gridHeightPx', () => {
 
   it('is zero for an empty grid', () => {
     expect(gridHeightPx('loom', 0, 20)).toBe(0)
+  })
+})
+
+function sorted(positions: { row: number; column: number }[]) {
+  return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
+}
+
+describe('neighborsOf', () => {
+  const dims = { columns: 5, rows: 5 }
+
+  it('gives loom cells their four straight neighbors', () => {
+    expect(sorted(neighborsOf('loom', dims, { row: 2, column: 2 }))).toEqual(
+      sorted([
+        { row: 2, column: 1 },
+        { row: 2, column: 3 },
+        { row: 1, column: 2 },
+        { row: 3, column: 2 },
+      ]),
+    )
+  })
+
+  it('clips loom neighbors at the grid edges', () => {
+    expect(sorted(neighborsOf('loom', dims, { row: 0, column: 0 }))).toEqual(
+      sorted([
+        { row: 0, column: 1 },
+        { row: 1, column: 0 },
+      ]),
+    )
+  })
+
+  it('gives a peyote cell in an unshifted row two neighbors in each shifted adjacent row', () => {
+    // row 2 is unshifted; rows 1 and 3 are shifted right by half a cell, so each overlaps columns {1,2} of row 2's column 2.
+    expect(sorted(neighborsOf('peyote', dims, { row: 2, column: 2 }))).toEqual(
+      sorted([
+        { row: 2, column: 1 },
+        { row: 2, column: 3 },
+        { row: 1, column: 1 },
+        { row: 1, column: 2 },
+        { row: 3, column: 1 },
+        { row: 3, column: 2 },
+      ]),
+    )
+  })
+
+  it('gives a peyote cell in a shifted row two neighbors in each unshifted adjacent row', () => {
+    // row 1 is shifted right; rows 0 and 2 are unshifted, so each overlaps columns {2,3} of row 1's column 2.
+    expect(sorted(neighborsOf('peyote', dims, { row: 1, column: 2 }))).toEqual(
+      sorted([
+        { row: 1, column: 1 },
+        { row: 1, column: 3 },
+        { row: 0, column: 2 },
+        { row: 0, column: 3 },
+        { row: 2, column: 2 },
+        { row: 2, column: 3 },
+      ]),
+    )
+  })
+
+  it('adjacency is symmetric: if B neighbors A, A neighbors B', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (let row = 0; row < dims.rows; row++) {
+        for (let column = 0; column < dims.columns; column++) {
+          for (const neighbor of neighborsOf(technique, dims, { row, column })) {
+            const back = neighborsOf(technique, dims, neighbor)
+            expect(back).toContainEqual({ row, column })
+          }
+        }
+      }
+    }
+  })
+
+  it('treats brick stitch adjacency the same as peyote, since both offset rows the same way', () => {
+    expect(sorted(neighborsOf('brick', dims, { row: 2, column: 2 }))).toEqual(
+      sorted(neighborsOf('peyote', dims, { row: 2, column: 2 })),
+    )
   })
 })

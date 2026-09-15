@@ -1,5 +1,5 @@
 import { beadLabel, findBead } from './beads'
-import { computeGridDimensions, toMillimeters, type SizeUnit, type Technique } from './grid'
+import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
 
 export type { Technique } from './grid'
 
@@ -75,6 +75,40 @@ export function paintCell(pattern: Pattern, row: number, column: number, color: 
     rowIndex === row
       ? gridRow.map((cell, columnIndex) => (columnIndex === column ? { color } : cell))
       : gridRow,
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
+/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors, per the Pattern's grid adjacency (see neighborsOf), with the given color. Returns the same Pattern instance, unchanged, if the clicked cell is already that color. */
+export function fillArea(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
+  const targetColor = pattern.grid[row]?.[column]?.color
+  if (targetColor === undefined || targetColor === color) {
+    return pattern
+  }
+
+  const dimensions = { columns: pattern.columns, rows: pattern.rows }
+  const visited = new Set<string>()
+  const toPaint = new Set<string>()
+  const stack = [{ row, column }]
+
+  while (stack.length > 0) {
+    const position = stack.pop()!
+    const key = `${position.row},${position.column}`
+    if (visited.has(key)) {
+      continue
+    }
+    visited.add(key)
+
+    if (pattern.grid[position.row]?.[position.column]?.color !== targetColor) {
+      continue
+    }
+    toPaint.add(key)
+    stack.push(...neighborsOf(pattern.technique, dimensions, position))
+  }
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((cell, columnIndex) => (toPaint.has(`${rowIndex},${columnIndex}`) ? { color } : cell)),
   )
 
   return restoreGrid(pattern, grid)

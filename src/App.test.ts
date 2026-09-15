@@ -199,6 +199,53 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
+  it('fills a contiguous same-colored region with the fill tool', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
+    await cells[0]!.trigger('click')
+    await cells[1]!.trigger('click')
+    await cells[10]!.trigger('click')
+    await cells[11]!.trigger('click')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[0]!.trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#2f6fed')
+    expect(grid[0]![1]!.color).toBe('#2f6fed')
+    expect(grid[1]![0]!.color).toBe('#2f6fed')
+    expect(grid[1]![1]!.color).toBe('#2f6fed')
+    // Unpainted neighbor outside the red region is untouched.
+    expect(grid[0]![2]!.color).toBeNull()
+  })
+
+  it('undoes a fill as a single action, restoring every cell it repainted', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('click')
+    await cells[1]!.trigger('click')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[0]!.trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#2f6fed')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+  })
+
   it('does not paint a cell before a palette color is selected', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
