@@ -9,6 +9,8 @@ export const en: Translations = {
     beadLabel: 'Bead',
     techniqueLabel: 'Technique',
     techniqueLoom: 'Loom',
+    techniquePeyote: 'Peyote',
+    techniqueBrick: 'Brick stitch',
     widthLabel: 'Width',
     heightLabel: 'Height',
     unitLabel: 'Unit',

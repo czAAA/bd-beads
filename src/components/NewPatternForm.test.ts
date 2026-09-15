@@ -76,4 +76,23 @@ describe('NewPatternForm', () => {
     expect(wrapper.find<HTMLSelectElement>('[data-testid="unit-select"]').element.value).toBe('mm')
     expect(wrapper.find('[data-testid="technique-select"]').text()).toContain(ru.form.techniqueLoom)
   })
+
+  it('lists Peyote and Brick stitch alongside Loom', () => {
+    const wrapper = mount(NewPatternForm)
+
+    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="technique-select"] option')
+    expect(options.map((option) => option.element.value)).toEqual(['loom', 'peyote', 'brick'])
+  })
+
+  it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="width-input"]').setValue('20')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    const events = wrapper.emitted('submit')
+    expect(events![0]![0]).toMatchObject({ technique: 'peyote' })
+  })
 })

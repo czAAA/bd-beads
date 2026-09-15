@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createPattern } from './pattern'
+import { createPattern, type Technique } from './pattern'
 import { loadPatterns, removePattern, savePattern } from './patternStorage'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
-function makePattern() {
+function makePattern(technique: Technique = 'loom') {
   return createPattern({
-    technique: 'loom',
+    technique,
     beadId: cubeBead.id,
     size: { width: 15, height: 15, unit: 'mm' },
   })
@@ -65,6 +65,14 @@ describe('patternStorage', () => {
     localStorage.setItem('bd-beads:patterns', 'not json')
 
     expect(loadPatterns()).toEqual([])
+  })
+
+  it.each(['peyote', 'brick'] as const)('saves and reloads a %s pattern identically to a loom one', (technique) => {
+    const pattern = makePattern(technique)
+
+    savePattern(pattern)
+
+    expect(loadPatterns()).toEqual([pattern])
   })
 
   it('backfills a name from the bead label for patterns saved before names existed', () => {

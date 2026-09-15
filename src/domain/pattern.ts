@@ -1,8 +1,7 @@
 import { beadLabel, findBead } from './beads'
-import { computeGridDimensions, toMillimeters, type SizeUnit } from './grid'
+import { computeGridDimensions, toMillimeters, type SizeUnit, type Technique } from './grid'
 
-/** The weaving method, which determines a Pattern's grid geometry. Only 'loom' is supported so far. */
-export type Technique = 'loom'
+export type { Technique } from './grid'
 
 export interface Cell {
   color: string | null

@@ -9,6 +9,8 @@ export interface Translations {
     beadLabel: string
     techniqueLabel: string
     techniqueLoom: string
+    techniquePeyote: string
+    techniqueBrick: string
     widthLabel: string
     heightLabel: string
     unitLabel: string

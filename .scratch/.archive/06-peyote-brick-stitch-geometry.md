@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] User can choose Peyote or Brick stitch as the Technique when creating a Pattern, in addition to Loom
 - [ ] Peyote patterns render rows offset by half a cell in alternating rows
