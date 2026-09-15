@@ -5,6 +5,7 @@ export interface Translations {
     title: string
   }
   form: {
+    nameLabel: string
     beadLabel: string
     techniqueLabel: string
     techniqueLoom: string

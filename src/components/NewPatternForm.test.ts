@@ -30,11 +30,34 @@ describe('NewPatternForm', () => {
     expect(events).toHaveLength(1)
     expect(events![0]).toEqual([
       {
+        name: '',
         technique: 'loom',
         beadId: BEAD_CATALOG[1]!.id,
         size: { width: 20, height: 30, unit: 'cm' },
       },
     ])
+  })
+
+  it('shows the selected bead label as the name placeholder', async () => {
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
+
+    expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe(
+      `${BEAD_CATALOG[1]!.brand} ${BEAD_CATALOG[1]!.name} ${BEAD_CATALOG[1]!.size}`,
+    )
+  })
+
+  it('emits the trimmed custom name when one is typed', async () => {
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="name-input"]').setValue('  My Bracelet  ')
+    await wrapper.find('[data-testid="width-input"]').setValue('20')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    const events = wrapper.emitted('submit')
+    expect(events![0]![0]).toMatchObject({ name: 'My Bracelet' })
   })
 
   it('does not emit submit while width or height is zero', async () => {

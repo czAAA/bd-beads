@@ -5,6 +5,7 @@ export const en: Translations = {
     title: 'bd-beads',
   },
   form: {
+    nameLabel: 'Name',
     beadLabel: 'Bead',
     techniqueLabel: 'Technique',
     techniqueLoom: 'Loom',
