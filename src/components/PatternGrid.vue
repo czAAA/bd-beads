@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CELL_SIZE_PX } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
 defineProps<{ pattern: Pattern }>()
@@ -12,7 +13,11 @@ defineProps<{ pattern: Pattern }>()
         :key="columnIndex"
         class="pattern-grid__cell"
         data-testid="grid-cell"
-        :style="{ backgroundColor: cell.color ?? undefined }"
+        :style="{
+          width: `${CELL_SIZE_PX}px`,
+          height: `${CELL_SIZE_PX}px`,
+          backgroundColor: cell.color ?? undefined,
+        }"
       />
     </div>
   </div>
@@ -33,8 +38,6 @@ defineProps<{ pattern: Pattern }>()
 }
 
 .pattern-grid__cell {
-  width: 20px;
-  height: 20px;
   box-sizing: border-box;
   border: 1px solid var(--color-paper);
   background-color: var(--color-paper-solid);
