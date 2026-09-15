@@ -42,4 +42,9 @@ export const en: Translations = {
     colorLabel: 'Color',
     undoButton: 'Undo',
   },
+  tools: {
+    heading: 'Tool',
+    paintLabel: 'Paint',
+    fillLabel: 'Fill',
+  },
 }

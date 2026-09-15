@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { createPattern, mostRecentlyUpdated, paintCell, restoreGrid, summarizePattern } from './pattern'
+import {
+  createPattern,
+  fillArea,
+  mostRecentlyUpdated,
+  paintCell,
+  restoreGrid,
+  summarizePattern,
+  type Cell,
+  type Pattern,
+  type Technique,
+} from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -193,6 +203,78 @@ describe('restoreGrid', () => {
     expect(restored.grid).toBe(snapshot)
     expect(restored.updatedAt).toBeGreaterThan(0)
     expect(pattern.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('fillArea', () => {
+  function makeGridPattern(technique: Technique, grid: Cell[][]): Pattern {
+    const base = createPattern({
+      technique,
+      beadId: cubeBead.id,
+      size: { width: grid[0]!.length * 1.5, height: grid.length * 1.5, unit: 'mm' },
+    })
+    return { ...base, grid }
+  }
+
+  it('repaints every cell of the clicked color reachable through same-colored neighbors', () => {
+    const pattern = makeGridPattern('loom', [
+      [{ color: 'red' }, { color: 'red' }, { color: 'blue' }],
+      [{ color: 'red' }, { color: 'red' }, { color: 'blue' }],
+      [{ color: 'blue' }, { color: 'blue' }, { color: 'blue' }],
+    ])
+
+    const filled = fillArea(pattern, 0, 0, 'green')
+
+    expect(filled.grid[0]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
+    expect(filled.grid[1]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
+    expect(filled.grid[2]!.map((c) => c.color)).toEqual(['blue', 'blue', 'blue'])
+  })
+
+  it('does not spill across a differently-colored boundary', () => {
+    const pattern = makeGridPattern('loom', [
+      [{ color: 'red' }, { color: 'blue' }],
+      [{ color: 'red' }, { color: 'blue' }],
+    ])
+
+    const filled = fillArea(pattern, 0, 0, 'green')
+
+    expect(filled.grid[0]![1]!.color).toBe('blue')
+    expect(filled.grid[1]![1]!.color).toBe('blue')
+  })
+
+  it('returns the same pattern instance, unchanged, when the clicked cell already has the fill color', () => {
+    const pattern = makeGridPattern('loom', [
+      [{ color: 'red' }, { color: 'red' }],
+      [{ color: 'red' }, { color: 'red' }],
+    ])
+
+    expect(fillArea(pattern, 0, 0, 'red')).toBe(pattern)
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makeGridPattern('loom', [
+      [{ color: 'red' }, { color: 'red' }],
+      [{ color: 'red' }, { color: 'red' }],
+    ])
+
+    fillArea(pattern, 0, 0, 'green')
+
+    expect(pattern.grid[0]![0]!.color).toBe('red')
+  })
+
+  it("connects a diagonally-offset same-color cell for Peyote that a straight Loom grid would not", () => {
+    const grid: Cell[][] = [
+      [{ color: null }, { color: 'red' }],
+      [{ color: 'red' }, { color: null }],
+    ]
+
+    const loomFilled = fillArea(makeGridPattern('loom', grid), 0, 1, 'green')
+    const peyoteFilled = fillArea(makeGridPattern('peyote', grid), 0, 1, 'green')
+
+    // Loom: (0,1)'s only straight neighbor below is (1,1), which is unpainted, so (1,0) stays red.
+    expect(loomFilled.grid[1]![0]!.color).toBe('red')
+    // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
+    expect(peyoteFilled.grid[1]![0]!.color).toBe('green')
   })
 })
 

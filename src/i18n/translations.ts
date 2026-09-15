@@ -42,4 +42,9 @@ export interface Translations {
     colorLabel: string
     undoButton: string
   }
+  tools: {
+    heading: string
+    paintLabel: string
+    fillLabel: string
+  }
 }

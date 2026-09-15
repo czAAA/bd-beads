@@ -56,6 +56,51 @@ export function gridHeightPx(technique: Technique, rows: number, cellSize = CELL
   return cellSize + (rows - 1) * rowHeightPx(technique, cellSize)
 }
 
+export interface GridPosition {
+  row: number
+  column: number
+}
+
+/** Columns in `toRow` whose cells visually overlap `column` of `fromRow`, given each row's horizontal offset. Loom rows share one offset, so only the same column overlaps; offset techniques' rows interlock, so a row's cell overlaps two columns of a differently-offset neighbor. */
+function overlappingColumns(technique: Technique, fromRow: number, toRow: number, column: number): number[] {
+  const fromOffset = rowOffsetPx(technique, fromRow, 1)
+  const toOffset = rowOffsetPx(technique, toRow, 1)
+
+  if (toOffset > fromOffset) {
+    return [column - 1, column]
+  }
+  if (toOffset < fromOffset) {
+    return [column, column + 1]
+  }
+  return [column]
+}
+
+/** The cells adjacent to (row, column) given the Pattern's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. */
+export function neighborsOf(
+  technique: Technique,
+  dimensions: GridDimensions,
+  position: GridPosition,
+): GridPosition[] {
+  const { row, column } = position
+  const candidates: GridPosition[] = [
+    { row, column: column - 1 },
+    { row, column: column + 1 },
+  ]
+
+  if (row > 0) {
+    for (const c of overlappingColumns(technique, row, row - 1, column)) {
+      candidates.push({ row: row - 1, column: c })
+    }
+  }
+  if (row < dimensions.rows - 1) {
+    for (const c of overlappingColumns(technique, row, row + 1, column)) {
+      candidates.push({ row: row + 1, column: c })
+    }
+  }
+
+  return candidates.filter((p) => p.column >= 0 && p.column < dimensions.columns)
+}
+
 export interface FitZoomInput extends GridDimensions {
   maxWidth: number
   maxHeight: number

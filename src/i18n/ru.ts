@@ -44,4 +44,9 @@ export const ru: Translations = {
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
   },
+  tools: {
+    heading: 'Инструмент',
+    paintLabel: 'Кисть',
+    fillLabel: 'Заливка',
+  },
 }
