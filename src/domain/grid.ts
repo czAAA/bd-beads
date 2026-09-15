@@ -44,9 +44,14 @@ export const RULER_GUTTER_PX = 28
 
 /**
  * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Pattern that needs less gets a
- * box its own shape rather than empty bands inside a fixed square (ticket 18).
+ * box its own shape rather than empty bands inside a fixed square (ticket 18). Raised twice from the original 480:
+ * once when the editing tools left the left panel (ADR 0005) and the canvas became what reclaims that width, and
+ * again here because 640 was still forcing ordinary-sized Patterns (a few dozen columns/rows) to open zoomed below
+ * 100% for no reason — the box simply wasn't big enough to show them at their natural 1:1 bead size. 900 covers a
+ * Pattern well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header and
+ * tool strip take their share; a Pattern past that still opens fit-to-box and zooms/scrolls from there as designed.
  */
-export const CANVAS_MAX_PX = 480
+export const CANVAS_MAX_PX = 900
 
 /** Horizontal offset (px) for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
 export function rowOffsetPx(technique: Technique, rowIndex: number, cellSize = CELL_SIZE_PX): number {
