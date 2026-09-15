@@ -49,7 +49,7 @@ describe('PatternGrid', () => {
     expect(rows[1]!.attributes('style')).toContain('margin-left: 10px')
   })
 
-  it('renders Brick stitch with the same row offset as Peyote but a visually distinct class', () => {
+  it('renders Brick stitch with the same horizontal row offset as Peyote but stacked at full row height', () => {
     const pattern = createPattern({
       technique: 'brick',
       beadId: cubeBead.id,
@@ -60,7 +60,31 @@ describe('PatternGrid', () => {
     const rows = wrapper.findAll('[data-testid="grid-row"]')
 
     expect(rows[1]!.attributes('style')).toContain('margin-left: 10px')
+    expect(rows[1]!.attributes('style')).toContain('margin-top: 0px')
     expect(wrapper.classes()).toContain('pattern-grid--brick')
     expect(wrapper.classes()).not.toContain('pattern-grid--peyote')
+  })
+
+  it("packs Peyote's rows tighter than a full cell, unlike Brick stitch's full-height rows", () => {
+    const peyote = createPattern({
+      technique: 'peyote',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+    const brick = createPattern({
+      technique: 'brick',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    const peyoteWrapper = mount(PatternGrid, { props: { pattern: peyote } })
+    const brickWrapper = mount(PatternGrid, { props: { pattern: brick } })
+
+    expect(peyoteWrapper.findAll('[data-testid="grid-row"]')[1]!.attributes('style')).toContain(
+      'margin-top: -5px',
+    )
+    expect(brickWrapper.findAll('[data-testid="grid-row"]')[1]!.attributes('style')).toContain(
+      'margin-top: 0px',
+    )
   })
 })

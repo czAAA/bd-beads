@@ -43,6 +43,19 @@ export function gridWidthPx(technique: Technique, columns: number, cellSize = CE
   return columns * cellSize + (isOffsetTechnique(technique) ? cellSize / 2 : 0)
 }
 
+/** Vertical distance (px) from one row's top to the next. Peyote rows interlock, packing tighter than a full cell (the real stitch's rows nest into each other); brick stitch stacks rows at full height like coursed brickwork, same as loom. */
+export function rowHeightPx(technique: Technique, cellSize = CELL_SIZE_PX): number {
+  return technique === 'peyote' ? cellSize * 0.75 : cellSize
+}
+
+/** Total rendered grid height in px, accounting for peyote's tighter row packing. */
+export function gridHeightPx(technique: Technique, rows: number, cellSize = CELL_SIZE_PX): number {
+  if (rows === 0) {
+    return 0
+  }
+  return cellSize + (rows - 1) * rowHeightPx(technique, cellSize)
+}
+
 export interface FitZoomInput extends GridDimensions {
   maxWidth: number
   maxHeight: number
@@ -60,6 +73,6 @@ export function computeFitZoom({
   technique = 'loom',
 }: FitZoomInput): number {
   const gridWidth = gridWidthPx(technique, columns, cellSize)
-  const gridHeight = rows * cellSize
+  const gridHeight = gridHeightPx(technique, rows, cellSize)
   return Math.min(1, maxWidth / gridWidth, maxHeight / gridHeight)
 }

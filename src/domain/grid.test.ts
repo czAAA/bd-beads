@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { computeFitZoom, computeGridDimensions, gridWidthPx, rowOffsetPx, toMillimeters } from './grid'
+import {
+  computeFitZoom,
+  computeGridDimensions,
+  gridHeightPx,
+  gridWidthPx,
+  rowHeightPx,
+  rowOffsetPx,
+  toMillimeters,
+} from './grid'
 import type { Bead } from './beads'
 
 const cubeBead: Bead = {
@@ -139,5 +147,32 @@ describe('gridWidthPx', () => {
   it('adds half a cell for offset techniques', () => {
     expect(gridWidthPx('peyote', 10, 20)).toBe(210)
     expect(gridWidthPx('brick', 10, 20)).toBe(210)
+  })
+})
+
+describe('rowHeightPx', () => {
+  it('is a full cell for loom and brick stitch', () => {
+    expect(rowHeightPx('loom', 20)).toBe(20)
+    expect(rowHeightPx('brick', 20)).toBe(20)
+  })
+
+  it('packs peyote rows tighter than a full cell, so they interlock', () => {
+    expect(rowHeightPx('peyote', 20)).toBe(15)
+  })
+})
+
+describe('gridHeightPx', () => {
+  it('is rows times cell size for loom and brick stitch', () => {
+    expect(gridHeightPx('loom', 10, 20)).toBe(200)
+    expect(gridHeightPx('brick', 10, 20)).toBe(200)
+  })
+
+  it('is shorter than a straight grid for peyote, since its rows overlap', () => {
+    expect(gridHeightPx('peyote', 10, 20)).toBe(20 + 9 * 15)
+    expect(gridHeightPx('peyote', 10, 20)).toBeLessThan(gridHeightPx('loom', 10, 20))
+  })
+
+  it('is zero for an empty grid', () => {
+    expect(gridHeightPx('loom', 0, 20)).toBe(0)
   })
 })
