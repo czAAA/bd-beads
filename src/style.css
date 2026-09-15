@@ -122,3 +122,25 @@ button:disabled {
   color: var(--color-amaranth-ink);
   background: var(--color-amaranth-deep);
 }
+
+/* An icon-only button (ticket 26): same pill shape as a text button, but square and centered on its glyph, which
+   is drawn as a stroke-only path in the button's own current text color so it matches every button state (default,
+   danger, disabled) without its own color rules. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.icon-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

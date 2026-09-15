@@ -3,10 +3,12 @@ import {
   createPattern,
   fillArea,
   mirrorPattern,
+  mirroredCells,
   mostRecentlyUpdated,
   moveToRow,
   normalizePattern,
   paintCell,
+  paintCells,
   restoreGrid,
   setColorBeadOverride,
   setRowProgressEnabled,
@@ -280,6 +282,127 @@ describe('fillArea', () => {
     expect(loomFilled.grid[1]![0]!.color).toBe('red')
     // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
     expect(peyoteFilled.grid[1]![0]!.color).toBe('green')
+  })
+})
+
+describe('mirroredCells', () => {
+  function grid4x4() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('is just the cell itself when neither axis is on', () => {
+    expect(mirroredCells(grid4x4(), { row: 1, column: 2 }, { horizontal: false, vertical: false })).toEqual([
+      { row: 1, column: 2 },
+    ])
+  })
+
+  it('reflects left-right across the exact center for the horizontal axis', () => {
+    expect(mirroredCells(grid4x4(), { row: 1, column: 0 }, { horizontal: true, vertical: false })).toEqual([
+      { row: 1, column: 0 },
+      { row: 1, column: 3 },
+    ])
+  })
+
+  it('reflects top-bottom across the exact center for the vertical axis', () => {
+    expect(mirroredCells(grid4x4(), { row: 0, column: 2 }, { horizontal: false, vertical: true })).toEqual([
+      { row: 0, column: 2 },
+      { row: 3, column: 2 },
+    ])
+  })
+
+  it('reflects into all four quadrant counterparts when both axes are on', () => {
+    expect(mirroredCells(grid4x4(), { row: 0, column: 0 }, { horizontal: true, vertical: true })).toEqual([
+      { row: 0, column: 0 },
+      { row: 0, column: 3 },
+      { row: 3, column: 0 },
+      { row: 3, column: 3 },
+    ])
+  })
+
+  it('deduplicates down to 2 cells when a cell sits on the exact center of an odd dimension', () => {
+    // A 3-column pattern: column 1 is its own horizontal mirror.
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 4.5, height: 6, unit: 'mm' },
+    })
+
+    expect(mirroredCells(pattern, { row: 0, column: 1 }, { horizontal: true, vertical: true })).toEqual([
+      { row: 0, column: 1 },
+      { row: 3, column: 1 },
+    ])
+  })
+})
+
+describe('paintCells', () => {
+  function makePattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('paints every given position when mirroring is off', () => {
+    const pattern = makePattern()
+
+    const painted = paintCells(
+      pattern,
+      [{ row: 0, column: 0 }, { row: 1, column: 1 }],
+      '#e63746',
+      { horizontal: false, vertical: false },
+    )
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[1]![1]!.color).toBe('#e63746')
+    expect(painted.grid[0]![1]!.color).toBeNull()
+  })
+
+  it('also paints the mirrored counterpart of each position when an axis is on', () => {
+    const pattern = makePattern()
+
+    const painted = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', {
+      horizontal: true,
+      vertical: false,
+    })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('erases with a null color the same way it paints', () => {
+    const pattern = paintCells(makePattern(), [{ row: 0, column: 0 }], '#e63746', {
+      horizontal: true,
+      vertical: false,
+    })
+
+    const erased = paintCells(pattern, [{ row: 0, column: 0 }], null, {
+      horizontal: true,
+      vertical: false,
+    })
+
+    expect(erased.grid[0]![0]!.color).toBeNull()
+    expect(erased.grid[0]![3]!.color).toBeNull()
+  })
+
+  it('returns the same Pattern instance, unchanged, when every touched cell is already that color', () => {
+    const pattern = makePattern()
+
+    expect(paintCells(pattern, [{ row: 0, column: 0 }], null, { horizontal: false, vertical: false })).toBe(
+      pattern,
+    )
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makePattern()
+
+    paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: true, vertical: false })
+
+    expect(pattern.grid[0]![0]!.color).toBeNull()
   })
 })
 

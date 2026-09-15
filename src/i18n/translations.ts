@@ -76,10 +76,10 @@ export interface Translations {
   }
   mirror: {
     heading: string
-    enabledLabel: string
     horizontalLabel: string
     verticalLabel: string
-    applyButton: string
+    mirrorCurrentHorizontalButton: string
+    mirrorCurrentVerticalButton: string
   }
   catalog: {
     heading: string

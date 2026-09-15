@@ -168,10 +168,32 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
-    expect(mainPanel.find('[data-testid="palette-picker"]').exists()).toBe(true)
+    expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(false)
+    expect(aboveCanvas.find('[data-testid="palette-picker"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
+  })
+
+  it('moves editing tools into the above-canvas panel, as a second row below New Pattern/zoom, and empties the main panel', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
+    const toolStrip = wrapper.find('[data-testid="tool-strip"]')
+
+    expect(mainPanel.text()).toBe('')
+    expect(toolStrip.exists()).toBe(true)
+    for (const testId of [
+      'tool-paint',
+      'tool-fill',
+      'palette-picker',
+      'undo-button',
+      'mirror-horizontal',
+      'row-progress-enabled',
+    ]) {
+      expect(toolStrip.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+    }
   })
 
   it('paints a cell with the selected palette color', async () => {
@@ -179,7 +201,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
     expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
       'background-color: rgb(230, 55, 70)',
@@ -196,7 +218,7 @@ describe('App', () => {
     await wrapper.find('form').trigger('submit')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
@@ -208,14 +230,14 @@ describe('App', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
-    await cells[0]!.trigger('click')
-    await cells[1]!.trigger('click')
-    await cells[10]!.trigger('click')
-    await cells[11]!.trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mousedown')
+    await cells[10]!.trigger('mousedown')
+    await cells[11]!.trigger('mousedown')
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[0]!.trigger('click')
+    await cells[0]!.trigger('mousedown')
 
     const grid = loadPatterns()[0]!.grid
     expect(grid[0]![0]!.color).toBe('#2f6fed')
@@ -232,12 +254,12 @@ describe('App', () => {
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('click')
-    await cells[1]!.trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mousedown')
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[0]!.trigger('click')
+    await cells[0]!.trigger('mousedown')
 
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#2f6fed')
 
@@ -248,66 +270,110 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
-  it('mirroring is off by default, so applying is unavailable', async () => {
+  it('mirroring is off by default, so painting touches only the clicked cell', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    expect(wrapper.find<HTMLInputElement>('[data-testid="mirror-enabled"]').element.checked).toBe(
+    expect(wrapper.find<HTMLInputElement>('[data-testid="mirror-horizontal"]').element.checked).toBe(
       false,
     )
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
-      true,
-    )
-  })
-
-  it('requires the master toggle and at least one axis before mirror can be applied', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3')
-
-    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
-      true,
-    )
-
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
-      false,
-    )
-  })
-
-  it('reflects painted cells across the selected axis only when mirror is applied, not live while drawing', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('click') // paint (0,0)
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
-    // Not live: painting alone never touches (0,1).
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+  })
 
-    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
+  it('live-mirrors a painted cell across the toggled axis immediately, fixed to the exact center', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
     await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
-    await wrapper.find('[data-testid="mirror-apply"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
 
     const grid = loadPatterns()[0]!.grid
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
-    // Vertical axis wasn't selected, so row 1 (never painted) stays untouched.
+    // Vertical axis is off, so row 1 stays untouched.
     expect(grid[1]![0]!.color).toBeNull()
     expect(grid[1]![1]!.color).toBeNull()
   })
 
-  it('undoes a mirror as a single action', async () => {
+  it('live-mirrors into all four quadrants when both axes are toggled on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-vertical"]').setValue(true)
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[1]![0]!.color).toBe('#e63746')
+    expect(grid[1]![1]!.color).toBe('#e63746')
+  })
+
+  it('undoes a live-mirrored paint as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('leaves Fill unaffected by mirror state', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
+    // Mirror off while painting (0,0), so (0,1) starts out unpainted.
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // fill (0,0), mirror on
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#2f6fed')
+    // If Fill mirrored like Paint does, (0,1) — (0,0)'s horizontal counterpart — would also have flipped to blue.
+    expect(grid[0]![1]!.color).toBeNull()
+  })
+
+  it('reflects whatever is currently painted with "Mirror current", for content painted before the axis was on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0), mirror off
+
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+  })
+
+  it('undoes "Mirror current" as a single action', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
-
-    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
-    await wrapper.find('[data-testid="mirror-apply"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -320,9 +386,213 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![2]!.color).toBe('#e63746')
+    // The rest of the stroke's row is untouched.
+    expect(grid[0]![3]!.color).toBeNull()
+  })
+
+  it('undoes a whole dragged stroke as a single action, not one step per cell', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+    expect(grid[0]![2]!.color).toBeNull()
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled,
+    ).toBe(true)
+  })
+
+  it('drags a live-mirrored stroke, mirroring each dragged cell along the way', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown') // (0,0) -> mirrors to (0,1)
+    await cells[2]!.trigger('mouseenter', { buttons: 1 }) // (1,0) -> mirrors to (1,1)
+    await wrapper.trigger('mouseup')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[1]![0]!.color).toBe('#e63746')
+    expect(grid[1]![1]!.color).toBe('#e63746')
+  })
+
+  it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    // Isolate cell 5 from cell 6 with different colors, so flood-fill's own same-color spread can't
+    // explain either cell's result — only a (nonexistent) drag continuation could paint cell 6 green.
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[5]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[6]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="green"]').trigger('click')
+    await cells[5]!.trigger('mousedown')
+    await cells[6]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![5]!.color).toBe('#27ae60')
+    expect(grid[0]![6]!.color).toBe('#2f6fed')
+  })
+
+  it('right-clicks a single cell to erase it with the Paint tool', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    await cells[0]!.trigger('mousedown', { button: 2 })
+    await wrapper.trigger('mouseup')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await cells[0]!.trigger('mousedown', { button: 2 })
+    await cells[1]!.trigger('mouseenter', { buttons: 2 })
+    await cells[2]!.trigger('mouseenter', { buttons: 2 })
+    await wrapper.trigger('mouseup')
+
+    let grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+    expect(grid[0]![2]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![2]!.color).toBe('#e63746')
+  })
+
+  it('right-click erase under Paint also erases the mirrored counterpart cell(s), same as painting', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[0]!.trigger('mousedown') // paints (0,0) and (0,1)
+    await wrapper.trigger('mouseup')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+
+    await cells[0]!.trigger('mousedown', { button: 2 })
+    await wrapper.trigger('mouseup')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+  })
+
+  it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[10]!.trigger('mouseenter', { buttons: 1 })
+    await cells[11]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await cells[0]!.trigger('mousedown', { button: 2 })
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+    expect(grid[1]![0]!.color).toBeNull()
+    expect(grid[1]![1]!.color).toBeNull()
+    // Outside the flood-erased region is untouched.
+    expect(grid[0]![2]!.color).toBeNull()
+  })
+
+  it('undoes a single-click flood-erase as one step', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await cells[0]!.trigger('mousedown', { button: 2 })
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+  })
+
+  it('suppresses the native context menu when right-clicking the canvas', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
+    wrapper.find('[data-testid="grid-cell"]').element.dispatchEvent(event)
+
+    expect(event.defaultPrevented).toBe(true)
   })
 
   it('undoes the most recent paint action, and repeated undo steps back further', async () => {
@@ -330,9 +600,11 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
 
@@ -352,11 +624,22 @@ describe('App', () => {
     )
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
       false,
     )
+  })
+
+  it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const undoButton = wrapper.find('[data-testid="undo-button"]')
+    expect(undoButton.text()).toBe('')
+    expect(undoButton.find('svg').exists()).toBe(true)
+    expect(undoButton.attributes('aria-label')).toBe(ru.palette.undoButton)
   })
 
   it('persists painted cells across a reload', async () => {
@@ -364,7 +647,7 @@ describe('App', () => {
     await createPatternViaForm(first, '15', '30')
 
     await first.find('[data-color-id="red"]').trigger('click')
-    await first.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await first.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
     first.unmount()
 
     const afterReload = mount(App)
@@ -512,6 +795,20 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
+  it('splits the top bar into a dark title box and an aqua summary box', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const topBar = wrapper.find('[data-testid="app-topbar"]')
+    const titleBox = topBar.find('.app-shell__topbar-title')
+    const summaryBox = topBar.find('.app-shell__topbar-summary')
+
+    expect(titleBox.find('h1').text()).toBe('bd-beads')
+    expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
+    expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
+    expect(summaryBox.find('[data-testid="language-en"]').exists()).toBe(true)
+  })
+
   it('rules the canvas with row and column numbers on all four edges', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -520,6 +817,57 @@ describe('App', () => {
     for (const edge of ['row-start', 'row-end', 'column-start', 'column-end']) {
       expect(canvas.find(`[data-testid="pattern-ruler-${edge}"]`).exists()).toBe(true)
     }
+  })
+})
+
+describe('App hover preview', () => {
+  it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mouseenter')
+    expect(wrapper.find('[data-testid="cell-preview"]').attributes('style')).toContain(
+      'background-color: rgb(230, 55, 70)',
+    )
+
+    await wrapper.find('.pattern-grid').trigger('mouseleave')
+    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(false)
+  })
+
+  it('shows a neutral highlight instead of a color preview when nothing is selected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mouseenter')
+
+    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="grid-cell"]')[5]!.classes()).toContain(
+      'pattern-grid__cell--preview-neutral',
+    )
+  })
+
+  it('also previews the mirrored counterpart cells when a mirror axis is on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mouseenter') // (0,0)
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2)
+  })
+
+  it('does not preview mirrored cells for the Fill tool, since Fill is unaffected by mirror state', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mouseenter') // (0,0)
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(1)
   })
 })
 
@@ -600,10 +948,10 @@ describe('App bead quantities', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('click')
-    await cells[1]!.trigger('click')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mousedown')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[2]!.trigger('click')
+    await cells[2]!.trigger('mousedown')
   }
 
   it('totals the beads each color needs from the painted cells', async () => {
