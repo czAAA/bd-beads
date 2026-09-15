@@ -44,3 +44,8 @@ export const BEAD_CATALOG: readonly Bead[] = [
 export function findBead(id: string): Bead | undefined {
   return BEAD_CATALOG.find((bead) => bead.id === id)
 }
+
+/** A human-readable label for a Bead, e.g. "TOHO Cube 1.5mm". */
+export function beadLabel(bead: Bead): string {
+  return `${bead.brand} ${bead.name} ${bead.size}`
+}

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { BEAD_CATALOG } from '../domain/beads'
+import { BEAD_CATALOG, beadLabel, findBead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
 import type { SizeUnit } from '../domain/grid'
 import { useI18n } from '../i18n/useI18n'
@@ -11,6 +11,7 @@ const emit = defineEmits<{
   submit: [payload: CreatePatternInput]
 }>()
 
+const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
 const widthText = ref('')
 const heightText = ref('')
@@ -19,6 +20,10 @@ const unit = ref<SizeUnit>('mm')
 const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
 const isValid = computed(() => width.value > 0 && height.value > 0)
+const namePlaceholder = computed(() => {
+  const bead = findBead(beadId.value)
+  return bead ? beadLabel(bead) : ''
+})
 
 function onSubmit() {
   if (!isValid.value) {
@@ -26,6 +31,7 @@ function onSubmit() {
   }
 
   emit('submit', {
+    name: name.value.trim(),
     technique: 'loom',
     beadId: beadId.value,
     size: { width: width.value, height: height.value, unit: unit.value },
@@ -35,6 +41,17 @@ function onSubmit() {
 
 <template>
   <form class="new-pattern-form" @submit.prevent="onSubmit">
+    <div class="field">
+      <label for="name-input">{{ t.form.nameLabel }}</label>
+      <input
+        id="name-input"
+        v-model="name"
+        data-testid="name-input"
+        type="text"
+        :placeholder="namePlaceholder"
+      />
+    </div>
+
     <div class="field">
       <label for="bead-select">{{ t.form.beadLabel }}</label>
       <select id="bead-select" v-model="beadId" data-testid="bead-select">
