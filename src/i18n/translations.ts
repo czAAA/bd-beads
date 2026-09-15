@@ -9,6 +9,8 @@ export interface Translations {
     beadLabel: string
     techniqueLabel: string
     techniqueLoom: string
+    techniquePeyote: string
+    techniqueBrick: string
     widthLabel: string
     heightLabel: string
     unitLabel: string
@@ -32,5 +34,24 @@ export interface Translations {
   }
   shell: {
     mainPanelPlaceholder: string
+    canvasPlaceholder: string
+  }
+  palette: {
+    heading: string
+    pickerLabel: string
+    colorLabel: string
+    undoButton: string
+  }
+  tools: {
+    heading: string
+    paintLabel: string
+    fillLabel: string
+  }
+  mirror: {
+    heading: string
+    enabledLabel: string
+    horizontalLabel: string
+    verticalLabel: string
+    applyButton: string
   }
 }

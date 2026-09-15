@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
+import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
+import { findPaletteColor } from './domain/palette'
 import {
   createPattern,
+  fillArea,
+  mirrorPattern,
   mostRecentlyUpdated,
+  paintCell,
+  restoreGrid,
   summarizePattern,
   type CreatePatternInput,
+  type Grid,
+  type MirrorAxes,
   type Pattern,
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
@@ -22,6 +30,17 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
+
+const selectedColorId = ref<string | undefined>()
+const activeTool = ref<'paint' | 'fill'>('paint')
+const mirrorEnabled = ref(false)
+const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
+/** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
+const undoStack = ref<Grid[]>([])
+
+watch(activePatternId, () => {
+  undoStack.value = []
+})
 
 function onCreatePattern(payload: CreatePatternInput) {
   const created = createPattern(payload)
@@ -46,6 +65,62 @@ function onRemovePattern(id: string) {
 function onNewPattern() {
   activePatternId.value = undefined
 }
+
+function onSelectColor(colorId: string) {
+  selectedColorId.value = colorId
+}
+
+function onSelectTool(tool: 'paint' | 'fill') {
+  activeTool.value = tool
+}
+
+function replaceActivePattern(updated: Pattern) {
+  savePattern(updated)
+  patterns.value = patterns.value.map((pattern) => (pattern.id === updated.id ? updated : pattern))
+}
+
+/** Commits the result of a grid-changing command (paint/fill/mirror) as one undo step, unless it left the Pattern unchanged. */
+function commitGridChange(pattern: Pattern, updated: Pattern) {
+  if (updated === pattern) {
+    return
+  }
+
+  undoStack.value.push(pattern.grid)
+  replaceActivePattern(updated)
+}
+
+function onCellClick(row: number, column: number) {
+  const pattern = activePattern.value
+  const color = selectedColorId.value ? findPaletteColor(selectedColorId.value) : undefined
+  if (!pattern || !color) {
+    return
+  }
+
+  const updated =
+    activeTool.value === 'fill'
+      ? fillArea(pattern, row, column, color.hex)
+      : paintCell(pattern, row, column, color.hex)
+  commitGridChange(pattern, updated)
+}
+
+function onUndo() {
+  const pattern = activePattern.value
+  const previousGrid = undoStack.value.pop()
+  if (!pattern || !previousGrid) {
+    return
+  }
+
+  replaceActivePattern(restoreGrid(pattern, previousGrid))
+}
+
+function onApplyMirror() {
+  const pattern = activePattern.value
+  if (!pattern || !mirrorEnabled.value) {
+    return
+  }
+
+  commitGridChange(pattern, mirrorPattern(pattern, mirrorAxes.value))
+}
 </script>
 
 <template>
@@ -59,16 +134,83 @@ function onNewPattern() {
     </header>
 
     <div class="app-shell__body">
-      <!-- Painting/fill/mirror tools (tickets 07-09) join the New Pattern form here as they're built;
-           until a ticket assigns this panel new content, it shows a placeholder instead of blank space. -->
       <aside class="app-shell__main" data-testid="app-main-panel">
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
           <NewPatternForm @submit="onCreatePattern" />
         </template>
-        <p v-else class="app-shell__placeholder" data-testid="app-main-panel-placeholder">
-          {{ t.shell.mainPanelPlaceholder }}
-        </p>
+        <template v-else>
+          <h2>{{ t.tools.heading }}</h2>
+          <div class="tool-picker" role="group" :aria-label="t.tools.heading">
+            <button
+              type="button"
+              data-testid="tool-paint"
+              :aria-pressed="activeTool === 'paint'"
+              :class="{ 'tool-picker__button--selected': activeTool === 'paint' }"
+              @click="onSelectTool('paint')"
+            >
+              {{ t.tools.paintLabel }}
+            </button>
+            <button
+              type="button"
+              data-testid="tool-fill"
+              :aria-pressed="activeTool === 'fill'"
+              :class="{ 'tool-picker__button--selected': activeTool === 'fill' }"
+              @click="onSelectTool('fill')"
+            >
+              {{ t.tools.fillLabel }}
+            </button>
+          </div>
+
+          <h2>{{ t.palette.heading }}</h2>
+          <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
+          <button
+            type="button"
+            data-testid="undo-button"
+            :disabled="undoStack.length === 0"
+            @click="onUndo"
+          >
+            {{ t.palette.undoButton }}
+          </button>
+
+          <h2>{{ t.mirror.heading }}</h2>
+          <label>
+            <input
+              v-model="mirrorEnabled"
+              type="checkbox"
+              data-testid="mirror-enabled"
+            />
+            {{ t.mirror.enabledLabel }}
+          </label>
+          <div class="mirror-axes">
+            <label>
+              <input
+                v-model="mirrorAxes.horizontal"
+                type="checkbox"
+                data-testid="mirror-horizontal"
+                :disabled="!mirrorEnabled"
+              />
+              {{ t.mirror.horizontalLabel }}
+            </label>
+            <label>
+              <input
+                v-model="mirrorAxes.vertical"
+                type="checkbox"
+                data-testid="mirror-vertical"
+                :disabled="!mirrorEnabled"
+              />
+              {{ t.mirror.verticalLabel }}
+            </label>
+          </div>
+          <button
+            type="button"
+            data-testid="mirror-apply"
+            :disabled="!mirrorEnabled || (!mirrorAxes.horizontal && !mirrorAxes.vertical)"
+            @click="onApplyMirror"
+          >
+            {{ t.mirror.applyButton }}
+          </button>
+        </template>
       </aside>
 
       <div class="app-shell__right">
@@ -84,7 +226,10 @@ function onNewPattern() {
         </div>
 
         <div class="app-shell__canvas" data-testid="app-canvas">
-          <PatternCanvas v-if="activePattern" :pattern="activePattern" />
+          <PatternCanvas v-if="activePattern" :pattern="activePattern" @cell-click="onCellClick" />
+          <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
+            {{ t.shell.canvasPlaceholder }}
+          </p>
         </div>
 
         <div class="app-shell__below-canvas" data-testid="app-below-canvas">
@@ -148,6 +293,23 @@ function onNewPattern() {
   margin: 0;
   color: var(--color-ink);
   opacity: 0.5;
+}
+
+.tool-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tool-picker__button--selected {
+  background: var(--color-wedgewood);
+  color: var(--color-wedgewood-ink);
+}
+
+.mirror-axes {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 16px;
 }
 
 .app-shell__right {

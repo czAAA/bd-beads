@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] User can pick a color from the Palette
 - [ ] Clicking a cell paints it with the selected color, regardless of the Pattern's Technique/grid geometry

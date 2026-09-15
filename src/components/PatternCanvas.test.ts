@@ -85,4 +85,12 @@ describe('PatternCanvas', () => {
     await wrapper.setProps({ pattern: largePattern() })
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('80%')
   })
+
+  it('forwards a grid cell click as its own cell-click event', async () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: smallPattern() } })
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('click')
+
+    expect(wrapper.emitted('cell-click')).toEqual([[0, 5]])
+  })
 })

@@ -1,12 +1,13 @@
 import { beadLabel, findBead } from './beads'
-import { computeGridDimensions, toMillimeters, type SizeUnit } from './grid'
+import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
 
-/** The weaving method, which determines a Pattern's grid geometry. Only 'loom' is supported so far. */
-export type Technique = 'loom'
+export type { Technique } from './grid'
 
 export interface Cell {
   color: string | null
 }
+
+export type Grid = Cell[][]
 
 export interface Pattern {
   id: string
@@ -17,7 +18,7 @@ export interface Pattern {
   heightMm: number
   columns: number
   rows: number
-  grid: Cell[][]
+  grid: Grid
   createdAt: number
   updatedAt: number
 }
@@ -30,7 +31,7 @@ export interface CreatePatternInput {
   size: { width: number; height: number; unit: SizeUnit }
 }
 
-function createEmptyGrid(columns: number, rows: number): Cell[][] {
+function createEmptyGrid(columns: number, rows: number): Grid {
   return Array.from({ length: rows }, () =>
     Array.from({ length: columns }, () => ({ color: null })),
   )
@@ -61,6 +62,121 @@ export function createPattern(input: CreatePatternInput): Pattern {
     createdAt: now,
     updatedAt: now,
   }
+}
+
+/** Swaps in a whole new grid (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
+export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
+  return { ...pattern, grid, updatedAt: Date.now() }
+}
+
+/** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */
+export function paintCell(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    rowIndex === row
+      ? gridRow.map((cell, columnIndex) => (columnIndex === column ? { color } : cell))
+      : gridRow,
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
+/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors, per the Pattern's grid adjacency (see neighborsOf), with the given color. Returns the same Pattern instance, unchanged, if the clicked cell is already that color. */
+export function fillArea(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
+  const targetColor = pattern.grid[row]?.[column]?.color
+  if (targetColor === undefined || targetColor === color) {
+    return pattern
+  }
+
+  const dimensions = { columns: pattern.columns, rows: pattern.rows }
+  const visited = new Set<string>()
+  const toPaint = new Set<string>()
+  const stack = [{ row, column }]
+
+  while (stack.length > 0) {
+    const position = stack.pop()!
+    const key = `${position.row},${position.column}`
+    if (visited.has(key)) {
+      continue
+    }
+    visited.add(key)
+
+    if (pattern.grid[position.row]?.[position.column]?.color !== targetColor) {
+      continue
+    }
+    toPaint.add(key)
+    stack.push(...neighborsOf(pattern.technique, dimensions, position))
+  }
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((cell, columnIndex) => (toPaint.has(`${rowIndex},${columnIndex}`) ? { color } : cell)),
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
+export interface MirrorAxes {
+  horizontal: boolean
+  vertical: boolean
+}
+
+function isInFirstHalf(index: number, dimension: number): boolean {
+  return index < Math.ceil(dimension / 2)
+}
+
+/** Whether the first half (by index, along the given axis) holds at least as much painted content as the second — used to find "the drawn half" to mirror from. Ties, including an all-blank grid, default to the first half. */
+function firstHalfIsSource(grid: Grid, dimension: number, axis: 'row' | 'column'): boolean {
+  let firstHalfPainted = 0
+  let secondHalfPainted = 0
+
+  grid.forEach((gridRow, rowIndex) => {
+    gridRow.forEach((cell, columnIndex) => {
+      if (cell.color === null) {
+        return
+      }
+      const index = axis === 'row' ? rowIndex : columnIndex
+      if (isInFirstHalf(index, dimension)) {
+        firstHalfPainted++
+      } else {
+        secondHalfPainted++
+      }
+    })
+  })
+
+  return firstHalfPainted >= secondHalfPainted
+}
+
+/** Maps an index in the non-source half onto its mirror partner in the source half; indices already in the source half map to themselves. */
+function mirrorIndex(index: number, dimension: number, sourceIsFirstHalf: boolean): number {
+  return isInFirstHalf(index, dimension) === sourceIsFirstHalf ? index : dimension - 1 - index
+}
+
+/**
+ * Reflects the drawn half (or quadrant, if both axes are selected) across the chosen axis/axes onto the rest of the
+ * grid, overwriting whatever was there. Which half counts as "drawn" is decided per axis by which side has more
+ * painted cells (see firstHalfIsSource), so mirroring works whichever side the user actually painted on rather than
+ * assuming a fixed corner. "Horizontal" flips left-right; "vertical" flips top-bottom. Returns the same Pattern
+ * instance, unchanged, when neither axis is selected.
+ */
+export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
+  if (!axes.horizontal && !axes.vertical) {
+    return pattern
+  }
+
+  const verticalSourceIsFirstHalf = axes.vertical && firstHalfIsSource(pattern.grid, pattern.rows, 'row')
+  const horizontalSourceIsFirstHalf =
+    axes.horizontal && firstHalfIsSource(pattern.grid, pattern.columns, 'column')
+
+  const sourceRow = (row: number) => (axes.vertical ? mirrorIndex(row, pattern.rows, verticalSourceIsFirstHalf) : row)
+  const sourceColumn = (column: number) =>
+    axes.horizontal ? mirrorIndex(column, pattern.columns, horizontalSourceIsFirstHalf) : column
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((_cell, columnIndex) => ({
+      color: pattern.grid[sourceRow(rowIndex)]![sourceColumn(columnIndex)]!.color,
+    })),
+  )
+
+  return restoreGrid(pattern, grid)
 }
 
 /** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated). */

@@ -1,6 +1,6 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique) reuse that
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette) reuse that
 // exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
@@ -11,6 +11,8 @@ export const ru: Translations = {
     beadLabel: 'Бисеринка',
     techniqueLabel: 'Техника плетения',
     techniqueLoom: 'Ткачество',
+    techniquePeyote: 'Мозаичное плетение',
+    techniqueBrick: 'Кирпичное плетение',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
     unitLabel: 'Единица измерения',
@@ -34,5 +36,24 @@ export const ru: Translations = {
   },
   shell: {
     mainPanelPlaceholder: 'Инструменты — скоро',
+    canvasPlaceholder: 'Схема пока не открыта',
+  },
+  palette: {
+    heading: 'Палитра',
+    pickerLabel: 'Цвета палитры',
+    colorLabel: 'Цвет',
+    undoButton: 'Отменить',
+  },
+  tools: {
+    heading: 'Инструмент',
+    paintLabel: 'Кисть',
+    fillLabel: 'Заливка',
+  },
+  mirror: {
+    heading: 'Отражение',
+    enabledLabel: 'Отражение включено',
+    horizontalLabel: 'Горизонталь',
+    verticalLabel: 'Вертикаль',
+    applyButton: 'Применить отражение',
   },
 }

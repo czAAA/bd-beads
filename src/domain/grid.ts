@@ -2,6 +2,14 @@ import type { Bead } from './beads'
 
 export type SizeUnit = 'mm' | 'cm'
 
+/** The weaving method, which determines a Pattern's grid geometry. */
+export type Technique = 'loom' | 'peyote' | 'brick'
+
+/** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06. */
+function isOffsetTechnique(technique: Technique): boolean {
+  return technique !== 'loom'
+}
+
 export interface PhysicalSizeMm {
   widthMm: number
   heightMm: number
@@ -25,15 +33,91 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
 /** The pixel size a pattern cell renders at (PatternGrid.vue reads this directly), so fit-zoom math lines up with the real grid. */
 export const CELL_SIZE_PX = 20
 
+/** Horizontal offset (px) for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
+export function rowOffsetPx(technique: Technique, rowIndex: number, cellSize = CELL_SIZE_PX): number {
+  return isOffsetTechnique(technique) && rowIndex % 2 === 1 ? cellSize / 2 : 0
+}
+
+/** Total rendered grid width in px, including the extra half-cell an offset technique's shifted rows take up. */
+export function gridWidthPx(technique: Technique, columns: number, cellSize = CELL_SIZE_PX): number {
+  return columns * cellSize + (isOffsetTechnique(technique) ? cellSize / 2 : 0)
+}
+
+/** Vertical distance (px) from one row's top to the next. Peyote rows interlock, packing tighter than a full cell (the real stitch's rows nest into each other); brick stitch stacks rows at full height like coursed brickwork, same as loom. */
+export function rowHeightPx(technique: Technique, cellSize = CELL_SIZE_PX): number {
+  return technique === 'peyote' ? cellSize * 0.75 : cellSize
+}
+
+/** Total rendered grid height in px, accounting for peyote's tighter row packing. */
+export function gridHeightPx(technique: Technique, rows: number, cellSize = CELL_SIZE_PX): number {
+  if (rows === 0) {
+    return 0
+  }
+  return cellSize + (rows - 1) * rowHeightPx(technique, cellSize)
+}
+
+export interface GridPosition {
+  row: number
+  column: number
+}
+
+/** Columns in `toRow` whose cells visually overlap `column` of `fromRow`, given each row's horizontal offset. Loom rows share one offset, so only the same column overlaps; offset techniques' rows interlock, so a row's cell overlaps two columns of a differently-offset neighbor. */
+function overlappingColumns(technique: Technique, fromRow: number, toRow: number, column: number): number[] {
+  const fromOffset = rowOffsetPx(technique, fromRow, 1)
+  const toOffset = rowOffsetPx(technique, toRow, 1)
+
+  if (toOffset > fromOffset) {
+    return [column - 1, column]
+  }
+  if (toOffset < fromOffset) {
+    return [column, column + 1]
+  }
+  return [column]
+}
+
+/** The cells adjacent to (row, column) given the Pattern's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. */
+export function neighborsOf(
+  technique: Technique,
+  dimensions: GridDimensions,
+  position: GridPosition,
+): GridPosition[] {
+  const { row, column } = position
+  const candidates: GridPosition[] = [
+    { row, column: column - 1 },
+    { row, column: column + 1 },
+  ]
+
+  if (row > 0) {
+    for (const c of overlappingColumns(technique, row, row - 1, column)) {
+      candidates.push({ row: row - 1, column: c })
+    }
+  }
+  if (row < dimensions.rows - 1) {
+    for (const c of overlappingColumns(technique, row, row + 1, column)) {
+      candidates.push({ row: row + 1, column: c })
+    }
+  }
+
+  return candidates.filter((p) => p.column >= 0 && p.column < dimensions.columns)
+}
+
 export interface FitZoomInput extends GridDimensions {
   maxWidth: number
   maxHeight: number
   cellSize?: number
+  technique?: Technique
 }
 
 /** Largest zoom that fits the whole grid within maxWidth x maxHeight, capped at 100% (never zooms in). */
-export function computeFitZoom({ columns, rows, maxWidth, maxHeight, cellSize = CELL_SIZE_PX }: FitZoomInput): number {
-  const gridWidth = columns * cellSize
-  const gridHeight = rows * cellSize
+export function computeFitZoom({
+  columns,
+  rows,
+  maxWidth,
+  maxHeight,
+  cellSize = CELL_SIZE_PX,
+  technique = 'loom',
+}: FitZoomInput): number {
+  const gridWidth = gridWidthPx(technique, columns, cellSize)
+  const gridHeight = gridHeightPx(technique, rows, cellSize)
   return Math.min(1, maxWidth / gridWidth, maxHeight / gridHeight)
 }

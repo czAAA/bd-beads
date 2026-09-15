@@ -9,6 +9,8 @@ export const en: Translations = {
     beadLabel: 'Bead',
     techniqueLabel: 'Technique',
     techniqueLoom: 'Loom',
+    techniquePeyote: 'Peyote',
+    techniqueBrick: 'Brick stitch',
     widthLabel: 'Width',
     heightLabel: 'Height',
     unitLabel: 'Unit',
@@ -32,5 +34,24 @@ export const en: Translations = {
   },
   shell: {
     mainPanelPlaceholder: 'Tools — coming soon',
+    canvasPlaceholder: 'No Pattern open yet',
+  },
+  palette: {
+    heading: 'Palette',
+    pickerLabel: 'Palette colors',
+    colorLabel: 'Color',
+    undoButton: 'Undo',
+  },
+  tools: {
+    heading: 'Tool',
+    paintLabel: 'Paint',
+    fillLabel: 'Fill',
+  },
+  mirror: {
+    heading: 'Mirror',
+    enabledLabel: 'Mirror enabled',
+    horizontalLabel: 'Horizontal',
+    verticalLabel: 'Vertical',
+    applyButton: 'Apply mirror',
   },
 }
