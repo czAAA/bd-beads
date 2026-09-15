@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import BeadCatalog from './components/BeadCatalog.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
+import { BEAD_CATALOG, type Bead } from './domain/beads'
+import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import { findPaletteColor } from './domain/palette'
 import {
   createPattern,
@@ -30,6 +33,9 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
+
+const customBeads = ref<Bead[]>(loadCustomBeads())
+const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
 
 const selectedColorId = ref<string | undefined>()
 const activeTool = ref<'paint' | 'fill'>('paint')
@@ -121,6 +127,21 @@ function onApplyMirror() {
 
   commitGridChange(pattern, mirrorPattern(pattern, mirrorAxes.value))
 }
+
+function onAddBead(bead: Bead) {
+  saveCustomBead(bead)
+  customBeads.value.push(bead)
+}
+
+function onEditBead(bead: Bead) {
+  saveCustomBead(bead)
+  customBeads.value = customBeads.value.map((existing) => (existing.id === bead.id ? bead : existing))
+}
+
+function onRemoveBead(id: string) {
+  removeCustomBead(id)
+  customBeads.value = customBeads.value.filter((bead) => bead.id !== id)
+}
 </script>
 
 <template>
@@ -137,7 +158,7 @@ function onApplyMirror() {
       <aside class="app-shell__main" data-testid="app-main-panel">
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
-          <NewPatternForm @submit="onCreatePattern" />
+          <NewPatternForm :beads="beads" @submit="onCreatePattern" />
         </template>
         <template v-else>
           <h2>{{ t.tools.heading }}</h2>
@@ -238,6 +259,13 @@ function onApplyMirror() {
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
             @remove="onRemovePattern"
+          />
+          <BeadCatalog
+            :seeded-beads="BEAD_CATALOG"
+            :custom-beads="customBeads"
+            @add="onAddBead"
+            @edit="onEditBead"
+            @remove="onRemoveBead"
           />
         </div>
       </div>

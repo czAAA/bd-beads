@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Seeded catalog (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0) is visible in the catalog view
 - [ ] User can add a new Bead entry with brand, name, size, form factor, and color
