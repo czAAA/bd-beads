@@ -47,6 +47,33 @@ export interface Translations {
     paintLabel: string
     fillLabel: string
   }
+  rowProgress: {
+    heading: string
+    enabledLabel: string
+    positionLabel: string
+    previousButton: string
+    nextButton: string
+  }
+  quantities: {
+    heading: string
+    noPatternMessage: string
+    colorHeading: string
+    countHeading: string
+    resolvedBeadHeading: string
+    defaultBeadHeading: string
+    patternBeadHeading: string
+    unmappedOption: string
+    useDefaultOption: string
+    unknownColorLabel: string
+  }
+  transfer: {
+    heading: string
+    exportPatternButton: string
+    exportLibraryButton: string
+    importLabel: string
+    importedLabel: string
+    importErrorLabel: string
+  }
   mirror: {
     heading: string
     enabledLabel: string

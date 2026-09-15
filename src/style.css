@@ -7,8 +7,12 @@
   /* Anchor palette (Japan Color Palette): flat, saturated color-blocking, no gradients */
   --color-amaranth: #e63746;
   --color-amaranth-ink: #ffffff;
+  /* A darker flat shade of the same anchor, for the destructive button's hover (see ticket 17) — not a gradient. */
+  --color-amaranth-deep: #b8202e;
   --color-wedgewood: #447a9c;
   --color-wedgewood-ink: #ffffff;
+  /* A darker flat shade of the same anchor, for the default button's pressed/active look. */
+  --color-wedgewood-deep: #2f5a76;
   --color-aqua-island: #a7dadc;
   --color-aqua-island-ink: var(--color-ink);
 
@@ -69,17 +73,26 @@ select {
 }
 
 input:focus-visible,
-select:focus-visible,
-button:focus-visible {
+select:focus-visible {
   outline: 3px solid var(--color-wedgewood);
   outline-offset: 2px;
 }
 
+/* Buttons are wedgewood themselves, so their focus ring uses the ink outline to stay visible against them. */
+button:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/*
+ * Red is reserved for destructive actions (see ticket 17): the default button is wedgewood, and only
+ * .button--danger reaches for the amaranth anchor.
+ */
 button {
   font: inherit;
   font-weight: 700;
-  color: var(--color-amaranth-ink);
-  background: var(--color-amaranth);
+  color: var(--color-wedgewood-ink);
+  background: var(--color-wedgewood);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-pill);
   padding: 10px 22px;
@@ -87,7 +100,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: var(--color-wedgewood);
+  background: var(--color-wedgewood-deep);
   color: var(--color-wedgewood-ink);
 }
 
@@ -97,4 +110,15 @@ button:disabled {
   border-color: var(--color-ink);
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/** Deleting/removing something the user can't get back — apply explicitly, never as a default. */
+.button--danger:not(:disabled) {
+  color: var(--color-amaranth-ink);
+  background: var(--color-amaranth);
+}
+
+.button--danger:hover:not(:disabled) {
+  color: var(--color-amaranth-ink);
+  background: var(--color-amaranth-deep);
 }

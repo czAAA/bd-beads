@@ -1,4 +1,5 @@
 import { beadLabel } from './beads'
+import { withColorBeadMapping } from './beadMapping'
 import { findBead } from './beadStorage'
 import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
 
@@ -10,6 +11,16 @@ export interface Cell {
 
 export type Grid = Cell[][]
 
+/** Which row the weaver is on, and whether the editor is showing that overlay (see CONTEXT.md's Row progress entry). */
+export interface RowProgress {
+  enabled: boolean
+  /** Zero-based index of the row being woven now; every row before it counts as finished. */
+  currentRow: number
+}
+
+/** Palette color id -> Bead id, for the colors this Pattern maps differently from the global default (ticket 11). */
+export type ColorBeadOverrides = Record<string, string>
+
 export interface Pattern {
   id: string
   name: string
@@ -20,6 +31,8 @@ export interface Pattern {
   columns: number
   rows: number
   grid: Grid
+  rowProgress: RowProgress
+  colorBeadOverrides: ColorBeadOverrides
   createdAt: number
   updatedAt: number
 }
@@ -61,14 +74,62 @@ export function createPattern(input: CreatePatternInput): Pattern {
     columns,
     rows,
     grid: createEmptyGrid(columns, rows),
+    rowProgress: { enabled: false, currentRow: 0 },
+    colorBeadOverrides: {},
     createdAt: now,
     updatedAt: now,
   }
 }
 
+/** Applies a change to a Pattern as a new object, stamping it as just-edited. */
+function touch(pattern: Pattern, changes: Partial<Pattern>): Pattern {
+  return { ...pattern, ...changes, updatedAt: Date.now() }
+}
+
+function clampRow(row: number, rows: number): number {
+  return Math.min(rows - 1, Math.max(0, row))
+}
+
+/**
+ * Fills in fields added after a Pattern was first saved, and re-clamps the row pointer, so a Pattern read back from
+ * storage or an imported file is safe to use whatever version wrote it.
+ */
+export function normalizePattern(pattern: Pattern): Pattern {
+  const rowProgress = pattern.rowProgress ?? { enabled: false, currentRow: 0 }
+
+  return {
+    ...pattern,
+    rowProgress: { ...rowProgress, currentRow: clampRow(rowProgress.currentRow, pattern.rows) },
+    colorBeadOverrides: pattern.colorBeadOverrides ?? {},
+  }
+}
+
+/** Shows or hides the row-progress overlay, leaving the pointer where it is. */
+export function setRowProgressEnabled(pattern: Pattern, enabled: boolean): Pattern {
+  return touch(pattern, { rowProgress: { ...pattern.rowProgress, enabled } })
+}
+
+/** Points row progress at the given row, clamped to the Pattern — used to advance a finished row and to go back to an earlier one. */
+export function moveToRow(pattern: Pattern, row: number): Pattern {
+  return touch(pattern, {
+    rowProgress: { ...pattern.rowProgress, currentRow: clampRow(row, pattern.rows) },
+  })
+}
+
+/** Points one Palette color at a different Bead for this Pattern only; passing no bead drops back to the global default. */
+export function setColorBeadOverride(
+  pattern: Pattern,
+  colorId: string,
+  beadId: string | null,
+): Pattern {
+  return touch(pattern, {
+    colorBeadOverrides: withColorBeadMapping(pattern.colorBeadOverrides, colorId, beadId),
+  })
+}
+
 /** Swaps in a whole new grid (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
 export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
-  return { ...pattern, grid, updatedAt: Date.now() }
+  return touch(pattern, { grid })
 }
 
 /** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */

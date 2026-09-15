@@ -4,8 +4,12 @@ import {
   fillArea,
   mirrorPattern,
   mostRecentlyUpdated,
+  moveToRow,
+  normalizePattern,
   paintCell,
   restoreGrid,
+  setColorBeadOverride,
+  setRowProgressEnabled,
   summarizePattern,
   type Cell,
   type Pattern,
@@ -417,5 +421,106 @@ describe('mostRecentlyUpdated', () => {
 
     expect(mostRecentlyUpdated([older, newer])).toBe(newer)
     expect(mostRecentlyUpdated([newer, older])).toBe(newer)
+  })
+})
+
+describe('row progress', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+  }
+
+  it('starts switched off, pointing at the first row', () => {
+    expect(pattern().rowProgress).toEqual({ enabled: false, currentRow: 0 })
+  })
+
+  it('turns the overlay on and off without moving the pointer', () => {
+    const started = moveToRow(pattern(), 4)
+
+    const shown = setRowProgressEnabled(started, true)
+    expect(shown.rowProgress).toEqual({ enabled: true, currentRow: 4 })
+
+    expect(setRowProgressEnabled(shown, false).rowProgress).toEqual({ enabled: false, currentRow: 4 })
+  })
+
+  it('moves the pointer forward and backward through the rows', () => {
+    const atThree = moveToRow(pattern(), 3)
+    expect(atThree.rowProgress.currentRow).toBe(3)
+    expect(moveToRow(atThree, atThree.rowProgress.currentRow - 1).rowProgress.currentRow).toBe(2)
+  })
+
+  it('will not step past either end of the Pattern', () => {
+    const first = pattern()
+
+    expect(moveToRow(first, -1).rowProgress.currentRow).toBe(0)
+    expect(moveToRow(first, first.rows + 5).rowProgress.currentRow).toBe(first.rows - 1)
+  })
+
+  it('leaves the grid alone and returns a new Pattern rather than mutating the old one', () => {
+    const before = pattern()
+
+    const after = moveToRow(before, 2)
+
+    expect(before.rowProgress.currentRow).toBe(0)
+    expect(after.grid).toBe(before.grid)
+  })
+})
+
+describe('setColorBeadOverride', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+  }
+
+  it('starts with no per-Pattern overrides', () => {
+    expect(pattern().colorBeadOverrides).toEqual({})
+  })
+
+  it('records an override for one palette color, leaving the others alone', () => {
+    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+
+    expect(overridden.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
+  })
+
+  it('clears an override when given no bead, falling back to the global default', () => {
+    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+
+    expect(setColorBeadOverride(overridden, 'red', null).colorBeadOverrides).toEqual({})
+  })
+})
+
+describe('normalizePattern', () => {
+  it('backfills row progress and color overrides on a Pattern saved before they existed', () => {
+    const { rowProgress: _rowProgress, colorBeadOverrides: _overrides, ...legacy } = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+
+    const normalized = normalizePattern(legacy as Pattern)
+
+    expect(normalized.rowProgress).toEqual({ enabled: false, currentRow: 0 })
+    expect(normalized.colorBeadOverrides).toEqual({})
+  })
+
+  it('clamps a row pointer that no longer fits the Pattern', () => {
+    const base = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+
+    const normalized = normalizePattern({
+      ...base,
+      rowProgress: { enabled: true, currentRow: 999 },
+    })
+
+    expect(normalized.rowProgress.currentRow).toBe(base.rows - 1)
   })
 })

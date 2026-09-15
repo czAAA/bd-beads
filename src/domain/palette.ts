@@ -22,3 +22,8 @@ export const PALETTE: readonly PaletteColor[] = [
 export function findPaletteColor(id: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.id === id)
 }
+
+/** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside the Palette. */
+export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
+  return PALETTE.find((color) => color.hex === hex)
+}

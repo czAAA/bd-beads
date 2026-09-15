@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
+import { createPattern, type Pattern } from './domain/pattern'
+import { serializeLibrary } from './domain/patternFile'
 import { loadPatterns } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
@@ -471,5 +473,311 @@ describe('App', () => {
     const afterReload = mount(App)
 
     expect(afterReload.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
+  })
+
+  it('reserves red for destructive actions, leaving every other button in the default style', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const patternId = loadPatterns()[0]!.id
+
+    expect(
+      wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).classes(),
+    ).toContain('button--danger')
+
+    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button']) {
+      expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
+    }
+  })
+
+  it('puts the zoom controls in the above-canvas panel rather than inside the canvas box', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
+    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
+    expect(
+      wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
+    ).toBe(false)
+  })
+
+  it('zooms the open Pattern from the above-canvas controls', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
+
+    await wrapper.find('[data-testid="zoom-in"]').trigger('click')
+    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('125%')
+
+    await wrapper.find('[data-testid="zoom-reset"]').trigger('click')
+    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
+  })
+
+  it('rules the canvas with row and column numbers on all four edges', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const canvas = wrapper.find('[data-testid="app-canvas"]')
+    for (const edge of ['row-start', 'row-end', 'column-start', 'column-end']) {
+      expect(canvas.find(`[data-testid="pattern-ruler-${edge}"]`).exists()).toBe(true)
+    }
+  })
+})
+
+describe('App row progress', () => {
+  it('shows the overlay only once it is toggled on, without leaving the editor', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(0)
+
+    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+
+    expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
+  })
+
+  it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(2)
+    expect(wrapper.findAll('[data-testid="grid-row"]')[2]!.classes()).toContain(
+      'pattern-grid__row--current',
+    )
+  })
+
+  it('moves the pointer back to an earlier row', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="row-progress-previous"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(1)
+  })
+
+  it('will not step past either end of the Pattern', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2
+    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
+    ).toBe(true)
+
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
+    ).toBe(true)
+  })
+
+  it('remembers where the weaving got to across a reload', async () => {
+    const first = mount(App)
+    await createPatternViaForm(first, '15', '30')
+    await first.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await first.find('[data-testid="row-progress-next"]').trigger('click')
+    first.unmount()
+
+    const afterReload = mount(App)
+
+    expect(afterReload.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+    expect(afterReload.findAll('.pattern-grid__row--done')).toHaveLength(1)
+    expect(loadPatterns()[0]!.rowProgress).toEqual({ enabled: true, currentRow: 1 })
+  })
+})
+
+describe('App bead quantities', () => {
+  async function patternWithPaintedCells(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('click')
+    await cells[1]!.trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[2]!.trigger('click')
+  }
+
+  it('totals the beads each color needs from the painted cells', async () => {
+    const wrapper = mount(App)
+    await patternWithPaintedCells(wrapper)
+
+    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('2')
+    expect(wrapper.find('[data-testid="quantity-count-blue"]').text()).toBe('1')
+  })
+
+  it('keeps a color\'s default bead across Patterns and reloads', async () => {
+    const first = mount(App)
+    await patternWithPaintedCells(first)
+
+    await first.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
+    first.unmount()
+
+    const afterReload = mount(App)
+    expect(
+      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
+    ).toBe('miyuki-delica-11-0')
+
+    // A second Pattern starts from that same global default.
+    await afterReload.find('[data-testid="new-pattern-button"]').trigger('click')
+    await patternWithPaintedCells(afterReload)
+    expect(
+      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
+    ).toBe('miyuki-delica-11-0')
+  })
+
+  it('overrides a color for one Pattern without touching the default or any other Pattern', async () => {
+    const wrapper = mount(App)
+    await patternWithPaintedCells(wrapper)
+    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
+
+    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
+
+    expect(
+      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
+    ).toBe('miyuki-delica-11-0')
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await patternWithPaintedCells(wrapper)
+
+    expect(
+      wrapper.find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
+    ).toBe('')
+  })
+
+  it('remembers a per-Pattern override across a reload', async () => {
+    const first = mount(App)
+    await patternWithPaintedCells(first)
+    await first.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
+    first.unmount()
+
+    expect(loadPatterns()[0]!.colorBeadOverrides).toEqual({ red: 'toho-round-11-0' })
+    expect(
+      mount(App).find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
+    ).toBe('toho-round-11-0')
+  })
+
+  it('needs no beads yet for a Pattern with nothing painted on it', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('0')
+  })
+
+  it('maps colors to Beads before any Pattern is open, so a default can be set up front', async () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-round-11-0')
+    wrapper.unmount()
+
+    expect(
+      mount(App).find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
+    ).toBe('toho-round-11-0')
+  })
+
+  it('shows the Bead a color resolves to, so the override is visible in the quantity view', async () => {
+    const wrapper = mount(App)
+    await patternWithPaintedCells(wrapper)
+
+    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
+    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('Miyuki Delica 11/0')
+
+    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
+    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('TOHO Round 11/0')
+  })
+})
+
+describe('App pattern transfer', () => {
+  function makePattern(name: string): Pattern {
+    return createPattern({
+      name,
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+  }
+
+  async function importFile(wrapper: ReturnType<typeof mount>, contents: string) {
+    const input = wrapper.find<HTMLInputElement>('[data-testid="import-file"]')
+    Object.defineProperty(input.element, 'files', {
+      configurable: true,
+      value: [new File([contents], 'library.json', { type: 'application/json' })],
+    })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  it("takes in the other device's color-to-bead defaults without overwriting this device's own", async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-cube-1.5mm')
+
+    await importFile(
+      wrapper,
+      serializeLibrary([makePattern('Fox')], {
+        red: 'miyuki-delica-11-0',
+        blue: 'miyuki-delica-11-0',
+      }),
+    )
+
+    // Local choice for red stands; blue, which this device had not mapped, is filled in from the file.
+    expect(
+      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
+    ).toBe('toho-cube-1.5mm')
+    expect(
+      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-blue"]').element.value,
+    ).toBe('miyuki-delica-11-0')
+  })
+
+  it('takes in a library exported on another device and saves every Pattern in it', async () => {
+    const wrapper = mount(App)
+    const library = [makePattern('Fox'), makePattern('Owl')]
+
+    await importFile(wrapper, serializeLibrary(library, {}))
+
+    expect(loadPatterns().map((pattern) => pattern.name).sort()).toEqual(['Fox', 'Owl'])
+    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(2)
+  })
+
+  it('opens an imported Pattern when nothing was open, so the user resumes where they left off', async () => {
+    const wrapper = mount(App)
+    const woven = makePattern('Fox')
+    woven.rowProgress = { enabled: true, currentRow: 4 }
+
+    await importFile(wrapper, serializeLibrary([woven], {}))
+
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('5 / 10')
+    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(4)
+  })
+
+  it('imports a Pattern that clashes with a local one as a separate entry, keeping both', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const local = loadPatterns()[0]!
+
+    await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }], {}))
+
+    const saved = loadPatterns()
+    expect(saved).toHaveLength(2)
+    expect(saved.map((pattern) => pattern.id)).toContain(local.id)
+    expect(new Set(saved.map((pattern) => pattern.id)).size).toBe(2)
+  })
+
+  it('reports a file it cannot read instead of importing anything', async () => {
+    const wrapper = mount(App)
+
+    await importFile(wrapper, 'definitely not a pattern file')
+
+    expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(true)
+    expect(loadPatterns()).toHaveLength(0)
   })
 })

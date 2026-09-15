@@ -18,6 +18,8 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Palette** and **Bead catalog**: kept as separate concepts, linked by a default color-to-bead mapping — see [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md)
 - **Technique**: determines a Pattern's grid geometry (loom, peyote, brick stitch)
 - **Row progress**: an in-editor overlay for tracking which rows are already woven
+- **Bead quantities**: the per-color bead counts a Pattern needs, resolved through the color-to-bead mapping in [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md)
+- **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
 - **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) before adding a new screen or control
 
 ## Language

@@ -1,6 +1,6 @@
 import { beadLabel } from './beads'
 import { findBead } from './beadStorage'
-import type { Pattern } from './pattern'
+import { normalizePattern, type Pattern } from './pattern'
 
 const STORAGE_KEY = 'bd-beads:patterns'
 
@@ -25,7 +25,7 @@ export function loadPatterns(): Pattern[] {
 
   try {
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as Pattern[]).map(withName) : []
+    return Array.isArray(parsed) ? (parsed as Pattern[]).map(withName).map(normalizePattern) : []
   } catch {
     return []
   }
