@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PatternGrid from './PatternGrid.vue'
-import { createPattern } from '../domain/pattern'
+import {
+  createPattern,
+  moveToRow,
+  setRowProgressEnabled,
+  type Pattern,
+} from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -100,5 +105,45 @@ describe('PatternGrid', () => {
     await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('click')
 
     expect(wrapper.emitted('cell-click')).toEqual([[2, 3]])
+  })
+})
+
+describe('PatternGrid row progress', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+  }
+
+  function rowClasses(pattern: Pattern) {
+    return mount(PatternGrid, { props: { pattern } })
+      .findAll('[data-testid="grid-row"]')
+      .map((row) => row.classes())
+  }
+
+  it('marks no row as woven or current while the overlay is off', () => {
+    const classes = rowClasses(moveToRow(pattern(), 3))
+
+    expect(classes.flat()).not.toContain('pattern-grid__row--done')
+    expect(classes.flat()).not.toContain('pattern-grid__row--current')
+  })
+
+  it('dims the rows behind the pointer, highlights the current one, and leaves the rest normal', () => {
+    const classes = rowClasses(setRowProgressEnabled(moveToRow(pattern(), 3), true))
+
+    expect(classes[2]).toContain('pattern-grid__row--done')
+    expect(classes[3]).toContain('pattern-grid__row--current')
+    expect(classes[3]).not.toContain('pattern-grid__row--done')
+    expect(classes[4]).not.toContain('pattern-grid__row--done')
+    expect(classes[4]).not.toContain('pattern-grid__row--current')
+  })
+
+  it('treats nothing as woven yet while the pointer is still on the first row', () => {
+    const classes = rowClasses(setRowProgressEnabled(pattern(), true))
+
+    expect(classes.flat()).not.toContain('pattern-grid__row--done')
+    expect(classes[0]).toContain('pattern-grid__row--current')
   })
 })

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  GRID_BORDER_PX,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  RULER_GUTTER_PX,
+  canvasContentHeightPx,
+  canvasContentWidthPx,
+  clampZoom,
   computeFitZoom,
   computeGridDimensions,
   gridHeightPx,
@@ -7,6 +14,7 @@ import {
   neighborsOf,
   rowHeightPx,
   rowOffsetPx,
+  rulerLabelStep,
   toMillimeters,
 } from './grid'
 import type { Bead } from './beads'
@@ -251,6 +259,60 @@ describe('neighborsOf', () => {
   it('treats brick stitch adjacency the same as peyote, since both offset rows the same way', () => {
     expect(sorted(neighborsOf('brick', dims, { row: 2, column: 2 }))).toEqual(
       sorted(neighborsOf('peyote', dims, { row: 2, column: 2 })),
+    )
+  })
+})
+
+describe('clampZoom', () => {
+  it('leaves a zoom inside the range alone, rounded to whole percent', () => {
+    expect(clampZoom(0.8)).toBe(0.8)
+    expect(clampZoom(0.7916)).toBe(0.79)
+  })
+
+  it('never goes below the minimum or above the maximum', () => {
+    expect(clampZoom(0.01)).toBe(MIN_ZOOM)
+    expect(clampZoom(99)).toBe(MAX_ZOOM)
+  })
+})
+
+describe('rulerLabelStep', () => {
+  it('labels every row/column when they are far enough apart on screen', () => {
+    expect(rulerLabelStep(20, 1, 18)).toBe(1)
+  })
+
+  it('thins labels out to every 2nd, 5th, 10th... as the zoom shrinks', () => {
+    expect(rulerLabelStep(20, 0.5, 18)).toBe(2)
+    expect(rulerLabelStep(20, 0.25, 18)).toBe(5)
+    expect(rulerLabelStep(20, 0.1, 18)).toBe(10)
+  })
+
+  it('keeps thinning past 10 rather than giving up and overlapping', () => {
+    expect(rulerLabelStep(20, 0.02, 18)).toBe(50)
+  })
+})
+
+describe('canvasContentPx', () => {
+  it('scales the grid and its bold outline by the zoom, between two unscaled ruler gutters', () => {
+    expect(canvasContentWidthPx('loom', 10, 0.5, 20)).toBe(
+      RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
+    )
+    expect(canvasContentHeightPx('loom', 10, 0.5, 20)).toBe(
+      RULER_GUTTER_PX * 2 + (gridHeightPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
+    )
+  })
+
+  it('leaves room for the outline on all four sides, not just the left and top', () => {
+    // Without the outline counted in, the box would be 6px short and clip the right/bottom edges.
+    const withOutline = canvasContentWidthPx('loom', 10, 1, 20)
+    expect(withOutline - RULER_GUTTER_PX * 2 - gridWidthPx('loom', 10, 20)).toBe(GRID_BORDER_PX * 2)
+  })
+})
+
+describe('computeFitZoom rounding', () => {
+  it('rounds down to a whole percent, so the grid still fits at the level shown', () => {
+    // 418 / 600 = 69.67%: rounding up would leave the grid a fraction of a pixel too wide for the box.
+    expect(computeFitZoom({ columns: 30, rows: 4, maxWidth: 418, maxHeight: 418, cellSize: 20 })).toBe(
+      0.69,
     )
   })
 })

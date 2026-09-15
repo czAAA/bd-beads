@@ -38,7 +38,7 @@ const { t } = useI18n()
         </button>
         <button
           type="button"
-          class="pattern-list__remove"
+          class="pattern-list__remove button--danger"
           :data-testid="`remove-pattern-${pattern.id}`"
           :aria-label="`${t.patterns.removeButton}: ${summarizePattern(pattern)}`"
           @click="emit('remove', pattern.id)"
@@ -91,16 +91,9 @@ const { t } = useI18n()
 }
 
 .pattern-list__remove {
-  color: var(--color-ink);
-  background: var(--color-paper);
   border: none;
   border-left: var(--border-width) solid var(--color-ink);
   border-radius: 0;
   padding: 8px 14px;
-}
-
-.pattern-list__remove:hover {
-  background: var(--color-amaranth);
-  color: var(--color-amaranth-ink);
 }
 </style>
