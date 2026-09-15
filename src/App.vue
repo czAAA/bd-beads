@@ -9,6 +9,7 @@ import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
 import ZoomControls from './components/ZoomControls.vue'
+import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
 import { mergeColorBeadDefaults, type ColorBeadDefaults } from './domain/beadMapping'
@@ -55,9 +56,20 @@ const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
 /** Which Bead each Palette color means by default, across every Pattern (ADR 0002). */
 const colorBeadDefaults = ref(loadColorBeadDefaults())
 
-const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(() => activePattern.value)
+/** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
+const canvasAreaEl = ref<HTMLElement | null>(null)
+const { width: canvasAreaWidth, height: canvasAreaHeight } = useElementSize(canvasAreaEl)
 
-const selectedColorId = ref<string | undefined>()
+const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
+  () => activePattern.value,
+  canvasAreaWidth,
+  canvasAreaHeight,
+)
+
+/** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
+const DEFAULT_PALETTE_COLOR_ID = 'red'
+
+const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 const activeTool = ref<'paint' | 'fill'>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
@@ -472,7 +484,7 @@ function onRemoveBead(id: string) {
           </div>
         </div>
 
-        <div class="app-shell__canvas" data-testid="app-canvas">
+        <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
           <PatternCanvas
             v-if="activePattern"
             :pattern="activePattern"
@@ -589,17 +601,17 @@ function onRemoveBead(id: string) {
  * The main panel's editing-tools role moved to the above-canvas tool strip (ADR 0005). While a Pattern is open this
  * panel has nothing to show, so it collapses to nothing rather than rendering the ADR 0004 "coming soon"
  * placeholder — that convention is for an unbuilt feature, not one that moved elsewhere on purpose — and
- * app-shell__right (flex: 1 1 auto) reclaims the freed width.
+ * app-shell__right (flex: 1 1 auto) reclaims the freed width. Taken out of the flow entirely rather than sized to
+ * zero, so app-shell__body's gap doesn't leave a dead strip where the panel used to be.
  */
 .app-shell__main--empty {
-  flex: 0 0 0;
-  padding: 0;
-  border: none;
+  display: none;
 }
 
 /* With the frame moved onto the canvas box, the empty-canvas message carries its own so the panel still reads as a box. */
 .app-shell__placeholder {
-  margin: 0;
+  width: fit-content;
+  margin: 0 auto;
   padding: 16px 24px;
   color: var(--color-ink);
   opacity: 0.5;
@@ -610,8 +622,8 @@ function onRemoveBead(id: string) {
 
 .tool-picker {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 16px;
 }
 
 /* The default button is already wedgewood, so the selected tool reads as ink-on-paper instead. */
@@ -623,8 +635,8 @@ function onRemoveBead(id: string) {
 
 .mirror-axes {
   display: flex;
-  gap: 16px;
-  margin: 8px 0 16px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .mirror-current {
@@ -661,9 +673,9 @@ function onRemoveBead(id: string) {
 .tool-strip {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
+  align-items: stretch;
+  gap: 10px;
+  padding: 8px;
   background-color: var(--color-paper-solid);
   background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
   background-size: 16px 16px;
@@ -671,22 +683,48 @@ function onRemoveBead(id: string) {
   border-radius: var(--radius-lg);
 }
 
+/*
+ * Grows (1 1 220px) rather than sitting at its own content width: five cards of very different natural widths
+ * (a two-button tool picker vs. a twelve-swatch palette vs. two long mirror buttons) left most of a wide strip as
+ * bare dot-grid texture at flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row,
+ * and shrinking below content width lets a card's own wrap rules (.mirror-current, .row-progress__steps) fire and
+ * stack its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line
+ * kicks in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
+ *
+ * display:flex here (not the old block/stacked layout) is what makes the strip lean rather than tall (ticket 27):
+ * the heading and its controls sit side by side, one line, instead of a heading row on top of a controls row —
+ * three or four times the height for no reason once the strip is allowed to grow sideways instead. A card's own
+ * content (.mirror-axes, .mirror-current, .row-progress__steps, ...) still wraps internally first if a narrow card
+ * genuinely can't fit everything on one line.
+ */
 .tool-strip__card {
-  flex: 0 0 auto;
-  padding: 12px 16px;
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px 12px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
 }
 
+/* An inline label rather than a block heading above the controls — see .tool-strip__card above. */
 .tool-strip__card h2 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 1rem;
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* A size step down from the app's default button (10px 22px): right for a compact toolbar row, not for the form/list buttons elsewhere that keep the default. The bare icon-button keeps its own fixed 44x44 touch target. */
+.tool-strip__card button:not(.icon-button) {
+  padding: 6px 16px;
 }
 
 .row-progress__position {
-  margin: 8px 0;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .row-progress__steps {
@@ -696,15 +734,53 @@ function onRemoveBead(id: string) {
 }
 
 /*
- * The canvas area only centres the canvas box. The frame belongs to the box itself (see PatternCanvas), so it
- * follows the open Pattern's shape instead of stretching to fill this panel (ticket 18).
+ * Pattern-level views (ADR 0004), each carrying the same card frame the rest of the shell uses. They share the row
+ * the collapsed main panel freed up rather than stacking full-width down the page.
+ */
+.app-shell__below-canvas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.app-shell__below-canvas > * {
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: 16px;
+  background: var(--color-paper-solid);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
+}
+
+/*
+ * A full-width frame around the canvas box, on the same dot-grid notepad texture as the tool strip (ADR 0005), so
+ * the canvas region reads as its own big panel rather than a small bordered box adrift on the page background. The
+ * Pattern's own box (PatternCanvas) still sizes itself to the open Pattern's shape rather than stretching to fill
+ * this — a bead grid is a fixed physical layout, not something that grows to fill leftover space — so it centers
+ * here via margin:auto on the box itself (see PatternCanvas.vue / .app-shell__placeholder below), not this
+ * container's own alignment.
+ *
+ * This is deliberately block layout, not flex, even though it's centering a child (ticket 28): a flex container
+ * with justify-content:center and overflow:auto/scroll has a long-standing browser bug where an overflowing
+ * child's start edge falls outside the scrollable range entirely — you can scroll to the excess on one side but
+ * never reach it on the other. margin:auto centering on a block child doesn't have that failure mode.
+ *
+ * overflow-x is the only scroll this frame ever does: a manual zoom-in past the available width scrolls sideways
+ * here instead of in a nested box (ticket 28 moved that up from PatternCanvas). Vertical overflow is never trapped
+ * anywhere in this shell — this frame, like everything above it up to the page, has no height cap of its own, so a
+ * tall Pattern just grows this frame, and the page, taller, and the browser's own scrollbar reaches the rest of it.
+ * Don't give this (or an ancestor) a fixed/max height — that's what would make vertical scrolling possible again.
  */
 .app-shell__canvas {
   flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  overflow-x: auto;
+  padding: 24px;
+  background-color: var(--color-paper-solid);
+  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
 }
 
 </style>

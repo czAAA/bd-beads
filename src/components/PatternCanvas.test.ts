@@ -3,13 +3,7 @@ import { mount } from '@vue/test-utils'
 import PatternCanvas from './PatternCanvas.vue'
 import { createPattern, type Pattern, type Technique } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
-import {
-  CANVAS_MAX_PX,
-  GRID_BORDER_PX,
-  RULER_GUTTER_PX,
-  gridHeightPx,
-  gridWidthPx,
-} from '../domain/grid'
+import { GRID_BORDER_PX, RULER_GUTTER_PX, gridHeightPx, gridWidthPx } from '../domain/grid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -58,22 +52,21 @@ describe('PatternCanvas', () => {
     expect(height).toBe(RULER_GUTTER_PX * 2 + gridHeightPx('loom', 20) + GRID_BORDER_PX * 2)
   })
 
-  it('stops growing at the screen-bounded maximum and scrolls instead', () => {
-    const { width, height } = boxSize(mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 3 } }))
+  it('has no ceiling of its own: a high zoom just grows the box, however large (ticket 27)', () => {
+    // Fitting the Pattern to the real canvas area is usePatternZoom's job now, not a constant PatternCanvas enforces
+    // itself; here it's handed a zoom that would never come out of a fit calculation, and it grows to match anyway.
+    // (Containing that within the actual available screen space is CSS's max-width:100% + overflow:auto, not this.)
+    const { width, height } = boxSize(mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 5 } }))
 
-    expect(width).toBe(CANVAS_MAX_PX)
-    expect(height).toBe(CANVAS_MAX_PX)
+    expect(width).toBe(RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
+    expect(height).toBe(RULER_GUTTER_PX * 2 + (gridHeightPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
   })
 
   it('makes room for the grid outline on all four sides, at every zoom level', () => {
     for (const zoom of [0.25, 1, 3]) {
-      const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom } })
-      const frame = wrapper.find('.pattern-canvas__frame').attributes('style')!
-      const frameWidth = Number(frame.match(/width: ([\d.]+)px/)![1])
+      const { width } = boxSize(mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom } }))
 
-      expect(frameWidth).toBe(
-        RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * zoom,
-      )
+      expect(width).toBe(RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * zoom)
     }
   })
 
