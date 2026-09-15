@@ -119,10 +119,42 @@ export interface MirrorAxes {
   vertical: boolean
 }
 
+function isInFirstHalf(index: number, dimension: number): boolean {
+  return index < Math.ceil(dimension / 2)
+}
+
+/** Whether the first half (by index, along the given axis) holds at least as much painted content as the second — used to find "the drawn half" to mirror from. Ties, including an all-blank grid, default to the first half. */
+function firstHalfIsSource(grid: Grid, dimension: number, axis: 'row' | 'column'): boolean {
+  let firstHalfPainted = 0
+  let secondHalfPainted = 0
+
+  grid.forEach((gridRow, rowIndex) => {
+    gridRow.forEach((cell, columnIndex) => {
+      if (cell.color === null) {
+        return
+      }
+      const index = axis === 'row' ? rowIndex : columnIndex
+      if (isInFirstHalf(index, dimension)) {
+        firstHalfPainted++
+      } else {
+        secondHalfPainted++
+      }
+    })
+  })
+
+  return firstHalfPainted >= secondHalfPainted
+}
+
+/** Maps an index in the non-source half onto its mirror partner in the source half; indices already in the source half map to themselves. */
+function mirrorIndex(index: number, dimension: number, sourceIsFirstHalf: boolean): number {
+  return isInFirstHalf(index, dimension) === sourceIsFirstHalf ? index : dimension - 1 - index
+}
+
 /**
- * Reflects the top-left quadrant (or half, if only one axis is selected) across the chosen axis/axes onto the rest
- * of the grid, overwriting whatever was there. "Horizontal" flips left-right (source: left half); "vertical" flips
- * top-bottom (source: top half); both together mirror the top-left quadrant into all four. Returns the same Pattern
+ * Reflects the drawn half (or quadrant, if both axes are selected) across the chosen axis/axes onto the rest of the
+ * grid, overwriting whatever was there. Which half counts as "drawn" is decided per axis by which side has more
+ * painted cells (see firstHalfIsSource), so mirroring works whichever side the user actually painted on rather than
+ * assuming a fixed corner. "Horizontal" flips left-right; "vertical" flips top-bottom. Returns the same Pattern
  * instance, unchanged, when neither axis is selected.
  */
 export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
@@ -130,9 +162,13 @@ export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
     return pattern
   }
 
-  const sourceRow = (row: number) => (axes.vertical && row >= Math.ceil(pattern.rows / 2) ? pattern.rows - 1 - row : row)
+  const verticalSourceIsFirstHalf = axes.vertical && firstHalfIsSource(pattern.grid, pattern.rows, 'row')
+  const horizontalSourceIsFirstHalf =
+    axes.horizontal && firstHalfIsSource(pattern.grid, pattern.columns, 'column')
+
+  const sourceRow = (row: number) => (axes.vertical ? mirrorIndex(row, pattern.rows, verticalSourceIsFirstHalf) : row)
   const sourceColumn = (column: number) =>
-    axes.horizontal && column >= Math.ceil(pattern.columns / 2) ? pattern.columns - 1 - column : column
+    axes.horizontal ? mirrorIndex(column, pattern.columns, horizontalSourceIsFirstHalf) : column
 
   const grid = pattern.grid.map((gridRow, rowIndex) =>
     gridRow.map((_cell, columnIndex) => ({

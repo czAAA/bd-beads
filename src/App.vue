@@ -16,6 +16,7 @@ import {
   summarizePattern,
   type CreatePatternInput,
   type Grid,
+  type MirrorAxes,
   type Pattern,
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
@@ -33,8 +34,7 @@ const activePattern = computed(() =>
 const selectedColorId = ref<string | undefined>()
 const activeTool = ref<'paint' | 'fill'>('paint')
 const mirrorEnabled = ref(false)
-const mirrorHorizontal = ref(false)
-const mirrorVertical = ref(false)
+const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
 const undoStack = ref<Grid[]>([])
 
@@ -79,6 +79,16 @@ function replaceActivePattern(updated: Pattern) {
   patterns.value = patterns.value.map((pattern) => (pattern.id === updated.id ? updated : pattern))
 }
 
+/** Commits the result of a grid-changing command (paint/fill/mirror) as one undo step, unless it left the Pattern unchanged. */
+function commitGridChange(pattern: Pattern, updated: Pattern) {
+  if (updated === pattern) {
+    return
+  }
+
+  undoStack.value.push(pattern.grid)
+  replaceActivePattern(updated)
+}
+
 function onCellClick(row: number, column: number) {
   const pattern = activePattern.value
   const color = selectedColorId.value ? findPaletteColor(selectedColorId.value) : undefined
@@ -90,12 +100,7 @@ function onCellClick(row: number, column: number) {
     activeTool.value === 'fill'
       ? fillArea(pattern, row, column, color.hex)
       : paintCell(pattern, row, column, color.hex)
-  if (updated === pattern) {
-    return
-  }
-
-  undoStack.value.push(pattern.grid)
-  replaceActivePattern(updated)
+  commitGridChange(pattern, updated)
 }
 
 function onUndo() {
@@ -114,16 +119,7 @@ function onApplyMirror() {
     return
   }
 
-  const mirrored = mirrorPattern(pattern, {
-    horizontal: mirrorHorizontal.value,
-    vertical: mirrorVertical.value,
-  })
-  if (mirrored === pattern) {
-    return
-  }
-
-  undoStack.value.push(pattern.grid)
-  replaceActivePattern(mirrored)
+  commitGridChange(pattern, mirrorPattern(pattern, mirrorAxes.value))
 }
 </script>
 
@@ -189,7 +185,7 @@ function onApplyMirror() {
           <div class="mirror-axes">
             <label>
               <input
-                v-model="mirrorHorizontal"
+                v-model="mirrorAxes.horizontal"
                 type="checkbox"
                 data-testid="mirror-horizontal"
                 :disabled="!mirrorEnabled"
@@ -198,7 +194,7 @@ function onApplyMirror() {
             </label>
             <label>
               <input
-                v-model="mirrorVertical"
+                v-model="mirrorAxes.vertical"
                 type="checkbox"
                 data-testid="mirror-vertical"
                 :disabled="!mirrorEnabled"
@@ -209,7 +205,7 @@ function onApplyMirror() {
           <button
             type="button"
             data-testid="mirror-apply"
-            :disabled="!mirrorEnabled || (!mirrorHorizontal && !mirrorVertical)"
+            :disabled="!mirrorEnabled || (!mirrorAxes.horizontal && !mirrorAxes.vertical)"
             @click="onApplyMirror"
           >
             {{ t.mirror.applyButton }}
