@@ -114,6 +114,35 @@ export function fillArea(pattern: Pattern, row: number, column: number, color: s
   return restoreGrid(pattern, grid)
 }
 
+export interface MirrorAxes {
+  horizontal: boolean
+  vertical: boolean
+}
+
+/**
+ * Reflects the top-left quadrant (or half, if only one axis is selected) across the chosen axis/axes onto the rest
+ * of the grid, overwriting whatever was there. "Horizontal" flips left-right (source: left half); "vertical" flips
+ * top-bottom (source: top half); both together mirror the top-left quadrant into all four. Returns the same Pattern
+ * instance, unchanged, when neither axis is selected.
+ */
+export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
+  if (!axes.horizontal && !axes.vertical) {
+    return pattern
+  }
+
+  const sourceRow = (row: number) => (axes.vertical && row >= Math.ceil(pattern.rows / 2) ? pattern.rows - 1 - row : row)
+  const sourceColumn = (column: number) =>
+    axes.horizontal && column >= Math.ceil(pattern.columns / 2) ? pattern.columns - 1 - column : column
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((_cell, columnIndex) => ({
+      color: pattern.grid[sourceRow(rowIndex)]![sourceColumn(columnIndex)]!.color,
+    })),
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
 /** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated). */
 export function summarizePattern(pattern: Pattern): string {
   return `${pattern.name} · ${pattern.columns}×${pattern.rows}`

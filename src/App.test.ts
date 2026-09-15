@@ -246,6 +246,74 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
+  it('mirroring is off by default, so applying is unavailable', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
+    expect(wrapper.find<HTMLInputElement>('[data-testid="mirror-enabled"]').element.checked).toBe(
+      false,
+    )
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
+      true,
+    )
+  })
+
+  it('requires the master toggle and at least one axis before mirror can be applied', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
+      true,
+    )
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="mirror-apply"]').element.disabled).toBe(
+      false,
+    )
+  })
+
+  it('reflects painted cells across the selected axis only when mirror is applied, not live while drawing', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('click') // paint (0,0)
+
+    // Not live: painting alone never touches (0,1).
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-apply"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    // Vertical axis wasn't selected, so row 1 (never painted) stays untouched.
+    expect(grid[1]![0]!.color).toBeNull()
+    expect(grid[1]![1]!.color).toBeNull()
+  })
+
+  it('undoes a mirror as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    await wrapper.find('[data-testid="mirror-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-apply"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
   it('does not paint a cell before a palette color is selected', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
