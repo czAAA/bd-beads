@@ -342,12 +342,53 @@ describe('mirrorPattern', () => {
     ])
   })
 
-  it('overwrites existing content on the reflected side', () => {
+  it('overwrites existing content on the reflected side, breaking a painted-count tie toward the first half', () => {
     const pattern = makeGridPattern([[{ color: 'red' }, { color: 'purple' }]])
 
     const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: false })
 
     expect(colors(mirrored)).toEqual([['red', 'red']])
+  })
+
+  it('mirrors from the right half instead, when that is the half the user actually painted', () => {
+    const pattern = makeGridPattern([[{ color: null }, { color: null }, { color: 'red' }, { color: 'blue' }]])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: false })
+
+    expect(colors(mirrored)).toEqual([['blue', 'red', 'red', 'blue']])
+  })
+
+  it('mirrors from the bottom half instead, when that is the half the user actually painted', () => {
+    const pattern = makeGridPattern([
+      [{ color: null }],
+      [{ color: null }],
+      [{ color: 'red' }],
+      [{ color: 'blue' }],
+    ])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: false, vertical: true })
+
+    expect(colors(mirrored)).toEqual([['blue'], ['red'], ['red'], ['blue']])
+  })
+
+  it('picks the source side independently per axis when both axes are selected', () => {
+    // Painted content lives in the top-right, not the top-left: horizontal source should be the right half,
+    // vertical source should be the top half (bottom is entirely blank).
+    const pattern = makeGridPattern([
+      [{ color: null }, { color: null }, { color: 'A' }, { color: 'B' }],
+      [{ color: null }, { color: null }, { color: 'C' }, { color: 'D' }],
+      [{ color: null }, { color: null }, { color: null }, { color: null }],
+      [{ color: null }, { color: null }, { color: null }, { color: null }],
+    ])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: true })
+
+    expect(colors(mirrored)).toEqual([
+      ['B', 'A', 'A', 'B'],
+      ['D', 'C', 'C', 'D'],
+      ['D', 'C', 'C', 'D'],
+      ['B', 'A', 'A', 'B'],
+    ])
   })
 
   it('returns the same pattern instance, unchanged, when neither axis is selected', () => {
