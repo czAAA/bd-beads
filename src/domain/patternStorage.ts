@@ -1,9 +1,19 @@
+import { beadLabel, findBead } from './beads'
 import type { Pattern } from './pattern'
 
 const STORAGE_KEY = 'bd-beads:patterns'
 
 function saveAll(patterns: Pattern[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(patterns))
+}
+
+/** Patterns saved before the `name` field existed have none; fall back to the bead label. */
+function withName(pattern: Pattern): Pattern {
+  if (pattern.name) {
+    return pattern
+  }
+  const bead = findBead(pattern.beadId)
+  return { ...pattern, name: bead ? beadLabel(bead) : pattern.beadId }
 }
 
 export function loadPatterns(): Pattern[] {
@@ -14,7 +24,7 @@ export function loadPatterns(): Pattern[] {
 
   try {
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as Pattern[]) : []
+    return Array.isArray(parsed) ? (parsed as Pattern[]).map(withName) : []
   } catch {
     return []
   }

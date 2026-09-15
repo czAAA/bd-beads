@@ -7,6 +7,7 @@ export const ru: Translations = {
     title: 'bd-beads',
   },
   form: {
+    nameLabel: 'Название',
     beadLabel: 'Бисеринка',
     techniqueLabel: 'Техника плетения',
     techniqueLoom: 'Ткачество',

@@ -1,4 +1,4 @@
-import { findBead } from './beads'
+import { beadLabel, findBead } from './beads'
 import { computeGridDimensions, toMillimeters, type SizeUnit } from './grid'
 
 /** The weaving method, which determines a Pattern's grid geometry. Only 'loom' is supported so far. */
@@ -10,6 +10,7 @@ export interface Cell {
 
 export interface Pattern {
   id: string
+  name: string
   technique: Technique
   beadId: string
   widthMm: number
@@ -22,6 +23,8 @@ export interface Pattern {
 }
 
 export interface CreatePatternInput {
+  /** User-chosen name; blank or omitted defaults to the bead's label. */
+  name?: string
   technique: Technique
   beadId: string
   size: { width: number; height: number; unit: SizeUnit }
@@ -43,9 +46,11 @@ export function createPattern(input: CreatePatternInput): Pattern {
   const heightMm = toMillimeters(input.size.height, input.size.unit)
   const { columns, rows } = computeGridDimensions({ widthMm, heightMm }, bead)
   const now = Date.now()
+  const name = input.name?.trim() || beadLabel(bead)
 
   return {
     id: crypto.randomUUID(),
+    name,
     technique: input.technique,
     beadId: input.beadId,
     widthMm,
@@ -58,11 +63,9 @@ export function createPattern(input: CreatePatternInput): Pattern {
   }
 }
 
-/** A short, language-neutral identifier for a Pattern in UI lists (bead names are proper nouns, not translated). */
+/** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated). */
 export function summarizePattern(pattern: Pattern): string {
-  const bead = findBead(pattern.beadId)
-  const beadLabel = bead ? `${bead.brand} ${bead.name} ${bead.size}` : pattern.beadId
-  return `${beadLabel} · ${pattern.columns}×${pattern.rows}`
+  return `${pattern.name} · ${pattern.columns}×${pattern.rows}`
 }
 
 export function mostRecentlyUpdated(patterns: Pattern[]): Pattern | undefined {
