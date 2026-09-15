@@ -166,10 +166,95 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
-    expect(mainPanel.find('[data-testid="app-main-panel-placeholder"]').exists()).toBe(true)
+    expect(mainPanel.find('[data-testid="palette-picker"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
+  })
+
+  it('paints a cell with the selected palette color', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
+      'background-color: rgb(230, 55, 70)',
+    )
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('paints a cell regardless of the Pattern\'s Technique', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="width-input"]').setValue('15')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('does not paint a cell before a palette color is selected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('undoes the most recent paint action, and repeated undo steps back further', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('disables undo when there is nothing to undo', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
+      true,
+    )
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
+      false,
+    )
+  })
+
+  it('persists painted cells across a reload', async () => {
+    const first = mount(App)
+    await createPatternViaForm(first, '15', '30')
+
+    await first.find('[data-color-id="red"]').trigger('click')
+    await first.findAll('[data-testid="grid-cell"]')[0]!.trigger('click')
+    first.unmount()
+
+    const afterReload = mount(App)
+
+    expect(afterReload.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
+      'background-color: rgb(230, 55, 70)',
+    )
   })
 
   it('defaults to Russian on first visit with no saved language preference', () => {

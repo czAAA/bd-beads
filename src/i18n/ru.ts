@@ -1,6 +1,6 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique) reuse that
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette) reuse that
 // exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
@@ -37,5 +37,11 @@ export const ru: Translations = {
   shell: {
     mainPanelPlaceholder: 'Инструменты — скоро',
     canvasPlaceholder: 'Схема пока не открыта',
+  },
+  palette: {
+    heading: 'Палитра',
+    pickerLabel: 'Цвета палитры',
+    colorLabel: 'Цвет',
+    undoButton: 'Отменить',
   },
 }

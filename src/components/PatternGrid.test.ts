@@ -87,4 +87,18 @@ describe('PatternGrid', () => {
       'margin-top: 0px',
     )
   })
+
+  it('emits cell-click with the row and column indices of the clicked cell', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    const wrapper = mount(PatternGrid, { props: { pattern } })
+    const targetRow = wrapper.findAll('[data-testid="grid-row"]')[2]!
+    await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('click')
+
+    expect(wrapper.emitted('cell-click')).toEqual([[2, 3]])
+  })
 })

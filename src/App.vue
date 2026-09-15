@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
+import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
+import { findPaletteColor } from './domain/palette'
 import {
   createPattern,
   mostRecentlyUpdated,
+  paintCell,
   summarizePattern,
+  type Cell,
   type CreatePatternInput,
   type Pattern,
 } from './domain/pattern'
@@ -22,6 +26,14 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
+
+const selectedColorId = ref<string | undefined>()
+/** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
+const undoStack = ref<Cell[][][]>([])
+
+watch(activePatternId, () => {
+  undoStack.value = []
+})
 
 function onCreatePattern(payload: CreatePatternInput) {
   const created = createPattern(payload)
@@ -46,6 +58,36 @@ function onRemovePattern(id: string) {
 function onNewPattern() {
   activePatternId.value = undefined
 }
+
+function onSelectColor(colorId: string) {
+  selectedColorId.value = colorId
+}
+
+function replaceActivePattern(updated: Pattern) {
+  savePattern(updated)
+  patterns.value = patterns.value.map((pattern) => (pattern.id === updated.id ? updated : pattern))
+}
+
+function onPaintCell(row: number, column: number) {
+  const pattern = activePattern.value
+  const color = selectedColorId.value ? findPaletteColor(selectedColorId.value) : undefined
+  if (!pattern || !color) {
+    return
+  }
+
+  undoStack.value.push(pattern.grid)
+  replaceActivePattern(paintCell(pattern, row, column, color.hex))
+}
+
+function onUndo() {
+  const pattern = activePattern.value
+  const previousGrid = undoStack.value.pop()
+  if (!pattern || !previousGrid) {
+    return
+  }
+
+  replaceActivePattern({ ...pattern, grid: previousGrid, updatedAt: Date.now() })
+}
 </script>
 
 <template>
@@ -59,16 +101,25 @@ function onNewPattern() {
     </header>
 
     <div class="app-shell__body">
-      <!-- Painting/fill/mirror tools (tickets 07-09) join the New Pattern form here as they're built;
+      <!-- Fill/mirror tools (tickets 08-09) join the New Pattern form and Palette here as they're built;
            until a ticket assigns this panel new content, it shows a placeholder instead of blank space. -->
       <aside class="app-shell__main" data-testid="app-main-panel">
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
           <NewPatternForm @submit="onCreatePattern" />
         </template>
-        <p v-else class="app-shell__placeholder" data-testid="app-main-panel-placeholder">
-          {{ t.shell.mainPanelPlaceholder }}
-        </p>
+        <template v-else>
+          <h2>{{ t.palette.heading }}</h2>
+          <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
+          <button
+            type="button"
+            data-testid="undo-button"
+            :disabled="undoStack.length === 0"
+            @click="onUndo"
+          >
+            {{ t.palette.undoButton }}
+          </button>
+        </template>
       </aside>
 
       <div class="app-shell__right">
@@ -84,7 +135,7 @@ function onNewPattern() {
         </div>
 
         <div class="app-shell__canvas" data-testid="app-canvas">
-          <PatternCanvas v-if="activePattern" :pattern="activePattern" />
+          <PatternCanvas v-if="activePattern" :pattern="activePattern" @cell-click="onPaintCell" />
           <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
             {{ t.shell.canvasPlaceholder }}
           </p>

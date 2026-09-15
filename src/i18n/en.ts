@@ -36,4 +36,10 @@ export const en: Translations = {
     mainPanelPlaceholder: 'Tools — coming soon',
     canvasPlaceholder: 'No Pattern open yet',
   },
+  palette: {
+    heading: 'Palette',
+    pickerLabel: 'Palette colors',
+    colorLabel: 'Color',
+    undoButton: 'Undo',
+  },
 }
