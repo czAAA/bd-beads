@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { CELL_SIZE_PX } from '../domain/grid'
+import { CELL_SIZE_PX, rowOffsetPx } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
 defineProps<{ pattern: Pattern }>()
 </script>
 
 <template>
-  <div class="pattern-grid">
-    <div v-for="(row, rowIndex) in pattern.grid" :key="rowIndex" class="pattern-grid__row" data-testid="grid-row">
+  <div class="pattern-grid" :class="`pattern-grid--${pattern.technique}`">
+    <div
+      v-for="(row, rowIndex) in pattern.grid"
+      :key="rowIndex"
+      class="pattern-grid__row"
+      data-testid="grid-row"
+      :style="{ marginLeft: `${rowOffsetPx(pattern.technique, rowIndex)}px` }"
+    >
       <div
         v-for="(cell, columnIndex) in row"
         :key="columnIndex"
@@ -41,5 +47,19 @@ defineProps<{ pattern: Pattern }>()
   box-sizing: border-box;
   border: 1px solid var(--color-paper);
   background-color: var(--color-paper-solid);
+}
+
+/* Peyote's interlocking beads read as diamonds/hexes rather than a flat grid. */
+.pattern-grid--peyote .pattern-grid__cell {
+  border-radius: 30%;
+}
+
+/* Brick stitch keeps square cells but reads as coursed masonry via a bolder seam between rows. */
+.pattern-grid--brick .pattern-grid__row {
+  border-top: 1px solid var(--color-ink);
+}
+
+.pattern-grid--brick .pattern-grid__row:first-child {
+  border-top: none;
 }
 </style>

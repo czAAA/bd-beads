@@ -11,6 +11,8 @@ export const ru: Translations = {
     beadLabel: 'Бисеринка',
     techniqueLabel: 'Техника плетения',
     techniqueLoom: 'Ткачество',
+    techniquePeyote: 'Мозаичное плетение',
+    techniqueBrick: 'Кирпичное плетение',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
     unitLabel: 'Единица измерения',

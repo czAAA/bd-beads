@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeFitZoom, computeGridDimensions, toMillimeters } from './grid'
+import { computeFitZoom, computeGridDimensions, gridWidthPx, rowOffsetPx, toMillimeters } from './grid'
 import type { Bead } from './beads'
 
 const cubeBead: Bead = {
@@ -85,5 +85,59 @@ describe('computeFitZoom', () => {
     expect(
       computeFitZoom({ columns: 2, rows: 2, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
     ).toBe(1)
+  })
+
+  it('accounts for an offset technique needing an extra half-cell of width', () => {
+    // 10 loom columns at 20px = 200px; peyote's shifted rows need 10px more, so it fits one fewer zoom step.
+    const loomZoom = computeFitZoom({
+      columns: 24,
+      rows: 10,
+      maxWidth: 480,
+      maxHeight: 480,
+      cellSize: 20,
+      technique: 'loom',
+    })
+    const peyoteZoom = computeFitZoom({
+      columns: 24,
+      rows: 10,
+      maxWidth: 480,
+      maxHeight: 480,
+      cellSize: 20,
+      technique: 'peyote',
+    })
+
+    expect(loomZoom).toBe(1)
+    expect(peyoteZoom).toBeLessThan(loomZoom)
+  })
+})
+
+describe('rowOffsetPx', () => {
+  it('never offsets loom rows', () => {
+    expect(rowOffsetPx('loom', 0, 20)).toBe(0)
+    expect(rowOffsetPx('loom', 1, 20)).toBe(0)
+    expect(rowOffsetPx('loom', 2, 20)).toBe(0)
+  })
+
+  it('offsets alternating peyote rows by half a cell', () => {
+    expect(rowOffsetPx('peyote', 0, 20)).toBe(0)
+    expect(rowOffsetPx('peyote', 1, 20)).toBe(10)
+    expect(rowOffsetPx('peyote', 2, 20)).toBe(0)
+    expect(rowOffsetPx('peyote', 3, 20)).toBe(10)
+  })
+
+  it('offsets alternating brick stitch rows by half a cell, the same as peyote', () => {
+    expect(rowOffsetPx('brick', 0, 20)).toBe(0)
+    expect(rowOffsetPx('brick', 1, 20)).toBe(10)
+  })
+})
+
+describe('gridWidthPx', () => {
+  it('is just columns times cell size for loom', () => {
+    expect(gridWidthPx('loom', 10, 20)).toBe(200)
+  })
+
+  it('adds half a cell for offset techniques', () => {
+    expect(gridWidthPx('peyote', 10, 20)).toBe(210)
+    expect(gridWidthPx('brick', 10, 20)).toBe(210)
   })
 })

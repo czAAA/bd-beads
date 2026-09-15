@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { BEAD_CATALOG, beadLabel, findBead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
-import type { SizeUnit } from '../domain/grid'
+import type { SizeUnit, Technique } from '../domain/grid'
 import { useI18n } from '../i18n/useI18n'
 
 const { t } = useI18n()
@@ -13,6 +13,7 @@ const emit = defineEmits<{
 
 const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
+const technique = ref<Technique>('loom')
 const widthText = ref('')
 const heightText = ref('')
 const unit = ref<SizeUnit>('mm')
@@ -32,7 +33,7 @@ function onSubmit() {
 
   emit('submit', {
     name: name.value.trim(),
-    technique: 'loom',
+    technique: technique.value,
     beadId: beadId.value,
     size: { width: width.value, height: height.value, unit: unit.value },
   })
@@ -63,9 +64,10 @@ function onSubmit() {
 
     <div class="field">
       <label for="technique-select">{{ t.form.techniqueLabel }}</label>
-      <!-- Only Loom is supported so far; Peyote/Brick stitch land in a later ticket. -->
-      <select id="technique-select" data-testid="technique-select" disabled>
+      <select id="technique-select" v-model="technique" data-testid="technique-select">
         <option value="loom">{{ t.form.techniqueLoom }}</option>
+        <option value="peyote">{{ t.form.techniquePeyote }}</option>
+        <option value="brick">{{ t.form.techniqueBrick }}</option>
       </select>
     </div>
 

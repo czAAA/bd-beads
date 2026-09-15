@@ -50,6 +50,19 @@ describe('createPattern', () => {
     expect(a.createdAt).toBeTypeOf('number')
   })
 
+  it.each(['peyote', 'brick'] as const)('builds a %s pattern the same way as a loom one', (technique) => {
+    const pattern = createPattern({
+      technique,
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    expect(pattern.technique).toBe(technique)
+    expect(pattern.columns).toBe(10)
+    expect(pattern.rows).toBe(20)
+    expect(pattern.grid).toHaveLength(20)
+  })
+
   it('throws when the bead id is not in the catalog', () => {
     expect(() =>
       createPattern({
