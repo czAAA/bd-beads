@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette) reuse that
-// exact wording rather than retranslating.
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor) reuse
+// that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
     title: 'bd-beads',
@@ -55,5 +55,23 @@ export const ru: Translations = {
     horizontalLabel: 'Горизонталь',
     verticalLabel: 'Вертикаль',
     applyButton: 'Применить отражение',
+  },
+  catalog: {
+    heading: 'Каталог бисера',
+    brandLabel: 'Бренд',
+    nameLabel: 'Название',
+    sizeLabel: 'Размер',
+    formFactorLabel: 'Форм-фактор',
+    formFactorCube: 'Куб',
+    formFactorRound: 'Круглый',
+    formFactorCylinder: 'Цилиндр',
+    colorLabel: 'Цвет',
+    widthLabel: 'Ширина (мм)',
+    heightLabel: 'Высота (мм)',
+    addButton: 'Добавить бисеринку',
+    editButton: 'Редактировать',
+    removeButton: 'Удалить',
+    saveButton: 'Сохранить',
+    cancelButton: 'Отмена',
   },
 }
