@@ -49,4 +49,11 @@ export const ru: Translations = {
     paintLabel: 'Кисть',
     fillLabel: 'Заливка',
   },
+  mirror: {
+    heading: 'Отражение',
+    enabledLabel: 'Отражение включено',
+    horizontalLabel: 'Горизонталь',
+    verticalLabel: 'Вертикаль',
+    applyButton: 'Применить отражение',
+  },
 }

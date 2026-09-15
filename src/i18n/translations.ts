@@ -47,4 +47,11 @@ export interface Translations {
     paintLabel: string
     fillLabel: string
   }
+  mirror: {
+    heading: string
+    enabledLabel: string
+    horizontalLabel: string
+    verticalLabel: string
+    applyButton: string
+  }
 }

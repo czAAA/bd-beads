@@ -47,4 +47,11 @@ export const en: Translations = {
     paintLabel: 'Paint',
     fillLabel: 'Fill',
   },
+  mirror: {
+    heading: 'Mirror',
+    enabledLabel: 'Mirror enabled',
+    horizontalLabel: 'Horizontal',
+    verticalLabel: 'Vertical',
+    applyButton: 'Apply mirror',
+  },
 }

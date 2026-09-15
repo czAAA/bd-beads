@@ -9,6 +9,7 @@ import { findPaletteColor } from './domain/palette'
 import {
   createPattern,
   fillArea,
+  mirrorPattern,
   mostRecentlyUpdated,
   paintCell,
   restoreGrid,
@@ -31,6 +32,9 @@ const activePattern = computed(() =>
 
 const selectedColorId = ref<string | undefined>()
 const activeTool = ref<'paint' | 'fill'>('paint')
+const mirrorEnabled = ref(false)
+const mirrorHorizontal = ref(false)
+const mirrorVertical = ref(false)
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
 const undoStack = ref<Grid[]>([])
 
@@ -103,6 +107,24 @@ function onUndo() {
 
   replaceActivePattern(restoreGrid(pattern, previousGrid))
 }
+
+function onApplyMirror() {
+  const pattern = activePattern.value
+  if (!pattern || !mirrorEnabled.value) {
+    return
+  }
+
+  const mirrored = mirrorPattern(pattern, {
+    horizontal: mirrorHorizontal.value,
+    vertical: mirrorVertical.value,
+  })
+  if (mirrored === pattern) {
+    return
+  }
+
+  undoStack.value.push(pattern.grid)
+  replaceActivePattern(mirrored)
+}
 </script>
 
 <template>
@@ -116,8 +138,6 @@ function onUndo() {
     </header>
 
     <div class="app-shell__body">
-      <!-- Mirror tool (ticket 09) joins the New Pattern form, Palette, and tools here as it's built;
-           until a ticket assigns this panel new content, it shows a placeholder instead of blank space. -->
       <aside class="app-shell__main" data-testid="app-main-panel">
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
@@ -155,6 +175,44 @@ function onUndo() {
             @click="onUndo"
           >
             {{ t.palette.undoButton }}
+          </button>
+
+          <h2>{{ t.mirror.heading }}</h2>
+          <label>
+            <input
+              v-model="mirrorEnabled"
+              type="checkbox"
+              data-testid="mirror-enabled"
+            />
+            {{ t.mirror.enabledLabel }}
+          </label>
+          <div class="mirror-axes">
+            <label>
+              <input
+                v-model="mirrorHorizontal"
+                type="checkbox"
+                data-testid="mirror-horizontal"
+                :disabled="!mirrorEnabled"
+              />
+              {{ t.mirror.horizontalLabel }}
+            </label>
+            <label>
+              <input
+                v-model="mirrorVertical"
+                type="checkbox"
+                data-testid="mirror-vertical"
+                :disabled="!mirrorEnabled"
+              />
+              {{ t.mirror.verticalLabel }}
+            </label>
+          </div>
+          <button
+            type="button"
+            data-testid="mirror-apply"
+            :disabled="!mirrorEnabled || (!mirrorHorizontal && !mirrorVertical)"
+            @click="onApplyMirror"
+          >
+            {{ t.mirror.applyButton }}
           </button>
         </template>
       </aside>
@@ -250,6 +308,12 @@ function onUndo() {
 .tool-picker__button--selected {
   background: var(--color-wedgewood);
   color: var(--color-wedgewood-ink);
+}
+
+.mirror-axes {
+  display: flex;
+  gap: 16px;
+  margin: 8px 0 16px;
 }
 
 .app-shell__right {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createPattern,
   fillArea,
+  mirrorPattern,
   mostRecentlyUpdated,
   paintCell,
   restoreGrid,
@@ -275,6 +276,92 @@ describe('fillArea', () => {
     expect(loomFilled.grid[1]![0]!.color).toBe('red')
     // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
     expect(peyoteFilled.grid[1]![0]!.color).toBe('green')
+  })
+})
+
+describe('mirrorPattern', () => {
+  function makeGridPattern(grid: Cell[][]): Pattern {
+    const base = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: grid[0]!.length * 1.5, height: grid.length * 1.5, unit: 'mm' },
+    })
+    return { ...base, grid }
+  }
+
+  function colors(pattern: Pattern): (string | null)[][] {
+    return pattern.grid.map((row) => row.map((cell) => cell.color))
+  }
+
+  it('reflects the left half onto the right half for an even-width grid', () => {
+    const pattern = makeGridPattern([[{ color: 'red' }, { color: 'blue' }, { color: null }, { color: null }]])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: false })
+
+    expect(colors(mirrored)).toEqual([['red', 'blue', 'blue', 'red']])
+  })
+
+  it('leaves the center column as its own mirror for an odd-width grid', () => {
+    const pattern = makeGridPattern([
+      [{ color: 'red' }, { color: 'blue' }, { color: 'green' }, { color: null }, { color: null }],
+    ])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: false })
+
+    expect(colors(mirrored)).toEqual([['red', 'blue', 'green', 'blue', 'red']])
+  })
+
+  it('reflects the top half onto the bottom half for a vertical mirror', () => {
+    const pattern = makeGridPattern([
+      [{ color: 'red' }],
+      [{ color: 'blue' }],
+      [{ color: null }],
+      [{ color: null }],
+    ])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: false, vertical: true })
+
+    expect(colors(mirrored)).toEqual([['red'], ['blue'], ['blue'], ['red']])
+  })
+
+  it('mirrors the top-left quadrant into all four quadrants when both axes are selected', () => {
+    const pattern = makeGridPattern([
+      [{ color: 'A' }, { color: 'B' }, { color: null }, { color: null }],
+      [{ color: 'C' }, { color: 'D' }, { color: null }, { color: null }],
+      [{ color: null }, { color: null }, { color: null }, { color: null }],
+      [{ color: null }, { color: null }, { color: null }, { color: null }],
+    ])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: true })
+
+    expect(colors(mirrored)).toEqual([
+      ['A', 'B', 'B', 'A'],
+      ['C', 'D', 'D', 'C'],
+      ['C', 'D', 'D', 'C'],
+      ['A', 'B', 'B', 'A'],
+    ])
+  })
+
+  it('overwrites existing content on the reflected side', () => {
+    const pattern = makeGridPattern([[{ color: 'red' }, { color: 'purple' }]])
+
+    const mirrored = mirrorPattern(pattern, { horizontal: true, vertical: false })
+
+    expect(colors(mirrored)).toEqual([['red', 'red']])
+  })
+
+  it('returns the same pattern instance, unchanged, when neither axis is selected', () => {
+    const pattern = makeGridPattern([[{ color: 'red' }, { color: null }]])
+
+    expect(mirrorPattern(pattern, { horizontal: false, vertical: false })).toBe(pattern)
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makeGridPattern([[{ color: 'red' }, { color: null }]])
+
+    mirrorPattern(pattern, { horizontal: true, vertical: false })
+
+    expect(pattern.grid[0]![1]!.color).toBeNull()
   })
 })
 

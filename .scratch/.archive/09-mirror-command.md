@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A master toggle turns mirroring on/off
 - [ ] Horizontal and vertical axis checkboxes can be selected independently (either, both, or neither)
