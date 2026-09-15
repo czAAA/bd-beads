@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] User can start a new Pattern, choosing a Bead from the seeded catalog (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0) and Loom as the Technique
 - [ ] User enters pattern size in cm or mm; the app converts it into a bead grid (columns × rows) using the selected Bead's size

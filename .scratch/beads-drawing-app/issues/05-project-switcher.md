@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The UI always shows which Pattern is currently open (e.g. a name or its bead/size summary)
 - [ ] A list of all saved Patterns renders below the pattern canvas; clicking one switches the editor to show it
