@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { BEAD_CATALOG, beadLabel, findBead } from '../domain/beads'
+import { BEAD_CATALOG, beadLabel, type Bead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
 import type { SizeUnit, Technique } from '../domain/grid'
 import { useI18n } from '../i18n/useI18n'
 
 const { t } = useI18n()
 
+const props = withDefaults(defineProps<{ beads?: readonly Bead[] }>(), {
+  beads: () => BEAD_CATALOG,
+})
+
 const emit = defineEmits<{
   submit: [payload: CreatePatternInput]
 }>()
 
 const name = ref('')
-const beadId = ref(BEAD_CATALOG[0]!.id)
+const beadId = ref(props.beads[0]!.id)
 const technique = ref<Technique>('loom')
 const widthText = ref('')
 const heightText = ref('')
@@ -22,7 +26,7 @@ const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
 const isValid = computed(() => width.value > 0 && height.value > 0)
 const namePlaceholder = computed(() => {
-  const bead = findBead(beadId.value)
+  const bead = props.beads.find((candidate) => candidate.id === beadId.value)
   return bead ? beadLabel(bead) : ''
 })
 
@@ -56,7 +60,7 @@ function onSubmit() {
     <div class="field">
       <label for="bead-select">{{ t.form.beadLabel }}</label>
       <select id="bead-select" v-model="beadId" data-testid="bead-select">
-        <option v-for="bead in BEAD_CATALOG" :key="bead.id" :value="bead.id">
+        <option v-for="bead in beads" :key="bead.id" :value="bead.id">
           {{ bead.brand }} {{ bead.name }} {{ bead.size }}
         </option>
       </select>

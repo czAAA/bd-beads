@@ -372,6 +372,86 @@ describe('App', () => {
     )
   })
 
+  it('lists the seeded catalog in the bead catalog view', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.findAll('[data-testid="catalog-seeded-item"]')).toHaveLength(BEAD_CATALOG.length)
+  })
+
+  it('adds a custom bead, which becomes selectable when creating a Pattern', async () => {
+    const wrapper = mount(App)
+
+    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
+    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
+    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
+    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
+    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
+    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+
+    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
+    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
+
+    const customBeadOption = options.find((option) => option.text() === 'Acme Fancy 8/0')!
+    await wrapper.find('[data-testid="bead-select"]').setValue(customBeadOption.element.value)
+    await wrapper.find('[data-testid="width-input"]').setValue('6')
+    await wrapper.find('[data-testid="height-input"]').setValue('6')
+    await wrapper.find('form.new-pattern-form').trigger('submit')
+
+    expect(loadPatterns()[0]!.columns).toBe(2)
+    expect(loadPatterns()[0]!.rows).toBe(2)
+  })
+
+  it('persists a custom bead across a reload, still selectable for a new Pattern', async () => {
+    const first = mount(App)
+    await first.find('[data-testid="catalog-brand-input"]').setValue('Acme')
+    await first.find('[data-testid="catalog-name-input"]').setValue('Fancy')
+    await first.find('[data-testid="catalog-size-input"]').setValue('8/0')
+    await first.find('[data-testid="catalog-width-input"]').setValue('3')
+    await first.find('[data-testid="catalog-height-input"]').setValue('3')
+    await first.find('[data-testid="bead-catalog"] form').trigger('submit')
+    first.unmount()
+
+    const afterReload = mount(App)
+
+    const options = afterReload.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
+    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
+  })
+
+  it('edits a custom bead in place', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
+    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
+    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
+    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
+    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
+    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+
+    const editButton = wrapper.find('[data-testid="catalog-custom-item"] button')
+    await editButton.trigger('click')
+    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Renamed')
+    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+
+    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
+    expect(options.map((option) => option.text())).toContain('Acme Renamed 8/0')
+    expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
+  })
+
+  it('removes a custom bead from the catalog and the pattern-creation select', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
+    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
+    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
+    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
+    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
+    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+
+    await wrapper.find('[data-testid="catalog-custom-item"] [data-testid^="catalog-remove-"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="catalog-custom-item"]').exists()).toBe(false)
+    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
+    expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
+  })
+
   it('defaults to Russian on first visit with no saved language preference', () => {
     const wrapper = mount(App)
 
