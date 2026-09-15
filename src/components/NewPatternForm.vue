@@ -110,11 +110,6 @@ function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 360px;
-  padding: 24px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
 }
 
 .field {

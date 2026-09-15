@@ -25,4 +25,12 @@ export interface Translations {
     removeButton: string
     currentLabel: string
   }
+  canvas: {
+    zoomInLabel: string
+    zoomOutLabel: string
+    zoomResetLabel: string
+  }
+  shell: {
+    mainPanelPlaceholder: string
+  }
 }

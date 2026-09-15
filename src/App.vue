@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
-import PatternGrid from './components/PatternGrid.vue'
+import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import {
   createPattern,
@@ -59,31 +59,43 @@ function onNewPattern() {
     </header>
 
     <div class="app-shell__body">
-      <!-- Painting/fill/mirror tools and technique/size controls land here as tickets 06-09 are built. -->
-      <aside class="app-shell__tools" data-testid="app-tool-sidebar"></aside>
-
-      <main class="app-shell__canvas" data-testid="app-canvas">
-        <NewPatternForm v-if="!activePattern" @submit="onCreatePattern" />
-        <PatternGrid v-else :pattern="activePattern" />
-      </main>
-
-      <aside class="app-shell__context" data-testid="app-context-panel">
-        <button
-          type="button"
-          data-testid="new-pattern-button"
-          :disabled="patterns.length === 0"
-          @click="onNewPattern"
-        >
-          {{ t.patterns.newPatternButton }}
-        </button>
-
-        <PatternList
-          :patterns="patterns"
-          :active-pattern-id="activePatternId"
-          @select="onSelectPattern"
-          @remove="onRemovePattern"
-        />
+      <!-- Painting/fill/mirror tools (tickets 07-09) join the New Pattern form here as they're built;
+           until a ticket assigns this panel new content, it shows a placeholder instead of blank space. -->
+      <aside class="app-shell__main" data-testid="app-main-panel">
+        <template v-if="!activePattern">
+          <h2>{{ t.patterns.newPatternButton }}</h2>
+          <NewPatternForm @submit="onCreatePattern" />
+        </template>
+        <p v-else class="app-shell__placeholder" data-testid="app-main-panel-placeholder">
+          {{ t.shell.mainPanelPlaceholder }}
+        </p>
       </aside>
+
+      <div class="app-shell__right">
+        <div class="app-shell__above-canvas" data-testid="app-above-canvas">
+          <button
+            type="button"
+            data-testid="new-pattern-button"
+            :disabled="patterns.length === 0"
+            @click="onNewPattern"
+          >
+            {{ t.patterns.newPatternButton }}
+          </button>
+        </div>
+
+        <div class="app-shell__canvas" data-testid="app-canvas">
+          <PatternCanvas v-if="activePattern" :pattern="activePattern" />
+        </div>
+
+        <div class="app-shell__below-canvas" data-testid="app-below-canvas">
+          <PatternList
+            :patterns="patterns"
+            :active-pattern-id="activePatternId"
+            @select="onSelectPattern"
+            @remove="onRemovePattern"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -116,27 +128,48 @@ function onNewPattern() {
 
 .app-shell__body {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 16px;
 }
 
-.app-shell__tools {
-  flex: 0 0 200px;
-  align-self: stretch;
+.app-shell__main {
+  flex: 0 0 280px;
+  padding: 16px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
 }
 
-.app-shell__canvas {
-  flex: 1 1 auto;
-  min-width: 0;
+.app-shell__main h2 {
+  margin-top: 0;
 }
 
-.app-shell__context {
-  flex: 0 0 280px;
+.app-shell__placeholder {
+  margin: 0;
+  color: var(--color-ink);
+  opacity: 0.5;
+}
+
+.app-shell__right {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.app-shell__above-canvas {
+  display: flex;
+}
+
+.app-shell__canvas {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--color-paper-solid);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
 }
 </style>
