@@ -76,10 +76,10 @@ export const en: Translations = {
   },
   mirror: {
     heading: 'Mirror',
-    enabledLabel: 'Mirror enabled',
     horizontalLabel: 'Horizontal',
     verticalLabel: 'Vertical',
-    applyButton: 'Apply mirror',
+    mirrorCurrentHorizontalButton: 'Mirror current (horizontal)',
+    mirrorCurrentVerticalButton: 'Mirror current (vertical)',
   },
   catalog: {
     heading: 'Bead catalog',

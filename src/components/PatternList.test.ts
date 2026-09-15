@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import PatternList from './PatternList.vue'
 import { createPattern, summarizePattern } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
+import { ru } from '../i18n/ru'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -63,5 +64,17 @@ describe('PatternList', () => {
     await wrapper.find(`[data-testid="remove-pattern-${pattern.id}"]`).trigger('click')
 
     expect(wrapper.emitted('remove')).toEqual([[pattern.id]])
+  })
+
+  it('renders the remove button as an icon, with an aria-label conveying its action for screen readers', () => {
+    const pattern = makePattern()
+    const wrapper = mount(PatternList, { props: { patterns: [pattern] } })
+
+    const removeButton = wrapper.find(`[data-testid="remove-pattern-${pattern.id}"]`)
+    expect(removeButton.text()).toBe('')
+    expect(removeButton.find('svg').exists()).toBe(true)
+    expect(removeButton.attributes('aria-label')).toBe(
+      `${ru.patterns.removeButton}: ${summarizePattern(pattern)}`,
+    )
   })
 })

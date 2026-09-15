@@ -38,12 +38,18 @@ const { t } = useI18n()
         </button>
         <button
           type="button"
-          class="pattern-list__remove button--danger"
+          class="pattern-list__remove button--danger icon-button"
           :data-testid="`remove-pattern-${pattern.id}`"
           :aria-label="`${t.patterns.removeButton}: ${summarizePattern(pattern)}`"
           @click="emit('remove', pattern.id)"
         >
-          {{ t.patterns.removeButton }}
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M4 7h16" />
+            <path d="M9 7V4h6v3" />
+            <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
         </button>
       </li>
     </ul>
@@ -94,6 +100,6 @@ const { t } = useI18n()
   border: none;
   border-left: var(--border-width) solid var(--color-ink);
   border-radius: 0;
-  padding: 8px 14px;
+  padding: 0;
 }
 </style>

@@ -85,11 +85,38 @@ describe('PatternCanvas', () => {
     }
   })
 
-  it('forwards a grid cell click as its own cell-click event', async () => {
+  it('forwards a grid cell mousedown as its own cell-primary-down event', async () => {
     const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mousedown')
 
-    expect(wrapper.emitted('cell-click')).toEqual([[0, 5]])
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 5]])
+  })
+
+  it('forwards a right mousedown as its own cell-secondary-down event', async () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mousedown', { button: 2 })
+
+    expect(wrapper.emitted('cell-secondary-down')).toEqual([[0, 5]])
+  })
+
+  it('forwards hover and hover-end, and passes the preview props down to the grid', async () => {
+    const wrapper = mount(PatternCanvas, {
+      props: {
+        pattern: pattern(15, 15),
+        zoom: 1,
+        previewCells: [{ row: 0, column: 5 }],
+        previewColor: '#e63746',
+      },
+    })
+
+    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(true)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mouseenter')
+    expect(wrapper.emitted('cell-hover')).toEqual([[0, 5]])
+
+    await wrapper.find('.pattern-grid').trigger('mouseleave')
+    expect(wrapper.emitted('hover-end')).toHaveLength(1)
   })
 })
