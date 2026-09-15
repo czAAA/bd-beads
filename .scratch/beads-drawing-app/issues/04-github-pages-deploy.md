@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Confirm GitHub Pages is workable for this app's requirements (static hosting only, localStorage-based persistence, no server) and note any blockers found
 - [ ] Vite build config (`base`, asset paths) is set correctly so the built app resolves its assets when served from a GitHub Pages URL, not just from `/`

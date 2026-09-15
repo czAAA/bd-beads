@@ -6,7 +6,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Palette and type choices are defined as reusable design tokens (e.g. CSS custom properties), not one-off inline values
 - [ ] Palette matches the style reference: bold flat color-blocking in cello navy, peppermint, amaranth red, wedgewood blue, and aqua island teal, on generous white/light negative space

@@ -12,7 +12,7 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] App shell renders as four regions matching the reference's structure: top bar, left tool sidebar, center canvas, right context panel
 - [ ] Every control placed in the new layout maps to an existing or planned bd-beads feature per the Target layout above; none of the explicitly-out-of-scope reference features are added

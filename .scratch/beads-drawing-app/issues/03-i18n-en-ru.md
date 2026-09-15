@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every piece of UI text shipped so far (New Pattern form labels/options, buttons, headings) has both an English and a Russian translation
 - [ ] A visible switcher lets the user toggle the UI language between EN and RU at any time
