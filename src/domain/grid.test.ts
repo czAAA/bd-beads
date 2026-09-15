@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { computeFitZoom, computeGridDimensions, toMillimeters } from './grid'
+import {
+  computeFitZoom,
+  computeGridDimensions,
+  gridHeightPx,
+  gridWidthPx,
+  neighborsOf,
+  rowHeightPx,
+  rowOffsetPx,
+  toMillimeters,
+} from './grid'
 import type { Bead } from './beads'
 
 const cubeBead: Bead = {
@@ -85,5 +94,161 @@ describe('computeFitZoom', () => {
     expect(
       computeFitZoom({ columns: 2, rows: 2, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
     ).toBe(1)
+  })
+
+  it('accounts for an offset technique needing an extra half-cell of width', () => {
+    // 10 loom columns at 20px = 200px; peyote's shifted rows need 10px more, so it fits one fewer zoom step.
+    const loomZoom = computeFitZoom({
+      columns: 24,
+      rows: 10,
+      maxWidth: 480,
+      maxHeight: 480,
+      cellSize: 20,
+      technique: 'loom',
+    })
+    const peyoteZoom = computeFitZoom({
+      columns: 24,
+      rows: 10,
+      maxWidth: 480,
+      maxHeight: 480,
+      cellSize: 20,
+      technique: 'peyote',
+    })
+
+    expect(loomZoom).toBe(1)
+    expect(peyoteZoom).toBeLessThan(loomZoom)
+  })
+})
+
+describe('rowOffsetPx', () => {
+  it('never offsets loom rows', () => {
+    expect(rowOffsetPx('loom', 0, 20)).toBe(0)
+    expect(rowOffsetPx('loom', 1, 20)).toBe(0)
+    expect(rowOffsetPx('loom', 2, 20)).toBe(0)
+  })
+
+  it('offsets alternating peyote rows by half a cell', () => {
+    expect(rowOffsetPx('peyote', 0, 20)).toBe(0)
+    expect(rowOffsetPx('peyote', 1, 20)).toBe(10)
+    expect(rowOffsetPx('peyote', 2, 20)).toBe(0)
+    expect(rowOffsetPx('peyote', 3, 20)).toBe(10)
+  })
+
+  it('offsets alternating brick stitch rows by half a cell, the same as peyote', () => {
+    expect(rowOffsetPx('brick', 0, 20)).toBe(0)
+    expect(rowOffsetPx('brick', 1, 20)).toBe(10)
+  })
+})
+
+describe('gridWidthPx', () => {
+  it('is just columns times cell size for loom', () => {
+    expect(gridWidthPx('loom', 10, 20)).toBe(200)
+  })
+
+  it('adds half a cell for offset techniques', () => {
+    expect(gridWidthPx('peyote', 10, 20)).toBe(210)
+    expect(gridWidthPx('brick', 10, 20)).toBe(210)
+  })
+})
+
+describe('rowHeightPx', () => {
+  it('is a full cell for loom and brick stitch', () => {
+    expect(rowHeightPx('loom', 20)).toBe(20)
+    expect(rowHeightPx('brick', 20)).toBe(20)
+  })
+
+  it('packs peyote rows tighter than a full cell, so they interlock', () => {
+    expect(rowHeightPx('peyote', 20)).toBe(15)
+  })
+})
+
+describe('gridHeightPx', () => {
+  it('is rows times cell size for loom and brick stitch', () => {
+    expect(gridHeightPx('loom', 10, 20)).toBe(200)
+    expect(gridHeightPx('brick', 10, 20)).toBe(200)
+  })
+
+  it('is shorter than a straight grid for peyote, since its rows overlap', () => {
+    expect(gridHeightPx('peyote', 10, 20)).toBe(20 + 9 * 15)
+    expect(gridHeightPx('peyote', 10, 20)).toBeLessThan(gridHeightPx('loom', 10, 20))
+  })
+
+  it('is zero for an empty grid', () => {
+    expect(gridHeightPx('loom', 0, 20)).toBe(0)
+  })
+})
+
+function sorted(positions: { row: number; column: number }[]) {
+  return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
+}
+
+describe('neighborsOf', () => {
+  const dims = { columns: 5, rows: 5 }
+
+  it('gives loom cells their four straight neighbors', () => {
+    expect(sorted(neighborsOf('loom', dims, { row: 2, column: 2 }))).toEqual(
+      sorted([
+        { row: 2, column: 1 },
+        { row: 2, column: 3 },
+        { row: 1, column: 2 },
+        { row: 3, column: 2 },
+      ]),
+    )
+  })
+
+  it('clips loom neighbors at the grid edges', () => {
+    expect(sorted(neighborsOf('loom', dims, { row: 0, column: 0 }))).toEqual(
+      sorted([
+        { row: 0, column: 1 },
+        { row: 1, column: 0 },
+      ]),
+    )
+  })
+
+  it('gives a peyote cell in an unshifted row two neighbors in each shifted adjacent row', () => {
+    // row 2 is unshifted; rows 1 and 3 are shifted right by half a cell, so each overlaps columns {1,2} of row 2's column 2.
+    expect(sorted(neighborsOf('peyote', dims, { row: 2, column: 2 }))).toEqual(
+      sorted([
+        { row: 2, column: 1 },
+        { row: 2, column: 3 },
+        { row: 1, column: 1 },
+        { row: 1, column: 2 },
+        { row: 3, column: 1 },
+        { row: 3, column: 2 },
+      ]),
+    )
+  })
+
+  it('gives a peyote cell in a shifted row two neighbors in each unshifted adjacent row', () => {
+    // row 1 is shifted right; rows 0 and 2 are unshifted, so each overlaps columns {2,3} of row 1's column 2.
+    expect(sorted(neighborsOf('peyote', dims, { row: 1, column: 2 }))).toEqual(
+      sorted([
+        { row: 1, column: 1 },
+        { row: 1, column: 3 },
+        { row: 0, column: 2 },
+        { row: 0, column: 3 },
+        { row: 2, column: 2 },
+        { row: 2, column: 3 },
+      ]),
+    )
+  })
+
+  it('adjacency is symmetric: if B neighbors A, A neighbors B', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (let row = 0; row < dims.rows; row++) {
+        for (let column = 0; column < dims.columns; column++) {
+          for (const neighbor of neighborsOf(technique, dims, { row, column })) {
+            const back = neighborsOf(technique, dims, neighbor)
+            expect(back).toContainEqual({ row, column })
+          }
+        }
+      }
+    }
+  })
+
+  it('treats brick stitch adjacency the same as peyote, since both offset rows the same way', () => {
+    expect(sorted(neighborsOf('brick', dims, { row: 2, column: 2 }))).toEqual(
+      sorted(neighborsOf('peyote', dims, { row: 2, column: 2 })),
+    )
   })
 })

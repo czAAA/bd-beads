@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { CELL_SIZE_PX, computeFitZoom } from '../domain/grid'
+import { computeFitZoom, gridHeightPx, gridWidthPx } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
 import PatternGrid from './PatternGrid.vue'
 
 const props = defineProps<{ pattern: Pattern }>()
+const emit = defineEmits<{
+  'cell-click': [row: number, column: number]
+}>()
 const { t } = useI18n()
 
 const MIN_ZOOM = 0.25
@@ -20,6 +23,7 @@ function fitZoomFor(pattern: Pattern): number {
     rows: pattern.rows,
     maxWidth: VIEWPORT_SIZE_PX,
     maxHeight: VIEWPORT_SIZE_PX,
+    technique: pattern.technique,
   })
 }
 
@@ -49,8 +53,12 @@ function resetZoom() {
 }
 
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
-const scaledWidth = computed(() => props.pattern.columns * CELL_SIZE_PX * zoom.value)
-const scaledHeight = computed(() => props.pattern.rows * CELL_SIZE_PX * zoom.value)
+const scaledWidth = computed(
+  () => gridWidthPx(props.pattern.technique, props.pattern.columns) * zoom.value,
+)
+const scaledHeight = computed(
+  () => gridHeightPx(props.pattern.technique, props.pattern.rows) * zoom.value,
+)
 </script>
 
 <template>
@@ -93,7 +101,7 @@ const scaledHeight = computed(() => props.pattern.rows * CELL_SIZE_PX * zoom.val
         :style="{ width: `${scaledWidth}px`, height: `${scaledHeight}px` }"
       >
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
-          <PatternGrid :pattern="pattern" />
+          <PatternGrid :pattern="pattern" @cell-click="(row, column) => emit('cell-click', row, column)" />
         </div>
       </div>
     </div>
