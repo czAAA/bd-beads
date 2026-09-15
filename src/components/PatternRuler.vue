@@ -139,7 +139,7 @@ function labelStyle(label: RulerLabel) {
   position: relative;
   flex: none;
   color: var(--color-ink);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: 1;
 }
 

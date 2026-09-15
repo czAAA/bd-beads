@@ -56,9 +56,10 @@ export const en: Translations = {
   },
   quantities: {
     heading: 'Beads needed',
-    emptyMessage: 'Paint some cells to see how many beads you need',
+    noPatternMessage: 'Open a Pattern to see how many beads it needs',
     colorHeading: 'Color',
     countHeading: 'Beads',
+    resolvedBeadHeading: 'Bead used',
     defaultBeadHeading: 'Default bead',
     patternBeadHeading: 'This Pattern',
     unmappedOption: 'No bead',

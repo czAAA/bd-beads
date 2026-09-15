@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import type { ColorBeadDefaults } from '../domain/beadMapping'
 import type { Pattern } from '../domain/pattern'
 import {
   importPatterns,
@@ -16,11 +17,16 @@ const props = defineProps<{
   pattern?: Pattern
   /** Every Pattern saved on this device, for the whole-library export and for spotting import collisions. */
   patterns: Pattern[]
+  /** This device's global color-to-bead defaults, which travel in the file so the Patterns still resolve elsewhere. */
+  colorBeadDefaults: ColorBeadDefaults
 }>()
 
 const emit = defineEmits<{
-  /** Patterns read out of a file and ready to be saved locally, already given fresh ids where they collided. */
-  import: [patterns: Pattern[]]
+  /**
+   * What a file turned out to hold: Patterns ready to be saved locally, already given fresh ids where they
+   * collided, plus the defaults the file carried for the app to fold into its own.
+   */
+  import: [patterns: Pattern[], colorBeadDefaults: ColorBeadDefaults]
 }>()
 
 const { t } = useI18n()
@@ -28,24 +34,33 @@ const { t } = useI18n()
 const importedCount = ref<number | null>(null)
 const importFailed = ref(false)
 
-/** There is no backend to fetch from (ADR 0001), so the file is built in the page and handed straight to the browser. */
+/**
+ * There is no backend to fetch from (ADR 0001), so the file is built in the page and handed straight to the
+ * browser. The link has to be in the document for Firefox to act on the click, and the blob URL has to outlive the
+ * click for Safari to finish reading it — hence revoking on the next tick rather than immediately.
+ */
 function download(fileName: string, contents: string): void {
   const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }))
   const link = document.createElement('a')
   link.href = url
   link.download = fileName
+  document.body.append(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url))
 }
 
 function onExportPattern(): void {
   if (props.pattern) {
-    download(patternFileName(props.pattern), serializePattern(props.pattern))
+    download(
+      patternFileName(props.pattern),
+      serializePattern(props.pattern, props.colorBeadDefaults),
+    )
   }
 }
 
 function onExportLibrary(): void {
-  download(libraryFileName(), serializeLibrary(props.patterns))
+  download(libraryFileName(), serializeLibrary(props.patterns, props.colorBeadDefaults))
 }
 
 async function onImportFile(event: Event): Promise<void> {
@@ -59,9 +74,10 @@ async function onImportFile(event: Event): Promise<void> {
   importFailed.value = false
 
   try {
-    const added = importPatterns(parsePatternsFile(await file.text()), props.patterns)
+    const contents = parsePatternsFile(await file.text())
+    const added = importPatterns(contents.patterns, props.patterns)
     importedCount.value = added.length
-    emit('import', added)
+    emit('import', added, contents.colorBeadDefaults)
   } catch {
     importFailed.value = true
   } finally {
@@ -133,6 +149,6 @@ async function onImportFile(event: Event): Promise<void> {
 
 .pattern-transfer__error {
   color: var(--color-amaranth);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 </style>

@@ -79,11 +79,23 @@ function rowProgressClass(rowIndex: number): string | null {
   filter: grayscale(1);
 }
 
-/* The row being woven now, lifted above its neighbours so the outline isn't buried under an overlapping row. */
+/* The row being woven now, lifted above its neighbours so its marker isn't buried under an overlapping row. */
 .pattern-grid__row--current {
   position: relative;
   z-index: 1;
-  outline: 3px solid var(--color-wedgewood);
+}
+
+/*
+ * The marker is its own layer over the row rather than an outline or an inset shadow: an outline on the first row
+ * would be shaved off by .pattern-grid's overflow clipping, and an inset shadow would be painted over by the cells'
+ * own opaque backgrounds. It ignores pointer events so the beads underneath stay paintable.
+ */
+.pattern-grid__row--current::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 3px var(--color-wedgewood);
+  pointer-events: none;
 }
 
 /* Peyote's interlocking beads read as diamonds/hexes rather than a flat grid. */

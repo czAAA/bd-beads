@@ -1,3 +1,4 @@
+import type { ColorBeadDefaults } from './beadMapping'
 import { normalizePattern, type Pattern } from './pattern'
 
 /**
@@ -5,29 +6,48 @@ import { normalizePattern, type Pattern } from './pattern'
  * is and the format version that wrote it, and the reader refuses anything it doesn't understand rather than
  * silently importing half a Pattern.
  */
-export const PATTERN_FILE_KIND = 'bd-beads/pattern'
-export const LIBRARY_FILE_KIND = 'bd-beads/library'
-export const FILE_VERSION = 1
+const PATTERN_FILE_KIND = 'bd-beads/pattern'
+const LIBRARY_FILE_KIND = 'bd-beads/library'
+const FILE_VERSION = 1
 
 interface PatternFile {
   kind: typeof PATTERN_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
   patterns: Pattern[]
+  /**
+   * The global color-to-bead defaults the Patterns lean on (ADR 0002). They live on the device, not on a Pattern,
+   * so without them in the file every color that relies on a default would arrive unmapped on the other device.
+   * Optional on the way in: files written before this field existed simply carry none.
+   */
+  colorBeadDefaults?: ColorBeadDefaults
 }
 
-function serialize(kind: PatternFile['kind'], patterns: Pattern[]): string {
-  const file: PatternFile = { kind, version: FILE_VERSION, patterns }
+/** What an exported file holds once read back. */
+export interface PatternFileContents {
+  patterns: Pattern[]
+  colorBeadDefaults: ColorBeadDefaults
+}
+
+function serialize(
+  kind: PatternFile['kind'],
+  patterns: Pattern[],
+  colorBeadDefaults: ColorBeadDefaults,
+): string {
+  const file: PatternFile = { kind, version: FILE_VERSION, patterns, colorBeadDefaults }
   return JSON.stringify(file, null, 2)
 }
 
-/** The open Pattern on its own, for sharing or backing up one design (ticket 12). */
-export function serializePattern(pattern: Pattern): string {
-  return serialize(PATTERN_FILE_KIND, [pattern])
+/** The open Pattern on its own, for sharing or backing it up (ticket 12). */
+export function serializePattern(pattern: Pattern, colorBeadDefaults: ColorBeadDefaults): string {
+  return serialize(PATTERN_FILE_KIND, [pattern], colorBeadDefaults)
 }
 
 /** Every saved Pattern in one file, for moving a whole library to another device (ticket 15). */
-export function serializeLibrary(patterns: Pattern[]): string {
-  return serialize(LIBRARY_FILE_KIND, patterns)
+export function serializeLibrary(
+  patterns: Pattern[],
+  colorBeadDefaults: ColorBeadDefaults,
+): string {
+  return serialize(LIBRARY_FILE_KIND, patterns, colorBeadDefaults)
 }
 
 /** Pattern names are free text (and may be Russian), so keep the letters that survive a filename and drop the rest. */
@@ -67,7 +87,7 @@ function looksLikePattern(value: unknown): value is Pattern {
  * action handles both. Throws when the file isn't one bd-beads wrote, or was written by a format version this build
  * doesn't know.
  */
-export function parsePatternsFile(text: string): Pattern[] {
+export function parsePatternsFile(text: string): PatternFileContents {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -92,7 +112,10 @@ export function parsePatternsFile(text: string): Pattern[] {
     throw new Error('This bd-beads file does not contain readable Patterns')
   }
 
-  return file.patterns.map(normalizePattern)
+  return {
+    patterns: file.patterns.map(normalizePattern),
+    colorBeadDefaults: file.colorBeadDefaults ?? {},
+  }
 }
 
 /**

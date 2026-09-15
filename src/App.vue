@@ -11,7 +11,12 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import ZoomControls from './components/ZoomControls.vue'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
-import { loadColorBeadDefaults, saveColorBeadDefault } from './domain/beadMappingStorage'
+import { mergeColorBeadDefaults, type ColorBeadDefaults } from './domain/beadMapping'
+import {
+  loadColorBeadDefaults,
+  saveColorBeadDefault,
+  saveColorBeadDefaults,
+} from './domain/beadMappingStorage'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import { findPaletteColor } from './domain/palette'
 import {
@@ -168,9 +173,13 @@ function onSetOverrideBead(colorId: string, beadId: string | null) {
   }
 }
 
-function onImportPatterns(imported: Pattern[]) {
+function onImportPatterns(imported: Pattern[], importedDefaults: ColorBeadDefaults) {
   imported.forEach(savePattern)
   patterns.value = [...patterns.value, ...imported]
+
+  const merged = mergeColorBeadDefaults(colorBeadDefaults.value, importedDefaults)
+  saveColorBeadDefaults(merged)
+  colorBeadDefaults.value = merged
 
   // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
   activePatternId.value ??= mostRecentlyUpdated(imported)?.id
@@ -359,7 +368,6 @@ function onRemoveBead(id: string) {
             @remove="onRemovePattern"
           />
           <BeadQuantities
-            v-if="activePattern"
             :pattern="activePattern"
             :beads="beads"
             :defaults="colorBeadDefaults"
@@ -369,6 +377,7 @@ function onRemoveBead(id: string) {
           <PatternTransfer
             :pattern="activePattern"
             :patterns="patterns"
+            :color-bead-defaults="colorBeadDefaults"
             @import="onImportPatterns"
           />
           <BeadCatalog
