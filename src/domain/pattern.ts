@@ -62,6 +62,17 @@ export function createPattern(input: CreatePatternInput): Pattern {
   }
 }
 
+/** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */
+export function paintCell(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    rowIndex === row
+      ? gridRow.map((cell, columnIndex) => (columnIndex === column ? { color } : cell))
+      : gridRow,
+  )
+
+  return { ...pattern, grid, updatedAt: Date.now() }
+}
+
 /** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated). */
 export function summarizePattern(pattern: Pattern): string {
   return `${pattern.name} · ${pattern.columns}×${pattern.rows}`

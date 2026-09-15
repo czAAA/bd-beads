@@ -6,6 +6,9 @@ import { useI18n } from '../i18n/useI18n'
 import PatternGrid from './PatternGrid.vue'
 
 const props = defineProps<{ pattern: Pattern }>()
+const emit = defineEmits<{
+  'cell-click': [row: number, column: number]
+}>()
 const { t } = useI18n()
 
 const MIN_ZOOM = 0.25
@@ -98,7 +101,7 @@ const scaledHeight = computed(
         :style="{ width: `${scaledWidth}px`, height: `${scaledHeight}px` }"
       >
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
-          <PatternGrid :pattern="pattern" />
+          <PatternGrid :pattern="pattern" @cell-click="(row, column) => emit('cell-click', row, column)" />
         </div>
       </div>
     </div>

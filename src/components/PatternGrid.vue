@@ -4,6 +4,10 @@ import type { Pattern } from '../domain/pattern'
 
 defineProps<{ pattern: Pattern }>()
 
+const emit = defineEmits<{
+  'cell-click': [row: number, column: number]
+}>()
+
 /** Rows after the first pull up to sit rowHeightPx apart instead of a full cell apart; 0 for techniques that stack at full height. */
 function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number {
   return rowIndex === 0 ? 0 : rowHeightPx(technique) - CELL_SIZE_PX
@@ -32,6 +36,7 @@ function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number
           height: `${CELL_SIZE_PX}px`,
           backgroundColor: cell.color ?? undefined,
         }"
+        @click="emit('cell-click', rowIndex, columnIndex)"
       />
     </div>
   </div>
@@ -55,6 +60,7 @@ function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number
   box-sizing: border-box;
   border: 1px solid var(--color-paper);
   background-color: var(--color-paper-solid);
+  cursor: pointer;
 }
 
 /* Peyote's interlocking beads read as diamonds/hexes rather than a flat grid. */

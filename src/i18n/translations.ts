@@ -36,4 +36,10 @@ export interface Translations {
     mainPanelPlaceholder: string
     canvasPlaceholder: string
   }
+  palette: {
+    heading: string
+    pickerLabel: string
+    colorLabel: string
+    undoButton: string
+  }
 }

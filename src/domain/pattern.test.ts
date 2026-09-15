@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPattern, mostRecentlyUpdated, summarizePattern } from './pattern'
+import { createPattern, mostRecentlyUpdated, paintCell, summarizePattern } from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -126,6 +126,56 @@ describe('summarizePattern', () => {
     })
 
     expect(summarizePattern(pattern)).toBe('TOHO Cube 1.5mm · 10×20')
+  })
+})
+
+describe('paintCell', () => {
+  function makePattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+  }
+
+  it('sets the color of exactly the targeted cell', () => {
+    const pattern = makePattern()
+
+    const painted = paintCell(pattern, 1, 2, '#e63746')
+
+    expect(painted.grid[1]![2]!.color).toBe('#e63746')
+    for (let row = 0; row < painted.grid.length; row++) {
+      for (let column = 0; column < painted.grid[row]!.length; column++) {
+        if (row !== 1 || column !== 2) {
+          expect(painted.grid[row]![column]!.color).toBeNull()
+        }
+      }
+    }
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makePattern()
+
+    paintCell(pattern, 0, 0, '#e63746')
+
+    expect(pattern.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('can clear a cell back to unpainted with a null color', () => {
+    const pattern = makePattern()
+    const painted = paintCell(pattern, 0, 0, '#e63746')
+
+    const cleared = paintCell(painted, 0, 0, null)
+
+    expect(cleared.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('bumps updatedAt', () => {
+    const pattern = { ...makePattern(), updatedAt: 0 }
+
+    const painted = paintCell(pattern, 0, 0, '#e63746')
+
+    expect(painted.updatedAt).toBeGreaterThan(0)
   })
 })
 
