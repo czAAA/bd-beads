@@ -25,4 +25,12 @@ export const en: Translations = {
     removeButton: 'Remove',
     currentLabel: 'Currently editing',
   },
+  canvas: {
+    zoomInLabel: 'Zoom in',
+    zoomOutLabel: 'Zoom out',
+    zoomResetLabel: 'Reset zoom to fit',
+  },
+  shell: {
+    mainPanelPlaceholder: 'Tools — coming soon',
+  },
 }

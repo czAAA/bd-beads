@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toMillimeters, computeGridDimensions } from './grid'
+import { computeFitZoom, computeGridDimensions, toMillimeters } from './grid'
 import type { Bead } from './beads'
 
 const cubeBead: Bead = {
@@ -59,5 +59,31 @@ describe('computeGridDimensions', () => {
       columns: 1,
       rows: 1,
     })
+  })
+})
+
+describe('computeFitZoom', () => {
+  it('returns 100% when the grid already fits within the box', () => {
+    expect(
+      computeFitZoom({ columns: 10, rows: 10, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
+    ).toBe(1)
+  })
+
+  it('zooms out just enough to fit when the grid is wider than the box', () => {
+    expect(
+      computeFitZoom({ columns: 30, rows: 10, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
+    ).toBeCloseTo(0.8)
+  })
+
+  it('zooms out just enough to fit when the grid is taller than the box', () => {
+    expect(
+      computeFitZoom({ columns: 10, rows: 30, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
+    ).toBeCloseTo(0.8)
+  })
+
+  it('never zooms in past 100% for a grid smaller than the box', () => {
+    expect(
+      computeFitZoom({ columns: 2, rows: 2, maxWidth: 480, maxHeight: 480, cellSize: 20 }),
+    ).toBe(1)
   })
 })

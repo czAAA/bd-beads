@@ -142,29 +142,32 @@ describe('App', () => {
     expect(loadPatterns()).toHaveLength(0)
   })
 
-  it('lays out the app shell as a top bar, tool sidebar, canvas, and context panel', async () => {
+  it('lays out the app shell as a top bar, main panel, canvas, and panels above/below the canvas', async () => {
     const wrapper = mount(App)
 
     const topBar = wrapper.find('[data-testid="app-topbar"]')
-    const toolSidebar = wrapper.find('[data-testid="app-tool-sidebar"]')
+    const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
+    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     const canvas = wrapper.find('[data-testid="app-canvas"]')
-    const contextPanel = wrapper.find('[data-testid="app-context-panel"]')
+    const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
 
     expect(topBar.exists()).toBe(true)
-    expect(toolSidebar.exists()).toBe(true)
+    expect(mainPanel.exists()).toBe(true)
+    expect(aboveCanvas.exists()).toBe(true)
     expect(canvas.exists()).toBe(true)
-    expect(contextPanel.exists()).toBe(true)
+    expect(belowCanvas.exists()).toBe(true)
 
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
-    expect(canvas.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(contextPanel.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
+    expect(mainPanel.find('[data-testid="app-main-panel-placeholder"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
-    expect(contextPanel.find('[data-testid="pattern-list"]').exists()).toBe(true)
+    expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
   it('defaults to Russian on first visit with no saved language preference', () => {
