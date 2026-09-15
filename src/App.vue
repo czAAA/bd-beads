@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import BeadCatalog from './components/BeadCatalog.vue'
+import BeadQuantities from './components/BeadQuantities.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
+import PatternTransfer from './components/PatternTransfer.vue'
+import ZoomControls from './components/ZoomControls.vue'
+import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
+import { mergeColorBeadDefaults, type ColorBeadDefaults } from './domain/beadMapping'
+import {
+  loadColorBeadDefaults,
+  saveColorBeadDefault,
+  saveColorBeadDefaults,
+} from './domain/beadMappingStorage'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import { findPaletteColor } from './domain/palette'
 import {
@@ -14,8 +24,11 @@ import {
   fillArea,
   mirrorPattern,
   mostRecentlyUpdated,
+  moveToRow,
   paintCell,
   restoreGrid,
+  setColorBeadOverride,
+  setRowProgressEnabled,
   summarizePattern,
   type CreatePatternInput,
   type Grid,
@@ -36,6 +49,11 @@ const activePattern = computed(() =>
 
 const customBeads = ref<Bead[]>(loadCustomBeads())
 const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
+
+/** Which Bead each Palette color means by default, across every Pattern (ADR 0002). */
+const colorBeadDefaults = ref(loadColorBeadDefaults())
+
+const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(() => activePattern.value)
 
 const selectedColorId = ref<string | undefined>()
 const activeTool = ref<'paint' | 'fill'>('paint')
@@ -126,6 +144,45 @@ function onApplyMirror() {
   }
 
   commitGridChange(pattern, mirrorPattern(pattern, mirrorAxes.value))
+}
+
+function onToggleRowProgress(enabled: boolean) {
+  const pattern = activePattern.value
+  if (pattern) {
+    replaceActivePattern(setRowProgressEnabled(pattern, enabled))
+  }
+}
+
+/** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */
+function onMoveRow(delta: number) {
+  const pattern = activePattern.value
+  if (pattern) {
+    replaceActivePattern(moveToRow(pattern, pattern.rowProgress.currentRow + delta))
+  }
+}
+
+function onSetDefaultBead(colorId: string, beadId: string | null) {
+  saveColorBeadDefault(colorId, beadId)
+  colorBeadDefaults.value = loadColorBeadDefaults()
+}
+
+function onSetOverrideBead(colorId: string, beadId: string | null) {
+  const pattern = activePattern.value
+  if (pattern) {
+    replaceActivePattern(setColorBeadOverride(pattern, colorId, beadId))
+  }
+}
+
+function onImportPatterns(imported: Pattern[], importedDefaults: ColorBeadDefaults) {
+  imported.forEach(savePattern)
+  patterns.value = [...patterns.value, ...imported]
+
+  const merged = mergeColorBeadDefaults(colorBeadDefaults.value, importedDefaults)
+  saveColorBeadDefaults(merged)
+  colorBeadDefaults.value = merged
+
+  // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
+  activePatternId.value ??= mostRecentlyUpdated(imported)?.id
 }
 
 function onAddBead(bead: Bead) {
@@ -231,6 +288,44 @@ function onRemoveBead(id: string) {
           >
             {{ t.mirror.applyButton }}
           </button>
+
+          <h2>{{ t.rowProgress.heading }}</h2>
+          <label>
+            <input
+              type="checkbox"
+              data-testid="row-progress-enabled"
+              :checked="activePattern.rowProgress.enabled"
+              @change="onToggleRowProgress(($event.target as HTMLInputElement).checked)"
+            />
+            {{ t.rowProgress.enabledLabel }}
+          </label>
+          <p class="row-progress__position" data-testid="row-progress-position">
+            {{ t.rowProgress.positionLabel }}
+            {{ activePattern.rowProgress.currentRow + 1 }} / {{ activePattern.rows }}
+          </p>
+          <div class="row-progress__steps">
+            <button
+              type="button"
+              data-testid="row-progress-previous"
+              :disabled="
+                !activePattern.rowProgress.enabled || activePattern.rowProgress.currentRow === 0
+              "
+              @click="onMoveRow(-1)"
+            >
+              {{ t.rowProgress.previousButton }}
+            </button>
+            <button
+              type="button"
+              data-testid="row-progress-next"
+              :disabled="
+                !activePattern.rowProgress.enabled ||
+                activePattern.rowProgress.currentRow === activePattern.rows - 1
+              "
+              @click="onMoveRow(1)"
+            >
+              {{ t.rowProgress.nextButton }}
+            </button>
+          </div>
         </template>
       </aside>
 
@@ -244,10 +339,22 @@ function onRemoveBead(id: string) {
           >
             {{ t.patterns.newPatternButton }}
           </button>
+          <ZoomControls
+            v-if="activePattern"
+            :zoom-percent="zoomPercent"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @reset="resetZoom"
+          />
         </div>
 
         <div class="app-shell__canvas" data-testid="app-canvas">
-          <PatternCanvas v-if="activePattern" :pattern="activePattern" @cell-click="onCellClick" />
+          <PatternCanvas
+            v-if="activePattern"
+            :pattern="activePattern"
+            :zoom="zoom"
+            @cell-click="onCellClick"
+          />
           <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
             {{ t.shell.canvasPlaceholder }}
           </p>
@@ -259,6 +366,19 @@ function onRemoveBead(id: string) {
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
             @remove="onRemovePattern"
+          />
+          <BeadQuantities
+            :pattern="activePattern"
+            :beads="beads"
+            :defaults="colorBeadDefaults"
+            @set-default="onSetDefaultBead"
+            @set-override="onSetOverrideBead"
+          />
+          <PatternTransfer
+            :pattern="activePattern"
+            :patterns="patterns"
+            :color-bead-defaults="colorBeadDefaults"
+            @import="onImportPatterns"
           />
           <BeadCatalog
             :seeded-beads="BEAD_CATALOG"
@@ -317,10 +437,15 @@ function onRemoveBead(id: string) {
   margin-top: 0;
 }
 
+/* With the frame moved onto the canvas box, the empty-canvas message carries its own so the panel still reads as a box. */
 .app-shell__placeholder {
   margin: 0;
+  padding: 16px 24px;
   color: var(--color-ink);
   opacity: 0.5;
+  background: var(--color-paper-solid);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
 }
 
 .tool-picker {
@@ -329,9 +454,11 @@ function onRemoveBead(id: string) {
   margin-bottom: 16px;
 }
 
-.tool-picker__button--selected {
-  background: var(--color-wedgewood);
-  color: var(--color-wedgewood-ink);
+/* The default button is already wedgewood, so the selected tool reads as ink-on-paper instead. */
+.tool-picker__button--selected,
+.tool-picker__button--selected:hover:not(:disabled) {
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 
 .mirror-axes {
@@ -350,16 +477,30 @@ function onRemoveBead(id: string) {
 
 .app-shell__above-canvas {
   display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
+.row-progress__position {
+  margin: 8px 0;
+}
+
+.row-progress__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/*
+ * The canvas area only centres the canvas box. The frame belongs to the box itself (see PatternCanvas), so it
+ * follows the open Pattern's shape instead of stretching to fill this panel (ticket 18).
+ */
 .app-shell__canvas {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
 }
+
 </style>
