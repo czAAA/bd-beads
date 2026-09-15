@@ -10,7 +10,7 @@ Issues are tracked as markdown files under `.scratch/`. See `docs/agents/issue-t
 
 ### Triage labels
 
-Default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+Default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, `done`. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

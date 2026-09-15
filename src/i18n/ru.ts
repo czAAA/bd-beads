@@ -34,5 +34,6 @@ export const ru: Translations = {
   },
   shell: {
     mainPanelPlaceholder: 'Инструменты — скоро',
+    canvasPlaceholder: 'Схема пока не открыта',
   },
 }

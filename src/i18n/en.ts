@@ -32,5 +32,6 @@ export const en: Translations = {
   },
   shell: {
     mainPanelPlaceholder: 'Tools — coming soon',
+    canvasPlaceholder: 'No Pattern open yet',
   },
 }
