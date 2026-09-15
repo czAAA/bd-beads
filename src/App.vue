@@ -10,9 +10,10 @@ import {
   createPattern,
   mostRecentlyUpdated,
   paintCell,
+  restoreGrid,
   summarizePattern,
-  type Cell,
   type CreatePatternInput,
+  type Grid,
   type Pattern,
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
@@ -29,7 +30,7 @@ const activePattern = computed(() =>
 
 const selectedColorId = ref<string | undefined>()
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
-const undoStack = ref<Cell[][][]>([])
+const undoStack = ref<Grid[]>([])
 
 watch(activePatternId, () => {
   undoStack.value = []
@@ -86,7 +87,7 @@ function onUndo() {
     return
   }
 
-  replaceActivePattern({ ...pattern, grid: previousGrid, updatedAt: Date.now() })
+  replaceActivePattern(restoreGrid(pattern, previousGrid))
 }
 </script>
 

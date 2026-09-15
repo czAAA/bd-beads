@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createPattern, mostRecentlyUpdated, paintCell, summarizePattern } from './pattern'
+import { createPattern, mostRecentlyUpdated, paintCell, restoreGrid, summarizePattern } from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -176,6 +176,23 @@ describe('paintCell', () => {
     const painted = paintCell(pattern, 0, 0, '#e63746')
 
     expect(painted.updatedAt).toBeGreaterThan(0)
+  })
+})
+
+describe('restoreGrid', () => {
+  it('swaps in the given grid and bumps updatedAt, without mutating the original pattern', () => {
+    const pattern = { ...createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    }), updatedAt: 0 }
+    const snapshot = paintCell(pattern, 0, 0, '#e63746').grid
+
+    const restored = restoreGrid(pattern, snapshot)
+
+    expect(restored.grid).toBe(snapshot)
+    expect(restored.updatedAt).toBeGreaterThan(0)
+    expect(pattern.grid[0]![0]!.color).toBeNull()
   })
 })
 
