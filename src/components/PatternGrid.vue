@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { CELL_SIZE_PX, rowOffsetPx } from '../domain/grid'
+import { CELL_SIZE_PX, rowHeightPx, rowOffsetPx } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
 defineProps<{ pattern: Pattern }>()
+
+/** Rows after the first pull up to sit rowHeightPx apart instead of a full cell apart; 0 for techniques that stack at full height. */
+function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number {
+  return rowIndex === 0 ? 0 : rowHeightPx(technique) - CELL_SIZE_PX
+}
 </script>
 
 <template>
@@ -12,7 +17,10 @@ defineProps<{ pattern: Pattern }>()
       :key="rowIndex"
       class="pattern-grid__row"
       data-testid="grid-row"
-      :style="{ marginLeft: `${rowOffsetPx(pattern.technique, rowIndex)}px` }"
+      :style="{
+        marginLeft: `${rowOffsetPx(pattern.technique, rowIndex)}px`,
+        marginTop: `${rowOverlapPx(pattern.technique, rowIndex)}px`,
+      }"
     >
       <div
         v-for="(cell, columnIndex) in row"

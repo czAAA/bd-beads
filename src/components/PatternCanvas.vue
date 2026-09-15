@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { CELL_SIZE_PX, computeFitZoom, gridWidthPx } from '../domain/grid'
+import { computeFitZoom, gridHeightPx, gridWidthPx } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
 import PatternGrid from './PatternGrid.vue'
@@ -53,7 +53,9 @@ const zoomPercent = computed(() => Math.round(zoom.value * 100))
 const scaledWidth = computed(
   () => gridWidthPx(props.pattern.technique, props.pattern.columns) * zoom.value,
 )
-const scaledHeight = computed(() => props.pattern.rows * CELL_SIZE_PX * zoom.value)
+const scaledHeight = computed(
+  () => gridHeightPx(props.pattern.technique, props.pattern.rows) * zoom.value,
+)
 </script>
 
 <template>
