@@ -382,13 +382,15 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
-  it('does not paint a cell before a palette color is selected', async () => {
+  it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
+    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
+
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
@@ -835,17 +837,9 @@ describe('App hover preview', () => {
     expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(false)
   })
 
-  it('shows a neutral highlight instead of a color preview when nothing is selected', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
-
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mouseenter')
-
-    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="grid-cell"]')[5]!.classes()).toContain(
-      'pattern-grid__cell--preview-neutral',
-    )
-  })
+  // The neutral (no color selected) preview is PatternGrid's own concern and is covered directly in
+  // PatternGrid.test.ts; since ticket 27 made red App's default selection, nothing is never actually selected
+  // while a Pattern is open here, so there's no reachable App-level scenario left to exercise it through.
 
   it('also previews the mirrored counterpart cells when a mirror axis is on', async () => {
     const wrapper = mount(App)

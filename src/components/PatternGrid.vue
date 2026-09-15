@@ -117,7 +117,16 @@ function rowProgressClass(rowIndex: number): string | null {
   position: relative;
   box-sizing: border-box;
   border: 1px solid var(--color-paper);
-  background-color: var(--color-paper-solid);
+  /*
+   * A dimmed grey rather than plain white/paper (ticket 27), so an untouched cell reads as "nothing painted here
+   * yet" instead of looking indistinguishable from a blank canvas. Mixed from --color-ink rather than reusing the
+   * Palette's own grey swatch (#9aa0a6, domain/palette.ts) — that's a paint color a user can actually pick, and
+   * doubling it as the empty-cell indicator would make an intentionally-grey bead invisible from an unpainted one.
+   * At full opacity it also stays clearly apart from a finished row's dimming (.pattern-grid__row--done below,
+   * opacity 0.35 + grayscale): a done row's cells — painted or still empty — fade well past this tint, so "not yet
+   * touched" and "already woven" never look the same.
+   */
+  background-color: color-mix(in srgb, var(--color-ink) 25%, var(--color-paper-solid));
   cursor: pointer;
 }
 
