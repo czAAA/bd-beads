@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import {
-  CANVAS_MAX_PX,
-  canvasContentHeightPx,
-  canvasContentWidthPx,
-  type GridPosition,
-} from '../domain/grid'
+import { canvasContentHeightPx, canvasContentWidthPx, type GridPosition } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import PatternGrid from './PatternGrid.vue'
 import PatternRuler from './PatternRuler.vue'
@@ -26,8 +21,10 @@ const emit = defineEmits<{
 }>()
 
 /**
- * The box hugs the Pattern: it's exactly as big as the zoomed Pattern and its rulers, until that would outgrow the
- * screen-bounded maximum, at which point the box stops there and scrolls (ticket 18).
+ * The box hugs the Pattern: it's exactly as big as the zoomed Pattern and its rulers (ticket 18), with no cap of its
+ * own (ticket 27) — the zoom passed in is already fit to the real canvas area upstream (see usePatternZoom), so at
+ * the fit level this is already within the available space. Manually zooming in past that can still outgrow the
+ * canvas area; the scrollbar for that lives one level up, on the canvas area itself (ticket 28), not here.
  */
 const contentWidth = computed(() =>
   canvasContentWidthPx(props.pattern.technique, props.pattern.columns, props.zoom),
@@ -36,45 +33,38 @@ const contentHeight = computed(() =>
   canvasContentHeightPx(props.pattern.technique, props.pattern.rows, props.zoom),
 )
 
-const boxStyle = computed(() => ({
-  width: `${Math.min(CANVAS_MAX_PX, contentWidth.value)}px`,
-  height: `${Math.min(CANVAS_MAX_PX, contentHeight.value)}px`,
-}))
-
-/** The scaled content has no layout size of its own (transforms don't reflow), so the frame states it for the scrollbars. */
-const frameStyle = computed(() => ({
+/** The scaled content has no layout size of its own (transforms don't reflow), so the box states it explicitly — both for its own size and so an ancestor that scrolls can tell it's grown past the available space. */
+const contentStyle = computed(() => ({
   width: `${contentWidth.value}px`,
   height: `${contentHeight.value}px`,
 }))
 </script>
 
 <template>
-  <div class="pattern-canvas" data-testid="pattern-canvas-viewport" :style="boxStyle">
-    <div class="pattern-canvas__frame" :style="frameStyle">
-      <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
-        <div class="pattern-canvas__ruled">
-          <span />
-          <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" />
-          <span />
+  <div class="pattern-canvas" data-testid="pattern-canvas-viewport" :style="contentStyle">
+    <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
+      <div class="pattern-canvas__ruled">
+        <span />
+        <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" />
+        <span />
 
-          <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" />
-          <PatternGrid
-            :pattern="pattern"
-            :preview-cells="previewCells"
-            :preview-color="previewColor"
-            @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
-            @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
-            @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
-            @cell-secondary-move="(row, column) => emit('cell-secondary-move', row, column)"
-            @cell-hover="(row, column) => emit('cell-hover', row, column)"
-            @hover-end="emit('hover-end')"
-          />
-          <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" />
+        <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" />
+        <PatternGrid
+          :pattern="pattern"
+          :preview-cells="previewCells"
+          :preview-color="previewColor"
+          @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
+          @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
+          @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
+          @cell-secondary-move="(row, column) => emit('cell-secondary-move', row, column)"
+          @cell-hover="(row, column) => emit('cell-hover', row, column)"
+          @hover-end="emit('hover-end')"
+        />
+        <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" />
 
-          <span />
-          <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" />
-          <span />
-        </div>
+        <span />
+        <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" />
+        <span />
       </div>
     </div>
   </div>
@@ -82,18 +72,20 @@ const frameStyle = computed(() => ({
 
 <style scoped>
 /*
- * The box is the bounded notepad page: its frame is sized to the Pattern by boxStyle, so a wide-and-short or
- * narrow-and-tall Pattern gets a frame its own shape rather than sitting in a fixed square (ticket 18).
+ * The box is the bounded notepad page: its size is set to the Pattern by contentStyle, so a wide-and-short or
+ * narrow-and-tall Pattern gets a box its own shape rather than sitting in a fixed square (ticket 18). It's no
+ * longer a scroll container itself (ticket 28) — overflow:hidden here is purely to clip the scaled content's own
+ * paint (rounding at odd zoom levels can bleed a fraction of a pixel past this box's edge). If a manual zoom-in
+ * makes this box bigger than the canvas area around it, that area scrolls horizontally to reach the rest of it
+ * (App.vue's .app-shell__canvas); nothing anywhere clips or scrolls vertically — a tall Pattern just grows this
+ * box, and the page, taller, and the browser's own scrollbar reaches the rest of it.
  */
 .pattern-canvas {
-  overflow: auto;
+  overflow: hidden;
+  margin: 0 auto;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
-}
-
-.pattern-canvas__frame {
-  overflow: hidden;
 }
 
 .pattern-canvas__scaled {
