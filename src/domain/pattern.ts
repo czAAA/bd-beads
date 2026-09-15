@@ -1,4 +1,5 @@
 import { beadLabel } from './beads'
+import { withColorBeadMapping } from './beadMapping'
 import { findBead } from './beadStorage'
 import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
 
@@ -121,10 +122,8 @@ export function setColorBeadOverride(
   colorId: string,
   beadId: string | null,
 ): Pattern {
-  const { [colorId]: _removed, ...rest } = pattern.colorBeadOverrides
-
   return touch(pattern, {
-    colorBeadOverrides: beadId === null ? rest : { ...rest, [colorId]: beadId },
+    colorBeadOverrides: withColorBeadMapping(pattern.colorBeadOverrides, colorId, beadId),
   })
 }
 

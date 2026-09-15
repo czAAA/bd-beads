@@ -58,9 +58,10 @@ export const ru: Translations = {
   },
   quantities: {
     heading: 'Нужно бисера',
-    emptyMessage: 'Закрасьте ячейки, чтобы увидеть, сколько нужно бисера',
+    noPatternMessage: 'Откройте схему, чтобы увидеть, сколько нужно бисера',
     colorHeading: 'Цвет',
     countHeading: 'Бисеринок',
+    resolvedBeadHeading: 'Используемая бисеринка',
     defaultBeadHeading: 'Бисеринка по умолчанию',
     patternBeadHeading: 'В этой схеме',
     unmappedOption: 'Без бисеринки',

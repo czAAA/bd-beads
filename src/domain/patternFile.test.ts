@@ -34,23 +34,33 @@ function decoratedPattern(): Pattern {
   return moveToRow(setRowProgressEnabled(mapped, true), 4)
 }
 
+const DEFAULTS = { red: 'toho-round-11-0' }
+
 describe('single-Pattern roundtrip', () => {
   it('restores an identical Pattern from its exported file', () => {
     const pattern = decoratedPattern()
 
-    expect(parsePatternsFile(serializePattern(pattern))).toEqual([pattern])
+    expect(parsePatternsFile(serializePattern(pattern, {})).patterns).toEqual([pattern])
   })
 
   it('carries the grid, technique, bead, mappings and row progress through the file', () => {
     const pattern = decoratedPattern()
 
-    const [restored] = parsePatternsFile(serializePattern(pattern))
+    const [restored] = parsePatternsFile(serializePattern(pattern, DEFAULTS)).patterns
 
     expect(restored!.technique).toBe('peyote')
     expect(restored!.beadId).toBe(cubeBead.id)
     expect(restored!.grid[2]![3]!.color).toBe('#e63746')
     expect(restored!.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
     expect(restored!.rowProgress).toEqual({ enabled: true, currentRow: 4 })
+  })
+
+  it("carries the device's global color-to-bead defaults, which live outside any Pattern", () => {
+    const pattern = decoratedPattern()
+
+    expect(parsePatternsFile(serializePattern(pattern, DEFAULTS)).colorBeadDefaults).toEqual(
+      DEFAULTS,
+    )
   })
 
   it('names the file after the Pattern, without characters a filesystem would choke on', () => {
@@ -68,7 +78,10 @@ describe('whole-library roundtrip', () => {
   it('restores every saved Pattern from one exported file', () => {
     const library = [decoratedPattern(), makePattern('Owl')]
 
-    expect(parsePatternsFile(serializeLibrary(library))).toEqual(library)
+    expect(parsePatternsFile(serializeLibrary(library, DEFAULTS))).toEqual({
+      patterns: library,
+      colorBeadDefaults: DEFAULTS,
+    })
   })
 
   it('exports to one predictable file name', () => {
@@ -78,7 +91,7 @@ describe('whole-library roundtrip', () => {
   it('reads a single-Pattern file too, so one import button handles both', () => {
     const pattern = makePattern()
 
-    expect(parsePatternsFile(serializePattern(pattern))).toEqual([pattern])
+    expect(parsePatternsFile(serializePattern(pattern, {})).patterns).toEqual([pattern])
   })
 })
 
@@ -92,7 +105,7 @@ describe('parsePatternsFile', () => {
   })
 
   it('rejects a file written by a newer, unknown version of the format', () => {
-    const tampered = JSON.parse(serializePattern(makePattern()))
+    const tampered = JSON.parse(serializePattern(makePattern(), {}))
     tampered.version = 99
 
     expect(() => parsePatternsFile(JSON.stringify(tampered))).toThrow()
@@ -105,14 +118,16 @@ describe('parsePatternsFile', () => {
   })
 
   it('backfills fields a Pattern exported by an older version would be missing', () => {
-    const file = JSON.parse(serializePattern(makePattern()))
+    const file = JSON.parse(serializePattern(makePattern(), {}))
     delete file.patterns[0].rowProgress
     delete file.patterns[0].colorBeadOverrides
+    delete file.colorBeadDefaults
 
-    const [restored] = parsePatternsFile(JSON.stringify(file))
+    const { patterns, colorBeadDefaults } = parsePatternsFile(JSON.stringify(file))
 
-    expect(restored!.rowProgress).toEqual({ enabled: false, currentRow: 0 })
-    expect(restored!.colorBeadOverrides).toEqual({})
+    expect(patterns[0]!.rowProgress).toEqual({ enabled: false, currentRow: 0 })
+    expect(patterns[0]!.colorBeadOverrides).toEqual({})
+    expect(colorBeadDefaults).toEqual({})
   })
 })
 

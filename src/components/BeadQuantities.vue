@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { beadLabel, type Bead } from '../domain/beads'
-import { computeColorQuantities, type ColorBeadDefaults } from '../domain/beadMapping'
+import { listColorMappings, resolveBeadId, type ColorBeadDefaults } from '../domain/beadMapping'
 import type { Pattern } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
 
 const props = defineProps<{
-  pattern: Pattern
+  /** The Pattern whose bead counts are shown; without one the table is just the color-to-bead mapping. */
+  pattern?: Pattern
   beads: Bead[]
   /** The universal color-to-bead mapping every Pattern starts from (ADR 0002). */
   defaults: ColorBeadDefaults
@@ -21,7 +22,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const quantities = computed(() => computeColorQuantities(props.pattern))
+const quantities = computed(() => listColorMappings(props.pattern))
+
+const overrides = computed(() => props.pattern?.colorBeadOverrides ?? {})
+
+/** The Bead a color actually resolves to here — the Pattern's override if it has one, else the global default. */
+function beadFor(colorId: string | null): Bead | undefined {
+  const beadId = resolveBeadId(colorId, props.defaults, overrides.value)
+  return props.beads.find((bead) => bead.id === beadId)
+}
 
 /** A <select> can only carry strings, so "mapped to nothing" travels as the empty option's value. */
 function toBeadId(value: string): string | null {
@@ -33,17 +42,18 @@ function toBeadId(value: string): string | null {
   <section class="bead-quantities" data-testid="bead-quantities">
     <h2>{{ t.quantities.heading }}</h2>
 
-    <p v-if="quantities.length === 0" data-testid="quantities-empty">
-      {{ t.quantities.emptyMessage }}
+    <p v-if="!pattern" data-testid="quantities-no-pattern">
+      {{ t.quantities.noPatternMessage }}
     </p>
 
-    <table v-else>
+    <table>
       <thead>
         <tr>
           <th>{{ t.quantities.colorHeading }}</th>
           <th>{{ t.quantities.countHeading }}</th>
+          <th>{{ t.quantities.resolvedBeadHeading }}</th>
           <th>{{ t.quantities.defaultBeadHeading }}</th>
-          <th>{{ t.quantities.patternBeadHeading }}</th>
+          <th v-if="pattern">{{ t.quantities.patternBeadHeading }}</th>
         </tr>
       </thead>
       <tbody>
@@ -53,6 +63,9 @@ function toBeadId(value: string): string | null {
           </td>
           <td :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
             {{ quantity.count }}
+          </td>
+          <td :data-testid="`quantity-bead-${quantity.colorId ?? quantity.hex}`">
+            {{ beadFor(quantity.colorId) ? beadLabel(beadFor(quantity.colorId)!) : '—' }}
           </td>
           <template v-if="quantity.colorId !== null">
             <td>
@@ -74,11 +87,11 @@ function toBeadId(value: string): string | null {
                 </option>
               </select>
             </td>
-            <td>
+            <td v-if="pattern">
               <select
                 :data-testid="`quantity-override-${quantity.colorId}`"
                 :aria-label="`${t.quantities.patternBeadHeading}: ${quantity.hex}`"
-                :value="pattern.colorBeadOverrides[quantity.colorId] ?? ''"
+                :value="overrides[quantity.colorId] ?? ''"
                 @change="
                   emit(
                     'set-override',
@@ -94,7 +107,7 @@ function toBeadId(value: string): string | null {
               </select>
             </td>
           </template>
-          <td v-else colspan="2" data-testid="quantity-unknown-color">
+          <td v-else :colspan="pattern ? 2 : 1" data-testid="quantity-unknown-color">
             {{ t.quantities.unknownColorLabel }}
           </td>
         </tr>
