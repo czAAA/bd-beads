@@ -32,5 +32,6 @@ export interface Translations {
   }
   shell: {
     mainPanelPlaceholder: string
+    canvasPlaceholder: string
   }
 }

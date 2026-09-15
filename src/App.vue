@@ -85,6 +85,9 @@ function onNewPattern() {
 
         <div class="app-shell__canvas" data-testid="app-canvas">
           <PatternCanvas v-if="activePattern" :pattern="activePattern" />
+          <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
+            {{ t.shell.canvasPlaceholder }}
+          </p>
         </div>
 
         <div class="app-shell__below-canvas" data-testid="app-below-canvas">

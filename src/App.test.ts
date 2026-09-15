@@ -161,12 +161,14 @@ describe('App', () => {
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="app-main-panel-placeholder"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
