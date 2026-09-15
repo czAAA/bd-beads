@@ -59,10 +59,53 @@ describe('createPattern', () => {
       }),
     ).toThrow()
   })
+
+  it('defaults the name to the bead label when none is given', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+    })
+
+    expect(pattern.name).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('defaults the name to the bead label when given a blank name', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      name: '   ',
+    })
+
+    expect(pattern.name).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('uses the given name when one is provided', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      name: '  My Bracelet  ',
+    })
+
+    expect(pattern.name).toBe('My Bracelet')
+  })
 })
 
 describe('summarizePattern', () => {
-  it('describes the pattern by its bead and grid dimensions', () => {
+  it('describes the pattern by its name and grid dimensions', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+      name: 'My Bracelet',
+    })
+
+    expect(summarizePattern(pattern)).toBe('My Bracelet · 10×20')
+  })
+
+  it('falls back to the bead label when the pattern has no custom name', () => {
     const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,

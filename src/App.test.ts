@@ -27,6 +27,20 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="grid-row"]').exists()).toBe(false)
   })
 
+  it('disables the new pattern button until at least one pattern exists', async () => {
+    const wrapper = mount(App)
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]').element.disabled,
+    ).toBe(true)
+
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]').element.disabled,
+    ).toBe(false)
+  })
+
   it('creates a pattern, renders its grid, and autosaves it without an explicit save action', async () => {
     const wrapper = mount(App)
 
@@ -126,6 +140,31 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="pattern-list"]').exists()).toBe(false)
     expect(loadPatterns()).toHaveLength(0)
+  })
+
+  it('lays out the app shell as a top bar, tool sidebar, canvas, and context panel', async () => {
+    const wrapper = mount(App)
+
+    const topBar = wrapper.find('[data-testid="app-topbar"]')
+    const toolSidebar = wrapper.find('[data-testid="app-tool-sidebar"]')
+    const canvas = wrapper.find('[data-testid="app-canvas"]')
+    const contextPanel = wrapper.find('[data-testid="app-context-panel"]')
+
+    expect(topBar.exists()).toBe(true)
+    expect(toolSidebar.exists()).toBe(true)
+    expect(canvas.exists()).toBe(true)
+    expect(contextPanel.exists()).toBe(true)
+
+    expect(topBar.find('h1').exists()).toBe(true)
+    expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(contextPanel.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
+    expect(contextPanel.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
   it('defaults to Russian on first visit with no saved language preference', () => {

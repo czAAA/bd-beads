@@ -66,4 +66,11 @@ describe('patternStorage', () => {
 
     expect(loadPatterns()).toEqual([])
   })
+
+  it('backfills a name from the bead label for patterns saved before names existed', () => {
+    const { name: _name, ...legacyPattern } = makePattern()
+    localStorage.setItem('bd-beads:patterns', JSON.stringify([legacyPattern]))
+
+    expect(loadPatterns()[0]!.name).toBe('TOHO Cube 1.5mm')
+  })
 })
