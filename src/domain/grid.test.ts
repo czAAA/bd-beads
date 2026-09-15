@@ -17,6 +17,7 @@ const cubeBead: Bead = {
   name: 'Cube',
   size: '1.5mm',
   formFactor: 'cube',
+  color: null,
   widthMm: 1.5,
   heightMm: 1.5,
 }
@@ -27,6 +28,7 @@ const delicaBead: Bead = {
   name: 'Delica',
   size: '11/0',
   formFactor: 'cylinder',
+  color: null,
   widthMm: 1.6,
   heightMm: 1.3,
 }

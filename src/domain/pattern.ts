@@ -1,4 +1,5 @@
-import { beadLabel, findBead } from './beads'
+import { beadLabel } from './beads'
+import { findBead } from './beadStorage'
 import { computeGridDimensions, neighborsOf, toMillimeters, type SizeUnit, type Technique } from './grid'
 
 export type { Technique } from './grid'
@@ -38,6 +39,7 @@ function createEmptyGrid(columns: number, rows: number): Grid {
 }
 
 export function createPattern(input: CreatePatternInput): Pattern {
+  // findBead checks custom beads (ticket 10) as well as the seeded catalog, so a Pattern can be created with either.
   const bead = findBead(input.beadId)
   if (!bead) {
     throw new Error(`Unknown bead id: ${input.beadId}`)
