@@ -48,7 +48,7 @@ describe('BeadCatalog', () => {
     await wrapper.find('[data-testid="catalog-form-factor-select"]').setValue('cube')
     await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
     await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.find('[data-testid="catalog-color-input"]').setValue('#123456')
     await wrapper.find('form').trigger('submit')
 
     const events = wrapper.emitted('add')
@@ -58,10 +58,24 @@ describe('BeadCatalog', () => {
       name: 'Fancy',
       size: '8/0',
       formFactor: 'cube',
-      color: '#e63746',
+      color: '#123456',
       widthMm: 3,
       heightMm: 3,
     })
+  })
+
+  it('defaults the color to a sensible value without requiring one to be picked', async () => {
+    const wrapper = mount(BeadCatalog, { props: { seededBeads: BEAD_CATALOG, customBeads: [] } })
+
+    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
+    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
+    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
+    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
+    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
+    await wrapper.find('form').trigger('submit')
+
+    const events = wrapper.emitted('add')
+    expect(events![0]![0]).toMatchObject({ color: expect.any(String) })
   })
 
   it('does not emit add while the form is incomplete', async () => {
