@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 14
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The canvas box has a fixed maximum size that always fits within the visible viewport, independent of the Pattern's grid size
 - [ ] Opening a Pattern whose grid is larger than the box's natural size auto-fits it (zoomed out to show the whole grid); a Pattern that already fits opens at 100%
