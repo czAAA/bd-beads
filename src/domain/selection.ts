@@ -1,4 +1,4 @@
-import type { GridDimensions, GridPosition } from './grid'
+import { positionKey, type GridDimensions, type GridPosition } from './grid'
 import { restoreGrid, type Pattern } from './pattern'
 
 /**
@@ -121,7 +121,7 @@ export function pastedCells(
  */
 export function pasteBlock(pattern: Pattern, block: CopiedBlock, at: GridPosition): Pattern {
   const cells = pastedCells(pattern, block, at)
-  const colorsByPosition = new Map(cells.map((cell) => [`${cell.row},${cell.column}`, cell.color]))
+  const colorsByPosition = new Map(cells.map((cell) => [positionKey(cell), cell.color]))
 
   const changed = cells.some(({ row, column, color }) => pattern.grid[row]![column]!.color !== color)
   if (!changed) {
@@ -130,7 +130,7 @@ export function pasteBlock(pattern: Pattern, block: CopiedBlock, at: GridPositio
 
   const grid = pattern.grid.map((gridRow, rowIndex) =>
     gridRow.map((cell, columnIndex) => {
-      const color = colorsByPosition.get(`${rowIndex},${columnIndex}`)
+      const color = colorsByPosition.get(positionKey({ row: rowIndex, column: columnIndex }))
       return color ? { color } : cell
     }),
   )

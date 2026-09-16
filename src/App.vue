@@ -242,6 +242,8 @@ function beginSelectPress(pattern: Pattern, row: number, column: number) {
   selectPress.value = { anchor: { row, column }, moved: false }
 
   // With nothing copied, the press can only be the start of a selection, so the marquee appears from the first cell.
+  // With something copied the gesture is claimed by Paste instead, which is why re-selecting a single cell then
+  // takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it means.
   if (!copiedBlock.value) {
     selection.value = selectionBetween(pattern, { row, column }, { row, column })
   }
