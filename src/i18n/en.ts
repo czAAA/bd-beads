@@ -37,21 +37,18 @@ export const en: Translations = {
     canvasPlaceholder: 'No Pattern open yet',
   },
   palette: {
-    heading: 'Palette',
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',
     undoButton: 'Undo',
     rotateButton: 'Rotate',
   },
   tools: {
-    heading: 'Tool',
     paintLabel: 'Paint',
     fillLabel: 'Fill',
     selectLabel: 'Select',
     copyButton: 'Copy',
   },
   rowProgress: {
-    heading: 'Row progress',
     enabledLabel: 'Show row progress',
     directionButton: 'Turn row direction',
     positionLabel: 'Row',
@@ -79,11 +76,19 @@ export const en: Translations = {
     importErrorLabel: 'Could not import that file',
   },
   mirror: {
-    heading: 'Mirror',
     horizontalLabel: 'Horizontal',
     verticalLabel: 'Vertical',
     mirrorCurrentHorizontalButton: 'Mirror current (horizontal)',
     mirrorCurrentVerticalButton: 'Mirror current (vertical)',
+  },
+  toolbox: {
+    groups: {
+      tools: 'Tools',
+      colors: 'Colors',
+      edit: 'Edit',
+      mirror: 'Mirror',
+      rowProgress: 'Row progress',
+    },
   },
   catalog: {
     heading: 'Bead catalog',

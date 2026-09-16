@@ -180,10 +180,10 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
-    const toolStrip = wrapper.find('[data-testid="tool-strip"]')
+    const toolbox = wrapper.find('[data-testid="toolbox"]')
 
     expect(mainPanel.text()).toBe('')
-    expect(toolStrip.exists()).toBe(true)
+    expect(toolbox.exists()).toBe(true)
     for (const testId of [
       'tool-paint',
       'tool-fill',
@@ -192,7 +192,7 @@ describe('App', () => {
       'mirror-horizontal',
       'row-progress-enabled',
     ]) {
-      expect(toolStrip.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+      expect(toolbox.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
   })
 
@@ -867,10 +867,9 @@ describe('App', () => {
 })
 
 /*
- * Every control in the tool strip is an icon: no card heading, no button label, nothing but the row-progress
- * readout in text. The words survive as a hover/focus tooltip plus the screen-reader name, so the strip stays
- * compact — .tool-strip stretches every card in a row to the tallest one, so one wrapped label used to make the
- * whole row tall (tickets 29/30, then widened to the rest of the strip).
+ * Every control in the Toolbox is an icon: no button label, just each Tool group's own small title (ticket 40) and
+ * the row-progress readout as text. Button words survive as a hover/focus tooltip plus the screen-reader name, so
+ * the Toolbox stays compact.
  */
 describe('App tool strip icon buttons', () => {
   const iconButtons = [
@@ -929,28 +928,37 @@ describe('App tool strip icon buttons', () => {
     expect(new Set(glyphs).size).toBe(glyphs.length)
   })
 
-  it('leaves the row-progress readout as the strip\u2019s only text \u2014 every card heading and button label is now a tooltip', async () => {
+  it('leaves each Tool group\u2019s title and the row-progress readout as the Toolbox\u2019s only text \u2014 every button label is still just a tooltip', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const toolStrip = wrapper.find('[data-testid="tool-strip"]')
+    const toolbox = wrapper.find('[data-testid="toolbox"]')
+    const expectedWords = [
+      ru.toolbox.groups.tools,
+      ru.toolbox.groups.colors,
+      ru.toolbox.groups.edit,
+      ru.toolbox.groups.mirror,
+      ru.toolbox.groups.rowProgress,
+      wrapper.find('[data-testid="row-progress-position"]').text(),
+    ].join('')
 
-    expect(toolStrip.text().replace(/\s+/g, ' ').trim()).toBe(
-      wrapper.find('[data-testid="row-progress-position"]').text().replace(/\s+/g, ' ').trim(),
-    )
+    expect(toolbox.text().replace(/\s+/g, ' ').trim()).toBe(expectedWords.replace(/\s+/g, ' ').trim())
   })
 
-  it('names each card for screen readers, now that its heading is gone', async () => {
+  it('gives each of the five Tool groups its own visible title, in Tools/Colors/Edit/Mirror/Row progress order', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
-    const labels = wrapper.findAll('.tool-strip__card').map((card) => card.attributes('aria-label'))
+    const titles = wrapper.findAll('.tool-group__title').map((title) => title.text())
 
-    expect(labels).toContain(en.tools.heading)
-    expect(labels).toContain(en.palette.heading)
-    expect(labels).toContain(en.mirror.heading)
-    expect(labels).toContain(en.rowProgress.heading)
+    expect(titles).toEqual([
+      en.toolbox.groups.tools,
+      en.toolbox.groups.colors,
+      en.toolbox.groups.edit,
+      en.toolbox.groups.mirror,
+      en.toolbox.groups.rowProgress,
+    ])
   })
 
   it('shows which tool and which mirror axes are on, now that nothing is labelled in text', async () => {
