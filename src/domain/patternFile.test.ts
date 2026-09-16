@@ -52,7 +52,12 @@ describe('single-Pattern roundtrip', () => {
     expect(restored!.beadId).toBe(cubeBead.id)
     expect(restored!.grid[2]![3]!.color).toBe('#e63746')
     expect(restored!.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
-    expect(restored!.rowProgress).toEqual({ enabled: true, currentRow: 4 })
+    expect(restored!.rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 4,
+      currentColumn: 0,
+    })
   })
 
   it("carries the device's global color-to-bead defaults, which live outside any Pattern", () => {
@@ -125,7 +130,12 @@ describe('parsePatternsFile', () => {
 
     const { patterns, colorBeadDefaults } = parsePatternsFile(JSON.stringify(file))
 
-    expect(patterns[0]!.rowProgress).toEqual({ enabled: false, currentRow: 0 })
+    expect(patterns[0]!.rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
     expect(patterns[0]!.colorBeadOverrides).toEqual({})
     expect(colorBeadDefaults).toEqual({})
   })
