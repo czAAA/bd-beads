@@ -58,12 +58,11 @@ const colorBeadDefaults = ref(loadColorBeadDefaults())
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
 const canvasAreaEl = ref<HTMLElement | null>(null)
-const { width: canvasAreaWidth, height: canvasAreaHeight } = useElementSize(canvasAreaEl)
+const { width: canvasAreaWidth } = useElementSize(canvasAreaEl)
 
 const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
-  canvasAreaHeight,
 )
 
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */

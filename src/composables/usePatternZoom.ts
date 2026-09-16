@@ -12,16 +12,21 @@ function fitMaxPx(outerPx: number): number {
  * canvas area, and steps in and out within the usable range. Lives outside PatternCanvas because the controls sit in
  * the above-canvas panel while the zoom applies to the canvas (ADR 0004, ticket 18).
  *
- * availableWidth/availableHeight are the canvas area's live measured size (ticket 27's useElementSize, backed by
- * ResizeObserver) rather than a fixed constant, so the fit level tracks whatever room the real window actually has
- * instead of a guessed box size. Before the first measurement lands (briefly, on mount — see useElementSize) they
- * read 0; CANVAS_MAX_PX stands in for the unmeasured case so the Pattern doesn't flash in at a degenerate near-zero
- * zoom, and the fit re-runs (see the watch below) as soon as the real size arrives.
+ * availableWidth is the canvas area's live measured width (ticket 27's useElementSize, backed by ResizeObserver)
+ * rather than a fixed constant, so the fit level tracks whatever room the real window actually has instead of a
+ * guessed box size. Before the first measurement lands (briefly, on mount — see useElementSize) it reads 0;
+ * CANVAS_MAX_PX stands in for the unmeasured case so the Pattern doesn't flash in at a degenerate near-zero zoom,
+ * and the fit re-runs (see the watch below) as soon as the real size arrives.
+ *
+ * Height deliberately isn't part of this fit: the canvas box has no height cap of its own (see the "never trapped"
+ * comment on .app-shell__canvas in App.vue) and grows to whatever the Pattern needs, with the page scrolling past
+ * it. Measuring the box's own rendered height and feeding it back into the zoom that produced that height is
+ * circular — it would ratchet the zoom down every resize tick until it bottomed out at MIN_ZOOM instead of settling
+ * at 100% for an ordinary Pattern (ticket 27 shipped that bug unnoticed since it went untested in a real browser).
  */
 export function usePatternZoom(
   currentPattern: () => Pattern | undefined,
   availableWidth: Ref<number>,
-  availableHeight: Ref<number>,
 ) {
   function fitZoom(): number {
     const pattern = currentPattern()
@@ -34,7 +39,7 @@ export function usePatternZoom(
         columns: pattern.columns,
         rows: pattern.rows,
         maxWidth: fitMaxPx(availableWidth.value || CANVAS_MAX_PX),
-        maxHeight: fitMaxPx(availableHeight.value || CANVAS_MAX_PX),
+        maxHeight: Infinity,
         technique: pattern.technique,
       }),
     )
@@ -54,7 +59,7 @@ export function usePatternZoom(
     isAtFit.value = true
   })
 
-  watch([availableWidth, availableHeight], () => {
+  watch(availableWidth, () => {
     if (isAtFit.value) {
       zoom.value = fitZoom()
     }
