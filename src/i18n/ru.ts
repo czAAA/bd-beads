@@ -43,6 +43,7 @@ export const ru: Translations = {
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
+    rotateButton: 'Повернуть',
   },
   tools: {
     heading: 'Инструмент',

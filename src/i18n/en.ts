@@ -41,6 +41,7 @@ export const en: Translations = {
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',
     undoButton: 'Undo',
+    rotateButton: 'Rotate',
   },
   tools: {
     heading: 'Tool',

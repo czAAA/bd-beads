@@ -13,6 +13,7 @@ import {
   setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
+  toggleRotated,
   type Cell,
   type Pattern,
   type Technique,
@@ -144,6 +145,19 @@ describe('summarizePattern', () => {
 
     expect(summarizePattern(pattern)).toBe('TOHO Cube 1.5mm · 10×20')
   })
+
+  it('swaps the dimensions when the rotated view flag is on, describing how the Pattern currently looks', () => {
+    const pattern = toggleRotated(
+      createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 30, unit: 'mm' },
+        name: 'My Bracelet',
+      }),
+    )
+
+    expect(summarizePattern(pattern)).toBe('My Bracelet · 20×10')
+  })
 })
 
 describe('paintCell', () => {
@@ -210,6 +224,44 @@ describe('restoreGrid', () => {
     expect(restored.grid).toBe(snapshot)
     expect(restored.updatedAt).toBeGreaterThan(0)
     expect(pattern.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('toggleRotated', () => {
+  function makePattern() {
+    return createPattern({
+      technique: 'peyote',
+      beadId: cubeBead.id,
+      size: { width: 4.5, height: 3, unit: 'mm' },
+    })
+  }
+
+  it('flips the rotated flag without touching anything else — grid, dimensions, and technique all stay exactly as they were', () => {
+    const pattern = paintCell(makePattern(), 0, 0, '#e63746')
+
+    const rotated = toggleRotated(pattern)
+
+    expect(rotated.rotated).toBe(true)
+    expect(rotated.grid).toBe(pattern.grid)
+    expect(rotated.columns).toBe(pattern.columns)
+    expect(rotated.rows).toBe(pattern.rows)
+    expect(rotated.widthMm).toBe(pattern.widthMm)
+    expect(rotated.heightMm).toBe(pattern.heightMm)
+    expect(rotated.technique).toBe(pattern.technique)
+  })
+
+  it('toggles back off on a second call', () => {
+    const pattern = makePattern()
+
+    expect(toggleRotated(toggleRotated(pattern)).rotated).toBe(false)
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makePattern()
+
+    toggleRotated(pattern)
+
+    expect(pattern.rotated).toBe(false)
   })
 })
 
@@ -619,8 +671,13 @@ describe('setColorBeadOverride', () => {
 })
 
 describe('normalizePattern', () => {
-  it('backfills row progress and color overrides on a Pattern saved before they existed', () => {
-    const { rowProgress: _rowProgress, colorBeadOverrides: _overrides, ...legacy } = createPattern({
+  it('backfills row progress, color overrides, and the rotated view flag on a Pattern saved before they existed', () => {
+    const {
+      rowProgress: _rowProgress,
+      colorBeadOverrides: _overrides,
+      rotated: _rotated,
+      ...legacy
+    } = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
@@ -630,6 +687,7 @@ describe('normalizePattern', () => {
 
     expect(normalized.rowProgress).toEqual({ enabled: false, currentRow: 0 })
     expect(normalized.colorBeadOverrides).toEqual({})
+    expect(normalized.rotated).toBe(false)
   })
 
   it('clamps a row pointer that no longer fits the Pattern', () => {
