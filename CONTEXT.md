@@ -54,11 +54,11 @@ A symmetric-drawing aid for a Pattern: with a horizontal and/or vertical toggle 
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Selection** (RU: Выделение):
-A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and switching or creating a Pattern clears it. It marks out cells, it does not change them — selecting never paints anything.
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, or switching or creating a Pattern, clears it. It marks out cells, it does not change them — selecting never paints anything.
 _Avoid_: region, highlighted area, selected block
 
 **Copy** (RU: Копировать):
-Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists. The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, or the user cancelling out of Paste).
+Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists. The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, the user cancelling out of Paste, or the Select tool being left — nothing outlives the marquee it came from).
 _Avoid_: duplicate, clone
 
 **Paste** (RU: Вставить):

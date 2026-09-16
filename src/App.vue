@@ -159,6 +159,16 @@ function onSelectColor(colorId: string) {
 }
 
 function onSelectTool(tool: Tool) {
+  /*
+   * Leaving Select forgets what it was holding. The marquee is noise once you're painting rather than selecting,
+   * and a clipboard that outlived its marquee would be invisible state: coming back to Select and clicking would
+   * stamp a block out of nowhere. Re-choosing Select while it's already active leaves both alone.
+   */
+  if (tool !== 'select') {
+    selection.value = undefined
+    cancelPaste()
+  }
+
   activeTool.value = tool
 }
 
