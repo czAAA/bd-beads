@@ -53,6 +53,7 @@ export const en: Translations = {
   rowProgress: {
     heading: 'Row progress',
     enabledLabel: 'Show row progress',
+    directionButton: 'Turn row direction',
     positionLabel: 'Row',
     previousButton: 'Previous row',
     nextButton: 'Row done',

@@ -5,6 +5,7 @@ import {
   createPattern,
   moveToRow,
   setRowProgressEnabled,
+  toggleRowDirection,
   type Pattern,
 } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -276,6 +277,42 @@ describe('PatternGrid row progress', () => {
 
     expect(classes.flat()).not.toContain('pattern-grid__row--done')
     expect(classes[0]).toContain('pattern-grid__row--current')
+  })
+
+  describe('once rows run down the columns', () => {
+    /** Each grid row's cells' classes, indexed [row][column]. */
+    function cellClasses(pattern: Pattern) {
+      return mount(PatternGrid, { props: { pattern } })
+        .findAll('[data-testid="grid-row"]')
+        .map((row) => row.findAll('[data-testid="grid-cell"]').map((cell) => cell.classes()))
+    }
+
+    it('dims every bead in the columns behind the pointer and marks the current column, top to bottom', () => {
+      const cells = cellClasses(setRowProgressEnabled(moveToRow(toggleRowDirection(pattern()), 3), true))
+
+      expect(cells).toHaveLength(20)
+      for (const row of cells) {
+        expect(row[2]).toContain('pattern-grid__cell--done')
+        expect(row[3]).toContain('pattern-grid__cell--current')
+        expect(row[3]).not.toContain('pattern-grid__cell--done')
+        expect(row[4]).not.toContain('pattern-grid__cell--done')
+        expect(row[4]).not.toContain('pattern-grid__cell--current')
+      }
+    })
+
+    it('leaves the grid rows themselves without the row overlay', () => {
+      const classes = rowClasses(setRowProgressEnabled(moveToRow(toggleRowDirection(pattern()), 3), true))
+
+      expect(classes.flat()).not.toContain('pattern-grid__row--done')
+      expect(classes.flat()).not.toContain('pattern-grid__row--current')
+    })
+
+    it('marks no bead while the overlay is off', () => {
+      const cells = cellClasses(moveToRow(toggleRowDirection(pattern()), 3))
+
+      expect(cells.flat(2)).not.toContain('pattern-grid__cell--done')
+      expect(cells.flat(2)).not.toContain('pattern-grid__cell--current')
+    })
   })
 })
 

@@ -17,7 +17,7 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Pattern**: a saveable, re-editable grid design (see Language below)
 - **Palette** and **Bead catalog**: kept as separate concepts, linked by a default color-to-bead mapping — see [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md)
 - **Technique**: determines a Pattern's grid geometry (loom, peyote, brick stitch)
-- **Row progress**: an in-editor overlay for tracking which rows are already woven
+- **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
 - **Bead quantities**: the per-color bead counts a Pattern needs, resolved through the color-to-bead mapping in [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
@@ -46,15 +46,19 @@ The weaving method used (loom, peyote, brick stitch, etc.), which determines the
 _Avoid_: stitch, weave type
 
 **Row progress** (RU: Прогресс по рядам):
-An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. Saved together with the pattern.
+An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Saved together with the pattern.
 _Avoid_: progress bar, completion state
+
+**Row direction** (RU: Направление рядов):
+Which way the weaver's rows run across a Pattern's grid for Row progress: along the grid's rows, or down its columns. Each direction keeps its own current-row pointer. Independent of rotating the Pattern, which only turns the picture on screen: after rotating, the weaver flips Row direction too, but neither ever changes the other.
+_Avoid_: progress orientation, row rotation
 
 **Mirror** (RU: Отражение):
 A symmetric-drawing aid for a Pattern: with a horizontal and/or vertical toggle on, painting a cell with the Paint tool also paints its counterpart(s) reflected across the grid's exact center — 2 cells with one axis on, 4 with both. A separate "Mirror current" action per axis does a one-time reflect of whatever's already painted, for content drawn before that axis was toggled on. Fill is not affected by Mirror.
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Selection** (RU: Выделение):
-A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, or switching or creating a Pattern, clears it. It marks out cells, it does not change them — selecting never paints anything.
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, switching or creating a Pattern, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
 _Avoid_: region, highlighted area, selected block
 
 **Copy** (RU: Копировать):
@@ -62,7 +66,7 @@ Snapshots the Selection's cells — the empty ones included — into an in-sessi
 _Avoid_: duplicate, clone
 
 **Paste** (RU: Вставить):
-Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. Like Fill, Paste is unaffected by Mirror — it puts the block exactly where it was aimed. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again. The Selection survives that, so Copy can pick the same block straight back up.
+Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. Like Fill, Paste is unaffected by Mirror — it puts the block exactly where it was aimed. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again. The Selection survives that, so Copy can pick the same block straight back up; a second right-click or Escape clears the Selection too.
 _Avoid_: place, insert, apply
 
 ## How to run it
