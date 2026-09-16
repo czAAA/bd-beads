@@ -1457,6 +1457,88 @@ describe('App select, copy and paste', () => {
     expect(loadPatterns()[0]!.grid[2]![0]!.color).toBeNull()
   })
 
+  /** Escape is bound to the window, not to the canvas, so it is dispatched there rather than on an element. */
+  async function pressEscape(wrapper: ReturnType<typeof mount>) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    return wrapper
+  }
+
+  async function copiedMotif(wrapper: ReturnType<typeof mount>) {
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+  }
+
+  it('drops the copied block on a right-click, so the next click selects instead of stamping', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mousedown', { button: 2 })
+    await click(wrapper, 10) // (2,2) — would have stamped the motif
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1)
+  })
+
+  it('drops the copied block on Escape, so the next click selects instead of stamping', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await pressEscape(wrapper)
+    await click(wrapper, 10)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1)
+  })
+
+  it('stops previewing the block once the copy is dropped', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mouseenter')
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2)
+
+    await pressEscape(wrapper)
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+  })
+
+  it('keeps the selection itself, so Copy can put the same block back on the clipboard', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await pressEscape(wrapper)
+
+    expect(selectedCount(wrapper)).toBe(4)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('still never erases under Select: a right-click cancels the paste rather than clearing a cell', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown', { button: 2 }) // a painted cell
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the other tools alone: Escape is not a general-purpose cancel', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await pressEscape(wrapper)
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+  })
+
   it('clears the selection and clipboard when a different Pattern is opened', async () => {
     const wrapper = mount(App)
     await patternWithMotif(wrapper)

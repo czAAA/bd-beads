@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BeadCatalog from './components/BeadCatalog.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
@@ -275,6 +275,25 @@ function endSelectPress() {
   commitGridChange(pattern, pasteBlock(pattern, copiedBlock.value, press.anchor))
 }
 
+/**
+ * Puts the copied block down without stamping it, so Select goes back to marking out areas — a click means Paste
+ * only while something is on the clipboard (see beginSelectPress). The Selection itself is left alone, so the same
+ * block can be picked back up with Copy rather than re-dragged.
+ */
+function cancelPaste() {
+  copiedBlock.value = undefined
+}
+
+/** Escape reaches cancelPaste from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    cancelPaste()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
+
 /** Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see endSelectPress). */
 function onCopy() {
   const pattern = activePattern.value
@@ -324,7 +343,9 @@ function onCellPrimaryMove(row: number, column: number) {
 
 /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint. */
 function onCellSecondaryDown(row: number, column: number) {
+  // Select never erases; under it the right button is the other way out of a pending Paste, alongside Escape.
   if (activeTool.value === 'select') {
+    cancelPaste()
     return
   }
 
