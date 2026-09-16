@@ -81,6 +81,15 @@ export interface GridPosition {
   column: number
 }
 
+/**
+ * A cell to show a hover preview on (ticket 23). `color` overrides the single preview color for this one cell,
+ * which is what turns the preview multi-color for a pasted block (ticket 31); without it the cell takes whatever
+ * color the preview as a whole is showing.
+ */
+export interface PreviewCell extends GridPosition {
+  color?: string
+}
+
 /** A stable string key for a grid position, for deduping/indexing positions in a Set or Map. */
 export function positionKey(position: GridPosition): string {
   return `${position.row},${position.column}`

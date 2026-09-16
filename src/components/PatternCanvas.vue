@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { canvasContentHeightPx, canvasContentWidthPx, type GridPosition } from '../domain/grid'
+import { canvasContentHeightPx, canvasContentWidthPx, type PreviewCell } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
+import type { Selection } from '../domain/selection'
 import PatternGrid from './PatternGrid.vue'
 import PatternRuler from './PatternRuler.vue'
 
 const props = defineProps<{
   pattern: Pattern
   zoom: number
-  previewCells?: GridPosition[]
+  previewCells?: PreviewCell[]
   previewColor?: string | null
+  selection?: Selection
 }>()
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -80,6 +82,7 @@ const rotateStyle = computed(() => ({
             :pattern="pattern"
             :preview-cells="previewCells"
             :preview-color="previewColor"
+            :selection="selection"
             @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
             @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
             @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"

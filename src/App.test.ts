@@ -1241,3 +1241,209 @@ describe('App pattern transfer', () => {
     expect(loadPatterns()).toHaveLength(0)
   })
 })
+
+describe('App select, copy and paste', () => {
+  /** A drag across the grid: press on one cell, move through the rest, release (release is on the shell, as a real drag can end anywhere). */
+  async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[indices[0]!]!.trigger('mousedown')
+    for (const index of indices.slice(1)) {
+      await cells[index]!.trigger('mouseenter', { buttons: 1 })
+    }
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /** Presses and releases one cell without moving — a click, which is what stamps a copied block. */
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  function selectedCount(wrapper: ReturnType<typeof mount>) {
+    return wrapper.findAll('.pattern-grid__cell--selected').length
+  }
+
+  /** A 4x4 Pattern with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
+  async function patternWithMotif(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '6', '6') // 4x4 grid
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // (0,0)
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await click(wrapper, 5) // (1,1)
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+  }
+
+  it('offers Select alongside Paint and Fill, chosen the same way', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('marks out a rectangle as the cursor is dragged, and keeps it after the drag ends', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('leaves the grid alone while selecting: dragging under Select paints nothing', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 5])
+
+    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+  })
+
+  it('replaces the previous selection when a new drag starts, leaving only one active', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 4, 5]) // a 2x2 rectangle
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await drag(wrapper, [10, 11]) // (2,2) -> (2,3)
+
+    expect(selectedCount(wrapper)).toBe(2)
+  })
+
+  it('enables Copy only once something is selected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await drag(wrapper, [0, 1])
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+  })
+
+  it('previews the copied block in its own colors, following the cursor', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5]) // select the 2x2 holding both painted cells
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mouseenter') // hover (2,2)
+
+    const previews = wrapper.findAll('[data-testid="cell-preview"]')
+    expect(previews).toHaveLength(2) // the block's two painted cells; its two empty ones preview nothing
+    expect(previews[0]!.attributes('style')).toContain('background-color: rgb(230, 55, 70)')
+    expect(previews[1]!.attributes('style')).toContain('background-color: rgb(47, 111, 237)')
+  })
+
+  it('stamps the copied block where it is clicked, as a single undo step', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 10) // (2,2)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[3]![3]!.color).toBe('#2f6fed')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBeNull()
+  })
+
+  it('can stamp the same block again at another position without copying again', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 8) // (2,0)
+    await click(wrapper, 10) // (2,2)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![0]!.color).toBe('#e63746')
+    expect(grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('clips a stamp that runs off the edge instead of refusing it', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 15) // (3,3), the last cell: only the block's own top-left corner fits
+
+    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBe('#e63746')
+  })
+
+  it('leaves the destination untouched under the block’s empty cells', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    // Paint the destination green first, so the block's holes have something to spare.
+    await wrapper.find('[data-testid="tool-paint"]').trigger('click')
+    await wrapper.find('[data-color-id="green"]').trigger('click')
+    await click(wrapper, 9) // (2,1) — lands under one of the block's empty cells
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await click(wrapper, 8) // stamp at (2,0)
+
+    expect(loadPatterns()[0]!.grid[2]![1]!.color).toBe('#27ae60')
+  })
+
+  it('stamps exactly where it was aimed even with a Mirror axis on, as Fill does', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+
+    await click(wrapper, 8) // (2,0)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![0]!.color).toBe('#e63746')
+    expect(grid[2]![3]!.color).toBeNull() // the mirrored counterpart is left alone
+  })
+
+  it('drops the clipboard when a new selection is drawn, so the next click selects rather than stamps', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await drag(wrapper, [10, 11]) // a fresh selection replaces both it and the clipboard
+    await click(wrapper, 8)
+
+    expect(loadPatterns()[0]!.grid[2]![0]!.color).toBeNull()
+  })
+
+  it('clears the selection and clipboard when a different Pattern is opened', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    const firstId = loadPatterns()[0]!.id
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await click(wrapper, 0)
+    expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBeNull()
+  })
+})

@@ -19,8 +19,16 @@ import {
   saveColorBeadDefaults,
 } from './domain/beadMappingStorage'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
-import type { GridPosition } from './domain/grid'
+import type { GridPosition, PreviewCell } from './domain/grid'
 import { findPaletteColor } from './domain/palette'
+import {
+  copySelection,
+  pasteBlock,
+  pastedCells,
+  selectionBetween,
+  type CopiedBlock,
+  type Selection,
+} from './domain/selection'
 import {
   createPattern,
   fillArea,
@@ -69,24 +77,37 @@ const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
 
+type Tool = 'paint' | 'fill' | 'select'
+
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
-const activeTool = ref<'paint' | 'fill'>('paint')
+const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
 const undoStack = ref<Grid[]>([])
+
+/** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
+const selection = ref<Selection | undefined>()
+/** What Copy last snapshotted, ready to stamp. Like the undo stack it's an editing-session aid, never saved with the Pattern. */
+const copiedBlock = ref<CopiedBlock | undefined>()
 
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
 
 watch(activePatternId, () => {
   undoStack.value = []
+  selection.value = undefined
+  copiedBlock.value = undefined
 })
 
-/** The hovered cell plus its live-mirror counterpart(s), or none while nothing is hovered. */
-const previewCells = computed<GridPosition[]>(() => {
+/** What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would touch plus its live-mirror counterpart(s) (tickets 22/23). */
+const previewCells = computed<PreviewCell[]>(() => {
   const pattern = activePattern.value
   if (!pattern || !hoveredCell.value) {
     return []
+  }
+  if (activeTool.value === 'select') {
+    // With nothing copied there's nothing a click would put down, so Select previews nothing.
+    return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hoveredCell.value) : []
   }
   // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
   const axes = activeTool.value === 'paint' ? mirrorAxes.value : { horizontal: false, vertical: false }
@@ -137,7 +158,7 @@ function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
 }
 
-function onSelectTool(tool: 'paint' | 'fill') {
+function onSelectTool(tool: Tool) {
   activeTool.value = tool
 }
 
@@ -169,8 +190,10 @@ function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
   strokeBaseline.value = pattern.grid
 }
 
-/** Ends an in-progress stroke, bound to mouseup on the whole app shell (ticket 24): a drag can end with the button released anywhere, not just back over the cell it started on. */
+/** Ends an in-progress stroke or Select press, bound to mouseup on the whole app shell (ticket 24): a drag can end with the button released anywhere, not just back over the cell it started on. */
 function endStroke() {
+  endSelectPress()
+
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
     undoStack.value.push(strokeBaseline.value)
@@ -208,7 +231,69 @@ function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: 
   paintStrokeCell(row, column, color)
 }
 
+/**
+ * Where a Select-tool press started, and whether it has left that cell yet. A press under Select is ambiguous until
+ * one of those happens: dragging marks out a new Selection, while a click in place stamps whatever was copied. So
+ * the press only records its anchor here, and endSelectPress decides which it turned out to be.
+ */
+const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
+
+function beginSelectPress(pattern: Pattern, row: number, column: number) {
+  selectPress.value = { anchor: { row, column }, moved: false }
+
+  // With nothing copied, the press can only be the start of a selection, so the marquee appears from the first cell.
+  if (!copiedBlock.value) {
+    selection.value = selectionBetween(pattern, { row, column }, { row, column })
+  }
+}
+
+/** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one. */
+function extendSelection(row: number, column: number) {
+  const pattern = activePattern.value
+  const press = selectPress.value
+  if (!pattern || !press) {
+    return
+  }
+
+  press.moved = true
+  copiedBlock.value = undefined
+  selection.value = selectionBetween(pattern, press.anchor, { row, column })
+}
+
+/** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
+function endSelectPress() {
+  const pattern = activePattern.value
+  const press = selectPress.value
+  selectPress.value = null
+
+  if (!pattern || !press || press.moved || !copiedBlock.value) {
+    return
+  }
+
+  commitGridChange(pattern, pasteBlock(pattern, copiedBlock.value, press.anchor))
+}
+
+/** Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see endSelectPress). */
+function onCopy() {
+  const pattern = activePattern.value
+  if (!pattern || !selection.value) {
+    return
+  }
+
+  copiedBlock.value = copySelection(pattern, selection.value)
+}
+
 function onCellPrimaryDown(row: number, column: number) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  if (activeTool.value === 'select') {
+    beginSelectPress(pattern, row, column)
+    return
+  }
+
   const color = selectedColorHex()
   if (!color) {
     return
@@ -218,6 +303,11 @@ function onCellPrimaryDown(row: number, column: number) {
 }
 
 function onCellPrimaryMove(row: number, column: number) {
+  if (activeTool.value === 'select') {
+    extendSelection(row, column)
+    return
+  }
+
   if (strokeMode.value !== 'paint') {
     return
   }
@@ -232,6 +322,10 @@ function onCellPrimaryMove(row: number, column: number) {
 
 /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint. */
 function onCellSecondaryDown(row: number, column: number) {
+  if (activeTool.value === 'select') {
+    return
+  }
+
   beginOrCommitPress('erase', null, row, column)
 }
 
@@ -402,6 +496,15 @@ function onRemoveBead(id: string) {
                 >
                   {{ t.tools.fillLabel }}
                 </button>
+                <button
+                  type="button"
+                  data-testid="tool-select"
+                  :aria-pressed="activeTool === 'select'"
+                  :class="{ 'tool-picker__button--selected': activeTool === 'select' }"
+                  @click="onSelectTool('select')"
+                >
+                  {{ t.tools.selectLabel }}
+                </button>
               </div>
             </section>
 
@@ -438,6 +541,21 @@ function onRemoveBead(id: string) {
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <rect x="3" y="11" width="13" height="9" rx="1.5" />
                   <rect x="9" y="4" width="9" height="13" rx="1.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="copy-button"
+                :title="t.tools.copyButton"
+                :aria-label="t.tools.copyButton"
+                :disabled="!selection"
+                @click="onCopy"
+              >
+                <!-- One sheet laid over a second: the duplicate the Selection becomes. Only the back sheet's exposed corner is drawn, so it doesn't read as Rotate's two full rectangles. -->
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="8" y="8" width="13" height="13" rx="2" />
+                  <path d="M16 8V3H3v13h5" />
                 </svg>
               </button>
             </section>
@@ -550,6 +668,7 @@ function onRemoveBead(id: string) {
             :zoom="zoom"
             :preview-cells="previewCells"
             :preview-color="previewColor"
+            :selection="selection"
             @cell-primary-down="onCellPrimaryDown"
             @cell-primary-move="onCellPrimaryMove"
             @cell-secondary-down="onCellSecondaryDown"

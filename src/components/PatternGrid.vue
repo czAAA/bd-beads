@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CELL_SIZE_PX, positionKey, rowHeightPx, rowOffsetPx, type GridPosition } from '../domain/grid'
+import { CELL_SIZE_PX, positionKey, rowHeightPx, rowOffsetPx, type PreviewCell } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
+import { isWithinSelection, type Selection } from '../domain/selection'
 
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -14,16 +15,56 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   pattern: Pattern
-  /** Cells to show a hover preview on (ticket 23): the hovered cell plus its live-mirror counterpart(s), if any. */
-  previewCells?: GridPosition[]
-  /** The color to preview, faintly, on previewCells; null for a neutral outline when no Palette color is selected. */
+  /** Cells to show a hover preview on (ticket 23): the hovered cell plus its live-mirror counterpart(s), or a whole copied block under the cursor (ticket 31). */
+  previewCells?: PreviewCell[]
+  /** The color to preview, faintly, on previewCells that don't carry one of their own; null for a neutral outline when no Palette color is selected. */
   previewColor?: string | null
+  /** The rectangle the Select tool has marked out, drawn as a marquee over those cells (ticket 31). */
+  selection?: Selection
 }>()
 
-const previewKeys = computed(() => new Set((props.previewCells ?? []).map(positionKey)))
+/** Position key -> that cell's own preview color, if it has one; a block pasted from the clipboard previews in its real colors rather than one flat color. */
+const previewColors = computed(
+  () => new Map((props.previewCells ?? []).map((cell) => [positionKey(cell), cell.color])),
+)
 
 function isPreviewCell(row: number, column: number): boolean {
-  return previewKeys.value.has(positionKey({ row, column }))
+  return previewColors.value.has(positionKey({ row, column }))
+}
+
+/** The color to paint this cell's preview overlay in: the cell's own, falling back to the preview-wide color; none when neither is set, which is what the neutral outline stands in for. */
+function previewCellColor(row: number, column: number): string | undefined {
+  return previewColors.value.get(positionKey({ row, column })) ?? props.previewColor ?? undefined
+}
+
+function isSelectedCell(row: number, column: number): boolean {
+  return props.selection !== undefined && isWithinSelection(props.selection, { row, column })
+}
+
+/**
+ * The marquee's outline, as inset box-shadow segments on whichever of a selected cell's four sides sit on the
+ * rectangle's boundary — so the selection reads as one rectangle rather than a grid of separately outlined cells.
+ * Drawn on the cells themselves rather than as one positioned rectangle because offset techniques shift alternate
+ * rows by half a cell (see rowOffsetPx): a single rect would sit half a bead off on every other row.
+ */
+function selectionEdgeShadow(row: number, column: number): string | undefined {
+  const selection = props.selection
+  if (!selection || !isSelectedCell(row, column)) {
+    return undefined
+  }
+
+  const edges = [
+    [row === selection.top, '0px 2px'],
+    [row === selection.top + selection.rows - 1, '0px -2px'],
+    [column === selection.left, '2px 0px'],
+    [column === selection.left + selection.columns - 1, '-2px 0px'],
+  ] as const
+
+  const segments = edges
+    .filter(([onEdge]) => onEdge)
+    .map(([, offset]) => `inset ${offset} 0px 0px var(--color-wedgewood)`)
+
+  return segments.length > 0 ? segments.join(', ') : undefined
 }
 
 /**
@@ -77,22 +118,27 @@ function rowProgressClass(rowIndex: number): string | null {
         v-for="(cell, columnIndex) in row"
         :key="columnIndex"
         class="pattern-grid__cell"
-        :class="{ 'pattern-grid__cell--preview-neutral': isPreviewCell(rowIndex, columnIndex) && !previewColor }"
+        :class="{
+          'pattern-grid__cell--preview-neutral':
+            isPreviewCell(rowIndex, columnIndex) && !previewCellColor(rowIndex, columnIndex),
+          'pattern-grid__cell--selected': isSelectedCell(rowIndex, columnIndex),
+        }"
         data-testid="grid-cell"
         :style="{
           width: `${CELL_SIZE_PX}px`,
           height: `${CELL_SIZE_PX}px`,
           backgroundColor: cell.color ?? undefined,
+          boxShadow: selectionEdgeShadow(rowIndex, columnIndex),
         }"
         @mousedown.left="emit('cell-primary-down', rowIndex, columnIndex)"
         @mousedown.right="emit('cell-secondary-down', rowIndex, columnIndex)"
         @mouseenter="onCellEnter($event, rowIndex, columnIndex)"
       >
         <span
-          v-if="isPreviewCell(rowIndex, columnIndex) && previewColor"
+          v-if="isPreviewCell(rowIndex, columnIndex) && previewCellColor(rowIndex, columnIndex)"
           class="pattern-grid__cell-preview"
           data-testid="cell-preview"
-          :style="{ backgroundColor: previewColor }"
+          :style="{ backgroundColor: previewCellColor(rowIndex, columnIndex) }"
         />
       </div>
     </div>
@@ -136,6 +182,17 @@ function rowProgressClass(rowIndex: number): string | null {
   inset: 0;
   opacity: 0.45;
   pointer-events: none;
+}
+
+/*
+ * A cell inside the Select tool's marquee (ticket 31): washed in the same wedgewood the marquee outline uses. Laid
+ * on as a background-image so it tints whatever color the cell already holds, without a second element per cell.
+ */
+.pattern-grid__cell--selected {
+  background-image: linear-gradient(
+    color-mix(in srgb, var(--color-wedgewood) 30%, transparent),
+    color-mix(in srgb, var(--color-wedgewood) 30%, transparent)
+  );
 }
 
 /* No Palette color selected: a neutral outline instead of a color preview. */
