@@ -314,7 +314,10 @@ const { t } = useI18n()
  *
  * :deep() reaches into PalettePicker's own root, which normally lays its swatches out with its own flex-wrap.
  * display:contents removes that box so the 12 swatches become direct children of the Colors group's own
- * .tool-group__grid instead, wrapping at the same 7-per-row the rest of the Toolbox uses.
+ * .tool-group__grid instead, wrapping at the same 7-per-row the rest of the Toolbox uses. Trade-off: this can drop
+ * PalettePicker's own role="group"/aria-label from the accessibility tree in engines that don't preserve ARIA
+ * semantics through display:contents — each swatch still names itself individually, and the Colors group itself is
+ * still named via ToolGroup's aria-labelledby, so nothing becomes unreachable, just less specifically grouped.
  */
 .toolbox :deep(.palette-picker) {
   display: contents;
