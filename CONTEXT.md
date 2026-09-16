@@ -46,7 +46,7 @@ The weaving method used (loom, peyote, brick stitch, etc.), which determines the
 _Avoid_: stitch, weave type
 
 **Row progress** (RU: Прогресс по рядам):
-An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Saved together with the pattern.
+An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Delete all is the exception: it clears Row progress along with the grid. Saved together with the pattern.
 _Avoid_: progress bar, completion state
 
 **Row direction** (RU: Направление рядов):
@@ -54,8 +54,24 @@ Which way the weaver's rows run across a Pattern's grid for Row progress: along 
 _Avoid_: progress orientation, row rotation
 
 **Mirror** (RU: Отражение):
-A symmetric-drawing aid for a Pattern: with a horizontal and/or vertical toggle on, painting a cell with the Paint tool also paints its counterpart(s) reflected across the grid's exact center — 2 cells with one axis on, 4 with both. A separate "Mirror current" action per axis does a one-time reflect of whatever's already painted, for content drawn before that axis was toggled on. Fill is not affected by Mirror.
+A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Fill, Paste and Delete all are not affected by Mirror. Axis counts and copy mode are an editing-session setting, reset when switching Patterns.
 _Avoid_: reflect, symmetry mode, apply mirror
+
+**Toolbox** (RU: Панель инструментов):
+The strip of editing controls above the canvas while a Pattern is open, made up of Tool groups.
+_Avoid_: tool strip, toolbar
+
+**Tool group** (RU: Группа инструментов):
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select), Colors, Edit, Mirror, Row progress. Holds at most 14 controls in view (two rows of seven); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+_Avoid_: subbox, card, section, panel
+
+**Delete all** (RU: Очистить всё):
+Resets the open Pattern to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Pattern's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
+_Avoid_: clear, reset, wipe
+
+**Custom color** (RU: Свой цвет):
+A one-off paint color chosen freely with the color picker in the Colors group, outside the Palette. Not added to the Palette and not remembered: choosing another Custom color replaces it. Cells painted with it keep that color and show up in Bead quantities like any other color.
+_Avoid_: user color, extra palette color
 
 **Selection** (RU: Выделение):
 A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, switching or creating a Pattern, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
