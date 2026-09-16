@@ -49,6 +49,10 @@ const titleId = useId()
  * content, so an under-full group (e.g. 3 controls) collapses the unused columns to nothing rather than stretching.
  * A control marked .tool-group__full-row (a text/numeric readout) spans every column, forcing its own row without
  * counting toward the two-row/14-slot cap — grid auto-placement resumes normal controls on a fresh row after it.
+ *
+ * No group today holds more than 14 controls, so there's no overflow handling here yet (CONTEXT.md's Tool group
+ * entry: "a group with more shows that it has more and expands in place, downward..." — that's ticket 41's chevron/
+ * hover-expand affordance, deliberately not built by this ticket).
  */
 .tool-group__grid {
   display: grid;
