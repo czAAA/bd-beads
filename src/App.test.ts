@@ -1539,6 +1539,42 @@ describe('App select, copy and paste', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
   })
 
+  it.each(['tool-paint', 'tool-fill'])('forgets the selected area when the tool changes to %s', async (tool) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0, 1, 4, 5])
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await wrapper.find(`[data-testid="${tool}"]`).trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(0)
+  })
+
+  it('forgets the copied block too, so returning to Select does not stamp out of nowhere', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.find('[data-testid="tool-paint"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await click(wrapper, 10) // (2,2)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1) // a fresh selection, not a stamp
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+  })
+
+  it('keeps the selection when Select is re-chosen while already active', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0, 1, 4, 5])
+
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
   it('clears the selection and clipboard when a different Pattern is opened', async () => {
     const wrapper = mount(App)
     await patternWithMotif(wrapper)
