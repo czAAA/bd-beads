@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BeadCatalog from './components/BeadCatalog.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
@@ -19,8 +19,16 @@ import {
   saveColorBeadDefaults,
 } from './domain/beadMappingStorage'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
-import type { GridPosition } from './domain/grid'
+import type { GridPosition, PreviewCell } from './domain/grid'
 import { findPaletteColor } from './domain/palette'
+import {
+  copySelection,
+  pasteBlock,
+  pastedCells,
+  selectionBetween,
+  type CopiedBlock,
+  type Selection,
+} from './domain/selection'
 import {
   createPattern,
   fillArea,
@@ -69,24 +77,37 @@ const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
 
+type Tool = 'paint' | 'fill' | 'select'
+
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
-const activeTool = ref<'paint' | 'fill'>('paint')
+const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
 /** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
 const undoStack = ref<Grid[]>([])
+
+/** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
+const selection = ref<Selection | undefined>()
+/** What Copy last snapshotted, ready to stamp. Like the undo stack it's an editing-session aid, never saved with the Pattern. */
+const copiedBlock = ref<CopiedBlock | undefined>()
 
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
 
 watch(activePatternId, () => {
   undoStack.value = []
+  selection.value = undefined
+  copiedBlock.value = undefined
 })
 
-/** The hovered cell plus its live-mirror counterpart(s), or none while nothing is hovered. */
-const previewCells = computed<GridPosition[]>(() => {
+/** What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would touch plus its live-mirror counterpart(s) (tickets 22/23). */
+const previewCells = computed<PreviewCell[]>(() => {
   const pattern = activePattern.value
   if (!pattern || !hoveredCell.value) {
     return []
+  }
+  if (activeTool.value === 'select') {
+    // With nothing copied there's nothing a click would put down, so Select previews nothing.
+    return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hoveredCell.value) : []
   }
   // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
   const axes = activeTool.value === 'paint' ? mirrorAxes.value : { horizontal: false, vertical: false }
@@ -137,7 +158,17 @@ function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
 }
 
-function onSelectTool(tool: 'paint' | 'fill') {
+function onSelectTool(tool: Tool) {
+  /*
+   * Leaving Select forgets what it was holding. The marquee is noise once you're painting rather than selecting,
+   * and a clipboard that outlived its marquee would be invisible state: coming back to Select and clicking would
+   * stamp a block out of nowhere. Re-choosing Select while it's already active leaves both alone.
+   */
+  if (tool !== 'select') {
+    selection.value = undefined
+    cancelPaste()
+  }
+
   activeTool.value = tool
 }
 
@@ -169,8 +200,10 @@ function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
   strokeBaseline.value = pattern.grid
 }
 
-/** Ends an in-progress stroke, bound to mouseup on the whole app shell (ticket 24): a drag can end with the button released anywhere, not just back over the cell it started on. */
+/** Ends an in-progress stroke or Select press, bound to mouseup on the whole app shell (ticket 24): a drag can end with the button released anywhere, not just back over the cell it started on. */
 function endStroke() {
+  endSelectPress()
+
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
     undoStack.value.push(strokeBaseline.value)
@@ -208,7 +241,90 @@ function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: 
   paintStrokeCell(row, column, color)
 }
 
+/**
+ * Where a Select-tool press started, and whether it has left that cell yet. A press under Select is ambiguous until
+ * one of those happens: dragging marks out a new Selection, while a click in place stamps whatever was copied. So
+ * the press only records its anchor here, and endSelectPress decides which it turned out to be.
+ */
+const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
+
+function beginSelectPress(pattern: Pattern, row: number, column: number) {
+  selectPress.value = { anchor: { row, column }, moved: false }
+
+  // With nothing copied, the press can only be the start of a selection, so the marquee appears from the first cell.
+  // With something copied the gesture is claimed by Paste instead, which is why re-selecting a single cell then
+  // takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it means.
+  if (!copiedBlock.value) {
+    selection.value = selectionBetween(pattern, { row, column }, { row, column })
+  }
+}
+
+/** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one. */
+function extendSelection(row: number, column: number) {
+  const pattern = activePattern.value
+  const press = selectPress.value
+  if (!pattern || !press) {
+    return
+  }
+
+  press.moved = true
+  copiedBlock.value = undefined
+  selection.value = selectionBetween(pattern, press.anchor, { row, column })
+}
+
+/** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
+function endSelectPress() {
+  const pattern = activePattern.value
+  const press = selectPress.value
+  selectPress.value = null
+
+  if (!pattern || !press || press.moved || !copiedBlock.value) {
+    return
+  }
+
+  commitGridChange(pattern, pasteBlock(pattern, copiedBlock.value, press.anchor))
+}
+
+/**
+ * Puts the copied block down without stamping it, so Select goes back to marking out areas — a click means Paste
+ * only while something is on the clipboard (see beginSelectPress). The Selection itself is left alone, so the same
+ * block can be picked back up with Copy rather than re-dragged.
+ */
+function cancelPaste() {
+  copiedBlock.value = undefined
+}
+
+/** Escape reaches cancelPaste from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+function onKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    cancelPaste()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
+
+/** Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see endSelectPress). */
+function onCopy() {
+  const pattern = activePattern.value
+  if (!pattern || !selection.value) {
+    return
+  }
+
+  copiedBlock.value = copySelection(pattern, selection.value)
+}
+
 function onCellPrimaryDown(row: number, column: number) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  if (activeTool.value === 'select') {
+    beginSelectPress(pattern, row, column)
+    return
+  }
+
   const color = selectedColorHex()
   if (!color) {
     return
@@ -218,6 +334,11 @@ function onCellPrimaryDown(row: number, column: number) {
 }
 
 function onCellPrimaryMove(row: number, column: number) {
+  if (activeTool.value === 'select') {
+    extendSelection(row, column)
+    return
+  }
+
   if (strokeMode.value !== 'paint') {
     return
   }
@@ -232,6 +353,12 @@ function onCellPrimaryMove(row: number, column: number) {
 
 /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint. */
 function onCellSecondaryDown(row: number, column: number) {
+  // Select never erases; under it the right button is the other way out of a pending Paste, alongside Escape.
+  if (activeTool.value === 'select') {
+    cancelPaste()
+    return
+  }
+
   beginOrCommitPress('erase', null, row, column)
 }
 
@@ -381,32 +508,63 @@ function onRemoveBead(id: string) {
           </div>
 
           <div v-if="activePattern" class="tool-strip" data-testid="tool-strip">
-            <section class="tool-strip__card">
-              <h2>{{ t.tools.heading }}</h2>
+            <section class="tool-strip__card" :aria-label="t.tools.heading">
               <div class="tool-picker" role="group" :aria-label="t.tools.heading">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="tool-paint"
+                  :title="t.tools.paintLabel"
+                  :aria-label="t.tools.paintLabel"
                   :aria-pressed="activeTool === 'paint'"
                   :class="{ 'tool-picker__button--selected': activeTool === 'paint' }"
                   @click="onSelectTool('paint')"
                 >
-                  {{ t.tools.paintLabel }}
+                  <!-- A brush held at an angle, bristles splaying to the low corner. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M17.5 2.5 21.5 6.5 11 17 7 13z" />
+                    <path d="M7 13 3.5 20.5 11 17" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="tool-fill"
+                  :title="t.tools.fillLabel"
+                  :aria-label="t.tools.fillLabel"
                   :aria-pressed="activeTool === 'fill'"
                   :class="{ 'tool-picker__button--selected': activeTool === 'fill' }"
                   @click="onSelectTool('fill')"
                 >
-                  {{ t.tools.fillLabel }}
+                  <!-- A tipped paint bucket with a drop coming off it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M10.5 2.5 3.9 9.1a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0l6.6-6.6z" />
+                    <path d="M20.5 14.5c.9 1.3 1.4 2.2 1.4 2.8a1.4 1.4 0 0 1-2.8 0c0-.6.5-1.5 1.4-2.8z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  data-testid="tool-select"
+                  :title="t.tools.selectLabel"
+                  :aria-label="t.tools.selectLabel"
+                  :aria-pressed="activeTool === 'select'"
+                  :class="{ 'tool-picker__button--selected': activeTool === 'select' }"
+                  @click="onSelectTool('select')"
+                >
+                  <!-- A dashed rectangle: the marquee this tool drags out. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 8V6a3 3 0 0 1 3-3h2" />
+                    <path d="M16 3h2a3 3 0 0 1 3 3v2" />
+                    <path d="M21 16v2a3 3 0 0 1-3 3h-2" />
+                    <path d="M8 21H6a3 3 0 0 1-3-3v-2" />
+                    <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
+                  </svg>
                 </button>
               </div>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.palette.heading }}</h2>
+            <section class="tool-strip__card" :aria-label="t.palette.heading">
               <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
             </section>
 
@@ -415,6 +573,7 @@ function onRemoveBead(id: string) {
                 type="button"
                 class="icon-button"
                 data-testid="undo-button"
+                :title="t.palette.undoButton"
                 :aria-label="t.palette.undoButton"
                 :disabled="undoStack.length === 0"
                 @click="onUndo"
@@ -428,6 +587,7 @@ function onRemoveBead(id: string) {
                 type="button"
                 class="icon-button"
                 data-testid="rotate-button"
+                :title="t.palette.rotateButton"
                 :aria-label="t.palette.rotateButton"
                 :aria-pressed="activePattern.rotated"
                 :class="{ 'tool-picker__button--selected': activePattern.rotated }"
@@ -438,49 +598,111 @@ function onRemoveBead(id: string) {
                   <rect x="9" y="4" width="9" height="13" rx="1.5" />
                 </svg>
               </button>
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="copy-button"
+                :title="t.tools.copyButton"
+                :aria-label="t.tools.copyButton"
+                :disabled="!selection"
+                @click="onCopy"
+              >
+                <!-- One sheet laid over a second: the duplicate the Selection becomes. Only the back sheet's exposed corner is drawn, so it doesn't read as Rotate's two full rectangles. -->
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="8" y="8" width="13" height="13" rx="2" />
+                  <path d="M16 8V3H3v13h5" />
+                </svg>
+              </button>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.mirror.heading }}</h2>
-              <div class="mirror-axes">
-                <label>
-                  <input v-model="mirrorAxes.horizontal" type="checkbox" data-testid="mirror-horizontal" />
-                  {{ t.mirror.horizontalLabel }}
-                </label>
-                <label>
-                  <input v-model="mirrorAxes.vertical" type="checkbox" data-testid="mirror-vertical" />
-                  {{ t.mirror.verticalLabel }}
-                </label>
+            <section class="tool-strip__card" :aria-label="t.mirror.heading">
+              <div class="mirror-axes" role="group" :aria-label="t.mirror.heading">
+                <button
+                  type="button"
+                  class="icon-button"
+                  data-testid="mirror-horizontal"
+                  :title="t.mirror.horizontalLabel"
+                  :aria-label="t.mirror.horizontalLabel"
+                  :aria-pressed="mirrorAxes.horizontal"
+                  :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
+                  @click="mirrorAxes.horizontal = !mirrorAxes.horizontal"
+                >
+                  <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 3v3M12 10.5v3M12 18v3" />
+                    <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
+                    <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  data-testid="mirror-vertical"
+                  :title="t.mirror.verticalLabel"
+                  :aria-label="t.mirror.verticalLabel"
+                  :aria-pressed="mirrorAxes.vertical"
+                  :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
+                  @click="mirrorAxes.vertical = !mirrorAxes.vertical"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 12h3M10.5 12h3M18 12h3" />
+                    <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
+                    <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
+                  </svg>
+                </button>
               </div>
               <div class="mirror-current">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="mirror-current-horizontal"
+                  :title="t.mirror.mirrorCurrentHorizontalButton"
+                  :aria-label="t.mirror.mirrorCurrentHorizontalButton"
                   @click="onMirrorCurrent('horizontal')"
                 >
-                  {{ t.mirror.mirrorCurrentHorizontalButton }}
+                  <!-- Two shapes facing away from a dashed vertical axis: the left-right flip this button performs. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 3v3M12 10.5v3M12 18v3" />
+                    <path d="M8.5 7 3.5 12l5 5z" />
+                    <path d="M15.5 7l5 5-5 5z" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="mirror-current-vertical"
+                  :title="t.mirror.mirrorCurrentVerticalButton"
+                  :aria-label="t.mirror.mirrorCurrentVerticalButton"
                   @click="onMirrorCurrent('vertical')"
                 >
-                  {{ t.mirror.mirrorCurrentVerticalButton }}
+                  <!-- The same glyph turned a quarter turn: a dashed horizontal axis with the shapes above and below it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 12h3M10.5 12h3M18 12h3" />
+                    <path d="M7 8.5 12 3.5l5 5z" />
+                    <path d="M7 15.5 12 20.5l5-5z" />
+                  </svg>
                 </button>
               </div>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.rowProgress.heading }}</h2>
-              <label>
-                <input
-                  type="checkbox"
-                  data-testid="row-progress-enabled"
-                  :checked="activePattern.rowProgress.enabled"
-                  @change="onToggleRowProgress(($event.target as HTMLInputElement).checked)"
-                />
-                {{ t.rowProgress.enabledLabel }}
-              </label>
+            <section class="tool-strip__card" :aria-label="t.rowProgress.heading">
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="row-progress-enabled"
+                :title="t.rowProgress.enabledLabel"
+                :aria-label="t.rowProgress.enabledLabel"
+                :aria-pressed="activePattern.rowProgress.enabled"
+                :class="{ 'tool-picker__button--selected': activePattern.rowProgress.enabled }"
+                @click="onToggleRowProgress(!activePattern.rowProgress.enabled)"
+              >
+                <!-- Rows of weaving with the current one boxed: the overlay this toggles on. -->
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 5.5h18" />
+                  <rect x="3" y="9.5" width="18" height="5" rx="1.5" />
+                  <path d="M3 18.5h18" />
+                </svg>
+              </button>
               <p class="row-progress__position" data-testid="row-progress-position">
                 {{ t.rowProgress.positionLabel }}
                 {{ activePattern.rowProgress.currentRow + 1 }} / {{ activePattern.rows }}
@@ -488,24 +710,37 @@ function onRemoveBead(id: string) {
               <div class="row-progress__steps">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="row-progress-previous"
+                  :title="t.rowProgress.previousButton"
+                  :aria-label="t.rowProgress.previousButton"
                   :disabled="
                     !activePattern.rowProgress.enabled || activePattern.rowProgress.currentRow === 0
                   "
                   @click="onMoveRow(-1)"
                 >
-                  {{ t.rowProgress.previousButton }}
+                  <!-- Rows are woven top to bottom, so stepping back up the Pattern is a plain up arrow. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 20V5" />
+                    <path d="M5.5 11.5 12 5l6.5 6.5" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="row-progress-next"
+                  :title="t.rowProgress.nextButton"
+                  :aria-label="t.rowProgress.nextButton"
                   :disabled="
                     !activePattern.rowProgress.enabled ||
                     activePattern.rowProgress.currentRow === activePattern.rows - 1
                   "
                   @click="onMoveRow(1)"
                 >
-                  {{ t.rowProgress.nextButton }}
+                  <!-- A tick, not a down arrow: what this button means is "this row is woven", and advancing is the consequence. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 13l5.5 5.5L20 6" />
+                  </svg>
                 </button>
               </div>
             </section>
@@ -519,6 +754,7 @@ function onRemoveBead(id: string) {
             :zoom="zoom"
             :preview-cells="previewCells"
             :preview-color="previewColor"
+            :selection="selection"
             @cell-primary-down="onCellPrimaryDown"
             @cell-primary-move="onCellPrimaryMove"
             @cell-secondary-down="onCellSecondaryDown"
@@ -664,7 +900,7 @@ function onRemoveBead(id: string) {
 .mirror-axes {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .mirror-current {
@@ -713,41 +949,30 @@ function onRemoveBead(id: string) {
 
 /*
  * Grows (1 1 220px) rather than sitting at its own content width: five cards of very different natural widths
- * (a two-button tool picker vs. a twelve-swatch palette vs. two long mirror buttons) left most of a wide strip as
- * bare dot-grid texture at flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row,
- * and shrinking below content width lets a card's own wrap rules (.mirror-current, .row-progress__steps) fire and
- * stack its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line
- * kicks in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
+ * (a three-icon tool picker vs. a twelve-swatch palette) left most of a wide strip as bare dot-grid texture at
+ * flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row, and shrinking below
+ * content width lets a card's own wrap rules (.mirror-axes, .mirror-current, .row-progress__steps) fire and stack
+ * its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line kicks
+ * in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
  *
- * display:flex here (not the old block/stacked layout) is what makes the strip lean rather than tall (ticket 27):
- * the heading and its controls sit side by side, one line, instead of a heading row on top of a controls row —
- * three or four times the height for no reason once the strip is allowed to grow sideways instead. A card's own
- * content (.mirror-axes, .mirror-current, .row-progress__steps, ...) still wraps internally first if a narrow card
- * genuinely can't fit everything on one line.
+ * Every control here is now an icon button naming itself on hover, and the cards carry their heading as an
+ * aria-label rather than visible text, so a card is one 44px row of icons — the whole reason the strip is lean
+ * rather than tall. That matters because align-items:stretch matches every card in a row to the tallest one, so any
+ * card that wraps to two rows drags its whole line with it (tickets 29/30). The Palette card, the one card whose
+ * content genuinely needs several rows at a narrow width, is what sets that height.
  */
 .tool-strip__card {
   flex: 1 1 220px;
   min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
   padding: 6px 12px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
-}
-
-/* An inline label rather than a block heading above the controls — see .tool-strip__card above. */
-.tool-strip__card h2 {
-  margin: 0;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-/* A size step down from the app's default button (10px 22px): right for a compact toolbar row, not for the form/list buttons elsewhere that keep the default. The bare icon-button keeps its own fixed 44x44 touch target. */
-.tool-strip__card button:not(.icon-button) {
-  padding: 6px 16px;
 }
 
 .row-progress__position {

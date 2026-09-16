@@ -53,6 +53,18 @@ _Avoid_: progress bar, completion state
 A symmetric-drawing aid for a Pattern: with a horizontal and/or vertical toggle on, painting a cell with the Paint tool also paints its counterpart(s) reflected across the grid's exact center — 2 cells with one axis on, 4 with both. A separate "Mirror current" action per axis does a one-time reflect of whatever's already painted, for content drawn before that axis was toggled on. Fill is not affected by Mirror.
 _Avoid_: reflect, symmetry mode, apply mirror
 
+**Selection** (RU: Выделение):
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, or switching or creating a Pattern, clears it. It marks out cells, it does not change them — selecting never paints anything.
+_Avoid_: region, highlighted area, selected block
+
+**Copy** (RU: Копировать):
+Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists. The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, the user cancelling out of Paste, or the Select tool being left — nothing outlives the marquee it came from).
+_Avoid_: duplicate, clone
+
+**Paste** (RU: Вставить):
+Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. Like Fill, Paste is unaffected by Mirror — it puts the block exactly where it was aimed. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again. The Selection survives that, so Copy can pick the same block straight back up.
+_Avoid_: place, insert, apply
+
 ## How to run it
 
 [Add build/run instructions here as you develop.]

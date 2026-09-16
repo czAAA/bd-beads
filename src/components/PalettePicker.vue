@@ -18,6 +18,7 @@ const { t } = useI18n()
       class="palette-picker__swatch"
       :class="{ 'palette-picker__swatch--selected': color.id === selectedColorId }"
       :style="{ backgroundColor: color.hex }"
+      :title="`${t.palette.colorLabel} ${color.hex}`"
       :aria-label="`${t.palette.colorLabel} ${color.hex}`"
       :aria-pressed="color.id === selectedColorId"
       data-testid="palette-swatch"
