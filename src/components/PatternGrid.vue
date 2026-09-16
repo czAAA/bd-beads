@@ -86,13 +86,26 @@ function rowOverlapPx(technique: Pattern['technique'], rowIndex: number): number
   return rowIndex === 0 ? 0 : rowHeightPx(technique) - CELL_SIZE_PX
 }
 
-/** How far through the weaving this row is, while the row-progress overlay is on (ticket 13). */
-function rowProgressClass(rowIndex: number): string | null {
-  const { enabled, currentRow } = props.pattern.rowProgress
-  if (!enabled || rowIndex > currentRow) {
+/** Where a weaver's row sits against the progress pointer: already woven, being woven now, or still to come (null). */
+function progressStage(index: number, current: number): 'done' | 'current' | null {
+  if (index > current) {
     return null
   }
-  return rowIndex === currentRow ? 'pattern-grid__row--current' : 'pattern-grid__row--done'
+  return index === current ? 'current' : 'done'
+}
+
+/** How far through the weaving this row is, while the row-progress overlay is on (ticket 13) and rows run along the grid's rows. */
+function rowProgressClass(rowIndex: number): string | null {
+  const { enabled, direction, currentRow } = props.pattern.rowProgress
+  const stage = enabled && direction === 'rows' ? progressStage(rowIndex, currentRow) : null
+  return stage && `pattern-grid__row--${stage}`
+}
+
+/** The same, once rows run down the grid's columns (ticket 32): a column has no element of its own, so each of its beads carries the overlay. */
+function columnProgressClass(columnIndex: number): string | null {
+  const { enabled, direction, currentColumn } = props.pattern.rowProgress
+  const stage = enabled && direction === 'columns' ? progressStage(columnIndex, currentColumn) : null
+  return stage && `pattern-grid__cell--${stage}`
 }
 </script>
 
@@ -118,11 +131,14 @@ function rowProgressClass(rowIndex: number): string | null {
         v-for="(cell, columnIndex) in row"
         :key="columnIndex"
         class="pattern-grid__cell"
-        :class="{
-          'pattern-grid__cell--preview-neutral':
-            isPreviewCell(rowIndex, columnIndex) && !previewCellColor(rowIndex, columnIndex),
-          'pattern-grid__cell--selected': isSelectedCell(rowIndex, columnIndex),
-        }"
+        :class="[
+          columnProgressClass(columnIndex),
+          {
+            'pattern-grid__cell--preview-neutral':
+              isPreviewCell(rowIndex, columnIndex) && !previewCellColor(rowIndex, columnIndex),
+            'pattern-grid__cell--selected': isSelectedCell(rowIndex, columnIndex),
+          },
+        ]"
         data-testid="grid-cell"
         :style="{
           width: `${CELL_SIZE_PX}px`,
@@ -223,6 +239,47 @@ function rowProgressClass(rowIndex: number): string | null {
   inset: 0;
   box-shadow: inset 0 0 0 3px var(--color-wedgewood);
   pointer-events: none;
+}
+
+/*
+ * Rows running down the columns (ticket 32) get the same look bead by bead. The current column's marker is drawn
+ * on each of its beads: both long sides on every bead, plus the top on the first grid row and the bottom on the
+ * last, so a Loom column reads as one outlined strip. The marker reaches 1px past the bead onto its paper border so
+ * the sides join up between beads instead of breaking at every seam.
+ */
+.pattern-grid__cell--done {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.pattern-grid__cell--current {
+  z-index: 1;
+}
+
+.pattern-grid__cell--current::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-inline: 3px solid var(--color-wedgewood);
+  pointer-events: none;
+}
+
+.pattern-grid__row:first-child .pattern-grid__cell--current::after {
+  border-top: 3px solid var(--color-wedgewood);
+}
+
+.pattern-grid__row:last-child .pattern-grid__cell--current::after {
+  border-bottom: 3px solid var(--color-wedgewood);
+}
+
+/*
+ * Peyote and Brick shift every other row half a bead, so their column zigzags and side bars alone break apart at
+ * every shift. Outlining each bead whole keeps the zigzag readable as one chain.
+ */
+.pattern-grid--peyote .pattern-grid__cell--current::after,
+.pattern-grid--brick .pattern-grid__cell--current::after {
+  border: 3px solid var(--color-wedgewood);
+  border-radius: inherit;
 }
 
 /* Peyote's interlocking beads read as diamonds/hexes rather than a flat grid. */

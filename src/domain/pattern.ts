@@ -19,11 +19,21 @@ export interface Cell {
 
 export type Grid = Cell[][]
 
+/**
+ * Which way the weaver's rows run across the grid (ticket 32): along the grid's rows, or down its columns. Separate
+ * from Pattern.rotated, which only turns the picture: after rotating, the grid's columns are what run across the
+ * screen, so the weaver flips this too, but neither setting ever changes the other.
+ */
+export type RowDirection = 'rows' | 'columns'
+
 /** Which row the weaver is on, and whether the editor is showing that overlay (see CONTEXT.md's Row progress entry). */
 export interface RowProgress {
   enabled: boolean
+  direction: RowDirection
   /** Zero-based index of the row being woven now; every row before it counts as finished. */
   currentRow: number
+  /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses either place. */
+  currentColumn: number
 }
 
 /** Palette color id -> Bead id, for the colors this Pattern maps differently from the global default (ticket 11). */
@@ -90,7 +100,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     columns,
     rows,
     grid: createEmptyGrid(columns, rows),
-    rowProgress: { enabled: false, currentRow: 0 },
+    rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
     colorBeadOverrides: {},
     rotated: false,
     createdAt: now,
@@ -116,7 +126,12 @@ export function normalizePattern(pattern: Pattern): Pattern {
 
   return {
     ...pattern,
-    rowProgress: { ...rowProgress, currentRow: clampRow(rowProgress.currentRow, pattern.rows) },
+    rowProgress: {
+      ...rowProgress,
+      direction: rowProgress.direction ?? 'rows',
+      currentRow: clampRow(rowProgress.currentRow, pattern.rows),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, pattern.columns),
+    },
     colorBeadOverrides: pattern.colorBeadOverrides ?? {},
     rotated: pattern.rotated ?? false,
   }
@@ -132,10 +147,50 @@ export function toggleRotated(pattern: Pattern): Pattern {
   return touch(pattern, { rotated: !pattern.rotated })
 }
 
-/** Points row progress at the given row, clamped to the Pattern — used to advance a finished row and to go back to an earlier one. */
+/** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
+export function toggleRowDirection(pattern: Pattern): Pattern {
+  const direction = pattern.rowProgress.direction === 'rows' ? 'columns' : 'rows'
+  return touch(pattern, { rowProgress: { ...pattern.rowProgress, direction } })
+}
+
+/** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many rows there are. */
+export function rowProgressPosition(pattern: Pattern): { current: number; total: number } {
+  const { direction, currentRow, currentColumn } = pattern.rowProgress
+  return direction === 'rows'
+    ? { current: currentRow, total: pattern.rows }
+    : { current: currentColumn, total: pattern.columns }
+}
+
+/** Whether a bead sits in a row the weaver has already finished: before the pointer, counted the way rows run. Only while the overlay is on. */
+export function isInFinishedRow(pattern: Pattern, { row, column }: GridPosition): boolean {
+  const { enabled, direction, currentRow, currentColumn } = pattern.rowProgress
+  if (!enabled) {
+    return false
+  }
+  return direction === 'rows' ? row < currentRow : column < currentColumn
+}
+
+/**
+ * Takes back whatever a drawing command did to finished rows (ticket 33): those beads are already woven, so an edit
+ * only lands on the row being woven now and the ones after it. An edit left with nothing to change hands back
+ * `before` itself, the same "unchanged" signal the drawing commands give, so it records no undo step.
+ */
+export function keepFinishedRows(before: Pattern, after: Pattern): Pattern {
+  const grid = after.grid.map((cells, row) =>
+    cells.map((cell, column) => (isInFinishedRow(before, { row, column }) ? before.grid[row]![column]! : cell)),
+  )
+  const changed = grid.some((cells, row) =>
+    cells.some((cell, column) => cell.color !== before.grid[row]![column]!.color),
+  )
+  return changed ? { ...after, grid } : before
+}
+
+/** Points row progress at the given row in its current direction, clamped to the Pattern — used to advance a finished row and to go back to an earlier one. */
 export function moveToRow(pattern: Pattern, row: number): Pattern {
+  const { total } = rowProgressPosition(pattern)
+  const pointer = pattern.rowProgress.direction === 'rows' ? 'currentRow' : 'currentColumn'
   return touch(pattern, {
-    rowProgress: { ...pattern.rowProgress, currentRow: clampRow(row, pattern.rows) },
+    rowProgress: { ...pattern.rowProgress, [pointer]: clampRow(row, total) },
   })
 }
 
