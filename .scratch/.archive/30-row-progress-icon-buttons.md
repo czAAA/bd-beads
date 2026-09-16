@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The previous-row and next-row ("Row done") buttons render as icon buttons, not text buttons
 - [ ] The two icons clearly distinguish "go back a row" from "mark this row done / advance", and are visually distinct from the Undo/Rotate/Mirror icons

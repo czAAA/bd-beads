@@ -866,6 +866,80 @@ describe('App', () => {
   })
 })
 
+/*
+ * Tickets 29/30: the tool strip's action buttons are icon-only, so a card never has to be as tall as a wrapped
+ * two-line Russian label — .tool-strip stretches every card in a row to the tallest one, so one tall card made the
+ * whole row (Palette included) tall. The label survives as a hover/focus tooltip plus the screen-reader name.
+ */
+describe('App tool strip icon buttons', () => {
+  const iconButtons = [
+    { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
+    { testId: 'mirror-current-vertical', label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton },
+    { testId: 'row-progress-previous', label: (t: typeof en) => t.rowProgress.previousButton },
+    { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton },
+  ]
+
+  it.each(iconButtons)('renders $testId as an icon button with no visible text', async ({ testId }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.classes()).toContain('icon-button')
+    expect(button.find('svg').exists()).toBe(true)
+    expect(button.text()).toBe('')
+  })
+
+  it.each(iconButtons)('names $testId for hover tooltips and screen readers alike', async ({ testId, label }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(label(en))
+    expect(button.attributes('aria-label')).toBe(label(en))
+  })
+
+  it.each(iconButtons)('translates $testId’s tooltip and label with the interface language', async ({ testId, label }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(label(ru))
+    expect(button.attributes('aria-label')).toBe(label(ru))
+  })
+
+  it('draws a different glyph for every icon button in the strip', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const glyphs = ['undo-button', 'rotate-button', ...iconButtons.map(({ testId }) => testId)].map(
+      (testId) => wrapper.find(`[data-testid="${testId}"] svg`).html(),
+    )
+
+    expect(new Set(glyphs).size).toBe(glyphs.length)
+  })
+
+  it('keeps the row-progress icons disabled at each end of the Pattern, as the text buttons were', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3') // 2x2
+    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
+    ).toBe(true)
+
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
+    ).toBe(true)
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
+    ).toBe(false)
+  })
+})
+
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
     const wrapper = mount(App)

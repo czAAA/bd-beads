@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The two mirror-current buttons render as icon buttons, not text buttons, in the Mirror card
 - [ ] The horizontal and vertical icons are visually distinct from each other and from the Undo/Rotate icons, and read as "mirror across this axis"
