@@ -12,7 +12,6 @@ import {
   keepFinishedRows,
   restoreGrid,
   rowProgressPosition,
-  setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
@@ -745,40 +744,9 @@ describe('keepFinishedRows', () => {
   })
 })
 
-describe('setColorBeadOverride', () => {
-  function pattern() {
-    return createPattern({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
-  }
-
-  it('starts with no per-Pattern overrides', () => {
-    expect(pattern().colorBeadOverrides).toEqual({})
-  })
-
-  it('records an override for one palette color, leaving the others alone', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
-
-    expect(overridden.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
-  })
-
-  it('clears an override when given no bead, falling back to the global default', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
-
-    expect(setColorBeadOverride(overridden, 'red', null).colorBeadOverrides).toEqual({})
-  })
-})
-
 describe('normalizePattern', () => {
-  it('backfills row progress, color overrides, and the rotated view flag on a Pattern saved before they existed', () => {
-    const {
-      rowProgress: _rowProgress,
-      colorBeadOverrides: _overrides,
-      rotated: _rotated,
-      ...legacy
-    } = createPattern({
+  it('backfills row progress and the rotated view flag on a Pattern saved before they existed', () => {
+    const { rowProgress: _rowProgress, rotated: _rotated, ...legacy } = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
@@ -792,8 +760,22 @@ describe('normalizePattern', () => {
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(normalized.colorBeadOverrides).toEqual({})
     expect(normalized.rotated).toBe(false)
+  })
+
+  it('drops the color-to-bead override field a Pattern saved before ticket 36 may still carry (ADR 0007)', () => {
+    const legacy = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      colorBeadOverrides: { red: 'miyuki-delica-11-0' },
+    }
+
+    const normalized = normalizePattern(legacy as Pattern)
+
+    expect((normalized as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 
   it('keeps the row pointer of progress saved before row direction existed, running it along the grid rows', () => {

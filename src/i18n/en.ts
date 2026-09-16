@@ -61,14 +61,9 @@ export const en: Translations = {
   quantities: {
     heading: 'Beads needed',
     noPatternMessage: 'Open a Pattern to see how many beads it needs',
+    noColorsMessage: 'Nothing painted yet',
     colorHeading: 'Color',
     countHeading: 'Beads',
-    resolvedBeadHeading: 'Bead used',
-    defaultBeadHeading: 'Default bead',
-    patternBeadHeading: 'This Pattern',
-    unmappedOption: 'No bead',
-    useDefaultOption: 'Same as default',
-    unknownColorLabel: 'Not in the Palette',
   },
   transfer: {
     heading: 'Export and import',
