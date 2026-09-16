@@ -33,6 +33,7 @@ import {
   setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
+  toggleRotated,
   type CreatePatternInput,
   type Grid,
   type MirrorAxes,
@@ -252,6 +253,20 @@ function onUndo() {
   replaceActivePattern(restoreGrid(pattern, previousGrid))
 }
 
+/**
+ * Flips the Pattern's rotated view flag — a purely visual 90° turn (see Pattern.rotated), not a grid edit, so it
+ * doesn't go through commitGridChange/undo. Still refits the zoom since the on-screen footprint just swapped.
+ */
+function onToggleRotate() {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  replaceActivePattern(toggleRotated(pattern))
+  resetZoom()
+}
+
 /** One-time reflect of whatever's currently painted across a single axis, via the old "bigger half" heuristic — for content drawn before that axis's live mirroring was turned on (ADR 0006). */
 function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
   const pattern = activePattern.value
@@ -407,6 +422,20 @@ function onRemoveBead(id: string) {
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path d="M7 7 3 11l4 4" />
                   <path d="M3 11h11a7 7 0 1 1 -7 7" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="rotate-button"
+                :aria-label="t.palette.rotateButton"
+                :aria-pressed="activePattern.rotated"
+                :class="{ 'tool-picker__button--selected': activePattern.rotated }"
+                @click="onToggleRotate"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="3" y="11" width="13" height="9" rx="1.5" />
+                  <rect x="9" y="4" width="9" height="13" rx="1.5" />
                 </svg>
               </button>
             </section>

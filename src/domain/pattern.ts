@@ -41,6 +41,14 @@ export interface Pattern {
   grid: Grid
   rowProgress: RowProgress
   colorBeadOverrides: ColorBeadOverrides
+  /**
+   * A view-only orientation flip (ticket 28): true shows the Pattern turned 90°, like a rotated photo. Purely
+   * cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only the on-screen (and
+   * printed/exported) presentation turns. Deliberately not a data transform: for Peyote/Brick, the offset stagger is
+   * tied to weave direction, so actually transposing the grid would change which cells are adjacent — a different,
+   * unweavable schema, not the same picture turned sideways.
+   */
+  rotated: boolean
   createdAt: number
   updatedAt: number
 }
@@ -84,6 +92,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     grid: createEmptyGrid(columns, rows),
     rowProgress: { enabled: false, currentRow: 0 },
     colorBeadOverrides: {},
+    rotated: false,
     createdAt: now,
     updatedAt: now,
   }
@@ -109,12 +118,18 @@ export function normalizePattern(pattern: Pattern): Pattern {
     ...pattern,
     rowProgress: { ...rowProgress, currentRow: clampRow(rowProgress.currentRow, pattern.rows) },
     colorBeadOverrides: pattern.colorBeadOverrides ?? {},
+    rotated: pattern.rotated ?? false,
   }
 }
 
 /** Shows or hides the row-progress overlay, leaving the pointer where it is. */
 export function setRowProgressEnabled(pattern: Pattern, enabled: boolean): Pattern {
   return touch(pattern, { rowProgress: { ...pattern.rowProgress, enabled } })
+}
+
+/** Flips the view-only rotated flag (see Pattern.rotated) — turns the Pattern's on-screen presentation 90°, like rotating a photo, without touching the grid itself. */
+export function toggleRotated(pattern: Pattern): Pattern {
+  return touch(pattern, { rotated: !pattern.rotated })
 }
 
 /** Points row progress at the given row, clamped to the Pattern — used to advance a finished row and to go back to an earlier one. */
@@ -317,9 +332,10 @@ export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
   return restoreGrid(pattern, grid)
 }
 
-/** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated). */
+/** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated); reflects the rotated view's swapped dimensions, since that's how the Pattern currently looks. */
 export function summarizePattern(pattern: Pattern): string {
-  return `${pattern.name} · ${pattern.columns}×${pattern.rows}`
+  const [width, height] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  return `${pattern.name} · ${width}×${height}`
 }
 
 export function mostRecentlyUpdated(patterns: Pattern[]): Pattern | undefined {

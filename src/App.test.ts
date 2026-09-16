@@ -270,6 +270,50 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
+  it('rotating is a view-only flip: it turns the picture on screen but never touches the grid, dimensions, or technique', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
+    const beforeRotate = loadPatterns()[0]!
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+    const afterRotate = loadPatterns()[0]!
+    expect(afterRotate.rotated).toBe(true)
+    expect(afterRotate.columns).toBe(beforeRotate.columns)
+    expect(afterRotate.rows).toBe(beforeRotate.rows)
+    expect(afterRotate.widthMm).toBe(beforeRotate.widthMm)
+    expect(afterRotate.heightMm).toBe(beforeRotate.heightMm)
+    expect(afterRotate.grid).toEqual(beforeRotate.grid)
+    // The header summary reflects how the Pattern currently looks (swapped), even though the stored grid didn't change.
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
+  })
+
+  it('toggles back to the original orientation on a second click', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '4.5', '3')
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    expect(loadPatterns()[0]!.rotated).toBe(true)
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    expect(loadPatterns()[0]!.rotated).toBe(false)
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('3×2')
+  })
+
+  it('is not an undo step: rotating does not touch the undo history', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '4.5', '3')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+  })
+
   it('mirroring is off by default, so painting touches only the clicked cell', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
@@ -769,7 +813,7 @@ describe('App', () => {
       wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).classes(),
     ).toContain('button--danger')
 
-    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button']) {
+    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button']) {
       expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
     }
   })

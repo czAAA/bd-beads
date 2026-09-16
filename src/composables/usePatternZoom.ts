@@ -34,12 +34,16 @@ export function usePatternZoom(
       return 1
     }
 
+    // columns/rows/technique stay the Pattern's real (unrotated) geometry — only which on-screen dimension the
+    // available width constrains swaps, since a rotated Pattern's natural height becomes its visual width.
+    const available = fitMaxPx(availableWidth.value || CANVAS_MAX_PX)
+
     return clampZoom(
       computeFitZoom({
         columns: pattern.columns,
         rows: pattern.rows,
-        maxWidth: fitMaxPx(availableWidth.value || CANVAS_MAX_PX),
-        maxHeight: Infinity,
+        maxWidth: pattern.rotated ? Infinity : available,
+        maxHeight: pattern.rotated ? available : Infinity,
         technique: pattern.technique,
       }),
     )
