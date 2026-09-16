@@ -1,5 +1,4 @@
 import { beadLabel } from './beads'
-import { withColorBeadMapping } from './beadMapping'
 import { findBead } from './beadStorage'
 import {
   computeGridDimensions,
@@ -36,9 +35,6 @@ export interface RowProgress {
   currentColumn: number
 }
 
-/** Palette color id -> Bead id, for the colors this Pattern maps differently from the global default (ticket 11). */
-export type ColorBeadOverrides = Record<string, string>
-
 export interface Pattern {
   id: string
   name: string
@@ -50,7 +46,6 @@ export interface Pattern {
   rows: number
   grid: Grid
   rowProgress: RowProgress
-  colorBeadOverrides: ColorBeadOverrides
   /**
    * A view-only orientation flip (ticket 28): true shows the Pattern turned 90°, like a rotated photo. Purely
    * cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only the on-screen (and
@@ -101,7 +96,6 @@ export function createPattern(input: CreatePatternInput): Pattern {
     rows,
     grid: createEmptyGrid(columns, rows),
     rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
-    colorBeadOverrides: {},
     rotated: false,
     createdAt: now,
     updatedAt: now,
@@ -117,22 +111,27 @@ function clampRow(row: number, rows: number): number {
   return Math.min(rows - 1, Math.max(0, row))
 }
 
+/** A Pattern as an older version of the app may have saved it: still carrying the color-to-bead override field ADR 0007/ticket 36 dropped. */
+type PatternWithLegacyFields = Pattern & { colorBeadOverrides?: unknown }
+
 /**
- * Fills in fields added after a Pattern was first saved, and re-clamps the row pointer, so a Pattern read back from
- * storage or an imported file is safe to use whatever version wrote it.
+ * Fills in fields added after a Pattern was first saved, re-clamps the row pointer, and drops the color-to-bead
+ * override field a Pattern saved before ticket 36 may still carry (ADR 0007: a Pattern now has one Bead, not a
+ * per-color mapping) — so a Pattern read back from storage or an imported file is safe to use whatever version wrote
+ * it, and never re-saves a field nothing reads anymore.
  */
 export function normalizePattern(pattern: Pattern): Pattern {
   const rowProgress = pattern.rowProgress ?? { enabled: false, currentRow: 0 }
+  const { colorBeadOverrides: _legacyOverrides, ...rest } = pattern as PatternWithLegacyFields
 
   return {
-    ...pattern,
+    ...rest,
     rowProgress: {
       ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
       currentRow: clampRow(rowProgress.currentRow, pattern.rows),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, pattern.columns),
     },
-    colorBeadOverrides: pattern.colorBeadOverrides ?? {},
     rotated: pattern.rotated ?? false,
   }
 }
@@ -191,17 +190,6 @@ export function moveToRow(pattern: Pattern, row: number): Pattern {
   const pointer = pattern.rowProgress.direction === 'rows' ? 'currentRow' : 'currentColumn'
   return touch(pattern, {
     rowProgress: { ...pattern.rowProgress, [pointer]: clampRow(row, total) },
-  })
-}
-
-/** Points one Palette color at a different Bead for this Pattern only; passing no bead drops back to the global default. */
-export function setColorBeadOverride(
-  pattern: Pattern,
-  colorId: string,
-  beadId: string | null,
-): Pattern {
-  return touch(pattern, {
-    colorBeadOverrides: withColorBeadMapping(pattern.colorBeadOverrides, colorId, beadId),
   })
 }
 
