@@ -415,6 +415,7 @@ function onRemoveBead(id: string) {
                 type="button"
                 class="icon-button"
                 data-testid="undo-button"
+                :title="t.palette.undoButton"
                 :aria-label="t.palette.undoButton"
                 :disabled="undoStack.length === 0"
                 @click="onUndo"
@@ -428,6 +429,7 @@ function onRemoveBead(id: string) {
                 type="button"
                 class="icon-button"
                 data-testid="rotate-button"
+                :title="t.palette.rotateButton"
                 :aria-label="t.palette.rotateButton"
                 :aria-pressed="activePattern.rotated"
                 :class="{ 'tool-picker__button--selected': activePattern.rotated }"
@@ -455,17 +457,33 @@ function onRemoveBead(id: string) {
               <div class="mirror-current">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="mirror-current-horizontal"
+                  :title="t.mirror.mirrorCurrentHorizontalButton"
+                  :aria-label="t.mirror.mirrorCurrentHorizontalButton"
                   @click="onMirrorCurrent('horizontal')"
                 >
-                  {{ t.mirror.mirrorCurrentHorizontalButton }}
+                  <!-- Two shapes facing away from a dashed vertical axis: the left-right flip this button performs. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 3v3M12 10.5v3M12 18v3" />
+                    <path d="M8.5 7 3.5 12l5 5z" />
+                    <path d="M15.5 7l5 5-5 5z" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="mirror-current-vertical"
+                  :title="t.mirror.mirrorCurrentVerticalButton"
+                  :aria-label="t.mirror.mirrorCurrentVerticalButton"
                   @click="onMirrorCurrent('vertical')"
                 >
-                  {{ t.mirror.mirrorCurrentVerticalButton }}
+                  <!-- The same glyph turned a quarter turn: a dashed horizontal axis with the shapes above and below it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 12h3M10.5 12h3M18 12h3" />
+                    <path d="M7 8.5 12 3.5l5 5z" />
+                    <path d="M7 15.5 12 20.5l5-5z" />
+                  </svg>
                 </button>
               </div>
             </section>
@@ -488,24 +506,37 @@ function onRemoveBead(id: string) {
               <div class="row-progress__steps">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="row-progress-previous"
+                  :title="t.rowProgress.previousButton"
+                  :aria-label="t.rowProgress.previousButton"
                   :disabled="
                     !activePattern.rowProgress.enabled || activePattern.rowProgress.currentRow === 0
                   "
                   @click="onMoveRow(-1)"
                 >
-                  {{ t.rowProgress.previousButton }}
+                  <!-- Rows are woven top to bottom, so stepping back up the Pattern is a plain up arrow. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 20V5" />
+                    <path d="M5.5 11.5 12 5l6.5 6.5" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="row-progress-next"
+                  :title="t.rowProgress.nextButton"
+                  :aria-label="t.rowProgress.nextButton"
                   :disabled="
                     !activePattern.rowProgress.enabled ||
                     activePattern.rowProgress.currentRow === activePattern.rows - 1
                   "
                   @click="onMoveRow(1)"
                 >
-                  {{ t.rowProgress.nextButton }}
+                  <!-- A tick, not a down arrow: what this button means is "this row is woven", and advancing is the consequence. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 13l5.5 5.5L20 6" />
+                  </svg>
                 </button>
               </div>
             </section>
