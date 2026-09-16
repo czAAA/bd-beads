@@ -477,41 +477,63 @@ function onRemoveBead(id: string) {
           </div>
 
           <div v-if="activePattern" class="tool-strip" data-testid="tool-strip">
-            <section class="tool-strip__card">
-              <h2>{{ t.tools.heading }}</h2>
+            <section class="tool-strip__card" :aria-label="t.tools.heading">
               <div class="tool-picker" role="group" :aria-label="t.tools.heading">
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="tool-paint"
+                  :title="t.tools.paintLabel"
+                  :aria-label="t.tools.paintLabel"
                   :aria-pressed="activeTool === 'paint'"
                   :class="{ 'tool-picker__button--selected': activeTool === 'paint' }"
                   @click="onSelectTool('paint')"
                 >
-                  {{ t.tools.paintLabel }}
+                  <!-- A brush held at an angle, bristles splaying to the low corner. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M17.5 2.5 21.5 6.5 11 17 7 13z" />
+                    <path d="M7 13 3.5 20.5 11 17" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="tool-fill"
+                  :title="t.tools.fillLabel"
+                  :aria-label="t.tools.fillLabel"
                   :aria-pressed="activeTool === 'fill'"
                   :class="{ 'tool-picker__button--selected': activeTool === 'fill' }"
                   @click="onSelectTool('fill')"
                 >
-                  {{ t.tools.fillLabel }}
+                  <!-- A tipped paint bucket with a drop coming off it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M10.5 2.5 3.9 9.1a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0l6.6-6.6z" />
+                    <path d="M20.5 14.5c.9 1.3 1.4 2.2 1.4 2.8a1.4 1.4 0 0 1-2.8 0c0-.6.5-1.5 1.4-2.8z" />
+                  </svg>
                 </button>
                 <button
                   type="button"
+                  class="icon-button"
                   data-testid="tool-select"
+                  :title="t.tools.selectLabel"
+                  :aria-label="t.tools.selectLabel"
                   :aria-pressed="activeTool === 'select'"
                   :class="{ 'tool-picker__button--selected': activeTool === 'select' }"
                   @click="onSelectTool('select')"
                 >
-                  {{ t.tools.selectLabel }}
+                  <!-- A dashed rectangle: the marquee this tool drags out. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 8V6a3 3 0 0 1 3-3h2" />
+                    <path d="M16 3h2a3 3 0 0 1 3 3v2" />
+                    <path d="M21 16v2a3 3 0 0 1-3 3h-2" />
+                    <path d="M8 21H6a3 3 0 0 1-3-3v-2" />
+                    <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
+                  </svg>
                 </button>
               </div>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.palette.heading }}</h2>
+            <section class="tool-strip__card" :aria-label="t.palette.heading">
               <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
             </section>
 
@@ -562,17 +584,41 @@ function onRemoveBead(id: string) {
               </button>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.mirror.heading }}</h2>
-              <div class="mirror-axes">
-                <label>
-                  <input v-model="mirrorAxes.horizontal" type="checkbox" data-testid="mirror-horizontal" />
-                  {{ t.mirror.horizontalLabel }}
-                </label>
-                <label>
-                  <input v-model="mirrorAxes.vertical" type="checkbox" data-testid="mirror-vertical" />
-                  {{ t.mirror.verticalLabel }}
-                </label>
+            <section class="tool-strip__card" :aria-label="t.mirror.heading">
+              <div class="mirror-axes" role="group" :aria-label="t.mirror.heading">
+                <button
+                  type="button"
+                  class="icon-button"
+                  data-testid="mirror-horizontal"
+                  :title="t.mirror.horizontalLabel"
+                  :aria-label="t.mirror.horizontalLabel"
+                  :aria-pressed="mirrorAxes.horizontal"
+                  :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
+                  @click="mirrorAxes.horizontal = !mirrorAxes.horizontal"
+                >
+                  <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 3v3M12 10.5v3M12 18v3" />
+                    <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
+                    <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="icon-button"
+                  data-testid="mirror-vertical"
+                  :title="t.mirror.verticalLabel"
+                  :aria-label="t.mirror.verticalLabel"
+                  :aria-pressed="mirrorAxes.vertical"
+                  :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
+                  @click="mirrorAxes.vertical = !mirrorAxes.vertical"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3 12h3M10.5 12h3M18 12h3" />
+                    <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
+                    <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
+                  </svg>
+                </button>
               </div>
               <div class="mirror-current">
                 <button
@@ -608,17 +654,24 @@ function onRemoveBead(id: string) {
               </div>
             </section>
 
-            <section class="tool-strip__card">
-              <h2>{{ t.rowProgress.heading }}</h2>
-              <label>
-                <input
-                  type="checkbox"
-                  data-testid="row-progress-enabled"
-                  :checked="activePattern.rowProgress.enabled"
-                  @change="onToggleRowProgress(($event.target as HTMLInputElement).checked)"
-                />
-                {{ t.rowProgress.enabledLabel }}
-              </label>
+            <section class="tool-strip__card" :aria-label="t.rowProgress.heading">
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="row-progress-enabled"
+                :title="t.rowProgress.enabledLabel"
+                :aria-label="t.rowProgress.enabledLabel"
+                :aria-pressed="activePattern.rowProgress.enabled"
+                :class="{ 'tool-picker__button--selected': activePattern.rowProgress.enabled }"
+                @click="onToggleRowProgress(!activePattern.rowProgress.enabled)"
+              >
+                <!-- Rows of weaving with the current one boxed: the overlay this toggles on. -->
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 5.5h18" />
+                  <rect x="3" y="9.5" width="18" height="5" rx="1.5" />
+                  <path d="M3 18.5h18" />
+                </svg>
+              </button>
               <p class="row-progress__position" data-testid="row-progress-position">
                 {{ t.rowProgress.positionLabel }}
                 {{ activePattern.rowProgress.currentRow + 1 }} / {{ activePattern.rows }}
@@ -816,7 +869,7 @@ function onRemoveBead(id: string) {
 .mirror-axes {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .mirror-current {
@@ -865,41 +918,30 @@ function onRemoveBead(id: string) {
 
 /*
  * Grows (1 1 220px) rather than sitting at its own content width: five cards of very different natural widths
- * (a two-button tool picker vs. a twelve-swatch palette vs. two long mirror buttons) left most of a wide strip as
- * bare dot-grid texture at flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row,
- * and shrinking below content width lets a card's own wrap rules (.mirror-current, .row-progress__steps) fire and
- * stack its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line
- * kicks in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
+ * (a three-icon tool picker vs. a twelve-swatch palette) left most of a wide strip as bare dot-grid texture at
+ * flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row, and shrinking below
+ * content width lets a card's own wrap rules (.mirror-axes, .mirror-current, .row-progress__steps) fire and stack
+ * its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line kicks
+ * in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
  *
- * display:flex here (not the old block/stacked layout) is what makes the strip lean rather than tall (ticket 27):
- * the heading and its controls sit side by side, one line, instead of a heading row on top of a controls row —
- * three or four times the height for no reason once the strip is allowed to grow sideways instead. A card's own
- * content (.mirror-axes, .mirror-current, .row-progress__steps, ...) still wraps internally first if a narrow card
- * genuinely can't fit everything on one line.
+ * Every control here is now an icon button naming itself on hover, and the cards carry their heading as an
+ * aria-label rather than visible text, so a card is one 44px row of icons — the whole reason the strip is lean
+ * rather than tall. That matters because align-items:stretch matches every card in a row to the tallest one, so any
+ * card that wraps to two rows drags its whole line with it (tickets 29/30). The Palette card, the one card whose
+ * content genuinely needs several rows at a narrow width, is what sets that height.
  */
 .tool-strip__card {
   flex: 1 1 220px;
   min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
   padding: 6px 12px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
-}
-
-/* An inline label rather than a block heading above the controls — see .tool-strip__card above. */
-.tool-strip__card h2 {
-  margin: 0;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
-/* A size step down from the app's default button (10px 22px): right for a compact toolbar row, not for the form/list buttons elsewhere that keep the default. The bare icon-button keeps its own fixed 44x44 touch target. */
-.tool-strip__card button:not(.icon-button) {
-  padding: 6px 16px;
 }
 
 .row-progress__position {

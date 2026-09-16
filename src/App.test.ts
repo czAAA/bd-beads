@@ -318,8 +318,8 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    expect(wrapper.find<HTMLInputElement>('[data-testid="mirror-horizontal"]').element.checked).toBe(
-      false,
+    expect(wrapper.find('[data-testid="mirror-horizontal"]').attributes('aria-pressed')).toBe(
+      'false',
     )
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -332,7 +332,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
 
@@ -348,8 +348,8 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
-    await wrapper.find('[data-testid="mirror-vertical"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
 
@@ -364,7 +364,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
     await wrapper.trigger('mouseup')
@@ -384,7 +384,7 @@ describe('App', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // fill (0,0), mirror on
@@ -481,7 +481,7 @@ describe('App', () => {
   it('drags a live-mirrored stroke, mirroring each dragged cell along the way', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
@@ -571,7 +571,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await cells[0]!.trigger('mousedown') // paints (0,0) and (0,1)
     await wrapper.trigger('mouseup')
@@ -867,14 +867,24 @@ describe('App', () => {
 })
 
 /*
- * Tickets 29/30: the tool strip's action buttons are icon-only, so a card never has to be as tall as a wrapped
- * two-line Russian label — .tool-strip stretches every card in a row to the tallest one, so one tall card made the
- * whole row (Palette included) tall. The label survives as a hover/focus tooltip plus the screen-reader name.
+ * Every control in the tool strip is an icon: no card heading, no button label, nothing but the row-progress
+ * readout in text. The words survive as a hover/focus tooltip plus the screen-reader name, so the strip stays
+ * compact — .tool-strip stretches every card in a row to the tallest one, so one wrapped label used to make the
+ * whole row tall (tickets 29/30, then widened to the rest of the strip).
  */
 describe('App tool strip icon buttons', () => {
   const iconButtons = [
+    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel },
+    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel },
+    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel },
+    { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
+    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
+    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
+    { testId: 'mirror-horizontal', label: (t: typeof en) => t.mirror.horizontalLabel },
+    { testId: 'mirror-vertical', label: (t: typeof en) => t.mirror.verticalLabel },
     { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
     { testId: 'mirror-current-vertical', label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton },
+    { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel },
     { testId: 'row-progress-previous', label: (t: typeof en) => t.rowProgress.previousButton },
     { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton },
   ]
@@ -899,7 +909,7 @@ describe('App tool strip icon buttons', () => {
     expect(button.attributes('aria-label')).toBe(label(en))
   })
 
-  it.each(iconButtons)('translates $testId’s tooltip and label with the interface language', async ({ testId, label }) => {
+  it.each(iconButtons)('translates $testId\u2019s tooltip and label with the interface language', async ({ testId, label }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
@@ -913,30 +923,48 @@ describe('App tool strip icon buttons', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const glyphs = ['undo-button', 'rotate-button', ...iconButtons.map(({ testId }) => testId)].map(
-      (testId) => wrapper.find(`[data-testid="${testId}"] svg`).html(),
-    )
+    const glyphs = iconButtons.map(({ testId }) => wrapper.find(`[data-testid="${testId}"] svg`).html())
 
     expect(new Set(glyphs).size).toBe(glyphs.length)
   })
 
-  it('keeps the row-progress icons disabled at each end of the Pattern, as the text buttons were', async () => {
+  it('leaves the row-progress readout as the strip\u2019s only text \u2014 every card heading and button label is now a tooltip', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await createPatternViaForm(wrapper, '15', '30')
 
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
-    ).toBe(true)
+    const toolStrip = wrapper.find('[data-testid="tool-strip"]')
 
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    expect(toolStrip.text().replace(/\s+/g, ' ').trim()).toBe(
+      wrapper.find('[data-testid="row-progress-position"]').text().replace(/\s+/g, ' ').trim(),
+    )
+  })
 
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
-    ).toBe(true)
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
-    ).toBe(false)
+  it('names each card for screen readers, now that its heading is gone', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    const labels = wrapper.findAll('.tool-strip__card').map((card) => card.attributes('aria-label'))
+
+    expect(labels).toContain(en.tools.heading)
+    expect(labels).toContain(en.palette.heading)
+    expect(labels).toContain(en.mirror.heading)
+    expect(labels).toContain(en.rowProgress.heading)
+  })
+
+  it('shows which tool and which mirror axes are on, now that nothing is labelled in text', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain(
+      'tool-picker__button--selected',
+    )
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+
+    const mirrorButton = wrapper.find('[data-testid="mirror-horizontal"]')
+    expect(mirrorButton.attributes('aria-pressed')).toBe('true')
+    expect(mirrorButton.classes()).toContain('tool-picker__button--selected')
   })
 })
 
@@ -963,7 +991,7 @@ describe('App hover preview', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
 
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mouseenter') // (0,0)
 
@@ -973,7 +1001,7 @@ describe('App hover preview', () => {
   it('does not preview mirrored cells for the Fill tool, since Fill is unaffected by mirror state', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
@@ -990,7 +1018,7 @@ describe('App row progress', () => {
 
     expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(0)
 
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(1)
     expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
@@ -999,7 +1027,7 @@ describe('App row progress', () => {
   it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
@@ -1014,7 +1042,7 @@ describe('App row progress', () => {
   it('moves the pointer back to an earlier row', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
@@ -1027,7 +1055,7 @@ describe('App row progress', () => {
   it('will not step past either end of the Pattern', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(
       wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
@@ -1043,7 +1071,7 @@ describe('App row progress', () => {
   it('remembers where the weaving got to across a reload', async () => {
     const first = mount(App)
     await createPatternViaForm(first, '15', '30')
-    await first.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await first.find('[data-testid="row-progress-enabled"]').trigger('click')
     await first.find('[data-testid="row-progress-next"]').trigger('click')
     first.unmount()
 
@@ -1408,7 +1436,7 @@ describe('App select, copy and paste', () => {
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
 
     await click(wrapper, 8) // (2,0)
 
