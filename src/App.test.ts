@@ -4,7 +4,7 @@ import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns, savePattern } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 
@@ -1342,6 +1342,72 @@ describe('App finished rows', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
     expect(colorAt(0, 4)).toBeNull()
+  })
+})
+
+describe('App header bead', () => {
+  it("shows the open Pattern's Bead label in the header", async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('updates the Bead shown when switching to another Pattern', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const firstId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
+    await wrapper.find('[data-testid="width-input"]').setValue('15')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('Miyuki Delica 11/0')
+
+    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('shows no Bead in the header with no Pattern open', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const patternId = loadPatterns()[0]!.id
+
+    await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
+  })
+
+  it('shows an "unknown bead" label, translated, for a Pattern whose Bead is not in the catalog', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+    savePattern({ ...pattern, beadId: 'no-such-bead' })
+
+    const wrapper = mount(App)
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(ru.patterns.unknownBeadLabel)
+
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(en.patterns.unknownBeadLabel)
+  })
+
+  it('leaves the Saved Patterns list unchanged: no Bead shown there', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const patternId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '30', '30')
+
+    const patternItem = wrapper
+      .findAll('[data-testid="pattern-item"]')
+      .find((item) => item.find(`[data-testid="select-pattern-${patternId}"]`).exists())!
+    expect(patternItem.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
   })
 })
 
