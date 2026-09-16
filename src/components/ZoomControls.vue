@@ -15,6 +15,7 @@ const { t } = useI18n()
     <button
       type="button"
       data-testid="zoom-out"
+      :title="t.canvas.zoomOutLabel"
       :aria-label="t.canvas.zoomOutLabel"
       @click="emit('zoom-out')"
     >
@@ -24,6 +25,7 @@ const { t } = useI18n()
     <button
       type="button"
       data-testid="zoom-in"
+      :title="t.canvas.zoomInLabel"
       :aria-label="t.canvas.zoomInLabel"
       @click="emit('zoom-in')"
     >
@@ -32,6 +34,7 @@ const { t } = useI18n()
     <button
       type="button"
       data-testid="zoom-reset"
+      :title="t.canvas.zoomResetLabel"
       :aria-label="t.canvas.zoomResetLabel"
       @click="emit('reset')"
     >

@@ -47,6 +47,8 @@ export const en: Translations = {
     heading: 'Tool',
     paintLabel: 'Paint',
     fillLabel: 'Fill',
+    selectLabel: 'Select',
+    copyButton: 'Copy',
   },
   rowProgress: {
     heading: 'Row progress',

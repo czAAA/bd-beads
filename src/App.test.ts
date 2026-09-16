@@ -318,8 +318,8 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    expect(wrapper.find<HTMLInputElement>('[data-testid="mirror-horizontal"]').element.checked).toBe(
-      false,
+    expect(wrapper.find('[data-testid="mirror-horizontal"]').attributes('aria-pressed')).toBe(
+      'false',
     )
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -332,7 +332,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
 
@@ -348,8 +348,8 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
-    await wrapper.find('[data-testid="mirror-vertical"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
 
@@ -364,7 +364,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
     await wrapper.trigger('mouseup')
@@ -384,7 +384,7 @@ describe('App', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // fill (0,0), mirror on
@@ -481,7 +481,7 @@ describe('App', () => {
   it('drags a live-mirrored stroke, mirroring each dragged cell along the way', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
@@ -571,7 +571,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await cells[0]!.trigger('mousedown') // paints (0,0) and (0,1)
     await wrapper.trigger('mouseup')
@@ -866,6 +866,108 @@ describe('App', () => {
   })
 })
 
+/*
+ * Every control in the tool strip is an icon: no card heading, no button label, nothing but the row-progress
+ * readout in text. The words survive as a hover/focus tooltip plus the screen-reader name, so the strip stays
+ * compact — .tool-strip stretches every card in a row to the tallest one, so one wrapped label used to make the
+ * whole row tall (tickets 29/30, then widened to the rest of the strip).
+ */
+describe('App tool strip icon buttons', () => {
+  const iconButtons = [
+    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel },
+    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel },
+    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel },
+    { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
+    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
+    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
+    { testId: 'mirror-horizontal', label: (t: typeof en) => t.mirror.horizontalLabel },
+    { testId: 'mirror-vertical', label: (t: typeof en) => t.mirror.verticalLabel },
+    { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
+    { testId: 'mirror-current-vertical', label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton },
+    { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel },
+    { testId: 'row-progress-previous', label: (t: typeof en) => t.rowProgress.previousButton },
+    { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton },
+  ]
+
+  it.each(iconButtons)('renders $testId as an icon button with no visible text', async ({ testId }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.classes()).toContain('icon-button')
+    expect(button.find('svg').exists()).toBe(true)
+    expect(button.text()).toBe('')
+  })
+
+  it.each(iconButtons)('names $testId for hover tooltips and screen readers alike', async ({ testId, label }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(label(en))
+    expect(button.attributes('aria-label')).toBe(label(en))
+  })
+
+  it.each(iconButtons)('translates $testId\u2019s tooltip and label with the interface language', async ({ testId, label }) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(label(ru))
+    expect(button.attributes('aria-label')).toBe(label(ru))
+  })
+
+  it('draws a different glyph for every icon button in the strip', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const glyphs = iconButtons.map(({ testId }) => wrapper.find(`[data-testid="${testId}"] svg`).html())
+
+    expect(new Set(glyphs).size).toBe(glyphs.length)
+  })
+
+  it('leaves the row-progress readout as the strip\u2019s only text \u2014 every card heading and button label is now a tooltip', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const toolStrip = wrapper.find('[data-testid="tool-strip"]')
+
+    expect(toolStrip.text().replace(/\s+/g, ' ').trim()).toBe(
+      wrapper.find('[data-testid="row-progress-position"]').text().replace(/\s+/g, ' ').trim(),
+    )
+  })
+
+  it('names each card for screen readers, now that its heading is gone', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    const labels = wrapper.findAll('.tool-strip__card').map((card) => card.attributes('aria-label'))
+
+    expect(labels).toContain(en.tools.heading)
+    expect(labels).toContain(en.palette.heading)
+    expect(labels).toContain(en.mirror.heading)
+    expect(labels).toContain(en.rowProgress.heading)
+  })
+
+  it('shows which tool and which mirror axes are on, now that nothing is labelled in text', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain(
+      'tool-picker__button--selected',
+    )
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+
+    const mirrorButton = wrapper.find('[data-testid="mirror-horizontal"]')
+    expect(mirrorButton.attributes('aria-pressed')).toBe('true')
+    expect(mirrorButton.classes()).toContain('tool-picker__button--selected')
+  })
+})
+
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
     const wrapper = mount(App)
@@ -889,7 +991,7 @@ describe('App hover preview', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
 
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mouseenter') // (0,0)
 
@@ -899,7 +1001,7 @@ describe('App hover preview', () => {
   it('does not preview mirrored cells for the Fill tool, since Fill is unaffected by mirror state', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-testid="mirror-horizontal"]').setValue(true)
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
@@ -916,7 +1018,7 @@ describe('App row progress', () => {
 
     expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(0)
 
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(1)
     expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
@@ -925,7 +1027,7 @@ describe('App row progress', () => {
   it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
@@ -940,7 +1042,7 @@ describe('App row progress', () => {
   it('moves the pointer back to an earlier row', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
@@ -953,7 +1055,7 @@ describe('App row progress', () => {
   it('will not step past either end of the Pattern', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2
-    await wrapper.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(
       wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
@@ -969,7 +1071,7 @@ describe('App row progress', () => {
   it('remembers where the weaving got to across a reload', async () => {
     const first = mount(App)
     await createPatternViaForm(first, '15', '30')
-    await first.find('[data-testid="row-progress-enabled"]').setValue(true)
+    await first.find('[data-testid="row-progress-enabled"]').trigger('click')
     await first.find('[data-testid="row-progress-next"]').trigger('click')
     first.unmount()
 
@@ -1165,5 +1267,329 @@ describe('App pattern transfer', () => {
 
     expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(0)
+  })
+})
+
+describe('App select, copy and paste', () => {
+  /** A drag across the grid: press on one cell, move through the rest, release (release is on the shell, as a real drag can end anywhere). */
+  async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[indices[0]!]!.trigger('mousedown')
+    for (const index of indices.slice(1)) {
+      await cells[index]!.trigger('mouseenter', { buttons: 1 })
+    }
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /** Presses and releases one cell without moving — a click, which is what stamps a copied block. */
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  function selectedCount(wrapper: ReturnType<typeof mount>) {
+    return wrapper.findAll('.pattern-grid__cell--selected').length
+  }
+
+  /** A 4x4 Pattern with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
+  async function patternWithMotif(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '6', '6') // 4x4 grid
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // (0,0)
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await click(wrapper, 5) // (1,1)
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+  }
+
+  it('offers Select alongside Paint and Fill, chosen the same way', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('marks out a rectangle as the cursor is dragged, and keeps it after the drag ends', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('leaves the grid alone while selecting: dragging under Select paints nothing', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 5])
+
+    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+  })
+
+  it('replaces the previous selection when a new drag starts, leaving only one active', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await drag(wrapper, [0, 1, 4, 5]) // a 2x2 rectangle
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await drag(wrapper, [10, 11]) // (2,2) -> (2,3)
+
+    expect(selectedCount(wrapper)).toBe(2)
+  })
+
+  it('enables Copy only once something is selected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await drag(wrapper, [0, 1])
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+  })
+
+  it('previews the copied block in its own colors, following the cursor', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5]) // select the 2x2 holding both painted cells
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mouseenter') // hover (2,2)
+
+    const previews = wrapper.findAll('[data-testid="cell-preview"]')
+    expect(previews).toHaveLength(2) // the block's two painted cells; its two empty ones preview nothing
+    expect(previews[0]!.attributes('style')).toContain('background-color: rgb(230, 55, 70)')
+    expect(previews[1]!.attributes('style')).toContain('background-color: rgb(47, 111, 237)')
+  })
+
+  it('stamps the copied block where it is clicked, as a single undo step', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 10) // (2,2)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[3]![3]!.color).toBe('#2f6fed')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBeNull()
+  })
+
+  it('can stamp the same block again at another position without copying again', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 8) // (2,0)
+    await click(wrapper, 10) // (2,2)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![0]!.color).toBe('#e63746')
+    expect(grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('clips a stamp that runs off the edge instead of refusing it', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await click(wrapper, 15) // (3,3), the last cell: only the block's own top-left corner fits
+
+    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBe('#e63746')
+  })
+
+  it('leaves the destination untouched under the block’s empty cells', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    // Paint the destination green first, so the block's holes have something to spare.
+    await wrapper.find('[data-testid="tool-paint"]').trigger('click')
+    await wrapper.find('[data-color-id="green"]').trigger('click')
+    await click(wrapper, 9) // (2,1) — lands under one of the block's empty cells
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await click(wrapper, 8) // stamp at (2,0)
+
+    expect(loadPatterns()[0]!.grid[2]![1]!.color).toBe('#27ae60')
+  })
+
+  it('stamps exactly where it was aimed even with a Mirror axis on, as Fill does', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+
+    await click(wrapper, 8) // (2,0)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![0]!.color).toBe('#e63746')
+    expect(grid[2]![3]!.color).toBeNull() // the mirrored counterpart is left alone
+  })
+
+  it('drops the clipboard when a new selection is drawn, so the next click selects rather than stamps', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await drag(wrapper, [10, 11]) // a fresh selection replaces both it and the clipboard
+    await click(wrapper, 8)
+
+    expect(loadPatterns()[0]!.grid[2]![0]!.color).toBeNull()
+  })
+
+  /** Escape is bound to the window, not to the canvas, so it is dispatched there rather than on an element. */
+  async function pressEscape(wrapper: ReturnType<typeof mount>) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    return wrapper
+  }
+
+  async function copiedMotif(wrapper: ReturnType<typeof mount>) {
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+  }
+
+  it('drops the copied block on a right-click, so the next click selects instead of stamping', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mousedown', { button: 2 })
+    await click(wrapper, 10) // (2,2) — would have stamped the motif
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1)
+  })
+
+  it('drops the copied block on Escape, so the next click selects instead of stamping', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await pressEscape(wrapper)
+    await click(wrapper, 10)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1)
+  })
+
+  it('stops previewing the block once the copy is dropped', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mouseenter')
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2)
+
+    await pressEscape(wrapper)
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+  })
+
+  it('keeps the selection itself, so Copy can put the same block back on the clipboard', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await pressEscape(wrapper)
+
+    expect(selectedCount(wrapper)).toBe(4)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('still never erases under Select: a right-click cancels the paste rather than clearing a cell', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown', { button: 2 }) // a painted cell
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the other tools alone: Escape is not a general-purpose cancel', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await pressEscape(wrapper)
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+  })
+
+  it.each(['tool-paint', 'tool-fill'])('forgets the selected area when the tool changes to %s', async (tool) => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0, 1, 4, 5])
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await wrapper.find(`[data-testid="${tool}"]`).trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(0)
+  })
+
+  it('forgets the copied block too, so returning to Select does not stamp out of nowhere', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await wrapper.find('[data-testid="tool-paint"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await click(wrapper, 10) // (2,2)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1) // a fresh selection, not a stamp
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+  })
+
+  it('keeps the selection when Select is re-chosen while already active', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0, 1, 4, 5])
+
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('clears the selection and clipboard when a different Pattern is opened', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    const firstId = loadPatterns()[0]!.id
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await click(wrapper, 0)
+    expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBeNull()
   })
 })
