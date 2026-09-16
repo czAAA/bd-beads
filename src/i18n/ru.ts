@@ -55,6 +55,7 @@ export const ru: Translations = {
   rowProgress: {
     heading: 'Прогресс по рядам',
     enabledLabel: 'Показывать прогресс по рядам',
+    directionButton: 'Повернуть направление рядов',
     positionLabel: 'Ряд',
     previousButton: 'Предыдущий ряд',
     nextButton: 'Ряд готов',

@@ -885,6 +885,7 @@ describe('App tool strip icon buttons', () => {
     { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
     { testId: 'mirror-current-vertical', label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton },
     { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel },
+    { testId: 'row-progress-direction', label: (t: typeof en) => t.rowProgress.directionButton },
     { testId: 'row-progress-previous', label: (t: typeof en) => t.rowProgress.previousButton },
     { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton },
   ]
@@ -1079,7 +1080,268 @@ describe('App row progress', () => {
 
     expect(afterReload.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
     expect(afterReload.findAll('.pattern-grid__row--done')).toHaveLength(1)
-    expect(loadPatterns()[0]!.rowProgress).toEqual({ enabled: true, currentRow: 1 })
+    expect(loadPatterns()[0]!.rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 1,
+      currentColumn: 0,
+    })
+  })
+
+  describe('row direction', () => {
+    function position(wrapper: ReturnType<typeof mount>) {
+      return wrapper.find('[data-testid="row-progress-position"]').text()
+    }
+
+    it('turns rows to run down the columns: the readout counts columns and the steps move through them', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+
+      expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('aria-pressed')).toBe('true')
+      expect(position(wrapper)).toContain('1 / 10')
+
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+      expect(position(wrapper)).toContain('3 / 10')
+      const firstGridRow = wrapper.findAll('[data-testid="grid-row"]')[0]!.findAll('[data-testid="grid-cell"]')
+      expect(firstGridRow[1]!.classes()).toContain('pattern-grid__cell--done')
+      expect(firstGridRow[2]!.classes()).toContain('pattern-grid__cell--current')
+      expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(0)
+    })
+
+    it('will not step past the last column', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
+      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+      expect(position(wrapper)).toContain('3 / 3')
+      expect(
+        wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
+      ).toBe(true)
+    })
+
+    it('returns to the row the weaver was on after flipping the direction and back', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      expect(position(wrapper)).toContain('2 / 10')
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+      expect(position(wrapper)).toContain('3 / 20')
+    })
+
+    it('remembers the direction and where the weaving got to across a reload', async () => {
+      const first = mount(App)
+      await createPatternViaForm(first, '15', '30')
+      await first.find('[data-testid="row-progress-direction"]').trigger('click')
+      await first.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await first.find('[data-testid="row-progress-next"]').trigger('click')
+      first.unmount()
+
+      const afterReload = mount(App)
+
+      expect(afterReload.find('[data-testid="row-progress-direction"]').attributes('aria-pressed')).toBe('true')
+      expect(position(afterReload)).toContain('2 / 10')
+    })
+
+    it('is its own toggle, apart from Rotate: neither changes the other, and flipping is not an undo step', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '15', '30')
+      const gridBefore = loadPatterns()[0]!.grid
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+
+      expect(loadPatterns()[0]!.rotated).toBe(false)
+      expect(loadPatterns()[0]!.grid).toEqual(gridBefore)
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+
+      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+      expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
+      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+      expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
+    })
+  })
+})
+
+describe('App finished rows', () => {
+  /** Opens a 10-column x 20-row Pattern with Row progress on and rows 1-2 marked done, red selected; returns its cells. */
+  async function withTwoRowsWoven(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    return wrapper.findAll('[data-testid="grid-cell"]')
+  }
+
+  function colorAt(row: number, column: number) {
+    return loadPatterns()[0]!.grid[row]![column]!.color
+  }
+
+  function undoDisabled(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled
+  }
+
+  it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+
+    await cells[14]!.trigger('mousedown') // (1,4)
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBeNull()
+    expect(undoDisabled(wrapper)).toBe(true)
+  })
+
+  it('paints only the unfinished part of a drag that crosses into the current row', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+
+    await cells[14]!.trigger('mousedown') // (1,4)
+    await cells[24]!.trigger('mouseenter', { buttons: 1 }) // (2,4), the current row
+    await cells[34]!.trigger('mouseenter', { buttons: 1 }) // (3,4)
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBeNull()
+    expect(colorAt(2, 4)).toBe('#e63746')
+    expect(colorAt(3, 4)).toBe('#e63746')
+  })
+
+  it('will not right-click erase a bead in a finished row', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('mousedown') // (0,4), painted before it was woven
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('mousedown', { button: 2 })
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(0, 4)).toBe('#e63746')
+  })
+
+  it('fills only the unfinished part of an area that reaches into finished rows', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+    await cells[55]!.trigger('mousedown') // (5,5), in the one empty area covering the whole grid
+
+    expect(colorAt(0, 0)).toBeNull()
+    expect(colorAt(1, 9)).toBeNull()
+    expect(colorAt(2, 0)).toBe('#e63746')
+    expect(colorAt(19, 9)).toBe('#e63746')
+  })
+
+  it('stamps a pasted block only onto the unfinished beads it covers', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await cells[50]!.trigger('mousedown') // (5,0)
+    await cells[60]!.trigger('mouseenter', { buttons: 1 }) // (6,0)
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await cells[50]!.trigger('mousedown')
+    await cells[60]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    await cells[10]!.trigger('mousedown') // stamps onto (1,0) and (2,0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+
+    expect(colorAt(1, 0)).toBeNull()
+    expect(colorAt(2, 0)).toBe('#e63746')
+  })
+
+  it('leaves a live-mirrored counterpart alone when it lands in a finished row', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
+
+    await cells[183]!.trigger('mousedown') // (18,3), whose counterpart across the middle is (1,3)
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(18, 3)).toBe('#e63746')
+    expect(colorAt(1, 3)).toBeNull()
+  })
+
+  it('keeps "Mirror current" from reflecting anything onto finished rows', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await cells[183]!.trigger('mousedown') // (18,3)
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('click')
+
+    expect(colorAt(18, 3)).toBe('#e63746')
+    expect(colorAt(1, 3)).toBeNull()
+  })
+
+  it('locks the finished columns instead once rows run down them', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await cells[0]!.trigger('mousedown') // (0,0), a row that's finished no longer, in a column that now is
+    await wrapper.trigger('mouseup')
+    await cells[11]!.trigger('mousedown') // (1,1), the current column
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(0, 0)).toBeNull()
+    expect(colorAt(1, 1)).toBe('#e63746')
+  })
+
+  it('lets every bead be drawn on again once the overlay is off', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    await cells[14]!.trigger('mousedown') // (1,4)
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBe('#e63746')
+  })
+
+  it('previews no paint on a finished bead, and only the unfinished half of a mirrored pair', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+
+    await cells[14]!.trigger('mouseenter') // (1,4)
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
+    await cells[183]!.trigger('mouseenter') // (18,3), mirrored onto finished (1,3)
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(1)
+  })
+
+  it('still undoes in full, even a change to a row marked done since', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('mousedown') // (0,4)
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(colorAt(0, 4)).toBeNull()
   })
 })
 
@@ -1239,7 +1501,7 @@ describe('App pattern transfer', () => {
   it('opens an imported Pattern when nothing was open, so the user resumes where they left off', async () => {
     const wrapper = mount(App)
     const woven = makePattern('Fox')
-    woven.rowProgress = { enabled: true, currentRow: 4 }
+    woven.rowProgress = { enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 }
 
     await importFile(wrapper, serializeLibrary([woven], {}))
 
@@ -1516,6 +1778,39 @@ describe('App select, copy and paste', () => {
     await click(wrapper, 10)
 
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('clears a selection nothing has been copied from on Escape', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+
+    await pressEscape(wrapper)
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+  })
+
+  it('clears a selection nothing has been copied from on a right-click, without erasing anything', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown', { button: 2 }) // a painted cell
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('clears the selection on a second Escape or right-click, once the first has dropped the copy', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+
+    await pressEscape(wrapper)
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mousedown', { button: 2 })
+    expect(selectedCount(wrapper)).toBe(0)
   })
 
   it('still never erases under Select: a right-click cancels the paste rather than clearing a cell', async () => {

@@ -32,16 +32,20 @@ import {
 import {
   createPattern,
   fillArea,
+  isInFinishedRow,
+  keepFinishedRows,
   mirrorPattern,
   mirroredCells,
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
   restoreGrid,
+  rowProgressPosition,
   setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
+  toggleRowDirection,
   type CreatePatternInput,
   type Grid,
   type MirrorAxes,
@@ -99,20 +103,28 @@ watch(activePatternId, () => {
   copiedBlock.value = undefined
 })
 
-/** What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would touch plus its live-mirror counterpart(s) (tickets 22/23). */
+/**
+ * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
+ * touch plus its live-mirror counterpart(s) (tickets 22/23). Beads in rows already woven are left out, since nothing
+ * lands on them (ticket 33).
+ */
 const previewCells = computed<PreviewCell[]>(() => {
   const pattern = activePattern.value
   if (!pattern || !hoveredCell.value) {
     return []
   }
+  return cellsUnderCursor(pattern, hoveredCell.value).filter((cell) => !isInFinishedRow(pattern, cell))
+})
+
+function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
   if (activeTool.value === 'select') {
     // With nothing copied there's nothing a click would put down, so Select previews nothing.
-    return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hoveredCell.value) : []
+    return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hovered) : []
   }
   // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
   const axes = activeTool.value === 'paint' ? mirrorAxes.value : { horizontal: false, vertical: false }
-  return mirroredCells(pattern, hoveredCell.value, axes)
-})
+  return mirroredCells(pattern, hovered, axes)
+}
 
 /** The selected Palette color's hex, or null when nothing is selected. */
 function selectedColorHex(): string | null {
@@ -177,14 +189,18 @@ function replaceActivePattern(updated: Pattern) {
   patterns.value = patterns.value.map((pattern) => (pattern.id === updated.id ? updated : pattern))
 }
 
-/** Commits the result of a grid-changing command (paint/fill/mirror) as one undo step, unless it left the Pattern unchanged. */
+/**
+ * Commits the result of a grid-changing command (fill/mirror/paste) as one undo step, minus anything it did to rows
+ * already woven (ticket 33), unless that leaves the Pattern unchanged.
+ */
 function commitGridChange(pattern: Pattern, updated: Pattern) {
-  if (updated === pattern) {
+  const kept = keepFinishedRows(pattern, updated)
+  if (kept === pattern) {
     return
   }
 
   undoStack.value.push(pattern.grid)
-  replaceActivePattern(updated)
+  replaceActivePattern(kept)
 }
 
 /**
@@ -212,14 +228,14 @@ function endStroke() {
   strokeBaseline.value = null
 }
 
-/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes. */
+/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes, leaving rows already woven alone (ticket 33). */
 function paintStrokeCell(row: number, column: number, color: string | null) {
   const pattern = activePattern.value
   if (!pattern) {
     return
   }
 
-  const updated = paintCells(pattern, [{ row, column }], color, mirrorAxes.value)
+  const updated = keepFinishedRows(pattern, paintCells(pattern, [{ row, column }], color, mirrorAxes.value))
   if (updated !== pattern) {
     replaceActivePattern(updated)
   }
@@ -294,10 +310,22 @@ function cancelPaste() {
   copiedBlock.value = undefined
 }
 
-/** Escape reaches cancelPaste from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+/**
+ * Right-click or Escape under Select backs out one step at a time: a copied block goes first, keeping the Selection
+ * so Copy can pick the same block back up (see cancelPaste); with nothing copied, the Selection itself goes.
+ */
+function backOutOfSelect() {
+  if (copiedBlock.value) {
+    cancelPaste()
+  } else {
+    selection.value = undefined
+  }
+}
+
+/** Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
-    cancelPaste()
+    backOutOfSelect()
   }
 }
 
@@ -353,9 +381,9 @@ function onCellPrimaryMove(row: number, column: number) {
 
 /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint. */
 function onCellSecondaryDown(row: number, column: number) {
-  // Select never erases; under it the right button is the other way out of a pending Paste, alongside Escape.
+  // Select never erases; under it the right button backs out of a pending Paste or the Selection, alongside Escape.
   if (activeTool.value === 'select') {
-    cancelPaste()
+    backOutOfSelect()
     return
   }
 
@@ -413,11 +441,23 @@ function onToggleRowProgress(enabled: boolean) {
   }
 }
 
+/**
+ * Flips row progress between running along the grid's rows and down its columns (ticket 32). Its own toggle,
+ * separate from Rotate: rotating only turns the picture, and neither ever changes the other. Like Rotate, not a grid
+ * edit, so not an undo step.
+ */
+function onToggleRowDirection() {
+  const pattern = activePattern.value
+  if (pattern) {
+    replaceActivePattern(toggleRowDirection(pattern))
+  }
+}
+
 /** Steps the row pointer forward as a row is finished, or back to revisit an earlier one. */
 function onMoveRow(delta: number) {
   const pattern = activePattern.value
   if (pattern) {
-    replaceActivePattern(moveToRow(pattern, pattern.rowProgress.currentRow + delta))
+    replaceActivePattern(moveToRow(pattern, rowProgressPosition(pattern).current + delta))
   }
 }
 
@@ -685,7 +725,7 @@ function onRemoveBead(id: string) {
               </div>
             </section>
 
-            <section class="tool-strip__card" :aria-label="t.rowProgress.heading">
+            <section class="tool-strip__card row-progress" :aria-label="t.rowProgress.heading">
               <button
                 type="button"
                 class="icon-button"
@@ -703,9 +743,27 @@ function onRemoveBead(id: string) {
                   <path d="M3 18.5h18" />
                 </svg>
               </button>
+              <button
+                type="button"
+                class="icon-button"
+                data-testid="row-progress-direction"
+                :title="t.rowProgress.directionButton"
+                :aria-label="t.rowProgress.directionButton"
+                :aria-pressed="activePattern.rowProgress.direction === 'columns'"
+                :class="{ 'tool-picker__button--selected': activePattern.rowProgress.direction === 'columns' }"
+                @click="onToggleRowDirection"
+              >
+                <!-- A row lying across and a row standing upright, with a quarter-turn arrow from one to the other. -->
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <rect x="3" y="3" width="11" height="5" rx="1.5" />
+                  <rect x="16" y="10" width="5" height="11" rx="1.5" />
+                  <path d="M6 11.5v1.5a4 4 0 0 0 4 4h2.5" />
+                  <path d="M10.5 14.5 13 17l-2.5 2.5" />
+                </svg>
+              </button>
               <p class="row-progress__position" data-testid="row-progress-position">
                 {{ t.rowProgress.positionLabel }}
-                {{ activePattern.rowProgress.currentRow + 1 }} / {{ activePattern.rows }}
+                {{ rowProgressPosition(activePattern).current + 1 }} / {{ rowProgressPosition(activePattern).total }}
               </p>
               <div class="row-progress__steps">
                 <button
@@ -715,7 +773,7 @@ function onRemoveBead(id: string) {
                   :title="t.rowProgress.previousButton"
                   :aria-label="t.rowProgress.previousButton"
                   :disabled="
-                    !activePattern.rowProgress.enabled || activePattern.rowProgress.currentRow === 0
+                    !activePattern.rowProgress.enabled || rowProgressPosition(activePattern).current === 0
                   "
                   @click="onMoveRow(-1)"
                 >
@@ -733,7 +791,7 @@ function onRemoveBead(id: string) {
                   :aria-label="t.rowProgress.nextButton"
                   :disabled="
                     !activePattern.rowProgress.enabled ||
-                    activePattern.rowProgress.currentRow === activePattern.rows - 1
+                    rowProgressPosition(activePattern).current === rowProgressPosition(activePattern).total - 1
                   "
                   @click="onMoveRow(1)"
                 >
@@ -951,8 +1009,8 @@ function onRemoveBead(id: string) {
  * Grows (1 1 220px) rather than sitting at its own content width: five cards of very different natural widths
  * (a three-icon tool picker vs. a twelve-swatch palette) left most of a wide strip as bare dot-grid texture at
  * flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row, and shrinking below
- * content width lets a card's own wrap rules (.mirror-axes, .mirror-current, .row-progress__steps) fire and stack
- * its buttons instead of forcing the whole strip wider. The 220px basis is only where wrapping to a new line kicks
+ * content width lets a card's own wrap rules (.mirror-axes, .mirror-current) fire and stack its buttons instead of
+ * forcing the whole strip wider (Row progress opts out; see .row-progress). The 220px basis is only where wrapping to a new line kicks
  * in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
  *
  * Every control here is now an icon button naming itself on hover, and the cards carry their heading as an
@@ -975,14 +1033,26 @@ function onRemoveBead(id: string) {
   border-radius: var(--radius-md);
 }
 
+/*
+ * Row progress always stays one line: the toggles, the readout and the steps belong together, and wrapping split
+ * the steps off under the readout (ticket 32). So this card doesn't shrink and wrap inside itself like the others.
+ * It claims its whole content width, and when the strip runs short the strip moves the whole card to its next line.
+ */
+.row-progress {
+  flex-basis: auto;
+  flex-wrap: nowrap;
+  min-width: max-content;
+}
+
 .row-progress__position {
   margin: 0;
   white-space: nowrap;
+  /* Same-width digits, so stepping from row 9 to 10 doesn't nudge the steps sideways. */
+  font-variant-numeric: tabular-nums;
 }
 
 .row-progress__steps {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
 }
 

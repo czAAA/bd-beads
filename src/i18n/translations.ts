@@ -53,6 +53,7 @@ export interface Translations {
   rowProgress: {
     heading: string
     enabledLabel: string
+    directionButton: string
     positionLabel: string
     previousButton: string
     nextButton: string

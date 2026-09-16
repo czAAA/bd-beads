@@ -9,11 +9,14 @@ import {
   normalizePattern,
   paintCell,
   paintCells,
+  keepFinishedRows,
   restoreGrid,
+  rowProgressPosition,
   setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
+  toggleRowDirection,
   type Cell,
   type Pattern,
   type Technique,
@@ -609,16 +612,26 @@ describe('row progress', () => {
   }
 
   it('starts switched off, pointing at the first row', () => {
-    expect(pattern().rowProgress).toEqual({ enabled: false, currentRow: 0 })
+    expect(pattern().rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
   })
 
   it('turns the overlay on and off without moving the pointer', () => {
     const started = moveToRow(pattern(), 4)
 
     const shown = setRowProgressEnabled(started, true)
-    expect(shown.rowProgress).toEqual({ enabled: true, currentRow: 4 })
+    expect(shown.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 })
 
-    expect(setRowProgressEnabled(shown, false).rowProgress).toEqual({ enabled: false, currentRow: 4 })
+    expect(setRowProgressEnabled(shown, false).rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 4,
+      currentColumn: 0,
+    })
   })
 
   it('moves the pointer forward and backward through the rows', () => {
@@ -641,6 +654,94 @@ describe('row progress', () => {
 
     expect(before.rowProgress.currentRow).toBe(0)
     expect(after.grid).toBe(before.grid)
+  })
+})
+
+describe('row direction', () => {
+  /** 10 columns x 20 rows, so counting along the rows and down the columns give different answers. */
+  function tallPattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+  }
+
+  it('counts along the grid rows by default', () => {
+    expect(rowProgressPosition(moveToRow(tallPattern(), 3))).toEqual({ current: 3, total: 20 })
+  })
+
+  it('counts and steps through the columns once rows run down them', () => {
+    const downColumns = toggleRowDirection(tallPattern())
+
+    expect(rowProgressPosition(downColumns)).toEqual({ current: 0, total: 10 })
+    expect(rowProgressPosition(moveToRow(downColumns, 4))).toEqual({ current: 4, total: 10 })
+    expect(rowProgressPosition(moveToRow(downColumns, 15))).toEqual({ current: 9, total: 10 })
+  })
+
+  it('keeps a separate pointer for each direction, so flipping back returns to the same row', () => {
+    const onRowSeven = moveToRow(tallPattern(), 7)
+
+    expect(rowProgressPosition(toggleRowDirection(onRowSeven))).toEqual({ current: 0, total: 10 })
+
+    const onColumnTwo = moveToRow(toggleRowDirection(onRowSeven), 2)
+
+    expect(rowProgressPosition(toggleRowDirection(onColumnTwo))).toEqual({ current: 7, total: 20 })
+  })
+})
+
+describe('keepFinishedRows', () => {
+  const NO_MIRROR = { horizontal: false, vertical: false }
+
+  /** 10 columns x 20 rows, with the overlay on and rows 0-2 finished. */
+  function onRowThree() {
+    return setRowProgressEnabled(
+      moveToRow(
+        createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
+        3,
+      ),
+      true,
+    )
+  }
+
+  it('leaves beads in finished rows as they were, keeping the edit on the current row and after', () => {
+    const before = onRowThree()
+    const edited = paintCells(
+      before,
+      [{ row: 2, column: 5 }, { row: 3, column: 5 }, { row: 9, column: 5 }],
+      '#e63746',
+      NO_MIRROR,
+    )
+
+    const kept = keepFinishedRows(before, edited)
+
+    expect(kept.grid[2]![5]!.color).toBeNull()
+    expect(kept.grid[3]![5]!.color).toBe('#e63746')
+    expect(kept.grid[9]![5]!.color).toBe('#e63746')
+  })
+
+  it('hands back the Pattern it started from when the edit only touched finished rows, so nothing counts as changed', () => {
+    const before = onRowThree()
+    const edited = paintCells(before, [{ row: 0, column: 0 }, { row: 2, column: 9 }], '#e63746', NO_MIRROR)
+
+    expect(keepFinishedRows(before, edited)).toBe(before)
+  })
+
+  it('locks the finished columns instead once rows run down them', () => {
+    const before = setRowProgressEnabled(moveToRow(toggleRowDirection(onRowThree()), 2), true)
+    const edited = paintCells(before, [{ row: 15, column: 1 }, { row: 15, column: 2 }], '#e63746', NO_MIRROR)
+
+    const kept = keepFinishedRows(before, edited)
+
+    expect(kept.grid[15]![1]!.color).toBeNull()
+    expect(kept.grid[15]![2]!.color).toBe('#e63746')
+  })
+
+  it('locks nothing while the overlay is off', () => {
+    const before = setRowProgressEnabled(onRowThree(), false)
+    const edited = paintCells(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
+
+    expect(keepFinishedRows(before, edited).grid[0]![0]!.color).toBe('#e63746')
   })
 })
 
@@ -685,23 +786,49 @@ describe('normalizePattern', () => {
 
     const normalized = normalizePattern(legacy as Pattern)
 
-    expect(normalized.rowProgress).toEqual({ enabled: false, currentRow: 0 })
+    expect(normalized.rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
     expect(normalized.colorBeadOverrides).toEqual({})
     expect(normalized.rotated).toBe(false)
   })
 
-  it('clamps a row pointer that no longer fits the Pattern', () => {
+  it('keeps the row pointer of progress saved before row direction existed, running it along the grid rows', () => {
     const base = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
+      size: { width: 15, height: 30, unit: 'mm' },
     })
 
     const normalized = normalizePattern({
       ...base,
-      rowProgress: { enabled: true, currentRow: 999 },
+      rowProgress: { enabled: true, currentRow: 5 } as Pattern['rowProgress'],
     })
 
-    expect(normalized.rowProgress.currentRow).toBe(base.rows - 1)
+    expect(normalized.rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 5,
+      currentColumn: 0,
+    })
+  })
+
+  it('clamps row and column pointers that no longer fit the Pattern', () => {
+    const base = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' }, // 10 columns x 20 rows
+    })
+
+    const normalized = normalizePattern({
+      ...base,
+      rowProgress: { enabled: true, direction: 'columns', currentRow: 999, currentColumn: 999 },
+    })
+
+    expect(normalized.rowProgress.currentRow).toBe(19)
+    expect(normalized.rowProgress.currentColumn).toBe(9)
   })
 })
