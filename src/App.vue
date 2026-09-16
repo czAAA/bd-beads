@@ -11,7 +11,7 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
-import { BEAD_CATALOG, type Bead } from './domain/beads'
+import { BEAD_CATALOG, beadLabel, type Bead } from './domain/beads'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import { findPaletteColor } from './domain/palette'
@@ -33,6 +33,7 @@ import {
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
+  resolvePatternBead,
   restoreGrid,
   rowProgressPosition,
   setRowProgressEnabled,
@@ -55,6 +56,20 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
+
+/**
+ * The open Pattern's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a
+ * neutral "unknown bead" placeholder when it doesn't — a custom Bead removed since (ticket 38), or one an imported
+ * file names that this device never had.
+ */
+const activeBeadLabel = computed(() => {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return undefined
+  }
+  const bead = resolvePatternBead(pattern)
+  return bead ? beadLabel(bead) : t.value.patterns.unknownBeadLabel
+})
 
 const customBeads = ref<Bead[]>(loadCustomBeads())
 const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
@@ -482,9 +497,14 @@ function onRemoveBead(id: string) {
         <h1>{{ t.app.title }}</h1>
       </div>
       <div class="app-shell__topbar-summary">
-        <p v-if="activePattern" class="app-shell__summary" data-testid="current-pattern-summary">
-          {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
-        </p>
+        <div v-if="activePattern" class="app-shell__summary-group">
+          <p class="app-shell__summary" data-testid="current-pattern-summary">
+            {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
+          </p>
+          <p class="app-shell__summary" data-testid="current-pattern-bead">
+            {{ activeBeadLabel }}
+          </p>
+        </div>
         <LanguageSwitcher />
       </div>
     </header>
@@ -857,6 +877,13 @@ function onRemoveBead(id: string) {
   justify-content: space-between;
   gap: 16px;
   background: var(--color-aqua-island);
+}
+
+/* Groups the current-Pattern summary and its Bead (ticket 37) so the topbar-summary box's own space-between still splits just two items: this group and the language switcher. */
+.app-shell__summary-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .app-shell__summary {
