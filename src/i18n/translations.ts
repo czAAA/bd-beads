@@ -47,6 +47,8 @@ export interface Translations {
     heading: string
     paintLabel: string
     fillLabel: string
+    selectLabel: string
+    copyButton: string
   }
   rowProgress: {
     heading: string

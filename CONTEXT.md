@@ -53,6 +53,18 @@ _Avoid_: progress bar, completion state
 A symmetric-drawing aid for a Pattern: with a horizontal and/or vertical toggle on, painting a cell with the Paint tool also paints its counterpart(s) reflected across the grid's exact center — 2 cells with one axis on, 4 with both. A separate "Mirror current" action per axis does a one-time reflect of whatever's already painted, for content drawn before that axis was toggled on. Fill is not affected by Mirror.
 _Avoid_: reflect, symmetry mode, apply mirror
 
+**Selection** (RU: Выделение):
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and switching or creating a Pattern clears it. It marks out cells, it does not change them — selecting never paints anything.
+_Avoid_: marquee, region, highlighted area
+
+**Copy** (RU: Копировать):
+Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists. The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it).
+_Avoid_: duplicate, clone, snapshot
+
+**Paste** (RU: Вставить):
+Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. Like Fill, Paste is unaffected by Mirror — it puts the block exactly where it was aimed.
+_Avoid_: stamp, place, insert
+
 ## How to run it
 
 [Add build/run instructions here as you develop.]

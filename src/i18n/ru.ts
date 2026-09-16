@@ -49,6 +49,8 @@ export const ru: Translations = {
     heading: 'Инструмент',
     paintLabel: 'Кисть',
     fillLabel: 'Заливка',
+    selectLabel: 'Выделение',
+    copyButton: 'Копировать',
   },
   rowProgress: {
     heading: 'Прогресс по рядам',

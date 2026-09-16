@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A "Select" tool appears in the tool strip alongside Paint and Fill, chosen the same way
 - [ ] Dragging on the canvas while Select is active draws a rectangular marquee aligned to grid cells, visible during the drag and after release

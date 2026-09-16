@@ -278,3 +278,87 @@ describe('PatternGrid row progress', () => {
     expect(classes[0]).toContain('pattern-grid__row--current')
   })
 })
+
+describe('PatternGrid selection', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' }, // 10 columns x 20 rows
+    })
+  }
+
+  function selectedPositions(wrapper: ReturnType<typeof mount>) {
+    return wrapper
+      .findAll('[data-testid="grid-row"]')
+      .flatMap((row, rowIndex) =>
+        row
+          .findAll('[data-testid="grid-cell"]')
+          .map((cell, columnIndex) => ({ cell, rowIndex, columnIndex })),
+      )
+      .filter(({ cell }) => cell.classes().includes('pattern-grid__cell--selected'))
+      .map(({ rowIndex, columnIndex }) => `${rowIndex},${columnIndex}`)
+  }
+
+  it('marks no cell as selected while there is no selection', () => {
+    const wrapper = mount(PatternGrid, { props: { pattern: pattern() } })
+
+    expect(selectedPositions(wrapper)).toEqual([])
+  })
+
+  it('marks exactly the cells inside the selection rectangle', () => {
+    const wrapper = mount(PatternGrid, {
+      props: { pattern: pattern(), selection: { top: 1, left: 2, rows: 2, columns: 3 } },
+    })
+
+    expect(selectedPositions(wrapper)).toEqual(['1,2', '1,3', '1,4', '2,2', '2,3', '2,4'])
+  })
+
+  it('draws the marquee only along the rectangle’s outer edge, not around every cell inside it', () => {
+    const wrapper = mount(PatternGrid, {
+      props: { pattern: pattern(), selection: { top: 0, left: 0, rows: 3, columns: 3 } },
+    })
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    // Top-left corner: the two edges that are actually on the rectangle's boundary, and neither of the other two.
+    const corner = cells[0]!.attributes('style')!
+    expect(corner).toContain('inset 0px 2px')
+    expect(corner).toContain('inset 2px 0px')
+    expect(corner).not.toContain('inset 0px -2px')
+    expect(corner).not.toContain('inset -2px 0px')
+
+    // The middle cell is surrounded by selection on all sides, so it carries no edge at all.
+    expect(cells[11]!.attributes('style')).not.toContain('inset')
+  })
+})
+
+describe('PatternGrid multi-color preview', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+  }
+
+  it('previews each cell in its own color when the preview carries one, for a pasted block', () => {
+    const wrapper = mount(PatternGrid, {
+      props: {
+        pattern: pattern(),
+        previewCells: [
+          { row: 0, column: 0, color: '#e63746' },
+          { row: 0, column: 1, color: '#2f6fed' },
+        ],
+        previewColor: '#27ae60',
+      },
+    })
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    expect(cells[0]!.find('[data-testid="cell-preview"]').attributes('style')).toContain(
+      'background-color: rgb(230, 55, 70)',
+    )
+    expect(cells[1]!.find('[data-testid="cell-preview"]').attributes('style')).toContain(
+      'background-color: rgb(47, 111, 237)',
+    )
+  })
+})
