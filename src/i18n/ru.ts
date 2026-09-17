@@ -42,6 +42,7 @@ export const ru: Translations = {
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
+    redoButton: 'Повторить',
     rotateButton: 'Повернуть',
   },
   tools: {
@@ -60,14 +61,9 @@ export const ru: Translations = {
   quantities: {
     heading: 'Нужно бисера',
     noPatternMessage: 'Откройте схему, чтобы увидеть, сколько нужно бисера',
+    noColorsMessage: 'Пока ничего не закрашено',
     colorHeading: 'Цвет',
     countHeading: 'Бисеринок',
-    resolvedBeadHeading: 'Используемая бисеринка',
-    defaultBeadHeading: 'Бисеринка по умолчанию',
-    patternBeadHeading: 'В этой схеме',
-    unmappedOption: 'Без бисеринки',
-    useDefaultOption: 'Как по умолчанию',
-    unknownColorLabel: 'Нет в палитре',
   },
   transfer: {
     heading: 'Экспорт и импорт',
