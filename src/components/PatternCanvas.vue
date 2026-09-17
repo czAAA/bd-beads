@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { canvasContentHeightPx, canvasContentWidthPx, type PreviewCell } from '../domain/grid'
+import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
 import PatternGrid from './PatternGrid.vue'
@@ -12,6 +13,8 @@ const props = defineProps<{
   previewCells?: PreviewCell[]
   previewColor?: string | null
   selection?: Selection
+  /** Rich Mirror (ticket 44): undefined/omitted with the flag off, so no axis lines ever render then. */
+  mirrorAxisCounts?: MirrorAxisCounts
 }>()
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -83,6 +86,7 @@ const rotateStyle = computed(() => ({
             :preview-cells="previewCells"
             :preview-color="previewColor"
             :selection="selection"
+            :mirror-axis-counts="mirrorAxisCounts"
             @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
             @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
             @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"

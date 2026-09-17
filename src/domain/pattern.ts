@@ -10,6 +10,9 @@ import {
   type SizeUnit,
   type Technique,
 } from './grid'
+import { mirrorCounterparts, type MirrorAxisCounts } from './mirror'
+
+export type { MirrorAxisCounts } from './mirror'
 
 export type { Technique } from './grid'
 
@@ -307,6 +310,65 @@ export function paintCells(
   const targets = new Map<string, GridPosition>()
   for (const position of positions) {
     for (const cell of mirroredCells(pattern, position, axes)) {
+      targets.set(positionKey(cell), cell)
+    }
+  }
+
+  const changed = [...targets.values()].some(
+    ({ row, column }) => pattern.grid[row]?.[column]?.color !== color,
+  )
+  if (!changed) {
+    return pattern
+  }
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((cell, columnIndex) =>
+      targets.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell,
+    ),
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
+/**
+ * Rich Mirror (ticket 44, flag `VITE_RICH_MIRROR`): every cell a live-mirrored stroke touches when painting
+ * `position`, given per-direction axis *counts* rather than the legacy on/off axes (see mirroredCells above, which
+ * this generalizes -- with both counts at 0 or 1 the two agree exactly). `axes.columns` splits the grid across its
+ * columns (today's "horizontal"), `axes.rows` across its rows (today's "vertical"); see domain/mirror.ts for the
+ * strip math and why counts are grid-space, never screen-space.
+ */
+export function mirroredCellsForCounts(
+  pattern: Pick<Pattern, 'rows' | 'columns'>,
+  position: GridPosition,
+  axes: MirrorAxisCounts,
+): GridPosition[] {
+  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows)
+  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns)
+
+  const seen = new Set<string>()
+  const cells: GridPosition[] = []
+  for (const row of rows) {
+    for (const column of columns) {
+      const key = positionKey({ row, column })
+      if (!seen.has(key)) {
+        seen.add(key)
+        cells.push({ row, column })
+      }
+    }
+  }
+  return cells
+}
+
+/** paintCells's rich-Mirror counterpart (see mirroredCellsForCounts): paints every position in `positions` plus each one's counterpart(s) under the given axis counts, as a single Pattern edit. */
+export function paintCellsForCounts(
+  pattern: Pattern,
+  positions: GridPosition[],
+  color: string | null,
+  axes: MirrorAxisCounts,
+): Pattern {
+  const targets = new Map<string, GridPosition>()
+  for (const position of positions) {
+    for (const cell of mirroredCellsForCounts(pattern, position, axes)) {
       targets.set(positionKey(cell), cell)
     }
   }

@@ -80,6 +80,14 @@ export interface Translations {
     verticalLabel: string
     mirrorCurrentHorizontalButton: string
     mirrorCurrentVerticalButton: string
+    /** Rich Mirror (ticket 44, flag VITE_RICH_MIRROR): the two per-direction axis counters replacing the on/off
+     * toggles above, named for what they do on screen -- rotating the Pattern swaps which grid axis each shows. */
+    leftRightLabel: string
+    topBottomLabel: string
+    decreaseLeftRightButton: string
+    increaseLeftRightButton: string
+    decreaseTopBottomButton: string
+    increaseTopBottomButton: string
   }
   /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
   toolbox: {
