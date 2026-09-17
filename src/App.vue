@@ -13,12 +13,6 @@ import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
-import { mergeColorBeadDefaults, type ColorBeadDefaults } from './domain/beadMapping'
-import {
-  loadColorBeadDefaults,
-  saveColorBeadDefault,
-  saveColorBeadDefaults,
-} from './domain/beadMappingStorage'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import { findPaletteColor } from './domain/palette'
@@ -43,7 +37,6 @@ import {
   paintCells,
   restoreSnapshot,
   rowProgressPosition,
-  setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
@@ -69,9 +62,6 @@ const activePattern = computed(() =>
 
 const customBeads = ref<Bead[]>(loadCustomBeads())
 const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
-
-/** Which Bead each Palette color means by default, across every Pattern (ADR 0002). */
-const colorBeadDefaults = ref(loadColorBeadDefaults())
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
 const canvasAreaEl = ref<HTMLElement | null>(null)
@@ -509,25 +499,9 @@ function onMoveRow(delta: number) {
   }
 }
 
-function onSetDefaultBead(colorId: string, beadId: string | null) {
-  saveColorBeadDefault(colorId, beadId)
-  colorBeadDefaults.value = loadColorBeadDefaults()
-}
-
-function onSetOverrideBead(colorId: string, beadId: string | null) {
-  const pattern = activePattern.value
-  if (pattern) {
-    replaceActivePattern(setColorBeadOverride(pattern, colorId, beadId))
-  }
-}
-
-function onImportPatterns(imported: Pattern[], importedDefaults: ColorBeadDefaults) {
+function onImportPatterns(imported: Pattern[]) {
   imported.forEach(savePattern)
   patterns.value = [...patterns.value, ...imported]
-
-  const merged = mergeColorBeadDefaults(colorBeadDefaults.value, importedDefaults)
-  saveColorBeadDefaults(merged)
-  colorBeadDefaults.value = merged
 
   // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
   activePatternId.value ??= mostRecentlyUpdated(imported)?.id
@@ -644,19 +618,8 @@ function onRemoveBead(id: string) {
             @select="onSelectPattern"
             @remove="onRemovePattern"
           />
-          <BeadQuantities
-            :pattern="activePattern"
-            :beads="beads"
-            :defaults="colorBeadDefaults"
-            @set-default="onSetDefaultBead"
-            @set-override="onSetOverrideBead"
-          />
-          <PatternTransfer
-            :pattern="activePattern"
-            :patterns="patterns"
-            :color-bead-defaults="colorBeadDefaults"
-            @import="onImportPatterns"
-          />
+          <BeadQuantities :pattern="activePattern" />
+          <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
           <BeadCatalog
             :seeded-beads="BEAD_CATALOG"
             :custom-beads="customBeads"
