@@ -28,6 +28,7 @@ export const ru: Translations = {
     newPatternButton: 'Новая схема',
     removeButton: 'Удалить',
     currentLabel: 'Сейчас редактируется',
+    unknownBeadLabel: 'Неизвестная бисеринка',
   },
   canvas: {
     zoomInLabel: 'Увеличить',

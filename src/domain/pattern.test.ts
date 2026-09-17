@@ -11,6 +11,7 @@ import {
   paintCell,
   paintCells,
   keepFinishedRows,
+  resolvePatternBead,
   restoreGrid,
   restoreSnapshot,
   rowProgressPosition,
@@ -743,6 +744,31 @@ describe('keepFinishedRows', () => {
     const edited = paintCells(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
 
     expect(keepFinishedRows(before, edited).grid[0]![0]!.color).toBe('#e63746')
+  })
+})
+
+describe('resolvePatternBead', () => {
+  it("finds the Pattern's Bead in the catalog", () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+
+    expect(resolvePatternBead(pattern)).toEqual(cubeBead)
+  })
+
+  it('returns undefined for a Bead the catalog no longer has (a removed custom Bead, or an unrecognized imported one)', () => {
+    const pattern = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      beadId: 'no-such-bead',
+    }
+
+    expect(resolvePatternBead(pattern)).toBeUndefined()
   })
 })
 

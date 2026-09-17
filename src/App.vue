@@ -11,7 +11,7 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
-import { BEAD_CATALOG, type Bead } from './domain/beads'
+import { BEAD_CATALOG, beadLabel, type Bead } from './domain/beads'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
@@ -35,6 +35,7 @@ import {
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
+  resolvePatternBead,
   restoreSnapshot,
   rowProgressPosition,
   setRowProgressEnabled,
@@ -59,6 +60,20 @@ const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.val
 const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
+
+/**
+ * The open Pattern's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a
+ * neutral "unknown bead" placeholder when it doesn't — a custom Bead removed since (ticket 38), or one an imported
+ * file names that this device never had.
+ */
+const activeBeadLabel = computed(() => {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return undefined
+  }
+  const bead = resolvePatternBead(pattern)
+  return bead ? beadLabel(bead) : t.value.patterns.unknownBeadLabel
+})
 
 const customBeads = ref<Bead[]>(loadCustomBeads())
 const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
@@ -614,9 +629,14 @@ function onRemoveBead(id: string) {
         >
           {{ t.patterns.newPatternButton }}
         </button>
-        <p v-if="activePattern" class="app-shell__summary" data-testid="current-pattern-summary">
-          {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
-        </p>
+        <div v-if="activePattern" class="app-shell__summary-group">
+          <p class="app-shell__summary" data-testid="current-pattern-summary">
+            {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
+          </p>
+          <p class="app-shell__summary" data-testid="current-pattern-bead">
+            {{ activeBeadLabel }}
+          </p>
+        </div>
         <LanguageSwitcher />
       </div>
     </header>
@@ -756,9 +776,15 @@ function onRemoveBead(id: string) {
   background: var(--color-aqua-island);
 }
 
-/* Grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is. */
-.app-shell__summary {
+/* Groups the current-Pattern summary and its Bead (ticket 37); grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is (ticket 35). */
+.app-shell__summary-group {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-shell__summary {
   margin: 0;
   color: var(--color-aqua-island-ink);
 }
