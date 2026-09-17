@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
@@ -1894,5 +1894,60 @@ describe('App select, copy and paste', () => {
 
     await click(wrapper, 0)
     expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('App Tool group Escape precedence (ticket 41)', () => {
+  function selectedCount(wrapper: ReturnType<typeof mount>) {
+    return wrapper.findAll('.pattern-grid__cell--selected').length
+  }
+
+  async function createPatternWithSelection(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[5]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /*
+   * No real Tool group exceeds 14 controls yet (ToolGroup.test.ts covers the expand/collapse mechanics itself with
+   * a synthetic one that does), so this stands in for "some Tool group is currently hover-expanded" by making the
+   * mounted Toolbox's own exposed collapseExpandedGroup — the exact function App.vue's onKeyDown calls — report
+   * one was, for exactly one call. It's proving the wiring: Escape asks Toolbox first, and only backs out of Select
+   * once that reports nothing was expanded.
+   */
+  function stubOneExpandedGroup(wrapper: ReturnType<typeof mount>) {
+    const app = wrapper.vm as unknown as { toolboxRef: { collapseExpandedGroup: () => boolean } }
+    vi.spyOn(app.toolboxRef, 'collapseExpandedGroup').mockReturnValueOnce(true)
+  }
+
+  it('lets an expanded Tool group swallow the first Escape, leaving the Selection untouched', async () => {
+    const wrapper = mount(App)
+    await createPatternWithSelection(wrapper)
+    expect(selectedCount(wrapper)).toBe(4)
+
+    stubOneExpandedGroup(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('reaches Select as usual on the Escape after that, once no group reports being expanded', async () => {
+    const wrapper = mount(App)
+    await createPatternWithSelection(wrapper)
+
+    stubOneExpandedGroup(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) // swallowed by the (stubbed) expanded group
+    await flushPromises()
+    expect(selectedCount(wrapper)).toBe(4)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) // no group expanded now — clears the Selection
+    await flushPromises()
+
+    expect(selectedCount(wrapper)).toBe(0)
   })
 })
