@@ -5,6 +5,7 @@ import PalettePicker from './PalettePicker.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import type { Tool } from '../domain/tool'
+import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
 import { rowProgressPosition, type MirrorAxes, type Pattern } from '../domain/pattern'
 
 const props = defineProps<{
@@ -17,6 +18,9 @@ const props = defineProps<{
   canRedo: boolean
   canCopy: boolean
   mirrorAxes: MirrorAxes
+  /** Rich Mirror (ticket 44, flag VITE_RICH_MIRROR): swaps the two on/off toggles below for axis counters when on. */
+  richMirror: boolean
+  mirrorAxisCounts: MirrorAxisCounts
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +32,7 @@ const emit = defineEmits<{
   'toggle-rotate': []
   copy: []
   'toggle-mirror-axis': [axis: 'horizontal' | 'vertical']
+  'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'mirror-current': [axis: 'horizontal' | 'vertical']
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
@@ -64,6 +69,24 @@ function collapseExpandedGroup(): boolean {
 }
 
 defineExpose({ collapseExpandedGroup })
+
+/**
+ * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
+ * Pattern's current view-only rotation (see Pattern.rotated / PatternCanvas.vue): rotating swaps the two, the same
+ * relabeling PatternCanvas already does for width/height, never a transform of the counts or grid data themselves.
+ */
+const leftRightAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'rows' : 'columns'))
+const topBottomAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'columns' : 'rows'))
+
+const leftRightCount = computed(() => props.mirrorAxisCounts[leftRightAxis.value])
+const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value])
+
+const leftRightMax = computed(() =>
+  maxAxisCount(props.pattern.rotated ? props.pattern.rows : props.pattern.columns),
+)
+const topBottomMax = computed(() =>
+  maxAxisCount(props.pattern.rotated ? props.pattern.columns : props.pattern.rows),
+)
 </script>
 
 <template>
@@ -211,39 +234,97 @@ defineExpose({ collapseExpandedGroup })
     </ToolGroup>
 
     <ToolGroup ref="mirrorGroupRef" :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
-      <button
-        type="button"
-        class="icon-button"
-        data-testid="mirror-horizontal"
-        :title="t.mirror.horizontalLabel"
-        :aria-label="t.mirror.horizontalLabel"
-        :aria-pressed="mirrorAxes.horizontal"
-        :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
-        @click="emit('toggle-mirror-axis', 'horizontal')"
-      >
-        <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 3v3M12 10.5v3M12 18v3" />
-          <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
-          <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="icon-button"
-        data-testid="mirror-vertical"
-        :title="t.mirror.verticalLabel"
-        :aria-label="t.mirror.verticalLabel"
-        :aria-pressed="mirrorAxes.vertical"
-        :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
-        @click="emit('toggle-mirror-axis', 'vertical')"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M3 12h3M10.5 12h3M18 12h3" />
-          <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
-          <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
-        </svg>
-      </button>
+      <template v-if="richMirror">
+        <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-left-right">
+          <button
+            type="button"
+            class="icon-button"
+            data-testid="mirror-left-right-decrease"
+            :title="t.mirror.decreaseLeftRightButton"
+            :aria-label="t.mirror.decreaseLeftRightButton"
+            :disabled="leftRightCount === 0"
+            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount - 1)"
+          >
+            −
+          </button>
+          <span class="mirror-axis-counter__label" data-testid="mirror-left-right-value">
+            {{ t.mirror.leftRightLabel }}: {{ leftRightCount }}
+          </span>
+          <button
+            type="button"
+            class="icon-button"
+            data-testid="mirror-left-right-increase"
+            :title="t.mirror.increaseLeftRightButton"
+            :aria-label="t.mirror.increaseLeftRightButton"
+            :disabled="leftRightCount === leftRightMax"
+            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount + 1)"
+          >
+            +
+          </button>
+        </p>
+        <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-top-bottom">
+          <button
+            type="button"
+            class="icon-button"
+            data-testid="mirror-top-bottom-decrease"
+            :title="t.mirror.decreaseTopBottomButton"
+            :aria-label="t.mirror.decreaseTopBottomButton"
+            :disabled="topBottomCount === 0"
+            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount - 1)"
+          >
+            −
+          </button>
+          <span class="mirror-axis-counter__label" data-testid="mirror-top-bottom-value">
+            {{ t.mirror.topBottomLabel }}: {{ topBottomCount }}
+          </span>
+          <button
+            type="button"
+            class="icon-button"
+            data-testid="mirror-top-bottom-increase"
+            :title="t.mirror.increaseTopBottomButton"
+            :aria-label="t.mirror.increaseTopBottomButton"
+            :disabled="topBottomCount === topBottomMax"
+            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount + 1)"
+          >
+            +
+          </button>
+        </p>
+      </template>
+      <template v-else>
+        <button
+          type="button"
+          class="icon-button"
+          data-testid="mirror-horizontal"
+          :title="t.mirror.horizontalLabel"
+          :aria-label="t.mirror.horizontalLabel"
+          :aria-pressed="mirrorAxes.horizontal"
+          :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
+          @click="emit('toggle-mirror-axis', 'horizontal')"
+        >
+          <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 3v3M12 10.5v3M12 18v3" />
+            <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
+            <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          data-testid="mirror-vertical"
+          :title="t.mirror.verticalLabel"
+          :aria-label="t.mirror.verticalLabel"
+          :aria-pressed="mirrorAxes.vertical"
+          :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
+          @click="emit('toggle-mirror-axis', 'vertical')"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M3 12h3M10.5 12h3M18 12h3" />
+            <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
+            <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
+          </svg>
+        </button>
+      </template>
       <button
         type="button"
         class="icon-button"
@@ -411,6 +492,20 @@ defineExpose({ collapseExpandedGroup })
   margin: 0;
   white-space: nowrap;
   /* Same-width digits, so stepping from row 9 to 10 doesn't nudge the steps sideways. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Rich Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
+.mirror-axis-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.mirror-axis-counter__label {
+  min-width: 9em;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 </style>

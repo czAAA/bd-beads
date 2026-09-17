@@ -5,11 +5,13 @@ import {
   fillArea,
   mirrorPattern,
   mirroredCells,
+  mirroredCellsForCounts,
   mostRecentlyUpdated,
   moveToRow,
   normalizePattern,
   paintCell,
   paintCells,
+  paintCellsForCounts,
   keepFinishedRows,
   resolvePatternBead,
   restoreGrid,
@@ -392,6 +394,117 @@ describe('mirroredCells', () => {
       { row: 0, column: 1 },
       { row: 3, column: 1 },
     ])
+  })
+})
+
+describe('mirroredCellsForCounts (rich Mirror, ticket 44)', () => {
+  function grid4x4() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('agrees with the legacy mirroredCells for 0/1 counts', () => {
+    const pattern = grid4x4()
+    const position = { row: 1, column: 0 }
+
+    expect(mirroredCellsForCounts(pattern, position, { columns: 0, rows: 0 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: false, vertical: false }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 1, rows: 0 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: true, vertical: false }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 0, rows: 1 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: false, vertical: true }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 1, rows: 1 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: true, vertical: true }),
+    )
+  })
+
+  it.each(['loom', 'peyote', 'brick'] as const)(
+    'mirrors by row/column index the same way regardless of Technique (%s)',
+    (technique) => {
+      // The strip math only ever looks at row/column indices, never at a Technique's rendering offsets, so every
+      // Technique's grid mirrors identically for the same dimensions (ticket 44: "Works for loom, peyote and brick
+      // stitch Patterns").
+      const pattern = createPattern({
+        technique,
+        beadId: cubeBead.id,
+        size: { width: 6, height: 6, unit: 'mm' },
+      })
+
+      expect(mirroredCellsForCounts(pattern, { row: 1, column: 0 }, { columns: 1, rows: 0 })).toEqual([
+        { row: 1, column: 0 },
+        { row: 1, column: 3 },
+      ])
+    },
+  )
+
+  it('covers every strip combination when both directions have more than 1 axis', () => {
+    // 6 columns, 2 column-axes -> 3 column strips [0,1] [2,3] [4,5]; 1 row-axis over 4 rows -> 2 row strips.
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 6, unit: 'mm' },
+    })
+    expect(pattern.columns).toBe(6)
+    expect(pattern.rows).toBe(4)
+
+    const cells = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 1 })
+
+    // 3 column counterparts x 2 row counterparts = 6 distinct cells.
+    expect(cells).toHaveLength(6)
+    expect(cells).toEqual(
+      expect.arrayContaining([
+        { row: 0, column: 0 },
+        { row: 3, column: 0 },
+      ]),
+    )
+  })
+})
+
+describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
+  function makePattern(technique: Technique = 'loom') {
+    return createPattern({
+      technique,
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it.each(['loom', 'peyote', 'brick'] as const)('paints every counterpart regardless of Technique (%s)', (technique) => {
+    const pattern = makePattern(technique)
+
+    const painted = paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('paints every counterpart across every strip', () => {
+    const pattern = makePattern()
+
+    const painted = paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('returns the same Pattern instance, unchanged, when every touched cell is already that color', () => {
+    const pattern = makePattern()
+
+    expect(paintCellsForCounts(pattern, [{ row: 0, column: 0 }], null, { columns: 0, rows: 0 })).toBe(pattern)
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makePattern()
+
+    paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(pattern.grid[0]![0]!.color).toBeNull()
   })
 })
 

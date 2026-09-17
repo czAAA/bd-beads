@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CELL_SIZE_PX, positionKey, rowHeightPx, rowOffsetPx, type PreviewCell } from '../domain/grid'
+import {
+  CELL_SIZE_PX,
+  gridHeightPx,
+  gridWidthPx,
+  positionKey,
+  rowHeightPx,
+  rowOffsetPx,
+  type PreviewCell,
+} from '../domain/grid'
+import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import { isWithinSelection, type Selection } from '../domain/selection'
 
@@ -21,7 +30,23 @@ const props = defineProps<{
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those cells (ticket 31). */
   selection?: Selection
+  /** Rich Mirror (ticket 44): axis lines are drawn whenever a direction's count is above 0; omitted (or both 0) draws nothing, which is what the flag-off path gets. Grid-space, same coordinate system as the cells themselves -- the surrounding rotate transform (PatternCanvas.vue) turns these along with everything else, so they never need to know about Pattern.rotated themselves. */
+  mirrorAxisCounts?: MirrorAxisCounts
 }>()
+
+/** Where each column-splitting (today's "horizontal"/left-right-unrotated) axis line sits, in unscaled px from the grid's left edge. */
+const columnAxisLeftPx = computed(() =>
+  axisLinePositions(props.mirrorAxisCounts?.columns ?? 0).map(
+    (fraction) => fraction * gridWidthPx(props.pattern.technique, props.pattern.columns),
+  ),
+)
+
+/** Where each row-splitting (today's "vertical"/top-bottom-unrotated) axis line sits, in unscaled px from the grid's top edge. */
+const rowAxisTopPx = computed(() =>
+  axisLinePositions(props.mirrorAxisCounts?.rows ?? 0).map(
+    (fraction) => fraction * gridHeightPx(props.pattern.technique, props.pattern.rows),
+  ),
+)
 
 /** Position key -> that cell's own preview color, if it has one; a block pasted from the clipboard previews in its real colors rather than one flat color. */
 const previewColors = computed(
@@ -158,17 +183,61 @@ function columnProgressClass(columnIndex: number): string | null {
         />
       </div>
     </div>
+
+    <div
+      v-for="(leftPx, index) in columnAxisLeftPx"
+      :key="`mirror-axis-column-${index}`"
+      class="pattern-grid__mirror-axis pattern-grid__mirror-axis--column"
+      data-testid="mirror-axis-line-column"
+      :style="{ left: `${leftPx}px` }"
+    />
+    <div
+      v-for="(topPx, index) in rowAxisTopPx"
+      :key="`mirror-axis-row-${index}`"
+      class="pattern-grid__mirror-axis pattern-grid__mirror-axis--row"
+      data-testid="mirror-axis-line-row"
+      :style="{ top: `${topPx}px` }"
+    />
   </div>
 </template>
 
 <style scoped>
 .pattern-grid {
+  position: relative;
   display: inline-flex;
   flex-direction: column;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+/*
+ * Rich Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
+ * the active tool. Positioned in the same unrotated grid coordinate space as the cells themselves, so the rotate
+ * transform one level up (PatternCanvas.vue) turns them together with the grid rather than this component having to
+ * know about Pattern.rotated -- the same view-only-transform approach the rest of the app uses for rotation.
+ */
+.pattern-grid__mirror-axis {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--color-wedgewood);
+  opacity: 0.65;
+}
+
+.pattern-grid__mirror-axis--column {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+}
+
+.pattern-grid__mirror-axis--row {
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
 }
 
 .pattern-grid__row {
