@@ -2611,19 +2611,35 @@ describe('App select, copy and paste', () => {
     expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
   })
 
-  it('keeps the selection itself, so Copy can put the same block back on the clipboard', async () => {
+  it('hides the Selection marquee immediately once Copy is clicked (ticket 49)', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+  })
+
+  it('still pastes normally after Copy hides the marquee, but needs a fresh drag to copy the same block again', async () => {
     const wrapper = mount(App)
     await copiedMotif(wrapper)
 
-    await pressEscape(wrapper)
-
-    expect(selectedCount(wrapper)).toBe(4)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
-
-    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    // The clipboard stays armed even though nothing is highlighted, so the next click still pastes.
     await click(wrapper, 10)
-
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+
+    // Nothing is left highlighted, so copying the same block again means dragging a new Selection over it first.
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await drag(wrapper, [0, 1, 5]) // re-select the same motif, since copying it again needs a fresh drag
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 8) // (2,0)
+
+    expect(loadPatterns()[0]!.grid[2]![0]!.color).toBe('#e63746')
   })
 
   it('clears a selection nothing has been copied from on Escape', async () => {
@@ -2648,15 +2664,26 @@ describe('App select, copy and paste', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
-  it('clears the selection on a second Escape or right-click, once the first has dropped the copy', async () => {
+  it('cancels the pending Paste on Escape without reviving the selection (ticket 49)', async () => {
     const wrapper = mount(App)
     await copiedMotif(wrapper)
+    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
 
     await pressEscape(wrapper)
-    expect(selectedCount(wrapper)).toBe(4)
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+  })
+
+  it('cancels the pending Paste on a right-click without reviving the selection (ticket 49)', async () => {
+    const wrapper = mount(App)
+    await copiedMotif(wrapper)
+    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
 
     await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('mousedown', { button: 2 })
+
     expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
   })
 
   it('still never erases under Select: a right-click cancels the paste rather than clearing a cell', async () => {
