@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import PatternTransfer from './PatternTransfer.vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import { createPattern, paintCell, type Pattern } from '../domain/pattern'
+import { createPattern, paintCells, type Pattern } from '../domain/pattern'
 import { serializeLibrary, serializePattern } from '../domain/patternFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -128,7 +128,7 @@ describe('PatternTransfer import', () => {
 
   it('brings in a Pattern that clashes with a local one under a new identity, keeping both', async () => {
     const local = makePattern('Fox')
-    const incoming = paintCell(local, 0, 0, '#e63746')
+    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
     const wrapper = mount(PatternTransfer, { props: { patterns: [local] } })
 
     await pickFile(wrapper, serializePattern(incoming))

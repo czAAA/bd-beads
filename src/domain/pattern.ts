@@ -1,5 +1,4 @@
-import { beadLabel, type Bead } from './beads'
-import { findBead } from './beadStorage'
+import { beadLabel, findBead, type Bead } from './beads'
 import {
   computeGridDimensions,
   neighborsOf,
@@ -315,17 +314,6 @@ export function replaceBead(pattern: Pattern, bead: Bead): Pattern {
     grid,
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
-}
-
-/** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */
-export function paintCell(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    rowIndex === row
-      ? gridRow.map((cell, columnIndex) => (columnIndex === column ? { color } : cell))
-      : gridRow,
-  )
-
-  return restoreGrid(pattern, grid)
 }
 
 /** Bucket-fills every cell reachable from (row, column) through same-colored neighbors, per the Pattern's grid adjacency (see neighborsOf), with the given color. Returns the same Pattern instance, unchanged, if the clicked cell is already that color. */

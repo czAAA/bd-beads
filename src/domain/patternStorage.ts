@@ -1,5 +1,4 @@
-import { beadLabel } from './beads'
-import { findBead } from './beadStorage'
+import { beadLabel, findBead } from './beads'
 import { normalizePattern, type Pattern } from './pattern'
 
 const STORAGE_KEY = 'bd-beads:patterns'

@@ -11,7 +11,7 @@ import Toolbox from './components/Toolbox.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
-import { findBead } from './domain/beadStorage'
+import { findBead } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import {
   canRedo,

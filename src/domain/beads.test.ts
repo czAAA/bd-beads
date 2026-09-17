@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { findBead } from './beadStorage'
+import { findBead } from './beads'
 
 beforeEach(() => {
   localStorage.clear()

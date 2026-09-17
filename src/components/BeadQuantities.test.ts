@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import { createPattern, paintCell, type Pattern } from '../domain/pattern'
+import { createPattern, paintCells, type Pattern } from '../domain/pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -20,7 +20,7 @@ function mountQuantities(pattern: Pattern | undefined) {
 
 describe('BeadQuantities', () => {
   it('has exactly two columns: a color swatch and a bead count', () => {
-    const wrapper = mountQuantities(paintCell(pattern(), 0, 0, '#e63746'))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }))
 
     expect(wrapper.findAll('th')).toHaveLength(2)
     const row = wrapper.find('[data-testid="quantity-row"]')
@@ -29,10 +29,7 @@ describe('BeadQuantities', () => {
   })
 
   it('reports how many beads each painted color needs', () => {
-    const withTwoColors = paintCell(
-      paintCell(pattern(), 0, 0, '#e63746'),
-      0, 1, '#2f6fed',
-    )
+    const withTwoColors = paintCells(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }), [{ row: 0, column: 1 }], '#2f6fed', { horizontal: false, vertical: false })
     const wrapper = mountQuantities(withTwoColors)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
@@ -47,13 +44,13 @@ describe('BeadQuantities', () => {
 
   it('reports a color painted from outside the Palette, with its swatch and count', () => {
     // Only reachable from an imported file: the app's own painting is Palette-only.
-    const wrapper = mountQuantities(paintCell(pattern(), 0, 0, '#123456'))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#123456', { horizontal: false, vertical: false }))
 
     expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
   })
 
   it('shows no bead pickers or bead names', () => {
-    const wrapper = mountQuantities(paintCell(pattern(), 0, 0, '#e63746'))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }))
 
     expect(wrapper.find('select').exists()).toBe(false)
   })

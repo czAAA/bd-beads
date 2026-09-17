@@ -8,7 +8,7 @@ import {
   serializeLibrary,
   serializePattern,
 } from './patternFile'
-import { createPattern, moveToRow, paintCell, setRowProgressEnabled, type Pattern } from './pattern'
+import { createPattern, moveToRow, paintCells, setRowProgressEnabled, type Pattern } from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -22,7 +22,7 @@ function makePattern(name = 'Fox'): Pattern {
 }
 
 function decoratedPattern(): Pattern {
-  const painted = paintCell(makePattern(), 2, 3, '#e63746')
+  const painted = paintCells(makePattern(), [{ row: 2, column: 3 }], '#e63746', { horizontal: false, vertical: false })
   return moveToRow(setRowProgressEnabled(painted, true), 4)
 }
 
@@ -142,7 +142,7 @@ describe('importPatterns', () => {
 
   it('keeps a same-identity local Pattern and brings the imported one in alongside it', () => {
     const local = decoratedPattern()
-    const incoming = paintCell(local, 0, 0, '#2f6fed')
+    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#2f6fed', { horizontal: false, vertical: false })
 
     const added = importPatterns([incoming], [local], () => 'fresh-id')
 
