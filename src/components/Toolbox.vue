@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import CustomColorPicker from './CustomColorPicker.vue'
 import PalettePicker from './PalettePicker.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
@@ -11,7 +12,10 @@ const props = defineProps<{
   pattern: Pattern
   activeTool: Tool
   selectedColorId?: string
+  /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
+  customColor?: string
   canUndo: boolean
+  canRedo: boolean
   canCopy: boolean
   mirrorAxes: MirrorAxes
   /** Rich Mirror (ticket 44, flag VITE_RICH_MIRROR): swaps the two on/off toggles below for axis counters when on. */
@@ -24,7 +28,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
   'select-color': [colorId: string]
+  'select-custom-color': [hex: string]
   undo: []
+  redo: []
   'toggle-rotate': []
   copy: []
   'toggle-mirror-axis': [axis: 'horizontal' | 'vertical']
@@ -34,9 +40,38 @@ const emit = defineEmits<{
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
   'move-row': [delta: number]
+  'delete-all': []
 }>()
 
 const { t } = useI18n()
+
+/** Custom color is the active paint color exactly when no Palette swatch is (they're mutually exclusive, App.vue). */
+const customColorSelected = computed(() => !props.selectedColorId && !!props.customColor)
+
+/**
+ * Refs to every Tool group, written out individually since they're written out individually below (ticket 40's
+ * layout), so Escape can ask each one to collapse (ticket 41) — see collapseExpandedGroup and App.vue's onKeyDown,
+ * which calls it before running its own Paste-cancel/Selection-clear precedence.
+ */
+const toolsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const colorsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const mirrorGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const rowProgressGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+
+/**
+ * Collapses whichever Tool group is currently hover-expanded (ticket 41). Only one ever is, since expansion follows
+ * a single pointer, but this asks every group regardless rather than assuming that — each collapse() is a no-op
+ * when that group wasn't expanded. Returns whether any of them was, so App.vue's onKeyDown knows whether this
+ * Escape press was "used up" by collapsing a group or should fall through to its usual Select precedence.
+ */
+function collapseExpandedGroup(): boolean {
+  const groups = [toolsGroupRef, colorsGroupRef, editGroupRef, mirrorGroupRef, rowProgressGroupRef]
+  const collapsed = groups.map((group) => group.value?.collapse() ?? false)
+  return collapsed.some(Boolean)
+}
+
+defineExpose({ collapseExpandedGroup })
 
 /**
  * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
@@ -59,7 +94,7 @@ const topBottomMax = computed(() =>
 
 <template>
   <div class="toolbox" data-testid="toolbox">
-    <ToolGroup :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
+    <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
       <button
         type="button"
         class="icon-button"
@@ -111,13 +146,35 @@ const topBottomMax = computed(() =>
           <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
         </svg>
       </button>
+      <button
+        type="button"
+        class="icon-button button--danger"
+        data-testid="delete-all-button"
+        :title="t.deleteAll.button"
+        :aria-label="t.deleteAll.button"
+        @click="emit('delete-all')"
+      >
+        <!-- The same bin glyph the app already uses for removing a Pattern (PatternList.vue). -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h16" />
+          <path d="M9 7V4h6v3" />
+          <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+        </svg>
+      </button>
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
+    <ToolGroup ref="colorsGroupRef" :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
       <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
+      <CustomColorPicker
+        :color="customColor"
+        :selected="customColorSelected"
+        @select="(hex) => emit('select-custom-color', hex)"
+      />
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
+    <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <button
         type="button"
         class="icon-button"
@@ -162,9 +219,24 @@ const topBottomMax = computed(() =>
           <path d="M16 8V3H3v13h5" />
         </svg>
       </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="redo-button"
+        :title="t.palette.redoButton"
+        :aria-label="t.palette.redoButton"
+        :disabled="!canRedo"
+        @click="emit('redo')"
+      >
+        <!-- Undo's icon, mirrored left-right: the same swoop curling the other way, arrowhead pointing right. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M17 7 21 11l-4 4" />
+          <path d="M21 11h-11a7 7 0 1 0 7 7" />
+        </svg>
+      </button>
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
+    <ToolGroup ref="mirrorGroupRef" :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
       <template v-if="richMirror">
         <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-left-right">
           <button
@@ -306,6 +378,7 @@ const topBottomMax = computed(() =>
     </ToolGroup>
 
     <ToolGroup
+      ref="rowProgressGroupRef"
       :title="t.toolbox.groups.rowProgress"
       class="tool-group--row-progress"
       data-testid="tool-group-row-progress"
