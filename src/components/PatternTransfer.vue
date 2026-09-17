@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { ColorBeadDefaults } from '../domain/beadMapping'
 import type { Pattern } from '../domain/pattern'
 import {
   importPatterns,
@@ -17,16 +16,11 @@ const props = defineProps<{
   pattern?: Pattern
   /** Every Pattern saved on this device, for the whole-library export and for spotting import collisions. */
   patterns: Pattern[]
-  /** This device's global color-to-bead defaults, which travel in the file so the Patterns still resolve elsewhere. */
-  colorBeadDefaults: ColorBeadDefaults
 }>()
 
 const emit = defineEmits<{
-  /**
-   * What a file turned out to hold: Patterns ready to be saved locally, already given fresh ids where they
-   * collided, plus the defaults the file carried for the app to fold into its own.
-   */
-  import: [patterns: Pattern[], colorBeadDefaults: ColorBeadDefaults]
+  /** The Patterns a file turned out to hold, ready to be saved locally, already given fresh ids where they collided. */
+  import: [patterns: Pattern[]]
 }>()
 
 const { t } = useI18n()
@@ -52,15 +46,12 @@ function download(fileName: string, contents: string): void {
 
 function onExportPattern(): void {
   if (props.pattern) {
-    download(
-      patternFileName(props.pattern),
-      serializePattern(props.pattern, props.colorBeadDefaults),
-    )
+    download(patternFileName(props.pattern), serializePattern(props.pattern))
   }
 }
 
 function onExportLibrary(): void {
-  download(libraryFileName(), serializeLibrary(props.patterns, props.colorBeadDefaults))
+  download(libraryFileName(), serializeLibrary(props.patterns))
 }
 
 async function onImportFile(event: Event): Promise<void> {
@@ -77,7 +68,7 @@ async function onImportFile(event: Event): Promise<void> {
     const contents = parsePatternsFile(await file.text())
     const added = importPatterns(contents.patterns, props.patterns)
     importedCount.value = added.length
-    emit('import', added, contents.colorBeadDefaults)
+    emit('import', added)
   } catch {
     importFailed.value = true
   } finally {

@@ -1549,94 +1549,47 @@ describe('App bead quantities', () => {
     await cells[2]!.trigger('mousedown')
   }
 
-  it('totals the beads each color needs from the painted cells', async () => {
+  it('totals the beads each color needs from the painted cells, with no bead picker in sight', async () => {
     const wrapper = mount(App)
     await patternWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('2')
     expect(wrapper.find('[data-testid="quantity-count-blue"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 
-  it('keeps a color\'s default bead across Patterns and reloads', async () => {
-    const first = mount(App)
-    await patternWithPaintedCells(first)
-
-    await first.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
-    first.unmount()
-
-    const afterReload = mount(App)
-    expect(
-      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-
-    // A second Pattern starts from that same global default.
-    await afterReload.find('[data-testid="new-pattern-button"]').trigger('click')
-    await patternWithPaintedCells(afterReload)
-    expect(
-      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-  })
-
-  it('overrides a color for one Pattern without touching the default or any other Pattern', async () => {
+  it('shows no row for a color painted nowhere in the Pattern', async () => {
     const wrapper = mount(App)
     await patternWithPaintedCells(wrapper)
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
 
-    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await patternWithPaintedCells(wrapper)
-
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
-    ).toBe('')
+    expect(wrapper.find('[data-testid="quantity-count-green"]').exists()).toBe(false)
   })
 
-  it('remembers a per-Pattern override across a reload', async () => {
-    const first = mount(App)
-    await patternWithPaintedCells(first)
-    await first.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-    first.unmount()
-
-    expect(loadPatterns()[0]!.colorBeadOverrides).toEqual({ red: 'toho-round-11-0' })
-    expect(
-      mount(App).find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
-    ).toBe('toho-round-11-0')
-  })
-
-  it('needs no beads yet for a Pattern with nothing painted on it', async () => {
+  it("adds a color's row as soon as it is painted, and removes it once its last cell is erased", async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
 
-    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('0')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown', { button: 2 }) // right-click erase
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 
-  it('maps colors to Beads before any Pattern is open, so a default can be set up front', async () => {
+  it('shows the "open a Pattern" message with no Pattern open', async () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(true)
-
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-round-11-0')
-    wrapper.unmount()
-
-    expect(
-      mount(App).find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('toho-round-11-0')
   })
 
-  it('shows the Bead a color resolves to, so the override is visible in the quantity view', async () => {
+  it('shows a "nothing painted yet" message for a Pattern with nothing painted on it', async () => {
     const wrapper = mount(App)
-    await patternWithPaintedCells(wrapper)
+    await createPatternViaForm(wrapper, '15', '30')
 
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
-    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('Miyuki Delica 11/0')
-
-    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('TOHO Round 11/0')
+    expect(wrapper.find('[data-testid="quantities-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 })
 
@@ -1660,32 +1613,11 @@ describe('App pattern transfer', () => {
     await flushPromises()
   }
 
-  it("takes in the other device's color-to-bead defaults without overwriting this device's own", async () => {
-    const wrapper = mount(App)
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-cube-1.5mm')
-
-    await importFile(
-      wrapper,
-      serializeLibrary([makePattern('Fox')], {
-        red: 'miyuki-delica-11-0',
-        blue: 'miyuki-delica-11-0',
-      }),
-    )
-
-    // Local choice for red stands; blue, which this device had not mapped, is filled in from the file.
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('toho-cube-1.5mm')
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-blue"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-  })
-
   it('takes in a library exported on another device and saves every Pattern in it', async () => {
     const wrapper = mount(App)
     const library = [makePattern('Fox'), makePattern('Owl')]
 
-    await importFile(wrapper, serializeLibrary(library, {}))
+    await importFile(wrapper, serializeLibrary(library))
 
     expect(loadPatterns().map((pattern) => pattern.name).sort()).toEqual(['Fox', 'Owl'])
     expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(2)
@@ -1696,7 +1628,7 @@ describe('App pattern transfer', () => {
     const woven = makePattern('Fox')
     woven.rowProgress = { enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 }
 
-    await importFile(wrapper, serializeLibrary([woven], {}))
+    await importFile(wrapper, serializeLibrary([woven]))
 
     expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('5 / 10')
     expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(4)
@@ -1707,7 +1639,7 @@ describe('App pattern transfer', () => {
     await createPatternViaForm(wrapper, '15', '30')
     const local = loadPatterns()[0]!
 
-    await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }], {}))
+    await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }]))
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(2)
