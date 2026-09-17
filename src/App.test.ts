@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns, savePattern } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 
@@ -140,7 +140,9 @@ describe('App', () => {
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-list"]').exists()).toBe(false)
+    // Saved Patterns keeps its box (ticket 39: always one of the three below-canvas boxes), now showing its
+    // own empty message rather than disappearing.
+    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(0)
   })
 
@@ -162,7 +164,8 @@ describe('App', () => {
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
@@ -175,15 +178,52 @@ describe('App', () => {
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
-  it('moves editing tools into the above-canvas panel, as a second row below New Pattern/zoom, and empties the main panel', async () => {
+  it('opens the bottom section with a dimmed divider, then exactly three boxes in order: Beads needed, Saved Patterns, Export and import (ticket 39)', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+
+    const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
+    const boxes = [...belowCanvas.element.children]
+    expect(boxes.map((box) => box.getAttribute('data-testid'))).toEqual([
+      'bead-quantities',
+      'pattern-list',
+      'pattern-transfer',
+    ])
+  })
+
+  it('keeps the same divider and exactly the same three boxes, in order, whether or not a Pattern is open', async () => {
+    const wrapper = mount(App)
+    const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
+    const boxOrder = () => [...belowCanvas.element.children].map((box) => box.getAttribute('data-testid'))
+    const expectedOrder = ['bead-quantities', 'pattern-list', 'pattern-transfer']
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
+
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click') // back to no Pattern open, but one is saved
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
+  })
+
+  it('moves editing tools into the above-canvas panel, empties the main panel, and leaves the Toolbox as that panel\'s only content (ticket 35 removed the New Pattern/zoom row above it)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
+    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     const toolbox = wrapper.find('[data-testid="toolbox"]')
 
     expect(mainPanel.text()).toBe('')
     expect(toolbox.exists()).toBe(true)
+    // No empty row is left where New Pattern/zoom used to sit: the Toolbox is the panel's first element child.
+    expect(aboveCanvas.element.firstElementChild).toBe(toolbox.element)
     for (const testId of [
       'tool-paint',
       'tool-fill',
@@ -270,6 +310,27 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
+  it('redoes an undone fill as a single action, re-repainting every cell it had touched', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#2f6fed')
+    expect(grid[0]![1]!.color).toBe('#2f6fed')
+  })
+
   it('rotating is a view-only flip: it turns the picture on screen but never touches the grid, dimensions, or technique', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
@@ -312,6 +373,22 @@ describe('App', () => {
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+  })
+
+  it('leaves redo untouched: Rotate is not a grid edit', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '4.5', '3')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
   it('mirroring is off by default, so painting touches only the clicked cell', async () => {
@@ -376,6 +453,22 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
   })
 
+  it('redoes a live-mirrored paint as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+  })
+
   it('leaves Fill unaffected by mirror state', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
@@ -426,6 +519,21 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
+  it('redoes "Mirror current" as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+  })
+
   it('hovering "Mirror current" shows no axis preview or dimming with the rich Mirror flag off (ticket 47)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3')
@@ -448,6 +556,82 @@ describe('App', () => {
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#123456')
+  })
+
+  it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('deselects the Custom color slot when a Palette swatch is picked afterwards, and vice versa', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+
+    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
+    expect(customColorInput.attributes('aria-pressed')).toBe('false')
+
+    await customColorInput.trigger('input')
+
+    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('replaces the previous Custom color when another one is chosen, leaving the Palette itself untouched', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+    customColorInput.element.value = '#abcdef'
+    await customColorInput.trigger('input')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#abcdef')
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount)
+  })
+
+  it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
   })
 
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
@@ -488,6 +672,29 @@ describe('App', () => {
     expect(grid[0]![2]!.color).toBeNull()
     expect(
       wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled,
+    ).toBe(true)
+  })
+
+  it('redoes a whole dragged stroke as a single action, not one step per cell', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![2]!.color).toBe('#e63746')
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled,
     ).toBe(true)
   })
 
@@ -691,6 +898,105 @@ describe('App', () => {
     )
   })
 
+  it('redoes the most recently undone change, and repeated redo steps forward through every undone change in order', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+  })
+
+  it('alternates undo and redo freely without losing or duplicating a step', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
+    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to blue
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to empty
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to red
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
+  it('clears the redo history once a new edit actually changes the grid', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
+  it('switching or creating a Pattern clears the redo history, the same as the undo stack', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const firstId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '6', '6')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
   it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -716,84 +1022,57 @@ describe('App', () => {
     )
   })
 
-  it('lists the seeded catalog in the bead catalog view', () => {
+  it('never renders the Bead catalog section (ticket 38): the catalog is a fixed built-in list', () => {
     const wrapper = mount(App)
 
-    expect(wrapper.findAll('[data-testid="catalog-seeded-item"]')).toHaveLength(BEAD_CATALOG.length)
+    expect(wrapper.find('[data-testid="bead-catalog"]').exists()).toBe(false)
   })
 
-  it('adds a custom bead, which becomes selectable when creating a Pattern', async () => {
-    const wrapper = mount(App)
+  it('offers exactly the three built-in Beads when creating a Pattern, even with custom-bead data left over from before ticket 38', () => {
+    localStorage.setItem(
+      'bd-beads:custom-beads',
+      JSON.stringify([
+        {
+          id: 'acme-fancy-8-0',
+          brand: 'Acme',
+          name: 'Fancy',
+          size: '8/0',
+          formFactor: 'round',
+          color: '#e63746',
+          widthMm: 3,
+          heightMm: 3,
+        },
+      ]),
+    )
 
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+    const wrapper = mount(App)
 
     const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
-
-    const customBeadOption = options.find((option) => option.text() === 'Acme Fancy 8/0')!
-    await wrapper.find('[data-testid="bead-select"]').setValue(customBeadOption.element.value)
-    await wrapper.find('[data-testid="width-input"]').setValue('6')
-    await wrapper.find('[data-testid="height-input"]').setValue('6')
-    await wrapper.find('form.new-pattern-form').trigger('submit')
-
-    expect(loadPatterns()[0]!.columns).toBe(2)
-    expect(loadPatterns()[0]!.rows).toBe(2)
-  })
-
-  it('persists a custom bead across a reload, still selectable for a new Pattern', async () => {
-    const first = mount(App)
-    await first.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await first.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await first.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await first.find('[data-testid="catalog-width-input"]').setValue('3')
-    await first.find('[data-testid="catalog-height-input"]').setValue('3')
-    await first.find('[data-testid="bead-catalog"] form').trigger('submit')
-    first.unmount()
-
-    const afterReload = mount(App)
-
-    const options = afterReload.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
-  })
-
-  it('edits a custom bead in place', async () => {
-    const wrapper = mount(App)
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
-
-    const editButton = wrapper.find('[data-testid="catalog-custom-item"] button')
-    await editButton.trigger('click')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Renamed')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
-
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Renamed 8/0')
+    expect(options).toHaveLength(BEAD_CATALOG.length)
     expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
   })
 
-  it('removes a custom bead from the catalog and the pattern-creation select', async () => {
+  it('still opens, paints, and exports a Pattern created with a since-removed custom Bead', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+    savePattern({ ...pattern, beadId: 'acme-fancy-8-0' })
+
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
 
-    await wrapper.find('[data-testid="catalog-custom-item"] [data-testid^="catalog-remove-"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="grid-cell"]')).not.toHaveLength(0)
 
-    expect(wrapper.find('[data-testid="catalog-custom-item"]').exists()).toBe(false)
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    // Export/import round-tripping an unresolved beadId is covered directly in patternFile.test.ts; here it's
+    // enough that the button (disabled only while no Pattern is open) is live for this one.
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled,
+    ).toBe(false)
   })
 
   it('defaults to Russian on first visit with no saved language preference', () => {
@@ -826,23 +1105,23 @@ describe('App', () => {
       wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).classes(),
     ).toContain('button--danger')
 
-    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button']) {
+    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button', 'redo-button']) {
       expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
     }
   })
 
-  it('puts the zoom controls in the above-canvas panel rather than inside the canvas box', async () => {
+  it('floats the zoom controls inside the canvas box rather than the above-canvas panel (ticket 35)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
-    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
+    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(false)
     expect(
       wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(false)
+    ).toBe(true)
   })
 
-  it('zooms the open Pattern from the above-canvas controls', async () => {
+  it('zooms the open Pattern from the floating canvas-box controls', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
@@ -864,8 +1143,26 @@ describe('App', () => {
 
     expect(titleBox.find('h1').text()).toBe('bd-beads')
     expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
+    expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="language-en"]').exists()).toBe(true)
+  })
+
+  it('renders New Pattern as the first item of the aqua summary box, before the summary and language switcher (ticket 35)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const summaryBox = wrapper.find('.app-shell__topbar-summary')
+    const children = Array.from(summaryBox.element.children)
+    const newPatternButton = wrapper.find('[data-testid="new-pattern-button"]').element
+    // The current-Pattern summary sits inside a wrapper with its Bead (ticket 37), so it's this group, not the
+    // summary <p> itself, that's the topbar box's direct child.
+    const summaryGroup = wrapper.find('[data-testid="current-pattern-summary"]').element.closest('.app-shell__summary-group')!
+    const languageSwitcher = wrapper.find('[data-testid="language-en"]').element.closest('div')!
+
+    expect(children.indexOf(newPatternButton)).toBe(0)
+    expect(children.indexOf(newPatternButton)).toBeLessThan(children.indexOf(summaryGroup))
+    expect(children.indexOf(summaryGroup)).toBeLessThan(children.indexOf(languageSwitcher))
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {
@@ -889,9 +1186,11 @@ describe('App tool strip icon buttons', () => {
     { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel },
     { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel },
     { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel },
+    { testId: 'delete-all-button', label: (t: typeof en) => t.deleteAll.button },
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
     { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
+    { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton },
     { testId: 'mirror-horizontal', label: (t: typeof en) => t.mirror.horizontalLabel },
     { testId: 'mirror-vertical', label: (t: typeof en) => t.mirror.verticalLabel },
     { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
@@ -987,6 +1286,83 @@ describe('App tool strip icon buttons', () => {
     const mirrorButton = wrapper.find('[data-testid="mirror-horizontal"]')
     expect(mirrorButton.attributes('aria-pressed')).toBe('true')
     expect(mirrorButton.classes()).toContain('tool-picker__button--selected')
+  })
+})
+
+describe('App keyboard shortcuts', () => {
+  /** Dispatched on `target` (window by default, the way Escape is), bubbling up so App's window-level listener sees it. */
+  async function pressKey(init: KeyboardEventInit, target: EventTarget = window) {
+    target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }))
+    await flushPromises()
+  }
+
+  /** Paints (0,0) red, as a single undo step to exercise the shortcuts against. */
+  async function paintFirstCell(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+  }
+
+  it.each([{ ctrlKey: true }, { metaKey: true }])('undoes on %s+Z', async (modifier) => {
+    const wrapper = mount(App)
+    await paintFirstCell(wrapper)
+
+    await pressKey({ key: 'z', ...modifier })
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it.each([{ ctrlKey: true, shiftKey: true }, { metaKey: true, shiftKey: true }, { ctrlKey: true, key: 'y' }])(
+    'redoes on %s',
+    async (modifier) => {
+      const wrapper = mount(App)
+      await paintFirstCell(wrapper)
+      await pressKey({ key: 'z', ctrlKey: true })
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+      await pressKey({ key: modifier.key ?? 'z', ...modifier })
+
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    },
+  )
+
+  it.each(['text', 'number'] as const)(
+    'does not undo or redo while typing in a %s form field',
+    async (type) => {
+      // No text/number field ships alongside an active, painted Pattern in this app (ticket 38 removed the last
+      // one, the Bead catalog's add-bead form) — a standalone field, attached to the document so the keydown still
+      // bubbles to App.vue's window listener, is what isTypingInFormField actually cares about regardless of it
+      // belonging to any real feature.
+      const field = document.createElement('input')
+      field.type = type
+      document.body.appendChild(field)
+
+      try {
+        const wrapper = mount(App)
+        await paintFirstCell(wrapper)
+
+        await pressKey({ key: 'z', ctrlKey: true }, field)
+
+        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+        await wrapper.find('[data-testid="undo-button"]').trigger('click')
+        await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
+
+        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+      } finally {
+        field.remove()
+      }
+    },
+  )
+
+  it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
+    const wrapper = mount(App)
+    await paintFirstCell(wrapper)
+
+    await pressKey({ key: 'z', ctrlKey: true })
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
   })
 })
 
@@ -1195,6 +1571,24 @@ describe('App row progress', () => {
       await wrapper.find('[data-testid="rotate-button"]').trigger('click')
       expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
     })
+
+    it('leaves redo untouched: Row direction and moving the Row progress pointer are not grid edits', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '15', '30')
+      await wrapper.find('[data-color-id="red"]').trigger('click')
+      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+      await wrapper.trigger('mouseup')
+      await wrapper.find('[data-testid="undo-button"]').trigger('click')
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+      await wrapper.find('[data-testid="redo-button"]').trigger('click')
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    })
   })
 })
 
@@ -1217,6 +1611,10 @@ describe('App finished rows', () => {
     return wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled
   }
 
+  function redoDisabled(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled
+  }
+
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
     const wrapper = mount(App)
     const cells = await withTwoRowsWoven(wrapper)
@@ -1226,6 +1624,23 @@ describe('App finished rows', () => {
 
     expect(colorAt(1, 4)).toBeNull()
     expect(undoDisabled(wrapper)).toBe(true)
+  })
+
+  it('an edit that lands only on a finished row changes nothing, so it leaves redo alone', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await cells[24]!.trigger('mousedown') // (2,4), the current row — a real edit
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(redoDisabled(wrapper)).toBe(false)
+
+    await cells[14]!.trigger('mousedown') // (1,4), a finished row — paints nothing
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBeNull()
+    expect(redoDisabled(wrapper)).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(colorAt(2, 4)).toBe('#e63746')
   })
 
   it('paints only the unfinished part of a drag that crosses into the current row', async () => {
@@ -1364,6 +1779,271 @@ describe('App finished rows', () => {
 
     expect(colorAt(0, 4)).toBeNull()
   })
+
+  it('redoes in full too, even onto a row marked done since', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('mousedown') // (0,4)
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(colorAt(0, 4)).toBe('#e63746')
+  })
+})
+
+describe('App delete all', () => {
+  /** Presses and releases one cell without moving — a click. */
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  function loadedPattern() {
+    return loadPatterns()[0]!
+  }
+
+  it('opens a confirmation modal instead of clearing immediately', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // paint (0,0) red
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await click(wrapper, 0) // select (0,0)
+    await wrapper.find('[data-testid="copy-button"]').trigger('click') // copiedBlock now holds the red cell
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+
+    // If Escape had also run backOutOfSelect, it would have dropped the copied block (cancelPaste), and this next
+    // click would start a fresh Selection instead of stamping — leaving (1,1) uncolored.
+    await click(wrapper, 5) // (1,1)
+    expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
+  })
+
+  it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await click(wrapper, 25)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
+  })
+
+  it('keeps name, size, Technique, Bead and rotation unchanged', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    const before = loadedPattern()
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    const after = loadedPattern()
+    expect(after.name).toBe(before.name)
+    expect(after.technique).toBe(before.technique)
+    expect(after.beadId).toBe(before.beadId)
+    expect(after.widthMm).toBe(before.widthMm)
+    expect(after.heightMm).toBe(before.heightMm)
+    expect(after.columns).toBe(before.columns)
+    expect(after.rows).toBe(before.rows)
+    expect(after.rotated).toBe(before.rotated)
+    expect(after.rotated).toBe(true)
+  })
+
+  it('ignores the Row progress lock, clearing beads in finished rows along with the rest', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 4) // (0,4), painted before it's locked
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished/locked
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid[0]![4]!.color).toBeNull()
+  })
+
+  it('is not affected by Mirror: confirming still empties every cell with mirror axes on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
+  })
+
+  it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 4) // (0,4)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // rows 0-1 finished
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadedPattern().grid[0]![4]!.color).toBe('#e63746')
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 2,
+      currentColumn: 0,
+    })
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+  })
+
+  it('does nothing when there is no open Pattern', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="delete-all-button"]').exists()).toBe(false)
+  })
+
+  it('translates the modal title, message and button labels with the interface language', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.text()).toContain(en.deleteAll.confirmTitle)
+    expect(wrapper.text()).toContain(en.deleteAll.confirmMessage)
+    expect(wrapper.find('[data-testid="confirm-modal-cancel"]').text()).toBe(en.deleteAll.cancelButton)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(en.deleteAll.confirmButton)
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.text()).toContain(ru.deleteAll.confirmTitle)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(ru.deleteAll.confirmButton)
+  })
+})
+
+describe('App header bead', () => {
+  it("shows the open Pattern's Bead label in the header", async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('updates the Bead shown when switching to another Pattern', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const firstId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
+    await wrapper.find('[data-testid="width-input"]').setValue('15')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('Miyuki Delica 11/0')
+
+    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('shows no Bead in the header with no Pattern open', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const patternId = loadPatterns()[0]!.id
+
+    await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
+  })
+
+  it('shows an "unknown bead" label, translated, for a Pattern whose Bead is not in the catalog', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+    savePattern({ ...pattern, beadId: 'no-such-bead' })
+
+    const wrapper = mount(App)
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(ru.patterns.unknownBeadLabel)
+
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(en.patterns.unknownBeadLabel)
+  })
+
+  it('leaves the Saved Patterns list unchanged: no Bead shown there', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const patternId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '30', '30')
+
+    const patternItem = wrapper
+      .findAll('[data-testid="pattern-item"]')
+      .find((item) => item.find(`[data-testid="select-pattern-${patternId}"]`).exists())!
+    expect(patternItem.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
+  })
 })
 
 describe('App bead quantities', () => {
@@ -1377,94 +2057,47 @@ describe('App bead quantities', () => {
     await cells[2]!.trigger('mousedown')
   }
 
-  it('totals the beads each color needs from the painted cells', async () => {
+  it('totals the beads each color needs from the painted cells, with no bead picker in sight', async () => {
     const wrapper = mount(App)
     await patternWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('2')
     expect(wrapper.find('[data-testid="quantity-count-blue"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 
-  it('keeps a color\'s default bead across Patterns and reloads', async () => {
-    const first = mount(App)
-    await patternWithPaintedCells(first)
-
-    await first.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
-    first.unmount()
-
-    const afterReload = mount(App)
-    expect(
-      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-
-    // A second Pattern starts from that same global default.
-    await afterReload.find('[data-testid="new-pattern-button"]').trigger('click')
-    await patternWithPaintedCells(afterReload)
-    expect(
-      afterReload.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-  })
-
-  it('overrides a color for one Pattern without touching the default or any other Pattern', async () => {
+  it('shows no row for a color painted nowhere in the Pattern', async () => {
     const wrapper = mount(App)
     await patternWithPaintedCells(wrapper)
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
 
-    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await patternWithPaintedCells(wrapper)
-
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
-    ).toBe('')
+    expect(wrapper.find('[data-testid="quantity-count-green"]').exists()).toBe(false)
   })
 
-  it('remembers a per-Pattern override across a reload', async () => {
-    const first = mount(App)
-    await patternWithPaintedCells(first)
-    await first.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-    first.unmount()
-
-    expect(loadPatterns()[0]!.colorBeadOverrides).toEqual({ red: 'toho-round-11-0' })
-    expect(
-      mount(App).find<HTMLSelectElement>('[data-testid="quantity-override-red"]').element.value,
-    ).toBe('toho-round-11-0')
-  })
-
-  it('needs no beads yet for a Pattern with nothing painted on it', async () => {
+  it("adds a color's row as soon as it is painted, and removes it once its last cell is erased", async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
 
-    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('0')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown', { button: 2 }) // right-click erase
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 
-  it('maps colors to Beads before any Pattern is open, so a default can be set up front', async () => {
+  it('shows the "open a Pattern" message with no Pattern open', async () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(true)
-
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-round-11-0')
-    wrapper.unmount()
-
-    expect(
-      mount(App).find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('toho-round-11-0')
   })
 
-  it('shows the Bead a color resolves to, so the override is visible in the quantity view', async () => {
+  it('shows a "nothing painted yet" message for a Pattern with nothing painted on it', async () => {
     const wrapper = mount(App)
-    await patternWithPaintedCells(wrapper)
+    await createPatternViaForm(wrapper, '15', '30')
 
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('miyuki-delica-11-0')
-    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('Miyuki Delica 11/0')
-
-    await wrapper.find('[data-testid="quantity-override-red"]').setValue('toho-round-11-0')
-    expect(wrapper.find('[data-testid="quantity-bead-red"]').text()).toBe('TOHO Round 11/0')
+    expect(wrapper.find('[data-testid="quantities-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 })
 
@@ -1488,32 +2121,11 @@ describe('App pattern transfer', () => {
     await flushPromises()
   }
 
-  it("takes in the other device's color-to-bead defaults without overwriting this device's own", async () => {
-    const wrapper = mount(App)
-    await wrapper.find('[data-testid="quantity-default-red"]').setValue('toho-cube-1.5mm')
-
-    await importFile(
-      wrapper,
-      serializeLibrary([makePattern('Fox')], {
-        red: 'miyuki-delica-11-0',
-        blue: 'miyuki-delica-11-0',
-      }),
-    )
-
-    // Local choice for red stands; blue, which this device had not mapped, is filled in from the file.
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-red"]').element.value,
-    ).toBe('toho-cube-1.5mm')
-    expect(
-      wrapper.find<HTMLSelectElement>('[data-testid="quantity-default-blue"]').element.value,
-    ).toBe('miyuki-delica-11-0')
-  })
-
   it('takes in a library exported on another device and saves every Pattern in it', async () => {
     const wrapper = mount(App)
     const library = [makePattern('Fox'), makePattern('Owl')]
 
-    await importFile(wrapper, serializeLibrary(library, {}))
+    await importFile(wrapper, serializeLibrary(library))
 
     expect(loadPatterns().map((pattern) => pattern.name).sort()).toEqual(['Fox', 'Owl'])
     expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(2)
@@ -1524,7 +2136,7 @@ describe('App pattern transfer', () => {
     const woven = makePattern('Fox')
     woven.rowProgress = { enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 }
 
-    await importFile(wrapper, serializeLibrary([woven], {}))
+    await importFile(wrapper, serializeLibrary([woven]))
 
     expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('5 / 10')
     expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(4)
@@ -1535,7 +2147,7 @@ describe('App pattern transfer', () => {
     await createPatternViaForm(wrapper, '15', '30')
     const local = loadPatterns()[0]!
 
-    await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }], {}))
+    await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }]))
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(2)
@@ -1671,6 +2283,39 @@ describe('App select, copy and paste', () => {
 
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
     expect(loadPatterns()[0]!.grid[3]![3]!.color).toBeNull()
+  })
+
+  it('redoes a stamped paste as a single action', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10) // (2,2)
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[3]![3]!.color).toBe('#2f6fed')
+  })
+
+  it('leaves redo untouched: Select, Copy, and cancelling a Paste are not grid edits', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10) // (2,2), a real edit
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await drag(wrapper, [0, 1]) // a fresh Selection
+    await wrapper.find('[data-testid="copy-button"]').trigger('click') // Copy
+    await pressEscape(wrapper) // cancels the pending Paste
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
   })
 
   it('can stamp the same block again at another position without copying again', async () => {
@@ -1907,5 +2552,60 @@ describe('App select, copy and paste', () => {
 
     await click(wrapper, 0)
     expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('App Tool group Escape precedence (ticket 41)', () => {
+  function selectedCount(wrapper: ReturnType<typeof mount>) {
+    return wrapper.findAll('.pattern-grid__cell--selected').length
+  }
+
+  async function createPatternWithSelection(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[5]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /*
+   * No real Tool group exceeds 14 controls yet (ToolGroup.test.ts covers the expand/collapse mechanics itself with
+   * a synthetic one that does), so this stands in for "some Tool group is currently hover-expanded" by making the
+   * mounted Toolbox's own exposed collapseExpandedGroup — the exact function App.vue's onKeyDown calls — report
+   * one was, for exactly one call. It's proving the wiring: Escape asks Toolbox first, and only backs out of Select
+   * once that reports nothing was expanded.
+   */
+  function stubOneExpandedGroup(wrapper: ReturnType<typeof mount>) {
+    const app = wrapper.vm as unknown as { toolboxRef: { collapseExpandedGroup: () => boolean } }
+    vi.spyOn(app.toolboxRef, 'collapseExpandedGroup').mockReturnValueOnce(true)
+  }
+
+  it('lets an expanded Tool group swallow the first Escape, leaving the Selection untouched', async () => {
+    const wrapper = mount(App)
+    await createPatternWithSelection(wrapper)
+    expect(selectedCount(wrapper)).toBe(4)
+
+    stubOneExpandedGroup(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+
+    expect(selectedCount(wrapper)).toBe(4)
+  })
+
+  it('reaches Select as usual on the Escape after that, once no group reports being expanded', async () => {
+    const wrapper = mount(App)
+    await createPatternWithSelection(wrapper)
+
+    stubOneExpandedGroup(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) // swallowed by the (stubbed) expanded group
+    await flushPromises()
+    expect(selectedCount(wrapper)).toBe(4)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })) // no group expanded now — clears the Selection
+    await flushPromises()
+
+    expect(selectedCount(wrapper)).toBe(0)
   })
 })
