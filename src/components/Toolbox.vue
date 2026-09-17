@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import PalettePicker from './PalettePicker.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
@@ -30,11 +31,36 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/**
+ * Refs to every Tool group, written out individually since they're written out individually below (ticket 40's
+ * layout), so Escape can ask each one to collapse (ticket 41) — see collapseExpandedGroup and App.vue's onKeyDown,
+ * which calls it before running its own Paste-cancel/Selection-clear precedence.
+ */
+const toolsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const colorsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const mirrorGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const rowProgressGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+
+/**
+ * Collapses whichever Tool group is currently hover-expanded (ticket 41). Only one ever is, since expansion follows
+ * a single pointer, but this asks every group regardless rather than assuming that — each collapse() is a no-op
+ * when that group wasn't expanded. Returns whether any of them was, so App.vue's onKeyDown knows whether this
+ * Escape press was "used up" by collapsing a group or should fall through to its usual Select precedence.
+ */
+function collapseExpandedGroup(): boolean {
+  const groups = [toolsGroupRef, colorsGroupRef, editGroupRef, mirrorGroupRef, rowProgressGroupRef]
+  const collapsed = groups.map((group) => group.value?.collapse() ?? false)
+  return collapsed.some(Boolean)
+}
+
+defineExpose({ collapseExpandedGroup })
 </script>
 
 <template>
   <div class="toolbox" data-testid="toolbox">
-    <ToolGroup :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
+    <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
       <button
         type="button"
         class="icon-button"
@@ -88,11 +114,11 @@ const { t } = useI18n()
       </button>
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
+    <ToolGroup ref="colorsGroupRef" :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
       <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
+    <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <button
         type="button"
         class="icon-button"
@@ -154,7 +180,7 @@ const { t } = useI18n()
       </button>
     </ToolGroup>
 
-    <ToolGroup :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
+    <ToolGroup ref="mirrorGroupRef" :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
       <button
         type="button"
         class="icon-button"
@@ -221,6 +247,7 @@ const { t } = useI18n()
     </ToolGroup>
 
     <ToolGroup
+      ref="rowProgressGroupRef"
       :title="t.toolbox.groups.rowProgress"
       class="tool-group--row-progress"
       data-testid="tool-group-row-progress"

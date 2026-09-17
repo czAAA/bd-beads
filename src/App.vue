@@ -86,6 +86,9 @@ const copiedBlock = ref<CopiedBlock | undefined>()
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
 
+/** For onKeyDown's Escape precedence: asks every Tool group to collapse before backing out of Select (ticket 41). */
+const toolboxRef = ref<InstanceType<typeof Toolbox> | null>(null)
+
 watch(activePatternId, () => {
   history.value = emptyHistory()
   selection.value = undefined
@@ -338,6 +341,13 @@ function isRedoShortcut(event: KeyboardEvent): boolean {
  */
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
+    /*
+     * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
+     * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
+     */
+    if (toolboxRef.value?.collapseExpandedGroup()) {
+      return
+    }
     backOutOfSelect()
     return
   }
@@ -567,6 +577,7 @@ function onRemoveBead(id: string) {
         <div class="app-shell__above-canvas" data-testid="app-above-canvas">
           <Toolbox
             v-if="activePattern"
+            ref="toolboxRef"
             :pattern="activePattern"
             :active-tool="activeTool"
             :selected-color-id="selectedColorId"
