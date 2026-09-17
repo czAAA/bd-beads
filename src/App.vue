@@ -9,12 +9,12 @@ import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
-import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
+import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
 import { findPaletteColor } from './domain/palette'
 import {
   copySelection,
@@ -67,7 +67,7 @@ const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
 const canvasAreaEl = ref<HTMLElement | null>(null)
 const { width: canvasAreaWidth } = useElementSize(canvasAreaEl)
 
-const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
+const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
 )
@@ -78,8 +78,8 @@ const DEFAULT_PALETTE_COLOR_ID = 'red'
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
-/** Snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
-const undoStack = ref<UndoEntry[]>([])
+/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
+const history = ref<History<UndoEntry>>(emptyHistory())
 
 /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
 const deleteAllConfirmOpen = ref(false)
@@ -92,8 +92,11 @@ const copiedBlock = ref<CopiedBlock | undefined>()
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
 
+/** For onKeyDown's Escape precedence: asks every Tool group to collapse before backing out of Select (ticket 41). */
+const toolboxRef = ref<InstanceType<typeof Toolbox> | null>(null)
+
 watch(activePatternId, () => {
-  undoStack.value = []
+  history.value = emptyHistory()
   selection.value = undefined
   copiedBlock.value = undefined
   deleteAllConfirmOpen.value = false
@@ -195,7 +198,7 @@ function commitGridChange(pattern: Pattern, updated: Pattern) {
     return
   }
 
-  undoStack.value.push({ grid: pattern.grid })
+  history.value = pushHistory(history.value, { grid: pattern.grid })
   replaceActivePattern(kept)
 }
 
@@ -218,7 +221,7 @@ function endStroke() {
 
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    undoStack.value.push({ grid: strokeBaseline.value })
+    history.value = pushHistory(history.value, { grid: strokeBaseline.value })
   }
   strokeMode.value = null
   strokeBaseline.value = null
@@ -318,14 +321,56 @@ function backOutOfSelect() {
   }
 }
 
+/** Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it should be left to type normally rather than triggering an editor-wide shortcut. */
+function isTypingInFormField(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  )
+}
+
+function isUndoShortcut(event: KeyboardEvent): boolean {
+  return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
+}
+
+/** Ctrl/Cmd+Shift+Z, the mirror of the undo chord, or Ctrl+Y, the older Windows convention. */
+function isRedoShortcut(event: KeyboardEvent): boolean {
+  const shiftZ = (event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z'
+  const ctrlY = event.ctrlKey && event.key.toLowerCase() === 'y'
+  return shiftZ || ctrlY
+}
+
 /**
  * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
- * may have left it. While the Delete all confirmation modal is open, its own Escape handling (ConfirmModal.vue)
- * owns the key instead — deferred to here so Escape can't also unexpectedly drop a copied block behind the modal.
+ * may have left it (ticket 24). Undo/Redo's shortcuts (ticket 34) work the same way — bound to the window rather
+ * than a focused element — except while the user is typing in a form field, where they're left to the field itself
+ * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo. While the Delete all
+ * confirmation modal is open, its own Escape handling (ConfirmModal.vue) owns the key instead — deferred to here so
+ * Escape can't also unexpectedly drop a copied block or collapse a Tool group behind the modal.
  */
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape' && !deleteAllConfirmOpen.value) {
+    /*
+     * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
+     * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
+     */
+    if (toolboxRef.value?.collapseExpandedGroup()) {
+      return
+    }
     backOutOfSelect()
+    return
+  }
+
+  if (isTypingInFormField(event.target)) {
+    return
+  }
+
+  if (isRedoShortcut(event)) {
+    event.preventDefault()
+    onRedo()
+  } else if (isUndoShortcut(event)) {
+    event.preventDefault()
+    onUndo()
   }
 }
 
@@ -400,12 +445,25 @@ function onCellSecondaryMove(row: number, column: number) {
 
 function onUndo() {
   const pattern = activePattern.value
-  const entry = undoStack.value.pop()
-  if (!pattern || !entry) {
+  const step = pattern && undoStep(history.value, { grid: pattern.grid })
+  if (!step) {
     return
   }
 
-  replaceActivePattern(restoreSnapshot(pattern, entry))
+  history.value = step.history
+  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+}
+
+/** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
+function onRedo() {
+  const pattern = activePattern.value
+  const step = pattern && redoStep(history.value, { grid: pattern.grid })
+  if (!step) {
+    return
+  }
+
+  history.value = step.history
+  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
 }
 
 /** Opens the Delete all confirmation modal (ticket 42); does nothing with no Pattern open. */
@@ -437,7 +495,7 @@ function onConfirmDeleteAll() {
     return
   }
 
-  undoStack.value.push({ grid: pattern.grid, rowProgress: pattern.rowProgress })
+  history.value = pushHistory(history.value, { grid: pattern.grid, rowProgress: pattern.rowProgress })
   replaceActivePattern(updated)
 }
 
@@ -530,6 +588,14 @@ function onRemoveBead(id: string) {
         <h1>{{ t.app.title }}</h1>
       </div>
       <div class="app-shell__topbar-summary">
+        <button
+          type="button"
+          data-testid="new-pattern-button"
+          :disabled="patterns.length === 0"
+          @click="onNewPattern"
+        >
+          {{ t.patterns.newPatternButton }}
+        </button>
         <p v-if="activePattern" class="app-shell__summary" data-testid="current-pattern-summary">
           {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
         </p>
@@ -551,35 +617,20 @@ function onRemoveBead(id: string) {
 
       <div class="app-shell__right">
         <div class="app-shell__above-canvas" data-testid="app-above-canvas">
-          <div class="app-shell__above-canvas-row">
-            <button
-              type="button"
-              data-testid="new-pattern-button"
-              :disabled="patterns.length === 0"
-              @click="onNewPattern"
-            >
-              {{ t.patterns.newPatternButton }}
-            </button>
-            <ZoomControls
-              v-if="activePattern"
-              :zoom-percent="zoomPercent"
-              @zoom-in="zoomIn"
-              @zoom-out="zoomOut"
-              @reset="resetZoom"
-            />
-          </div>
-
           <Toolbox
             v-if="activePattern"
+            ref="toolboxRef"
             :pattern="activePattern"
             :active-tool="activeTool"
             :selected-color-id="selectedColorId"
-            :can-undo="undoStack.length > 0"
+            :can-undo="canUndo(history)"
+            :can-redo="canRedo(history)"
             :can-copy="!!selection"
             :mirror-axes="mirrorAxes"
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
             @undo="onUndo"
+            @redo="onRedo"
             @toggle-rotate="onToggleRotate"
             @copy="onCopy"
             @toggle-mirror-axis="onToggleMirrorAxis"
@@ -605,6 +656,9 @@ function onRemoveBead(id: string) {
             @cell-secondary-move="onCellSecondaryMove"
             @cell-hover="onCellHover"
             @hover-end="onHoverEnd"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @zoom-reset="resetZoom"
           />
           <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
             {{ t.shell.canvasPlaceholder }}
@@ -682,7 +736,9 @@ function onRemoveBead(id: string) {
   background: var(--color-aqua-island);
 }
 
+/* Grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is. */
 .app-shell__summary {
+  flex: 1 1 auto;
   margin: 0;
   color: var(--color-aqua-island-ink);
 }
@@ -736,15 +792,10 @@ function onRemoveBead(id: string) {
   gap: 16px;
 }
 
+/* New Pattern (ticket 35) has moved out to the header, and zoom (ticket 35) onto the canvas box, so the Toolbox is this panel's only remaining content — it renders directly here rather than as a second row below a first one that's now gone. */
 .app-shell__above-canvas {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.app-shell__above-canvas-row {
-  display: flex;
-  align-items: center;
   gap: 16px;
 }
 
