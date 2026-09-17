@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createPattern,
+  deleteAll,
   fillArea,
   mirrorPattern,
   mirroredCells,
@@ -12,9 +13,10 @@ import {
   paintCells,
   paintCellsForCounts,
   keepFinishedRows,
+  resolvePatternBead,
   restoreGrid,
+  restoreSnapshot,
   rowProgressPosition,
-  setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
@@ -858,40 +860,135 @@ describe('keepFinishedRows', () => {
   })
 })
 
-describe('setColorBeadOverride', () => {
-  function pattern() {
-    return createPattern({
+describe('resolvePatternBead', () => {
+  it("finds the Pattern's Bead in the catalog", () => {
+    const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
+
+    expect(resolvePatternBead(pattern)).toEqual(cubeBead)
+  })
+
+  it('returns undefined for a Bead the catalog no longer has (a removed custom Bead, or an unrecognized imported one)', () => {
+    const pattern = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      beadId: 'no-such-bead',
+    }
+
+    expect(resolvePatternBead(pattern)).toBeUndefined()
+  })
+})
+
+describe('deleteAll', () => {
+  /** 10 columns x 20 rows, painted, rotated, with the overlay on, rows 0-2 finished and direction turned to columns. */
+  function paintedAndWoven() {
+    const painted = paintCells(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
+      [{ row: 0, column: 0 }, { row: 5, column: 5 }],
+      '#e63746',
+      { horizontal: false, vertical: false },
+    )
+    const rotated = toggleRotated(painted)
+    const turned = toggleRowDirection(rotated)
+    return setRowProgressEnabled(moveToRow(turned, 3), true)
   }
 
-  it('starts with no per-Pattern overrides', () => {
-    expect(pattern().colorBeadOverrides).toEqual({})
+  it('empties every cell', () => {
+    const cleared = deleteAll(paintedAndWoven())
+
+    expect(cleared.grid.every((row) => row.every((cell) => cell.color === null))).toBe(true)
   })
 
-  it('records an override for one palette color, leaving the others alone', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+  it('turns Row progress off and puts both direction pointers back at the first row', () => {
+    const cleared = deleteAll(paintedAndWoven())
 
-    expect(overridden.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
+    expect(cleared.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
-  it('clears an override when given no bead, falling back to the global default', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+  it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
+    const before = paintedAndWoven()
 
-    expect(setColorBeadOverride(overridden, 'red', null).colorBeadOverrides).toEqual({})
+    const cleared = deleteAll(before)
+
+    expect(cleared.name).toBe(before.name)
+    expect(cleared.technique).toBe(before.technique)
+    expect(cleared.beadId).toBe(before.beadId)
+    expect(cleared.widthMm).toBe(before.widthMm)
+    expect(cleared.heightMm).toBe(before.heightMm)
+    expect(cleared.columns).toBe(before.columns)
+    expect(cleared.rows).toBe(before.rows)
+    expect(cleared.rotated).toBe(before.rotated)
+  })
+
+  it('ignores the Row progress lock: clears a finished row along with the rest', () => {
+    const before = paintedAndWoven() // rows 0-2 are finished
+    expect(before.grid[0]![0]!.color).toBe('#e63746') // painted before the overlay locked it
+
+    const cleared = deleteAll(before)
+
+    expect(cleared.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('bumps updatedAt', () => {
+    const before = { ...paintedAndWoven(), updatedAt: 0 }
+
+    expect(deleteAll(before).updatedAt).toBeGreaterThan(0)
+  })
+
+  it('hands back the same instance, unchanged, when the Pattern is already blank with progress off', () => {
+    const fresh = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    expect(deleteAll(fresh)).toBe(fresh)
+  })
+})
+
+describe('restoreSnapshot', () => {
+  it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
+    const pattern = setRowProgressEnabled(moveToRow(paintCell(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      0,
+      0,
+      '#e63746',
+    ), 2), true)
+    const blankGrid = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    }).grid
+
+    const restored = restoreSnapshot(pattern, { grid: blankGrid })
+
+    expect(restored.grid).toBe(blankGrid)
+    expect(restored.rowProgress).toEqual(pattern.rowProgress)
+  })
+
+  it('restores the grid and Row progress together when the undo entry carries both', () => {
+    const before = setRowProgressEnabled(moveToRow(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      3,
+    ), true)
+    const cleared = deleteAll(before)
+
+    const restored = restoreSnapshot(cleared, { grid: before.grid, rowProgress: before.rowProgress })
+
+    expect(restored.grid).toBe(before.grid)
+    expect(restored.rowProgress).toEqual(before.rowProgress)
   })
 })
 
 describe('normalizePattern', () => {
-  it('backfills row progress, color overrides, and the rotated view flag on a Pattern saved before they existed', () => {
-    const {
-      rowProgress: _rowProgress,
-      colorBeadOverrides: _overrides,
-      rotated: _rotated,
-      ...legacy
-    } = createPattern({
+  it('backfills row progress and the rotated view flag on a Pattern saved before they existed', () => {
+    const { rowProgress: _rowProgress, rotated: _rotated, ...legacy } = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
@@ -905,8 +1002,22 @@ describe('normalizePattern', () => {
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(normalized.colorBeadOverrides).toEqual({})
     expect(normalized.rotated).toBe(false)
+  })
+
+  it('drops the color-to-bead override field a Pattern saved before ticket 36 may still carry (ADR 0007)', () => {
+    const legacy = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      colorBeadOverrides: { red: 'miyuki-delica-11-0' },
+    }
+
+    const normalized = normalizePattern(legacy as Pattern)
+
+    expect((normalized as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 
   it('keeps the row pointer of progress saved before row direction existed, running it along the grid rows', () => {
