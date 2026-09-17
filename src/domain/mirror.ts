@@ -83,6 +83,11 @@ function targetPositionIn(local: number, strip: number, space: StripSpace, copyM
   return isReversedStrip(strip, copyMode) ? (strip + 1) * space.stripWidth - local : strip * space.stripWidth + local
 }
 
+/** toIndex without the clamp into [0, dimension - 1] -- lets a mirrored point land off-grid, which mirrorBlockPlacements needs so a block anchored near one edge can clip on the *other* edge once mirrored, instead of being pinned to the boundary cell. */
+function toIndexUnclamped(position: number, space: StripSpace): number {
+  return Math.round((position - space.strips) / space.scale)
+}
+
 /**
  * Which strip (0-indexed, 0..axisCount) a cell belongs to, per the same "as equal as possible" split
  * mirrorCounterparts uses.
@@ -170,6 +175,66 @@ export function mirrorCounterpartInStrip(
   const ownStrip = stripAtPosition(position, space)
   const local = forwardLocal(position, ownStrip, space, copyMode)
   return toIndex(targetPositionIn(local, sourceStrip, space, copyMode), dimension, space)
+}
+
+/** One strip's placement of a mirrored block along a single axis: where its near (top or left) edge lands, and
+ * whether the strip reads reversed from the block's own strip -- see mirrorBlockPlacements. */
+export interface MirrorBlockPlacement {
+  anchorIndex: number
+  flipped: boolean
+}
+
+/**
+ * Every placement (ticket 50) a `size`-cell-long block anchored at `anchorIndex` lands at across all of `axisCount`
+ * axes' strips, generalizing mirrorCounterparts from a single cell to a block's extent: a block, unlike a single
+ * cell, can come out *flipped* in a strip that reads reversed from its own, and its edges can end up off-grid even
+ * when the original placement wasn't (a block anchored near one edge can run past the *other* edge once mirrored) --
+ * both left for the caller to handle (flip the block's own content; clip per placement the same way a single
+ * un-mirrored placement already does).
+ *
+ * Deliberately built from just the block's own strip and one mapped point (its near edge), not by independently
+ * re-deriving each strip's mapping from scratch: a block's own strip and orientation are fixed by where its anchor
+ * cell sits, so its far edge always follows the same affine step (+/- `size - 1`) from the mapped near edge, with the
+ * sign flipping exactly when the target strip reads reversed relative to the block's own -- see forwardLocal/
+ * targetPositionIn's own "local offset from strip start" framing, which is what makes this an affine map in the
+ * first place. That also sidesteps toIndexUnclamped's rounding drift (see mirrorCounterparts' own implementation
+ * note) ever pulling a block's two edges out of step with each other.
+ *
+ * One placement per strip (0 axes: just the block's own, unflipped -- matches mirrorCounterparts' `[index]`).
+ * Deduped by resulting anchor + flip, so a self-mirroring placement (the single-axis odd-dimension case
+ * mirrorCounterparts documents, generalized) only appears once.
+ */
+export function mirrorBlockPlacements(
+  anchorIndex: number,
+  size: number,
+  dimension: number,
+  axisCount: number,
+  copyMode = false,
+): MirrorBlockPlacement[] {
+  const strips = axisCount + 1
+  if (strips <= 1 || dimension <= 0) {
+    return [{ anchorIndex, flipped: false }]
+  }
+
+  const space = stripSpace(dimension, axisCount)
+  const position = toPosition(anchorIndex, space)
+  const sourceStrip = stripAtPosition(position, space)
+  const sourceReversed = isReversedStrip(sourceStrip, copyMode)
+  const local = forwardLocal(position, sourceStrip, space, copyMode)
+
+  const seen = new Set<string>()
+  const results: MirrorBlockPlacement[] = []
+  for (let strip = 0; strip < strips; strip++) {
+    const mirroredAnchor = toIndexUnclamped(targetPositionIn(local, strip, space, copyMode), space)
+    const flipped = sourceReversed !== isReversedStrip(strip, copyMode)
+    const placement = { anchorIndex: flipped ? mirroredAnchor - (size - 1) : mirroredAnchor, flipped }
+    const key = `${placement.anchorIndex}:${placement.flipped}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      results.push(placement)
+    }
+  }
+  return results
 }
 
 /**
