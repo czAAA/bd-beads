@@ -170,8 +170,9 @@ describe('App', () => {
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
+    expect(belowCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
@@ -1139,7 +1140,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
-  it('splits the top bar into a dark title box and an aqua summary box', async () => {
+  it('splits the top bar into a dark title box and an aqua summary box holding just the current-pattern summary and language switcher (ticket 51 moved New Pattern out)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1149,26 +1150,22 @@ describe('App', () => {
 
     expect(titleBox.find('h1').text()).toBe('bd-beads')
     expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
-    expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="language-en"]').exists()).toBe(true)
   })
 
-  it('renders New Pattern as the first item of the aqua summary box, before the summary and language switcher (ticket 35)', async () => {
+  it('renders New Pattern as the first control of the Saved Patterns box, above the list (ticket 51)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const summaryBox = wrapper.find('.app-shell__topbar-summary')
-    const children = Array.from(summaryBox.element.children)
+    const patternList = wrapper.find('[data-testid="pattern-list"]')
     const newPatternButton = wrapper.find('[data-testid="new-pattern-button"]').element
-    // The current-Pattern summary sits inside a wrapper with its Bead (ticket 37), so it's this group, not the
-    // summary <p> itself, that's the topbar box's direct child.
-    const summaryGroup = wrapper.find('[data-testid="current-pattern-summary"]').element.closest('.app-shell__summary-group')!
-    const languageSwitcher = wrapper.find('[data-testid="language-en"]').element.closest('div')!
+    const firstPatternItem = wrapper.find('[data-testid="pattern-item"]').element
 
-    expect(children.indexOf(newPatternButton)).toBe(0)
-    expect(children.indexOf(newPatternButton)).toBeLessThan(children.indexOf(summaryGroup))
-    expect(children.indexOf(summaryGroup)).toBeLessThan(children.indexOf(languageSwitcher))
+    expect(patternList.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    const children = Array.from(patternList.element.children)
+    expect(children.indexOf(newPatternButton)).toBeLessThan(children.indexOf(firstPatternItem.parentElement!))
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {

@@ -841,14 +841,6 @@ function onImportPatterns(imported: Pattern[]) {
         <h1>{{ t.app.title }}</h1>
       </div>
       <div class="app-shell__topbar-summary">
-        <button
-          type="button"
-          data-testid="new-pattern-button"
-          :disabled="patterns.length === 0"
-          @click="onNewPattern"
-        >
-          {{ t.patterns.newPatternButton }}
-        </button>
         <div v-if="activePattern" class="app-shell__summary-group">
           <p class="app-shell__summary" data-testid="current-pattern-summary">
             {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
@@ -953,6 +945,7 @@ function onImportPatterns(imported: Pattern[]) {
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
             @remove="onRemovePattern"
+            @new-pattern="onNewPattern"
           />
           <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
         </div>
@@ -1021,7 +1014,7 @@ function onImportPatterns(imported: Pattern[]) {
   background: var(--color-aqua-island);
 }
 
-/* Groups the current-Pattern summary and its Bead (ticket 37); grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is (ticket 35). */
+/* Groups the current-Pattern summary and its Bead (ticket 37); grows to fill whatever room the language switcher doesn't need, so the switcher stays pinned to the box's end regardless of how long the summary text is (ticket 51 moved New Pattern out of this box entirely). */
 .app-shell__summary-group {
   display: flex;
   flex: 1 1 auto;

@@ -76,7 +76,7 @@ const rotateStyle = computed(() => ({
   transform: `translate(-50%, -50%) rotate(${props.pattern.rotated ? 90 : 0}deg)`,
 }))
 
-/** The floating zoom stack's own readout: derived from the same zoom prop the grid scales by, rather than threaded down as a second prop (it's a pure Math.round(zoom * 100) either way — see usePatternZoom.ts). */
+/** The floating zoom cluster's own readout: derived from the same zoom prop the grid scales by, rather than threaded down as a second prop (it's a pure Math.round(zoom * 100) either way — see usePatternZoom.ts). */
 const zoomPercent = computed(() => Math.round(props.zoom * 100))
 </script>
 
@@ -118,10 +118,10 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
     <!--
       A later sibling of pattern-canvas__rotate, not a descendant of it (ticket 35): rotation/zoom in this app are
       view-only CSS transforms of that element alone (see rotateStyle/pattern-canvas__scaled above), so anything
-      outside it — this stack included — never rotates or scales along with the Pattern. Being later in the DOM
+      outside it — this cluster included — never rotates or scales along with the Pattern. Being later in the DOM
       also means it paints on top of the grid without any extra z-index/pointer-events plumbing: whatever screen
       area it covers stops mouse events from ever reaching the grid cells underneath (see PatternGrid.vue, whose
-      paint/erase/hover handlers live on the cells themselves), which is what keeps hovering or clicking the stack
+      paint/erase/hover handlers live on the cells themselves), which is what keeps hovering or clicking the cluster
       from painting, erasing, selecting or previewing anything.
     -->
     <div class="pattern-canvas__zoom-controls">
@@ -155,8 +155,8 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
 /*
  * Clips only the rotated/scaled grid's own paint (rounding at odd zoom levels can bleed a fraction of a pixel past
  * its edge) — its own layer rather than overflow:hidden on .pattern-canvas itself (ticket 35), so the floating zoom
- * stack, a sibling positioned against the box below, is never clipped by it even on a Pattern small enough that its
- * box is smaller than the stack's own footprint.
+ * cluster, a sibling positioned against the box below, is never clipped by it even on a Pattern small enough that
+ * its box is smaller than the cluster's own footprint.
  */
 .pattern-canvas__clip {
   position: absolute;
@@ -177,12 +177,11 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
   transform-origin: top left;
 }
 
-/* Floats along the box's right edge, vertically centered, at a fixed offset that doesn't scale with zoom (ticket 35). */
+/* Fixed to the box's top-right corner, modeled on OS window chrome, at a fixed offset that doesn't scale with zoom (ticket 51; previously a right-edge stack under ticket 35). */
 .pattern-canvas__zoom-controls {
   position: absolute;
-  top: 50%;
+  top: 12px;
   right: 12px;
-  transform: translateY(-50%);
   z-index: 1;
 }
 
