@@ -39,21 +39,18 @@ export const ru: Translations = {
     canvasPlaceholder: 'Схема пока не открыта',
   },
   palette: {
-    heading: 'Палитра',
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
     rotateButton: 'Повернуть',
   },
   tools: {
-    heading: 'Инструмент',
     paintLabel: 'Кисть',
     fillLabel: 'Заливка',
     selectLabel: 'Выделение',
     copyButton: 'Копировать',
   },
   rowProgress: {
-    heading: 'Прогресс по рядам',
     enabledLabel: 'Показывать прогресс по рядам',
     directionButton: 'Повернуть направление рядов',
     positionLabel: 'Ряд',
@@ -81,11 +78,19 @@ export const ru: Translations = {
     importErrorLabel: 'Не удалось импортировать этот файл',
   },
   mirror: {
-    heading: 'Отражение',
     horizontalLabel: 'Горизонталь',
     verticalLabel: 'Вертикаль',
     mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
     mirrorCurrentVerticalButton: 'Отразить текущее (по вертикали)',
+  },
+  toolbox: {
+    groups: {
+      tools: 'Инструменты',
+      colors: 'Цвета',
+      edit: 'Правка',
+      mirror: 'Отражение',
+      rowProgress: 'Прогресс по рядам',
+    },
   },
   catalog: {
     heading: 'Каталог бисера',
