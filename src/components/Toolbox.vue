@@ -28,6 +28,7 @@ const emit = defineEmits<{
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
   'move-row': [delta: number]
+  'delete-all': []
 }>()
 
 const { t } = useI18n()
@@ -110,6 +111,23 @@ defineExpose({ collapseExpandedGroup })
           <path d="M21 16v2a3 3 0 0 1-3 3h-2" />
           <path d="M8 21H6a3 3 0 0 1-3-3v-2" />
           <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button button--danger"
+        data-testid="delete-all-button"
+        :title="t.deleteAll.button"
+        :aria-label="t.deleteAll.button"
+        @click="emit('delete-all')"
+      >
+        <!-- The same bin glyph the app already uses for removing a Pattern (PatternList.vue). -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 7h16" />
+          <path d="M9 7V4h6v3" />
+          <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
         </svg>
       </button>
     </ToolGroup>
