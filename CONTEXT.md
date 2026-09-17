@@ -34,7 +34,7 @@ A free-standing set of colors used to paint pattern cells. Independent from the 
 _Avoid_: color scheme
 
 **Bead** (RU: Бисеринка / Бисер):
-A catalog entry for a specific real bead: brand, name, size, form factor, and color (e.g. Miyuki Delica 11/0), plus its physical footprint in mm (used to convert a Pattern's physical size into a grid — see ticket 01). The bead catalog ships pre-seeded with common lines (Miyuki, Toho) and the user can add more.
+A catalog entry for a specific real bead: brand, name, size, form factor, and color (e.g. Miyuki Delica 11/0), plus its physical footprint in mm (used to convert a Pattern's physical size into a grid — see ticket 01). The bead catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), no longer user-editable — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
 _Avoid_: seed bead type, item
 
 **Form factor** (RU: Форм-фактор):

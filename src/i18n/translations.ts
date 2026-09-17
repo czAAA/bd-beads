@@ -81,22 +81,4 @@ export interface Translations {
     mirrorCurrentHorizontalButton: string
     mirrorCurrentVerticalButton: string
   }
-  catalog: {
-    heading: string
-    brandLabel: string
-    nameLabel: string
-    sizeLabel: string
-    formFactorLabel: string
-    formFactorCube: string
-    formFactorRound: string
-    formFactorCylinder: string
-    colorLabel: string
-    widthLabel: string
-    heightLabel: string
-    addButton: string
-    editButton: string
-    removeButton: string
-    saveButton: string
-    cancelButton: string
-  }
 }
