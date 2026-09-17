@@ -9,8 +9,11 @@ function fitMaxPx(outerPx: number): number {
 
 /**
  * The canvas zoom for whichever Pattern is open: it starts and resets at the level that fits the Pattern in the
- * canvas area, and steps in and out within the usable range. Lives outside PatternCanvas because the controls sit in
- * the above-canvas panel while the zoom applies to the canvas (ADR 0004, ticket 18).
+ * canvas area, and steps in and out within the usable range. Lives outside PatternCanvas because the fit level
+ * depends on the canvas area's own measured width (see availableWidth below), which is App.vue's to measure, not
+ * PatternCanvas's — the zoom controls themselves float inside PatternCanvas's box instead (ticket 35), reading
+ * PatternCanvas's own zoom prop rather than this composable's zoomPercent below (a duplicate of the same
+ * Math.round(zoom * 100), so there's nothing to keep in sync by not sharing it).
  *
  * availableWidth is the canvas area's live measured width (ticket 27's useElementSize, backed by ResizeObserver)
  * rather than a fixed constant, so the fit level tracks whatever room the real window actually has instead of a
