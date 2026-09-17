@@ -80,6 +80,22 @@ describe('App with the rich Mirror flag on (ticket 44)', () => {
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
   })
 
+  it('resets axis counts to 0 when Replace Bead is confirmed (ticket 48), and Undo brings them back', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
+  })
+
   it('rotating swaps which counter reads which grid axis, without touching the grid', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows

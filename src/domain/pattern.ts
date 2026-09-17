@@ -5,6 +5,7 @@ import {
   neighborsOf,
   positionKey,
   toMillimeters,
+  type GridDimensions,
   type GridPosition,
   type SizeUnit,
   type Technique,
@@ -205,20 +206,37 @@ export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
 }
 
 /**
- * One entry on the editing-session undo stack (App.vue): the grid to restore, plus Row progress for the one command
- * that resets that too alongside the grid — Delete all (ticket 42, see deleteAll) — so a single Undo brings both
- * back together. Every other drawing command's entry carries only a grid, leaving Row progress as Undo finds it.
+ * What Replace Bead (ticket 48) changes alongside the grid, bundled onto one UndoEntry: the Bead id and the grid
+ * size it implied, plus Mirror's axis counts. Mirror's counts are an editing-session setting App.vue owns, not a
+ * Pattern field, so restoreSnapshot leaves applying them to the caller — bundled here only so a single history
+ * entry carries everything one Undo/Redo step needs.
+ */
+export interface ReplaceBeadSnapshot {
+  beadId: string
+  columns: number
+  rows: number
+  mirrorAxisCounts: MirrorAxisCounts
+}
+
+/**
+ * One entry on the editing-session undo stack (App.vue): the grid to restore, plus Row progress for the commands
+ * that reset that too alongside the grid — Delete all (ticket 42, see deleteAll) and Replace Bead (ticket 48, see
+ * replaceBead) — so a single Undo brings both back together. Every other drawing command's entry carries only a
+ * grid, leaving Row progress as Undo finds it.
  */
 export interface UndoEntry {
   grid: Grid
   rowProgress?: RowProgress
+  /** Present only for Replace Bead (ticket 48) — see ReplaceBeadSnapshot. */
+  bead?: ReplaceBeadSnapshot
 }
 
-/** Restores a grid, and Row progress alongside it when the undo entry carries it (see UndoEntry) — otherwise the same as restoreGrid. */
+/** Restores a grid, and Row progress/Bead alongside it when the undo entry carries them (see UndoEntry) — otherwise the same as restoreGrid. */
 export function restoreSnapshot(pattern: Pattern, entry: UndoEntry): Pattern {
   return touch(pattern, {
     grid: entry.grid,
     ...(entry.rowProgress ? { rowProgress: entry.rowProgress } : {}),
+    ...(entry.bead ? { beadId: entry.bead.beadId, columns: entry.bead.columns, rows: entry.bead.rows } : {}),
   })
 }
 
@@ -250,6 +268,51 @@ export function deleteAll(pattern: Pattern): Pattern {
 
   return touch(pattern, {
     grid: createEmptyGrid(pattern.columns, pattern.rows),
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
+  })
+}
+
+/**
+ * Nearest-cell resampling from one grid size to another (Replace Bead, ticket 48): each cell in the new grid maps
+ * back proportionally to a cell in the old one, so the existing design carries over approximately rather than being
+ * cropped or left blank on a resize. Identity when `to` equals `from`.
+ */
+function rescaleGrid(grid: Grid, from: GridDimensions, to: GridDimensions): Grid {
+  return Array.from({ length: to.rows }, (_, row) => {
+    const sourceRow = Math.min(from.rows - 1, Math.floor((row * from.rows) / to.rows))
+    return Array.from({ length: to.columns }, (_, column) => {
+      const sourceColumn = Math.min(from.columns - 1, Math.floor((column * from.columns) / to.columns))
+      return { color: grid[sourceRow]![sourceColumn]!.color }
+    })
+  })
+}
+
+/**
+ * The grid size Replace Bead (ticket 48, ADR 0008) would resize to if `bead` were confirmed: the new Bead's
+ * footprint applied at the Pattern's current real-world size (which stays fixed) — see replaceBead for the actual
+ * swap. Used to show what will change before the user confirms.
+ */
+export function previewReplaceBead(pattern: Pattern, bead: Bead): GridDimensions {
+  return computeGridDimensions({ widthMm: pattern.widthMm, heightMm: pattern.heightMm }, bead)
+}
+
+/**
+ * Swaps the Pattern's Bead for a different catalog entry (ticket 48, ADR 0008). Real-world size (mm) stays fixed,
+ * so columns/rows are recomputed from the new Bead's footprint via the same math createPattern uses (see
+ * computeGridDimensions), and existing colors are rescaled onto the new grid (see rescaleGrid) rather than cropped.
+ * Row progress resets to its just-created state, the same target deleteAll uses, since a row count that may no
+ * longer exist makes the old pointer meaningless. Mirror's axis counts are not a Pattern field (see UndoEntry.bead)
+ * — resetting those alongside this is the caller's job.
+ */
+export function replaceBead(pattern: Pattern, bead: Bead): Pattern {
+  const dimensions = computeGridDimensions({ widthMm: pattern.widthMm, heightMm: pattern.heightMm }, bead)
+  const grid = rescaleGrid(pattern.grid, { columns: pattern.columns, rows: pattern.rows }, dimensions)
+
+  return touch(pattern, {
+    beadId: bead.id,
+    columns: dimensions.columns,
+    rows: dimensions.rows,
+    grid,
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
 }

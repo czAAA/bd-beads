@@ -2052,6 +2052,180 @@ describe('App header bead', () => {
   })
 })
 
+describe('App replace bead', () => {
+  function loadedPattern() {
+    return loadPatterns()[0]!
+  }
+
+  it('offers the other built-in catalog Beads, not the current one', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // Cube
+
+    const labels = wrapper.find('[data-testid="replace-bead-select"]').findAll('option').map((option) => option.text())
+    expect(labels).not.toContain('TOHO Cube 1.5mm')
+    expect(labels).toContain('TOHO Round 11/0')
+    expect(labels).toContain('Miyuki Delica 11/0')
+  })
+
+  it('opens a confirmation modal naming the new grid size instead of replacing immediately', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('7×14') // round(15/2.2)=7, round(30/2.2)=14
+    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+  })
+
+  it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
+    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+  })
+
+  it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4 at Cube
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup') // select (0,0)
+    await wrapper.find('[data-testid="copy-button"]').trigger('click') // copiedBlock now holds the red cell
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
+    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+
+    // If Escape had also run backOutOfSelect, it would have dropped the copied block, and this next click would
+    // start a fresh Selection instead of stamping.
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+    expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
+  })
+
+  it('switches the Bead and resizes the grid once confirmed, keeping real-world size fixed', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().beadId).toBe('toho-round-11-0')
+    expect(loadedPattern().columns).toBe(7)
+    expect(loadedPattern().rows).toBe(14)
+    expect(loadedPattern().widthMm).toBe(15)
+    expect(loadedPattern().heightMm).toBe(30)
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
+  })
+
+  it('rescales existing colors onto the new grid rather than cropping them', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // (0,0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('resets Row progress once confirmed', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
+  })
+
+  it('keeps name, Technique and rotation unchanged', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    const before = loadedPattern()
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    const after = loadedPattern()
+    expect(after.name).toBe(before.name)
+    expect(after.technique).toBe(before.technique)
+    expect(after.rotated).toBe(true)
+  })
+
+  it('is one undo step: a single Undo restores the Bead, grid size, colors and Row progress together', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedPattern().columns).toBe(10)
+    expect(loadedPattern().rows).toBe(20)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 1,
+      currentColumn: 0,
+    })
+  })
+
+  it('does nothing when there is no open Pattern', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="replace-bead-select"]').exists()).toBe(false)
+  })
+
+  it('translates the modal title, message and button labels with the interface language', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+
+    expect(wrapper.text()).toContain(en.replaceBead.confirmTitle)
+    expect(wrapper.find('[data-testid="confirm-modal-cancel"]').text()).toBe(en.replaceBead.cancelButton)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(en.replaceBead.confirmButton)
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+
+    expect(wrapper.text()).toContain(ru.replaceBead.confirmTitle)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(ru.replaceBead.confirmButton)
+  })
+})
+
 describe('App bead quantities', () => {
   async function patternWithPaintedCells(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '15', '30')
