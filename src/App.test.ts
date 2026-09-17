@@ -973,84 +973,57 @@ describe('App', () => {
     )
   })
 
-  it('lists the seeded catalog in the bead catalog view', () => {
+  it('never renders the Bead catalog section (ticket 38): the catalog is a fixed built-in list', () => {
     const wrapper = mount(App)
 
-    expect(wrapper.findAll('[data-testid="catalog-seeded-item"]')).toHaveLength(BEAD_CATALOG.length)
+    expect(wrapper.find('[data-testid="bead-catalog"]').exists()).toBe(false)
   })
 
-  it('adds a custom bead, which becomes selectable when creating a Pattern', async () => {
-    const wrapper = mount(App)
+  it('offers exactly the three built-in Beads when creating a Pattern, even with custom-bead data left over from before ticket 38', () => {
+    localStorage.setItem(
+      'bd-beads:custom-beads',
+      JSON.stringify([
+        {
+          id: 'acme-fancy-8-0',
+          brand: 'Acme',
+          name: 'Fancy',
+          size: '8/0',
+          formFactor: 'round',
+          color: '#e63746',
+          widthMm: 3,
+          heightMm: 3,
+        },
+      ]),
+    )
 
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
+    const wrapper = mount(App)
 
     const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
-
-    const customBeadOption = options.find((option) => option.text() === 'Acme Fancy 8/0')!
-    await wrapper.find('[data-testid="bead-select"]').setValue(customBeadOption.element.value)
-    await wrapper.find('[data-testid="width-input"]').setValue('6')
-    await wrapper.find('[data-testid="height-input"]').setValue('6')
-    await wrapper.find('form.new-pattern-form').trigger('submit')
-
-    expect(loadPatterns()[0]!.columns).toBe(2)
-    expect(loadPatterns()[0]!.rows).toBe(2)
-  })
-
-  it('persists a custom bead across a reload, still selectable for a new Pattern', async () => {
-    const first = mount(App)
-    await first.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await first.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await first.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await first.find('[data-testid="catalog-width-input"]').setValue('3')
-    await first.find('[data-testid="catalog-height-input"]').setValue('3')
-    await first.find('[data-testid="bead-catalog"] form').trigger('submit')
-    first.unmount()
-
-    const afterReload = mount(App)
-
-    const options = afterReload.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Fancy 8/0')
-  })
-
-  it('edits a custom bead in place', async () => {
-    const wrapper = mount(App)
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
-
-    const editButton = wrapper.find('[data-testid="catalog-custom-item"] button')
-    await editButton.trigger('click')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Renamed')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
-
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).toContain('Acme Renamed 8/0')
+    expect(options).toHaveLength(BEAD_CATALOG.length)
     expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
   })
 
-  it('removes a custom bead from the catalog and the pattern-creation select', async () => {
+  it('still opens, paints, and exports a Pattern created with a since-removed custom Bead', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+    savePattern({ ...pattern, beadId: 'acme-fancy-8-0' })
+
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="catalog-brand-input"]').setValue('Acme')
-    await wrapper.find('[data-testid="catalog-name-input"]').setValue('Fancy')
-    await wrapper.find('[data-testid="catalog-size-input"]').setValue('8/0')
-    await wrapper.find('[data-testid="catalog-width-input"]').setValue('3')
-    await wrapper.find('[data-testid="catalog-height-input"]').setValue('3')
-    await wrapper.find('[data-testid="bead-catalog"] form').trigger('submit')
 
-    await wrapper.find('[data-testid="catalog-custom-item"] [data-testid^="catalog-remove-"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="grid-cell"]')).not.toHaveLength(0)
 
-    expect(wrapper.find('[data-testid="catalog-custom-item"]').exists()).toBe(false)
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    // Export/import round-tripping an unresolved beadId is covered directly in patternFile.test.ts; here it's
+    // enough that the button (disabled only while no Pattern is open) is live for this one.
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled,
+    ).toBe(false)
   })
 
   it('defaults to Russian on first visit with no saved language preference', () => {
@@ -1305,21 +1278,32 @@ describe('App keyboard shortcuts', () => {
     },
   )
 
-  it.each(['catalog-name-input', 'catalog-width-input'])(
-    'does not undo or redo while typing in %s, a text or number form field',
-    async (testId) => {
-      const wrapper = mount(App)
-      await paintFirstCell(wrapper)
-      const field = wrapper.find(`[data-testid="${testId}"]`).element
+  it.each(['text', 'number'] as const)(
+    'does not undo or redo while typing in a %s form field',
+    async (type) => {
+      // No text/number field ships alongside an active, painted Pattern in this app (ticket 38 removed the last
+      // one, the Bead catalog's add-bead form) — a standalone field, attached to the document so the keydown still
+      // bubbles to App.vue's window listener, is what isTypingInFormField actually cares about regardless of it
+      // belonging to any real feature.
+      const field = document.createElement('input')
+      field.type = type
+      document.body.appendChild(field)
 
-      await pressKey({ key: 'z', ctrlKey: true }, field)
+      try {
+        const wrapper = mount(App)
+        await paintFirstCell(wrapper)
 
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+        await pressKey({ key: 'z', ctrlKey: true }, field)
 
-      await wrapper.find('[data-testid="undo-button"]').trigger('click')
-      await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
+        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
 
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+        await wrapper.find('[data-testid="undo-button"]').trigger('click')
+        await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
+
+        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+      } finally {
+        field.remove()
+      }
     },
   )
 
