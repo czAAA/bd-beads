@@ -4,9 +4,10 @@ import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { loadPatterns } from './domain/patternStorage'
 
-// Rich Mirror (ticket 44) is a build-time flag (src/featureFlags.ts), off by default in the test env (`.env`, same
-// as production). Mocking the module -- rather than relying on `.env.test` -- keeps this one file exercising the
-// flag-on path deliberately and explicitly, alongside App.test.ts's unmodified flag-off coverage.
+// Rich Mirror (ticket 44) is a build-time flag (src/featureFlags.ts), on by default now that it's shipped (`.env`).
+// Mocking the module -- rather than relying on the ambient `.env` -- keeps this one file exercising the flag-on
+// path deliberately and explicitly, alongside App.test.ts's mocked-off legacy-path coverage, regardless of
+// whichever way the default ever moves again.
 vi.mock('./featureFlags', () => ({ isRichMirrorEnabled: () => true }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
