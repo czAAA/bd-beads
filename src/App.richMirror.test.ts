@@ -93,3 +93,46 @@ describe('App with the rich Mirror flag on (ticket 44)', () => {
     expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('1')
   })
 })
+
+describe("App's Mirror copy mode (ticket 45)", () => {
+  it('shows its on/off state and switches strips from mirror-image to plain-repeat when turned on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns
+
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis, 2 strips of 5
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    const paintedColumns = () =>
+      cells
+        .map((cell, index) => ({ index, painted: cell.attributes('style')?.includes('background-color') }))
+        .filter((cell) => cell.painted)
+        .map((cell) => cell.index)
+
+    await cells[0]!.trigger('mousedown') // paint (0,0)
+    await wrapper.trigger('mouseup') // ends the stroke, so it becomes one undo step
+    expect(paintedColumns()).toEqual([0, 9]) // mirror-image by default: 0 <-> 9
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    const copyModeButton = wrapper.find('[data-testid="mirror-copy-mode"]')
+    expect(copyModeButton.attributes('aria-pressed')).toBe('false')
+    await copyModeButton.trigger('click')
+    expect(copyModeButton.attributes('aria-pressed')).toBe('true')
+
+    await cells[0]!.trigger('mousedown') // paint (0,0) again, now in copy mode
+    expect(paintedColumns()).toEqual([0, 5]) // plain repeat: same relative cell in the other strip, 0 <-> 5
+  })
+
+  it('resets to off when switching Patterns', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-testid="mirror-copy-mode"]').trigger('click')
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('false')
+  })
+})

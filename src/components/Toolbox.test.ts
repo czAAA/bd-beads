@@ -27,6 +27,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       mirrorAxes: { horizontal: false, vertical: false },
       richMirror: false,
       mirrorAxisCounts: { columns: 0, rows: 0 },
+      mirrorCopyMode: false,
       ...overrides,
     },
   })
@@ -276,6 +277,30 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
 
     expect(wrapper.find('[data-testid="mirror-current-horizontal"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="mirror-current-vertical"]').exists()).toBe(true)
+  })
+
+  it('shows the copy-mode switch, its on/off state, and emits toggle-mirror-copy-mode when clicked (ticket 45)', async () => {
+    const wrapper = mountToolbox({ richMirror: true, mirrorCopyMode: false })
+
+    const button = wrapper.find('[data-testid="mirror-copy-mode"]')
+    expect(button.exists()).toBe(true)
+    expect(button.attributes('aria-pressed')).toBe('false')
+
+    await button.trigger('click')
+
+    expect(wrapper.emitted('toggle-mirror-copy-mode')).toHaveLength(1)
+  })
+
+  it('reflects an on copy-mode state from its prop', () => {
+    const wrapper = mountToolbox({ richMirror: true, mirrorCopyMode: true })
+
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('does not render the copy-mode switch with the flag off', () => {
+    const wrapper = mountToolbox({ richMirror: false })
+
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').exists()).toBe(false)
   })
 
   it('gives each counter its own full row, not counted among the icon controls', () => {

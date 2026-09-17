@@ -87,6 +87,7 @@ export const ru: Translations = {
     increaseLeftRightButton: 'Увеличить число осей слева направо',
     decreaseTopBottomButton: 'Уменьшить число осей сверху вниз',
     increaseTopBottomButton: 'Увеличить число осей сверху вниз',
+    copyModeLabel: 'Режим копирования',
   },
   toolbox: {
     groups: {

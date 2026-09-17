@@ -112,6 +112,11 @@ const richMirror = isRichMirrorEnabled()
  * with the Pattern, reset to 0 on a Pattern switch same as mirrorAxes' spirit. Unused, and left at 0, while the flag is off. */
 const mirrorAxisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
 
+/** Rich Mirror's copy-mode switch (ticket 45): strips repeat unflipped (A | A | A) instead of mirror-imaging
+ * (A | A' | A) when on. One switch for both directions, editing-session only like mirrorAxisCounts -- reset on a
+ * Pattern switch, never saved. Unused while the flag is off. */
+const mirrorCopyMode = ref(false)
+
 /** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
 const history = ref<History<UndoEntry>>(emptyHistory())
 
@@ -133,9 +138,10 @@ watch(activePatternId, () => {
   history.value = emptyHistory()
   selection.value = undefined
   copiedBlock.value = undefined
-  // Rich Mirror's axis counts are an editing-session setting, reset on a Pattern switch (ticket 44 decision);
-  // unused while the flag is off, but harmless to reset regardless.
+  // Rich Mirror's axis counts and copy mode are an editing-session setting, reset on a Pattern switch (ticket 44/45
+  // decision); unused while the flag is off, but harmless to reset regardless.
   mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
+  mirrorCopyMode.value = false
   deleteAllConfirmOpen.value = false
 })
 
@@ -162,7 +168,7 @@ function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[
     return [hovered]
   }
   return richMirror
-    ? mirroredCellsForCounts(pattern, hovered, mirrorAxisCounts.value)
+    ? mirroredCellsForCounts(pattern, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
     : mirroredCells(pattern, hovered, mirrorAxes.value)
 }
 
@@ -286,7 +292,7 @@ function paintStrokeCell(row: number, column: number, color: string | null) {
   }
 
   const painted = richMirror
-    ? paintCellsForCounts(pattern, [{ row, column }], color, mirrorAxisCounts.value)
+    ? paintCellsForCounts(pattern, [{ row, column }], color, mirrorAxisCounts.value, mirrorCopyMode.value)
     : paintCells(pattern, [{ row, column }], color, mirrorAxes.value)
 
   const updated = keepFinishedRows(pattern, painted)
@@ -588,6 +594,11 @@ function onSetMirrorAxisCount(axis: 'columns' | 'rows', count: number) {
   mirrorAxisCounts.value = { ...mirrorAxisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
 }
 
+/** Flips rich-Mirror's copy-mode switch (ticket 45): one switch for both directions. */
+function onToggleMirrorCopyMode() {
+  mirrorCopyMode.value = !mirrorCopyMode.value
+}
+
 /** One-time reflect of whatever's currently painted across a single axis, via the old "bigger half" heuristic — for content drawn before that axis's live mirroring was turned on (ADR 0006). */
 function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
   const pattern = activePattern.value
@@ -690,6 +701,7 @@ function onImportPatterns(imported: Pattern[]) {
             :mirror-axes="mirrorAxes"
             :rich-mirror="richMirror"
             :mirror-axis-counts="mirrorAxisCounts"
+            :mirror-copy-mode="mirrorCopyMode"
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
@@ -699,6 +711,7 @@ function onImportPatterns(imported: Pattern[]) {
             @copy="onCopy"
             @toggle-mirror-axis="onToggleMirrorAxis"
             @set-mirror-axis-count="onSetMirrorAxisCount"
+            @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
             @mirror-current="onMirrorCurrent"
             @toggle-row-progress="onToggleRowProgress"
             @toggle-row-direction="onToggleRowDirection"
