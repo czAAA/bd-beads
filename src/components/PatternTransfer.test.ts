@@ -6,7 +6,6 @@ import { createPattern, paintCell, type Pattern } from '../domain/pattern'
 import { serializeLibrary, serializePattern } from '../domain/patternFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
-const DEFAULTS = { red: cubeBead.id }
 
 function makePattern(name: string): Pattern {
   return createPattern({
@@ -69,18 +68,18 @@ async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
 describe('PatternTransfer export', () => {
   it('writes the open Pattern out to a file named after it', async () => {
     const pattern = makePattern('Fox')
-    const wrapper = mount(PatternTransfer, { props: { pattern, patterns: [pattern], colorBeadDefaults: DEFAULTS } })
+    const wrapper = mount(PatternTransfer, { props: { pattern, patterns: [pattern] } })
 
     await wrapper.find('[data-testid="export-pattern"]').trigger('click')
     await flushPromises()
 
     expect(downloads).toHaveLength(1)
     expect(downloads[0]!.name).toBe('bd-beads-fox.json')
-    expect(downloads[0]!.contents).toBe(serializePattern(pattern, DEFAULTS))
+    expect(downloads[0]!.contents).toBe(serializePattern(pattern))
   })
 
   it('has nothing to export while no Pattern is open', () => {
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled).toBe(
       true,
@@ -89,17 +88,17 @@ describe('PatternTransfer export', () => {
 
   it('writes every saved Pattern out to one file, not just the open one', async () => {
     const library = [makePattern('Fox'), makePattern('Owl')]
-    const wrapper = mount(PatternTransfer, { props: { pattern: library[0], patterns: library, colorBeadDefaults: DEFAULTS } })
+    const wrapper = mount(PatternTransfer, { props: { pattern: library[0], patterns: library } })
 
     await wrapper.find('[data-testid="export-library"]').trigger('click')
     await flushPromises()
 
     expect(downloads[0]!.name).toBe('bd-beads-library.json')
-    expect(downloads[0]!.contents).toBe(serializeLibrary(library, DEFAULTS))
+    expect(downloads[0]!.contents).toBe(serializeLibrary(library))
   })
 
   it('has nothing to export while nothing is saved', () => {
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-library"]').element.disabled).toBe(
       true,
@@ -110,46 +109,38 @@ describe('PatternTransfer export', () => {
 describe('PatternTransfer import', () => {
   it('hands back the Patterns in a single-Pattern file', async () => {
     const pattern = makePattern('Fox')
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
-    await pickFile(wrapper, serializePattern(pattern, DEFAULTS))
+    await pickFile(wrapper, serializePattern(pattern))
 
-    expect(wrapper.emitted('import')).toEqual([[[pattern], DEFAULTS]])
+    expect(wrapper.emitted('import')).toEqual([[[pattern]]])
     expect(wrapper.find('[data-testid="import-result"]').text()).toContain('1')
   })
 
   it('hands back a whole library at once', async () => {
     const library = [makePattern('Fox'), makePattern('Owl')]
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
-    await pickFile(wrapper, serializeLibrary(library, DEFAULTS))
+    await pickFile(wrapper, serializeLibrary(library))
 
-    expect(wrapper.emitted('import')).toEqual([[library, DEFAULTS]])
+    expect(wrapper.emitted('import')).toEqual([[library]])
   })
 
   it('brings in a Pattern that clashes with a local one under a new identity, keeping both', async () => {
     const local = makePattern('Fox')
     const incoming = paintCell(local, 0, 0, '#e63746')
-    const wrapper = mount(PatternTransfer, { props: { patterns: [local], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [local] } })
 
-    await pickFile(wrapper, serializePattern(incoming, {}))
+    await pickFile(wrapper, serializePattern(incoming))
 
-    const [added] = wrapper.emitted('import')![0] as [Pattern[], unknown]
+    const [added] = wrapper.emitted('import')![0] as [Pattern[]]
     expect(added).toHaveLength(1)
     expect(added[0]!.id).not.toBe(local.id)
     expect(added[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
-  it("carries the file's global color-to-bead defaults through to the app", async () => {
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
-
-    await pickFile(wrapper, serializeLibrary([makePattern('Fox')], DEFAULTS))
-
-    expect(wrapper.emitted('import')![0]![1]).toEqual(DEFAULTS)
-  })
-
   it('says so and imports nothing when the file is not a bd-beads file', async () => {
-    const wrapper = mount(PatternTransfer, { props: { patterns: [], colorBeadDefaults: {} } })
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
     await pickFile(wrapper, 'this is not a pattern')
 

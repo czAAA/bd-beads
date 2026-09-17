@@ -22,6 +22,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       pattern: makePattern(),
       activeTool: 'paint',
       canUndo: false,
+      canRedo: false,
       canCopy: false,
       mirrorAxes: { horizontal: false, vertical: false },
       richMirror: false,
@@ -46,13 +47,21 @@ describe('Toolbox', () => {
     ])
   })
 
-  it('puts Paint, Fill and Select inside the Tools group', () => {
+  it('puts Paint, Fill, Select and Delete all inside the Tools group', () => {
     const wrapper = mountToolbox()
 
     const toolsGroup = wrapper.findAll('.tool-group')[0]!
-    for (const testId of ['tool-paint', 'tool-fill', 'tool-select']) {
+    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'delete-all-button']) {
       expect(toolsGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it('emits delete-all when its button is clicked', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.emitted('delete-all')).toHaveLength(1)
   })
 
   it('puts the Palette picker inside the Colors group', () => {
@@ -62,11 +71,27 @@ describe('Toolbox', () => {
     expect(colorsGroup.find('[data-testid="palette-picker"]').exists()).toBe(true)
   })
 
-  it('puts Undo, Rotate and Copy inside the Edit group', () => {
+  it('puts the Custom color picker inside the Colors group, after the Palette picker', () => {
+    const wrapper = mountToolbox()
+
+    const colorsGroup = wrapper.findAll('.tool-group')[1]!
+    const inDocumentOrder = [
+      ...colorsGroup.element.querySelectorAll('[data-color-id], [data-testid="custom-color-input"]'),
+    ]
+    const lastPaletteIndex = inDocumentOrder.map((el) => el.hasAttribute('data-color-id')).lastIndexOf(true)
+    const customColorIndex = inDocumentOrder.findIndex(
+      (el) => el.getAttribute('data-testid') === 'custom-color-input',
+    )
+
+    expect(customColorIndex).toBeGreaterThan(-1)
+    expect(customColorIndex).toBeGreaterThan(lastPaletteIndex)
+  })
+
+  it('puts Undo, Rotate, Copy and Redo inside the Edit group', () => {
     const wrapper = mountToolbox()
 
     const editGroup = wrapper.findAll('.tool-group')[2]!
-    for (const testId of ['undo-button', 'rotate-button', 'copy-button']) {
+    for (const testId of ['undo-button', 'rotate-button', 'copy-button', 'redo-button']) {
       expect(editGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
   })
@@ -117,23 +142,49 @@ describe('Toolbox', () => {
     expect(wrapper.emitted('select-color')).toEqual([['blue']])
   })
 
-  it('emits undo, toggle-rotate and copy from the Edit group', async () => {
-    const wrapper = mountToolbox({ canUndo: true, canCopy: true })
+  it('emits select-custom-color with the hex the native color input reports', async () => {
+    const wrapper = mountToolbox()
+
+    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    input.element.value = '#abcdef'
+    await input.trigger('input')
+
+    expect(wrapper.emitted('select-custom-color')).toEqual([['#abcdef']])
+  })
+
+  it('marks the Custom color slot selected only when selectedColorId is unset, mirroring PalettePicker', () => {
+    const withCustomActive = mountToolbox({ selectedColorId: undefined, customColor: '#abcdef' })
+    const withPaletteActive = mountToolbox({ selectedColorId: 'blue', customColor: '#abcdef' })
+
+    expect(
+      withCustomActive.find('[data-testid="custom-color-input"]').attributes('aria-pressed'),
+    ).toBe('true')
+    expect(
+      withPaletteActive.find('[data-testid="custom-color-input"]').attributes('aria-pressed'),
+    ).toBe('false')
+    expect(withPaletteActive.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('emits undo, toggle-rotate, copy and redo from the Edit group', async () => {
+    const wrapper = mountToolbox({ canUndo: true, canRedo: true, canCopy: true })
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
     expect(wrapper.emitted('undo')).toHaveLength(1)
     expect(wrapper.emitted('toggle-rotate')).toHaveLength(1)
     expect(wrapper.emitted('copy')).toHaveLength(1)
+    expect(wrapper.emitted('redo')).toHaveLength(1)
   })
 
-  it('disables Undo and Copy purely from its own props, not internal state', () => {
-    const wrapper = mountToolbox({ canUndo: false, canCopy: false })
+  it('disables Undo, Copy and Redo purely from its own props, not internal state', () => {
+    const wrapper = mountToolbox({ canUndo: false, canRedo: false, canCopy: false })
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
 
   it('emits toggle-mirror-axis with the axis that was clicked', async () => {
@@ -199,6 +250,15 @@ describe('Toolbox', () => {
     expect(en.toolbox.groups.tools).not.toBe(ru.toolbox.groups.tools)
     expect(wrapper.text()).toContain(ru.toolbox.groups.tools)
     expect(wrapper.text()).not.toContain(en.toolbox.groups.tools)
+  })
+
+  it('exposes collapseExpandedGroup, reporting nothing to collapse when no group is expanded (ticket 41)', () => {
+    // No group here holds more than 14 controls (see ToolGroup.test.ts for the expand/collapse mechanics with a
+    // synthetic one that does), so none can be hover-expanded — this is a regression guard for App.vue's onKeyDown
+    // wiring (see App.vue), which relies on this method existing and returning false in exactly this situation.
+    const wrapper = mountToolbox()
+
+    expect(wrapper.vm.collapseExpandedGroup()).toBe(false)
   })
 })
 
