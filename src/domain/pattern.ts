@@ -1,4 +1,4 @@
-import { beadLabel } from './beads'
+import { beadLabel, type Bead } from './beads'
 import { findBead } from './beadStorage'
 import {
   computeGridDimensions,
@@ -432,6 +432,15 @@ export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
 export function summarizePattern(pattern: Pattern): string {
   const [width, height] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   return `${pattern.name} · ${width}×${height}`
+}
+
+/**
+ * The Bead a Pattern was woven from (ticket 37), or undefined when the catalog no longer has it — a custom Bead
+ * removed since (ticket 38), or one an imported file names that this device never had. Callers show a neutral
+ * placeholder for the undefined case rather than a raw id.
+ */
+export function resolvePatternBead(pattern: Pattern): Bead | undefined {
+  return findBead(pattern.beadId)
 }
 
 export function mostRecentlyUpdated(patterns: Pattern[]): Pattern | undefined {
