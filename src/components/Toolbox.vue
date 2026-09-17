@@ -10,6 +10,7 @@ defineProps<{
   activeTool: Tool
   selectedColorId?: string
   canUndo: boolean
+  canRedo: boolean
   canCopy: boolean
   mirrorAxes: MirrorAxes
 }>()
@@ -18,6 +19,7 @@ const emit = defineEmits<{
   'select-tool': [tool: Tool]
   'select-color': [colorId: string]
   undo: []
+  redo: []
   'toggle-rotate': []
   copy: []
   'toggle-mirror-axis': [axis: 'horizontal' | 'vertical']
@@ -133,6 +135,21 @@ const { t } = useI18n()
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <rect x="8" y="8" width="13" height="13" rx="2" />
           <path d="M16 8V3H3v13h5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="redo-button"
+        :title="t.palette.redoButton"
+        :aria-label="t.palette.redoButton"
+        :disabled="!canRedo"
+        @click="emit('redo')"
+      >
+        <!-- Undo's icon, mirrored left-right: the same swoop curling the other way, arrowhead pointing right. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M17 7 21 11l-4 4" />
+          <path d="M21 11h-11a7 7 0 1 0 7 7" />
         </svg>
       </button>
     </ToolGroup>
