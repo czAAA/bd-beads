@@ -3,6 +3,7 @@ import {
   createPattern,
   deleteAll,
   fillArea,
+  mirrorCurrentForCounts,
   mirrorPattern,
   mirroredCells,
   mirroredCellsForCounts,
@@ -545,6 +546,134 @@ describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
     paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
 
     expect(pattern.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () => {
+  function makePattern() {
+    // 4 columns x 4 rows.
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('with axisCount 0, matches the legacy "bigger half" mirror exactly, including its tie-break for a blank grid', () => {
+    const blank = makePattern()
+
+    expect(mirrorCurrentForCounts(blank, 'columns', 0, false).grid).toEqual(
+      mirrorPattern(blank, { horizontal: true, vertical: false }).grid,
+    )
+  })
+
+  it('with axisCount 0, matches the legacy heuristic once one side is painted more', () => {
+    let painted = paintCell(makePattern(), 0, 0, '#e63746')
+    painted = paintCell(painted, 1, 0, '#e63746')
+
+    const legacy = mirrorPattern(painted, { horizontal: true, vertical: false })
+    const rich = mirrorCurrentForCounts(painted, 'columns', 0, false)
+
+    expect(rich.grid).toEqual(legacy.grid)
+  })
+
+  it('copies the fullest strip onto every other strip, mirrored by default, with N axes', () => {
+    // 6 columns, 1 row, 2 axes -> 3 strips [0,1] [2,3] [4,5]. Paint the middle strip.
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    expect(pattern.columns).toBe(6)
+    pattern = paintCell(pattern, 0, 2, '#e63746')
+    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
+
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#2f6fed',
+      '#e63746',
+      '#e63746',
+      '#2f6fed',
+      '#2f6fed',
+      '#e63746',
+    ])
+  })
+
+  it('copies unflipped (same relative cell in every strip) with copy mode on', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 2, '#e63746')
+    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, true)
+
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#e63746',
+      '#2f6fed',
+      '#e63746',
+      '#2f6fed',
+      '#e63746',
+      '#2f6fed',
+    ])
+  })
+
+  it('breaks a tie between equally-painted strips in favor of the lowest (leftmost/topmost) one', () => {
+    // 6 columns, 2 axes -> strips [0,1] [2,3] [4,5]. Strip0 and strip2 each get one painted cell; strip1 stays
+    // blank. Strip0 (index 0) should win the tie over strip2 (index 2).
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+    pattern = paintCell(pattern, 0, 4, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
+
+    // Strip0's own cells stay exactly as painted (it's the source); strip1/strip2 both take strip0's color.
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#e63746',
+      null,
+      null,
+      '#e63746',
+      '#e63746',
+      null,
+    ])
+  })
+
+  it('acts along rows the same way it acts along columns', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 1.5, height: 9, unit: 'mm' },
+    })
+    expect(pattern.rows).toBe(6)
+    pattern = paintCell(pattern, 2, 0, '#e63746')
+    pattern = paintCell(pattern, 3, 0, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'rows', 2, false)
+
+    expect(synced.grid.map((row) => row[0]!.color)).toEqual([
+      '#2f6fed',
+      '#e63746',
+      '#e63746',
+      '#2f6fed',
+      '#2f6fed',
+      '#e63746',
+    ])
+  })
+
+  it('does not mutate the original pattern', () => {
+    let pattern = makePattern()
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+
+    mirrorCurrentForCounts(pattern, 'columns', 1, false)
+
+    expect(pattern.grid[0]![3]!.color).toBeNull()
   })
 })
 

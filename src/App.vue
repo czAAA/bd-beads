@@ -29,6 +29,7 @@ import {
   fillArea,
   isInFinishedRow,
   keepFinishedRows,
+  mirrorCurrentForCounts,
   mirrorPattern,
   mirroredCells,
   mirroredCellsForCounts,
@@ -599,10 +600,29 @@ function onToggleMirrorCopyMode() {
   mirrorCopyMode.value = !mirrorCopyMode.value
 }
 
-/** One-time reflect of whatever's currently painted across a single axis, via the old "bigger half" heuristic — for content drawn before that axis's live mirroring was turned on (ADR 0006). */
+/**
+ * One-time reflect of whatever's currently painted across one direction, for content drawn before that direction's
+ * live mirroring was turned on (ADR 0006). With the flag off, the legacy "bigger half" heuristic across the grid's
+ * center, unchanged (ticket 44/45 decision: "Mirror current keeps its current behaviour until ticket 46"). With
+ * rich Mirror on (ticket 46), the strip with the most painted cells becomes the source instead, using that
+ * direction's own axis count (the other direction is left alone, same as the legacy per-axis buttons always did)
+ * and honouring copy mode; a count of 0 still acts as a single center axis, so the button always does something.
+ * 'horizontal'/'vertical' here are grid-space, same as they've always been for these two buttons -- unlike the
+ * Left–right/Top–bottom counters (ticket 44), these were never rotation-relabeled, and ticket 46 doesn't change
+ * that.
+ */
 function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
   const pattern = activePattern.value
   if (!pattern) {
+    return
+  }
+
+  if (richMirror) {
+    const gridAxis = axis === 'horizontal' ? 'columns' : 'rows'
+    commitGridChange(
+      pattern,
+      mirrorCurrentForCounts(pattern, gridAxis, mirrorAxisCounts.value[gridAxis], mirrorCopyMode.value),
+    )
     return
   }
 

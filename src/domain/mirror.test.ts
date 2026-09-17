@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { axisLinePositions, clampAxisCount, maxAxisCount, mirrorCounterparts, stripOf } from './mirror'
+import {
+  axisLinePositions,
+  clampAxisCount,
+  maxAxisCount,
+  mirrorCounterpartInStrip,
+  mirrorCounterparts,
+  stripOf,
+} from './mirror'
 
 describe('maxAxisCount', () => {
   it('is one fewer than the cells across, so every axis has a cell on each side', () => {
@@ -135,6 +142,44 @@ describe('stripOf', () => {
 
   it('is strip 0 for everything when there are no axes', () => {
     expect([0, 1, 2].map((i) => stripOf(i, 3, 0))).toEqual([0, 0, 0])
+  })
+
+  it('counts an odd dimension\'s exact center cell toward the first/lower strip with 1 axis (ticket 46: matches the legacy "bigger half" tie-break, where a tied/center cell counts toward the first half)', () => {
+    // dimension 5, 1 axis, 2 strips: [0,1,2] [3,4] -- the center cell (2) is the axis's own self-mirroring cell,
+    // and counts toward strip 0, not strip 1.
+    expect([0, 1, 2, 3, 4].map((i) => stripOf(i, 5, 1))).toEqual([0, 0, 0, 1, 1])
+  })
+})
+
+describe('mirrorCounterpartInStrip (ticket 46: "Mirror current" copying one specific source strip)', () => {
+  it('returns the cell itself when it is already in the requested strip', () => {
+    // dimension 6, 2 axes -> strips [0,1] [2,3] [4,5]. Cell 2 is already in strip 1.
+    expect(mirrorCounterpartInStrip(2, 6, 2, false, 1)).toBe(2)
+  })
+
+  it('finds the mirror-image counterpart in a specific other strip', () => {
+    // Same setup: cell 0 (strip 0) mirrored into strip 1 lands on 3 (see the mirrorCounterparts test above).
+    expect(mirrorCounterpartInStrip(0, 6, 2, false, 1)).toBe(3)
+    expect(mirrorCounterpartInStrip(0, 6, 2, false, 2)).toBe(4)
+  })
+
+  it('finds the plain-repeat counterpart in copy mode', () => {
+    expect(mirrorCounterpartInStrip(0, 6, 2, true, 1)).toBe(2)
+    expect(mirrorCounterpartInStrip(0, 6, 2, true, 2)).toBe(4)
+  })
+
+  it('agrees with mirrorCounterparts: looking up every strip individually gives the same set', () => {
+    for (const copyMode of [false, true]) {
+      for (let strip = 0; strip < 3; strip++) {
+        const viaAllStrips = mirrorCounterparts(1, 6, 2, copyMode)
+        const viaOneStrip = mirrorCounterpartInStrip(1, 6, 2, copyMode, strip)
+        expect(viaAllStrips).toContain(viaOneStrip)
+      }
+    }
+  })
+
+  it('is the identity when there are no axes', () => {
+    expect(mirrorCounterpartInStrip(3, 6, 0, false, 0)).toBe(3)
   })
 })
 
