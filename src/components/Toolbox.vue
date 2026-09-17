@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import CustomColorPicker from './CustomColorPicker.vue'
 import PalettePicker from './PalettePicker.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import type { Tool } from '../domain/tool'
 import { rowProgressPosition, type MirrorAxes, type Pattern } from '../domain/pattern'
 
-defineProps<{
+const props = defineProps<{
   pattern: Pattern
   activeTool: Tool
   selectedColorId?: string
+  /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
+  customColor?: string
   canUndo: boolean
   canCopy: boolean
   mirrorAxes: MirrorAxes
@@ -17,6 +21,7 @@ defineProps<{
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
   'select-color': [colorId: string]
+  'select-custom-color': [hex: string]
   undo: []
   'toggle-rotate': []
   copy: []
@@ -28,6 +33,9 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** Custom color is the active paint color exactly when no Palette swatch is (they're mutually exclusive, App.vue). */
+const customColorSelected = computed(() => !props.selectedColorId && !!props.customColor)
 </script>
 
 <template>
@@ -88,6 +96,11 @@ const { t } = useI18n()
 
     <ToolGroup :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
       <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
+      <CustomColorPicker
+        :color="customColor"
+        :selected="customColorSelected"
+        @select="(hex) => emit('select-custom-color', hex)"
+      />
     </ToolGroup>
 
     <ToolGroup :title="t.toolbox.groups.edit" data-testid="tool-group-edit">

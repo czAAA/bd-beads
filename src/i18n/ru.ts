@@ -43,6 +43,7 @@ export const ru: Translations = {
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
     rotateButton: 'Повернуть',
+    customColorLabel: 'Свой цвет',
   },
   tools: {
     paintLabel: 'Кисть',
