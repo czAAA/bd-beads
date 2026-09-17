@@ -40,6 +40,7 @@ export interface Translations {
     pickerLabel: string
     colorLabel: string
     undoButton: string
+    redoButton: string
     rotateButton: string
   }
   tools: {
@@ -58,14 +59,9 @@ export interface Translations {
   quantities: {
     heading: string
     noPatternMessage: string
+    noColorsMessage: string
     colorHeading: string
     countHeading: string
-    resolvedBeadHeading: string
-    defaultBeadHeading: string
-    patternBeadHeading: string
-    unmappedOption: string
-    useDefaultOption: string
-    unknownColorLabel: string
   }
   transfer: {
     heading: string
