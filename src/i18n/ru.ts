@@ -82,6 +82,12 @@ export const ru: Translations = {
     verticalLabel: 'Вертикаль',
     mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
     mirrorCurrentVerticalButton: 'Отразить текущее (по вертикали)',
+    leftRightLabel: 'Слева направо',
+    topBottomLabel: 'Сверху вниз',
+    decreaseLeftRightButton: 'Уменьшить число осей слева направо',
+    increaseLeftRightButton: 'Увеличить число осей слева направо',
+    decreaseTopBottomButton: 'Уменьшить число осей сверху вниз',
+    increaseTopBottomButton: 'Увеличить число осей сверху вниз',
   },
   toolbox: {
     groups: {

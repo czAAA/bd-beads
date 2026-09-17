@@ -80,6 +80,12 @@ export const en: Translations = {
     verticalLabel: 'Vertical',
     mirrorCurrentHorizontalButton: 'Mirror current (horizontal)',
     mirrorCurrentVerticalButton: 'Mirror current (vertical)',
+    leftRightLabel: 'Left–right',
+    topBottomLabel: 'Top–bottom',
+    decreaseLeftRightButton: 'Decrease left–right axes',
+    increaseLeftRightButton: 'Increase left–right axes',
+    decreaseTopBottomButton: 'Decrease top–bottom axes',
+    increaseTopBottomButton: 'Increase top–bottom axes',
   },
   toolbox: {
     groups: {
