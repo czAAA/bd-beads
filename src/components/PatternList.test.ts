@@ -24,6 +24,35 @@ describe('PatternList', () => {
     expect(wrapper.find('[data-testid="pattern-item"]').exists()).toBe(false)
   })
 
+  it('renders New Pattern as a control in this box, disabled while no Patterns are saved (ticket 51)', () => {
+    const wrapper = mount(PatternList, { props: { patterns: [] } })
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]').element.disabled,
+    ).toBe(true)
+  })
+
+  it('enables New Pattern once a Pattern is saved, before the list of saved Patterns', () => {
+    const pattern = makePattern()
+    const wrapper = mount(PatternList, { props: { patterns: [pattern] } })
+
+    const newPatternButton = wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]')
+    expect(newPatternButton.element.disabled).toBe(false)
+
+    const children = Array.from(wrapper.find('[data-testid="pattern-list"]').element.children)
+    const list = wrapper.find('[data-testid="pattern-item"]').element.closest('ul')!
+    expect(children.indexOf(newPatternButton.element)).toBeLessThan(children.indexOf(list))
+  })
+
+  it('emits new-pattern when clicked', async () => {
+    const pattern = makePattern()
+    const wrapper = mount(PatternList, { props: { patterns: [pattern] } })
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+
+    expect(wrapper.emitted('new-pattern')).toHaveLength(1)
+  })
+
   it('renders one entry per saved pattern with its summary', () => {
     const first = makePattern()
     const second = makePattern()

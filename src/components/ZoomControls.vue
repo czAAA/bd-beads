@@ -12,10 +12,10 @@ const { t } = useI18n()
 
 <template>
   <!--
-    A vertical stack, + on top through reset at the bottom (ticket 35's decision: zooming in leads). Floats over the
-    canvas box (see PatternCanvas.vue, which positions this along the box's right edge) rather than sitting in the
-    above-canvas row, so it carries its own card background/border here — unlike a plain inline control, it has to
-    stay legible with a painted Pattern running underneath it at any zoom level.
+    A horizontal row, + through reset left to right (ticket 35's ordering, kept by ticket 51's move to a corner
+    cluster). Floats over the canvas box (see PatternCanvas.vue, which pins this to the box's top-right corner) rather
+    than sitting in the above-canvas row, so it carries its own translucent background/border here — unlike a plain
+    inline control, it has to stay legible with a painted Pattern running underneath it at any zoom level.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
     <button
@@ -55,11 +55,11 @@ const { t } = useI18n()
 <style scoped>
 .zoom-controls {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: var(--color-paper-solid);
+  background: color-mix(in srgb, var(--color-paper-solid) 80%, transparent);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
 }

@@ -11,6 +11,7 @@ defineProps<{
 const emit = defineEmits<{
   select: [id: string]
   remove: [id: string]
+  'new-pattern': []
 }>()
 
 const { t } = useI18n()
@@ -19,6 +20,14 @@ const { t } = useI18n()
 <template>
   <section class="pattern-list" data-testid="pattern-list">
     <h2>{{ t.patterns.heading }}</h2>
+    <button
+      type="button"
+      data-testid="new-pattern-button"
+      :disabled="patterns.length === 0"
+      @click="emit('new-pattern')"
+    >
+      {{ t.patterns.newPatternButton }}
+    </button>
     <p v-if="patterns.length === 0" data-testid="pattern-list-empty">
       {{ t.patterns.noSavedPatternsMessage }}
     </p>
@@ -62,6 +71,10 @@ const { t } = useI18n()
 <style scoped>
 .pattern-list h2 {
   margin: 0 0 12px;
+}
+
+.pattern-list > button {
+  margin-bottom: 12px;
 }
 
 .pattern-list ul {
