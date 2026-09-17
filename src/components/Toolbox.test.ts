@@ -43,13 +43,21 @@ describe('Toolbox', () => {
     ])
   })
 
-  it('puts Paint, Fill and Select inside the Tools group', () => {
+  it('puts Paint, Fill, Select and Delete all inside the Tools group', () => {
     const wrapper = mountToolbox()
 
     const toolsGroup = wrapper.findAll('.tool-group')[0]!
-    for (const testId of ['tool-paint', 'tool-fill', 'tool-select']) {
+    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'delete-all-button']) {
       expect(toolsGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it('emits delete-all when its button is clicked', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.emitted('delete-all')).toHaveLength(1)
   })
 
   it('puts the Palette picker inside the Colors group', () => {

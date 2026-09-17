@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BeadCatalog from './components/BeadCatalog.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
+import ConfirmModal from './components/ConfirmModal.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
@@ -31,6 +32,7 @@ import {
 } from './domain/selection'
 import {
   createPattern,
+  deleteAll,
   fillArea,
   isInFinishedRow,
   keepFinishedRows,
@@ -39,7 +41,7 @@ import {
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
-  restoreGrid,
+  restoreSnapshot,
   rowProgressPosition,
   setColorBeadOverride,
   setRowProgressEnabled,
@@ -50,6 +52,7 @@ import {
   type Grid,
   type MirrorAxes,
   type Pattern,
+  type UndoEntry,
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
 import type { Tool } from './domain/tool'
@@ -85,8 +88,11 @@ const DEFAULT_PALETTE_COLOR_ID = 'red'
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
-/** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
-const undoStack = ref<Grid[]>([])
+/** Snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
+const undoStack = ref<UndoEntry[]>([])
+
+/** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
+const deleteAllConfirmOpen = ref(false)
 
 /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
 const selection = ref<Selection | undefined>()
@@ -100,6 +106,7 @@ watch(activePatternId, () => {
   undoStack.value = []
   selection.value = undefined
   copiedBlock.value = undefined
+  deleteAllConfirmOpen.value = false
 })
 
 /**
@@ -198,7 +205,7 @@ function commitGridChange(pattern: Pattern, updated: Pattern) {
     return
   }
 
-  undoStack.value.push(pattern.grid)
+  undoStack.value.push({ grid: pattern.grid })
   replaceActivePattern(kept)
 }
 
@@ -221,7 +228,7 @@ function endStroke() {
 
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    undoStack.value.push(strokeBaseline.value)
+    undoStack.value.push({ grid: strokeBaseline.value })
   }
   strokeMode.value = null
   strokeBaseline.value = null
@@ -321,9 +328,13 @@ function backOutOfSelect() {
   }
 }
 
-/** Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+/**
+ * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
+ * may have left it. While the Delete all confirmation modal is open, its own Escape handling (ConfirmModal.vue)
+ * owns the key instead — deferred to here so Escape can't also unexpectedly drop a copied block behind the modal.
+ */
 function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
+  if (event.key === 'Escape' && !deleteAllConfirmOpen.value) {
     backOutOfSelect()
   }
 }
@@ -399,12 +410,45 @@ function onCellSecondaryMove(row: number, column: number) {
 
 function onUndo() {
   const pattern = activePattern.value
-  const previousGrid = undoStack.value.pop()
-  if (!pattern || !previousGrid) {
+  const entry = undoStack.value.pop()
+  if (!pattern || !entry) {
     return
   }
 
-  replaceActivePattern(restoreGrid(pattern, previousGrid))
+  replaceActivePattern(restoreSnapshot(pattern, entry))
+}
+
+/** Opens the Delete all confirmation modal (ticket 42); does nothing with no Pattern open. */
+function onRequestDeleteAll() {
+  if (activePattern.value) {
+    deleteAllConfirmOpen.value = true
+  }
+}
+
+function onCancelDeleteAll() {
+  deleteAllConfirmOpen.value = false
+}
+
+/**
+ * Confirms Delete all (ticket 42): resets the grid and Row progress together as a single undo step. Applied
+ * directly rather than through commitGridChange/keepFinishedRows, since Delete all ignores the Row progress lock
+ * on purpose — clearing progress is the point.
+ */
+function onConfirmDeleteAll() {
+  deleteAllConfirmOpen.value = false
+
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const updated = deleteAll(pattern)
+  if (updated === pattern) {
+    return
+  }
+
+  undoStack.value.push({ grid: pattern.grid, rowProgress: pattern.rowProgress })
+  replaceActivePattern(updated)
 }
 
 /**
@@ -569,6 +613,7 @@ function onRemoveBead(id: string) {
             @toggle-row-progress="onToggleRowProgress"
             @toggle-row-direction="onToggleRowDirection"
             @move-row="onMoveRow"
+            @delete-all="onRequestDeleteAll"
           />
         </div>
 
@@ -622,6 +667,17 @@ function onRemoveBead(id: string) {
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      v-if="deleteAllConfirmOpen"
+      data-testid="delete-all-modal"
+      :title="t.deleteAll.confirmTitle"
+      :message="t.deleteAll.confirmMessage"
+      :confirm-label="t.deleteAll.confirmButton"
+      :cancel-label="t.deleteAll.cancelButton"
+      @confirm="onConfirmDeleteAll"
+      @cancel="onCancelDeleteAll"
+    />
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor) reuse
-// that exact wording rather than retranslating.
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor, Delete all)
+// reuse that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
     title: 'bd-beads',
@@ -91,6 +91,13 @@ export const ru: Translations = {
       mirror: 'Отражение',
       rowProgress: 'Прогресс по рядам',
     },
+  },
+  deleteAll: {
+    button: 'Очистить всё',
+    confirmTitle: 'Очистить всё?',
+    confirmMessage: 'Все ячейки станут пустыми, а прогресс по рядам выключится. Это действие можно отменить.',
+    confirmButton: 'Очистить всё',
+    cancelButton: 'Отмена',
   },
   catalog: {
     heading: 'Каталог бисера',
