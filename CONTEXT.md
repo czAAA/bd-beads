@@ -29,6 +29,10 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 A saveable, re-editable beadwork design: a grid of cells (shape depends on the chosen technique and bead form factor), each cell painted with a color from the palette.
 _Avoid_: design, drawing, chart
 
+**Pattern library** (RU: Библиотека схем):
+Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is a flat set with no ordering, grouping or nesting: a Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file.
+_Avoid_: collection, gallery, saved list, workspace
+
 **Palette** (RU: Палитра):
 A free-standing set of colors used to paint pattern cells. Independent from the bead catalog — a cell's color is not required to correspond to a real bead.
 _Avoid_: color scheme

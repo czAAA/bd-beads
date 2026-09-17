@@ -35,7 +35,6 @@ export const en: Translations = {
     zoomResetLabel: 'Reset zoom to fit',
   },
   shell: {
-    mainPanelPlaceholder: 'Tools — coming soon',
     canvasPlaceholder: 'No Pattern open yet',
   },
   palette: {

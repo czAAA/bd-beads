@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { computeColorQuantities } from '../domain/beadMapping'
+import { computeColorQuantities } from '../domain/beadQuantities'
 import type { Pattern } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
 
