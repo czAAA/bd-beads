@@ -76,6 +76,14 @@ const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 const DEFAULT_PALETTE_COLOR_ID = 'red'
 
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
+/**
+ * The last Custom color chosen (CONTEXT.md's Custom color): a one-off hex outside the Palette. Kept on its Toolbox
+ * slot for the rest of the session even once a Palette swatch deselects it — replaced only by a new Custom color,
+ * gone on reload since it's never persisted. It's the paint color exactly when selectedColorId is unset; the two are
+ * kept mutually exclusive by onSelectColor/onSelectCustomColor below, the same way PalettePicker's own selection is
+ * a single id rather than a parallel flag per swatch.
+ */
+const customColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
 /** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
@@ -125,9 +133,12 @@ function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[
   return mirroredCells(pattern, hovered, axes)
 }
 
-/** The selected Palette color's hex, or null when nothing is selected. */
+/** The current paint color's hex: the selected Palette color, or the Custom color when that's active instead; null when neither is. */
 function selectedColorHex(): string | null {
-  return selectedColorId.value ? (findPaletteColor(selectedColorId.value)?.hex ?? null) : null
+  if (selectedColorId.value) {
+    return findPaletteColor(selectedColorId.value)?.hex ?? null
+  }
+  return customColor.value ?? null
 }
 
 /** The color the hover preview shows; null (a neutral outline, not a color) when nothing is selected. */
@@ -165,8 +176,15 @@ function onNewPattern() {
   activePatternId.value = undefined
 }
 
+/** Choosing a Palette swatch deselects Custom color (CONTEXT.md); its slot keeps showing its last hex, just unselected. */
 function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
+}
+
+/** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch was active, vice versa. */
+function onSelectCustomColor(hex: string) {
+  customColor.value = hex
+  selectedColorId.value = undefined
 }
 
 function onSelectTool(tool: Tool) {
@@ -623,12 +641,14 @@ function onRemoveBead(id: string) {
             :pattern="activePattern"
             :active-tool="activeTool"
             :selected-color-id="selectedColorId"
+            :custom-color="customColor"
             :can-undo="canUndo(history)"
             :can-redo="canRedo(history)"
             :can-copy="!!selection"
             :mirror-axes="mirrorAxes"
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
+            @select-custom-color="onSelectCustomColor"
             @undo="onUndo"
             @redo="onRedo"
             @toggle-rotate="onToggleRotate"

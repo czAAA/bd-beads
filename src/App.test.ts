@@ -509,6 +509,82 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
+  it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#123456')
+  })
+
+  it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('deselects the Custom color slot when a Palette swatch is picked afterwards, and vice versa', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+
+    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
+    expect(customColorInput.attributes('aria-pressed')).toBe('false')
+
+    await customColorInput.trigger('input')
+
+    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('replaces the previous Custom color when another one is chosen, leaving the Palette itself untouched', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+    customColorInput.element.value = '#abcdef'
+    await customColorInput.trigger('input')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#abcdef')
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount)
+  })
+
+  it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    customColorInput.element.value = '#123456'
+    await customColorInput.trigger('input')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
+  })
+
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
