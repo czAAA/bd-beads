@@ -27,6 +27,7 @@ export const en: Translations = {
     removeButton: 'Remove',
     currentLabel: 'Currently editing',
     unknownBeadLabel: 'Unknown bead',
+    noSavedPatternsMessage: 'No Patterns saved yet',
   },
   canvas: {
     zoomInLabel: 'Zoom in',
