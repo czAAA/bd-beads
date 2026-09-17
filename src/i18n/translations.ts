@@ -26,6 +26,8 @@ export interface Translations {
     newPatternButton: string
     removeButton: string
     currentLabel: string
+    unknownBeadLabel: string
+    noSavedPatternsMessage: string
   }
   canvas: {
     zoomInLabel: string
@@ -40,7 +42,10 @@ export interface Translations {
     pickerLabel: string
     colorLabel: string
     undoButton: string
+    redoButton: string
     rotateButton: string
+    /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
+    customColorLabel: string
   }
   tools: {
     paintLabel: string
@@ -58,14 +63,9 @@ export interface Translations {
   quantities: {
     heading: string
     noPatternMessage: string
+    noColorsMessage: string
     colorHeading: string
     countHeading: string
-    resolvedBeadHeading: string
-    defaultBeadHeading: string
-    patternBeadHeading: string
-    unmappedOption: string
-    useDefaultOption: string
-    unknownColorLabel: string
   }
   transfer: {
     heading: string
@@ -101,22 +101,12 @@ export interface Translations {
       rowProgress: string
     }
   }
-  catalog: {
-    heading: string
-    brandLabel: string
-    nameLabel: string
-    sizeLabel: string
-    formFactorLabel: string
-    formFactorCube: string
-    formFactorRound: string
-    formFactorCylinder: string
-    colorLabel: string
-    widthLabel: string
-    heightLabel: string
-    addButton: string
-    editButton: string
-    removeButton: string
-    saveButton: string
+  /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
+  deleteAll: {
+    button: string
+    confirmTitle: string
+    confirmMessage: string
+    confirmButton: string
     cancelButton: string
   }
 }
