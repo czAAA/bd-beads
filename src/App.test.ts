@@ -140,7 +140,9 @@ describe('App', () => {
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-list"]').exists()).toBe(false)
+    // Saved Patterns keeps its box (ticket 39: always one of the three below-canvas boxes), now showing its
+    // own empty message rather than disappearing.
+    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(0)
   })
 
@@ -173,6 +175,40 @@ describe('App', () => {
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
+  })
+
+  it('opens the bottom section with a dimmed divider, then exactly three boxes in order: Beads needed, Saved Patterns, Export and import (ticket 39)', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+
+    const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
+    const boxes = [...belowCanvas.element.children]
+    expect(boxes.map((box) => box.getAttribute('data-testid'))).toEqual([
+      'bead-quantities',
+      'pattern-list',
+      'pattern-transfer',
+    ])
+  })
+
+  it('keeps the same divider and exactly the same three boxes, in order, whether or not a Pattern is open', async () => {
+    const wrapper = mount(App)
+    const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
+    const boxOrder = () => [...belowCanvas.element.children].map((box) => box.getAttribute('data-testid'))
+    const expectedOrder = ['bead-quantities', 'pattern-list', 'pattern-transfer']
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
+
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click') // back to no Pattern open, but one is saved
+
+    expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
+    expect(boxOrder()).toEqual(expectedOrder)
   })
 
   it('moves editing tools into the above-canvas panel, as a second row below New Pattern/zoom, and empties the main panel', async () => {
