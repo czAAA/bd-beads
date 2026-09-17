@@ -1,25 +1,19 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import BeadCatalog from './components/BeadCatalog.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
+import ConfirmModal from './components/ConfirmModal.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
-import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
-import ZoomControls from './components/ZoomControls.vue'
+import Toolbox from './components/Toolbox.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
-import { BEAD_CATALOG, type Bead } from './domain/beads'
-import { mergeColorBeadDefaults, type ColorBeadDefaults } from './domain/beadMapping'
-import {
-  loadColorBeadDefaults,
-  saveColorBeadDefault,
-  saveColorBeadDefaults,
-} from './domain/beadMappingStorage'
-import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
+import { beadLabel } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
+import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
+import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
 import { findPaletteColor } from './domain/palette'
 import {
   copySelection,
@@ -30,18 +24,23 @@ import {
   type Selection,
 } from './domain/selection'
 import {
+  changedCells,
   createPattern,
+  deleteAll,
   fillArea,
   isInFinishedRow,
   keepFinishedRows,
+  mirrorCurrentForCounts,
   mirrorPattern,
   mirroredCells,
+  mirroredCellsForCounts,
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
-  restoreGrid,
+  paintCellsForCounts,
+  resolvePatternBead,
+  restoreSnapshot,
   rowProgressPosition,
-  setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
@@ -50,8 +49,11 @@ import {
   type Grid,
   type MirrorAxes,
   type Pattern,
+  type UndoEntry,
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
+import type { Tool } from './domain/tool'
+import { isRichMirrorEnabled } from './featureFlags'
 import { provideI18n } from './i18n/useI18n'
 
 const { t } = provideI18n()
@@ -63,17 +65,25 @@ const activePattern = computed(() =>
   patterns.value.find((pattern) => pattern.id === activePatternId.value),
 )
 
-const customBeads = ref<Bead[]>(loadCustomBeads())
-const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
-
-/** Which Bead each Palette color means by default, across every Pattern (ADR 0002). */
-const colorBeadDefaults = ref(loadColorBeadDefaults())
+/**
+ * The open Pattern's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a
+ * neutral "unknown bead" placeholder when it doesn't — a custom Bead removed since (ticket 38), or one an imported
+ * file names that this device never had.
+ */
+const activeBeadLabel = computed(() => {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return undefined
+  }
+  const bead = resolvePatternBead(pattern)
+  return bead ? beadLabel(bead) : t.value.patterns.unknownBeadLabel
+})
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
 const canvasAreaEl = ref<HTMLElement | null>(null)
 const { width: canvasAreaWidth } = useElementSize(canvasAreaEl)
 
-const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
+const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
 )
@@ -81,13 +91,42 @@ const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
 
-type Tool = 'paint' | 'fill' | 'select'
-
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
+/**
+ * The last Custom color chosen (CONTEXT.md's Custom color): a one-off hex outside the Palette. Kept on its Toolbox
+ * slot for the rest of the session even once a Palette swatch deselects it — replaced only by a new Custom color,
+ * gone on reload since it's never persisted. It's the paint color exactly when selectedColorId is unset; the two are
+ * kept mutually exclusive by onSelectColor/onSelectCustomColor below, the same way PalettePicker's own selection is
+ * a single id rather than a parallel flag per swatch.
+ */
+const customColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
-/** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
-const undoStack = ref<Grid[]>([])
+
+/**
+ * Rich Mirror (ticket 44): on only when VITE_RICH_MIRROR is exactly "true" at build time (see featureFlags.ts) --
+ * read once here, the app's one place, and threaded down as a prop rather than re-read per component. With it off,
+ * mirrorAxes above is what runs, unchanged from before this ticket.
+ */
+const richMirror = isRichMirrorEnabled()
+
+/** Per-direction axis counts for rich Mirror (ADR 0006 amendment): grid-space (see domain/mirror.ts), not saved
+ * with the Pattern, reset to 0 on a Pattern switch same as mirrorAxes' spirit. Unused, and left at 0, while the flag is off. */
+const mirrorAxisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
+
+/** Rich Mirror's copy-mode switch (ticket 45): strips repeat unflipped (A | A | A) instead of mirror-imaging
+ * (A | A' | A) when on. One switch for both directions, editing-session only like mirrorAxisCounts -- reset on a
+ * Pattern switch, never saved. Unused while the flag is off. */
+const mirrorCopyMode = ref(false)
+
+/** Which "Mirror current" button, if any, the pointer is over right now (ticket 47) -- grid-space ('horizontal'/'vertical'), same as the buttons themselves; null when the pointer is off both. Purely a transient hover UI concern, not persisted. */
+const hoveredMirrorCurrentAxis = ref<'horizontal' | 'vertical' | null>(null)
+
+/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
+const history = ref<History<UndoEntry>>(emptyHistory())
+
+/** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
+const deleteAllConfirmOpen = ref(false)
 
 /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
 const selection = ref<Selection | undefined>()
@@ -97,11 +136,57 @@ const copiedBlock = ref<CopiedBlock | undefined>()
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
 
+/** For onKeyDown's Escape precedence: asks every Tool group to collapse before backing out of Select (ticket 41). */
+const toolboxRef = ref<InstanceType<typeof Toolbox> | null>(null)
+
 watch(activePatternId, () => {
-  undoStack.value = []
+  history.value = emptyHistory()
   selection.value = undefined
   copiedBlock.value = undefined
+  // Rich Mirror's axis counts and copy mode are an editing-session setting, reset on a Pattern switch (ticket 44/45
+  // decision); unused while the flag is off, but harmless to reset regardless.
+  mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
+  mirrorCopyMode.value = false
+  hoveredMirrorCurrentAxis.value = null
+  deleteAllConfirmOpen.value = false
 })
+
+/**
+ * Rich Mirror's axis counts as actually shown on the canvas (ticket 47): while the pointer is over a "Mirror
+ * current" button, that direction's axes preview at their *effective* count -- the same count-acts-as-1 fallback
+ * mirrorCurrentForCounts itself uses (ticket 46 decision) -- without touching the stored count a click would still
+ * leave alone. The other direction, and everything once the pointer leaves, is exactly mirrorAxisCounts.
+ */
+const previewedMirrorAxisCounts = computed<MirrorAxisCounts>(() => {
+  const hovered = hoveredMirrorCurrentAxis.value
+  if (!hovered) {
+    return mirrorAxisCounts.value
+  }
+
+  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
+  return { ...mirrorAxisCounts.value, [axis]: mirrorAxisCounts.value[axis] || 1 }
+})
+
+/** Cells a hovered "Mirror current" button would overwrite, dimmed on the canvas (ticket 47) -- computed by asking mirrorCurrentForCounts what it *would* do and diffing that against what's there now, through the same Row progress lock a real click would go through, so a locked cell that couldn't actually change is never dimmed. */
+const mirrorCurrentDimmedCells = computed<GridPosition[]>(() => {
+  const pattern = activePattern.value
+  const hovered = hoveredMirrorCurrentAxis.value
+  if (!richMirror || !pattern || !hovered) {
+    return []
+  }
+
+  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
+  const result = keepFinishedRows(
+    pattern,
+    mirrorCurrentForCounts(pattern, axis, mirrorAxisCounts.value[axis], mirrorCopyMode.value),
+  )
+
+  return changedCells(pattern.grid, result.grid)
+})
+
+function onMirrorCurrentHover(axis: 'horizontal' | 'vertical' | null) {
+  hoveredMirrorCurrentAxis.value = axis
+}
 
 /**
  * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
@@ -121,14 +206,21 @@ function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[
     // With nothing copied there's nothing a click would put down, so Select previews nothing.
     return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hovered) : []
   }
-  // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
-  const axes = activeTool.value === 'paint' ? mirrorAxes.value : { horizontal: false, vertical: false }
-  return mirroredCells(pattern, hovered, axes)
+  if (activeTool.value !== 'paint') {
+    // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
+    return [hovered]
+  }
+  return richMirror
+    ? mirroredCellsForCounts(pattern, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
+    : mirroredCells(pattern, hovered, mirrorAxes.value)
 }
 
-/** The selected Palette color's hex, or null when nothing is selected. */
+/** The current paint color's hex: the selected Palette color, or the Custom color when that's active instead; null when neither is. */
 function selectedColorHex(): string | null {
-  return selectedColorId.value ? (findPaletteColor(selectedColorId.value)?.hex ?? null) : null
+  if (selectedColorId.value) {
+    return findPaletteColor(selectedColorId.value)?.hex ?? null
+  }
+  return customColor.value ?? null
 }
 
 /** The color the hover preview shows; null (a neutral outline, not a color) when nothing is selected. */
@@ -166,8 +258,15 @@ function onNewPattern() {
   activePatternId.value = undefined
 }
 
+/** Choosing a Palette swatch deselects Custom color (CONTEXT.md); its slot keeps showing its last hex, just unselected. */
 function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
+}
+
+/** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch was active, vice versa. */
+function onSelectCustomColor(hex: string) {
+  customColor.value = hex
+  selectedColorId.value = undefined
 }
 
 function onSelectTool(tool: Tool) {
@@ -199,7 +298,7 @@ function commitGridChange(pattern: Pattern, updated: Pattern) {
     return
   }
 
-  undoStack.value.push(pattern.grid)
+  history.value = pushHistory(history.value, { grid: pattern.grid })
   replaceActivePattern(kept)
 }
 
@@ -222,20 +321,24 @@ function endStroke() {
 
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    undoStack.value.push(strokeBaseline.value)
+    history.value = pushHistory(history.value, { grid: strokeBaseline.value })
   }
   strokeMode.value = null
   strokeBaseline.value = null
 }
 
-/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes, leaving rows already woven alone (ticket 33). */
+/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes (or, behind the rich-mirror flag, mirrorAxisCounts), leaving rows already woven alone (ticket 33). */
 function paintStrokeCell(row: number, column: number, color: string | null) {
   const pattern = activePattern.value
   if (!pattern) {
     return
   }
 
-  const updated = keepFinishedRows(pattern, paintCells(pattern, [{ row, column }], color, mirrorAxes.value))
+  const painted = richMirror
+    ? paintCellsForCounts(pattern, [{ row, column }], color, mirrorAxisCounts.value, mirrorCopyMode.value)
+    : paintCells(pattern, [{ row, column }], color, mirrorAxes.value)
+
+  const updated = keepFinishedRows(pattern, painted)
   if (updated !== pattern) {
     replaceActivePattern(updated)
   }
@@ -322,10 +425,56 @@ function backOutOfSelect() {
   }
 }
 
-/** Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+/** Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it should be left to type normally rather than triggering an editor-wide shortcut. */
+function isTypingInFormField(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  )
+}
+
+function isUndoShortcut(event: KeyboardEvent): boolean {
+  return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
+}
+
+/** Ctrl/Cmd+Shift+Z, the mirror of the undo chord, or Ctrl+Y, the older Windows convention. */
+function isRedoShortcut(event: KeyboardEvent): boolean {
+  const shiftZ = (event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z'
+  const ctrlY = event.ctrlKey && event.key.toLowerCase() === 'y'
+  return shiftZ || ctrlY
+}
+
+/**
+ * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
+ * may have left it (ticket 24). Undo/Redo's shortcuts (ticket 34) work the same way — bound to the window rather
+ * than a focused element — except while the user is typing in a form field, where they're left to the field itself
+ * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo. While the Delete all
+ * confirmation modal is open, its own Escape handling (ConfirmModal.vue) owns the key instead — deferred to here so
+ * Escape can't also unexpectedly drop a copied block or collapse a Tool group behind the modal.
+ */
 function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
+  if (event.key === 'Escape' && !deleteAllConfirmOpen.value) {
+    /*
+     * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
+     * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
+     */
+    if (toolboxRef.value?.collapseExpandedGroup()) {
+      return
+    }
     backOutOfSelect()
+    return
+  }
+
+  if (isTypingInFormField(event.target)) {
+    return
+  }
+
+  if (isRedoShortcut(event)) {
+    event.preventDefault()
+    onRedo()
+  } else if (isUndoShortcut(event)) {
+    event.preventDefault()
+    onUndo()
   }
 }
 
@@ -400,12 +549,58 @@ function onCellSecondaryMove(row: number, column: number) {
 
 function onUndo() {
   const pattern = activePattern.value
-  const previousGrid = undoStack.value.pop()
-  if (!pattern || !previousGrid) {
+  const step = pattern && undoStep(history.value, { grid: pattern.grid })
+  if (!step) {
     return
   }
 
-  replaceActivePattern(restoreGrid(pattern, previousGrid))
+  history.value = step.history
+  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+}
+
+/** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
+function onRedo() {
+  const pattern = activePattern.value
+  const step = pattern && redoStep(history.value, { grid: pattern.grid })
+  if (!step) {
+    return
+  }
+
+  history.value = step.history
+  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+}
+
+/** Opens the Delete all confirmation modal (ticket 42); does nothing with no Pattern open. */
+function onRequestDeleteAll() {
+  if (activePattern.value) {
+    deleteAllConfirmOpen.value = true
+  }
+}
+
+function onCancelDeleteAll() {
+  deleteAllConfirmOpen.value = false
+}
+
+/**
+ * Confirms Delete all (ticket 42): resets the grid and Row progress together as a single undo step. Applied
+ * directly rather than through commitGridChange/keepFinishedRows, since Delete all ignores the Row progress lock
+ * on purpose — clearing progress is the point.
+ */
+function onConfirmDeleteAll() {
+  deleteAllConfirmOpen.value = false
+
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const updated = deleteAll(pattern)
+  if (updated === pattern) {
+    return
+  }
+
+  history.value = pushHistory(history.value, { grid: pattern.grid, rowProgress: pattern.rowProgress })
+  replaceActivePattern(updated)
 }
 
 /**
@@ -422,10 +617,54 @@ function onToggleRotate() {
   resetZoom()
 }
 
-/** One-time reflect of whatever's currently painted across a single axis, via the old "bigger half" heuristic — for content drawn before that axis's live mirroring was turned on (ADR 0006). */
+/** Flips one Mirror axis on/off; live-mirroring while painting reads mirrorAxes directly (ADR 0006). */
+function onToggleMirrorAxis(axis: 'horizontal' | 'vertical') {
+  mirrorAxes.value[axis] = !mirrorAxes.value[axis]
+}
+
+/**
+ * Sets one direction's rich-Mirror axis count (ticket 44), clamped to what the open Pattern's current size allows --
+ * Toolbox.vue works out which grid-space field ('columns'/'rows') a screen direction maps to, since that's the
+ * piece that swaps under rotation (see ToolGroup usage in Toolbox.vue).
+ */
+function onSetMirrorAxisCount(axis: 'columns' | 'rows', count: number) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const cellsAcross = axis === 'columns' ? pattern.columns : pattern.rows
+  mirrorAxisCounts.value = { ...mirrorAxisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
+}
+
+/** Flips rich-Mirror's copy-mode switch (ticket 45): one switch for both directions. */
+function onToggleMirrorCopyMode() {
+  mirrorCopyMode.value = !mirrorCopyMode.value
+}
+
+/**
+ * One-time reflect of whatever's currently painted across one direction, for content drawn before that direction's
+ * live mirroring was turned on (ADR 0006). With the flag off, the legacy "bigger half" heuristic across the grid's
+ * center, unchanged (ticket 44/45 decision: "Mirror current keeps its current behaviour until ticket 46"). With
+ * rich Mirror on (ticket 46), the strip with the most painted cells becomes the source instead, using that
+ * direction's own axis count (the other direction is left alone, same as the legacy per-axis buttons always did)
+ * and honouring copy mode; a count of 0 still acts as a single center axis, so the button always does something.
+ * 'horizontal'/'vertical' here are grid-space, same as they've always been for these two buttons -- unlike the
+ * Left–right/Top–bottom counters (ticket 44), these were never rotation-relabeled, and ticket 46 doesn't change
+ * that.
+ */
 function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
   const pattern = activePattern.value
   if (!pattern) {
+    return
+  }
+
+  if (richMirror) {
+    const gridAxis = axis === 'horizontal' ? 'columns' : 'rows'
+    commitGridChange(
+      pattern,
+      mirrorCurrentForCounts(pattern, gridAxis, mirrorAxisCounts.value[gridAxis], mirrorCopyMode.value),
+    )
     return
   }
 
@@ -461,43 +700,12 @@ function onMoveRow(delta: number) {
   }
 }
 
-function onSetDefaultBead(colorId: string, beadId: string | null) {
-  saveColorBeadDefault(colorId, beadId)
-  colorBeadDefaults.value = loadColorBeadDefaults()
-}
-
-function onSetOverrideBead(colorId: string, beadId: string | null) {
-  const pattern = activePattern.value
-  if (pattern) {
-    replaceActivePattern(setColorBeadOverride(pattern, colorId, beadId))
-  }
-}
-
-function onImportPatterns(imported: Pattern[], importedDefaults: ColorBeadDefaults) {
+function onImportPatterns(imported: Pattern[]) {
   imported.forEach(savePattern)
   patterns.value = [...patterns.value, ...imported]
 
-  const merged = mergeColorBeadDefaults(colorBeadDefaults.value, importedDefaults)
-  saveColorBeadDefaults(merged)
-  colorBeadDefaults.value = merged
-
   // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
   activePatternId.value ??= mostRecentlyUpdated(imported)?.id
-}
-
-function onAddBead(bead: Bead) {
-  saveCustomBead(bead)
-  customBeads.value.push(bead)
-}
-
-function onEditBead(bead: Bead) {
-  saveCustomBead(bead)
-  customBeads.value = customBeads.value.map((existing) => (existing.id === bead.id ? bead : existing))
-}
-
-function onRemoveBead(id: string) {
-  removeCustomBead(id)
-  customBeads.value = customBeads.value.filter((bead) => bead.id !== id)
 }
 </script>
 
@@ -508,9 +716,22 @@ function onRemoveBead(id: string) {
         <h1>{{ t.app.title }}</h1>
       </div>
       <div class="app-shell__topbar-summary">
-        <p v-if="activePattern" class="app-shell__summary" data-testid="current-pattern-summary">
-          {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
-        </p>
+        <button
+          type="button"
+          data-testid="new-pattern-button"
+          :disabled="patterns.length === 0"
+          @click="onNewPattern"
+        >
+          {{ t.patterns.newPatternButton }}
+        </button>
+        <div v-if="activePattern" class="app-shell__summary-group">
+          <p class="app-shell__summary" data-testid="current-pattern-summary">
+            {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
+          </p>
+          <p class="app-shell__summary" data-testid="current-pattern-bead">
+            {{ activeBeadLabel }}
+          </p>
+        </div>
         <LanguageSwitcher />
       </div>
     </header>
@@ -523,286 +744,43 @@ function onRemoveBead(id: string) {
       >
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
-          <NewPatternForm :beads="beads" @submit="onCreatePattern" />
+          <NewPatternForm @submit="onCreatePattern" />
         </template>
       </aside>
 
       <div class="app-shell__right">
         <div class="app-shell__above-canvas" data-testid="app-above-canvas">
-          <div class="app-shell__above-canvas-row">
-            <button
-              type="button"
-              data-testid="new-pattern-button"
-              :disabled="patterns.length === 0"
-              @click="onNewPattern"
-            >
-              {{ t.patterns.newPatternButton }}
-            </button>
-            <ZoomControls
-              v-if="activePattern"
-              :zoom-percent="zoomPercent"
-              @zoom-in="zoomIn"
-              @zoom-out="zoomOut"
-              @reset="resetZoom"
-            />
-          </div>
-
-          <div v-if="activePattern" class="tool-strip" data-testid="tool-strip">
-            <section class="tool-strip__card" :aria-label="t.tools.heading">
-              <div class="tool-picker" role="group" :aria-label="t.tools.heading">
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="tool-paint"
-                  :title="t.tools.paintLabel"
-                  :aria-label="t.tools.paintLabel"
-                  :aria-pressed="activeTool === 'paint'"
-                  :class="{ 'tool-picker__button--selected': activeTool === 'paint' }"
-                  @click="onSelectTool('paint')"
-                >
-                  <!-- A brush held at an angle, bristles splaying to the low corner. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M17.5 2.5 21.5 6.5 11 17 7 13z" />
-                    <path d="M7 13 3.5 20.5 11 17" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="tool-fill"
-                  :title="t.tools.fillLabel"
-                  :aria-label="t.tools.fillLabel"
-                  :aria-pressed="activeTool === 'fill'"
-                  :class="{ 'tool-picker__button--selected': activeTool === 'fill' }"
-                  @click="onSelectTool('fill')"
-                >
-                  <!-- A tipped paint bucket with a drop coming off it. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M10.5 2.5 3.9 9.1a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0l6.6-6.6z" />
-                    <path d="M20.5 14.5c.9 1.3 1.4 2.2 1.4 2.8a1.4 1.4 0 0 1-2.8 0c0-.6.5-1.5 1.4-2.8z" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="tool-select"
-                  :title="t.tools.selectLabel"
-                  :aria-label="t.tools.selectLabel"
-                  :aria-pressed="activeTool === 'select'"
-                  :class="{ 'tool-picker__button--selected': activeTool === 'select' }"
-                  @click="onSelectTool('select')"
-                >
-                  <!-- A dashed rectangle: the marquee this tool drags out. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M3 8V6a3 3 0 0 1 3-3h2" />
-                    <path d="M16 3h2a3 3 0 0 1 3 3v2" />
-                    <path d="M21 16v2a3 3 0 0 1-3 3h-2" />
-                    <path d="M8 21H6a3 3 0 0 1-3-3v-2" />
-                    <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-
-            <section class="tool-strip__card" :aria-label="t.palette.heading">
-              <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
-            </section>
-
-            <section class="tool-strip__card">
-              <button
-                type="button"
-                class="icon-button"
-                data-testid="undo-button"
-                :title="t.palette.undoButton"
-                :aria-label="t.palette.undoButton"
-                :disabled="undoStack.length === 0"
-                @click="onUndo"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M7 7 3 11l4 4" />
-                  <path d="M3 11h11a7 7 0 1 1 -7 7" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="icon-button"
-                data-testid="rotate-button"
-                :title="t.palette.rotateButton"
-                :aria-label="t.palette.rotateButton"
-                :aria-pressed="activePattern.rotated"
-                :class="{ 'tool-picker__button--selected': activePattern.rotated }"
-                @click="onToggleRotate"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <rect x="3" y="11" width="13" height="9" rx="1.5" />
-                  <rect x="9" y="4" width="9" height="13" rx="1.5" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="icon-button"
-                data-testid="copy-button"
-                :title="t.tools.copyButton"
-                :aria-label="t.tools.copyButton"
-                :disabled="!selection"
-                @click="onCopy"
-              >
-                <!-- One sheet laid over a second: the duplicate the Selection becomes. Only the back sheet's exposed corner is drawn, so it doesn't read as Rotate's two full rectangles. -->
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <rect x="8" y="8" width="13" height="13" rx="2" />
-                  <path d="M16 8V3H3v13h5" />
-                </svg>
-              </button>
-            </section>
-
-            <section class="tool-strip__card" :aria-label="t.mirror.heading">
-              <div class="mirror-axes" role="group" :aria-label="t.mirror.heading">
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="mirror-horizontal"
-                  :title="t.mirror.horizontalLabel"
-                  :aria-label="t.mirror.horizontalLabel"
-                  :aria-pressed="mirrorAxes.horizontal"
-                  :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
-                  @click="mirrorAxes.horizontal = !mirrorAxes.horizontal"
-                >
-                  <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 3v3M12 10.5v3M12 18v3" />
-                    <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
-                    <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="mirror-vertical"
-                  :title="t.mirror.verticalLabel"
-                  :aria-label="t.mirror.verticalLabel"
-                  :aria-pressed="mirrorAxes.vertical"
-                  :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
-                  @click="mirrorAxes.vertical = !mirrorAxes.vertical"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M3 12h3M10.5 12h3M18 12h3" />
-                    <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
-                    <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
-                  </svg>
-                </button>
-              </div>
-              <div class="mirror-current">
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="mirror-current-horizontal"
-                  :title="t.mirror.mirrorCurrentHorizontalButton"
-                  :aria-label="t.mirror.mirrorCurrentHorizontalButton"
-                  @click="onMirrorCurrent('horizontal')"
-                >
-                  <!-- Two shapes facing away from a dashed vertical axis: the left-right flip this button performs. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 3v3M12 10.5v3M12 18v3" />
-                    <path d="M8.5 7 3.5 12l5 5z" />
-                    <path d="M15.5 7l5 5-5 5z" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="mirror-current-vertical"
-                  :title="t.mirror.mirrorCurrentVerticalButton"
-                  :aria-label="t.mirror.mirrorCurrentVerticalButton"
-                  @click="onMirrorCurrent('vertical')"
-                >
-                  <!-- The same glyph turned a quarter turn: a dashed horizontal axis with the shapes above and below it. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M3 12h3M10.5 12h3M18 12h3" />
-                    <path d="M7 8.5 12 3.5l5 5z" />
-                    <path d="M7 15.5 12 20.5l5-5z" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-
-            <section class="tool-strip__card row-progress" :aria-label="t.rowProgress.heading">
-              <button
-                type="button"
-                class="icon-button"
-                data-testid="row-progress-enabled"
-                :title="t.rowProgress.enabledLabel"
-                :aria-label="t.rowProgress.enabledLabel"
-                :aria-pressed="activePattern.rowProgress.enabled"
-                :class="{ 'tool-picker__button--selected': activePattern.rowProgress.enabled }"
-                @click="onToggleRowProgress(!activePattern.rowProgress.enabled)"
-              >
-                <!-- Rows of weaving with the current one boxed: the overlay this toggles on. -->
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <path d="M3 5.5h18" />
-                  <rect x="3" y="9.5" width="18" height="5" rx="1.5" />
-                  <path d="M3 18.5h18" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="icon-button"
-                data-testid="row-progress-direction"
-                :title="t.rowProgress.directionButton"
-                :aria-label="t.rowProgress.directionButton"
-                :aria-pressed="activePattern.rowProgress.direction === 'columns'"
-                :class="{ 'tool-picker__button--selected': activePattern.rowProgress.direction === 'columns' }"
-                @click="onToggleRowDirection"
-              >
-                <!-- A row lying across and a row standing upright, with a quarter-turn arrow from one to the other. -->
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <rect x="3" y="3" width="11" height="5" rx="1.5" />
-                  <rect x="16" y="10" width="5" height="11" rx="1.5" />
-                  <path d="M6 11.5v1.5a4 4 0 0 0 4 4h2.5" />
-                  <path d="M10.5 14.5 13 17l-2.5 2.5" />
-                </svg>
-              </button>
-              <p class="row-progress__position" data-testid="row-progress-position">
-                {{ t.rowProgress.positionLabel }}
-                {{ rowProgressPosition(activePattern).current + 1 }} / {{ rowProgressPosition(activePattern).total }}
-              </p>
-              <div class="row-progress__steps">
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="row-progress-previous"
-                  :title="t.rowProgress.previousButton"
-                  :aria-label="t.rowProgress.previousButton"
-                  :disabled="
-                    !activePattern.rowProgress.enabled || rowProgressPosition(activePattern).current === 0
-                  "
-                  @click="onMoveRow(-1)"
-                >
-                  <!-- Rows are woven top to bottom, so stepping back up the Pattern is a plain up arrow. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 20V5" />
-                    <path d="M5.5 11.5 12 5l6.5 6.5" />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  class="icon-button"
-                  data-testid="row-progress-next"
-                  :title="t.rowProgress.nextButton"
-                  :aria-label="t.rowProgress.nextButton"
-                  :disabled="
-                    !activePattern.rowProgress.enabled ||
-                    rowProgressPosition(activePattern).current === rowProgressPosition(activePattern).total - 1
-                  "
-                  @click="onMoveRow(1)"
-                >
-                  <!-- A tick, not a down arrow: what this button means is "this row is woven", and advancing is the consequence. -->
-                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M4 13l5.5 5.5L20 6" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-          </div>
+          <Toolbox
+            v-if="activePattern"
+            ref="toolboxRef"
+            :pattern="activePattern"
+            :active-tool="activeTool"
+            :selected-color-id="selectedColorId"
+            :custom-color="customColor"
+            :can-undo="canUndo(history)"
+            :can-redo="canRedo(history)"
+            :can-copy="!!selection"
+            :mirror-axes="mirrorAxes"
+            :rich-mirror="richMirror"
+            :mirror-axis-counts="mirrorAxisCounts"
+            :mirror-copy-mode="mirrorCopyMode"
+            @select-tool="onSelectTool"
+            @select-color="onSelectColor"
+            @select-custom-color="onSelectCustomColor"
+            @undo="onUndo"
+            @redo="onRedo"
+            @toggle-rotate="onToggleRotate"
+            @copy="onCopy"
+            @toggle-mirror-axis="onToggleMirrorAxis"
+            @set-mirror-axis-count="onSetMirrorAxisCount"
+            @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
+            @mirror-current="onMirrorCurrent"
+            @mirror-current-hover="onMirrorCurrentHover"
+            @toggle-row-progress="onToggleRowProgress"
+            @toggle-row-direction="onToggleRowDirection"
+            @move-row="onMoveRow"
+            @delete-all="onRequestDeleteAll"
+          />
         </div>
 
         <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
@@ -813,48 +791,48 @@ function onRemoveBead(id: string) {
             :preview-cells="previewCells"
             :preview-color="previewColor"
             :selection="selection"
+            :mirror-axis-counts="richMirror ? previewedMirrorAxisCounts : undefined"
+            :dimmed-cells="mirrorCurrentDimmedCells"
             @cell-primary-down="onCellPrimaryDown"
             @cell-primary-move="onCellPrimaryMove"
             @cell-secondary-down="onCellSecondaryDown"
             @cell-secondary-move="onCellSecondaryMove"
             @cell-hover="onCellHover"
             @hover-end="onHoverEnd"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @zoom-reset="resetZoom"
           />
           <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
             {{ t.shell.canvasPlaceholder }}
           </p>
         </div>
 
+        <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
+
         <div class="app-shell__below-canvas" data-testid="app-below-canvas">
+          <BeadQuantities :pattern="activePattern" />
           <PatternList
             :patterns="patterns"
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
             @remove="onRemovePattern"
           />
-          <BeadQuantities
-            :pattern="activePattern"
-            :beads="beads"
-            :defaults="colorBeadDefaults"
-            @set-default="onSetDefaultBead"
-            @set-override="onSetOverrideBead"
-          />
-          <PatternTransfer
-            :pattern="activePattern"
-            :patterns="patterns"
-            :color-bead-defaults="colorBeadDefaults"
-            @import="onImportPatterns"
-          />
-          <BeadCatalog
-            :seeded-beads="BEAD_CATALOG"
-            :custom-beads="customBeads"
-            @add="onAddBead"
-            @edit="onEditBead"
-            @remove="onRemoveBead"
-          />
+          <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      v-if="deleteAllConfirmOpen"
+      data-testid="delete-all-modal"
+      :title="t.deleteAll.confirmTitle"
+      :message="t.deleteAll.confirmMessage"
+      :confirm-label="t.deleteAll.confirmButton"
+      :cancel-label="t.deleteAll.cancelButton"
+      @confirm="onConfirmDeleteAll"
+      @cancel="onCancelDeleteAll"
+    />
   </div>
 </template>
 
@@ -894,6 +872,14 @@ function onRemoveBead(id: string) {
   justify-content: space-between;
   gap: 16px;
   background: var(--color-aqua-island);
+}
+
+/* Groups the current-Pattern summary and its Bead (ticket 37); grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is (ticket 35). */
+.app-shell__summary-group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .app-shell__summary {
@@ -942,31 +928,6 @@ function onRemoveBead(id: string) {
   border-radius: var(--radius-lg);
 }
 
-.tool-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* The default button is already wedgewood, so the selected tool reads as ink-on-paper instead. */
-.tool-picker__button--selected,
-.tool-picker__button--selected:hover:not(:disabled) {
-  background: var(--color-ink);
-  color: var(--color-paper);
-}
-
-.mirror-axes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.mirror-current {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
 .app-shell__right {
   flex: 1 1 auto;
   min-width: 0;
@@ -975,85 +936,27 @@ function onRemoveBead(id: string) {
   gap: 16px;
 }
 
+/* New Pattern (ticket 35) has moved out to the header, and zoom (ticket 35) onto the canvas box, so the Toolbox is this panel's only remaining content — it renders directly here rather than as a second row below a first one that's now gone. */
 .app-shell__above-canvas {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.app-shell__above-canvas-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
 /*
- * A strip of small cards, one per editing-tool group (ADR 0005), on a dot-grid notepad-paper texture. The dots are
- * a muted tint of --color-ink, derived with color-mix rather than a new token — a decorative texture, not a
- * palette addition (ticket 20's "no new tokens" constraint is about the header boxes, not this).
+ * Opens the bottom section (ADR 0004 amendment, ticket 39): a faint divider, muted the same way the tool-strip's
+ * dot-grid texture is (color-mix off --color-ink rather than a new token) so it separates the section without
+ * competing with the boxes' own borders below it. A block child of app-shell__right like app-shell__canvas above it,
+ * so it naturally spans just the canvas column's width, not the page (the app-shell__main panel sits outside this
+ * column, to the left).
  */
-.tool-strip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 10px;
-  padding: 8px;
-  background-color: var(--color-paper-solid);
-  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
-  background-size: 16px 16px;
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-
-/*
- * Grows (1 1 220px) rather than sitting at its own content width: five cards of very different natural widths
- * (a three-icon tool picker vs. a twelve-swatch palette) left most of a wide strip as bare dot-grid texture at
- * flex-shrink:0/flex-grow:0. Growing shares that leftover width back out across the row, and shrinking below
- * content width lets a card's own wrap rules (.mirror-axes, .mirror-current) fire and stack its buttons instead of
- * forcing the whole strip wider (Row progress opts out; see .row-progress). The 220px basis is only where wrapping to a new line kicks
- * in on a narrow window; min-width:0 lets a card shrink past its natural content width instead of overflowing.
- *
- * Every control here is now an icon button naming itself on hover, and the cards carry their heading as an
- * aria-label rather than visible text, so a card is one 44px row of icons — the whole reason the strip is lean
- * rather than tall. That matters because align-items:stretch matches every card in a row to the tallest one, so any
- * card that wraps to two rows drags its whole line with it (tickets 29/30). The Palette card, the one card whose
- * content genuinely needs several rows at a narrow width, is what sets that height.
- */
-.tool-strip__card {
-  flex: 1 1 220px;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 6px 12px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
-}
-
-/*
- * Row progress always stays one line: the toggles, the readout and the steps belong together, and wrapping split
- * the steps off under the readout (ticket 32). So this card doesn't shrink and wrap inside itself like the others.
- * It claims its whole content width, and when the strip runs short the strip moves the whole card to its next line.
- */
-.row-progress {
-  flex-basis: auto;
-  flex-wrap: nowrap;
-  min-width: max-content;
-}
-
-.row-progress__position {
+.app-shell__below-canvas-divider {
+  width: 100%;
+  height: 0;
   margin: 0;
-  white-space: nowrap;
-  /* Same-width digits, so stepping from row 9 to 10 doesn't nudge the steps sideways. */
-  font-variant-numeric: tabular-nums;
-}
-
-.row-progress__steps {
-  display: flex;
-  gap: 8px;
+  border: none;
+  /* Deliberately thinner than --border-width (3px, the boxes' own frame) so it reads as a faint separator, not another box edge. */
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
 }
 
 /*

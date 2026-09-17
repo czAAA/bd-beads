@@ -17,9 +17,12 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <section v-if="patterns.length > 0" class="pattern-list" data-testid="pattern-list">
+  <section class="pattern-list" data-testid="pattern-list">
     <h2>{{ t.patterns.heading }}</h2>
-    <ul>
+    <p v-if="patterns.length === 0" data-testid="pattern-list-empty">
+      {{ t.patterns.noSavedPatternsMessage }}
+    </p>
+    <ul v-else>
       <li
         v-for="pattern in patterns"
         :key="pattern.id"

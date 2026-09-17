@@ -4,7 +4,7 @@
 
 Confirming swaps the Pattern's Bead and recalculates: the Pattern's real-world size (mm) stays fixed, so columns/rows are recomputed from the new Bead's footprint using the same math ticket 01 uses at creation. Existing colors are rescaled onto the new grid by proportional nearest-cell resampling rather than cropped, approximating the same design at the new resolution. Row progress turns off with both direction pointers back at the first row, and Mirror axis counts reset to 0 in both directions, since both are defined against a grid that may no longer exist. The whole thing — bead swap, grid resize, color rescale, and the two resets — is one undo step. Available on Patterns with painted cells as well as empty ones.
 
-**Blocked by:** 36, 37, 38, 39
+**Blocked by:** None (can start immediately) — tickets 36-39 have already shipped, so the fixed 3-bead catalog and single-bead-per-pattern model this ticket needs are already in place
 
 **Status:** ready-for-agent
 
@@ -16,7 +16,7 @@ Confirming swaps the Pattern's Bead and recalculates: the Pattern's real-world s
 - One undo step restores the Pattern exactly as it was before the swap (grid, colors, Row progress, Mirror axes together).
 - Confirmation modal follows the same pattern as Delete all (ticket 42): in-app, Cancel/Escape cancels cleanly.
 - Available whether or not the Pattern has been painted on — the motivating case is exactly a Pattern someone already started.
-- Sequenced after tickets 36-39: needs the fixed 3-bead catalog and single-bead-per-pattern cleanup landed first, so this isn't built against the still-editable catalog or the per-color Bead override that those tickets remove.
+- Originally sequenced after tickets 36-39 (fixed 3-bead catalog, single-bead-per-pattern cleanup) — those have since shipped, so this is unblocked.
 
 - [ ] A "Replace bead" control appears next to wherever the Pattern's current Bead is shown
 - [ ] Clicking it offers the other built-in catalog Beads to switch to

@@ -1,6 +1,10 @@
 # Editing tools live above the canvas, not in the left main panel
 
-_Amended by ticket 35 (revised): the "New Pattern" / zoom-controls row this ADR describes as sitting above the tool strip is gone — both controls moved elsewhere ([ADR 0004](0004-three-panel-app-shell.md)'s amendment). The tool strip is now the entire above-canvas panel, not a second row below anything._
+_Amended by ticket 40: the second row is the **Toolbox** (CONTEXT.md), reorganized into five titled **Tool groups** — Tools, Colors, Edit, Mirror, Row progress — each laying its controls out left to right in a two-row grid (at most seven per row). "Strip of small cards" below is superseded by this; avoid "card"/"tool strip" wording going forward._
+
+_Amended by ticket 35: the "New Pattern" / zoom-controls row the Toolbox used to sit below is gone — New Pattern moved into the top bar (see [ADR 0004](0004-three-panel-app-shell.md)'s amendment) and zoom became a floating stack on the canvas box's own right edge, reversing ticket 18's choice to keep zoom off the box while keeping the rest of ticket 18 (the box's snug fit to the Pattern and its border on all four sides). The Toolbox is now the above-canvas panel's first and only content, not a second row below one._
+
+_Amended by ticket 51: zoom moves again, from the floating right-edge stack to a compact cluster fixed to the canvas box's top-right corner (see [ADR 0004](0004-three-panel-app-shell.md)'s amendment). The Toolbox remains the above-canvas panel's only content either way._
 
 [ADR 0004](0004-three-panel-app-shell.md) assigned painting/fill/mirror tools to the left main panel. Moved instead to the above-canvas panel, as a second row below the existing "New Pattern" / zoom-controls row: the tool picker, palette, undo, mirror controls, and row progress now all render there, styled as a strip of small cards on a dot-grid notepad-paper background. This keeps the editing tools next to what they act on (useful for the mirror axis line and hover preview, which relate directly to the grid) and gives them the horizontal room the redesigned mirror controls (two axis toggles plus two "mirror current" buttons) need.
 

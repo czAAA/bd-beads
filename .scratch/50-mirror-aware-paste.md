@@ -4,7 +4,7 @@
 
 Respects the existing `VITE_RICH_MIRROR` flag (ticket 44): with it off, Paste mirrors only across the single fixed center axis, matching how Paint already behaves in that state; with it on, Paste projects across every strip the current axis counts define.
 
-**Blocked by:** 44, 47
+**Blocked by:** None (can start immediately) — tickets 44 and 47 have already shipped, so the axis-count system and hover-preview geometry this ticket builds on are already in place
 
 **Status:** ready-for-agent
 
@@ -14,7 +14,7 @@ Respects the existing `VITE_RICH_MIRROR` flag (ticket 44): with it off, Paste mi
 - Preview and placement always match: the hover ghost shows exactly the copies a click will stamp, never more or less.
 - All stamps from one click (original plus every mirrored copy) count as a single undo step, consistent with Delete all (ticket 42) and mirrored Paint strokes.
 - Each mirrored copy independently keeps the "holes leave destination alone" rule and independent edge-clipping — copies don't interact with each other, only with the grid underneath them.
-- Blocked by 44 (needs the axis-count system Paste projects across) and 47 (reuses the hover-preview geometry "Mirror current" already established).
+- Originally blocked by 44 (axis-count system) and 47 (hover-preview geometry) — both have since shipped, so this is unblocked; it reuses their already-established infrastructure.
 
 - [ ] With Mirror off (all axis counts 0), Paste behaves exactly as today: one preview, one stamp
 - [ ] With `VITE_RICH_MIRROR` off and the single center axis on, hovering previews the block at both the aimed spot and its one mirrored counterpart; clicking stamps both, as one undo step
