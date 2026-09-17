@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import {
+  changedCells,
   createPattern,
+  deleteAll,
   fillArea,
+  mirrorCurrentForCounts,
   mirrorPattern,
   mirroredCells,
+  mirroredCellsForCounts,
   mostRecentlyUpdated,
   moveToRow,
   normalizePattern,
   paintCell,
   paintCells,
+  paintCellsForCounts,
   keepFinishedRows,
+  resolvePatternBead,
   restoreGrid,
+  restoreSnapshot,
   rowProgressPosition,
-  setColorBeadOverride,
   setRowProgressEnabled,
   summarizePattern,
   toggleRotated,
@@ -393,6 +399,324 @@ describe('mirroredCells', () => {
   })
 })
 
+describe('mirroredCellsForCounts (rich Mirror, ticket 44)', () => {
+  function grid4x4() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('agrees with the legacy mirroredCells for 0/1 counts', () => {
+    const pattern = grid4x4()
+    const position = { row: 1, column: 0 }
+
+    expect(mirroredCellsForCounts(pattern, position, { columns: 0, rows: 0 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: false, vertical: false }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 1, rows: 0 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: true, vertical: false }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 0, rows: 1 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: false, vertical: true }),
+    )
+    expect(mirroredCellsForCounts(pattern, position, { columns: 1, rows: 1 })).toEqual(
+      mirroredCells(pattern, position, { horizontal: true, vertical: true }),
+    )
+  })
+
+  it.each(['loom', 'peyote', 'brick'] as const)(
+    'mirrors by row/column index the same way regardless of Technique (%s)',
+    (technique) => {
+      // The strip math only ever looks at row/column indices, never at a Technique's rendering offsets, so every
+      // Technique's grid mirrors identically for the same dimensions (ticket 44: "Works for loom, peyote and brick
+      // stitch Patterns").
+      const pattern = createPattern({
+        technique,
+        beadId: cubeBead.id,
+        size: { width: 6, height: 6, unit: 'mm' },
+      })
+
+      expect(mirroredCellsForCounts(pattern, { row: 1, column: 0 }, { columns: 1, rows: 0 })).toEqual([
+        { row: 1, column: 0 },
+        { row: 1, column: 3 },
+      ])
+    },
+  )
+
+  it('covers every strip combination when both directions have more than 1 axis', () => {
+    // 6 columns, 2 column-axes -> 3 column strips [0,1] [2,3] [4,5]; 1 row-axis over 4 rows -> 2 row strips.
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 6, unit: 'mm' },
+    })
+    expect(pattern.columns).toBe(6)
+    expect(pattern.rows).toBe(4)
+
+    const cells = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 1 })
+
+    // 3 column counterparts x 2 row counterparts = 6 distinct cells.
+    expect(cells).toHaveLength(6)
+    expect(cells).toEqual(
+      expect.arrayContaining([
+        { row: 0, column: 0 },
+        { row: 3, column: 0 },
+      ]),
+    )
+  })
+
+  it('copy mode (ticket 45) repeats the same relative cell instead of mirror-imaging, in both directions', () => {
+    // 6 columns, 2 column-axes -> strips [0,1] [2,3] [4,5]; painting the first cell of strip0 copies onto the
+    // first cell of strips 1 and 2 (columns 2, 4) rather than mirroring (which would land on 3 and 4).
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 6, unit: 'mm' },
+    })
+
+    const mirrored = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 0 })
+    const copied = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 0 }, true)
+
+    expect(mirrored).toEqual([
+      { row: 0, column: 0 },
+      { row: 0, column: 3 },
+      { row: 0, column: 4 },
+    ])
+    expect(copied).toEqual([
+      { row: 0, column: 0 },
+      { row: 0, column: 2 },
+      { row: 0, column: 4 },
+    ])
+  })
+})
+
+describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
+  function makePattern(technique: Technique = 'loom') {
+    return createPattern({
+      technique,
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it.each(['loom', 'peyote', 'brick'] as const)('paints every counterpart regardless of Technique (%s)', (technique) => {
+    const pattern = makePattern(technique)
+
+    const painted = paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('paints every counterpart across every strip', () => {
+    const pattern = makePattern()
+
+    const painted = paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('returns the same Pattern instance, unchanged, when every touched cell is already that color', () => {
+    const pattern = makePattern()
+
+    expect(paintCellsForCounts(pattern, [{ row: 0, column: 0 }], null, { columns: 0, rows: 0 })).toBe(pattern)
+  })
+
+  it('paints the same relative cell in every strip, unflipped, in copy mode (ticket 45)', () => {
+    const pattern = makePattern() // 4 columns
+
+    const painted = paintCellsForCounts(
+      pattern,
+      [{ row: 0, column: 0 }],
+      '#e63746',
+      { columns: 1, rows: 0 },
+      true,
+    )
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![2]!.color).toBe('#e63746') // copy mode: same relative cell, not the mirrored (3)
+    expect(painted.grid[0]![3]!.color).toBeNull()
+  })
+
+  it('does not mutate the original pattern', () => {
+    const pattern = makePattern()
+
+    paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(pattern.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () => {
+  function makePattern() {
+    // 4 columns x 4 rows.
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('with axisCount 0, matches the legacy "bigger half" mirror exactly, including its tie-break for a blank grid', () => {
+    const blank = makePattern()
+
+    expect(mirrorCurrentForCounts(blank, 'columns', 0, false).grid).toEqual(
+      mirrorPattern(blank, { horizontal: true, vertical: false }).grid,
+    )
+  })
+
+  it('with axisCount 0, matches the legacy heuristic once one side is painted more', () => {
+    let painted = paintCell(makePattern(), 0, 0, '#e63746')
+    painted = paintCell(painted, 1, 0, '#e63746')
+
+    const legacy = mirrorPattern(painted, { horizontal: true, vertical: false })
+    const rich = mirrorCurrentForCounts(painted, 'columns', 0, false)
+
+    expect(rich.grid).toEqual(legacy.grid)
+  })
+
+  it('copies the fullest strip onto every other strip, mirrored by default, with N axes', () => {
+    // 6 columns, 1 row, 2 axes -> 3 strips [0,1] [2,3] [4,5]. Paint the middle strip.
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    expect(pattern.columns).toBe(6)
+    pattern = paintCell(pattern, 0, 2, '#e63746')
+    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
+
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#2f6fed',
+      '#e63746',
+      '#e63746',
+      '#2f6fed',
+      '#2f6fed',
+      '#e63746',
+    ])
+  })
+
+  it('copies unflipped (same relative cell in every strip) with copy mode on', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 2, '#e63746')
+    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, true)
+
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#e63746',
+      '#2f6fed',
+      '#e63746',
+      '#2f6fed',
+      '#e63746',
+      '#2f6fed',
+    ])
+  })
+
+  it('breaks a tie between equally-painted strips in favor of the lowest (leftmost/topmost) one', () => {
+    // 6 columns, 2 axes -> strips [0,1] [2,3] [4,5]. Strip0 and strip2 each get one painted cell; strip1 stays
+    // blank. Strip0 (index 0) should win the tie over strip2 (index 2).
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 1.5, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+    pattern = paintCell(pattern, 0, 4, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
+
+    // Strip0's own cells stay exactly as painted (it's the source); strip1/strip2 both take strip0's color.
+    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+      '#e63746',
+      null,
+      null,
+      '#e63746',
+      '#e63746',
+      null,
+    ])
+  })
+
+  it('acts along rows the same way it acts along columns', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 1.5, height: 9, unit: 'mm' },
+    })
+    expect(pattern.rows).toBe(6)
+    pattern = paintCell(pattern, 2, 0, '#e63746')
+    pattern = paintCell(pattern, 3, 0, '#2f6fed')
+
+    const synced = mirrorCurrentForCounts(pattern, 'rows', 2, false)
+
+    expect(synced.grid.map((row) => row[0]!.color)).toEqual([
+      '#2f6fed',
+      '#e63746',
+      '#e63746',
+      '#2f6fed',
+      '#2f6fed',
+      '#e63746',
+    ])
+  })
+
+  it('does not mutate the original pattern', () => {
+    let pattern = makePattern()
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+
+    mirrorCurrentForCounts(pattern, 'columns', 1, false)
+
+    expect(pattern.grid[0]![3]!.color).toBeNull()
+  })
+})
+
+describe('changedCells (rich Mirror "Mirror current" hover preview, ticket 47)', () => {
+  it('is empty for two identical grids', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+
+    expect(changedCells(pattern.grid, pattern.grid)).toEqual([])
+  })
+
+  it('lists exactly the cells whose color differs, and nothing else', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+    const after = paintCell(paintCell(pattern, 0, 0, '#e63746'), 2, 1, '#2f6fed')
+
+    expect(changedCells(pattern.grid, after.grid)).toEqual([
+      { row: 0, column: 0 },
+      { row: 2, column: 1 },
+    ])
+  })
+
+  it('is what mirrorCurrentForCounts + keepFinishedRows would actually change, matching the hover preview App.vue derives', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+
+    const result = mirrorCurrentForCounts(pattern, 'columns', 1, false)
+
+    expect(changedCells(pattern.grid, result.grid)).toEqual([{ row: 0, column: 3 }])
+  })
+})
+
 describe('paintCells', () => {
   function makePattern() {
     return createPattern({
@@ -745,40 +1069,135 @@ describe('keepFinishedRows', () => {
   })
 })
 
-describe('setColorBeadOverride', () => {
-  function pattern() {
-    return createPattern({
+describe('resolvePatternBead', () => {
+  it("finds the Pattern's Bead in the catalog", () => {
+    const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
+
+    expect(resolvePatternBead(pattern)).toEqual(cubeBead)
+  })
+
+  it('returns undefined for a Bead the catalog no longer has (a removed custom Bead, or an unrecognized imported one)', () => {
+    const pattern = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      beadId: 'no-such-bead',
+    }
+
+    expect(resolvePatternBead(pattern)).toBeUndefined()
+  })
+})
+
+describe('deleteAll', () => {
+  /** 10 columns x 20 rows, painted, rotated, with the overlay on, rows 0-2 finished and direction turned to columns. */
+  function paintedAndWoven() {
+    const painted = paintCells(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
+      [{ row: 0, column: 0 }, { row: 5, column: 5 }],
+      '#e63746',
+      { horizontal: false, vertical: false },
+    )
+    const rotated = toggleRotated(painted)
+    const turned = toggleRowDirection(rotated)
+    return setRowProgressEnabled(moveToRow(turned, 3), true)
   }
 
-  it('starts with no per-Pattern overrides', () => {
-    expect(pattern().colorBeadOverrides).toEqual({})
+  it('empties every cell', () => {
+    const cleared = deleteAll(paintedAndWoven())
+
+    expect(cleared.grid.every((row) => row.every((cell) => cell.color === null))).toBe(true)
   })
 
-  it('records an override for one palette color, leaving the others alone', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+  it('turns Row progress off and puts both direction pointers back at the first row', () => {
+    const cleared = deleteAll(paintedAndWoven())
 
-    expect(overridden.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
+    expect(cleared.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
-  it('clears an override when given no bead, falling back to the global default', () => {
-    const overridden = setColorBeadOverride(pattern(), 'red', 'miyuki-delica-11-0')
+  it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
+    const before = paintedAndWoven()
 
-    expect(setColorBeadOverride(overridden, 'red', null).colorBeadOverrides).toEqual({})
+    const cleared = deleteAll(before)
+
+    expect(cleared.name).toBe(before.name)
+    expect(cleared.technique).toBe(before.technique)
+    expect(cleared.beadId).toBe(before.beadId)
+    expect(cleared.widthMm).toBe(before.widthMm)
+    expect(cleared.heightMm).toBe(before.heightMm)
+    expect(cleared.columns).toBe(before.columns)
+    expect(cleared.rows).toBe(before.rows)
+    expect(cleared.rotated).toBe(before.rotated)
+  })
+
+  it('ignores the Row progress lock: clears a finished row along with the rest', () => {
+    const before = paintedAndWoven() // rows 0-2 are finished
+    expect(before.grid[0]![0]!.color).toBe('#e63746') // painted before the overlay locked it
+
+    const cleared = deleteAll(before)
+
+    expect(cleared.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('bumps updatedAt', () => {
+    const before = { ...paintedAndWoven(), updatedAt: 0 }
+
+    expect(deleteAll(before).updatedAt).toBeGreaterThan(0)
+  })
+
+  it('hands back the same instance, unchanged, when the Pattern is already blank with progress off', () => {
+    const fresh = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    expect(deleteAll(fresh)).toBe(fresh)
+  })
+})
+
+describe('restoreSnapshot', () => {
+  it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
+    const pattern = setRowProgressEnabled(moveToRow(paintCell(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      0,
+      0,
+      '#e63746',
+    ), 2), true)
+    const blankGrid = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    }).grid
+
+    const restored = restoreSnapshot(pattern, { grid: blankGrid })
+
+    expect(restored.grid).toBe(blankGrid)
+    expect(restored.rowProgress).toEqual(pattern.rowProgress)
+  })
+
+  it('restores the grid and Row progress together when the undo entry carries both', () => {
+    const before = setRowProgressEnabled(moveToRow(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      3,
+    ), true)
+    const cleared = deleteAll(before)
+
+    const restored = restoreSnapshot(cleared, { grid: before.grid, rowProgress: before.rowProgress })
+
+    expect(restored.grid).toBe(before.grid)
+    expect(restored.rowProgress).toEqual(before.rowProgress)
   })
 })
 
 describe('normalizePattern', () => {
-  it('backfills row progress, color overrides, and the rotated view flag on a Pattern saved before they existed', () => {
-    const {
-      rowProgress: _rowProgress,
-      colorBeadOverrides: _overrides,
-      rotated: _rotated,
-      ...legacy
-    } = createPattern({
+  it('backfills row progress and the rotated view flag on a Pattern saved before they existed', () => {
+    const { rowProgress: _rowProgress, rotated: _rotated, ...legacy } = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
@@ -792,8 +1211,22 @@ describe('normalizePattern', () => {
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(normalized.colorBeadOverrides).toEqual({})
     expect(normalized.rotated).toBe(false)
+  })
+
+  it('drops the color-to-bead override field a Pattern saved before ticket 36 may still carry (ADR 0007)', () => {
+    const legacy = {
+      ...createPattern({
+        technique: 'loom',
+        beadId: cubeBead.id,
+        size: { width: 15, height: 15, unit: 'mm' },
+      }),
+      colorBeadOverrides: { red: 'miyuki-delica-11-0' },
+    }
+
+    const normalized = normalizePattern(legacy as Pattern)
+
+    expect((normalized as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 
   it('keeps the row pointer of progress saved before row direction existed, running it along the grid rows', () => {

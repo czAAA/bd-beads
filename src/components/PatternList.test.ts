@@ -16,10 +16,12 @@ function makePattern() {
 }
 
 describe('PatternList', () => {
-  it('renders nothing when there are no saved patterns', () => {
+  it('still renders its box with an empty message when there are no saved patterns (ticket 39: always one of the three below-canvas boxes)', () => {
     const wrapper = mount(PatternList, { props: { patterns: [] } })
 
-    expect(wrapper.find('[data-testid="pattern-list"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pattern-list"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-item"]').exists()).toBe(false)
   })
 
   it('renders one entry per saved pattern with its summary', () => {

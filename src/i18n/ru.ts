@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor) reuse
-// that exact wording rather than retranslating.
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor, Delete all)
+// reuse that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
     title: 'bd-beads',
@@ -28,6 +28,8 @@ export const ru: Translations = {
     newPatternButton: 'Новая схема',
     removeButton: 'Удалить',
     currentLabel: 'Сейчас редактируется',
+    unknownBeadLabel: 'Неизвестная бисеринка',
+    noSavedPatternsMessage: 'Пока нет сохранённых схем',
   },
   canvas: {
     zoomInLabel: 'Увеличить',
@@ -39,21 +41,20 @@ export const ru: Translations = {
     canvasPlaceholder: 'Схема пока не открыта',
   },
   palette: {
-    heading: 'Палитра',
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
+    redoButton: 'Повторить',
     rotateButton: 'Повернуть',
+    customColorLabel: 'Свой цвет',
   },
   tools: {
-    heading: 'Инструмент',
     paintLabel: 'Кисть',
     fillLabel: 'Заливка',
     selectLabel: 'Выделение',
     copyButton: 'Копировать',
   },
   rowProgress: {
-    heading: 'Прогресс по рядам',
     enabledLabel: 'Показывать прогресс по рядам',
     directionButton: 'Повернуть направление рядов',
     positionLabel: 'Ряд',
@@ -63,14 +64,9 @@ export const ru: Translations = {
   quantities: {
     heading: 'Нужно бисера',
     noPatternMessage: 'Откройте схему, чтобы увидеть, сколько нужно бисера',
+    noColorsMessage: 'Пока ничего не закрашено',
     colorHeading: 'Цвет',
     countHeading: 'Бисеринок',
-    resolvedBeadHeading: 'Используемая бисеринка',
-    defaultBeadHeading: 'Бисеринка по умолчанию',
-    patternBeadHeading: 'В этой схеме',
-    unmappedOption: 'Без бисеринки',
-    useDefaultOption: 'Как по умолчанию',
-    unknownColorLabel: 'Нет в палитре',
   },
   transfer: {
     heading: 'Экспорт и импорт',
@@ -81,28 +77,32 @@ export const ru: Translations = {
     importErrorLabel: 'Не удалось импортировать этот файл',
   },
   mirror: {
-    heading: 'Отражение',
     horizontalLabel: 'Горизонталь',
     verticalLabel: 'Вертикаль',
     mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
     mirrorCurrentVerticalButton: 'Отразить текущее (по вертикали)',
+    leftRightLabel: 'Слева направо',
+    topBottomLabel: 'Сверху вниз',
+    decreaseLeftRightButton: 'Уменьшить число осей слева направо',
+    increaseLeftRightButton: 'Увеличить число осей слева направо',
+    decreaseTopBottomButton: 'Уменьшить число осей сверху вниз',
+    increaseTopBottomButton: 'Увеличить число осей сверху вниз',
+    copyModeLabel: 'Режим копирования',
   },
-  catalog: {
-    heading: 'Каталог бисера',
-    brandLabel: 'Бренд',
-    nameLabel: 'Название',
-    sizeLabel: 'Размер',
-    formFactorLabel: 'Форм-фактор',
-    formFactorCube: 'Куб',
-    formFactorRound: 'Круглый',
-    formFactorCylinder: 'Цилиндр',
-    colorLabel: 'Цвет',
-    widthLabel: 'Ширина (мм)',
-    heightLabel: 'Высота (мм)',
-    addButton: 'Добавить бисеринку',
-    editButton: 'Редактировать',
-    removeButton: 'Удалить',
-    saveButton: 'Сохранить',
+  toolbox: {
+    groups: {
+      tools: 'Инструменты',
+      colors: 'Цвета',
+      edit: 'Правка',
+      mirror: 'Отражение',
+      rowProgress: 'Прогресс по рядам',
+    },
+  },
+  deleteAll: {
+    button: 'Очистить всё',
+    confirmTitle: 'Очистить всё?',
+    confirmMessage: 'Все ячейки станут пустыми, а прогресс по рядам выключится. Это действие можно отменить.',
+    confirmButton: 'Очистить всё',
     cancelButton: 'Отмена',
   },
 }

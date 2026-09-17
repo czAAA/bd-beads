@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CELL_SIZE_PX, positionKey, rowHeightPx, rowOffsetPx, type PreviewCell } from '../domain/grid'
+import {
+  CELL_SIZE_PX,
+  gridHeightPx,
+  gridWidthPx,
+  positionKey,
+  rowHeightPx,
+  rowOffsetPx,
+  type GridPosition,
+  type PreviewCell,
+} from '../domain/grid'
+import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import { isWithinSelection, type Selection } from '../domain/selection'
 
@@ -21,7 +31,25 @@ const props = defineProps<{
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those cells (ticket 31). */
   selection?: Selection
+  /** Rich Mirror (ticket 44): axis lines are drawn whenever a direction's count is above 0; omitted (or both 0) draws nothing, which is what the flag-off path gets. Grid-space, same coordinate system as the cells themselves -- the surrounding rotate transform (PatternCanvas.vue) turns these along with everything else, so they never need to know about Pattern.rotated themselves. */
+  mirrorAxisCounts?: MirrorAxisCounts
+  /** Cells a hovered "Mirror current" button would overwrite (ticket 47): dimmed, distinct from previewCells' paint-color overlay -- this dims *existing* content rather than showing what would be painted over it. */
+  dimmedCells?: GridPosition[]
 }>()
+
+/** Where each column-splitting (today's "horizontal"/left-right-unrotated) axis line sits, in unscaled px from the grid's left edge. */
+const columnAxisLeftPx = computed(() =>
+  axisLinePositions(props.mirrorAxisCounts?.columns ?? 0).map(
+    (fraction) => fraction * gridWidthPx(props.pattern.technique, props.pattern.columns),
+  ),
+)
+
+/** Where each row-splitting (today's "vertical"/top-bottom-unrotated) axis line sits, in unscaled px from the grid's top edge. */
+const rowAxisTopPx = computed(() =>
+  axisLinePositions(props.mirrorAxisCounts?.rows ?? 0).map(
+    (fraction) => fraction * gridHeightPx(props.pattern.technique, props.pattern.rows),
+  ),
+)
 
 /** Position key -> that cell's own preview color, if it has one; a block pasted from the clipboard previews in its real colors rather than one flat color. */
 const previewColors = computed(
@@ -35,6 +63,12 @@ function isPreviewCell(row: number, column: number): boolean {
 /** The color to paint this cell's preview overlay in: the cell's own, falling back to the preview-wide color; none when neither is set, which is what the neutral outline stands in for. */
 function previewCellColor(row: number, column: number): string | undefined {
   return previewColors.value.get(positionKey({ row, column })) ?? props.previewColor ?? undefined
+}
+
+const dimmedCellKeys = computed(() => new Set((props.dimmedCells ?? []).map((cell) => positionKey(cell))))
+
+function isDimmedCell(row: number, column: number): boolean {
+  return dimmedCellKeys.value.has(positionKey({ row, column }))
 }
 
 function isSelectedCell(row: number, column: number): boolean {
@@ -137,6 +171,7 @@ function columnProgressClass(columnIndex: number): string | null {
             'pattern-grid__cell--preview-neutral':
               isPreviewCell(rowIndex, columnIndex) && !previewCellColor(rowIndex, columnIndex),
             'pattern-grid__cell--selected': isSelectedCell(rowIndex, columnIndex),
+            'pattern-grid__cell--dimmed': isDimmedCell(rowIndex, columnIndex),
           },
         ]"
         data-testid="grid-cell"
@@ -158,17 +193,61 @@ function columnProgressClass(columnIndex: number): string | null {
         />
       </div>
     </div>
+
+    <div
+      v-for="(leftPx, index) in columnAxisLeftPx"
+      :key="`mirror-axis-column-${index}`"
+      class="pattern-grid__mirror-axis pattern-grid__mirror-axis--column"
+      data-testid="mirror-axis-line-column"
+      :style="{ left: `${leftPx}px` }"
+    />
+    <div
+      v-for="(topPx, index) in rowAxisTopPx"
+      :key="`mirror-axis-row-${index}`"
+      class="pattern-grid__mirror-axis pattern-grid__mirror-axis--row"
+      data-testid="mirror-axis-line-row"
+      :style="{ top: `${topPx}px` }"
+    />
   </div>
 </template>
 
 <style scoped>
 .pattern-grid {
+  position: relative;
   display: inline-flex;
   flex-direction: column;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+/*
+ * Rich Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
+ * the active tool. Positioned in the same unrotated grid coordinate space as the cells themselves, so the rotate
+ * transform one level up (PatternCanvas.vue) turns them together with the grid rather than this component having to
+ * know about Pattern.rotated -- the same view-only-transform approach the rest of the app uses for rotation.
+ */
+.pattern-grid__mirror-axis {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background: var(--color-wedgewood);
+  opacity: 0.65;
+}
+
+.pattern-grid__mirror-axis--column {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+}
+
+.pattern-grid__mirror-axis--row {
+  left: 0;
+  right: 0;
+  height: 2px;
+  margin-top: -1px;
 }
 
 .pattern-grid__row {
@@ -214,6 +293,17 @@ function columnProgressClass(columnIndex: number): string | null {
 /* No Palette color selected: a neutral outline instead of a color preview. */
 .pattern-grid__cell--preview-neutral {
   box-shadow: inset 0 0 0 2px var(--color-ink);
+}
+
+/*
+ * Hovering a "Mirror current" button dims exactly the cells clicking it would overwrite (ticket 47) -- existing
+ * *content* stepping back, unlike pattern-grid__cell-preview above (which shows a color that isn't painted yet).
+ * Same opacity/grayscale language as a finished row (.pattern-grid__row--done) for "this is not what you're about
+ * to touch directly", but scoped per-cell since a Mirror current preview rarely lines up with whole rows.
+ */
+.pattern-grid__cell--dimmed {
+  opacity: 0.35;
+  filter: grayscale(1);
 }
 
 /* Rows already woven step back so the eye lands on what's left to do. */
