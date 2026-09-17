@@ -91,6 +91,14 @@ export interface Translations {
       rowProgress: string
     }
   }
+  /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
+  deleteAll: {
+    button: string
+    confirmTitle: string
+    confirmMessage: string
+    confirmButton: string
+    cancelButton: string
+  }
   catalog: {
     heading: string
     brandLabel: string

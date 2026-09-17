@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createPattern,
+  deleteAll,
   fillArea,
   mirrorPattern,
   mirroredCells,
@@ -11,6 +12,7 @@ import {
   paintCells,
   keepFinishedRows,
   restoreGrid,
+  restoreSnapshot,
   rowProgressPosition,
   setColorBeadOverride,
   setRowProgressEnabled,
@@ -742,6 +744,107 @@ describe('keepFinishedRows', () => {
     const edited = paintCells(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
 
     expect(keepFinishedRows(before, edited).grid[0]![0]!.color).toBe('#e63746')
+  })
+})
+
+describe('deleteAll', () => {
+  /** 10 columns x 20 rows, painted, rotated, with the overlay on, rows 0-2 finished and direction turned to columns. */
+  function paintedAndWoven() {
+    const painted = paintCells(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
+      [{ row: 0, column: 0 }, { row: 5, column: 5 }],
+      '#e63746',
+      { horizontal: false, vertical: false },
+    )
+    const rotated = toggleRotated(painted)
+    const turned = toggleRowDirection(rotated)
+    return setRowProgressEnabled(moveToRow(turned, 3), true)
+  }
+
+  it('empties every cell', () => {
+    const cleared = deleteAll(paintedAndWoven())
+
+    expect(cleared.grid.every((row) => row.every((cell) => cell.color === null))).toBe(true)
+  })
+
+  it('turns Row progress off and puts both direction pointers back at the first row', () => {
+    const cleared = deleteAll(paintedAndWoven())
+
+    expect(cleared.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
+  })
+
+  it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
+    const before = paintedAndWoven()
+
+    const cleared = deleteAll(before)
+
+    expect(cleared.name).toBe(before.name)
+    expect(cleared.technique).toBe(before.technique)
+    expect(cleared.beadId).toBe(before.beadId)
+    expect(cleared.widthMm).toBe(before.widthMm)
+    expect(cleared.heightMm).toBe(before.heightMm)
+    expect(cleared.columns).toBe(before.columns)
+    expect(cleared.rows).toBe(before.rows)
+    expect(cleared.rotated).toBe(before.rotated)
+  })
+
+  it('ignores the Row progress lock: clears a finished row along with the rest', () => {
+    const before = paintedAndWoven() // rows 0-2 are finished
+    expect(before.grid[0]![0]!.color).toBe('#e63746') // painted before the overlay locked it
+
+    const cleared = deleteAll(before)
+
+    expect(cleared.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('bumps updatedAt', () => {
+    const before = { ...paintedAndWoven(), updatedAt: 0 }
+
+    expect(deleteAll(before).updatedAt).toBeGreaterThan(0)
+  })
+
+  it('hands back the same instance, unchanged, when the Pattern is already blank with progress off', () => {
+    const fresh = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    expect(deleteAll(fresh)).toBe(fresh)
+  })
+})
+
+describe('restoreSnapshot', () => {
+  it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
+    const pattern = setRowProgressEnabled(moveToRow(paintCell(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      0,
+      0,
+      '#e63746',
+    ), 2), true)
+    const blankGrid = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    }).grid
+
+    const restored = restoreSnapshot(pattern, { grid: blankGrid })
+
+    expect(restored.grid).toBe(blankGrid)
+    expect(restored.rowProgress).toEqual(pattern.rowProgress)
+  })
+
+  it('restores the grid and Row progress together when the undo entry carries both', () => {
+    const before = setRowProgressEnabled(moveToRow(
+      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
+      3,
+    ), true)
+    const cleared = deleteAll(before)
+
+    const restored = restoreSnapshot(cleared, { grid: before.grid, rowProgress: before.rowProgress })
+
+    expect(restored.grid).toBe(before.grid)
+    expect(restored.rowProgress).toEqual(before.rowProgress)
   })
 })
 

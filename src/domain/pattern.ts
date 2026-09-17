@@ -77,6 +77,9 @@ function createEmptyGrid(columns: number, rows: number): Grid {
   )
 }
 
+/** Row progress exactly as a freshly created Pattern starts out — also what Delete all (ticket 42) resets it back to. */
+const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
+
 export function createPattern(input: CreatePatternInput): Pattern {
   // findBead checks custom beads (ticket 10) as well as the seeded catalog, so a Pattern can be created with either.
   const bead = findBead(input.beadId)
@@ -100,7 +103,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     columns,
     rows,
     grid: createEmptyGrid(columns, rows),
-    rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
     colorBeadOverrides: {},
     rotated: false,
     createdAt: now,
@@ -208,6 +211,56 @@ export function setColorBeadOverride(
 /** Swaps in a whole new grid (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
 export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
   return touch(pattern, { grid })
+}
+
+/**
+ * One entry on the editing-session undo stack (App.vue): the grid to restore, plus Row progress for the one command
+ * that resets that too alongside the grid — Delete all (ticket 42, see deleteAll) — so a single Undo brings both
+ * back together. Every other drawing command's entry carries only a grid, leaving Row progress as Undo finds it.
+ */
+export interface UndoEntry {
+  grid: Grid
+  rowProgress?: RowProgress
+}
+
+/** Restores a grid, and Row progress alongside it when the undo entry carries it (see UndoEntry) — otherwise the same as restoreGrid. */
+export function restoreSnapshot(pattern: Pattern, entry: UndoEntry): Pattern {
+  return touch(pattern, {
+    grid: entry.grid,
+    ...(entry.rowProgress ? { rowProgress: entry.rowProgress } : {}),
+  })
+}
+
+function isEmptyGrid(grid: Grid): boolean {
+  return grid.every((row) => row.every((cell) => cell.color === null))
+}
+
+/** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
+function isInitialRowProgress(rowProgress: RowProgress): boolean {
+  return (
+    rowProgress.enabled === INITIAL_ROW_PROGRESS.enabled &&
+    rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
+    rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
+    rowProgress.currentColumn === INITIAL_ROW_PROGRESS.currentColumn
+  )
+}
+
+/**
+ * Resets the open Pattern to how it was when first created at its size (CONTEXT.md's Delete all): every cell
+ * emptied and Row progress back to its just-created state — off, both pointers at the first row — while name, size,
+ * Technique, Bead and rotation stay exactly as they were. Unlike Paint/Fill/Paste/Mirror it ignores the Row
+ * progress lock (see isInFinishedRow): clearing progress is the point, so callers apply this directly rather than
+ * routing it through keepFinishedRows. Returns the same Pattern instance, unchanged, if it's already in that state.
+ */
+export function deleteAll(pattern: Pattern): Pattern {
+  if (isEmptyGrid(pattern.grid) && isInitialRowProgress(pattern.rowProgress)) {
+    return pattern
+  }
+
+  return touch(pattern, {
+    grid: createEmptyGrid(pattern.columns, pattern.rows),
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
+  })
 }
 
 /** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */
