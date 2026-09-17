@@ -432,3 +432,32 @@ describe('PatternGrid mirror axis lines (rich Mirror, ticket 44)', () => {
     },
   )
 })
+
+describe('PatternGrid Mirror current hover preview (ticket 47)', () => {
+  function pattern() {
+    return createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('dims exactly the given cells, and nothing else, when dimmedCells is set', () => {
+    const wrapper = mount(PatternGrid, {
+      props: { pattern: pattern(), dimmedCells: [{ row: 0, column: 1 }, { row: 2, column: 3 }] },
+    })
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    expect(cells[1]!.classes()).toContain('pattern-grid__cell--dimmed') // (0,1)
+    expect(cells[11]!.classes()).toContain('pattern-grid__cell--dimmed') // (2,3): row2*4cols+3
+    expect(cells[0]!.classes()).not.toContain('pattern-grid__cell--dimmed')
+  })
+
+  it('dims nothing when dimmedCells is omitted or empty', () => {
+    const withoutProp = mount(PatternGrid, { props: { pattern: pattern() } })
+    expect(withoutProp.findAll('.pattern-grid__cell--dimmed')).toHaveLength(0)
+
+    const withEmpty = mount(PatternGrid, { props: { pattern: pattern(), dimmedCells: [] } })
+    expect(withEmpty.findAll('.pattern-grid__cell--dimmed')).toHaveLength(0)
+  })
+})

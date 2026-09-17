@@ -7,6 +7,7 @@ import {
   positionKey,
   rowHeightPx,
   rowOffsetPx,
+  type GridPosition,
   type PreviewCell,
 } from '../domain/grid'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
@@ -32,6 +33,8 @@ const props = defineProps<{
   selection?: Selection
   /** Rich Mirror (ticket 44): axis lines are drawn whenever a direction's count is above 0; omitted (or both 0) draws nothing, which is what the flag-off path gets. Grid-space, same coordinate system as the cells themselves -- the surrounding rotate transform (PatternCanvas.vue) turns these along with everything else, so they never need to know about Pattern.rotated themselves. */
   mirrorAxisCounts?: MirrorAxisCounts
+  /** Cells a hovered "Mirror current" button would overwrite (ticket 47): dimmed, distinct from previewCells' paint-color overlay -- this dims *existing* content rather than showing what would be painted over it. */
+  dimmedCells?: GridPosition[]
 }>()
 
 /** Where each column-splitting (today's "horizontal"/left-right-unrotated) axis line sits, in unscaled px from the grid's left edge. */
@@ -60,6 +63,12 @@ function isPreviewCell(row: number, column: number): boolean {
 /** The color to paint this cell's preview overlay in: the cell's own, falling back to the preview-wide color; none when neither is set, which is what the neutral outline stands in for. */
 function previewCellColor(row: number, column: number): string | undefined {
   return previewColors.value.get(positionKey({ row, column })) ?? props.previewColor ?? undefined
+}
+
+const dimmedCellKeys = computed(() => new Set((props.dimmedCells ?? []).map((cell) => positionKey(cell))))
+
+function isDimmedCell(row: number, column: number): boolean {
+  return dimmedCellKeys.value.has(positionKey({ row, column }))
 }
 
 function isSelectedCell(row: number, column: number): boolean {
@@ -162,6 +171,7 @@ function columnProgressClass(columnIndex: number): string | null {
             'pattern-grid__cell--preview-neutral':
               isPreviewCell(rowIndex, columnIndex) && !previewCellColor(rowIndex, columnIndex),
             'pattern-grid__cell--selected': isSelectedCell(rowIndex, columnIndex),
+            'pattern-grid__cell--dimmed': isDimmedCell(rowIndex, columnIndex),
           },
         ]"
         data-testid="grid-cell"
@@ -283,6 +293,17 @@ function columnProgressClass(columnIndex: number): string | null {
 /* No Palette color selected: a neutral outline instead of a color preview. */
 .pattern-grid__cell--preview-neutral {
   box-shadow: inset 0 0 0 2px var(--color-ink);
+}
+
+/*
+ * Hovering a "Mirror current" button dims exactly the cells clicking it would overwrite (ticket 47) -- existing
+ * *content* stepping back, unlike pattern-grid__cell-preview above (which shows a color that isn't painted yet).
+ * Same opacity/grayscale language as a finished row (.pattern-grid__row--done) for "this is not what you're about
+ * to touch directly", but scoped per-cell since a Mirror current preview rarely lines up with whole rows.
+ */
+.pattern-grid__cell--dimmed {
+  opacity: 0.35;
+  filter: grayscale(1);
 }
 
 /* Rows already woven step back so the eye lands on what's left to do. */

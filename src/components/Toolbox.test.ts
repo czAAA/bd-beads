@@ -204,6 +204,16 @@ describe('Toolbox', () => {
     expect(wrapper.emitted('mirror-current')).toEqual([['horizontal']])
   })
 
+  it('emits mirror-current-hover with the axis on mouseenter and null on mouseleave (ticket 47)', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseleave')
+    await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('mouseenter')
+
+    expect(wrapper.emitted('mirror-current-hover')).toEqual([['horizontal'], [null], ['vertical']])
+  })
+
   it('emits toggle-row-progress with the next enabled state', async () => {
     const wrapper = mountToolbox()
 

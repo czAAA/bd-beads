@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { canvasContentHeightPx, canvasContentWidthPx, type PreviewCell } from '../domain/grid'
+import { canvasContentHeightPx, canvasContentWidthPx, type GridPosition, type PreviewCell } from '../domain/grid'
 import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
@@ -16,6 +16,8 @@ const props = defineProps<{
   selection?: Selection
   /** Rich Mirror (ticket 44): undefined/omitted with the flag off, so no axis lines ever render then. */
   mirrorAxisCounts?: MirrorAxisCounts
+  /** Rich Mirror's "Mirror current" hover preview (ticket 47): cells a hovered button would overwrite. */
+  dimmedCells?: GridPosition[]
 }>()
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -95,6 +97,7 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
               :preview-color="previewColor"
               :selection="selection"
               :mirror-axis-counts="mirrorAxisCounts"
+              :dimmed-cells="dimmedCells"
               @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
               @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
               @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
