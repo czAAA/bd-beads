@@ -144,3 +144,12 @@ button:disabled {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/*
+ * A text/numeric control (e.g. Row progress's "row X / Y" readout) inside a Tool group's .tool-group__grid
+ * (ticket 40): spans every column so it takes a full row of its own, and isn't counted toward the group's
+ * two-row/14-slot cap of normal controls.
+ */
+.tool-group__full-row {
+  grid-column: 1 / -1;
+}
