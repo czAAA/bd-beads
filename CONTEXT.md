@@ -15,13 +15,13 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 ## Key concepts
 
 - **Pattern**: a saveable, re-editable grid design (see Language below)
-- **Palette** and **Bead catalog**: kept as separate concepts, linked by a default color-to-bead mapping — see [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md)
+- **Palette** and **Bead catalog**: kept as separate concepts — a cell's color is not required to match a real Bead — see [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md), amended by [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md) (dropped the color-to-bead mapping; a Pattern now has exactly one Bead)
 - **Technique**: determines a Pattern's grid geometry (loom, peyote, brick stitch)
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
 - **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
-- **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the top bar and zoom floats on the canvas box itself, and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
+- **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the Saved Patterns box and zoom floats over the canvas box's top-right corner, and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
 
 ## Language
 
@@ -46,7 +46,7 @@ The weaving method used (loom, peyote, brick stitch, etc.), which determines the
 _Avoid_: stitch, weave type
 
 **Row progress** (RU: Прогресс по рядам):
-An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Delete all is the exception: it clears Row progress along with the grid. Saved together with the pattern.
+An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Delete all is the exception: it clears Row progress along with the grid. A Replace Bead that changes grid dimensions resets it the same way. Saved together with the pattern.
 _Avoid_: progress bar, completion state
 
 **Row direction** (RU: Направление рядов):
@@ -54,7 +54,7 @@ Which way the weaver's rows run across a Pattern's grid for Row progress: along 
 _Avoid_: progress orientation, row rotation
 
 **Mirror** (RU: Отражение):
-A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Fill, Paste and Delete all are not affected by Mirror. Axis counts and copy mode are an editing-session setting, reset when switching Patterns.
+A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Axis counts and copy mode are an editing-session setting, reset when switching Patterns or when a Replace Bead changes grid dimensions. Fill and Delete all are not affected by Mirror; Paste now is — see Paste.
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Toolbox** (RU: Панель инструментов):
@@ -69,24 +69,28 @@ _Avoid_: subbox, card, section, panel
 Resets the open Pattern to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Pattern's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
 _Avoid_: clear, reset, wipe
 
+**Replace Bead** (RU: Заменить бисер):
+Swaps a Pattern's single Bead for a different catalog entry, after a confirmation that names what will change. Real-world size stays fixed, so the grid (columns × rows) recalculates from the new Bead's footprint; existing colors are rescaled onto the new grid (proportional resampling) rather than cropped, approximating the same design at the new resolution. Row progress and Mirror axis counts reset, since both are tied to a grid that no longer matches. One undo step restores the Pattern exactly as it was before the swap. Works whether or not the Pattern has been painted on.
+_Avoid_: change bead, swap bead, resize pattern
+
 **Custom color** (RU: Свой цвет):
 A one-off paint color chosen freely with the color picker in the Colors group, outside the Palette. Not added to the Palette and not remembered: choosing another Custom color replaces it. Cells painted with it keep that color and show up in Bead quantities like any other color.
 _Avoid_: user color, extra palette color
 
 **Selection** (RU: Выделение):
-A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, switching or creating a Pattern, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, switching or creating a Pattern, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
 _Avoid_: region, highlighted area, selected block
 
 **Copy** (RU: Копировать):
-Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists. The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, the user cancelling out of Paste, or the Select tool being left — nothing outlives the marquee it came from).
+Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists, and immediately clears the Selection highlight (the clipboard stays armed; copying the same block again requires reselecting it). The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, the user cancelling out of Paste, or the Select tool being left — nothing outlives the marquee it came from).
 _Avoid_: duplicate, clone
 
 **Paste** (RU: Вставить):
-Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. Like Fill, Paste is unaffected by Mirror — it puts the block exactly where it was aimed. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again. The Selection survives that, so Copy can pick the same block straight back up; a second right-click or Escape clears the Selection too.
+Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. While a block is on the clipboard, hovering previews the block at every Mirror strip it would land in (not just under the pointer), and clicking stamps all of those copies at once as a single undo step, honouring copy mode; each copy keeps Paste's own hole rule independently. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again.
 _Avoid_: place, insert, apply
 
 **Undo** (RU: Отменить):
-Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, or a "Mirror current" — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Rotate, Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Pattern, and reset whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
+Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, a Replace Bead, or a "Mirror current" — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Rotate, Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Pattern, and reset whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
 _Avoid_: revert, step back
 
 **Redo** (RU: Повторить):
