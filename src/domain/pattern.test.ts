@@ -422,6 +422,25 @@ describe('mirroredCellsForCounts (rich Mirror, ticket 44)', () => {
     )
   })
 
+  it.each(['loom', 'peyote', 'brick'] as const)(
+    'mirrors by row/column index the same way regardless of Technique (%s)',
+    (technique) => {
+      // The strip math only ever looks at row/column indices, never at a Technique's rendering offsets, so every
+      // Technique's grid mirrors identically for the same dimensions (ticket 44: "Works for loom, peyote and brick
+      // stitch Patterns").
+      const pattern = createPattern({
+        technique,
+        beadId: cubeBead.id,
+        size: { width: 6, height: 6, unit: 'mm' },
+      })
+
+      expect(mirroredCellsForCounts(pattern, { row: 1, column: 0 }, { columns: 1, rows: 0 })).toEqual([
+        { row: 1, column: 0 },
+        { row: 1, column: 3 },
+      ])
+    },
+  )
+
   it('covers every strip combination when both directions have more than 1 axis', () => {
     // 6 columns, 2 column-axes -> 3 column strips [0,1] [2,3] [4,5]; 1 row-axis over 4 rows -> 2 row strips.
     const pattern = createPattern({
@@ -446,13 +465,22 @@ describe('mirroredCellsForCounts (rich Mirror, ticket 44)', () => {
 })
 
 describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
-  function makePattern() {
+  function makePattern(technique: Technique = 'loom') {
     return createPattern({
-      technique: 'loom',
+      technique,
       beadId: cubeBead.id,
       size: { width: 6, height: 6, unit: 'mm' },
     })
   }
+
+  it.each(['loom', 'peyote', 'brick'] as const)('paints every counterpart regardless of Technique (%s)', (technique) => {
+    const pattern = makePattern(technique)
+
+    const painted = paintCellsForCounts(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+  })
 
   it('paints every counterpart across every strip', () => {
     const pattern = makePattern()
