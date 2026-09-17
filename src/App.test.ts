@@ -1086,6 +1086,7 @@ describe('App tool strip icon buttons', () => {
     { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel },
     { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel },
     { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel },
+    { testId: 'delete-all-button', label: (t: typeof en) => t.deleteAll.button },
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
     { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
@@ -1681,6 +1682,190 @@ describe('App finished rows', () => {
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
     expect(colorAt(0, 4)).toBe('#e63746')
+  })
+})
+
+describe('App delete all', () => {
+  /** Presses and releases one cell without moving — a click. */
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  function loadedPattern() {
+    return loadPatterns()[0]!
+  }
+
+  it('opens a confirmation modal instead of clearing immediately', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // paint (0,0) red
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await click(wrapper, 0) // select (0,0)
+    await wrapper.find('[data-testid="copy-button"]').trigger('click') // copiedBlock now holds the red cell
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
+    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+
+    // If Escape had also run backOutOfSelect, it would have dropped the copied block (cancelPaste), and this next
+    // click would start a fresh Selection instead of stamping — leaving (1,1) uncolored.
+    await click(wrapper, 5) // (1,1)
+    expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
+  })
+
+  it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await click(wrapper, 25)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: false,
+      direction: 'rows',
+      currentRow: 0,
+      currentColumn: 0,
+    })
+  })
+
+  it('keeps name, size, Technique, Bead and rotation unchanged', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    const before = loadedPattern()
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    const after = loadedPattern()
+    expect(after.name).toBe(before.name)
+    expect(after.technique).toBe(before.technique)
+    expect(after.beadId).toBe(before.beadId)
+    expect(after.widthMm).toBe(before.widthMm)
+    expect(after.heightMm).toBe(before.heightMm)
+    expect(after.columns).toBe(before.columns)
+    expect(after.rows).toBe(before.rows)
+    expect(after.rotated).toBe(before.rotated)
+    expect(after.rotated).toBe(true)
+  })
+
+  it('ignores the Row progress lock, clearing beads in finished rows along with the rest', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 4) // (0,4), painted before it's locked
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished/locked
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid[0]![4]!.color).toBeNull()
+  })
+
+  it('is not affected by Mirror: confirming still empties every cell with mirror axes on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0)
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
+  })
+
+  it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 4) // (0,4)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // rows 0-1 finished
+
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadedPattern().grid[0]![4]!.color).toBe('#e63746')
+    expect(loadedPattern().rowProgress).toEqual({
+      enabled: true,
+      direction: 'rows',
+      currentRow: 2,
+      currentColumn: 0,
+    })
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+  })
+
+  it('does nothing when there is no open Pattern', () => {
+    const wrapper = mount(App)
+
+    expect(wrapper.find('[data-testid="delete-all-button"]').exists()).toBe(false)
+  })
+
+  it('translates the modal title, message and button labels with the interface language', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.text()).toContain(en.deleteAll.confirmTitle)
+    expect(wrapper.text()).toContain(en.deleteAll.confirmMessage)
+    expect(wrapper.find('[data-testid="confirm-modal-cancel"]').text()).toBe(en.deleteAll.cancelButton)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(en.deleteAll.confirmButton)
+
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    expect(wrapper.text()).toContain(ru.deleteAll.confirmTitle)
+    expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(ru.deleteAll.confirmButton)
   })
 })
 

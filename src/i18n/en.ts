@@ -86,6 +86,13 @@ export const en: Translations = {
       rowProgress: 'Row progress',
     },
   },
+  deleteAll: {
+    button: 'Delete all',
+    confirmTitle: 'Delete all?',
+    confirmMessage: 'Every cell will be emptied and Row progress turned off. This can be undone.',
+    confirmButton: 'Delete all',
+    cancelButton: 'Cancel',
+  },
   catalog: {
     heading: 'Bead catalog',
     brandLabel: 'Brand',
