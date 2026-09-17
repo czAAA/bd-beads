@@ -447,6 +447,24 @@ export function mirrorCurrentForCounts(
   return restoreGrid(pattern, grid)
 }
 
+/**
+ * Every cell whose color differs between two same-shaped grids -- what the "Mirror current" hover preview (ticket
+ * 47) dims: the cells a click would actually overwrite, and nothing else. Kept here as a plain domain function
+ * (rather than inline in App.vue) so it's unit-testable on its own and matches this file's other grid-diffing
+ * helpers, e.g. keepFinishedRows above and paintedCountsByStrip's own cell-by-cell walk.
+ */
+export function changedCells(before: Grid, after: Grid): GridPosition[] {
+  const changed: GridPosition[] = []
+  after.forEach((row, rowIndex) => {
+    row.forEach((cell, columnIndex) => {
+      if (cell.color !== before[rowIndex]![columnIndex]!.color) {
+        changed.push({ row: rowIndex, column: columnIndex })
+      }
+    })
+  })
+  return changed
+}
+
 function isInFirstHalf(index: number, dimension: number): boolean {
   return index < Math.ceil(dimension / 2)
 }

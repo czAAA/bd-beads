@@ -31,6 +31,7 @@ import {
   type Selection,
 } from './domain/selection'
 import {
+  changedCells,
   createPattern,
   fillArea,
   isInFinishedRow,
@@ -162,15 +163,7 @@ const mirrorCurrentDimmedCells = computed<GridPosition[]>(() => {
     mirrorCurrentForCounts(pattern, axis, mirrorAxisCounts.value[axis], mirrorCopyMode.value),
   )
 
-  const changed: GridPosition[] = []
-  result.grid.forEach((row, rowIndex) => {
-    row.forEach((cell, columnIndex) => {
-      if (cell.color !== pattern.grid[rowIndex]![columnIndex]!.color) {
-        changed.push({ row: rowIndex, column: columnIndex })
-      }
-    })
-  })
-  return changed
+  return changedCells(pattern.grid, result.grid)
 })
 
 function onMirrorCurrentHover(axis: 'horizontal' | 'vertical' | null) {
