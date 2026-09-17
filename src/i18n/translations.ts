@@ -42,6 +42,8 @@ export interface Translations {
     undoButton: string
     redoButton: string
     rotateButton: string
+    /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
+    customColorLabel: string
   }
   tools: {
     paintLabel: string

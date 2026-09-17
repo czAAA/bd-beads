@@ -68,6 +68,22 @@ describe('Toolbox', () => {
     expect(colorsGroup.find('[data-testid="palette-picker"]').exists()).toBe(true)
   })
 
+  it('puts the Custom color picker inside the Colors group, after the Palette picker', () => {
+    const wrapper = mountToolbox()
+
+    const colorsGroup = wrapper.findAll('.tool-group')[1]!
+    const inDocumentOrder = [
+      ...colorsGroup.element.querySelectorAll('[data-color-id], [data-testid="custom-color-input"]'),
+    ]
+    const lastPaletteIndex = inDocumentOrder.map((el) => el.hasAttribute('data-color-id')).lastIndexOf(true)
+    const customColorIndex = inDocumentOrder.findIndex(
+      (el) => el.getAttribute('data-testid') === 'custom-color-input',
+    )
+
+    expect(customColorIndex).toBeGreaterThan(-1)
+    expect(customColorIndex).toBeGreaterThan(lastPaletteIndex)
+  })
+
   it('puts Undo, Rotate, Copy and Redo inside the Edit group', () => {
     const wrapper = mountToolbox()
 
@@ -121,6 +137,29 @@ describe('Toolbox', () => {
     await wrapper.find('[data-color-id="blue"]').trigger('click')
 
     expect(wrapper.emitted('select-color')).toEqual([['blue']])
+  })
+
+  it('emits select-custom-color with the hex the native color input reports', async () => {
+    const wrapper = mountToolbox()
+
+    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    input.element.value = '#abcdef'
+    await input.trigger('input')
+
+    expect(wrapper.emitted('select-custom-color')).toEqual([['#abcdef']])
+  })
+
+  it('marks the Custom color slot selected only when selectedColorId is unset, mirroring PalettePicker', () => {
+    const withCustomActive = mountToolbox({ selectedColorId: undefined, customColor: '#abcdef' })
+    const withPaletteActive = mountToolbox({ selectedColorId: 'blue', customColor: '#abcdef' })
+
+    expect(
+      withCustomActive.find('[data-testid="custom-color-input"]').attributes('aria-pressed'),
+    ).toBe('true')
+    expect(
+      withPaletteActive.find('[data-testid="custom-color-input"]').attributes('aria-pressed'),
+    ).toBe('false')
+    expect(withPaletteActive.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('emits undo, toggle-rotate, copy and redo from the Edit group', async () => {

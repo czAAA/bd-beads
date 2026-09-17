@@ -42,6 +42,7 @@ export const en: Translations = {
     undoButton: 'Undo',
     redoButton: 'Redo',
     rotateButton: 'Rotate',
+    customColorLabel: 'Custom color',
   },
   tools: {
     paintLabel: 'Paint',
