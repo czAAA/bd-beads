@@ -203,3 +203,89 @@ describe("App's Mirror current across strips (ticket 46)", () => {
   // this ticket, e.g. "reflects the drawn half across the vertical axis with 'Mirror current'") are what prove the
   // flag-off path still uses the legacy bigger-half heuristic, untouched.
 })
+
+describe("App's Mirror current hover preview (ticket 47)", () => {
+  it('shows a center axis on hover even when that direction\'s count is 0', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-row"]')).toHaveLength(0) // the other direction is untouched
+  })
+
+  it('leaves an actual count above 0 alone (does not add a second axis)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+  })
+
+  it('dims exactly the cells the click would overwrite, and clears on mouseleave', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[9]!.trigger('mousedown') // (0, 9)
+    await wrapper.trigger('mouseup')
+
+    expect(cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))).toHaveLength(0)
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+
+    // Count 0 -> acts as 1 axis, 2 strips of 5. Column 9 is the (already-painted) source; only its counterpart,
+    // column 0, would actually change color when clicked.
+    const dimmed = cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))
+    expect(dimmed).toHaveLength(1)
+    expect(dimmed[0]!.attributes('data-testid')).toBe('grid-cell')
+    expect(cells.indexOf(dimmed[0]!)).toBe(0) // (0, 0)
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseleave')
+
+    expect(cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))).toHaveLength(0)
+  })
+
+  it('clicking produces exactly the change the dimmed preview showed', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[9]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+
+    const dimmedCount = cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed')).length
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+
+    expect(dimmedCount).toBe(1)
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('does not dim a cell a click could not actually change (Row progress lock)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // finishes row 0
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[19 * 10]!.trigger('mousedown') // (row 19, column 0) -- mirrors onto row 0
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('mouseenter')
+
+    // Row 0 would naively change under the raw sync, but it's finished/locked, so a click couldn't actually
+    // change it -- it must not be dimmed either.
+    expect(cells[0]!.classes()).not.toContain('pattern-grid__cell--dimmed')
+  })
+})
