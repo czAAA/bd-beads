@@ -534,6 +534,19 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
   })
 
+  it('hovering "Mirror current" shows no axis preview or dimming with the rich Mirror flag off (ticket 47)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
+
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+    expect(wrapper.findAll('[data-testid="mirror-axis-line-row"]')).toHaveLength(0)
+    expect(wrapper.findAll('.pattern-grid__cell--dimmed')).toHaveLength(0)
+  })
+
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')

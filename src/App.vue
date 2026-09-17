@@ -24,6 +24,7 @@ import {
   type Selection,
 } from './domain/selection'
 import {
+  changedCells,
   createPattern,
   deleteAll,
   fillArea,
@@ -118,6 +119,9 @@ const mirrorAxisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
  * Pattern switch, never saved. Unused while the flag is off. */
 const mirrorCopyMode = ref(false)
 
+/** Which "Mirror current" button, if any, the pointer is over right now (ticket 47) -- grid-space ('horizontal'/'vertical'), same as the buttons themselves; null when the pointer is off both. Purely a transient hover UI concern, not persisted. */
+const hoveredMirrorCurrentAxis = ref<'horizontal' | 'vertical' | null>(null)
+
 /** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
 const history = ref<History<UndoEntry>>(emptyHistory())
 
@@ -143,8 +147,46 @@ watch(activePatternId, () => {
   // decision); unused while the flag is off, but harmless to reset regardless.
   mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
   mirrorCopyMode.value = false
+  hoveredMirrorCurrentAxis.value = null
   deleteAllConfirmOpen.value = false
 })
+
+/**
+ * Rich Mirror's axis counts as actually shown on the canvas (ticket 47): while the pointer is over a "Mirror
+ * current" button, that direction's axes preview at their *effective* count -- the same count-acts-as-1 fallback
+ * mirrorCurrentForCounts itself uses (ticket 46 decision) -- without touching the stored count a click would still
+ * leave alone. The other direction, and everything once the pointer leaves, is exactly mirrorAxisCounts.
+ */
+const previewedMirrorAxisCounts = computed<MirrorAxisCounts>(() => {
+  const hovered = hoveredMirrorCurrentAxis.value
+  if (!hovered) {
+    return mirrorAxisCounts.value
+  }
+
+  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
+  return { ...mirrorAxisCounts.value, [axis]: mirrorAxisCounts.value[axis] || 1 }
+})
+
+/** Cells a hovered "Mirror current" button would overwrite, dimmed on the canvas (ticket 47) -- computed by asking mirrorCurrentForCounts what it *would* do and diffing that against what's there now, through the same Row progress lock a real click would go through, so a locked cell that couldn't actually change is never dimmed. */
+const mirrorCurrentDimmedCells = computed<GridPosition[]>(() => {
+  const pattern = activePattern.value
+  const hovered = hoveredMirrorCurrentAxis.value
+  if (!richMirror || !pattern || !hovered) {
+    return []
+  }
+
+  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
+  const result = keepFinishedRows(
+    pattern,
+    mirrorCurrentForCounts(pattern, axis, mirrorAxisCounts.value[axis], mirrorCopyMode.value),
+  )
+
+  return changedCells(pattern.grid, result.grid)
+})
+
+function onMirrorCurrentHover(axis: 'horizontal' | 'vertical' | null) {
+  hoveredMirrorCurrentAxis.value = axis
+}
 
 /**
  * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
@@ -733,6 +775,7 @@ function onImportPatterns(imported: Pattern[]) {
             @set-mirror-axis-count="onSetMirrorAxisCount"
             @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
             @mirror-current="onMirrorCurrent"
+            @mirror-current-hover="onMirrorCurrentHover"
             @toggle-row-progress="onToggleRowProgress"
             @toggle-row-direction="onToggleRowDirection"
             @move-row="onMoveRow"
@@ -748,7 +791,8 @@ function onImportPatterns(imported: Pattern[]) {
             :preview-cells="previewCells"
             :preview-color="previewColor"
             :selection="selection"
-            :mirror-axis-counts="richMirror ? mirrorAxisCounts : undefined"
+            :mirror-axis-counts="richMirror ? previewedMirrorAxisCounts : undefined"
+            :dimmed-cells="mirrorCurrentDimmedCells"
             @cell-primary-down="onCellPrimaryDown"
             @cell-primary-move="onCellPrimaryMove"
             @cell-secondary-down="onCellSecondaryDown"
