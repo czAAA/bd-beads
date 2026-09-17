@@ -306,3 +306,101 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     expect(cells[0]!.classes()).not.toContain('pattern-grid__cell--dimmed')
   })
 })
+
+describe('App Paste through rich Mirror (ticket 50)', () => {
+  /** A drag across the grid: press on one cell, move through the rest, release. */
+  async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[indices[0]!]!.trigger('mousedown')
+    for (const index of indices.slice(1)) {
+      await cells[index]!.trigger('mouseenter', { buttons: 1 })
+    }
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /** Presses and releases one cell without moving -- a click, which is what stamps a copied block. */
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /** A 10x20 Pattern with a single red cell at (0,0), copied and ready to Paste. */
+  async function patternWithCopiedDot(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // paint (0,0)
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+  }
+
+  it('with both axis counts at 0, stamps a single unmirrored copy exactly as before', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedDot(wrapper)
+
+    await click(wrapper, 21) // (2,1)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![1]!.color).toBe('#e63746')
+    expect(grid[2]![8]!.color).toBeNull() // nothing mirrors with both counts at 0
+  })
+
+  it('previews and stamps the block at every strip a left-right axis projects onto', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedDot(wrapper)
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis: column c <-> column 9-c
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('mouseenter') // hover (2,2)
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2) // aimed spot + its mirrored counterpart
+
+    await click(wrapper, 22) // (2,2)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[2]![7]!.color).toBe('#e63746') // column 2 <-> column 9-2
+  })
+
+  it('undoes every mirrored copy from one click together, as a single step', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedDot(wrapper)
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+
+    await click(wrapper, 22) // (2,2), mirrors onto (2,7)
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[2]![7]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBeNull()
+    expect(grid[2]![7]!.color).toBeNull()
+  })
+
+  it('honours copy mode: strips translate rather than mirror-image', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedDot(wrapper)
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis, 2 strips of 5
+    await wrapper.find('[data-testid="mirror-copy-mode"]').trigger('click')
+
+    await click(wrapper, 1) // (0,1)
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    // Copy mode translates to the same relative offset (1) into the next strip (starting at column 5) rather than
+    // mirror-imaging onto column 9-1=8.
+    expect(grid[0]![6]!.color).toBe('#e63746')
+    expect(grid[0]![8]!.color).toBeNull()
+  })
+
+  it('right-click still cancels the pending Paste while Mirror is projecting it', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedDot(wrapper)
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('mousedown', { button: 2 })
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+    await click(wrapper, 22)
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull() // the click landed as a fresh Selection, not a stamp
+  })
+})

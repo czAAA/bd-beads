@@ -27,8 +27,8 @@ import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/
 import { findPaletteColor } from './domain/palette'
 import {
   copySelection,
-  pasteBlock,
-  pastedCells,
+  mirroredPasteBlock,
+  mirroredPastedCells,
   selectionBetween,
   type CopiedBlock,
   type Selection,
@@ -233,6 +233,19 @@ function onMirrorCurrentHover(axis: 'horizontal' | 'vertical' | null) {
 }
 
 /**
+ * The axis counts (and copy mode) Paste live-mirrors by (ticket 50, reversing "Paste is unaffected by Mirror"): with
+ * the flag off, the legacy horizontal/vertical booleans translated into the same {columns, rows} shape mirroredCells'
+ * own flag-off single-axis behaviour is equivalent to (an axis count of 1 in the "on" direction, never copy mode) --
+ * else richMirror's own settings, exactly like Paint reads them.
+ */
+const pasteMirrorAxes = computed<MirrorAxisCounts>(() =>
+  richMirror
+    ? mirrorAxisCounts.value
+    : { columns: mirrorAxes.value.horizontal ? 1 : 0, rows: mirrorAxes.value.vertical ? 1 : 0 },
+)
+const pasteMirrorCopyMode = computed(() => (richMirror ? mirrorCopyMode.value : false))
+
+/**
  * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
  * touch plus its live-mirror counterpart(s) (tickets 22/23). Beads in rows already woven are left out, since nothing
  * lands on them (ticket 33).
@@ -248,7 +261,9 @@ const previewCells = computed<PreviewCell[]>(() => {
 function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
   if (activeTool.value === 'select') {
     // With nothing copied there's nothing a click would put down, so Select previews nothing.
-    return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hovered) : []
+    return copiedBlock.value
+      ? mirroredPastedCells(pattern, copiedBlock.value, hovered, pasteMirrorAxes.value, pasteMirrorCopyMode.value)
+      : []
   }
   if (activeTool.value !== 'paint') {
     // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
@@ -445,7 +460,10 @@ function endSelectPress() {
     return
   }
 
-  commitGridChange(pattern, pasteBlock(pattern, copiedBlock.value, press.anchor))
+  commitGridChange(
+    pattern,
+    mirroredPasteBlock(pattern, copiedBlock.value, press.anchor, pasteMirrorAxes.value, pasteMirrorCopyMode.value),
+  )
 }
 
 /**
