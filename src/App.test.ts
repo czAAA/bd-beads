@@ -8,6 +8,12 @@ import { loadPatterns, savePattern } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 
+// Rich Mirror (ticket 44) defaults on now that it's shipped (.env, VITE_RICH_MIRROR=true). This file is the
+// legacy-path regression suite -- it forces the flag off deliberately and explicitly, so it keeps proving the
+// original center-mirror toggles still work regardless of the ambient default, alongside
+// App.richMirror.test.ts's flag-on coverage.
+vi.mock('./featureFlags', () => ({ isRichMirrorEnabled: () => false }))
+
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
