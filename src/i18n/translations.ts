@@ -38,21 +38,21 @@ export interface Translations {
     canvasPlaceholder: string
   }
   palette: {
-    heading: string
     pickerLabel: string
     colorLabel: string
     undoButton: string
+    redoButton: string
     rotateButton: string
+    /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
+    customColorLabel: string
   }
   tools: {
-    heading: string
     paintLabel: string
     fillLabel: string
     selectLabel: string
     copyButton: string
   }
   rowProgress: {
-    heading: string
     enabledLabel: string
     directionButton: string
     positionLabel: string
@@ -75,11 +75,28 @@ export interface Translations {
     importErrorLabel: string
   }
   mirror: {
-    heading: string
     horizontalLabel: string
     verticalLabel: string
     mirrorCurrentHorizontalButton: string
     mirrorCurrentVerticalButton: string
+  }
+  /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
+  toolbox: {
+    groups: {
+      tools: string
+      colors: string
+      edit: string
+      mirror: string
+      rowProgress: string
+    }
+  }
+  /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
+  deleteAll: {
+    button: string
+    confirmTitle: string
+    confirmMessage: string
+    confirmButton: string
+    cancelButton: string
   }
   catalog: {
     heading: string
