@@ -399,3 +399,36 @@ describe('PatternGrid multi-color preview', () => {
     )
   })
 })
+
+describe('PatternGrid mirror axis lines (rich Mirror, ticket 44)', () => {
+  function pattern(technique: Pattern['technique'] = 'loom') {
+    return createPattern({
+      technique,
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+  }
+
+  it('draws no axis lines when mirrorAxisCounts is omitted or both counts are 0', () => {
+    const withoutProp = mount(PatternGrid, { props: { pattern: pattern() } })
+    expect(withoutProp.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+    expect(withoutProp.findAll('[data-testid="mirror-axis-line-row"]')).toHaveLength(0)
+
+    const withZeroCounts = mount(PatternGrid, {
+      props: { pattern: pattern(), mirrorAxisCounts: { columns: 0, rows: 0 } },
+    })
+    expect(withZeroCounts.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+  })
+
+  it.each(['loom', 'peyote', 'brick'] as const)(
+    'draws one line per axis regardless of Technique (%s)',
+    (technique) => {
+      const wrapper = mount(PatternGrid, {
+        props: { pattern: pattern(technique), mirrorAxisCounts: { columns: 2, rows: 1 } },
+      })
+
+      expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(2)
+      expect(wrapper.findAll('[data-testid="mirror-axis-line-row"]')).toHaveLength(1)
+    },
+  )
+})
