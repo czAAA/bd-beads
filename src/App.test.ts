@@ -162,7 +162,8 @@ describe('App', () => {
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
@@ -175,15 +176,18 @@ describe('App', () => {
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
-  it('moves editing tools into the above-canvas panel, as a second row below New Pattern/zoom, and empties the main panel', async () => {
+  it('moves editing tools into the above-canvas panel, empties the main panel, and leaves the Toolbox as that panel\'s only content (ticket 35 removed the New Pattern/zoom row above it)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
+    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     const toolbox = wrapper.find('[data-testid="toolbox"]')
 
     expect(mainPanel.text()).toBe('')
     expect(toolbox.exists()).toBe(true)
+    // No empty row is left where New Pattern/zoom used to sit: the Toolbox is the panel's first element child.
+    expect(aboveCanvas.element.firstElementChild).toBe(toolbox.element)
     for (const testId of [
       'tool-paint',
       'tool-fill',
@@ -818,18 +822,18 @@ describe('App', () => {
     }
   })
 
-  it('puts the zoom controls in the above-canvas panel rather than inside the canvas box', async () => {
+  it('floats the zoom controls inside the canvas box rather than the above-canvas panel (ticket 35)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
-    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
+    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(false)
     expect(
       wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(false)
+    ).toBe(true)
   })
 
-  it('zooms the open Pattern from the above-canvas controls', async () => {
+  it('zooms the open Pattern from the floating canvas-box controls', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
@@ -851,8 +855,24 @@ describe('App', () => {
 
     expect(titleBox.find('h1').text()).toBe('bd-beads')
     expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
+    expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="language-en"]').exists()).toBe(true)
+  })
+
+  it('renders New Pattern as the first item of the aqua summary box, before the summary and language switcher (ticket 35)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const summaryBox = wrapper.find('.app-shell__topbar-summary')
+    const children = Array.from(summaryBox.element.children)
+    const newPatternButton = wrapper.find('[data-testid="new-pattern-button"]').element
+    const summary = wrapper.find('[data-testid="current-pattern-summary"]').element
+    const languageSwitcher = wrapper.find('[data-testid="language-en"]').element.closest('div')!
+
+    expect(children.indexOf(newPatternButton)).toBe(0)
+    expect(children.indexOf(newPatternButton)).toBeLessThan(children.indexOf(summary))
+    expect(children.indexOf(summary)).toBeLessThan(children.indexOf(languageSwitcher))
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {

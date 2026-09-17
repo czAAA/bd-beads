@@ -8,7 +8,6 @@ import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
-import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
@@ -74,7 +73,7 @@ const colorBeadDefaults = ref(loadColorBeadDefaults())
 const canvasAreaEl = ref<HTMLElement | null>(null)
 const { width: canvasAreaWidth } = useElementSize(canvasAreaEl)
 
-const { zoom, zoomPercent, zoomIn, zoomOut, resetZoom } = usePatternZoom(
+const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
 )
@@ -512,6 +511,14 @@ function onRemoveBead(id: string) {
         <h1>{{ t.app.title }}</h1>
       </div>
       <div class="app-shell__topbar-summary">
+        <button
+          type="button"
+          data-testid="new-pattern-button"
+          :disabled="patterns.length === 0"
+          @click="onNewPattern"
+        >
+          {{ t.patterns.newPatternButton }}
+        </button>
         <p v-if="activePattern" class="app-shell__summary" data-testid="current-pattern-summary">
           {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
         </p>
@@ -533,24 +540,6 @@ function onRemoveBead(id: string) {
 
       <div class="app-shell__right">
         <div class="app-shell__above-canvas" data-testid="app-above-canvas">
-          <div class="app-shell__above-canvas-row">
-            <button
-              type="button"
-              data-testid="new-pattern-button"
-              :disabled="patterns.length === 0"
-              @click="onNewPattern"
-            >
-              {{ t.patterns.newPatternButton }}
-            </button>
-            <ZoomControls
-              v-if="activePattern"
-              :zoom-percent="zoomPercent"
-              @zoom-in="zoomIn"
-              @zoom-out="zoomOut"
-              @reset="resetZoom"
-            />
-          </div>
-
           <Toolbox
             v-if="activePattern"
             :pattern="activePattern"
@@ -586,6 +575,9 @@ function onRemoveBead(id: string) {
             @cell-secondary-move="onCellSecondaryMove"
             @cell-hover="onCellHover"
             @hover-end="onHoverEnd"
+            @zoom-in="zoomIn"
+            @zoom-out="zoomOut"
+            @zoom-reset="resetZoom"
           />
           <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
             {{ t.shell.canvasPlaceholder }}
@@ -663,7 +655,9 @@ function onRemoveBead(id: string) {
   background: var(--color-aqua-island);
 }
 
+/* Grows to fill whatever room New Pattern and the language switcher don't need, so those two stay pinned to the box's ends regardless of how long the summary text is. */
 .app-shell__summary {
+  flex: 1 1 auto;
   margin: 0;
   color: var(--color-aqua-island-ink);
 }
@@ -717,15 +711,10 @@ function onRemoveBead(id: string) {
   gap: 16px;
 }
 
+/* New Pattern (ticket 35) has moved out to the header, and zoom (ticket 35) onto the canvas box, so the Toolbox is this panel's only remaining content — it renders directly here rather than as a second row below a first one that's now gone. */
 .app-shell__above-canvas {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.app-shell__above-canvas-row {
-  display: flex;
-  align-items: center;
   gap: 16px;
 }
 
