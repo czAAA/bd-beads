@@ -12,6 +12,7 @@
 - **`beadStorage.ts` folds into `beads.ts`.** It stores nothing — it is one lookup over a constant catalog. Its tests merge into the catalog's.
 - **Two dead domain exports go, with their tests:** the unmirrored paste-block stamp (superseded by the Mirror-aware one in ticket 50) and the single-cell paint (superseded by the multi-cell one in ticket 24). Neither has a caller outside its own test.
 - **The unused `shell.mainPanelPlaceholder` key goes** from the Translations interface and both dictionaries.
+- **`@testing-library/jest-dom` goes.** `setupTests.ts` consists of a single import that registers roughly 30 custom matchers, and not one of them is used anywhere — all 663 tests assert with plain Vitest. The dependency, `setupTests.ts` itself, and the `setupFiles` entry in the Vite config all go together.
 - **`docs/agents/issue-tracker.md` is corrected** to describe the flat `.scratch/NN-slug.md` layout this repo actually uses, rather than the per-feature directory layout it currently documents and that practice abandoned.
 
 No behaviour change: same UI, same saved data, same exported files.
@@ -25,11 +26,13 @@ No behaviour change: same UI, same saved data, same exported files.
 - The entry pins the library as a flat set with no ordering, grouping or nesting. That is the valuable half: a future "can Patterns go in folders?" question should find the current answer written down. If the answer ever changes, amending one glossary line is the cheapest possible change.
 - This ticket is sequenced first so tickets 55 and 56 are written in the right vocabulary from their first line, instead of being renamed afterwards.
 - Renames and deletions only. No module is split or restructured beyond folding the one-function catalog lookup into the catalog itself.
+- The jest-dom removal was verified empirically rather than inferred: the full suite was run once with `setupFiles` omitted entirely and passed unchanged — 30 files, 663 tests. Nothing in the repo depends on the matchers it registers.
 
 - [ ] CONTEXT.md has the Pattern library entry, with its RU term and _Avoid_ list, among the other glossary entries
 - [ ] Bead quantities are computed by a module named for them, with every import updated
 - [ ] The Bead-catalog lookup lives in the catalog module; the storage-named module is gone and its tests merged
 - [ ] The unmirrored paste-block stamp and the single-cell paint exports are gone, along with their tests
 - [ ] `shell.mainPanelPlaceholder` is gone from the Translations interface and from both dictionaries
+- [ ] `@testing-library/jest-dom` is gone from package.json, `setupTests.ts` is deleted, and the Vite config no longer names a setup file — with the full suite still green
 - [ ] `docs/agents/issue-tracker.md` matches the flat numbered-file layout actually in use
 - [ ] `npm test` and `npm run typecheck` pass, and the app behaves exactly as before
