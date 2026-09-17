@@ -10,7 +10,7 @@ import {
   type SizeUnit,
   type Technique,
 } from './grid'
-import { mirrorCounterparts, type MirrorAxisCounts } from './mirror'
+import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
 
 export type { MirrorAxisCounts } from './mirror'
 
@@ -387,6 +387,61 @@ export function paintCellsForCounts(
     gridRow.map((cell, columnIndex) =>
       targets.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell,
     ),
+  )
+
+  return restoreGrid(pattern, grid)
+}
+
+/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) along `axis`, per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
+function paintedCountsByStrip(grid: Grid, dimension: number, axis: 'columns' | 'rows', axisCount: number): number[] {
+  const counts = new Array(axisCount + 1).fill(0)
+  grid.forEach((gridRow, rowIndex) => {
+    gridRow.forEach((cell, columnIndex) => {
+      if (cell.color === null) {
+        return
+      }
+      const index = axis === 'columns' ? columnIndex : rowIndex
+      counts[stripOf(index, dimension, axisCount)]++
+    })
+  })
+  return counts
+}
+
+/**
+ * Rich Mirror's "Mirror current" (ticket 46, replacing the legacy mirrorPattern's "bigger half" heuristic below --
+ * ADR 0006 amendment): a one-time sync of what's already painted along ONE direction, using that direction's own
+ * axis count -- the other direction is left alone entirely, matching how the legacy per-axis buttons always worked
+ * (see onMirrorCurrent in App.vue). The strip holding the most painted cells becomes the source and is copied onto
+ * every other strip, mirrored by default or unflipped in copy mode (see mirrorCounterpartInStrip). Ties go to the
+ * lowest strip index (leftmost/topmost), matching the legacy heuristic's tie-break for equal halves.
+ *
+ * A count of 0 acts as a single center axis (1 axis, 2 strips) purely for this one sync -- the stored axis count
+ * itself is untouched -- so the button always does something, the same way a count of 0 still lets the flag-off
+ * toggle mirror once turned on.
+ */
+export function mirrorCurrentForCounts(
+  pattern: Pattern,
+  axis: 'columns' | 'rows',
+  axisCount: number,
+  copyMode: boolean,
+): Pattern {
+  const dimension = axis === 'columns' ? pattern.columns : pattern.rows
+  const effectiveAxisCount = axisCount === 0 ? 1 : axisCount
+
+  const counts = paintedCountsByStrip(pattern.grid, dimension, axis, effectiveAxisCount)
+  const sourceStrip = counts.reduce((best, count, strip) => (count > counts[best]! ? strip : best), 0)
+
+  const grid = pattern.grid.map((gridRow, rowIndex) =>
+    gridRow.map((cell, columnIndex) => {
+      const index = axis === 'columns' ? columnIndex : rowIndex
+      if (stripOf(index, dimension, effectiveAxisCount) === sourceStrip) {
+        return cell
+      }
+
+      const sourceIndex = mirrorCounterpartInStrip(index, dimension, effectiveAxisCount, copyMode, sourceStrip)
+      const sourceCell = axis === 'columns' ? pattern.grid[rowIndex]![sourceIndex]! : pattern.grid[sourceIndex]![columnIndex]!
+      return { color: sourceCell.color }
+    }),
   )
 
   return restoreGrid(pattern, grid)

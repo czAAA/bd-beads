@@ -28,6 +28,76 @@ export function clampAxisCount(count: number, cellsAcross: number): number {
 }
 
 /**
+ * Shared coordinate space for every strip computation below: works in integer units doubled (for a cell's
+ * half-integer center) and scaled by the strip count (to clear the strip-width fraction when `dimension` doesn't
+ * divide evenly), so every intermediate value is an exact integer -- no float rounding drift for large grids.
+ */
+interface StripSpace {
+  strips: number
+  /** A cell index's position, once encoded via toPosition, advances by this much per index. */
+  scale: number
+  /** How much position one strip spans. */
+  stripWidth: number
+}
+
+function stripSpace(dimension: number, axisCount: number): StripSpace {
+  const strips = axisCount + 1
+  return { strips, scale: 2 * strips, stripWidth: 2 * dimension }
+}
+
+/** Encodes a cell index as its half-integer center's position in the doubled/scaled space above. */
+function toPosition(index: number, space: StripSpace): number {
+  return index * space.scale + space.strips
+}
+
+/** Decodes a position back to a cell index, clamped into the grid. */
+function toIndex(position: number, dimension: number, space: StripSpace): number {
+  return Math.min(dimension - 1, Math.max(0, Math.round((position - space.strips) / space.scale)))
+}
+
+/**
+ * Which strip (0-indexed, 0..axisCount) a position falls in. `Math.ceil(x / w) - 1` rather than the more obvious
+ * `Math.floor(x / w)`: the two agree everywhere except exactly on a strip boundary, where this rounds *down* to the
+ * lower/earlier strip -- matching legacy `mirrorPattern`'s tie-break for its center axis (an odd dimension's exact
+ * middle cell counts toward the first/larger half, not the second), which only ever arises at exactly this kind of
+ * boundary. See stripOf's own tests for the case this was chosen for.
+ */
+function stripAtPosition(position: number, space: StripSpace): number {
+  return Math.min(space.strips - 1, Math.max(0, Math.ceil(position / space.stripWidth) - 1))
+}
+
+/** A strip reads reversed (mirror-image) when it's an odd strip and we're not in copy mode; every strip reads forward (plain, A | A | A) in copy mode (ticket 45). */
+function isReversedStrip(strip: number, copyMode: boolean): boolean {
+  return !copyMode && strip % 2 === 1
+}
+
+/** A position's offset from `strip`'s own start, always read as if that strip were strip 0 (i.e. un-reversed) -- the common coordinate every strip's counterpart is found at the same offset in (see targetPositionIn). */
+function forwardLocal(position: number, strip: number, space: StripSpace, copyMode: boolean): number {
+  return isReversedStrip(strip, copyMode)
+    ? (strip + 1) * space.stripWidth - position
+    : position - strip * space.stripWidth
+}
+
+/** The inverse of forwardLocal: where a forward-local offset sits once read into `strip`. */
+function targetPositionIn(local: number, strip: number, space: StripSpace, copyMode: boolean): number {
+  return isReversedStrip(strip, copyMode) ? (strip + 1) * space.stripWidth - local : strip * space.stripWidth + local
+}
+
+/**
+ * Which strip (0-indexed, 0..axisCount) a cell belongs to, per the same "as equal as possible" split
+ * mirrorCounterparts uses.
+ */
+export function stripOf(index: number, dimension: number, axisCount: number): number {
+  const strips = axisCount + 1
+  if (strips <= 1 || dimension <= 0) {
+    return 0
+  }
+
+  const space = stripSpace(dimension, axisCount)
+  return stripAtPosition(toPosition(index, space), space)
+}
+
+/**
  * Every index (across every strip -- its own included) that `index` mirrors onto when `axisCount` axes split
  * `dimension` cells into axisCount + 1 strips "as equal as possible". With 0 axes that's just `[index]`. With 1
  * axis this is exactly today's single center-mirror reflection, `dimension - 1 - index`, which self-mirrors the
@@ -44,13 +114,10 @@ export function clampAxisCount(count: number, cellsAcross: number): number {
  * Deduped and sorted by strip order; a self-mirroring cell (e.g. the 1-axis odd-dimension case above) only appears
  * once.
  *
- * Implementation note: works in integer units doubled (for a cell's half-integer center) and scaled by the strip
- * count (to clear the strip-width fraction when `dimension` doesn't divide evenly), so every intermediate value is
- * an exact integer -- no float rounding drift for large grids. Where a dimension doesn't divide evenly among more
- * than 2 strips, a cell in a strip whose width has different parity from its target strip has no exact positional
- * counterpart there; that case rounds to the nearest cell (see mirror.test.ts) rather than left undefined, since
- * painting a slightly-off cell is harmless where painting nothing at all would silently break the "every strip"
- * guarantee.
+ * Implementation note: where a dimension doesn't divide evenly among more than 2 strips, a cell in a strip whose
+ * width has different parity from its target strip has no exact positional counterpart there; that case rounds to
+ * the nearest cell (see mirror.test.ts) rather than left undefined, since painting a slightly-off cell is harmless
+ * where painting nothing at all would silently break the "every strip" guarantee.
  */
 export function mirrorCounterparts(
   index: number,
@@ -63,26 +130,15 @@ export function mirrorCounterparts(
     return [index]
   }
 
-  const scale = 2 * strips
-  const stripWidth = 2 * dimension
-  const position = index * scale + strips
-
-  // A strip reads reversed (mirror-image) when it's an odd strip and we're not in copy mode; every strip reads
-  // forward (plain, A | A | A) in copy mode.
-  const isReversed = (strip: number) => !copyMode && strip % 2 === 1
-
-  const sourceStrip = Math.min(strips - 1, Math.floor(position / stripWidth))
-  const forwardLocal = isReversed(sourceStrip)
-    ? (sourceStrip + 1) * stripWidth - position
-    : position - sourceStrip * stripWidth
+  const space = stripSpace(dimension, axisCount)
+  const position = toPosition(index, space)
+  const sourceStrip = stripAtPosition(position, space)
+  const local = forwardLocal(position, sourceStrip, space, copyMode)
 
   const seen = new Set<number>()
   const results: number[] = []
   for (let strip = 0; strip < strips; strip++) {
-    const targetPosition = isReversed(strip)
-      ? (strip + 1) * stripWidth - forwardLocal
-      : strip * stripWidth + forwardLocal
-    const target = Math.min(dimension - 1, Math.max(0, Math.round((targetPosition - strips) / scale)))
+    const target = toIndex(targetPositionIn(local, strip, space, copyMode), dimension, space)
     if (!seen.has(target)) {
       seen.add(target)
       results.push(target)
@@ -91,17 +147,29 @@ export function mirrorCounterparts(
   return results
 }
 
-/** Which strip (0-indexed) a cell belongs to, per the same "as equal as possible" split mirrorCounterparts uses. */
-export function stripOf(index: number, dimension: number, axisCount: number): number {
+/**
+ * The one counterpart `index` has specifically in `sourceStrip` (0-indexed, 0..axisCount) -- what "Mirror current"
+ * (ticket 46) needs: copying one particular strip's content onto every *other* strip individually, rather than
+ * every strip's mutual counterpart of a single painted cell (see mirrorCounterparts, which this shares its strip
+ * math with). Meaningless, and returns `index` itself, when `sourceStrip` doesn't exist for this axisCount.
+ */
+export function mirrorCounterpartInStrip(
+  index: number,
+  dimension: number,
+  axisCount: number,
+  copyMode: boolean,
+  sourceStrip: number,
+): number {
   const strips = axisCount + 1
   if (strips <= 1 || dimension <= 0) {
-    return 0
+    return index
   }
 
-  const scale = 2 * strips
-  const stripWidth = 2 * dimension
-  const position = index * scale + strips
-  return Math.min(strips - 1, Math.floor(position / stripWidth))
+  const space = stripSpace(dimension, axisCount)
+  const position = toPosition(index, space)
+  const ownStrip = stripAtPosition(position, space)
+  const local = forwardLocal(position, ownStrip, space, copyMode)
+  return toIndex(targetPositionIn(local, sourceStrip, space, copyMode), dimension, space)
 }
 
 /**
