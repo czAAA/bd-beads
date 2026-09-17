@@ -270,6 +270,27 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
+  it('redoes an undone fill as a single action, re-repainting every cell it had touched', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await cells[0]!.trigger('mousedown')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#2f6fed')
+    expect(grid[0]![1]!.color).toBe('#2f6fed')
+  })
+
   it('rotating is a view-only flip: it turns the picture on screen but never touches the grid, dimensions, or technique', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
@@ -312,6 +333,22 @@ describe('App', () => {
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+  })
+
+  it('leaves redo untouched: Rotate is not a grid edit', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '4.5', '3')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
   it('mirroring is off by default, so painting touches only the clicked cell', async () => {
@@ -376,6 +413,22 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
   })
 
+  it('redoes a live-mirrored paint as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+  })
+
   it('leaves Fill unaffected by mirror state', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
@@ -424,6 +477,21 @@ describe('App', () => {
 
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('redoes "Mirror current" as a single action', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '3', '3')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
   })
 
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
@@ -475,6 +543,29 @@ describe('App', () => {
     expect(grid[0]![2]!.color).toBeNull()
     expect(
       wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled,
+    ).toBe(true)
+  })
+
+  it('redoes a whole dragged stroke as a single action, not one step per cell', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![2]!.color).toBe('#e63746')
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled,
     ).toBe(true)
   })
 
@@ -678,6 +769,105 @@ describe('App', () => {
     )
   })
 
+  it('redoes the most recently undone change, and repeated redo steps forward through every undone change in order', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+  })
+
+  it('alternates undo and redo freely without losing or duplicating a step', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
+    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to blue
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
+    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to empty
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to red
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
+  it('clears the redo history once a new edit actually changes the grid', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
+  it('switching or creating a Pattern clears the redo history, the same as the undo stack', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const firstId = loadPatterns()[0]!.id
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await createPatternViaForm(wrapper, '6', '6')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+
+    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+  })
+
   it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -813,7 +1003,7 @@ describe('App', () => {
       wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).classes(),
     ).toContain('button--danger')
 
-    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button']) {
+    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button', 'redo-button']) {
       expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
     }
   })
@@ -879,6 +1069,7 @@ describe('App tool strip icon buttons', () => {
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
     { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
+    { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton },
     { testId: 'mirror-horizontal', label: (t: typeof en) => t.mirror.horizontalLabel },
     { testId: 'mirror-vertical', label: (t: typeof en) => t.mirror.verticalLabel },
     { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
@@ -974,6 +1165,72 @@ describe('App tool strip icon buttons', () => {
     const mirrorButton = wrapper.find('[data-testid="mirror-horizontal"]')
     expect(mirrorButton.attributes('aria-pressed')).toBe('true')
     expect(mirrorButton.classes()).toContain('tool-picker__button--selected')
+  })
+})
+
+describe('App keyboard shortcuts', () => {
+  /** Dispatched on `target` (window by default, the way Escape is), bubbling up so App's window-level listener sees it. */
+  async function pressKey(init: KeyboardEventInit, target: EventTarget = window) {
+    target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }))
+    await flushPromises()
+  }
+
+  /** Paints (0,0) red, as a single undo step to exercise the shortcuts against. */
+  async function paintFirstCell(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+  }
+
+  it.each([{ ctrlKey: true }, { metaKey: true }])('undoes on %s+Z', async (modifier) => {
+    const wrapper = mount(App)
+    await paintFirstCell(wrapper)
+
+    await pressKey({ key: 'z', ...modifier })
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it.each([{ ctrlKey: true, shiftKey: true }, { metaKey: true, shiftKey: true }, { ctrlKey: true, key: 'y' }])(
+    'redoes on %s',
+    async (modifier) => {
+      const wrapper = mount(App)
+      await paintFirstCell(wrapper)
+      await pressKey({ key: 'z', ctrlKey: true })
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+      await pressKey({ key: modifier.key ?? 'z', ...modifier })
+
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    },
+  )
+
+  it.each(['catalog-name-input', 'catalog-width-input'])(
+    'does not undo or redo while typing in %s, a text or number form field',
+    async (testId) => {
+      const wrapper = mount(App)
+      await paintFirstCell(wrapper)
+      const field = wrapper.find(`[data-testid="${testId}"]`).element
+
+      await pressKey({ key: 'z', ctrlKey: true }, field)
+
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+      await wrapper.find('[data-testid="undo-button"]').trigger('click')
+      await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
+
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    },
+  )
+
+  it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
+    const wrapper = mount(App)
+    await paintFirstCell(wrapper)
+
+    await pressKey({ key: 'z', ctrlKey: true })
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
   })
 })
 
@@ -1182,6 +1439,24 @@ describe('App row progress', () => {
       await wrapper.find('[data-testid="rotate-button"]').trigger('click')
       expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
     })
+
+    it('leaves redo untouched: Row direction and moving the Row progress pointer are not grid edits', async () => {
+      const wrapper = mount(App)
+      await createPatternViaForm(wrapper, '15', '30')
+      await wrapper.find('[data-color-id="red"]').trigger('click')
+      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+      await wrapper.trigger('mouseup')
+      await wrapper.find('[data-testid="undo-button"]').trigger('click')
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+      await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+      await wrapper.find('[data-testid="redo-button"]').trigger('click')
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    })
   })
 })
 
@@ -1204,6 +1479,10 @@ describe('App finished rows', () => {
     return wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled
   }
 
+  function redoDisabled(wrapper: ReturnType<typeof mount>) {
+    return wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled
+  }
+
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
     const wrapper = mount(App)
     const cells = await withTwoRowsWoven(wrapper)
@@ -1213,6 +1492,23 @@ describe('App finished rows', () => {
 
     expect(colorAt(1, 4)).toBeNull()
     expect(undoDisabled(wrapper)).toBe(true)
+  })
+
+  it('an edit that lands only on a finished row changes nothing, so it leaves redo alone', async () => {
+    const wrapper = mount(App)
+    const cells = await withTwoRowsWoven(wrapper)
+    await cells[24]!.trigger('mousedown') // (2,4), the current row — a real edit
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(redoDisabled(wrapper)).toBe(false)
+
+    await cells[14]!.trigger('mousedown') // (1,4), a finished row — paints nothing
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBeNull()
+    expect(redoDisabled(wrapper)).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(colorAt(2, 4)).toBe('#e63746')
   })
 
   it('paints only the unfinished part of a drag that crosses into the current row', async () => {
@@ -1350,6 +1646,21 @@ describe('App finished rows', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
     expect(colorAt(0, 4)).toBeNull()
+  })
+
+  it('redoes in full too, even onto a row marked done since', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('mousedown') // (0,4)
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(colorAt(0, 4)).toBe('#e63746')
   })
 })
 
@@ -1658,6 +1969,39 @@ describe('App select, copy and paste', () => {
 
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
     expect(loadPatterns()[0]!.grid[3]![3]!.color).toBeNull()
+  })
+
+  it('redoes a stamped paste as a single action', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10) // (2,2)
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[3]![3]!.color).toBe('#2f6fed')
+  })
+
+  it('leaves redo untouched: Select, Copy, and cancelling a Paste are not grid edits', async () => {
+    const wrapper = mount(App)
+    await patternWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await click(wrapper, 10) // (2,2), a real edit
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+
+    await drag(wrapper, [0, 1]) // a fresh Selection
+    await wrapper.find('[data-testid="copy-button"]').trigger('click') // Copy
+    await pressEscape(wrapper) // cancels the pending Paste
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
   })
 
   it('can stamp the same block again at another position without copying again', async () => {
