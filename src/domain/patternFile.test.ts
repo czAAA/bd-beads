@@ -8,14 +8,7 @@ import {
   serializeLibrary,
   serializePattern,
 } from './patternFile'
-import {
-  createPattern,
-  moveToRow,
-  paintCell,
-  setColorBeadOverride,
-  setRowProgressEnabled,
-  type Pattern,
-} from './pattern'
+import { createPattern, moveToRow, paintCell, setRowProgressEnabled, type Pattern } from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -30,28 +23,24 @@ function makePattern(name = 'Fox'): Pattern {
 
 function decoratedPattern(): Pattern {
   const painted = paintCell(makePattern(), 2, 3, '#e63746')
-  const mapped = setColorBeadOverride(painted, 'red', 'miyuki-delica-11-0')
-  return moveToRow(setRowProgressEnabled(mapped, true), 4)
+  return moveToRow(setRowProgressEnabled(painted, true), 4)
 }
-
-const DEFAULTS = { red: 'toho-round-11-0' }
 
 describe('single-Pattern roundtrip', () => {
   it('restores an identical Pattern from its exported file', () => {
     const pattern = decoratedPattern()
 
-    expect(parsePatternsFile(serializePattern(pattern, {})).patterns).toEqual([pattern])
+    expect(parsePatternsFile(serializePattern(pattern)).patterns).toEqual([pattern])
   })
 
-  it('carries the grid, technique, bead, mappings and row progress through the file', () => {
+  it('carries the grid, technique, bead and row progress through the file', () => {
     const pattern = decoratedPattern()
 
-    const [restored] = parsePatternsFile(serializePattern(pattern, DEFAULTS)).patterns
+    const [restored] = parsePatternsFile(serializePattern(pattern)).patterns
 
     expect(restored!.technique).toBe('peyote')
     expect(restored!.beadId).toBe(cubeBead.id)
     expect(restored!.grid[2]![3]!.color).toBe('#e63746')
-    expect(restored!.colorBeadOverrides).toEqual({ red: 'miyuki-delica-11-0' })
     expect(restored!.rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
@@ -60,12 +49,11 @@ describe('single-Pattern roundtrip', () => {
     })
   })
 
-  it("carries the device's global color-to-bead defaults, which live outside any Pattern", () => {
-    const pattern = decoratedPattern()
+  it('does not write a color-to-bead mapping into the file (ADR 0007)', () => {
+    const file = JSON.parse(serializePattern(decoratedPattern()))
 
-    expect(parsePatternsFile(serializePattern(pattern, DEFAULTS)).colorBeadDefaults).toEqual(
-      DEFAULTS,
-    )
+    expect(file.colorBeadDefaults).toBeUndefined()
+    expect(file.patterns[0].colorBeadOverrides).toBeUndefined()
   })
 
   it('names the file after the Pattern, without characters a filesystem would choke on', () => {
@@ -83,10 +71,7 @@ describe('whole-library roundtrip', () => {
   it('restores every saved Pattern from one exported file', () => {
     const library = [decoratedPattern(), makePattern('Owl')]
 
-    expect(parsePatternsFile(serializeLibrary(library, DEFAULTS))).toEqual({
-      patterns: library,
-      colorBeadDefaults: DEFAULTS,
-    })
+    expect(parsePatternsFile(serializeLibrary(library))).toEqual({ patterns: library })
   })
 
   it('exports to one predictable file name', () => {
@@ -96,7 +81,7 @@ describe('whole-library roundtrip', () => {
   it('reads a single-Pattern file too, so one import button handles both', () => {
     const pattern = makePattern()
 
-    expect(parsePatternsFile(serializePattern(pattern, {})).patterns).toEqual([pattern])
+    expect(parsePatternsFile(serializePattern(pattern)).patterns).toEqual([pattern])
   })
 })
 
@@ -110,7 +95,7 @@ describe('parsePatternsFile', () => {
   })
 
   it('rejects a file written by a newer, unknown version of the format', () => {
-    const tampered = JSON.parse(serializePattern(makePattern(), {}))
+    const tampered = JSON.parse(serializePattern(makePattern()))
     tampered.version = 99
 
     expect(() => parsePatternsFile(JSON.stringify(tampered))).toThrow()
@@ -123,12 +108,10 @@ describe('parsePatternsFile', () => {
   })
 
   it('backfills fields a Pattern exported by an older version would be missing', () => {
-    const file = JSON.parse(serializePattern(makePattern(), {}))
+    const file = JSON.parse(serializePattern(makePattern()))
     delete file.patterns[0].rowProgress
-    delete file.patterns[0].colorBeadOverrides
-    delete file.colorBeadDefaults
 
-    const { patterns, colorBeadDefaults } = parsePatternsFile(JSON.stringify(file))
+    const { patterns } = parsePatternsFile(JSON.stringify(file))
 
     expect(patterns[0]!.rowProgress).toEqual({
       enabled: false,
@@ -136,8 +119,17 @@ describe('parsePatternsFile', () => {
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(patterns[0]!.colorBeadOverrides).toEqual({})
-    expect(colorBeadDefaults).toEqual({})
+  })
+
+  it('still imports a file exported before this change, ignoring its color-to-bead defaults and overrides', () => {
+    const file = JSON.parse(serializePattern(makePattern()))
+    file.colorBeadDefaults = { red: 'toho-cube-1.5mm' }
+    file.patterns[0].colorBeadOverrides = { red: 'miyuki-delica-11-0' }
+
+    const { patterns } = parsePatternsFile(JSON.stringify(file))
+
+    expect(patterns[0]!.id).toBe(file.patterns[0].id)
+    expect((patterns[0] as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 })
 
