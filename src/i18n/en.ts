@@ -40,6 +40,7 @@ export const en: Translations = {
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',
     undoButton: 'Undo',
+    redoButton: 'Redo',
     rotateButton: 'Rotate',
     customColorLabel: 'Custom color',
   },
@@ -59,14 +60,9 @@ export const en: Translations = {
   quantities: {
     heading: 'Beads needed',
     noPatternMessage: 'Open a Pattern to see how many beads it needs',
+    noColorsMessage: 'Nothing painted yet',
     colorHeading: 'Color',
     countHeading: 'Beads',
-    resolvedBeadHeading: 'Bead used',
-    defaultBeadHeading: 'Default bead',
-    patternBeadHeading: 'This Pattern',
-    unmappedOption: 'No bead',
-    useDefaultOption: 'Same as default',
-    unknownColorLabel: 'Not in the Palette',
   },
   transfer: {
     heading: 'Export and import',
@@ -90,6 +86,13 @@ export const en: Translations = {
       mirror: 'Mirror',
       rowProgress: 'Row progress',
     },
+  },
+  deleteAll: {
+    button: 'Delete all',
+    confirmTitle: 'Delete all?',
+    confirmMessage: 'Every cell will be emptied and Row progress turned off. This can be undone.',
+    confirmButton: 'Delete all',
+    cancelButton: 'Cancel',
   },
   catalog: {
     heading: 'Bead catalog',

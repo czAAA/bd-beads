@@ -1,5 +1,4 @@
 import { beadLabel } from './beads'
-import { withColorBeadMapping } from './beadMapping'
 import { findBead } from './beadStorage'
 import {
   computeGridDimensions,
@@ -36,9 +35,6 @@ export interface RowProgress {
   currentColumn: number
 }
 
-/** Palette color id -> Bead id, for the colors this Pattern maps differently from the global default (ticket 11). */
-export type ColorBeadOverrides = Record<string, string>
-
 export interface Pattern {
   id: string
   name: string
@@ -50,7 +46,6 @@ export interface Pattern {
   rows: number
   grid: Grid
   rowProgress: RowProgress
-  colorBeadOverrides: ColorBeadOverrides
   /**
    * A view-only orientation flip (ticket 28): true shows the Pattern turned 90°, like a rotated photo. Purely
    * cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only the on-screen (and
@@ -77,6 +72,9 @@ function createEmptyGrid(columns: number, rows: number): Grid {
   )
 }
 
+/** Row progress exactly as a freshly created Pattern starts out — also what Delete all (ticket 42) resets it back to. */
+const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
+
 export function createPattern(input: CreatePatternInput): Pattern {
   // findBead checks custom beads (ticket 10) as well as the seeded catalog, so a Pattern can be created with either.
   const bead = findBead(input.beadId)
@@ -100,8 +98,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     columns,
     rows,
     grid: createEmptyGrid(columns, rows),
-    rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
-    colorBeadOverrides: {},
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotated: false,
     createdAt: now,
     updatedAt: now,
@@ -117,22 +114,27 @@ function clampRow(row: number, rows: number): number {
   return Math.min(rows - 1, Math.max(0, row))
 }
 
+/** A Pattern as an older version of the app may have saved it: still carrying the color-to-bead override field ADR 0007/ticket 36 dropped. */
+type PatternWithLegacyFields = Pattern & { colorBeadOverrides?: unknown }
+
 /**
- * Fills in fields added after a Pattern was first saved, and re-clamps the row pointer, so a Pattern read back from
- * storage or an imported file is safe to use whatever version wrote it.
+ * Fills in fields added after a Pattern was first saved, re-clamps the row pointer, and drops the color-to-bead
+ * override field a Pattern saved before ticket 36 may still carry (ADR 0007: a Pattern now has one Bead, not a
+ * per-color mapping) — so a Pattern read back from storage or an imported file is safe to use whatever version wrote
+ * it, and never re-saves a field nothing reads anymore.
  */
 export function normalizePattern(pattern: Pattern): Pattern {
   const rowProgress = pattern.rowProgress ?? { enabled: false, currentRow: 0 }
+  const { colorBeadOverrides: _legacyOverrides, ...rest } = pattern as PatternWithLegacyFields
 
   return {
-    ...pattern,
+    ...rest,
     rowProgress: {
       ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
       currentRow: clampRow(rowProgress.currentRow, pattern.rows),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, pattern.columns),
     },
-    colorBeadOverrides: pattern.colorBeadOverrides ?? {},
     rotated: pattern.rotated ?? false,
   }
 }
@@ -194,20 +196,59 @@ export function moveToRow(pattern: Pattern, row: number): Pattern {
   })
 }
 
-/** Points one Palette color at a different Bead for this Pattern only; passing no bead drops back to the global default. */
-export function setColorBeadOverride(
-  pattern: Pattern,
-  colorId: string,
-  beadId: string | null,
-): Pattern {
-  return touch(pattern, {
-    colorBeadOverrides: withColorBeadMapping(pattern.colorBeadOverrides, colorId, beadId),
-  })
-}
-
 /** Swaps in a whole new grid (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
 export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
   return touch(pattern, { grid })
+}
+
+/**
+ * One entry on the editing-session undo stack (App.vue): the grid to restore, plus Row progress for the one command
+ * that resets that too alongside the grid — Delete all (ticket 42, see deleteAll) — so a single Undo brings both
+ * back together. Every other drawing command's entry carries only a grid, leaving Row progress as Undo finds it.
+ */
+export interface UndoEntry {
+  grid: Grid
+  rowProgress?: RowProgress
+}
+
+/** Restores a grid, and Row progress alongside it when the undo entry carries it (see UndoEntry) — otherwise the same as restoreGrid. */
+export function restoreSnapshot(pattern: Pattern, entry: UndoEntry): Pattern {
+  return touch(pattern, {
+    grid: entry.grid,
+    ...(entry.rowProgress ? { rowProgress: entry.rowProgress } : {}),
+  })
+}
+
+function isEmptyGrid(grid: Grid): boolean {
+  return grid.every((row) => row.every((cell) => cell.color === null))
+}
+
+/** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
+function isInitialRowProgress(rowProgress: RowProgress): boolean {
+  return (
+    rowProgress.enabled === INITIAL_ROW_PROGRESS.enabled &&
+    rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
+    rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
+    rowProgress.currentColumn === INITIAL_ROW_PROGRESS.currentColumn
+  )
+}
+
+/**
+ * Resets the open Pattern to how it was when first created at its size (CONTEXT.md's Delete all): every cell
+ * emptied and Row progress back to its just-created state — off, both pointers at the first row — while name, size,
+ * Technique, Bead and rotation stay exactly as they were. Unlike Paint/Fill/Paste/Mirror it ignores the Row
+ * progress lock (see isInFinishedRow): clearing progress is the point, so callers apply this directly rather than
+ * routing it through keepFinishedRows. Returns the same Pattern instance, unchanged, if it's already in that state.
+ */
+export function deleteAll(pattern: Pattern): Pattern {
+  if (isEmptyGrid(pattern.grid) && isInitialRowProgress(pattern.rowProgress)) {
+    return pattern
+  }
+
+  return touch(pattern, {
+    grid: createEmptyGrid(pattern.columns, pattern.rows),
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
+  })
 }
 
 /** Paints a single cell, returning a new Pattern (grid and updatedAt) rather than mutating the one passed in. */

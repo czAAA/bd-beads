@@ -40,6 +40,7 @@ export interface Translations {
     pickerLabel: string
     colorLabel: string
     undoButton: string
+    redoButton: string
     rotateButton: string
     /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
     customColorLabel: string
@@ -60,14 +61,9 @@ export interface Translations {
   quantities: {
     heading: string
     noPatternMessage: string
+    noColorsMessage: string
     colorHeading: string
     countHeading: string
-    resolvedBeadHeading: string
-    defaultBeadHeading: string
-    patternBeadHeading: string
-    unmappedOption: string
-    useDefaultOption: string
-    unknownColorLabel: string
   }
   transfer: {
     heading: string
@@ -92,6 +88,14 @@ export interface Translations {
       mirror: string
       rowProgress: string
     }
+  }
+  /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
+  deleteAll: {
+    button: string
+    confirmTitle: string
+    confirmMessage: string
+    confirmButton: string
+    cancelButton: string
   }
   catalog: {
     heading: string
