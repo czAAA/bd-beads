@@ -13,6 +13,7 @@ import { usePatternZoom } from './composables/usePatternZoom'
 import { beadLabel } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
+import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
 import { findPaletteColor } from './domain/palette'
 import {
   copySelection,
@@ -30,9 +31,11 @@ import {
   keepFinishedRows,
   mirrorPattern,
   mirroredCells,
+  mirroredCellsForCounts,
   mostRecentlyUpdated,
   moveToRow,
   paintCells,
+  paintCellsForCounts,
   resolvePatternBead,
   restoreSnapshot,
   rowProgressPosition,
@@ -48,6 +51,7 @@ import {
 } from './domain/pattern'
 import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
 import type { Tool } from './domain/tool'
+import { isRichMirrorEnabled } from './featureFlags'
 import { provideI18n } from './i18n/useI18n'
 
 const { t } = provideI18n()
@@ -96,6 +100,18 @@ const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 const customColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
+
+/**
+ * Rich Mirror (ticket 44): on only when VITE_RICH_MIRROR is exactly "true" at build time (see featureFlags.ts) --
+ * read once here, the app's one place, and threaded down as a prop rather than re-read per component. With it off,
+ * mirrorAxes above is what runs, unchanged from before this ticket.
+ */
+const richMirror = isRichMirrorEnabled()
+
+/** Per-direction axis counts for rich Mirror (ADR 0006 amendment): grid-space (see domain/mirror.ts), not saved
+ * with the Pattern, reset to 0 on a Pattern switch same as mirrorAxes' spirit. Unused, and left at 0, while the flag is off. */
+const mirrorAxisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
+
 /** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
 const history = ref<History<UndoEntry>>(emptyHistory())
 
@@ -117,6 +133,9 @@ watch(activePatternId, () => {
   history.value = emptyHistory()
   selection.value = undefined
   copiedBlock.value = undefined
+  // Rich Mirror's axis counts are an editing-session setting, reset on a Pattern switch (ticket 44 decision);
+  // unused while the flag is off, but harmless to reset regardless.
+  mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
   deleteAllConfirmOpen.value = false
 })
 
@@ -138,9 +157,13 @@ function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[
     // With nothing copied there's nothing a click would put down, so Select previews nothing.
     return copiedBlock.value ? pastedCells(pattern, copiedBlock.value, hovered) : []
   }
-  // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
-  const axes = activeTool.value === 'paint' ? mirrorAxes.value : { horizontal: false, vertical: false }
-  return mirroredCells(pattern, hovered, axes)
+  if (activeTool.value !== 'paint') {
+    // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
+    return [hovered]
+  }
+  return richMirror
+    ? mirroredCellsForCounts(pattern, hovered, mirrorAxisCounts.value)
+    : mirroredCells(pattern, hovered, mirrorAxes.value)
 }
 
 /** The current paint color's hex: the selected Palette color, or the Custom color when that's active instead; null when neither is. */
@@ -255,14 +278,18 @@ function endStroke() {
   strokeBaseline.value = null
 }
 
-/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes, leaving rows already woven alone (ticket 33). */
+/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxes (or, behind the rich-mirror flag, mirrorAxisCounts), leaving rows already woven alone (ticket 33). */
 function paintStrokeCell(row: number, column: number, color: string | null) {
   const pattern = activePattern.value
   if (!pattern) {
     return
   }
 
-  const updated = keepFinishedRows(pattern, paintCells(pattern, [{ row, column }], color, mirrorAxes.value))
+  const painted = richMirror
+    ? paintCellsForCounts(pattern, [{ row, column }], color, mirrorAxisCounts.value)
+    : paintCells(pattern, [{ row, column }], color, mirrorAxes.value)
+
+  const updated = keepFinishedRows(pattern, painted)
   if (updated !== pattern) {
     replaceActivePattern(updated)
   }
@@ -546,6 +573,21 @@ function onToggleMirrorAxis(axis: 'horizontal' | 'vertical') {
   mirrorAxes.value[axis] = !mirrorAxes.value[axis]
 }
 
+/**
+ * Sets one direction's rich-Mirror axis count (ticket 44), clamped to what the open Pattern's current size allows --
+ * Toolbox.vue works out which grid-space field ('columns'/'rows') a screen direction maps to, since that's the
+ * piece that swaps under rotation (see ToolGroup usage in Toolbox.vue).
+ */
+function onSetMirrorAxisCount(axis: 'columns' | 'rows', count: number) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const cellsAcross = axis === 'columns' ? pattern.columns : pattern.rows
+  mirrorAxisCounts.value = { ...mirrorAxisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
+}
+
 /** One-time reflect of whatever's currently painted across a single axis, via the old "bigger half" heuristic — for content drawn before that axis's live mirroring was turned on (ADR 0006). */
 function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
   const pattern = activePattern.value
@@ -646,6 +688,8 @@ function onImportPatterns(imported: Pattern[]) {
             :can-redo="canRedo(history)"
             :can-copy="!!selection"
             :mirror-axes="mirrorAxes"
+            :rich-mirror="richMirror"
+            :mirror-axis-counts="mirrorAxisCounts"
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
@@ -654,6 +698,7 @@ function onImportPatterns(imported: Pattern[]) {
             @toggle-rotate="onToggleRotate"
             @copy="onCopy"
             @toggle-mirror-axis="onToggleMirrorAxis"
+            @set-mirror-axis-count="onSetMirrorAxisCount"
             @mirror-current="onMirrorCurrent"
             @toggle-row-progress="onToggleRowProgress"
             @toggle-row-direction="onToggleRowDirection"
@@ -670,6 +715,7 @@ function onImportPatterns(imported: Pattern[]) {
             :preview-cells="previewCells"
             :preview-color="previewColor"
             :selection="selection"
+            :mirror-axis-counts="richMirror ? mirrorAxisCounts : undefined"
             @cell-primary-down="onCellPrimaryDown"
             @cell-primary-move="onCellPrimaryMove"
             @cell-secondary-down="onCellSecondaryDown"

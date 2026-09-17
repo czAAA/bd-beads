@@ -25,6 +25,8 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       canRedo: false,
       canCopy: false,
       mirrorAxes: { horizontal: false, vertical: false },
+      richMirror: false,
+      mirrorAxisCounts: { columns: 0, rows: 0 },
       ...overrides,
     },
   })
@@ -256,5 +258,83 @@ describe('Toolbox', () => {
     const wrapper = mountToolbox()
 
     expect(wrapper.vm.collapseExpandedGroup()).toBe(false)
+  })
+})
+
+describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
+  it('shows the Left–right/Top–bottom counters instead of the on/off toggles', () => {
+    const wrapper = mountToolbox({ richMirror: true })
+
+    expect(wrapper.find('[data-testid="mirror-left-right"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mirror-top-bottom"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mirror-horizontal"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="mirror-vertical"]').exists()).toBe(false)
+  })
+
+  it('still shows the Mirror current buttons, unchanged (ticket 44 leaves them for ticket 46)', () => {
+    const wrapper = mountToolbox({ richMirror: true })
+
+    expect(wrapper.find('[data-testid="mirror-current-horizontal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="mirror-current-vertical"]').exists()).toBe(true)
+  })
+
+  it('gives each counter its own full row, not counted among the icon controls', () => {
+    const wrapper = mountToolbox({ richMirror: true })
+
+    expect(wrapper.find('[data-testid="mirror-left-right"]').classes()).toContain('tool-group__full-row')
+    expect(wrapper.find('[data-testid="mirror-top-bottom"]').classes()).toContain('tool-group__full-row')
+  })
+
+  it('shows each counter its current value', () => {
+    const wrapper = mountToolbox({
+      richMirror: true,
+      mirrorAxisCounts: { columns: 2, rows: 1 },
+    })
+
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('2')
+    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('1')
+  })
+
+  it('not rotated: Left–right drives columns, Top–bottom drives rows', async () => {
+    const wrapper = mountToolbox({ richMirror: true, mirrorAxisCounts: { columns: 1, rows: 0 } })
+
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
+
+    expect(wrapper.emitted('set-mirror-axis-count')).toEqual([
+      ['columns', 2],
+      ['rows', 1],
+    ])
+  })
+
+  it('rotated: swaps which grid axis Left–right/Top–bottom each drive, view-only (never a data transpose)', async () => {
+    const pattern = makePattern()
+    pattern.rotated = true
+    const wrapper = mountToolbox({ pattern, richMirror: true, mirrorAxisCounts: { columns: 3, rows: 1 } })
+
+    // Left–right now reads/writes rows; Top–bottom now reads/writes columns.
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
+    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('3')
+
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    expect(wrapper.emitted('set-mirror-axis-count')).toEqual([['rows', 2]])
+  })
+
+  it('disables decrease at 0 and increase at cells - 1', () => {
+    const pattern = makePattern() // 15mm/1.5mm cube -> 10 columns, 30mm/1.5mm -> 20 rows
+    expect(pattern.columns).toBe(10)
+
+    const wrapper = mountToolbox({
+      pattern,
+      richMirror: true,
+      mirrorAxisCounts: { columns: 0, rows: pattern.rows - 1 },
+    })
+
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="mirror-left-right-decrease"]').element.disabled,
+    ).toBe(true)
+    expect(
+      wrapper.find<HTMLButtonElement>('[data-testid="mirror-top-bottom-increase"]').element.disabled,
+    ).toBe(true)
   })
 })
