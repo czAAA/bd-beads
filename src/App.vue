@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import BeadCatalog from './components/BeadCatalog.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
@@ -11,8 +10,7 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
-import { BEAD_CATALOG, beadLabel, type Bead } from './domain/beads'
-import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
+import { beadLabel } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
 import { findPaletteColor } from './domain/palette'
@@ -74,9 +72,6 @@ const activeBeadLabel = computed(() => {
   const bead = resolvePatternBead(pattern)
   return bead ? beadLabel(bead) : t.value.patterns.unknownBeadLabel
 })
-
-const customBeads = ref<Bead[]>(loadCustomBeads())
-const beads = computed(() => [...BEAD_CATALOG, ...customBeads.value])
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
 const canvasAreaEl = ref<HTMLElement | null>(null)
@@ -597,21 +592,6 @@ function onImportPatterns(imported: Pattern[]) {
   // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
   activePatternId.value ??= mostRecentlyUpdated(imported)?.id
 }
-
-function onAddBead(bead: Bead) {
-  saveCustomBead(bead)
-  customBeads.value.push(bead)
-}
-
-function onEditBead(bead: Bead) {
-  saveCustomBead(bead)
-  customBeads.value = customBeads.value.map((existing) => (existing.id === bead.id ? bead : existing))
-}
-
-function onRemoveBead(id: string) {
-  removeCustomBead(id)
-  customBeads.value = customBeads.value.filter((bead) => bead.id !== id)
-}
 </script>
 
 <template>
@@ -649,7 +629,7 @@ function onRemoveBead(id: string) {
       >
         <template v-if="!activePattern">
           <h2>{{ t.patterns.newPatternButton }}</h2>
-          <NewPatternForm :beads="beads" @submit="onCreatePattern" />
+          <NewPatternForm @submit="onCreatePattern" />
         </template>
       </aside>
 
@@ -714,13 +694,6 @@ function onRemoveBead(id: string) {
           />
           <BeadQuantities :pattern="activePattern" />
           <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
-          <BeadCatalog
-            :seeded-beads="BEAD_CATALOG"
-            :custom-beads="customBeads"
-            @add="onAddBead"
-            @edit="onEditBead"
-            @remove="onRemoveBead"
-          />
         </div>
       </div>
     </div>

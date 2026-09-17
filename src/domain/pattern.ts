@@ -76,7 +76,7 @@ function createEmptyGrid(columns: number, rows: number): Grid {
 const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 export function createPattern(input: CreatePatternInput): Pattern {
-  // findBead checks custom beads (ticket 10) as well as the seeded catalog, so a Pattern can be created with either.
+  // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
   const bead = findBead(input.beadId)
   if (!bead) {
     throw new Error(`Unknown bead id: ${input.beadId}`)
