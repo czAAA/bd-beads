@@ -31,6 +31,7 @@ const emit = defineEmits<{
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
+  'mirror-current-hover': [axis: 'horizontal' | 'vertical' | null]
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
   'move-row': [delta: number]
@@ -280,6 +281,8 @@ const topBottomMax = computed(() =>
         :title="t.mirror.mirrorCurrentHorizontalButton"
         :aria-label="t.mirror.mirrorCurrentHorizontalButton"
         @click="emit('mirror-current', 'horizontal')"
+        @mouseenter="emit('mirror-current-hover', 'horizontal')"
+        @mouseleave="emit('mirror-current-hover', null)"
       >
         <!-- Two shapes facing away from a dashed vertical axis: the left-right flip this button performs. -->
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -295,6 +298,8 @@ const topBottomMax = computed(() =>
         :title="t.mirror.mirrorCurrentVerticalButton"
         :aria-label="t.mirror.mirrorCurrentVerticalButton"
         @click="emit('mirror-current', 'vertical')"
+        @mouseenter="emit('mirror-current-hover', 'vertical')"
+        @mouseleave="emit('mirror-current-hover', null)"
       >
         <!-- The same glyph turned a quarter turn: a dashed horizontal axis with the shapes above and below it. -->
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
