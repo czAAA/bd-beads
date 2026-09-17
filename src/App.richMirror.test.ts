@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
+import { loadPatterns } from './domain/patternStorage'
 
 // Rich Mirror (ticket 44) is a build-time flag (src/featureFlags.ts), off by default in the test env (`.env`, same
 // as production). Mocking the module -- rather than relying on `.env.test` -- keeps this one file exercising the
@@ -135,4 +136,70 @@ describe("App's Mirror copy mode (ticket 45)", () => {
 
     expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('false')
   })
+})
+
+describe("App's Mirror current across strips (ticket 46)", () => {
+  it('syncs the fullest strip onto the rest, as one undo step', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    // Paint (0,9) *before* turning the axis on, so it's a plain, un-mirrored paint -- exactly the "content drawn
+    // before that direction's live mirroring was turned on" scenario ADR 0006 built "Mirror current" for.
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[9]!.trigger('mousedown') // (0, 9)
+    await wrapper.trigger('mouseup')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull() // not live-mirrored: only column 9 got painted
+
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis, 2 strips of 5 columns
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+
+    // Strip [5..9] (containing the painted cell) is fuller, so it's the source, mirrored onto [0..4]: 9<->0.
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[0]![9]!.color).toBe('#e63746') // the source cell survives the undo
+  })
+
+  it('honours copy mode', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[9]!.trigger('mousedown') // (0, 9), before the axis is on
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-copy-mode"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
+
+    // Copy mode: same relative cell (last of each strip), not mirrored -> column 4 (not column 0).
+    expect(loadPatterns()[0]!.grid[0]![4]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('leaves woven rows untouched (Row progress lock)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // finishes row 0
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click') // 1 axis, 2 strips of 10 rows
+
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[19 * 10]!.trigger('mousedown') // (row 19, column 0) -- its mirror counterpart is row 0
+    await wrapper.trigger('mouseup')
+
+    await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('click')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull() // row 0 is finished/locked, stays untouched
+    expect(loadPatterns()[0]!.grid[19]![0]!.color).toBe('#e63746') // the source row is unaffected
+  })
+
+  // This module always mocks the flag on; App.test.ts's own pre-existing "Mirror current" tests (unmodified by
+  // this ticket, e.g. "reflects the drawn half across the vertical axis with 'Mirror current'") are what prove the
+  // flag-off path still uses the legacy bigger-half heuristic, untouched.
 })
