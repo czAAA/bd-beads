@@ -40,6 +40,7 @@ export interface Translations {
     pickerLabel: string
     colorLabel: string
     undoButton: string
+    redoButton: string
     rotateButton: string
   }
   tools: {
