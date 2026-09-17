@@ -85,6 +85,7 @@ export const en: Translations = {
     increaseLeftRightButton: 'Increase left–right axes',
     decreaseTopBottomButton: 'Decrease top–bottom axes',
     increaseTopBottomButton: 'Increase top–bottom axes',
+    copyModeLabel: 'Copy mode',
   },
   toolbox: {
     groups: {

@@ -88,6 +88,8 @@ export interface Translations {
     increaseLeftRightButton: string
     decreaseTopBottomButton: string
     increaseTopBottomButton: string
+    /** Rich Mirror's copy-mode switch (ticket 45): one switch for both directions, only rendered with the flag on. */
+    copyModeLabel: string
   }
   /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
   toolbox: {

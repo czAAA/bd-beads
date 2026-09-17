@@ -464,6 +464,30 @@ describe('mirroredCellsForCounts (rich Mirror, ticket 44)', () => {
       ]),
     )
   })
+
+  it('copy mode (ticket 45) repeats the same relative cell instead of mirror-imaging, in both directions', () => {
+    // 6 columns, 2 column-axes -> strips [0,1] [2,3] [4,5]; painting the first cell of strip0 copies onto the
+    // first cell of strips 1 and 2 (columns 2, 4) rather than mirroring (which would land on 3 and 4).
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 9, height: 6, unit: 'mm' },
+    })
+
+    const mirrored = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 0 })
+    const copied = mirroredCellsForCounts(pattern, { row: 0, column: 0 }, { columns: 2, rows: 0 }, true)
+
+    expect(mirrored).toEqual([
+      { row: 0, column: 0 },
+      { row: 0, column: 3 },
+      { row: 0, column: 4 },
+    ])
+    expect(copied).toEqual([
+      { row: 0, column: 0 },
+      { row: 0, column: 2 },
+      { row: 0, column: 4 },
+    ])
+  })
 })
 
 describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
@@ -497,6 +521,22 @@ describe('paintCellsForCounts (rich Mirror, ticket 44)', () => {
     const pattern = makePattern()
 
     expect(paintCellsForCounts(pattern, [{ row: 0, column: 0 }], null, { columns: 0, rows: 0 })).toBe(pattern)
+  })
+
+  it('paints the same relative cell in every strip, unflipped, in copy mode (ticket 45)', () => {
+    const pattern = makePattern() // 4 columns
+
+    const painted = paintCellsForCounts(
+      pattern,
+      [{ row: 0, column: 0 }],
+      '#e63746',
+      { columns: 1, rows: 0 },
+      true,
+    )
+
+    expect(painted.grid[0]![0]!.color).toBe('#e63746')
+    expect(painted.grid[0]![2]!.color).toBe('#e63746') // copy mode: same relative cell, not the mirrored (3)
+    expect(painted.grid[0]![3]!.color).toBeNull()
   })
 
   it('does not mutate the original pattern', () => {

@@ -21,6 +21,8 @@ const props = defineProps<{
   /** Rich Mirror (ticket 44, flag VITE_RICH_MIRROR): swaps the two on/off toggles below for axis counters when on. */
   richMirror: boolean
   mirrorAxisCounts: MirrorAxisCounts
+  /** Rich Mirror's copy-mode switch (ticket 45): only rendered when richMirror is on. */
+  mirrorCopyMode: boolean
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +35,7 @@ const emit = defineEmits<{
   copy: []
   'toggle-mirror-axis': [axis: 'horizontal' | 'vertical']
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
+  'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
@@ -289,6 +292,23 @@ const topBottomMax = computed(() =>
             +
           </button>
         </p>
+        <button
+          type="button"
+          class="icon-button"
+          data-testid="mirror-copy-mode"
+          :title="t.mirror.copyModeLabel"
+          :aria-label="t.mirror.copyModeLabel"
+          :aria-pressed="mirrorCopyMode"
+          :class="{ 'tool-picker__button--selected': mirrorCopyMode }"
+          @click="emit('toggle-mirror-copy-mode')"
+        >
+          <!-- Three identical rectangles in a row: this switch makes every strip repeat the same way round (A | A | A) instead of mirror-imaging. -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="2" y="8" width="5" height="8" rx="1" />
+            <rect x="9.5" y="8" width="5" height="8" rx="1" />
+            <rect x="17" y="8" width="5" height="8" rx="1" />
+          </svg>
+        </button>
       </template>
       <template v-else>
         <button
