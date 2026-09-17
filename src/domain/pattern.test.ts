@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  changedCells,
   createPattern,
   fillArea,
   mirrorCurrentForCounts,
@@ -672,6 +673,45 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
     mirrorCurrentForCounts(pattern, 'columns', 1, false)
 
     expect(pattern.grid[0]![3]!.color).toBeNull()
+  })
+})
+
+describe('changedCells (rich Mirror "Mirror current" hover preview, ticket 47)', () => {
+  it('is empty for two identical grids', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+
+    expect(changedCells(pattern.grid, pattern.grid)).toEqual([])
+  })
+
+  it('lists exactly the cells whose color differs, and nothing else', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+    const after = paintCell(paintCell(pattern, 0, 0, '#e63746'), 2, 1, '#2f6fed')
+
+    expect(changedCells(pattern.grid, after.grid)).toEqual([
+      { row: 0, column: 0 },
+      { row: 2, column: 1 },
+    ])
+  })
+
+  it('is what mirrorCurrentForCounts + keepFinishedRows would actually change, matching the hover preview App.vue derives', () => {
+    let pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+    pattern = paintCell(pattern, 0, 0, '#e63746')
+
+    const result = mirrorCurrentForCounts(pattern, 'columns', 1, false)
+
+    expect(changedCells(pattern.grid, result.grid)).toEqual([{ row: 0, column: 3 }])
   })
 })
 
