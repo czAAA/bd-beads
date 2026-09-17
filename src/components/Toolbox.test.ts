@@ -201,4 +201,13 @@ describe('Toolbox', () => {
     expect(wrapper.text()).toContain(ru.toolbox.groups.tools)
     expect(wrapper.text()).not.toContain(en.toolbox.groups.tools)
   })
+
+  it('exposes collapseExpandedGroup, reporting nothing to collapse when no group is expanded (ticket 41)', () => {
+    // No group here holds more than 14 controls (see ToolGroup.test.ts for the expand/collapse mechanics with a
+    // synthetic one that does), so none can be hover-expanded — this is a regression guard for App.vue's onKeyDown
+    // wiring (see App.vue), which relies on this method existing and returning false in exactly this situation.
+    const wrapper = mountToolbox()
+
+    expect(wrapper.vm.collapseExpandedGroup()).toBe(false)
+  })
 })
