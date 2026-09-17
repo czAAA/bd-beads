@@ -14,7 +14,7 @@ describe('isRichMirrorEnabled', () => {
     expect(isRichMirrorEnabled({ VITE_RICH_MIRROR: value })).toBe(false)
   })
 
-  it('defaults to reading import.meta.env, which .env pins to false for production builds', () => {
-    expect(isRichMirrorEnabled()).toBe(false)
+  it('defaults to reading import.meta.env, which .env pins to true for every build', () => {
+    expect(isRichMirrorEnabled()).toBe(true)
   })
 })
