@@ -4,7 +4,6 @@ import {
   isWithinSelection,
   mirroredPasteBlock,
   mirroredPastedCells,
-  pasteBlock,
   pastedCells,
   selectionBetween,
   type CopiedBlock,
@@ -170,69 +169,15 @@ describe('pastedCells', () => {
   })
 })
 
-describe('pasteBlock', () => {
-  const motif: CopiedBlock = {
-    rows: 2,
-    columns: 2,
-    colors: [
-      [RED, null],
-      [null, RED],
-    ],
-  }
-
-  it('stamps the block onto the grid at the given position', () => {
-    const target = painted(['....', '....', '....'])
-
-    expect(picture(pasteBlock(target, motif, { row: 1, column: 2 }))).toEqual([
-      '....',
-      '..r.',
-      '...r',
-    ])
-  })
-
-  it('leaves the destination’s own color alone under the block’s empty cells', () => {
-    const target = painted(['bbb', 'bbb', 'bbb'])
-
-    expect(picture(pasteBlock(target, motif, { row: 0, column: 0 }))).toEqual(['rbb', 'brb', 'bbb'])
-  })
-
-  it('clips a stamp that runs past the grid’s edge instead of refusing or shifting it', () => {
-    const target = painted(['..', '..'])
-
-    expect(picture(pasteBlock(target, motif, { row: 1, column: 1 }))).toEqual(['..', '.r'])
-  })
-
-  it('can be stamped repeatedly, each stamp landing where it was asked for', () => {
-    const target = painted(['....', '....', '....', '....'])
-
-    const twice = pasteBlock(pasteBlock(target, motif, { row: 0, column: 0 }), motif, { row: 2, column: 2 })
-
-    expect(picture(twice)).toEqual(['r...', '.r..', '..r.', '...r'])
-  })
-
-  it('returns the same Pattern, untouched, when the stamp would change nothing', () => {
-    const target = painted(['r.', '.r'])
-
-    expect(pasteBlock(target, motif, { row: 0, column: 0 })).toBe(target)
-  })
-
-  it('returns the same Pattern when the stamp lands entirely off the grid', () => {
-    const target = painted(['..', '..'])
-
-    expect(pasteBlock(target, motif, { row: 5, column: 5 })).toBe(target)
-  })
-})
-
 describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects through Mirror)', () => {
   const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]] }
 
-  it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells/pasteBlock stamp', () => {
+  it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells stamp', () => {
     const target = painted(['....', '....', '....', '....'])
     const at = { row: 1, column: 1 }
     const axes = { rows: 0, columns: 0 }
 
     expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(target, dot, at))
-    expect(picture(mirroredPasteBlock(target, dot, at, axes))).toEqual(picture(pasteBlock(target, dot, at)))
   })
 
   it('with a single center axis on (the flag-off case), stamps both the aimed spot and its one mirrored counterpart', () => {

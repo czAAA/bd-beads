@@ -11,7 +11,6 @@ import {
   mostRecentlyUpdated,
   moveToRow,
   normalizePattern,
-  paintCell,
   paintCells,
   paintCellsForCounts,
   keepFinishedRows,
@@ -172,56 +171,6 @@ describe('summarizePattern', () => {
   })
 })
 
-describe('paintCell', () => {
-  function makePattern() {
-    return createPattern({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    })
-  }
-
-  it('sets the color of exactly the targeted cell', () => {
-    const pattern = makePattern()
-
-    const painted = paintCell(pattern, 1, 2, '#e63746')
-
-    expect(painted.grid[1]![2]!.color).toBe('#e63746')
-    for (let row = 0; row < painted.grid.length; row++) {
-      for (let column = 0; column < painted.grid[row]!.length; column++) {
-        if (row !== 1 || column !== 2) {
-          expect(painted.grid[row]![column]!.color).toBeNull()
-        }
-      }
-    }
-  })
-
-  it('does not mutate the original pattern', () => {
-    const pattern = makePattern()
-
-    paintCell(pattern, 0, 0, '#e63746')
-
-    expect(pattern.grid[0]![0]!.color).toBeNull()
-  })
-
-  it('can clear a cell back to unpainted with a null color', () => {
-    const pattern = makePattern()
-    const painted = paintCell(pattern, 0, 0, '#e63746')
-
-    const cleared = paintCell(painted, 0, 0, null)
-
-    expect(cleared.grid[0]![0]!.color).toBeNull()
-  })
-
-  it('bumps updatedAt', () => {
-    const pattern = { ...makePattern(), updatedAt: 0 }
-
-    const painted = paintCell(pattern, 0, 0, '#e63746')
-
-    expect(painted.updatedAt).toBeGreaterThan(0)
-  })
-})
-
 describe('restoreGrid', () => {
   it('swaps in the given grid and bumps updatedAt, without mutating the original pattern', () => {
     const pattern = { ...createPattern({
@@ -229,7 +178,7 @@ describe('restoreGrid', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     }), updatedAt: 0 }
-    const snapshot = paintCell(pattern, 0, 0, '#e63746').grid
+    const snapshot = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }).grid
 
     const restored = restoreGrid(pattern, snapshot)
 
@@ -249,7 +198,7 @@ describe('toggleRotated', () => {
   }
 
   it('flips the rotated flag without touching anything else — grid, dimensions, and technique all stay exactly as they were', () => {
-    const pattern = paintCell(makePattern(), 0, 0, '#e63746')
+    const pattern = paintCells(makePattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
 
     const rotated = toggleRotated(pattern)
 
@@ -572,8 +521,8 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
   })
 
   it('with axisCount 0, matches the legacy heuristic once one side is painted more', () => {
-    let painted = paintCell(makePattern(), 0, 0, '#e63746')
-    painted = paintCell(painted, 1, 0, '#e63746')
+    let painted = paintCells(makePattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
+    painted = paintCells(painted, [{ row: 1, column: 0 }], '#e63746', { horizontal: false, vertical: false })
 
     const legacy = mirrorPattern(painted, { horizontal: true, vertical: false })
     const rich = mirrorCurrentForCounts(painted, 'columns', 0, false)
@@ -589,8 +538,8 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
       size: { width: 9, height: 1.5, unit: 'mm' },
     })
     expect(pattern.columns).toBe(6)
-    pattern = paintCell(pattern, 0, 2, '#e63746')
-    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+    pattern = paintCells(pattern, [{ row: 0, column: 2 }], '#e63746', { horizontal: false, vertical: false })
+    pattern = paintCells(pattern, [{ row: 0, column: 3 }], '#2f6fed', { horizontal: false, vertical: false })
 
     const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
 
@@ -610,8 +559,8 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
       beadId: cubeBead.id,
       size: { width: 9, height: 1.5, unit: 'mm' },
     })
-    pattern = paintCell(pattern, 0, 2, '#e63746')
-    pattern = paintCell(pattern, 0, 3, '#2f6fed')
+    pattern = paintCells(pattern, [{ row: 0, column: 2 }], '#e63746', { horizontal: false, vertical: false })
+    pattern = paintCells(pattern, [{ row: 0, column: 3 }], '#2f6fed', { horizontal: false, vertical: false })
 
     const synced = mirrorCurrentForCounts(pattern, 'columns', 2, true)
 
@@ -633,8 +582,8 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
       beadId: cubeBead.id,
       size: { width: 9, height: 1.5, unit: 'mm' },
     })
-    pattern = paintCell(pattern, 0, 0, '#e63746')
-    pattern = paintCell(pattern, 0, 4, '#2f6fed')
+    pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
+    pattern = paintCells(pattern, [{ row: 0, column: 4 }], '#2f6fed', { horizontal: false, vertical: false })
 
     const synced = mirrorCurrentForCounts(pattern, 'columns', 2, false)
 
@@ -656,8 +605,8 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
       size: { width: 1.5, height: 9, unit: 'mm' },
     })
     expect(pattern.rows).toBe(6)
-    pattern = paintCell(pattern, 2, 0, '#e63746')
-    pattern = paintCell(pattern, 3, 0, '#2f6fed')
+    pattern = paintCells(pattern, [{ row: 2, column: 0 }], '#e63746', { horizontal: false, vertical: false })
+    pattern = paintCells(pattern, [{ row: 3, column: 0 }], '#2f6fed', { horizontal: false, vertical: false })
 
     const synced = mirrorCurrentForCounts(pattern, 'rows', 2, false)
 
@@ -673,7 +622,7 @@ describe('mirrorCurrentForCounts (rich Mirror "Mirror current", ticket 46)', () 
 
   it('does not mutate the original pattern', () => {
     let pattern = makePattern()
-    pattern = paintCell(pattern, 0, 0, '#e63746')
+    pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
 
     mirrorCurrentForCounts(pattern, 'columns', 1, false)
 
@@ -698,7 +647,7 @@ describe('changedCells (rich Mirror "Mirror current" hover preview, ticket 47)',
       beadId: cubeBead.id,
       size: { width: 6, height: 6, unit: 'mm' },
     })
-    const after = paintCell(paintCell(pattern, 0, 0, '#e63746'), 2, 1, '#2f6fed')
+    const after = paintCells(paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }), [{ row: 2, column: 1 }], '#2f6fed', { horizontal: false, vertical: false })
 
     expect(changedCells(pattern.grid, after.grid)).toEqual([
       { row: 0, column: 0 },
@@ -712,7 +661,7 @@ describe('changedCells (rich Mirror "Mirror current" hover preview, ticket 47)',
       beadId: cubeBead.id,
       size: { width: 6, height: 6, unit: 'mm' },
     })
-    pattern = paintCell(pattern, 0, 0, '#e63746')
+    pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
 
     const result = mirrorCurrentForCounts(pattern, 'columns', 1, false)
 
@@ -1188,7 +1137,7 @@ describe('replaceBead', () => {
     })
     for (let row = 0; row < pattern.rows; row++) {
       for (let column = 0; column < pattern.columns; column++) {
-        pattern = paintCell(pattern, row, column, `r${row}c${column}`)
+        pattern = paintCells(pattern, [{ row: row, column: column }], `r${row}c${column}`, { horizontal: false, vertical: false })
       }
     }
     return pattern
@@ -1248,12 +1197,7 @@ describe('replaceBead', () => {
 
 describe('restoreSnapshot', () => {
   it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
-    const pattern = setRowProgressEnabled(moveToRow(paintCell(
-      createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
-      0,
-      0,
-      '#e63746',
-    ), 2), true)
+    const pattern = setRowProgressEnabled(moveToRow(paintCells(createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }), 2), true)
     const blankGrid = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,

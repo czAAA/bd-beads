@@ -1,21 +1,26 @@
 # Issue tracker
 
-Issues are tracked as markdown files stored under `.scratch/` in this repo. Each feature or bug gets its own directory:
+Issues are tracked as markdown files stored under `.scratch/` in this repo, one flat file per ticket, named `NN-slug.md` (e.g. `52-vocabulary-alignment.md`):
 
 ```
 .scratch/
-  feature-name/
-    issue.md
-    discussion.md (optional)
-  another-feature/
-    issue.md
+  52-vocabulary-alignment.md
+  53-ci-gate.md
+  ru/
+    52-vocabulary-alignment.md
+    53-ci-gate.md
+  .archive/
+    51-move-new-pattern-cta-and-zoom-controls.md
 ```
+
+- `ru/` holds a Russian-language copy of each open ticket, same filename, alongside the English original.
+- `.archive/` holds resolved tickets, moved there once closed.
 
 ## Workflow
 
-- **Creating an issue**: `to-tickets` skill writes a new `.scratch/<feature>/issue.md`
-- **Triaging**: `triage` skill reads and updates frontmatter in `issue.md`
-- **Resolving**: close the issue by moving it to `.scratch/.archive/`
+- **Creating an issue**: `to-tickets` skill writes a new `.scratch/NN-slug.md`
+- **Triaging**: `triage` skill reads and updates a ticket's `**Status:**` line, set to one of the triage labels
+- **Resolving**: close the issue by moving it (and its `ru/` copy) to `.scratch/.archive/`
 
 ## Why local markdown?
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
-import { computeColorQuantities } from './beadMapping'
-import { createPattern, paintCell, type Pattern } from './pattern'
+import { computeColorQuantities } from './beadQuantities'
+import { createPattern, paintCells, type Pattern } from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -18,7 +18,7 @@ function blankPattern(): Pattern {
 
 function painted(cells: [row: number, column: number, color: string][]): Pattern {
   return cells.reduce(
-    (pattern, [row, column, color]) => paintCell(pattern, row, column, color),
+    (pattern, [row, column, color]) => paintCells(pattern, [{ row: row, column: column }], color, { horizontal: false, vertical: false }),
     blankPattern(),
   )
 }

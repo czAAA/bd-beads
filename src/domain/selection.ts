@@ -114,31 +114,6 @@ export function pastedCells(
   return cells
 }
 
-/**
- * Stamps a single, unmirrored placement of a block onto the grid with its top-left corner at `at`, as one Pattern
- * edit so it undoes in one step. The building block mirroredPasteBlock uses once per Mirror-projected copy (ticket
- * 50); called directly, this is what Paste stamps with both axis counts at 0. Returns the same Pattern instance,
- * unchanged, when the stamp would leave every cell as it already is.
- */
-export function pasteBlock(pattern: Pattern, block: CopiedBlock, at: GridPosition): Pattern {
-  const cells = pastedCells(pattern, block, at)
-  const colorsByPosition = new Map(cells.map((cell) => [positionKey(cell), cell.color]))
-
-  const changed = cells.some(({ row, column, color }) => pattern.grid[row]![column]!.color !== color)
-  if (!changed) {
-    return pattern
-  }
-
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) => {
-      const color = colorsByPosition.get(positionKey({ row: rowIndex, column: columnIndex }))
-      return color ? { color } : cell
-    }),
-  )
-
-  return restoreGrid(pattern, grid)
-}
-
 /** Reverses a block's rows and/or columns -- what a copy landing in a strip that reads reversed from the block's own
  * needs its content rebuilt as, so pastedCells can treat every mirrored copy exactly like an ordinary, unflipped
  * placement once built (see mirrorBlockPlacements). */
@@ -159,7 +134,7 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
 
 /**
  * Every cell every Mirror-projected copy of `block` would land on when its own top-left corner is aimed at `at`
- * (ticket 50, reversing pasteBlock's old "unaffected by Mirror" precedent — see CONTEXT.md's Paste entry): one
+ * (ticket 50, reversing Paste's old "unaffected by Mirror" precedent — see CONTEXT.md's Paste entry): one
  * placement per strip combination the current axis counts (and copy mode) define, each built by flipping the
  * block's content per mirrorBlockPlacements' verdict and then handed to pastedCells exactly like a single
  * unmirrored placement — so each copy keeps its own hole rule and its own independent edge-clipping, with no
@@ -191,7 +166,7 @@ export function mirroredPastedCells(
 }
 
 /**
- * pasteBlock's Mirror-aware counterpart (ticket 50): stamps `block` at `at` plus every copy Mirror projects it onto
+ * The Mirror-aware form of a single unmirrored paste stamp (ticket 50): stamps `block` at `at` plus every copy Mirror projects it onto
  * (see mirroredPastedCells), all as one Pattern edit so the whole click — original placement and every mirrored one
  * — undoes in a single step, same as a mirrored Paint stroke. Returns the same Pattern instance, unchanged, when the
  * stamp would leave every cell as it already is.
