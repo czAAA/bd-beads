@@ -14,6 +14,7 @@ import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, type Bead } from './domain/beads'
 import { loadCustomBeads, removeCustomBead, saveCustomBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
+import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
 import { findPaletteColor } from './domain/palette'
 import {
   copySelection,
@@ -75,8 +76,8 @@ const DEFAULT_PALETTE_COLOR_ID = 'red'
 const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 const activeTool = ref<Tool>('paint')
 const mirrorAxes = ref<MirrorAxes>({ horizontal: false, vertical: false })
-/** Grid snapshots to restore on undo, most recent last; reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
-const undoStack = ref<Grid[]>([])
+/** Undo/redo stacks of grid snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. */
+const history = ref<History<Grid>>(emptyHistory())
 
 /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
 const selection = ref<Selection | undefined>()
@@ -87,7 +88,7 @@ const copiedBlock = ref<CopiedBlock | undefined>()
 const hoveredCell = ref<GridPosition | undefined>()
 
 watch(activePatternId, () => {
-  undoStack.value = []
+  history.value = emptyHistory()
   selection.value = undefined
   copiedBlock.value = undefined
 })
@@ -188,7 +189,7 @@ function commitGridChange(pattern: Pattern, updated: Pattern) {
     return
   }
 
-  undoStack.value.push(pattern.grid)
+  history.value = pushHistory(history.value, pattern.grid)
   replaceActivePattern(kept)
 }
 
@@ -211,7 +212,7 @@ function endStroke() {
 
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    undoStack.value.push(strokeBaseline.value)
+    history.value = pushHistory(history.value, strokeBaseline.value)
   }
   strokeMode.value = null
   strokeBaseline.value = null
@@ -311,10 +312,47 @@ function backOutOfSelect() {
   }
 }
 
-/** Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor may have left it. */
+/** Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it should be left to type normally rather than triggering an editor-wide shortcut. */
+function isTypingInFormField(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  )
+}
+
+function isUndoShortcut(event: KeyboardEvent): boolean {
+  return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
+}
+
+/** Ctrl/Cmd+Shift+Z, the mirror of the undo chord, or Ctrl+Y, the older Windows convention. */
+function isRedoShortcut(event: KeyboardEvent): boolean {
+  const shiftZ = (event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z'
+  const ctrlY = event.ctrlKey && event.key.toLowerCase() === 'y'
+  return shiftZ || ctrlY
+}
+
+/**
+ * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
+ * may have left it (ticket 24). Undo/Redo's shortcuts (ticket 34) work the same way — bound to the window rather
+ * than a focused element — except while the user is typing in a form field, where they're left to the field itself
+ * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo.
+ */
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     backOutOfSelect()
+    return
+  }
+
+  if (isTypingInFormField(event.target)) {
+    return
+  }
+
+  if (isRedoShortcut(event)) {
+    event.preventDefault()
+    onRedo()
+  } else if (isUndoShortcut(event)) {
+    event.preventDefault()
+    onUndo()
   }
 }
 
@@ -389,12 +427,25 @@ function onCellSecondaryMove(row: number, column: number) {
 
 function onUndo() {
   const pattern = activePattern.value
-  const previousGrid = undoStack.value.pop()
-  if (!pattern || !previousGrid) {
+  const step = pattern && undoStep(history.value, pattern.grid)
+  if (!step) {
     return
   }
 
-  replaceActivePattern(restoreGrid(pattern, previousGrid))
+  history.value = step.history
+  replaceActivePattern(restoreGrid(pattern, step.snapshot))
+}
+
+/** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
+function onRedo() {
+  const pattern = activePattern.value
+  const step = pattern && redoStep(history.value, pattern.grid)
+  if (!step) {
+    return
+  }
+
+  history.value = step.history
+  replaceActivePattern(restoreGrid(pattern, step.snapshot))
 }
 
 /**
@@ -530,12 +581,14 @@ function onRemoveBead(id: string) {
             :pattern="activePattern"
             :active-tool="activeTool"
             :selected-color-id="selectedColorId"
-            :can-undo="undoStack.length > 0"
+            :can-undo="canUndo(history)"
+            :can-redo="canRedo(history)"
             :can-copy="!!selection"
             :mirror-axes="mirrorAxes"
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
             @undo="onUndo"
+            @redo="onRedo"
             @toggle-rotate="onToggleRotate"
             @copy="onCopy"
             @toggle-mirror-axis="onToggleMirrorAxis"

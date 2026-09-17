@@ -40,6 +40,7 @@ export const en: Translations = {
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',
     undoButton: 'Undo',
+    redoButton: 'Redo',
     rotateButton: 'Rotate',
   },
   tools: {
