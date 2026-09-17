@@ -15,7 +15,6 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^7.0.1",
     "@types/node": "^24.13.3",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/test-utils": "^2.5.0",

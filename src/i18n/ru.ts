@@ -37,7 +37,6 @@ export const ru: Translations = {
     zoomResetLabel: 'Сбросить масштаб по размеру схемы',
   },
   shell: {
-    mainPanelPlaceholder: 'Инструменты — скоро',
     canvasPlaceholder: 'Схема пока не открыта',
   },
   palette: {

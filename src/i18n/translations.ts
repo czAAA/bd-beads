@@ -35,7 +35,6 @@ export interface Translations {
     zoomResetLabel: string
   }
   shell: {
-    mainPanelPlaceholder: string
     canvasPlaceholder: string
   }
   palette: {
