@@ -335,15 +335,17 @@ export function paintCells(
  * `position`, given per-direction axis *counts* rather than the legacy on/off axes (see mirroredCells above, which
  * this generalizes -- with both counts at 0 or 1 the two agree exactly). `axes.columns` splits the grid across its
  * columns (today's "horizontal"), `axes.rows` across its rows (today's "vertical"); see domain/mirror.ts for the
- * strip math and why counts are grid-space, never screen-space.
+ * strip math and why counts are grid-space, never screen-space. `copyMode` (ticket 45) is one switch for both
+ * directions: strips repeat the same way round (A | A | A) instead of mirror-imaging (A | A' | A).
  */
 export function mirroredCellsForCounts(
   pattern: Pick<Pattern, 'rows' | 'columns'>,
   position: GridPosition,
   axes: MirrorAxisCounts,
+  copyMode = false,
 ): GridPosition[] {
-  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows)
-  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns)
+  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows, copyMode)
+  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns, copyMode)
 
   const seen = new Set<string>()
   const cells: GridPosition[] = []
@@ -359,16 +361,17 @@ export function mirroredCellsForCounts(
   return cells
 }
 
-/** paintCells's rich-Mirror counterpart (see mirroredCellsForCounts): paints every position in `positions` plus each one's counterpart(s) under the given axis counts, as a single Pattern edit. */
+/** paintCells's rich-Mirror counterpart (see mirroredCellsForCounts): paints every position in `positions` plus each one's counterpart(s) under the given axis counts (and copy mode), as a single Pattern edit. */
 export function paintCellsForCounts(
   pattern: Pattern,
   positions: GridPosition[],
   color: string | null,
   axes: MirrorAxisCounts,
+  copyMode = false,
 ): Pattern {
   const targets = new Map<string, GridPosition>()
   for (const position of positions) {
-    for (const cell of mirroredCellsForCounts(pattern, position, axes)) {
+    for (const cell of mirroredCellsForCounts(pattern, position, axes, copyMode)) {
       targets.set(positionKey(cell), cell)
     }
   }
