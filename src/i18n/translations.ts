@@ -27,6 +27,7 @@ export interface Translations {
     removeButton: string
     currentLabel: string
     unknownBeadLabel: string
+    noSavedPatternsMessage: string
   }
   canvas: {
     zoomInLabel: string

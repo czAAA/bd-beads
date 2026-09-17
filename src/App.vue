@@ -799,14 +799,16 @@ function onImportPatterns(imported: Pattern[]) {
           </p>
         </div>
 
+        <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
+
         <div class="app-shell__below-canvas" data-testid="app-below-canvas">
+          <BeadQuantities :pattern="activePattern" />
           <PatternList
             :patterns="patterns"
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
             @remove="onRemovePattern"
           />
-          <BeadQuantities :pattern="activePattern" />
           <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
         </div>
       </div>
@@ -1017,6 +1019,22 @@ function onImportPatterns(imported: Pattern[]) {
 .row-progress__steps {
   display: flex;
   gap: 8px;
+}
+
+/*
+ * Opens the bottom section (ADR 0004 amendment, ticket 39): a faint divider, muted the same way the tool-strip's
+ * dot-grid texture is (color-mix off --color-ink rather than a new token) so it separates the section without
+ * competing with the boxes' own borders below it. A block child of app-shell__right like app-shell__canvas above it,
+ * so it naturally spans just the canvas column's width, not the page (the app-shell__main panel sits outside this
+ * column, to the left).
+ */
+.app-shell__below-canvas-divider {
+  width: 100%;
+  height: 0;
+  margin: 0;
+  border: none;
+  /* Deliberately thinner than --border-width (3px, the boxes' own frame) so it reads as a faint separator, not another box edge. */
+  border-top: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
 }
 
 /*
