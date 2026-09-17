@@ -32,8 +32,14 @@ export function clampAxisCount(count: number, cellsAcross: number): number {
  * `dimension` cells into axisCount + 1 strips "as equal as possible". With 0 axes that's just `[index]`. With 1
  * axis this is exactly today's single center-mirror reflection, `dimension - 1 - index`, which self-mirrors the
  * middle cell of an odd dimension (ADR 0006's original behaviour, still what the flag-off path uses directly). With
- * more axes, strips alternate mirror-image/plain the way a fan-folded strip of paper would, so an axis can run
- * through the middle of a strip's own middle cell too, when that strip's width is odd.
+ * more axes, strips alternate mirror-image/plain the way a fan-folded strip of paper would (A | A' | A | A' ...),
+ * so an axis can run through the middle of a strip's own middle cell too, when that strip's width is odd.
+ *
+ * `copyMode` (ticket 45) switches every strip to read the same way round instead (A | A | A | A ...): a painted
+ * cell's counterpart sits at the *same* relative position in every other strip, unflipped. It's its own switch
+ * rather than something implied by the axis count (ADR 0006 amendment: "tying '2+ axes means copy' to the count
+ * would make 1 axis the only true mirror and change what Mirror means as you step the count") -- with axisCount <=
+ * 1 there's only ever one "other" strip, so copyMode has no observable effect there.
  *
  * Deduped and sorted by strip order; a self-mirroring cell (e.g. the 1-axis odd-dimension case above) only appears
  * once.
@@ -46,7 +52,12 @@ export function clampAxisCount(count: number, cellsAcross: number): number {
  * painting a slightly-off cell is harmless where painting nothing at all would silently break the "every strip"
  * guarantee.
  */
-export function mirrorCounterparts(index: number, dimension: number, axisCount: number): number[] {
+export function mirrorCounterparts(
+  index: number,
+  dimension: number,
+  axisCount: number,
+  copyMode = false,
+): number[] {
   const strips = axisCount + 1
   if (strips <= 1 || dimension <= 0) {
     return [index]
@@ -56,15 +67,21 @@ export function mirrorCounterparts(index: number, dimension: number, axisCount: 
   const stripWidth = 2 * dimension
   const position = index * scale + strips
 
+  // A strip reads reversed (mirror-image) when it's an odd strip and we're not in copy mode; every strip reads
+  // forward (plain, A | A | A) in copy mode.
+  const isReversed = (strip: number) => !copyMode && strip % 2 === 1
+
   const sourceStrip = Math.min(strips - 1, Math.floor(position / stripWidth))
-  const forwardLocal =
-    sourceStrip % 2 === 0 ? position - sourceStrip * stripWidth : (sourceStrip + 1) * stripWidth - position
+  const forwardLocal = isReversed(sourceStrip)
+    ? (sourceStrip + 1) * stripWidth - position
+    : position - sourceStrip * stripWidth
 
   const seen = new Set<number>()
   const results: number[] = []
   for (let strip = 0; strip < strips; strip++) {
-    const targetPosition =
-      strip % 2 === 0 ? strip * stripWidth + forwardLocal : (strip + 1) * stripWidth - forwardLocal
+    const targetPosition = isReversed(strip)
+      ? (strip + 1) * stripWidth - forwardLocal
+      : strip * stripWidth + forwardLocal
     const target = Math.min(dimension - 1, Math.max(0, Math.round((targetPosition - strips) / scale)))
     if (!seen.has(target)) {
       seen.add(target)

@@ -96,6 +96,37 @@ describe('mirrorCounterparts', () => {
   })
 })
 
+describe('mirrorCounterparts with copyMode (ticket 45)', () => {
+  it('repeats the same relative cell in every strip, unflipped, instead of alternating mirror images', () => {
+    // dimension 6, 2 axes -> 3 strips [0,1] [2,3] [4,5]. Copy mode: cell0 (first cell of strip0) counterparts the
+    // first cell of every other strip (2, 4) rather than mirror-imaging (which would give 3, 4 -- see the plain
+    // mirror-mode test above).
+    expect(mirrorCounterparts(0, 6, 2, true)).toEqual([0, 2, 4])
+    expect(mirrorCounterparts(1, 6, 2, true)).toEqual([1, 3, 5])
+    expect(mirrorCounterparts(5, 6, 2, true)).toEqual([1, 3, 5])
+  })
+
+  it('has no observable effect with 0 axes -- there is only ever one strip, so no flip to suppress', () => {
+    for (let dimension = 1; dimension <= 8; dimension++) {
+      for (let index = 0; index < dimension; index++) {
+        expect(mirrorCounterparts(index, dimension, 0, true)).toEqual(mirrorCounterparts(index, dimension, 0, false))
+      }
+    }
+  })
+
+  it('with 1 axis, still changes behaviour: a true mirror by default, a plain repeat in copy mode', () => {
+    // dimension 4, 2 strips [0,1] [2,3]. Mirror mode reflects (0<->3, 1<->2); copy mode repeats the same relative
+    // cell (0<->2, 1<->3) -- see ADR 0006 amendment: copy mode is its own switch precisely so 1 axis keeps being a
+    // true mirror *by default*, not because copy mode is a no-op there.
+    expect(mirrorCounterparts(0, 4, 1, false)).toEqual([0, 3])
+    expect(mirrorCounterparts(0, 4, 1, true)).toEqual([0, 2])
+  })
+
+  it('defaults to mirror mode (copyMode=false) when the argument is omitted, unchanged from ticket 44', () => {
+    expect(mirrorCounterparts(0, 6, 2)).toEqual(mirrorCounterparts(0, 6, 2, false))
+  })
+})
+
 describe('stripOf', () => {
   it('assigns cells to contiguous, as-equal-as-possible strips', () => {
     // dimension 7, 3 strips: [0,1] [2,3,4] [5,6]
