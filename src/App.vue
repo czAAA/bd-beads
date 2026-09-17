@@ -450,16 +450,16 @@ function endSelectPress() {
 
 /**
  * Puts the copied block down without stamping it, so Select goes back to marking out areas — a click means Paste
- * only while something is on the clipboard (see beginSelectPress). The Selection itself is left alone, so the same
- * block can be picked back up with Copy rather than re-dragged.
+ * only while something is on the clipboard (see beginSelectPress). The Selection itself is left alone (it's
+ * already empty at this point, since Copy clears it — ticket 49).
  */
 function cancelPaste() {
   copiedBlock.value = undefined
 }
 
 /**
- * Right-click or Escape under Select backs out one step at a time: a copied block goes first, keeping the Selection
- * so Copy can pick the same block back up (see cancelPaste); with nothing copied, the Selection itself goes.
+ * Right-click or Escape under Select backs out one step at a time: a copied block goes first (see cancelPaste);
+ * with nothing copied, the Selection itself goes.
  */
 function backOutOfSelect() {
   if (copiedBlock.value) {
@@ -525,7 +525,11 @@ function onKeyDown(event: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKeyDown))
 onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 
-/** Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see endSelectPress). */
+/**
+ * Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see
+ * endSelectPress). The Selection's marquee is hidden immediately, the same as a right-click or Escape with nothing
+ * copied (ticket 49) — copying the same block again means dragging a new Selection over it first.
+ */
 function onCopy() {
   const pattern = activePattern.value
   if (!pattern || !selection.value) {
@@ -533,6 +537,7 @@ function onCopy() {
   }
 
   copiedBlock.value = copySelection(pattern, selection.value)
+  selection.value = undefined
 }
 
 function onCellPrimaryDown(row: number, column: number) {
