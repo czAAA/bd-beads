@@ -3,6 +3,7 @@ import {
   axisLinePositions,
   clampAxisCount,
   maxAxisCount,
+  mirrorBlockPlacements,
   mirrorCounterpartInStrip,
   mirrorCounterparts,
   stripOf,
@@ -180,6 +181,61 @@ describe('mirrorCounterpartInStrip (ticket 46: "Mirror current" copying one spec
 
   it('is the identity when there are no axes', () => {
     expect(mirrorCounterpartInStrip(3, 6, 0, false, 0)).toBe(3)
+  })
+})
+
+describe('mirrorBlockPlacements (ticket 50: Paste block geometry)', () => {
+  it('with 0 axes, a block only counterparts its own placement, unflipped', () => {
+    expect(mirrorBlockPlacements(2, 3, 10, 0)).toEqual([{ anchorIndex: 2, flipped: false }])
+  })
+
+  it('with a block of size 1, matches mirrorCounterparts exactly (a single cell has no extent to flip)', () => {
+    // dimension 6, 2 axes -> strips [0,1] [2,3] [4,5] (same table mirrorCounterparts' own test uses).
+    for (const index of [0, 1, 2, 3, 4, 5]) {
+      const viaBlock = mirrorBlockPlacements(index, 1, 6, 2).map((p) => p.anchorIndex)
+      expect(viaBlock).toEqual(mirrorCounterparts(index, 6, 2))
+    }
+  })
+
+  it('with 1 axis, translates a multi-cell block\'s far edge into the mirrored near edge, flipping its content', () => {
+    // dimension 6, 1 axis -> strips [0,1,2] [3,4,5]. A 2-wide block anchored at 0 (spanning 0,1) mirrors to a
+    // flipped block anchored at 4 (spanning 4,5) -- source col0 (near edge) lands on the far edge (5), source col1
+    // lands on the near edge (4), since the whole block reads reversed once mirrored.
+    expect(mirrorBlockPlacements(0, 2, 6, 1)).toEqual([
+      { anchorIndex: 0, flipped: false },
+      { anchorIndex: 4, flipped: true },
+    ])
+  })
+
+  it('with copy mode, translates without ever flipping', () => {
+    expect(mirrorBlockPlacements(0, 2, 6, 2, true)).toEqual([
+      { anchorIndex: 0, flipped: false },
+      { anchorIndex: 2, flipped: false },
+      { anchorIndex: 4, flipped: false },
+    ])
+  })
+
+  it('lets a mirrored placement run off the *other* edge when the original already ran off its own edge', () => {
+    // dimension 6, 1 axis -> strips [0,1,2] [3,4,5]. A 2-wide block anchored at 5 spans [5,6] -- column 6 is already
+    // past the grid's edge for the original placement. Its mirror image (index -> 5 - index) should be exactly as
+    // far off the *other* edge: column 5 -> 0 (on-grid), column 6 -> -1 (off-grid), so the flipped copy anchors at
+    // -1 rather than being pinned to 0.
+    expect(mirrorBlockPlacements(5, 2, 6, 1)).toEqual([
+      { anchorIndex: -1, flipped: true },
+      { anchorIndex: 5, flipped: false },
+    ])
+  })
+
+  it('deduplicates a placement that lands on the same anchor and flip as another (self-mirroring case)', () => {
+    for (let dimension = 1; dimension <= 8; dimension++) {
+      for (let axisCount = 0; axisCount <= maxAxisCount(dimension); axisCount++) {
+        for (let index = 0; index < dimension; index++) {
+          const placements = mirrorBlockPlacements(index, 1, dimension, axisCount)
+          const keys = placements.map((p) => `${p.anchorIndex}:${p.flipped}`)
+          expect(new Set(keys).size).toBe(keys.length)
+        }
+      }
+    }
   })
 })
 

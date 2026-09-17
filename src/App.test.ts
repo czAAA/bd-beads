@@ -2539,18 +2539,31 @@ describe('App select, copy and paste', () => {
     expect(loadPatterns()[0]!.grid[2]![1]!.color).toBe('#27ae60')
   })
 
-  it('stamps exactly where it was aimed even with a Mirror axis on, as Fill does', async () => {
+  it('stamps its mirrored counterpart too when a Mirror axis is on, reversing the old "Paste ignores Mirror" precedent (ticket 50)', async () => {
     const wrapper = mount(App)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
     await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
 
+    // Hovering should preview both copies before the click stamps them.
+    await wrapper.findAll('[data-testid="grid-cell"]')[8]!.trigger('mouseenter') // hover (2,0)
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(4) // 2 painted cells x 2 mirrored copies
+
     await click(wrapper, 8) // (2,0)
 
+    // 4x4 grid, single center axis on columns: column 0 <-> column 3, column 1 <-> column 2.
     const grid = loadPatterns()[0]!.grid
-    expect(grid[2]![0]!.color).toBe('#e63746')
-    expect(grid[2]![3]!.color).toBeNull() // the mirrored counterpart is left alone
+    expect(grid[2]![0]!.color).toBe('#e63746') // aimed spot
+    expect(grid[3]![1]!.color).toBe('#2f6fed')
+    expect(grid[2]![3]!.color).toBe('#e63746') // mirrored counterpart, now also stamped
+    expect(grid[3]![2]!.color).toBe('#2f6fed')
+
+    // Both copies undo together, as a single step.
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    const undone = loadPatterns()[0]!.grid
+    expect(undone[2]![0]!.color).toBeNull()
+    expect(undone[2]![3]!.color).toBeNull()
   })
 
   it('drops the clipboard when a new selection is drawn, so the next click selects rather than stamps', async () => {

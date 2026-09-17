@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   copySelection,
   isWithinSelection,
+  mirroredPasteBlock,
+  mirroredPastedCells,
   pasteBlock,
   pastedCells,
   selectionBetween,
@@ -218,5 +220,98 @@ describe('pasteBlock', () => {
     const target = painted(['..', '..'])
 
     expect(pasteBlock(target, motif, { row: 5, column: 5 })).toBe(target)
+  })
+})
+
+describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects through Mirror)', () => {
+  const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]] }
+
+  it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells/pasteBlock stamp', () => {
+    const target = painted(['....', '....', '....', '....'])
+    const at = { row: 1, column: 1 }
+    const axes = { rows: 0, columns: 0 }
+
+    expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(target, dot, at))
+    expect(picture(mirroredPasteBlock(target, dot, at, axes))).toEqual(picture(pasteBlock(target, dot, at)))
+  })
+
+  it('with a single center axis on (the flag-off case), stamps both the aimed spot and its one mirrored counterpart', () => {
+    const target = painted(['......', '......', '......', '......'])
+
+    // 6-wide grid, mirrored across columns (axisCount 1): column 1 <-> column 4.
+    const result = mirroredPasteBlock(target, dot, { row: 2, column: 1 }, { rows: 0, columns: 1 })
+
+    expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
+  })
+
+  it('with N axes and copy mode off, stamps every strip, each copy independently flipped', () => {
+    const motif: CopiedBlock = {
+      rows: 1,
+      columns: 2,
+      colors: [[RED, null]],
+    }
+    // 6-wide grid, 2 axes -> strips [0,1] [2,3] [4,5]. Anchored at column 0 (spanning 0,1): strip0 stamps as-is
+    // (r at 0, hole at 1); strip1 mirrors flipped (hole lands at 2, r lands at 3); strip2 translates unflipped
+    // (r at 4, hole at 5) -- see the mirror.test.ts placements test this mirrors.
+    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
+
+    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 })
+
+    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbrrb'])
+  })
+
+  it('with copy mode on, translates every copy without flipping', () => {
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
+
+    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 }, true)
+
+    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbrbrb'])
+  })
+
+  it('leaves each copy’s own holes as holes, independently of the others', () => {
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
+
+    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 1 })
+
+    // Column 0->r, column1 is a hole (stays b); mirrored at columns 4/5 (6-wide, single axis): column5->r,
+    // column4 is a hole (stays b).
+    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbbbr'])
+  })
+
+  it('clips each copy independently when it reaches past the grid’s edge', () => {
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, RED]] }
+    // 6-wide grid, single axis (strips [0,1,2] [3,4,5]). Anchored at column 5 -- the block's own placement already
+    // runs one cell past the grid's right edge; its mirror image runs one cell past the *left* edge instead.
+    const target = painted(['......'])
+
+    const result = mirroredPasteBlock(target, motif, { row: 0, column: 5 }, { rows: 0, columns: 1 })
+
+    expect(picture(result)).toEqual(['r....r'])
+  })
+
+  it('honours copy mode in the preview the same way it does in the stamp', () => {
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
+    const at = { row: 0, column: 0 }
+    const axes = { rows: 0, columns: 2 }
+
+    const preview = mirroredPastedCells(target, motif, at, axes, true)
+    const stamped = mirroredPasteBlock(target, motif, at, axes, true)
+
+    for (const cell of preview) {
+      expect(stamped.grid[cell.row]![cell.column]!.color).toBe(cell.color)
+    }
+  })
+
+  it('returns the same Pattern, untouched, when every copy’s stamp would change nothing', () => {
+    // 6-wide grid, 2 axes: a dot at column 0 lands on columns [0, 3, 4] (see mirror.test.ts's mirrorCounterparts
+    // table for this exact dimension/axis-count) -- all three already red here.
+    const target = painted(['r..rr.'])
+
+    const result = mirroredPasteBlock(target, dot, { row: 0, column: 0 }, { rows: 0, columns: 2 })
+
+    expect(result).toBe(target)
   })
 })
