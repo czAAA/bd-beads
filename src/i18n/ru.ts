@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor) reuse
-// that exact wording rather than retranslating.
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor, Delete all)
+// reuse that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
     title: 'bd-beads',
@@ -28,6 +28,8 @@ export const ru: Translations = {
     newPatternButton: 'Новая схема',
     removeButton: 'Удалить',
     currentLabel: 'Сейчас редактируется',
+    unknownBeadLabel: 'Неизвестная бисеринка',
+    noSavedPatternsMessage: 'Пока нет сохранённых схем',
   },
   canvas: {
     zoomInLabel: 'Увеличить',
@@ -42,7 +44,9 @@ export const ru: Translations = {
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',
     undoButton: 'Отменить',
+    redoButton: 'Повторить',
     rotateButton: 'Повернуть',
+    customColorLabel: 'Свой цвет',
   },
   tools: {
     paintLabel: 'Кисть',
@@ -60,14 +64,9 @@ export const ru: Translations = {
   quantities: {
     heading: 'Нужно бисера',
     noPatternMessage: 'Откройте схему, чтобы увидеть, сколько нужно бисера',
+    noColorsMessage: 'Пока ничего не закрашено',
     colorHeading: 'Цвет',
     countHeading: 'Бисеринок',
-    resolvedBeadHeading: 'Используемая бисеринка',
-    defaultBeadHeading: 'Бисеринка по умолчанию',
-    patternBeadHeading: 'В этой схеме',
-    unmappedOption: 'Без бисеринки',
-    useDefaultOption: 'Как по умолчанию',
-    unknownColorLabel: 'Нет в палитре',
   },
   transfer: {
     heading: 'Экспорт и импорт',
@@ -98,22 +97,11 @@ export const ru: Translations = {
       rowProgress: 'Прогресс по рядам',
     },
   },
-  catalog: {
-    heading: 'Каталог бисера',
-    brandLabel: 'Бренд',
-    nameLabel: 'Название',
-    sizeLabel: 'Размер',
-    formFactorLabel: 'Форм-фактор',
-    formFactorCube: 'Куб',
-    formFactorRound: 'Круглый',
-    formFactorCylinder: 'Цилиндр',
-    colorLabel: 'Цвет',
-    widthLabel: 'Ширина (мм)',
-    heightLabel: 'Высота (мм)',
-    addButton: 'Добавить бисеринку',
-    editButton: 'Редактировать',
-    removeButton: 'Удалить',
-    saveButton: 'Сохранить',
+  deleteAll: {
+    button: 'Очистить всё',
+    confirmTitle: 'Очистить всё?',
+    confirmMessage: 'Все ячейки станут пустыми, а прогресс по рядам выключится. Это действие можно отменить.',
+    confirmButton: 'Очистить всё',
     cancelButton: 'Отмена',
   },
 }
