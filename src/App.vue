@@ -10,9 +10,19 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
-import { beadLabel } from './domain/beads'
+import { BEAD_CATALOG, beadLabel } from './domain/beads'
+import { findBead } from './domain/beadStorage'
 import type { GridPosition, PreviewCell } from './domain/grid'
-import { canRedo, canUndo, emptyHistory, pushHistory, redoStep, undoStep, type History } from './domain/history'
+import {
+  canRedo,
+  canUndo,
+  emptyHistory,
+  pushHistory,
+  redoStep,
+  undoStep,
+  type History,
+  type HistoryStep,
+} from './domain/history'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
 import { findPaletteColor } from './domain/palette'
 import {
@@ -38,6 +48,8 @@ import {
   moveToRow,
   paintCells,
   paintCellsForCounts,
+  previewReplaceBead,
+  replaceBead,
   resolvePatternBead,
   restoreSnapshot,
   rowProgressPosition,
@@ -77,6 +89,34 @@ const activeBeadLabel = computed(() => {
   }
   const bead = resolvePatternBead(pattern)
   return bead ? beadLabel(bead) : t.value.patterns.unknownBeadLabel
+})
+
+/** The other built-in catalog Beads the open Pattern could switch to (ticket 48) — everything but its current one. */
+const replaceBeadCandidates = computed(() => {
+  const pattern = activePattern.value
+  return pattern ? BEAD_CATALOG.filter((bead) => bead.id !== pattern.beadId) : []
+})
+
+/** The Bead behind replaceBeadPendingId, resolved from the catalog — also doubles as "is the Replace bead modal open" (ticket 48), since a pending id always names a real catalog Bead. */
+const replaceBeadPendingBead = computed(() => {
+  const id = replaceBeadPendingId.value
+  return id ? findBead(id) : undefined
+})
+
+/** The grid size Replace Bead's pending pick would resize to, for the confirmation message — undefined while its modal is closed. */
+const replaceBeadPreview = computed(() => {
+  const pattern = activePattern.value
+  const bead = replaceBeadPendingBead.value
+  return pattern && bead ? previewReplaceBead(pattern, bead) : undefined
+})
+
+/** The Replace bead modal's message: the new grid size followed by the static rescale/reset/undo reassurance (ticket 48) — same "size line + static sentence" shape as currentPatternSummary uses elsewhere in this file. */
+const replaceBeadConfirmMessage = computed(() => {
+  const preview = replaceBeadPreview.value
+  if (!preview) {
+    return ''
+  }
+  return `${t.value.replaceBead.newSizeLabel}: ${preview.columns}×${preview.rows}. ${t.value.replaceBead.confirmMessage}`
 })
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
@@ -122,11 +162,14 @@ const mirrorCopyMode = ref(false)
 /** Which "Mirror current" button, if any, the pointer is over right now (ticket 47) -- grid-space ('horizontal'/'vertical'), same as the buttons themselves; null when the pointer is off both. Purely a transient hover UI concern, not persisted. */
 const hoveredMirrorCurrentAxis = ref<'horizontal' | 'vertical' | null>(null)
 
-/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress for the one command that resets that too (Delete all, ticket 42 — see UndoEntry). */
+/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress and the Bead/grid-size/Mirror bundle for the commands that reset those too (Delete all, ticket 42, and Replace Bead, ticket 48 — see UndoEntry). */
 const history = ref<History<UndoEntry>>(emptyHistory())
 
 /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
 const deleteAllConfirmOpen = ref(false)
+
+/** The Bead id picked from the Replace bead select, awaiting confirmation (ticket 48); undefined when its modal is closed. */
+const replaceBeadPendingId = ref<string | undefined>()
 
 /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
 const selection = ref<Selection | undefined>()
@@ -149,6 +192,7 @@ watch(activePatternId, () => {
   mirrorCopyMode.value = false
   hoveredMirrorCurrentAxis.value = null
   deleteAllConfirmOpen.value = false
+  replaceBeadPendingId.value = undefined
 })
 
 /**
@@ -448,12 +492,12 @@ function isRedoShortcut(event: KeyboardEvent): boolean {
  * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
  * may have left it (ticket 24). Undo/Redo's shortcuts (ticket 34) work the same way — bound to the window rather
  * than a focused element — except while the user is typing in a form field, where they're left to the field itself
- * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo. While the Delete all
- * confirmation modal is open, its own Escape handling (ConfirmModal.vue) owns the key instead — deferred to here so
- * Escape can't also unexpectedly drop a copied block or collapse a Tool group behind the modal.
+ * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo. While the Delete all or
+ * Replace bead confirmation modal is open, its own Escape handling (ConfirmModal.vue) owns the key instead —
+ * deferred to here so Escape can't also unexpectedly drop a copied block or collapse a Tool group behind the modal.
  */
 function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && !deleteAllConfirmOpen.value) {
+  if (event.key === 'Escape' && !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value) {
     /*
      * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
      * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
@@ -547,27 +591,54 @@ function onCellSecondaryMove(row: number, column: number) {
   paintStrokeCell(row, column, null)
 }
 
+/**
+ * Everything Undo/Redo can step through right now, fully populated (ticket 48): the grid, Row progress, and the
+ * Bead/grid-size/Mirror bundle Replace Bead changes. Every other command's own pushHistory call only carries what it
+ * actually changed (see e.g. commitGridChange, onConfirmDeleteAll), but the snapshot recorded here — of the
+ * *current* state, as the opposite stack's new top — has to be complete so a later Redo/Undo through it round-trips
+ * exactly, even for fields this particular step left untouched.
+ */
+function currentUndoEntry(pattern: Pattern): UndoEntry {
+  return {
+    grid: pattern.grid,
+    rowProgress: pattern.rowProgress,
+    bead: {
+      beadId: pattern.beadId,
+      columns: pattern.columns,
+      rows: pattern.rows,
+      mirrorAxisCounts: mirrorAxisCounts.value,
+    },
+  }
+}
+
+/** Applies one Undo/Redo step, shared by both directions: the grid/Row progress/Bead the snapshot carries (via restoreSnapshot), plus Mirror's axis counts when the snapshot bundles them — not a Pattern field, so restoreSnapshot alone can't apply it (see UndoEntry.bead). */
+function applyHistoryStep(pattern: Pattern, step: HistoryStep<UndoEntry>) {
+  history.value = step.history
+  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+  if (step.snapshot.bead) {
+    mirrorAxisCounts.value = step.snapshot.bead.mirrorAxisCounts
+  }
+}
+
 function onUndo() {
   const pattern = activePattern.value
-  const step = pattern && undoStep(history.value, { grid: pattern.grid })
+  const step = pattern && undoStep(history.value, currentUndoEntry(pattern))
   if (!step) {
     return
   }
 
-  history.value = step.history
-  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+  applyHistoryStep(pattern, step)
 }
 
 /** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
 function onRedo() {
   const pattern = activePattern.value
-  const step = pattern && redoStep(history.value, { grid: pattern.grid })
+  const step = pattern && redoStep(history.value, currentUndoEntry(pattern))
   if (!step) {
     return
   }
 
-  history.value = step.history
-  replaceActivePattern(restoreSnapshot(pattern, step.snapshot))
+  applyHistoryStep(pattern, step)
 }
 
 /** Opens the Delete all confirmation modal (ticket 42); does nothing with no Pattern open. */
@@ -601,6 +672,37 @@ function onConfirmDeleteAll() {
 
   history.value = pushHistory(history.value, { grid: pattern.grid, rowProgress: pattern.rowProgress })
   replaceActivePattern(updated)
+}
+
+/** Opens the Replace bead confirmation modal (ticket 48) for the picked Bead id; does nothing with no Pattern open or an empty pick (the select's placeholder option). */
+function onRequestReplaceBead(beadId: string) {
+  if (beadId && activePattern.value) {
+    replaceBeadPendingId.value = beadId
+  }
+}
+
+function onCancelReplaceBead() {
+  replaceBeadPendingId.value = undefined
+}
+
+/**
+ * Confirms Replace Bead (ticket 48, ADR 0008): swaps the Bead, resizes the grid and rescales its colors, and resets
+ * Row progress, as a single undo step. Applied directly rather than through commitGridChange/keepFinishedRows, the
+ * same as Delete all: Replace Bead ignores the Row progress lock on purpose, since the row count it was locking
+ * against may not even exist on the new grid. Mirror's axis counts aren't a Pattern field (see UndoEntry.bead), so
+ * they're reset here directly rather than inside replaceBead.
+ */
+function onConfirmReplaceBead() {
+  const pattern = activePattern.value
+  const bead = replaceBeadPendingBead.value
+  replaceBeadPendingId.value = undefined
+  if (!pattern || !bead) {
+    return
+  }
+
+  history.value = pushHistory(history.value, currentUndoEntry(pattern))
+  replaceActivePattern(replaceBead(pattern, bead))
+  mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
 }
 
 /**
@@ -731,6 +833,17 @@ function onImportPatterns(imported: Pattern[]) {
           <p class="app-shell__summary" data-testid="current-pattern-bead">
             {{ activeBeadLabel }}
           </p>
+          <select
+            data-testid="replace-bead-select"
+            :aria-label="t.replaceBead.selectLabel"
+            :value="''"
+            @change="onRequestReplaceBead(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
+            <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+              {{ beadLabel(bead) }}
+            </option>
+          </select>
         </div>
         <LanguageSwitcher />
       </div>
@@ -832,6 +945,17 @@ function onImportPatterns(imported: Pattern[]) {
       :cancel-label="t.deleteAll.cancelButton"
       @confirm="onConfirmDeleteAll"
       @cancel="onCancelDeleteAll"
+    />
+
+    <ConfirmModal
+      v-if="replaceBeadPendingBead"
+      data-testid="replace-bead-modal"
+      :title="t.replaceBead.confirmTitle"
+      :message="replaceBeadConfirmMessage"
+      :confirm-label="t.replaceBead.confirmButton"
+      :cancel-label="t.replaceBead.cancelButton"
+      @confirm="onConfirmReplaceBead"
+      @cancel="onCancelReplaceBead"
     />
   </div>
 </template>

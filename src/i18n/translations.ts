@@ -109,4 +109,14 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
+  /** The Replace Bead control (CONTEXT.md, ADR 0008) next to the open Pattern's Bead, and its confirmation modal (ticket 48). */
+  replaceBead: {
+    selectLabel: string
+    /** Prefix for the new grid size shown in the confirmation message, e.g. "New size: 45×62." */
+    newSizeLabel: string
+    confirmTitle: string
+    confirmMessage: string
+    confirmButton: string
+    cancelButton: string
+  }
 }

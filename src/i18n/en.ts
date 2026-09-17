@@ -103,4 +103,12 @@ export const en: Translations = {
     confirmButton: 'Delete all',
     cancelButton: 'Cancel',
   },
+  replaceBead: {
+    selectLabel: 'Replace bead',
+    newSizeLabel: 'New size',
+    confirmTitle: 'Replace bead?',
+    confirmMessage: 'Existing colors will be rescaled to fit, and Row progress and Mirror will reset. This can be undone.',
+    confirmButton: 'Replace bead',
+    cancelButton: 'Cancel',
+  },
 }

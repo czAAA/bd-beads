@@ -105,4 +105,12 @@ export const ru: Translations = {
     confirmButton: 'Очистить всё',
     cancelButton: 'Отмена',
   },
+  replaceBead: {
+    selectLabel: 'Заменить бисер',
+    newSizeLabel: 'Новый размер',
+    confirmTitle: 'Заменить бисер?',
+    confirmMessage: 'Существующие цвета будут пересчитаны под новый размер, а прогресс по рядам и отражение сбросятся. Это действие можно отменить.',
+    confirmButton: 'Заменить бисер',
+    cancelButton: 'Отмена',
+  },
 }
