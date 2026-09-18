@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
+import ConvertImageFrame from './components/ConvertImageFrame.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
@@ -9,12 +10,14 @@ import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
 import ZoomControls from './components/ZoomControls.vue'
+import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
 import { findBead } from './domain/beads'
-import type { GridPosition, PreviewCell } from './domain/grid'
+import { computeGridDimensions, toMillimeters, type GridPosition, type PreviewCell } from './domain/grid'
+import type { ConvertedImage, PixelData } from './domain/imageConversion'
 import {
   canRedo,
   canUndo,
@@ -38,6 +41,7 @@ import {
 import {
   changedCells,
   createPattern,
+  createPatternFromImage,
   deleteAll,
   fillArea,
   isInFinishedRow,
@@ -138,6 +142,55 @@ const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 /** The floating zoom cluster's own readout (ticket 57 moved the cluster here, off PatternCanvas): derived from the same zoom the grid scales by, rather than threaded down as a second prop — it's a pure Math.round(zoom * 100) either way (see usePatternZoom.ts). */
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
+/**
+ * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
+ * own state, deliberately independent of which Pattern is open — conversion creates a Pattern rather than converting
+ * into one, so nothing here goes through replacePattern, the undo stack, Mirror or the Row progress lock, and entering
+ * framing with a Pattern already open simply takes the canvas panel over until Cancel gives it back.
+ */
+const {
+  image: convertImageSource,
+  zoom: convertZoom,
+  pan: convertPan,
+  maxColors: convertMaxColors,
+  isFraming,
+  zoomPercent: convertZoomPercent,
+  start: startConvertImage,
+  cancel: cancelConvertImage,
+  zoomIn: convertZoomIn,
+  zoomOut: convertZoomOut,
+  resetZoom: convertResetZoom,
+  setPan: setConvertPan,
+  setMaxColors: setConvertMaxColors,
+} = useConvertImage()
+
+/**
+ * The last New Pattern form state that named a real size. The frame follows the form's fields as they're edited during
+ * framing, and this is what a Create reads — holding the last *valid* state rather than the live one is what keeps the
+ * frame put while a width field is momentarily empty mid-retype, instead of collapsing it to a single cell.
+ */
+const newPatternDraft = ref<CreatePatternInput | undefined>()
+
+function onNewPatternDraft(draft: CreatePatternInput) {
+  if (draft.size.width > 0 && draft.size.height > 0) {
+    newPatternDraft.value = draft
+  }
+}
+
+/** The frame the picture is being fitted to: the Bead, Technique and grid size the form's current values imply. */
+const convertImageFrame = computed(() => {
+  const draft = newPatternDraft.value
+  const bead = draft && findBead(draft.beadId)
+  if (!draft || !bead) {
+    return undefined
+  }
+
+  const widthMm = toMillimeters(draft.size.width, draft.size.unit)
+  const heightMm = toMillimeters(draft.size.height, draft.size.unit)
+
+  return { bead, technique: draft.technique, dimensions: computeGridDimensions({ widthMm, heightMm }, bead) }
+})
+
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
 
@@ -150,6 +203,13 @@ const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
  * a single id rather than a parallel flag per swatch.
  */
 const customColor = ref<string | undefined>(undefined)
+/**
+ * The Image color being painted with (CONTEXT.md's Image colors, ticket 58): one of the open Pattern's own converted
+ * colors, offered in the Colors group alongside the Palette. The third of three mutually exclusive paint colors — a
+ * Palette swatch, an Image color, or the Custom color — kept exclusive by the onSelect* handlers below, and reset on a
+ * Pattern switch since a hex from one Pattern's conversion means nothing in another.
+ */
+const selectedImageColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 
 /** Per-direction Mirror axis counts (ADR 0006 amendment): grid-space (see domain/mirror.ts), not saved
@@ -195,6 +255,12 @@ watch(activePatternId, () => {
   hoveredMirrorCurrentAxis.value = null
   deleteAllConfirmOpen.value = false
   replaceBeadPendingId.value = undefined
+  // An Image color belongs to the Pattern that was converted, so it can't stay selected across a switch; the Palette's
+  // own default steps back in, rather than leaving the editor with no paint color at all.
+  if (selectedImageColor.value) {
+    selectedImageColor.value = undefined
+    selectedColorId.value = DEFAULT_PALETTE_COLOR_ID
+  }
 })
 
 /**
@@ -261,12 +327,12 @@ function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[
   return mirroredCells(pattern, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
 }
 
-/** The current paint color's hex: the selected Palette color, or the Custom color when that's active instead; null when neither is. */
+/** The current paint color's hex: the selected Palette color, the selected Image color, or the Custom color — whichever of the three is active; null when none is. */
 function selectedColorHex(): string | null {
   if (selectedColorId.value) {
     return findPaletteColor(selectedColorId.value)?.hex ?? null
   }
-  return customColor.value ?? null
+  return selectedImageColor.value ?? customColor.value ?? null
 }
 
 /** The color the hover preview shows; null (a neutral outline, not a color) when nothing is selected. */
@@ -284,6 +350,31 @@ function onCreatePattern(payload: CreatePatternInput) {
   addPattern(createPattern(payload))
 }
 
+/** A picture has been chosen and decoded: the canvas panel becomes the framing step until Create or Cancel (ADR 0010). */
+function onConvertImageChosen(image: PixelData) {
+  startConvertImage(image)
+}
+
+/**
+ * Creates the Pattern the frame was holding (ticket 58): an ordinary new Pattern that arrives painted, carrying the
+ * conversion's Image colors (ADR 0011). The grid comes from the framing preview itself, so what was inside the frame
+ * is literally what is created — see ConvertImageFrame.vue.
+ */
+function onConvertImageCreate(converted: ConvertedImage) {
+  const draft = newPatternDraft.value
+  if (!draft) {
+    return
+  }
+
+  addPattern(createPatternFromImage({ ...draft, grid: converted.grid, imageColors: converted.imageColors }))
+  cancelConvertImage()
+}
+
+/** Cancel creates nothing and keeps nothing (ticket 58 decision); the panel goes back to whatever it was showing. */
+function onConvertImageCancel() {
+  cancelConvertImage()
+}
+
 function onSelectPattern(id: string) {
   activePatternId.value = id
 }
@@ -292,14 +383,22 @@ function onNewPattern() {
   activePatternId.value = undefined
 }
 
-/** Choosing a Palette swatch deselects Custom color (CONTEXT.md); its slot keeps showing its last hex, just unselected. */
+/** Choosing a Palette swatch deselects Custom color and any Image color (CONTEXT.md); the Custom slot keeps showing its last hex, just unselected. */
 function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
+  selectedImageColor.value = undefined
 }
 
-/** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch was active, vice versa. */
+/** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch or Image color was active, vice versa. */
 function onSelectCustomColor(hex: string) {
   customColor.value = hex
+  selectedColorId.value = undefined
+  selectedImageColor.value = undefined
+}
+
+/** Choosing one of the open Pattern's Image colors (ticket 58) paints with it, the same way a Palette swatch does; the Custom slot keeps its own last hex, unselected. */
+function onSelectImageColor(hex: string) {
+  selectedImageColor.value = hex
   selectedColorId.value = undefined
 }
 
@@ -852,14 +951,23 @@ function onMoveRow(delta: number) {
     </header>
 
     <div class="app-shell__body">
+      <!--
+        The New Pattern form's panel. It also stays up throughout a Convert image framing step, even with a Pattern
+        open (ticket 58): the frame is sized by these very fields and follows them as they're edited, so taking them
+        away mid-framing would freeze the frame at whatever it last read.
+      -->
       <aside
         class="app-shell__main"
-        :class="{ 'app-shell__main--empty': activePattern }"
+        :class="{ 'app-shell__main--empty': activePattern && !isFraming }"
         data-testid="app-main-panel"
       >
-        <template v-if="!activePattern">
+        <template v-if="!activePattern || isFraming">
           <h2>{{ t.patterns.newPatternButton }}</h2>
-          <NewPatternForm @submit="onCreatePattern" />
+          <NewPatternForm
+            @submit="onCreatePattern"
+            @draft="onNewPatternDraft"
+            @convert-image="onConvertImageChosen"
+          />
         </template>
       </aside>
 
@@ -872,6 +980,7 @@ function onMoveRow(delta: number) {
             :active-tool="activeTool"
             :selected-color-id="selectedColorId"
             :custom-color="customColor"
+            :selected-image-color="selectedImageColor"
             :can-undo="canUndo(history)"
             :can-redo="canRedo(history)"
             :can-copy="!!selection"
@@ -880,6 +989,7 @@ function onMoveRow(delta: number) {
             @select-tool="onSelectTool"
             @select-color="onSelectColor"
             @select-custom-color="onSelectCustomColor"
+            @select-image-color="onSelectImageColor"
             @undo="onUndo"
             @redo="onRedo"
             @toggle-rotate="onToggleRotate"
@@ -897,8 +1007,28 @@ function onMoveRow(delta: number) {
 
         <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
           <div class="app-shell__canvas-scroll">
+            <!--
+              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
+              open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
+              entered with one open. Cancel hands the panel straight back.
+            -->
+            <ConvertImageFrame
+              v-if="convertImageSource && convertImageFrame"
+              :image="convertImageSource"
+              :technique="convertImageFrame.technique"
+              :bead="convertImageFrame.bead"
+              :dimensions="convertImageFrame.dimensions"
+              :zoom="convertZoom"
+              :pan="convertPan"
+              :max-colors="convertMaxColors"
+              :available-width="canvasAreaWidth"
+              @pan="setConvertPan"
+              @set-max-colors="setConvertMaxColors"
+              @create="onConvertImageCreate"
+              @cancel="onConvertImageCancel"
+            />
             <PatternCanvas
-              v-if="activePattern"
+              v-else-if="activePattern"
               :pattern="activePattern"
               :zoom="zoom"
               :preview-cells="previewCells"
@@ -928,12 +1058,26 @@ function onMoveRow(delta: number) {
             hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
           -->
           <ZoomControls
-            v-if="activePattern"
+            v-if="activePattern && !isFraming"
             class="app-shell__zoom-controls"
             :zoom-percent="zoomPercent"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
             @reset="resetZoom"
+          />
+
+          <!--
+            The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
+            over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
+            frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
+          -->
+          <ZoomControls
+            v-if="isFraming"
+            class="app-shell__zoom-controls"
+            :zoom-percent="convertZoomPercent"
+            @zoom-in="convertZoomIn"
+            @zoom-out="convertZoomOut"
+            @reset="convertResetZoom"
           />
         </div>
 
