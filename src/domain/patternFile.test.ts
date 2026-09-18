@@ -49,6 +49,16 @@ describe('single-Pattern roundtrip', () => {
     })
   })
 
+  it('stays readable version-1 JSON with a cell per grid cell, not the compact stored form (ADR 0009)', () => {
+    const file = JSON.parse(serializePattern(decoratedPattern()))
+
+    // A Pattern file exists to move work between devices and to be read; compactness belongs to localStorage only, so
+    // export/import is an encode/decode boundary rather than a passthrough of whatever is stored.
+    expect(file.version).toBe(1)
+    expect(file.patterns[0].cells).toBeUndefined()
+    expect(file.patterns[0].grid[2][3]).toEqual({ color: '#e63746' })
+  })
+
   it('does not write a color-to-bead mapping into the file (ADR 0007)', () => {
     const file = JSON.parse(serializePattern(decoratedPattern()))
 
