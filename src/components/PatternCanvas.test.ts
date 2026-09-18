@@ -24,38 +24,16 @@ function boxSize(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('PatternCanvas', () => {
-  it('floats the zoom controls inside its own box, only while a Pattern is open (ticket 35)', () => {
-    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
-
-    expect(
-      wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(true)
-    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
-  })
-
-  it("sits outside the rotated/scaled element, so it never turns or scales with the Pattern (ticket 35's view-only-transform constraint)", () => {
+  it('turns the rotated/scaled element 90° as a plain view transform, without touching its own box size (ticket 28)', () => {
     const wrapper = mount(PatternCanvas, {
-      props: { pattern: { ...pattern(15, 15), rotated: true }, zoom: 2.5 },
+      props: { pattern: { ...pattern(30, 7.5), rotated: true }, zoom: 1 },
     })
 
-    // .pattern-canvas__rotate is what rotateStyle/pattern-canvas__scaled above actually transform; the zoom stack
-    // must be a sibling of it, not a descendant, or it would turn and scale along with the Pattern.
-    expect(wrapper.find('.pattern-canvas__rotate').find('[data-testid="zoom-controls"]').exists()).toBe(false)
-    expect(
-      wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(true)
-  })
-
-  it('forwards zoom-in/zoom-out/reset as its own events, so App.vue only wires usePatternZoom once', async () => {
-    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
-
-    await wrapper.find('[data-testid="zoom-in"]').trigger('click')
-    await wrapper.find('[data-testid="zoom-out"]').trigger('click')
-    await wrapper.find('[data-testid="zoom-reset"]').trigger('click')
-
-    expect(wrapper.emitted('zoom-in')).toHaveLength(1)
-    expect(wrapper.emitted('zoom-out')).toHaveLength(1)
-    expect(wrapper.emitted('zoom-reset')).toHaveLength(1)
+    expect(wrapper.find('.pattern-canvas__rotate').attributes('style')).toContain('rotate(90deg)')
+    // The box's own reserved footprint swaps to match the turned picture (contentWidth/contentHeight), while the
+    // rotated element itself keeps the Pattern's unrotated width/height and is turned about its own center.
+    const { width, height } = boxSize(wrapper)
+    expect(height).toBeGreaterThan(width)
   })
 
   it('sizes its box to the Pattern rather than padding it out to a fixed square', () => {

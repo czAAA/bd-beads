@@ -12,10 +12,10 @@ const { t } = useI18n()
 
 <template>
   <!--
-    A horizontal row, + through reset left to right (ticket 35's ordering, kept by ticket 51's move to a corner
-    cluster). Floats over the canvas box (see PatternCanvas.vue, which pins this to the box's top-right corner) rather
-    than sitting in the above-canvas row, so it carries its own translucent background/border here — unlike a plain
-    inline control, it has to stay legible with a painted Pattern running underneath it at any zoom level.
+    A horizontal row, + through reset left to right (ticket 35's ordering, kept by tickets 51/57's moves). Floats
+    over the canvas panel (see App.vue, which pins this to the panel's top-right corner) rather than sitting in the
+    above-canvas row, so it carries its own translucent background/border here — unlike a plain inline control, it
+    has to stay legible with a painted Pattern running underneath it at any zoom level.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
     <button

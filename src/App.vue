@@ -8,6 +8,7 @@ import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
+import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
@@ -122,6 +123,9 @@ const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
 )
+
+/** The floating zoom cluster's own readout (ticket 57 moved the cluster here, off PatternCanvas): derived from the same zoom the grid scales by, rather than threaded down as a second prop — it's a pure Math.round(zoom * 100) either way (see usePatternZoom.ts). */
+const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
@@ -864,28 +868,45 @@ function onImportPatterns(imported: Pattern[]) {
         </div>
 
         <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
-          <PatternCanvas
+          <div class="app-shell__canvas-scroll">
+            <PatternCanvas
+              v-if="activePattern"
+              :pattern="activePattern"
+              :zoom="zoom"
+              :preview-cells="previewCells"
+              :preview-color="previewColor"
+              :selection="selection"
+              :mirror-axis-counts="previewedMirrorAxisCounts"
+              :dimmed-cells="mirrorCurrentDimmedCells"
+              @cell-primary-down="onCellPrimaryDown"
+              @cell-primary-move="onCellPrimaryMove"
+              @cell-secondary-down="onCellSecondaryDown"
+              @cell-secondary-move="onCellSecondaryMove"
+              @cell-hover="onCellHover"
+              @hover-end="onHoverEnd"
+            />
+            <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
+              {{ t.shell.canvasPlaceholder }}
+            </p>
+          </div>
+
+          <!--
+            Fixed to the canvas panel's own corner (ticket 57), not the Pattern's own box inside it — a later sibling
+            of the scroll wrapper above, not a descendant of it, so it never scrolls, zooms or rotates along with the
+            Pattern underneath (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box
+            alone). Being later in the DOM also means it paints on top without any extra z-index/pointer-events
+            plumbing: whatever screen area it covers stops mouse events from ever reaching the grid cells underneath
+            (see PatternGrid.vue, whose paint/erase/hover handlers live on the cells themselves), which is what keeps
+            hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
+          -->
+          <ZoomControls
             v-if="activePattern"
-            :pattern="activePattern"
-            :zoom="zoom"
-            :preview-cells="previewCells"
-            :preview-color="previewColor"
-            :selection="selection"
-            :mirror-axis-counts="previewedMirrorAxisCounts"
-            :dimmed-cells="mirrorCurrentDimmedCells"
-            @cell-primary-down="onCellPrimaryDown"
-            @cell-primary-move="onCellPrimaryMove"
-            @cell-secondary-down="onCellSecondaryDown"
-            @cell-secondary-move="onCellSecondaryMove"
-            @cell-hover="onCellHover"
-            @hover-end="onHoverEnd"
+            class="app-shell__zoom-controls"
+            :zoom-percent="zoomPercent"
             @zoom-in="zoomIn"
             @zoom-out="zoomOut"
-            @zoom-reset="resetZoom"
+            @reset="resetZoom"
           />
-          <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
-            {{ t.shell.canvasPlaceholder }}
-          </p>
         </div>
 
         <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
@@ -1089,16 +1110,32 @@ function onImportPatterns(imported: Pattern[]) {
  * anywhere in this shell — this frame, like everything above it up to the page, has no height cap of its own, so a
  * tall Pattern just grows this frame, and the page, taller, and the browser's own scrollbar reaches the rest of it.
  * Don't give this (or an ancestor) a fixed/max height — that's what would make vertical scrolling possible again.
+ *
+ * position:relative makes this the zoom cluster's containing block (ticket 57): the scrolling itself lives one level
+ * down, on .app-shell__canvas-scroll, so the cluster — a sibling of that scroller, not a descendant — is positioned
+ * against this frame's own corner and never scrolls, zooms or rotates along with the Pattern underneath it.
  */
 .app-shell__canvas {
+  position: relative;
   flex: 1 1 auto;
-  overflow-x: auto;
   padding: 24px;
   background-color: var(--color-paper-solid);
   background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
   background-size: 16px 16px;
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
+}
+
+.app-shell__canvas-scroll {
+  overflow-x: auto;
+}
+
+/* Fixed to the canvas panel's top-right corner, modeled on OS window chrome, at an offset that doesn't scale with zoom or move as the panel scrolls (ticket 57; previously anchored to the Pattern's own box under ticket 51). */
+.app-shell__zoom-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
 }
 
 </style>

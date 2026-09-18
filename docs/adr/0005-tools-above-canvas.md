@@ -6,6 +6,8 @@ _Amended by ticket 35: the "New Pattern" / zoom-controls row the Toolbox used to
 
 _Amended by ticket 51: zoom moves again, from the floating right-edge stack to a compact cluster fixed to the canvas box's top-right corner (see [ADR 0004](0004-three-panel-app-shell.md)'s amendment). The Toolbox remains the above-canvas panel's only content either way._
 
+_Amended by ticket 57: corrects ticket 51 — the cluster is fixed to the **canvas panel's** top-right corner (`App.vue`), not the Pattern's own sized box nested inside it (`PatternCanvas.vue`); see [ADR 0004](0004-three-panel-app-shell.md)'s amendment._
+
 [ADR 0004](0004-three-panel-app-shell.md) assigned painting/fill/mirror tools to the left main panel. Moved instead to the above-canvas panel, as a second row below the existing "New Pattern" / zoom-controls row: the tool picker, palette, undo, mirror controls, and row progress now all render there, styled as a strip of small cards on a dot-grid notepad-paper background. This keeps the editing tools next to what they act on (useful for the mirror axis line and hover preview, which relate directly to the grid) and gives them the horizontal room the redesigned mirror controls (two axis toggles plus two "mirror current" buttons) need.
 
 The left main panel keeps its original New Pattern form role, but while a Pattern is open it now renders nothing. This is not the ADR 0004 "coming soon" placeholder — that convention is for a panel whose feature hasn't been built yet, whereas this panel's content moved elsewhere on purpose — so it collapses instead, and the canvas area reclaims the freed width.
