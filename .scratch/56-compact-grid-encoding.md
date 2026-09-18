@@ -7,6 +7,7 @@ Today every cell is stored as its own object carrying a full hex string. A 60×9
 - **ADR 0009 is written first**, recording why a compact encoding was chosen over moving to IndexedDB, with the measurements and an explicit trigger for revisiting that choice.
 - **The stored format is versioned**, and Patterns saved in today's format are migrated on first read.
 - **Each Pattern carries its own colour table**, not indexes into the app's Palette. A cell may hold any hex at all — a Custom colour, or a colour from an imported file that this device's Palette has never had — so a Palette-indexed encoding would destroy those colours silently on the next save.
+- **A Pattern's non-grid fields round-trip untouched**, including ones added after this ticket. Ticket 58 adds Image colors: a *frozen* record of what one Convert image found, which is deliberately **not** the same list as this encoding's colour table of the hexes currently in the grid ([ADR 0011](../docs/adr/0011-image-colors-stored-frozen.md)). The two legitimately differ the moment a colour is erased, and folding one into the other — which looks like an obvious deduplication — would silently destroy that feature.
 - **Exported Pattern files are unaffected.** They stay readable JSON at version 1, which makes export and import an encode/decode boundary rather than a passthrough.
 
 **Blocked by:** 55 (take saving off the per-cell edit path) — this changes what the save path writes, so it should land on a save path that has already been reshaped
