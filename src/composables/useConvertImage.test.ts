@@ -11,14 +11,13 @@ import { CENTERED_PAN, CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../domain/imag
 const image: PixelData = { width: 1, height: 1, data: new Uint8ClampedArray([1, 2, 3, 255]) }
 
 describe('useConvertImage', () => {
-  it('is not framing until a picture is handed over', () => {
+  it('holds no picture until one is handed over', () => {
     const state = useConvertImage()
 
-    expect(state.isFraming.value).toBe(false)
+    expect(state.image.value).toBeUndefined()
 
     state.start(image)
 
-    expect(state.isFraming.value).toBe(true)
     expect(state.image.value).toBe(image)
   })
 
@@ -58,7 +57,7 @@ describe('useConvertImage', () => {
 
     expect(state.zoom.value).toBe(CONVERT_MIN_ZOOM)
     expect(state.pan.value).toEqual(CENTERED_PAN)
-    expect(state.isFraming.value).toBe(true)
+    expect(state.image.value).toBe(image)
   })
 
   it('keeps the colour count inside its range', () => {
@@ -81,7 +80,6 @@ describe('useConvertImage', () => {
 
     state.cancel()
 
-    expect(state.isFraming.value).toBe(false)
     expect(state.image.value).toBeUndefined()
 
     state.start(image)

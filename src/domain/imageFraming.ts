@@ -195,19 +195,32 @@ function marginFit(dimensions: GridDimensions, wantedColumns: number, wantedRows
   return Math.min(1, (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a))
 }
 
+/** The picture, the frame and the Technique's geometry — what the lattice is worked out from. */
+export interface PreviewLatticeInput {
+  view: FramingView
+  frame: FrameSizeMm
+  dimensions: GridDimensions
+  bead: Pick<Bead, 'widthMm' | 'heightMm'>
+  technique: Technique
+}
+
 /**
  * The preview's lattice for a given view: the frame plus as much of the picture as hangs over it, capped at
  * PREVIEW_MAX_CELLS. The margin is the same on both sides of an axis (the larger of the two overhangs), so the bead
  * lattice stays put while the picture is panned instead of jumping a cell as the overhang moves from one side to the
  * other.
+ *
+ * At the cover scale the whole picture nearly always fits inside the cap, so the framing step opens showing all of it.
+ * Zoomed in, the surround is what gets trimmed — the part of the picture furthest from the crop being judged, and still
+ * reachable by panning.
  */
-export function previewLattice(
-  view: FramingView,
-  frame: FrameSizeMm,
-  dimensions: GridDimensions,
-  bead: Pick<Bead, 'widthMm' | 'heightMm'>,
-  technique: Technique,
-): PreviewLattice {
+export function previewLattice({
+  view,
+  frame,
+  dimensions,
+  bead,
+  technique,
+}: PreviewLatticeInput): PreviewLattice {
   const overhangX = Math.max(-view.offsetXMm, view.offsetXMm + view.pictureWidthMm - frame.widthMm)
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
 

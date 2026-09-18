@@ -89,16 +89,40 @@ function createEmptyGrid(columns: number, rows: number): Grid {
 /** Row progress exactly as a freshly created Pattern starts out — also what Delete all (ticket 42) resets it back to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-export function createPattern(input: CreatePatternInput): Pattern {
+/** What a new Pattern's stated size, Bead and Technique work out to: its real-world size in mm and the grid that implies. */
+export interface PatternGeometry extends GridDimensions {
+  bead: Bead
+  widthMm: number
+  heightMm: number
+}
+
+/**
+ * The real-world size and grid a New Pattern form state implies, or undefined when the Bead isn't in the catalog.
+ *
+ * Shared with Convert image (ticket 58), whose frame is this same geometry: the frame has to be the grid the Pattern
+ * will actually be created at, so both read it from here rather than each converting units and dividing by the Bead's
+ * footprint in their own way.
+ */
+export function patternGeometry(input: CreatePatternInput): PatternGeometry | undefined {
   // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
   const bead = findBead(input.beadId)
   if (!bead) {
-    throw new Error(`Unknown bead id: ${input.beadId}`)
+    return undefined
   }
 
   const widthMm = toMillimeters(input.size.width, input.size.unit)
   const heightMm = toMillimeters(input.size.height, input.size.unit)
-  const { columns, rows } = computeGridDimensions({ widthMm, heightMm }, bead)
+
+  return { bead, widthMm, heightMm, ...computeGridDimensions({ widthMm, heightMm }, bead) }
+}
+
+export function createPattern(input: CreatePatternInput): Pattern {
+  const geometry = patternGeometry(input)
+  if (!geometry) {
+    throw new Error(`Unknown bead id: ${input.beadId}`)
+  }
+
+  const { bead, widthMm, heightMm, columns, rows } = geometry
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
 

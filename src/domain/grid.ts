@@ -98,8 +98,9 @@ export interface CellCenter {
  * shearing and squashing it invisibly. The two axes take their own cell size, so a non-square footprint like Delica's
  * 1.6 × 1.3mm doesn't distort either.
  *
- * Accumulates exactly the way gridWidthPx/gridHeightPx do, so the last cell's centre always lands half a cell short
- * of the footprint those report.
+ * Accumulates exactly the way gridWidthPx/gridHeightPx do: the last row's centre lands half a cell above the height
+ * gridHeightPx reports, and a row's last cell half a cell inside gridWidthPx's width — less that row's own stagger,
+ * since gridWidthPx's extra half cell is there for the shifted rows.
  */
 export function cellCenter(
   technique: Technique,

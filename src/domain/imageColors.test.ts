@@ -4,6 +4,7 @@ import {
   PALETTE_SNAP_DISTANCE,
   colorDistance,
   fromHex,
+  nearPaletteColor,
   nearestColor,
   resolveImageColors,
   snapToPalette,
@@ -47,7 +48,7 @@ describe('colorDistance', () => {
 })
 
 describe('PALETTE_SNAP_DISTANCE', () => {
-  it('is far smaller than the gap between the two closest Palette colors, so snapping can never merge two of them', () => {
+  it('is far smaller than the gap between the two closest Palette colors, so no color is near two of them', () => {
     let closest = Infinity
     for (const [index, color] of PALETTE.entries()) {
       for (const other of PALETTE.slice(index + 1)) {
@@ -55,9 +56,22 @@ describe('PALETTE_SNAP_DISTANCE', () => {
       }
     }
 
-    // Two extracted colors more than 2 * PALETTE_SNAP_DISTANCE apart can never snap to the same Palette color, so
-    // this margin is what keeps near-exact snapping from collapsing colors the picture kept apart.
     expect(PALETTE_SNAP_DISTANCE * 2).toBeLessThan(closest)
+  })
+})
+
+describe('nearPaletteColor', () => {
+  it('finds the Palette color an imperceptibly different color should become', () => {
+    expect(nearPaletteColor('#e53845')).toBe('#e63746')
+  })
+
+  it('has nothing for a visibly different color', () => {
+    expect(nearPaletteColor('#ff0000')).toBeUndefined()
+  })
+
+  it('picks the nearest Palette color rather than the first one in range', () => {
+    // Nudged towards the Palette's white from grey; whichever comes first in PALETTE, the nearer one wins.
+    expect(nearPaletteColor('#fefefe')).toBe('#ffffff')
   })
 })
 
@@ -132,6 +146,26 @@ describe('resolveImageColors', () => {
 
     expect(resolved.colors).toContain('#e63746')
     expect(resolved.mapping.get('#e53845')).toBe('#e63746')
+  })
+
+  it('refuses to snap when two colors are near the same Palette color, so snapping never merges them', () => {
+    // Both are within PALETTE_SNAP_DISTANCE of the Palette's white, and 7 apart from each other: snapping both would
+    // collapse two colors the picture kept apart, which is the quantization ADR 0011 rejects.
+    const resolved = resolveImageColors(counts({ '#ffffff': 5, '#fbfbfb': 5 }), 8)
+
+    expect(new Set(resolved.colors)).toEqual(new Set(['#ffffff', '#fbfbfb']))
+    expect(resolved.mapping.get('#ffffff')).toBe('#ffffff')
+    expect(resolved.mapping.get('#fbfbfb')).toBe('#fbfbfb')
+  })
+
+  it('never resolves two distinct colors to the same Image color while both fit inside the limit', () => {
+    const colors = ['#ffffff', '#fbfbfb', '#e63746', '#e53845', '#1a1a1a', '#1c1b1b']
+    const resolved = resolveImageColors(
+      counts(Object.fromEntries(colors.map((hex) => [hex, 1]))),
+      colors.length,
+    )
+
+    expect(new Set(resolved.colors).size).toBe(colors.length)
   })
 
   it('reduces to a single color when only one is allowed', () => {

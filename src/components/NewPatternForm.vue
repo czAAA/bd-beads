@@ -187,7 +187,11 @@ async function onConvertImage(event: Event): Promise<void> {
       size stated above. It needs that size before there is a frame to fit a picture into, so it waits for one the same
       way the submit button does.
     -->
-    <div class="field new-pattern-form__convert">
+    <!--
+      The limits are on this box as well as on the input itself: a browser shows no tooltip for a disabled control, and
+      the input is disabled until a size is stated, so this is what carries the `title` until then.
+    -->
+    <div class="field new-pattern-form__convert" :title="limitsHint" data-testid="convert-image-field">
       <label for="convert-image-input">{{ t.convertImage.fileLabel }}</label>
       <input
         id="convert-image-input"

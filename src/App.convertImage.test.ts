@@ -305,10 +305,13 @@ describe('App Convert image cancelling (ticket 58)', () => {
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="pattern-canvas-viewport"]').exists()).toBe(false)
+    // The open Pattern's editing tools go with its canvas: there is nothing visible to Undo, Rotate or Delete all.
+    expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
 
     expect(wrapper.find('[data-testid="pattern-canvas-viewport"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(1)
   })
 

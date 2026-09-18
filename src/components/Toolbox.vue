@@ -178,8 +178,11 @@ const topBottomMax = computed(() =>
       <!--
         The open Pattern's Image colors (ADR 0011), alongside the Palette rather than instead of it — a converted
         Pattern is touched up with its own colors, and any other Pattern has none of these and shows nothing here.
-        Marked as a full row so it keeps its own line under the Palette's swatches and doesn't count toward the
-        group's 14-control cap (see ToolGroup.vue).
+
+        Marked as a full row so it keeps its own line under the Palette's swatches rather than being squeezed into one
+        of the group's grid columns. That also takes it outside the group's 14-control cap (see ToolGroup.vue), so the
+        set it can hold is bounded at the other end instead: a conversion keeps at most MAX_IMAGE_COLORS colors, which
+        is that same 14, two rows of seven (see domain/imageConversion.ts).
       -->
       <ImageColorsPicker
         v-if="pattern.imageColors?.length"

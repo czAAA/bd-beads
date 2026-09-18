@@ -163,7 +163,7 @@ describe('previewLattice', () => {
     const square = { width: 50, height: 50 }
     const view = framingView(square, frame, 1, CENTERED_PAN)
 
-    expect(previewLattice(view, frame, dimensions, cubeBead, 'loom')).toEqual({
+    expect(previewLattice({ view, frame, dimensions, bead: cubeBead, technique: 'loom' })).toEqual({
       columns: 10,
       rows: 10,
       frameColumn: 0,
@@ -176,7 +176,7 @@ describe('previewLattice', () => {
     const wide = { width: 100, height: 50 }
     const view = framingView(wide, frame, 1, CENTERED_PAN)
 
-    const lattice = previewLattice(view, frame, dimensions, cubeBead, 'loom')
+    const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique: 'loom' })
 
     expect(lattice.frameColumn).toBeGreaterThanOrEqual(5)
     expect(lattice.columns).toBe(dimensions.columns + lattice.frameColumn * 2)
@@ -188,7 +188,13 @@ describe('previewLattice', () => {
     const peyoteFrame = frameSizeMm('peyote', dimensions, cubeBead)
     const view = framingView(tall, peyoteFrame, 1, CENTERED_PAN)
 
-    const lattice = previewLattice(view, peyoteFrame, dimensions, cubeBead, 'peyote')
+    const lattice = previewLattice({
+      view,
+      frame: peyoteFrame,
+      dimensions,
+      bead: cubeBead,
+      technique: 'peyote',
+    })
 
     expect(lattice.frameRow).toBeGreaterThan(0)
     expect(lattice.frameRow % 2).toBe(0)
@@ -200,7 +206,13 @@ describe('previewLattice', () => {
     const bigFrame = frameSizeMm('loom', big, cubeBead)
     const view = framingView(huge, bigFrame, 8, CENTERED_PAN)
 
-    const lattice = previewLattice(view, bigFrame, big, cubeBead, 'loom')
+    const lattice = previewLattice({
+      view,
+      frame: bigFrame,
+      dimensions: big,
+      bead: cubeBead,
+      technique: 'loom',
+    })
 
     expect(lattice.columns * lattice.rows).toBeLessThanOrEqual(PREVIEW_MAX_CELLS)
     expect(lattice.columns).toBeGreaterThanOrEqual(big.columns)
@@ -212,7 +224,15 @@ describe('previewLattice', () => {
     const enormousFrame = frameSizeMm('loom', enormous, cubeBead)
     const view = framingView({ width: 4000, height: 4000 }, enormousFrame, 2, CENTERED_PAN)
 
-    expect(previewLattice(view, enormousFrame, enormous, cubeBead, 'loom')).toEqual({
+    const lattice = previewLattice({
+      view,
+      frame: enormousFrame,
+      dimensions: enormous,
+      bead: cubeBead,
+      technique: 'loom',
+    })
+
+    expect(lattice).toEqual({
       columns: 400,
       rows: 400,
       frameColumn: 0,

@@ -43,9 +43,10 @@ export function colorDistance(a: Rgb, b: Rgb): number {
  * indistinguishable side by side, and a picture's "pure" red landing a unit or two off the Palette's red would
  * otherwise behave as a stranger everywhere in the app (its own Bead quantities row, its own swatch).
  *
- * It is also far below the distance between any two Palette colors (the closest pair is over 80 apart — see
- * imageColors.test.ts, which asserts the margin), so snapping can never collapse two colors the picture kept apart:
- * that would be exactly the wholesale quantization ADR 0011 rejects.
+ * The distance alone is not what keeps snapping from merging two colors a picture kept apart, though: two extracted
+ * colors can both sit inside one Palette color's radius (say #ffffff and #fbfbfb, 7 apart, both within 10 of the
+ * Palette's white). Collapsing those would be exactly the wholesale quantization ADR 0011 rejects, so
+ * resolveImageColors refuses to snap either of them — see snapCompetition below.
  */
 export const PALETTE_SNAP_DISTANCE = 10
 
@@ -66,11 +67,23 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
   return best
 }
 
-/** A Palette color when `hex` is imperceptibly close to one (see PALETTE_SNAP_DISTANCE), otherwise `hex` untouched. */
+/**
+ * The Palette color `hex` is imperceptibly close to (see PALETTE_SNAP_DISTANCE), or undefined when it is near none.
+ * The *nearest* one, not merely the first in range, so the answer doesn't depend on the Palette's own order.
+ */
+export function nearPaletteColor(hex: string): string | undefined {
+  const nearest = nearestColor(
+    PALETTE.map((color) => color.hex),
+    hex,
+  )
+  return nearest && colorDistance(fromHex(hex), fromHex(nearest)) <= PALETTE_SNAP_DISTANCE
+    ? nearest
+    : undefined
+}
+
+/** A Palette color when `hex` is imperceptibly close to one, otherwise `hex` untouched. */
 export function snapToPalette(hex: string): string {
-  const target = fromHex(hex)
-  const snapped = PALETTE.find((color) => colorDistance(target, fromHex(color.hex)) <= PALETTE_SNAP_DISTANCE)
-  return snapped?.hex ?? hex
+  return nearPaletteColor(hex) ?? hex
 }
 
 /** One color of a picture and how many cells sampled it, the unit median cut works in. */
@@ -171,12 +184,36 @@ export interface ResolvedImageColors {
   colors: string[]
 }
 
+/** The color a box of the reduction stands for, before the Palette is offered a chance to claim it. */
+function boxColor(box: readonly WeightedColor[]): string {
+  // A box of one is that color itself, untouched — this is what makes an already-small picture lossless.
+  return box.length === 1 ? box[0]!.hex : toHex(representative(box))
+}
+
+/**
+ * Which Palette colors more than one of these colors would snap to. Those snaps are refused: snapping both would
+ * merge two colors the picture kept apart, which is the wholesale quantization ADR 0011 rejects, and snapping one of
+ * them would be a coin toss between two equally near-exact matches. Both keep their own exact color instead.
+ */
+function snapCompetition(colors: readonly string[]): Set<string> {
+  const claimants = new Map<string, number>()
+  for (const hex of colors) {
+    const near = nearPaletteColor(hex)
+    if (near !== undefined) {
+      claimants.set(near, (claimants.get(near) ?? 0) + 1)
+    }
+  }
+
+  return new Set([...claimants].filter(([, count]) => count > 1).map(([hex]) => hex))
+}
+
 /**
  * The Image colors (CONTEXT.md, ADR 0011) for a picture's sampled cell colors, and what each sampled color became.
  *
  * A picture already holding at most `maxColors` distinct colors is used exactly: no quantization at all, which is the
  * near-lossless case the flat artwork this feature targets falls into. A busier one is reduced by median cut. Either
- * way each resulting color is then offered to the Palette for near-exact snapping (see snapToPalette).
+ * way each resulting color is then offered to the Palette for near-exact snapping, except where two of them are near
+ * the same Palette color (see snapCompetition) — snapping can never be what merges two colors.
  *
  * Ordered by how much of the picture each color covers, so the Colors group leads with the ones worth reaching for.
  */
@@ -192,12 +229,14 @@ export function resolveImageColors(
   const boxes =
     sampled.length <= maxColors ? sampled.map((color) => [color]) : medianCut(sampled, maxColors)
 
+  const contested = snapCompetition(boxes.map(boxColor))
   const mapping = new Map<string, string>()
   const coverage = new Map<string, number>()
 
   for (const box of boxes) {
-    // A box of one is that color itself, untouched — this is what makes an already-small picture lossless.
-    const resolved = snapToPalette(box.length === 1 ? box[0]!.hex : toHex(representative(box)))
+    const own = boxColor(box)
+    const near = nearPaletteColor(own)
+    const resolved = near !== undefined && !contested.has(near) ? near : own
     for (const color of box) {
       mapping.set(color.hex, resolved)
       coverage.set(resolved, (coverage.get(resolved) ?? 0) + color.count)
