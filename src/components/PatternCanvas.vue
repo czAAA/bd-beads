@@ -16,7 +16,7 @@ const props = defineProps<{
   selection?: Selection
   /** Mirror's per-direction axis counts (ticket 44); undefined, or both 0, draws no axis lines. */
   mirrorAxisCounts?: MirrorAxisCounts
-  /** Rich Mirror's "Mirror current" hover preview (ticket 47): cells a hovered button would overwrite. */
+  /** Mirror's "Mirror current" hover preview (ticket 47): cells a hovered button would overwrite. */
   dimmedCells?: GridPosition[]
 }>()
 const emit = defineEmits<{
