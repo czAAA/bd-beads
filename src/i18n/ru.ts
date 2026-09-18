@@ -76,8 +76,6 @@ export const ru: Translations = {
     importErrorLabel: 'Не удалось импортировать этот файл',
   },
   mirror: {
-    horizontalLabel: 'Горизонталь',
-    verticalLabel: 'Вертикаль',
     mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
     mirrorCurrentVerticalButton: 'Отразить текущее (по вертикали)',
     leftRightLabel: 'Слева направо',

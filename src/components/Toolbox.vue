@@ -6,7 +6,7 @@ import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import type { Tool } from '../domain/tool'
 import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
-import { rowProgressPosition, type MirrorAxes, type Pattern } from '../domain/pattern'
+import { rowProgressPosition, type Pattern } from '../domain/pattern'
 
 const props = defineProps<{
   pattern: Pattern
@@ -17,11 +17,8 @@ const props = defineProps<{
   canUndo: boolean
   canRedo: boolean
   canCopy: boolean
-  mirrorAxes: MirrorAxes
-  /** Rich Mirror (ticket 44, flag VITE_RICH_MIRROR): swaps the two on/off toggles below for axis counters when on. */
-  richMirror: boolean
   mirrorAxisCounts: MirrorAxisCounts
-  /** Rich Mirror's copy-mode switch (ticket 45): only rendered when richMirror is on. */
+  /** Mirror's copy-mode switch (ticket 45). */
   mirrorCopyMode: boolean
 }>()
 
@@ -33,7 +30,6 @@ const emit = defineEmits<{
   redo: []
   'toggle-rotate': []
   copy: []
-  'toggle-mirror-axis': [axis: 'horizontal' | 'vertical']
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
@@ -238,114 +234,77 @@ const topBottomMax = computed(() =>
     </ToolGroup>
 
     <ToolGroup ref="mirrorGroupRef" :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
-      <template v-if="richMirror">
-        <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-left-right">
-          <button
-            type="button"
-            class="icon-button"
-            data-testid="mirror-left-right-decrease"
-            :title="t.mirror.decreaseLeftRightButton"
-            :aria-label="t.mirror.decreaseLeftRightButton"
-            :disabled="leftRightCount === 0"
-            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount - 1)"
-          >
-            −
-          </button>
-          <span class="mirror-axis-counter__label" data-testid="mirror-left-right-value">
-            {{ t.mirror.leftRightLabel }}: {{ leftRightCount }}
-          </span>
-          <button
-            type="button"
-            class="icon-button"
-            data-testid="mirror-left-right-increase"
-            :title="t.mirror.increaseLeftRightButton"
-            :aria-label="t.mirror.increaseLeftRightButton"
-            :disabled="leftRightCount === leftRightMax"
-            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount + 1)"
-          >
-            +
-          </button>
-        </p>
-        <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-top-bottom">
-          <button
-            type="button"
-            class="icon-button"
-            data-testid="mirror-top-bottom-decrease"
-            :title="t.mirror.decreaseTopBottomButton"
-            :aria-label="t.mirror.decreaseTopBottomButton"
-            :disabled="topBottomCount === 0"
-            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount - 1)"
-          >
-            −
-          </button>
-          <span class="mirror-axis-counter__label" data-testid="mirror-top-bottom-value">
-            {{ t.mirror.topBottomLabel }}: {{ topBottomCount }}
-          </span>
-          <button
-            type="button"
-            class="icon-button"
-            data-testid="mirror-top-bottom-increase"
-            :title="t.mirror.increaseTopBottomButton"
-            :aria-label="t.mirror.increaseTopBottomButton"
-            :disabled="topBottomCount === topBottomMax"
-            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount + 1)"
-          >
-            +
-          </button>
-        </p>
+      <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-left-right">
         <button
           type="button"
           class="icon-button"
-          data-testid="mirror-copy-mode"
-          :title="t.mirror.copyModeLabel"
-          :aria-label="t.mirror.copyModeLabel"
-          :aria-pressed="mirrorCopyMode"
-          :class="{ 'tool-picker__button--selected': mirrorCopyMode }"
-          @click="emit('toggle-mirror-copy-mode')"
+          data-testid="mirror-left-right-decrease"
+          :title="t.mirror.decreaseLeftRightButton"
+          :aria-label="t.mirror.decreaseLeftRightButton"
+          :disabled="leftRightCount === 0"
+          @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount - 1)"
         >
-          <!-- Three identical rectangles in a row: this switch makes every strip repeat the same way round (A | A | A) instead of mirror-imaging. -->
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <rect x="2" y="8" width="5" height="8" rx="1" />
-            <rect x="9.5" y="8" width="5" height="8" rx="1" />
-            <rect x="17" y="8" width="5" height="8" rx="1" />
-          </svg>
+          −
         </button>
-      </template>
-      <template v-else>
+        <span class="mirror-axis-counter__label" data-testid="mirror-left-right-value">
+          {{ t.mirror.leftRightLabel }}: {{ leftRightCount }}
+        </span>
         <button
           type="button"
           class="icon-button"
-          data-testid="mirror-horizontal"
-          :title="t.mirror.horizontalLabel"
-          :aria-label="t.mirror.horizontalLabel"
-          :aria-pressed="mirrorAxes.horizontal"
-          :class="{ 'tool-picker__button--selected': mirrorAxes.horizontal }"
-          @click="emit('toggle-mirror-axis', 'horizontal')"
+          data-testid="mirror-left-right-increase"
+          :title="t.mirror.increaseLeftRightButton"
+          :aria-label="t.mirror.increaseLeftRightButton"
+          :disabled="leftRightCount === leftRightMax"
+          @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount + 1)"
         >
-          <!-- A bead and the counterpart a live-mirrored stroke also paints, either side of this axis. The one-time "Mirror current" icons below use arrows instead, since they move content rather than doubling it. -->
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M12 3v3M12 10.5v3M12 18v3" />
-            <rect x="2.5" y="8.5" width="7" height="7" rx="1.5" />
-            <rect x="14.5" y="8.5" width="7" height="7" rx="1.5" />
-          </svg>
+          +
         </button>
+      </p>
+      <p class="tool-group__full-row mirror-axis-counter" data-testid="mirror-top-bottom">
         <button
           type="button"
           class="icon-button"
-          data-testid="mirror-vertical"
-          :title="t.mirror.verticalLabel"
-          :aria-label="t.mirror.verticalLabel"
-          :aria-pressed="mirrorAxes.vertical"
-          :class="{ 'tool-picker__button--selected': mirrorAxes.vertical }"
-          @click="emit('toggle-mirror-axis', 'vertical')"
+          data-testid="mirror-top-bottom-decrease"
+          :title="t.mirror.decreaseTopBottomButton"
+          :aria-label="t.mirror.decreaseTopBottomButton"
+          :disabled="topBottomCount === 0"
+          @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount - 1)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M3 12h3M10.5 12h3M18 12h3" />
-            <rect x="8.5" y="2.5" width="7" height="7" rx="1.5" />
-            <rect x="8.5" y="14.5" width="7" height="7" rx="1.5" />
-          </svg>
+          −
         </button>
-      </template>
+        <span class="mirror-axis-counter__label" data-testid="mirror-top-bottom-value">
+          {{ t.mirror.topBottomLabel }}: {{ topBottomCount }}
+        </span>
+        <button
+          type="button"
+          class="icon-button"
+          data-testid="mirror-top-bottom-increase"
+          :title="t.mirror.increaseTopBottomButton"
+          :aria-label="t.mirror.increaseTopBottomButton"
+          :disabled="topBottomCount === topBottomMax"
+          @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount + 1)"
+        >
+          +
+        </button>
+      </p>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="mirror-copy-mode"
+        :title="t.mirror.copyModeLabel"
+        :aria-label="t.mirror.copyModeLabel"
+        :aria-pressed="mirrorCopyMode"
+        :class="{ 'tool-picker__button--selected': mirrorCopyMode }"
+        @click="emit('toggle-mirror-copy-mode')"
+      >
+        <!-- Three identical rectangles in a row: this switch makes every strip repeat the same way round (A | A | A) instead of mirror-imaging. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="2" y="8" width="5" height="8" rx="1" />
+          <rect x="9.5" y="8" width="5" height="8" rx="1" />
+          <rect x="17" y="8" width="5" height="8" rx="1" />
+        </svg>
+      </button>
       <button
         type="button"
         class="icon-button"
@@ -520,7 +479,7 @@ const topBottomMax = computed(() =>
   font-variant-numeric: tabular-nums;
 }
 
-/* Rich Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
+/* Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
 .mirror-axis-counter {
   display: flex;
   align-items: center;

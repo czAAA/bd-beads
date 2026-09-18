@@ -1,14 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { loadPatterns } from './domain/patternStorage'
-
-// Rich Mirror (ticket 44) is a build-time flag (src/featureFlags.ts), on by default now that it's shipped (`.env`).
-// Mocking the module -- rather than relying on the ambient `.env` -- keeps this one file exercising the flag-on
-// path deliberately and explicitly, alongside App.test.ts's mocked-off legacy-path coverage, regardless of
-// whichever way the default ever moves again.
-vi.mock('./featureFlags', () => ({ isRichMirrorEnabled: () => true }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -23,7 +17,7 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-describe('App with the rich Mirror flag on (ticket 44)', () => {
+describe('App Mirror axis counters (ticket 44)', () => {
   it('shows axis counters instead of the on/off toggles in the Mirror group', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -215,10 +209,6 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull() // row 0 is finished/locked, stays untouched
     expect(loadPatterns()[0]!.grid[19]![0]!.color).toBe('#e63746') // the source row is unaffected
   })
-
-  // This module always mocks the flag on; App.test.ts's own pre-existing "Mirror current" tests (unmodified by
-  // this ticket, e.g. "reflects the drawn half across the vertical axis with 'Mirror current'") are what prove the
-  // flag-off path still uses the legacy bigger-half heuristic, untouched.
 })
 
 describe("App's Mirror current hover preview (ticket 47)", () => {
@@ -307,7 +297,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
   })
 })
 
-describe('App Paste through rich Mirror (ticket 50)', () => {
+describe('App Paste through Mirror (ticket 50)', () => {
   /** A drag across the grid: press on one cell, move through the rest, release. */
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
     const cells = wrapper.findAll('[data-testid="grid-cell"]')

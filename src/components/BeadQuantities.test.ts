@@ -20,7 +20,7 @@ function mountQuantities(pattern: Pattern | undefined) {
 
 describe('BeadQuantities', () => {
   it('has exactly two columns: a color swatch and a bead count', () => {
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
 
     expect(wrapper.findAll('th')).toHaveLength(2)
     const row = wrapper.find('[data-testid="quantity-row"]')
@@ -29,7 +29,7 @@ describe('BeadQuantities', () => {
   })
 
   it('reports how many beads each painted color needs', () => {
-    const withTwoColors = paintCells(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }), [{ row: 0, column: 1 }], '#2f6fed', { horizontal: false, vertical: false })
+    const withTwoColors = paintCells(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), [{ row: 0, column: 1 }], '#2f6fed', { columns: 0, rows: 0 })
     const wrapper = mountQuantities(withTwoColors)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
@@ -44,13 +44,13 @@ describe('BeadQuantities', () => {
 
   it('reports a color painted from outside the Palette, with its swatch and count', () => {
     // Only reachable from an imported file: the app's own painting is Palette-only.
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#123456', { horizontal: false, vertical: false }))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#123456', { columns: 0, rows: 0 }))
 
     expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
   })
 
   it('shows no bead pickers or bead names', () => {
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false }))
+    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
 
     expect(wrapper.find('select').exists()).toBe(false)
   })

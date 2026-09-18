@@ -24,8 +24,6 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       canUndo: false,
       canRedo: false,
       canCopy: false,
-      mirrorAxes: { horizontal: false, vertical: false },
-      richMirror: false,
       mirrorAxisCounts: { columns: 0, rows: 0 },
       mirrorCopyMode: false,
       ...overrides,
@@ -96,11 +94,11 @@ describe('Toolbox', () => {
     }
   })
 
-  it('puts the mirror axis and mirror-current controls inside the Mirror group', () => {
+  it('puts the mirror axis counters and mirror-current controls inside the Mirror group', () => {
     const wrapper = mountToolbox()
 
     const mirrorGroup = wrapper.findAll('.tool-group')[3]!
-    for (const testId of ['mirror-horizontal', 'mirror-vertical', 'mirror-current-horizontal', 'mirror-current-vertical']) {
+    for (const testId of ['mirror-left-right', 'mirror-top-bottom', 'mirror-current-horizontal', 'mirror-current-vertical']) {
       expect(mirrorGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
   })
@@ -187,15 +185,6 @@ describe('Toolbox', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
 
-  it('emits toggle-mirror-axis with the axis that was clicked', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="mirror-horizontal"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-vertical"]').trigger('click')
-
-    expect(wrapper.emitted('toggle-mirror-axis')).toEqual([['horizontal'], ['vertical']])
-  })
-
   it('emits mirror-current with the axis that was clicked', async () => {
     const wrapper = mountToolbox()
 
@@ -270,27 +259,9 @@ describe('Toolbox', () => {
 
     expect(wrapper.vm.collapseExpandedGroup()).toBe(false)
   })
-})
-
-describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
-  it('shows the Left–right/Top–bottom counters instead of the on/off toggles', () => {
-    const wrapper = mountToolbox({ richMirror: true })
-
-    expect(wrapper.find('[data-testid="mirror-left-right"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="mirror-top-bottom"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="mirror-horizontal"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="mirror-vertical"]').exists()).toBe(false)
-  })
-
-  it('still shows the Mirror current buttons, unchanged (ticket 44 leaves them for ticket 46)', () => {
-    const wrapper = mountToolbox({ richMirror: true })
-
-    expect(wrapper.find('[data-testid="mirror-current-horizontal"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="mirror-current-vertical"]').exists()).toBe(true)
-  })
 
   it('shows the copy-mode switch, its on/off state, and emits toggle-mirror-copy-mode when clicked (ticket 45)', async () => {
-    const wrapper = mountToolbox({ richMirror: true, mirrorCopyMode: false })
+    const wrapper = mountToolbox({ mirrorCopyMode: false })
 
     const button = wrapper.find('[data-testid="mirror-copy-mode"]')
     expect(button.exists()).toBe(true)
@@ -302,19 +273,13 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
   })
 
   it('reflects an on copy-mode state from its prop', () => {
-    const wrapper = mountToolbox({ richMirror: true, mirrorCopyMode: true })
+    const wrapper = mountToolbox({ mirrorCopyMode: true })
 
     expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('does not render the copy-mode switch with the flag off', () => {
-    const wrapper = mountToolbox({ richMirror: false })
-
-    expect(wrapper.find('[data-testid="mirror-copy-mode"]').exists()).toBe(false)
-  })
-
   it('gives each counter its own full row, not counted among the icon controls', () => {
-    const wrapper = mountToolbox({ richMirror: true })
+    const wrapper = mountToolbox()
 
     expect(wrapper.find('[data-testid="mirror-left-right"]').classes()).toContain('tool-group__full-row')
     expect(wrapper.find('[data-testid="mirror-top-bottom"]').classes()).toContain('tool-group__full-row')
@@ -322,7 +287,6 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
 
   it('shows each counter its current value', () => {
     const wrapper = mountToolbox({
-      richMirror: true,
       mirrorAxisCounts: { columns: 2, rows: 1 },
     })
 
@@ -331,7 +295,7 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
   })
 
   it('not rotated: Left–right drives columns, Top–bottom drives rows', async () => {
-    const wrapper = mountToolbox({ richMirror: true, mirrorAxisCounts: { columns: 1, rows: 0 } })
+    const wrapper = mountToolbox({ mirrorAxisCounts: { columns: 1, rows: 0 } })
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
@@ -345,7 +309,7 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
   it('rotated: swaps which grid axis Left–right/Top–bottom each drive, view-only (never a data transpose)', async () => {
     const pattern = makePattern()
     pattern.rotated = true
-    const wrapper = mountToolbox({ pattern, richMirror: true, mirrorAxisCounts: { columns: 3, rows: 1 } })
+    const wrapper = mountToolbox({ pattern, mirrorAxisCounts: { columns: 3, rows: 1 } })
 
     // Left–right now reads/writes rows; Top–bottom now reads/writes columns.
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
@@ -361,7 +325,6 @@ describe('Toolbox with the rich Mirror flag on (ticket 44)', () => {
 
     const wrapper = mountToolbox({
       pattern,
-      richMirror: true,
       mirrorAxisCounts: { columns: 0, rows: pattern.rows - 1 },
     })
 
