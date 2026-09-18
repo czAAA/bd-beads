@@ -180,7 +180,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(target, dot, at))
   })
 
-  it('with a single center axis on (the flag-off case), stamps both the aimed spot and its one mirrored counterpart', () => {
+  it('with a single center axis on, stamps both the aimed spot and its one mirrored counterpart', () => {
     const target = painted(['......', '......', '......', '......'])
 
     // 6-wide grid, mirrored across columns (axisCount 1): column 1 <-> column 4.

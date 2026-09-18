@@ -18,7 +18,7 @@ function blankPattern(): Pattern {
 
 function painted(cells: [row: number, column: number, color: string][]): Pattern {
   return cells.reduce(
-    (pattern, [row, column, color]) => paintCells(pattern, [{ row: row, column: column }], color, { horizontal: false, vertical: false }),
+    (pattern, [row, column, color]) => paintCells(pattern, [{ row: row, column: column }], color, { columns: 0, rows: 0 }),
     blankPattern(),
   )
 }

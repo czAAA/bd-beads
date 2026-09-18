@@ -31,7 +31,7 @@ const props = defineProps<{
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those cells (ticket 31). */
   selection?: Selection
-  /** Rich Mirror (ticket 44): axis lines are drawn whenever a direction's count is above 0; omitted (or both 0) draws nothing, which is what the flag-off path gets. Grid-space, same coordinate system as the cells themselves -- the surrounding rotate transform (PatternCanvas.vue) turns these along with everything else, so they never need to know about Pattern.rotated themselves. */
+  /** Mirror's per-direction axis counts (ticket 44): axis lines are drawn whenever a direction's count is above 0; omitted (or both 0) draws nothing. Grid-space, same coordinate system as the cells themselves -- the surrounding rotate transform (PatternCanvas.vue) turns these along with everything else, so they never need to know about Pattern.rotated themselves. */
   mirrorAxisCounts?: MirrorAxisCounts
   /** Cells a hovered "Mirror current" button would overwrite (ticket 47): dimmed, distinct from previewCells' paint-color overlay -- this dims *existing* content rather than showing what would be painted over it. */
   dimmedCells?: GridPosition[]
@@ -223,7 +223,7 @@ function columnProgressClass(columnIndex: number): string | null {
 }
 
 /*
- * Rich Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
+ * Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
  * the active tool. Positioned in the same unrotated grid coordinate space as the cells themselves, so the rotate
  * transform one level up (PatternCanvas.vue) turns them together with the grid rather than this component having to
  * know about Pattern.rotated -- the same view-only-transform approach the rest of the app uses for rotation.

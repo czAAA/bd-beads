@@ -128,7 +128,7 @@ describe('PatternTransfer import', () => {
 
   it('brings in a Pattern that clashes with a local one under a new identity, keeping both', async () => {
     const local = makePattern('Fox')
-    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { horizontal: false, vertical: false })
+    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     const wrapper = mount(PatternTransfer, { props: { patterns: [local] } })
 
     await pickFile(wrapper, serializePattern(incoming))

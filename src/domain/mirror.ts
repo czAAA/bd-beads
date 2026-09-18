@@ -7,9 +7,9 @@
  * the grid data itself.
  */
 
-/** Per-direction Mirror axis counts, in grid space. `columns` splits the grid across its columns (today's, i.e.
- * flag-off, "horizontal"/left-right-when-unrotated mirror); `rows` splits it across its rows (today's "vertical"/
- * top-bottom-when-unrotated mirror). */
+/** Per-direction Mirror axis counts, in grid space. `columns` splits the grid across its columns ("horizontal"/
+ * left-right-when-unrotated mirror); `rows` splits it across its rows ("vertical"/top-bottom-when-unrotated
+ * mirror). */
 export interface MirrorAxisCounts {
   columns: number
   rows: number
@@ -58,9 +58,8 @@ function toIndex(position: number, dimension: number, space: StripSpace): number
 /**
  * Which strip (0-indexed, 0..axisCount) a position falls in. `Math.ceil(x / w) - 1` rather than the more obvious
  * `Math.floor(x / w)`: the two agree everywhere except exactly on a strip boundary, where this rounds *down* to the
- * lower/earlier strip -- matching legacy `mirrorPattern`'s tie-break for its center axis (an odd dimension's exact
- * middle cell counts toward the first/larger half, not the second), which only ever arises at exactly this kind of
- * boundary. See stripOf's own tests for the case this was chosen for.
+ * lower/earlier strip -- an odd dimension's exact middle cell counts toward the first/larger half, not the second,
+ * which only ever arises at exactly this kind of boundary. See stripOf's own tests for the case this was chosen for.
  */
 function stripAtPosition(position: number, space: StripSpace): number {
   return Math.min(space.strips - 1, Math.max(0, Math.ceil(position / space.stripWidth) - 1))
@@ -105,8 +104,8 @@ export function stripOf(index: number, dimension: number, axisCount: number): nu
 /**
  * Every index (across every strip -- its own included) that `index` mirrors onto when `axisCount` axes split
  * `dimension` cells into axisCount + 1 strips "as equal as possible". With 0 axes that's just `[index]`. With 1
- * axis this is exactly today's single center-mirror reflection, `dimension - 1 - index`, which self-mirrors the
- * middle cell of an odd dimension (ADR 0006's original behaviour, still what the flag-off path uses directly). With
+ * axis this is exactly a single center-mirror reflection, `dimension - 1 - index`, which self-mirrors the
+ * middle cell of an odd dimension (ADR 0006's original behaviour). With
  * more axes, strips alternate mirror-image/plain the way a fan-folded strip of paper would (A | A' | A | A' ...),
  * so an axis can run through the middle of a strip's own middle cell too, when that strip's width is odd.
  *
