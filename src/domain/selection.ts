@@ -139,7 +139,7 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
  * block's content per mirrorBlockPlacements' verdict and then handed to pastedCells exactly like a single
  * unmirrored placement — so each copy keeps its own hole rule and its own independent edge-clipping, with no
  * interaction between copies beyond later ones winning where two happen to overlap (the same merge order
- * paintCellsForCounts uses for mirrored Paint strokes). With both axis counts at 0 this is exactly pastedCells'
+ * paintCells uses for mirrored Paint strokes). With both axis counts at 0 this is exactly pastedCells'
  * own single placement.
  */
 export function mirroredPastedCells(
