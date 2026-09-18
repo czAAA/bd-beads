@@ -223,7 +223,7 @@ function columnProgressClass(columnIndex: number): string | null {
 }
 
 /*
- * Rich Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
+ * Mirror's axis lines (ticket 44): "super-thin but clearly visible", drawn over the whole grid regardless of
  * the active tool. Positioned in the same unrotated grid coordinate space as the cells themselves, so the rotate
  * transform one level up (PatternCanvas.vue) turns them together with the grid rather than this component having to
  * know about Pattern.rotated -- the same view-only-transform approach the rest of the app uses for rotation.

@@ -479,7 +479,7 @@ const topBottomMax = computed(() =>
   font-variant-numeric: tabular-nums;
 }
 
-/* Rich Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
+/* Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
 .mirror-axis-counter {
   display: flex;
   align-items: center;
