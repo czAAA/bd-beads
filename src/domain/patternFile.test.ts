@@ -22,7 +22,7 @@ function makePattern(name = 'Fox'): Pattern {
 }
 
 function decoratedPattern(): Pattern {
-  const painted = paintCells(makePattern(), [{ row: 2, column: 3 }], '#e63746', { horizontal: false, vertical: false })
+  const painted = paintCells(makePattern(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
   return moveToRow(setRowProgressEnabled(painted, true), 4)
 }
 
@@ -142,7 +142,7 @@ describe('importPatterns', () => {
 
   it('keeps a same-identity local Pattern and brings the imported one in alongside it', () => {
     const local = decoratedPattern()
-    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#2f6fed', { horizontal: false, vertical: false })
+    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
 
     const added = importPatterns([incoming], [local], () => 'fresh-id')
 

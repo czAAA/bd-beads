@@ -350,28 +350,23 @@ export function fillArea(pattern: Pattern, row: number, column: number, color: s
   return restoreGrid(pattern, grid)
 }
 
-export interface MirrorAxes {
-  horizontal: boolean
-  vertical: boolean
-}
-
 /**
- * Every cell a live-mirrored stroke touches when painting `position` (ADR 0006/ticket 22): itself, plus its
- * reflection(s) across whichever axes are on, fixed to the grid's exact center rather than mirrorPattern's adaptive
- * "bigger half" (there's no drawn-so-far content to judge a source half from mid-stroke). 1 cell with neither axis
- * on, 2 with one, 4 with both — fewer if the position sits on the exact center of an odd dimension, where a cell
- * mirrors onto itself.
+ * Every cell a live-mirrored stroke touches when painting `position` (ADR 0006/ticket 22, generalized to
+ * per-direction axis *counts* by ticket 44): itself, plus its reflection(s) across every Mirror axis, fixed to the
+ * grid's exact center(s) rather than mirrorCurrent's adaptive "fullest strip" heuristic (there's no drawn-so-far
+ * content to judge a source strip from mid-stroke). `axes.columns` splits the grid across its columns
+ * ("horizontal"), `axes.rows` across its rows ("vertical"); see domain/mirror.ts for the strip math and why counts
+ * are grid-space, never screen-space. `copyMode` (ticket 45) is one switch for both directions: strips repeat the
+ * same way round (A | A | A) instead of mirror-imaging (A | A' | A).
  */
 export function mirroredCells(
   pattern: Pick<Pattern, 'rows' | 'columns'>,
   position: GridPosition,
-  axes: MirrorAxes,
+  axes: MirrorAxisCounts,
+  copyMode = false,
 ): GridPosition[] {
-  const mirroredRow = pattern.rows - 1 - position.row
-  const mirroredColumn = pattern.columns - 1 - position.column
-
-  const rows = axes.vertical ? [position.row, mirroredRow] : [position.row]
-  const columns = axes.horizontal ? [position.column, mirroredColumn] : [position.column]
+  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows, copyMode)
+  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns, copyMode)
 
   const seen = new Set<string>()
   const cells: GridPosition[] = []
@@ -397,73 +392,12 @@ export function paintCells(
   pattern: Pattern,
   positions: GridPosition[],
   color: string | null,
-  axes: MirrorAxes,
-): Pattern {
-  const targets = new Map<string, GridPosition>()
-  for (const position of positions) {
-    for (const cell of mirroredCells(pattern, position, axes)) {
-      targets.set(positionKey(cell), cell)
-    }
-  }
-
-  const changed = [...targets.values()].some(
-    ({ row, column }) => pattern.grid[row]?.[column]?.color !== color,
-  )
-  if (!changed) {
-    return pattern
-  }
-
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) =>
-      targets.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell,
-    ),
-  )
-
-  return restoreGrid(pattern, grid)
-}
-
-/**
- * Rich Mirror (ticket 44, flag `VITE_RICH_MIRROR`): every cell a live-mirrored stroke touches when painting
- * `position`, given per-direction axis *counts* rather than the legacy on/off axes (see mirroredCells above, which
- * this generalizes -- with both counts at 0 or 1 the two agree exactly). `axes.columns` splits the grid across its
- * columns (today's "horizontal"), `axes.rows` across its rows (today's "vertical"); see domain/mirror.ts for the
- * strip math and why counts are grid-space, never screen-space. `copyMode` (ticket 45) is one switch for both
- * directions: strips repeat the same way round (A | A | A) instead of mirror-imaging (A | A' | A).
- */
-export function mirroredCellsForCounts(
-  pattern: Pick<Pattern, 'rows' | 'columns'>,
-  position: GridPosition,
-  axes: MirrorAxisCounts,
-  copyMode = false,
-): GridPosition[] {
-  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows, copyMode)
-  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns, copyMode)
-
-  const seen = new Set<string>()
-  const cells: GridPosition[] = []
-  for (const row of rows) {
-    for (const column of columns) {
-      const key = positionKey({ row, column })
-      if (!seen.has(key)) {
-        seen.add(key)
-        cells.push({ row, column })
-      }
-    }
-  }
-  return cells
-}
-
-/** paintCells's rich-Mirror counterpart (see mirroredCellsForCounts): paints every position in `positions` plus each one's counterpart(s) under the given axis counts (and copy mode), as a single Pattern edit. */
-export function paintCellsForCounts(
-  pattern: Pattern,
-  positions: GridPosition[],
-  color: string | null,
   axes: MirrorAxisCounts,
   copyMode = false,
 ): Pattern {
   const targets = new Map<string, GridPosition>()
   for (const position of positions) {
-    for (const cell of mirroredCellsForCounts(pattern, position, axes, copyMode)) {
+    for (const cell of mirroredCells(pattern, position, axes, copyMode)) {
       targets.set(positionKey(cell), cell)
     }
   }
@@ -500,18 +434,16 @@ function paintedCountsByStrip(grid: Grid, dimension: number, axis: 'columns' | '
 }
 
 /**
- * Rich Mirror's "Mirror current" (ticket 46, replacing the legacy mirrorPattern's "bigger half" heuristic below --
- * ADR 0006 amendment): a one-time sync of what's already painted along ONE direction, using that direction's own
- * axis count -- the other direction is left alone entirely, matching how the legacy per-axis buttons always worked
- * (see onMirrorCurrent in App.vue). The strip holding the most painted cells becomes the source and is copied onto
- * every other strip, mirrored by default or unflipped in copy mode (see mirrorCounterpartInStrip). Ties go to the
- * lowest strip index (leftmost/topmost), matching the legacy heuristic's tie-break for equal halves.
+ * "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync of what's already painted along ONE direction,
+ * using that direction's own axis count -- the other direction is left alone entirely, matching how the per-axis
+ * buttons have always worked (see onMirrorCurrent in App.vue). The strip holding the most painted cells becomes the
+ * source and is copied onto every other strip, mirrored by default or unflipped in copy mode (see
+ * mirrorCounterpartInStrip). Ties go to the lowest strip index (leftmost/topmost).
  *
  * A count of 0 acts as a single center axis (1 axis, 2 strips) purely for this one sync -- the stored axis count
- * itself is untouched -- so the button always does something, the same way a count of 0 still lets the flag-off
- * toggle mirror once turned on.
+ * itself is untouched -- so the button always does something even before any axis is turned on.
  */
-export function mirrorCurrentForCounts(
+export function mirrorCurrent(
   pattern: Pattern,
   axis: 'columns' | 'rows',
   axisCount: number,
@@ -555,66 +487,6 @@ export function changedCells(before: Grid, after: Grid): GridPosition[] {
     })
   })
   return changed
-}
-
-function isInFirstHalf(index: number, dimension: number): boolean {
-  return index < Math.ceil(dimension / 2)
-}
-
-/** Whether the first half (by index, along the given axis) holds at least as much painted content as the second — used to find "the drawn half" to mirror from. Ties, including an all-blank grid, default to the first half. */
-function firstHalfIsSource(grid: Grid, dimension: number, axis: 'row' | 'column'): boolean {
-  let firstHalfPainted = 0
-  let secondHalfPainted = 0
-
-  grid.forEach((gridRow, rowIndex) => {
-    gridRow.forEach((cell, columnIndex) => {
-      if (cell.color === null) {
-        return
-      }
-      const index = axis === 'row' ? rowIndex : columnIndex
-      if (isInFirstHalf(index, dimension)) {
-        firstHalfPainted++
-      } else {
-        secondHalfPainted++
-      }
-    })
-  })
-
-  return firstHalfPainted >= secondHalfPainted
-}
-
-/** Maps an index in the non-source half onto its mirror partner in the source half; indices already in the source half map to themselves. */
-function mirrorIndex(index: number, dimension: number, sourceIsFirstHalf: boolean): number {
-  return isInFirstHalf(index, dimension) === sourceIsFirstHalf ? index : dimension - 1 - index
-}
-
-/**
- * Reflects the drawn half (or quadrant, if both axes are selected) across the chosen axis/axes onto the rest of the
- * grid, overwriting whatever was there. Which half counts as "drawn" is decided per axis by which side has more
- * painted cells (see firstHalfIsSource), so mirroring works whichever side the user actually painted on rather than
- * assuming a fixed corner. "Horizontal" flips left-right; "vertical" flips top-bottom. Returns the same Pattern
- * instance, unchanged, when neither axis is selected.
- */
-export function mirrorPattern(pattern: Pattern, axes: MirrorAxes): Pattern {
-  if (!axes.horizontal && !axes.vertical) {
-    return pattern
-  }
-
-  const verticalSourceIsFirstHalf = axes.vertical && firstHalfIsSource(pattern.grid, pattern.rows, 'row')
-  const horizontalSourceIsFirstHalf =
-    axes.horizontal && firstHalfIsSource(pattern.grid, pattern.columns, 'column')
-
-  const sourceRow = (row: number) => (axes.vertical ? mirrorIndex(row, pattern.rows, verticalSourceIsFirstHalf) : row)
-  const sourceColumn = (column: number) =>
-    axes.horizontal ? mirrorIndex(column, pattern.columns, horizontalSourceIsFirstHalf) : column
-
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((_cell, columnIndex) => ({
-      color: pattern.grid[sourceRow(rowIndex)]![sourceColumn(columnIndex)]!.color,
-    })),
-  )
-
-  return restoreGrid(pattern, grid)
 }
 
 /** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated); reflects the rotated view's swapped dimensions, since that's how the Pattern currently looks. */

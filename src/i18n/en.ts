@@ -74,8 +74,6 @@ export const en: Translations = {
     importErrorLabel: 'Could not import that file',
   },
   mirror: {
-    horizontalLabel: 'Horizontal',
-    verticalLabel: 'Vertical',
     mirrorCurrentHorizontalButton: 'Mirror current (horizontal)',
     mirrorCurrentVerticalButton: 'Mirror current (vertical)',
     leftRightLabel: 'Left–right',
