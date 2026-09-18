@@ -10,6 +10,7 @@ import PatternTransfer from './components/PatternTransfer.vue'
 import Toolbox from './components/Toolbox.vue'
 import ZoomControls from './components/ZoomControls.vue'
 import { useElementSize } from './composables/useElementSize'
+import { usePatternLibrary, type ReplaceOptions } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
 import { findBead } from './domain/beads'
@@ -43,7 +44,6 @@ import {
   keepFinishedRows,
   mirrorCurrent,
   mirroredCells,
-  mostRecentlyUpdated,
   moveToRow,
   paintCells,
   previewReplaceBead,
@@ -60,18 +60,27 @@ import {
   type Pattern,
   type UndoEntry,
 } from './domain/pattern'
-import { loadPatterns, removePattern, savePattern } from './domain/patternStorage'
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
 
 const { t } = provideI18n()
 
-const patterns = ref<Pattern[]>(loadPatterns())
-const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.value)?.id)
-
-const activePattern = computed(() =>
-  patterns.value.find((pattern) => pattern.id === activePatternId.value),
-)
+/**
+ * The Pattern library, which one is open, and persistence (ticket 55) — every Pattern change in this file goes
+ * through one of these mutators, and nothing here touches storage directly. A dragged stroke is the one edit that
+ * doesn't save as it goes (see paintStrokeCell and endStroke): it writes once, when the stroke ends.
+ */
+const {
+  patterns,
+  activePatternId,
+  activePattern,
+  saveFailed,
+  addPattern,
+  addPatterns,
+  replacePattern,
+  removePattern,
+  flushPendingSave,
+} = usePatternLibrary()
 
 /**
  * The open Pattern's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a
@@ -270,23 +279,11 @@ function onHoverEnd() {
 }
 
 function onCreatePattern(payload: CreatePatternInput) {
-  const created = createPattern(payload)
-  savePattern(created)
-  patterns.value.push(created)
-  activePatternId.value = created.id
+  addPattern(createPattern(payload))
 }
 
 function onSelectPattern(id: string) {
   activePatternId.value = id
-}
-
-function onRemovePattern(id: string) {
-  removePattern(id)
-  patterns.value = patterns.value.filter((pattern) => pattern.id !== id)
-
-  if (activePatternId.value === id) {
-    activePatternId.value = mostRecentlyUpdated(patterns.value)?.id
-  }
 }
 
 function onNewPattern() {
@@ -318,9 +315,14 @@ function onSelectTool(tool: Tool) {
   activeTool.value = tool
 }
 
-function replaceActivePattern(updated: Pattern) {
-  savePattern(updated)
-  patterns.value = patterns.value.map((pattern) => (pattern.id === updated.id ? updated : pattern))
+/**
+ * The one place a change to the open Pattern is committed: every command in this file lands here, and the library
+ * (usePatternLibrary) decides what reaches storage. A save happens straight away unless the caller asks for it to be
+ * deferred — only the per-cell paint path does (see paintStrokeCell, ticket 55), so Fill, Paste, Mirror, Rotate, Row
+ * progress, Delete all, Replace Bead, Undo and Redo all persist the moment they land, exactly as before.
+ */
+function replaceActivePattern(updated: Pattern, options?: ReplaceOptions) {
+  replacePattern(updated, options)
 }
 
 /**
@@ -360,9 +362,20 @@ function endStroke() {
   }
   strokeMode.value = null
   strokeBaseline.value = null
+
+  // The stroke's one write: every cell it painted deferred its save (see replaceActivePattern), so the whole stroke
+  // reaches storage here, once. A no-op when the mouseup wasn't ending a stroke at all.
+  flushPendingSave()
 }
 
-/** Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxisCounts, leaving rows already woven alone (ticket 33). */
+/**
+ * Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxisCounts,
+ * leaving rows already woven alone (ticket 33).
+ *
+ * This is the one caller that defers its save (ticket 55): a stroke can touch hundreds of cells in a second, and
+ * saving each one wrote the whole Pattern library per mousemove. The cell lands in the library immediately — it's on
+ * screen and undoable either way — and endStroke turns the whole stroke into a single write.
+ */
 function paintStrokeCell(row: number, column: number, color: string | null) {
   const pattern = activePattern.value
   if (!pattern) {
@@ -373,7 +386,7 @@ function paintStrokeCell(row: number, column: number, color: string | null) {
 
   const updated = keepFinishedRows(pattern, painted)
   if (updated !== pattern) {
-    replaceActivePattern(updated)
+    replaceActivePattern(updated, { deferSave: true })
   }
 }
 
@@ -784,13 +797,6 @@ function onMoveRow(delta: number) {
   }
 }
 
-function onImportPatterns(imported: Pattern[]) {
-  imported.forEach(savePattern)
-  patterns.value = [...patterns.value, ...imported]
-
-  // Opening one of them would interrupt whatever is already open, so only step in when nothing is.
-  activePatternId.value ??= mostRecentlyUpdated(imported)?.id
-}
 </script>
 
 <template>
@@ -822,6 +828,16 @@ function onImportPatterns(imported: Pattern[]) {
         <LanguageSwitcher />
       </div>
     </header>
+
+    <!--
+      A failed write to this device's storage (ticket 55): a full-width strip under the top bar, so it's in view
+      wherever the user is working rather than tucked into a panel they may have scrolled past. role="alert" so it's
+      announced the moment it appears. It stays up until a save gets through (see usePatternLibrary's saveFailed) —
+      there's nothing to dismiss, since the edit really isn't saved yet.
+    -->
+    <p v-if="saveFailed" class="app-shell__save-error" role="alert" data-testid="save-failed-message">
+      {{ t.storage.saveFailedMessage }}
+    </p>
 
     <div class="app-shell__body">
       <aside
@@ -917,10 +933,11 @@ function onImportPatterns(imported: Pattern[]) {
             :patterns="patterns"
             :active-pattern-id="activePatternId"
             @select="onSelectPattern"
-            @remove="onRemovePattern"
+            @remove="removePattern"
             @new-pattern="onNewPattern"
           />
-          <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="onImportPatterns" />
+          <!-- Imported Patterns go straight into the library, which decides what to open and persists them. -->
+          <PatternTransfer :pattern="activePattern" :patterns="patterns" @import="addPatterns" />
         </div>
       </div>
     </div>
@@ -998,6 +1015,18 @@ function onImportPatterns(imported: Pattern[]) {
 .app-shell__summary {
   margin: 0;
   color: var(--color-aqua-island-ink);
+}
+
+/* Carries the same card frame as the shell's other boxes, in the alarm color the import error already uses
+   (PatternTransfer.vue), so it reads as part of this app rather than a browser dialog. */
+.app-shell__save-error {
+  margin: 0 0 24px;
+  padding: 12px 24px;
+  color: var(--color-amaranth-ink);
+  font-weight: var(--font-weight-bold);
+  background: var(--color-amaranth);
+  border: var(--border-width) solid var(--color-ink);
+  border-radius: var(--radius-lg);
 }
 
 .app-shell__body {

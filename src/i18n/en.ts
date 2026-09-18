@@ -37,6 +37,10 @@ export const en: Translations = {
   shell: {
     canvasPlaceholder: 'No Pattern open yet',
   },
+  storage: {
+    saveFailedMessage:
+      "Couldn't save on this device — your latest change is only on screen. Free up space in the browser, or export the Pattern to a file to keep it.",
+  },
   palette: {
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',

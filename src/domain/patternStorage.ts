@@ -3,10 +3,6 @@ import { normalizePattern, type Pattern } from './pattern'
 
 const STORAGE_KEY = 'bd-beads:patterns'
 
-function saveAll(patterns: Pattern[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(patterns))
-}
-
 /** Patterns saved before the `name` field existed have none; fall back to the bead label. */
 function withName(pattern: Pattern): Pattern {
   if (pattern.name) {
@@ -30,19 +26,15 @@ export function loadPatterns(): Pattern[] {
   }
 }
 
-export function savePattern(pattern: Pattern): void {
-  const patterns = loadPatterns()
-  const index = patterns.findIndex((existing) => existing.id === pattern.id)
-
-  if (index === -1) {
-    patterns.push(pattern)
-  } else {
-    patterns[index] = pattern
-  }
-
-  saveAll(patterns)
-}
-
-export function removePattern(id: string): void {
-  saveAll(loadPatterns().filter((pattern) => pattern.id !== id))
+/**
+ * Writes the whole Pattern library, replacing whatever was there. The caller's in-memory library is the source of
+ * truth (see usePatternLibrary), so this deliberately doesn't read storage back first to merge: a save used to parse
+ * and re-normalise every saved Pattern before writing a single changed one, which is most of what ticket 55 measured
+ * on the per-cell paint path.
+ *
+ * Throws whatever the browser throws when the write doesn't fit (a QuotaExceededError, typically) — the caller is
+ * expected to catch that and surface it rather than lose the edit silently.
+ */
+export function savePatterns(patterns: Pattern[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(patterns))
 }
