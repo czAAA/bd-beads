@@ -125,6 +125,13 @@ const rotateStyle = computed(() => ({
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
+  /*
+   * Painting is a mousedown-drag across cells and ruler numbers alike; without this, that drag also selects the
+   * ruler's number text, and a later drag starting inside that selection triggers the browser's native "drag the
+   * selection" gesture -- which is what makes the whole canvas look like it's being picked up and moved.
+   */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /*
