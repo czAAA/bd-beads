@@ -172,9 +172,14 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
  * How many colors a conversion may keep. The default aims at the flat artwork this feature targets, where the honest
  * count is usually in single figures anyway and the limit never bites; a photograph is where the user reaches for the
  * control, and where any number is a compromise.
+ *
+ * The ceiling is 14 because Image colors are shown as swatches in the Colors group, and a Tool group holds at most 14
+ * controls in view — two rows of seven (CONTEXT.md's Tool group). A higher ceiling would let one conversion fill that
+ * group past what the layout is built for, and a Pattern needing more than fourteen colors is not one this feature is
+ * for: it is the photograph case the ticket deliberately declines to build machinery for.
  */
 export const MIN_IMAGE_COLORS = 2
-export const MAX_IMAGE_COLORS = 64
+export const MAX_IMAGE_COLORS = 14
 export const DEFAULT_MAX_IMAGE_COLORS = 12
 
 export function clampMaxImageColors(value: number): number {

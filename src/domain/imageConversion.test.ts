@@ -359,7 +359,7 @@ describe('sampleLattice with convertSampledFrame', () => {
     const dimensions = computeGridDimensions({ widthMm: 15, heightMm: 15 }, cubeBead)
     const frame = frameSizeMm(technique, dimensions, cubeBead)
     const view = framingView(image, frame, 1.5, { x: 0.3, y: 0.7 })
-    const lattice = previewLattice(view, frame, dimensions, cubeBead, technique)
+    const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique })
 
     const sampled = sampleLattice({ image, view, technique, bead: cubeBead, lattice })
     const fromPreview = convertSampledFrame(sampled, lattice, dimensions, 4096)

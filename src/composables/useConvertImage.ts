@@ -19,6 +19,10 @@ import {
  * Nothing survives leaving: Cancel discards the picture along with the zoom, the pan and the colour count (ticket 58
  * decision), so re-entering always starts from a clean slate. There is deliberately nowhere to remember a picture for
  * a second try at different settings.
+ *
+ * Holds the picture and nothing about the frame. Whether framing is actually *running* is a question only App.vue can
+ * answer, since it also needs the frame the New Pattern form's fields imply — see its `framing` computed, the one gate
+ * for every piece of framing UI.
  */
 export function useConvertImage() {
   /**
@@ -44,8 +48,6 @@ export function useConvertImage() {
     zoom,
     pan,
     maxColors,
-    /** Whether the canvas panel is showing the framing step rather than the open Pattern or the empty placeholder. */
-    isFraming: computed(() => image.value !== undefined),
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
 
     /** Starts framing a freshly decoded picture, from a clean slate whatever a previous attempt left behind. */

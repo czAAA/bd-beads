@@ -16,8 +16,8 @@ import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
 import { findBead } from './domain/beads'
-import { computeGridDimensions, toMillimeters, type GridPosition, type PreviewCell } from './domain/grid'
-import type { ConvertedImage, PixelData } from './domain/imageConversion'
+import type { GridPosition, PreviewCell } from './domain/grid'
+import type { ConvertedImage } from './domain/imageConversion'
 import {
   canRedo,
   canUndo,
@@ -50,6 +50,7 @@ import {
   mirroredCells,
   moveToRow,
   paintCells,
+  patternGeometry,
   previewReplaceBead,
   replaceBead,
   resolvePatternBead,
@@ -153,7 +154,6 @@ const {
   zoom: convertZoom,
   pan: convertPan,
   maxColors: convertMaxColors,
-  isFraming,
   zoomPercent: convertZoomPercent,
   start: startConvertImage,
   cancel: cancelConvertImage,
@@ -177,18 +177,28 @@ function onNewPatternDraft(draft: CreatePatternInput) {
   }
 }
 
-/** The frame the picture is being fitted to: the Bead, Technique and grid size the form's current values imply. */
-const convertImageFrame = computed(() => {
+/**
+ * Everything the framing step needs, or undefined when it isn't running: the picture, and the frame the form's current
+ * values imply — the Bead, the Technique and the grid size, read through the same patternGeometry the Pattern itself
+ * will be created from, so the frame can't disagree with what Create makes.
+ *
+ * One value gates all three pieces of framing UI (the form staying up, the canvas panel, the zoom cluster), so they
+ * can never disagree about whether framing is on — a canvas showing a frame with no Cancel button, say.
+ */
+const framing = computed(() => {
+  const image = convertImageSource.value
   const draft = newPatternDraft.value
-  const bead = draft && findBead(draft.beadId)
-  if (!draft || !bead) {
-    return undefined
-  }
+  const geometry = draft && patternGeometry(draft)
 
-  const widthMm = toMillimeters(draft.size.width, draft.size.unit)
-  const heightMm = toMillimeters(draft.size.height, draft.size.unit)
-
-  return { bead, technique: draft.technique, dimensions: computeGridDimensions({ widthMm, heightMm }, bead) }
+  return image && draft && geometry
+    ? {
+        image,
+        draft,
+        technique: draft.technique,
+        bead: geometry.bead,
+        dimensions: { columns: geometry.columns, rows: geometry.rows },
+      }
+    : undefined
 })
 
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
@@ -350,28 +360,19 @@ function onCreatePattern(payload: CreatePatternInput) {
   addPattern(createPattern(payload))
 }
 
-/** A picture has been chosen and decoded: the canvas panel becomes the framing step until Create or Cancel (ADR 0010). */
-function onConvertImageChosen(image: PixelData) {
-  startConvertImage(image)
-}
-
 /**
  * Creates the Pattern the frame was holding (ticket 58): an ordinary new Pattern that arrives painted, carrying the
  * conversion's Image colors (ADR 0011). The grid comes from the framing preview itself, so what was inside the frame
- * is literally what is created — see ConvertImageFrame.vue.
+ * is literally what is created — see ConvertImageFrame.vue. Cancel, by contrast, creates nothing and keeps nothing
+ * (ticket 58 decision), so it goes straight to the composable.
  */
 function onConvertImageCreate(converted: ConvertedImage) {
-  const draft = newPatternDraft.value
+  const draft = framing.value?.draft
   if (!draft) {
     return
   }
 
   addPattern(createPatternFromImage({ ...draft, grid: converted.grid, imageColors: converted.imageColors }))
-  cancelConvertImage()
-}
-
-/** Cancel creates nothing and keeps nothing (ticket 58 decision); the panel goes back to whatever it was showing. */
-function onConvertImageCancel() {
   cancelConvertImage()
 }
 
@@ -958,23 +959,28 @@ function onMoveRow(delta: number) {
       -->
       <aside
         class="app-shell__main"
-        :class="{ 'app-shell__main--empty': activePattern && !isFraming }"
+        :class="{ 'app-shell__main--empty': activePattern && !framing }"
         data-testid="app-main-panel"
       >
-        <template v-if="!activePattern || isFraming">
+        <template v-if="!activePattern || framing">
           <h2>{{ t.patterns.newPatternButton }}</h2>
           <NewPatternForm
             @submit="onCreatePattern"
             @draft="onNewPatternDraft"
-            @convert-image="onConvertImageChosen"
+            @convert-image="startConvertImage"
           />
         </template>
       </aside>
 
       <div class="app-shell__right">
         <div class="app-shell__above-canvas" data-testid="app-above-canvas">
+          <!--
+            Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools,
+            and a Pattern nobody can see is not one to offer Undo, Rotate, Mirror or Delete all against. Cancel brings
+            both the Pattern and its Toolbox straight back.
+          -->
           <Toolbox
-            v-if="activePattern"
+            v-if="activePattern && !framing"
             ref="toolboxRef"
             :pattern="activePattern"
             :active-tool="activeTool"
@@ -1013,11 +1019,11 @@ function onMoveRow(delta: number) {
               entered with one open. Cancel hands the panel straight back.
             -->
             <ConvertImageFrame
-              v-if="convertImageSource && convertImageFrame"
-              :image="convertImageSource"
-              :technique="convertImageFrame.technique"
-              :bead="convertImageFrame.bead"
-              :dimensions="convertImageFrame.dimensions"
+              v-if="framing"
+              :image="framing.image"
+              :technique="framing.technique"
+              :bead="framing.bead"
+              :dimensions="framing.dimensions"
               :zoom="convertZoom"
               :pan="convertPan"
               :max-colors="convertMaxColors"
@@ -1025,7 +1031,7 @@ function onMoveRow(delta: number) {
               @pan="setConvertPan"
               @set-max-colors="setConvertMaxColors"
               @create="onConvertImageCreate"
-              @cancel="onConvertImageCancel"
+              @cancel="cancelConvertImage"
             />
             <PatternCanvas
               v-else-if="activePattern"
@@ -1058,7 +1064,7 @@ function onMoveRow(delta: number) {
             hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
           -->
           <ZoomControls
-            v-if="activePattern && !isFraming"
+            v-if="activePattern && !framing"
             class="app-shell__zoom-controls"
             :zoom-percent="zoomPercent"
             @zoom-in="zoomIn"
@@ -1072,7 +1078,7 @@ function onMoveRow(delta: number) {
             frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
           -->
           <ZoomControls
-            v-if="isFraming"
+            v-if="framing"
             class="app-shell__zoom-controls"
             :zoom-percent="convertZoomPercent"
             @zoom-in="convertZoomIn"

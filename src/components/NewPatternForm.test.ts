@@ -177,6 +177,15 @@ describe('NewPatternForm Convert image (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-input"]').attributes('title')).toBe(expected)
   })
 
+  it('still carries the limits in a title while the input is disabled, where a tooltip would not show', () => {
+    const wrapper = mount(NewPatternForm)
+
+    expect(wrapper.find<HTMLInputElement>('[data-testid="convert-image-input"]').element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="convert-image-field"]').attributes('title')).toBe(
+      formatImageLimits(ru.convertImage.limitsHint),
+    )
+  })
+
   it('offers the accepted formats to the file picker', async () => {
     const wrapper = await mountSizedForm()
 

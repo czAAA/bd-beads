@@ -69,7 +69,13 @@ const view = computed(() => framingView(props.image, frame.value, props.zoom, pr
 
 /** The block of beads drawn: the frame, plus as much of the picture around it as the budget allows. */
 const lattice = computed(() =>
-  previewLattice(view.value, frame.value, props.dimensions, props.bead, props.technique),
+  previewLattice({
+    view: view.value,
+    frame: frame.value,
+    dimensions: props.dimensions,
+    bead: props.bead,
+    technique: props.technique,
+  }),
 )
 
 /** One sampling pass over the whole lattice — the frame's own cells included. */
