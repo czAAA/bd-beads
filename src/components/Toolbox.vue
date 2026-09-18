@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import CustomColorPicker from './CustomColorPicker.vue'
+import ImageColorsPicker from './ImageColorsPicker.vue'
 import PalettePicker from './PalettePicker.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
@@ -14,6 +15,8 @@ const props = defineProps<{
   selectedColorId?: string
   /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
   customColor?: string
+  /** The Image color being painted with right now (ticket 58), if that is what the paint color currently is. */
+  selectedImageColor?: string
   canUndo: boolean
   canRedo: boolean
   canCopy: boolean
@@ -26,6 +29,7 @@ const emit = defineEmits<{
   'select-tool': [tool: Tool]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
+  'select-image-color': [hex: string]
   undo: []
   redo: []
   'toggle-rotate': []
@@ -42,8 +46,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** Custom color is the active paint color exactly when no Palette swatch is (they're mutually exclusive, App.vue). */
-const customColorSelected = computed(() => !props.selectedColorId && !!props.customColor)
+/** Custom color is the active paint color exactly when neither a Palette swatch nor an Image color is (App.vue keeps the three mutually exclusive). */
+const customColorSelected = computed(
+  () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
+)
 
 /**
  * Refs to every Tool group, written out individually since they're written out individually below (ticket 40's
@@ -168,6 +174,19 @@ const topBottomMax = computed(() =>
         :color="customColor"
         :selected="customColorSelected"
         @select="(hex) => emit('select-custom-color', hex)"
+      />
+      <!--
+        The open Pattern's Image colors (ADR 0011), alongside the Palette rather than instead of it — a converted
+        Pattern is touched up with its own colors, and any other Pattern has none of these and shows nothing here.
+        Marked as a full row so it keeps its own line under the Palette's swatches and doesn't count toward the
+        group's 14-control cap (see ToolGroup.vue).
+      -->
+      <ImageColorsPicker
+        v-if="pattern.imageColors?.length"
+        class="tool-group__full-row"
+        :colors="pattern.imageColors"
+        :selected-color="selectedImageColor"
+        @select="(hex) => emit('select-image-color', hex)"
       />
     </ToolGroup>
 
