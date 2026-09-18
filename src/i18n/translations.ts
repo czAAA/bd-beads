@@ -37,6 +37,10 @@ export interface Translations {
   shell: {
     canvasPlaceholder: string
   }
+  /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
+  storage: {
+    saveFailedMessage: string
+  }
   palette: {
     pickerLabel: string
     colorLabel: string
