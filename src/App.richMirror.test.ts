@@ -33,7 +33,7 @@ describe('App Mirror axis counters (ticket 44)', () => {
 
     expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // paint (0,0)
 
     expect(wrapper.findAll('[data-testid="grid-cell"]').filter((cell) => !!cell.attributes('style')?.includes('background-color'))).toHaveLength(1)
   })
@@ -48,7 +48,7 @@ describe('App Mirror axis counters (ticket 44)', () => {
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('mousedown') // paint (0,0), 10 columns wide -> mirrors to (0,9)
+    await cells[0]!.trigger('pointerdown') // paint (0,0), 10 columns wide -> mirrors to (0,9)
 
     const painted = cells.filter((cell) => cell.attributes('style')?.includes('background-color'))
     expect(painted).toHaveLength(2)
@@ -120,7 +120,7 @@ describe("App's Mirror copy mode (ticket 45)", () => {
         .filter((cell) => cell.painted)
         .map((cell) => cell.index)
 
-    await cells[0]!.trigger('mousedown') // paint (0,0)
+    await cells[0]!.trigger('pointerdown') // paint (0,0)
     await wrapper.trigger('mouseup') // ends the stroke, so it becomes one undo step
     expect(paintedColumns()).toEqual([0, 9]) // mirror-image by default: 0 <-> 9
 
@@ -131,7 +131,7 @@ describe("App's Mirror copy mode (ticket 45)", () => {
     await copyModeButton.trigger('click')
     expect(copyModeButton.attributes('aria-pressed')).toBe('true')
 
-    await cells[0]!.trigger('mousedown') // paint (0,0) again, now in copy mode
+    await cells[0]!.trigger('pointerdown') // paint (0,0) again, now in copy mode
     expect(paintedColumns()).toEqual([0, 5]) // plain repeat: same relative cell in the other strip, 0 <-> 5
   })
 
@@ -158,7 +158,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     // Paint (0,9) *before* turning the axis on, so it's a plain, un-mirrored paint -- exactly the "content drawn
     // before that direction's live mirroring was turned on" scenario ADR 0006 built "Mirror current" for.
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('mousedown') // (0, 9)
+    await cells[9]!.trigger('pointerdown') // (0, 9)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull() // not live-mirrored: only column 9 got painted
 
@@ -180,7 +180,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('mousedown') // (0, 9), before the axis is on
+    await cells[9]!.trigger('pointerdown') // (0, 9), before the axis is on
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
@@ -201,7 +201,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click') // 1 axis, 2 strips of 10 rows
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[19 * 10]!.trigger('mousedown') // (row 19, column 0) -- its mirror counterpart is row 0
+    await cells[19 * 10]!.trigger('pointerdown') // (row 19, column 0) -- its mirror counterpart is row 0
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('click')
@@ -241,7 +241,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('mousedown') // (0, 9)
+    await cells[9]!.trigger('pointerdown') // (0, 9)
     await wrapper.trigger('mouseup')
 
     expect(cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))).toHaveLength(0)
@@ -266,7 +266,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('mousedown')
+    await cells[9]!.trigger('pointerdown')
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
 
@@ -286,7 +286,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[19 * 10]!.trigger('mousedown') // (row 19, column 0) -- mirrors onto row 0
+    await cells[19 * 10]!.trigger('pointerdown') // (row 19, column 0) -- mirrors onto row 0
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('mouseenter')
@@ -301,16 +301,16 @@ describe('App Paste through Mirror (ticket 50)', () => {
   /** A drag across the grid: press on one cell, move through the rest, release. */
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[indices[0]!]!.trigger('mousedown')
+    await cells[indices[0]!]!.trigger('pointerdown')
     for (const index of indices.slice(1)) {
-      await cells[index]!.trigger('mouseenter', { buttons: 1 })
+      await cells[index]!.trigger('pointerenter', { buttons: 1 })
     }
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   /** Presses and releases one cell without moving -- a click, which is what stamps a copied block. */
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('mousedown')
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
@@ -340,7 +340,7 @@ describe('App Paste through Mirror (ticket 50)', () => {
     await patternWithCopiedDot(wrapper)
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis: column c <-> column 9-c
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('mouseenter') // hover (2,2)
+    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('pointerenter') // hover (2,2)
     expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2) // aimed spot + its mirrored counterpart
 
     await click(wrapper, 22) // (2,2)
@@ -387,7 +387,7 @@ describe('App Paste through Mirror (ticket 50)', () => {
     await patternWithCopiedDot(wrapper)
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('mousedown', { button: 2 })
+    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('pointerdown', { button: 2 })
 
     expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
     await click(wrapper, 22)

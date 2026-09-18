@@ -444,7 +444,11 @@ function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
   strokeBaseline.value = pattern.grid
 }
 
-/** Ends an in-progress stroke or Select press, bound to mouseup on the whole app shell (ticket 24): a drag can end with the button released anywhere, not just back over the cell it started on. */
+/**
+ * Ends an in-progress stroke or Select press, bound to mouseup/pointerup on the whole app shell (ticket 24): a
+ * drag can end with the button/finger/pen released anywhere, not just back over the cell it started on. Also bound
+ * to pointercancel (ticket 60) so a touch/pen stroke the OS interrupts mid-drag doesn't leave strokeMode stuck.
+ */
 function endStroke() {
   endSelectPress()
 
@@ -910,7 +914,7 @@ function onMoveRow(delta: number) {
 </script>
 
 <template>
-  <div class="app-shell" @mouseup="endStroke">
+  <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
     <header class="app-shell__topbar" data-testid="app-topbar">
       <div class="app-shell__topbar-title">
         <h1>{{ t.app.title }}</h1>
