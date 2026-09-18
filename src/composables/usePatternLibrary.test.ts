@@ -3,6 +3,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, paintCells, type Pattern } from '../domain/pattern'
 import { NO_MIRROR_AXES } from '../domain/mirror'
 import { loadPatterns } from '../domain/patternStorage'
+import { refuseStorageWrites, spyOnStorageWrites } from '../testUtils/storageWrites'
 import { usePatternLibrary } from './usePatternLibrary'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -21,17 +22,6 @@ function makePattern(overrides: Partial<Pattern> = {}): Pattern {
 /** One painted cell, the way a stroke's per-cell commit arrives at replacePattern. */
 function withPaintedCell(pattern: Pattern, row: number, column: number): Pattern {
   return paintCells(pattern, [{ row, column }], '#e63746', NO_MIRROR_AXES, false)
-}
-
-/** Counts the writes the library actually makes to storage, which is the whole point of ticket 55. */
-function countWrites() {
-  return vi.spyOn(Storage.prototype, 'setItem')
-}
-
-function failEveryWrite() {
-  return vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-    throw new DOMException('exceeded the quota', 'QuotaExceededError')
-  })
 }
 
 beforeEach(() => {
@@ -101,15 +91,15 @@ describe('usePatternLibrary', () => {
     const library = usePatternLibrary()
     library.addPattern(makePattern())
 
-    const writes = countWrites()
+    const writes = spyOnStorageWrites()
     for (let column = 0; column < 10; column++) {
       library.replacePattern(withPaintedCell(library.activePattern.value!, 0, column), { deferSave: true })
     }
-    expect(writes).not.toHaveBeenCalled()
+    expect(writes.count).toBe(0)
 
     library.flushPendingSave()
 
-    expect(writes).toHaveBeenCalledTimes(1)
+    expect(writes.count).toBe(1)
     expect(loadPatterns()[0]!.grid[0]!.every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
@@ -117,10 +107,10 @@ describe('usePatternLibrary', () => {
     const library = usePatternLibrary()
     library.addPattern(makePattern())
 
-    const writes = countWrites()
+    const writes = spyOnStorageWrites()
     library.flushPendingSave()
 
-    expect(writes).not.toHaveBeenCalled()
+    expect(writes.count).toBe(0)
   })
 
   it('persists an immediate change together with whatever a deferred one left pending', () => {
@@ -188,7 +178,7 @@ describe('usePatternLibrary', () => {
     library.addPattern(pattern)
     expect(library.saveFailed.value).toBe(false)
 
-    const failing = failEveryWrite()
+    const failing = refuseStorageWrites()
     expect(() => library.replacePattern(withPaintedCell(pattern, 0, 0))).not.toThrow()
     expect(library.saveFailed.value).toBe(true)
 
@@ -203,7 +193,7 @@ describe('usePatternLibrary', () => {
     const pattern = makePattern()
     library.addPattern(pattern)
 
-    failEveryWrite()
+    refuseStorageWrites()
     library.replacePattern(withPaintedCell(pattern, 0, 0), { deferSave: true })
     expect(library.saveFailed.value).toBe(false)
 
@@ -217,7 +207,7 @@ describe('usePatternLibrary', () => {
     const pattern = makePattern()
     library.addPattern(pattern)
 
-    const failing = failEveryWrite()
+    const failing = refuseStorageWrites()
     library.replacePattern(withPaintedCell(pattern, 0, 0))
     failing.mockRestore()
 

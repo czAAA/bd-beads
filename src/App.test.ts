@@ -7,6 +7,7 @@ import { serializeLibrary } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
+import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -2670,31 +2671,9 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
 
 /** Ticket 55: saving follows the Pattern library instead of sitting on the per-cell edit path. */
 describe('App storage writes', () => {
+  /** The Pattern library's own key: the counting and refusing below are scoped to it, so the saved language's writes
+   *  (a click on the language switcher) neither show up as noise nor get refused along with it. */
   const PATTERNS_KEY = 'bd-beads:patterns'
-
-  /** Counts writes to the Pattern library's key only, so the locale key's own writes don't show up as noise. */
-  function countPatternWrites() {
-    const setItem = vi.spyOn(Storage.prototype, 'setItem')
-    setItem.mockClear()
-    return {
-      get count() {
-        return setItem.mock.calls.filter(([key]) => key === PATTERNS_KEY).length
-      },
-    }
-  }
-
-  /** Storage refuses the Pattern library (out of quota), while leaving every other key working. */
-  function refusePatternWrites() {
-    const real = Storage.prototype.setItem
-    return vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(function (this: Storage, key: string, value: string) {
-        if (key === PATTERNS_KEY) {
-          throw new DOMException('exceeded the quota', 'QuotaExceededError')
-        }
-        real.call(this, key, value)
-      })
-  }
 
   afterEach(() => {
     vi.restoreAllMocks()
@@ -2706,7 +2685,7 @@ describe('App storage writes', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
-    const writes = countPatternWrites()
+    const writes = spyOnStorageWrites(PATTERNS_KEY)
     await cells[0]!.trigger('mousedown')
     await cells[1]!.trigger('mouseenter', { buttons: 1 })
     await cells[2]!.trigger('mouseenter', { buttons: 1 })
@@ -2733,7 +2712,7 @@ describe('App storage writes', () => {
     await cells[1]!.trigger('mouseenter', { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const writes = countPatternWrites()
+    const writes = spyOnStorageWrites(PATTERNS_KEY)
     await cells[0]!.trigger('mousedown', { button: 2 })
     await cells[1]!.trigger('mouseenter', { buttons: 2 })
     expect(writes.count).toBe(0)
@@ -2745,13 +2724,39 @@ describe('App storage writes', () => {
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
   })
 
+  it('writes a stroke whose mouseup never arrived when the page goes away', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
+    // stroke is still only in memory.
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('writes a stroke whose mouseup never arrived when the editor is torn down', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    wrapper.unmount()
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
   it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const writes = countPatternWrites()
+    const writes = spyOnStorageWrites(PATTERNS_KEY)
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
 
     expect(writes.count).toBe(1)
@@ -2763,7 +2768,7 @@ describe('App storage writes', () => {
     await createPatternViaForm(wrapper, '15', '30')
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
 
-    refusePatternWrites()
+    refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
     await wrapper.trigger('mouseup')
@@ -2779,7 +2784,7 @@ describe('App storage writes', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const refusing = refusePatternWrites()
+    const refusing = refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
     await wrapper.trigger('mouseup')

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPattern, type Technique } from './pattern'
 import { loadPatterns, savePatterns } from './patternStorage'
 import { BEAD_CATALOG } from './beads'
+import { refuseStorageWrites } from '../testUtils/storageWrites'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -83,9 +84,7 @@ describe('patternStorage', () => {
   })
 
   it('lets a write that does not fit through to the caller instead of swallowing it', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('exceeded the quota', 'QuotaExceededError')
-    })
+    refuseStorageWrites()
 
     expect(() => savePatterns([makePattern()])).toThrow()
   })
