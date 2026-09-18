@@ -29,7 +29,7 @@ export interface PatternLibrary {
 
 /**
  * The Pattern library: the Patterns on this device, which one is open, and persisting them (ADR 0001, localStorage
- * only).
+ * only; ADR 0012 for when a save happens and what a refused one does).
  *
  * Persistence is a subscriber to the library rather than a step in the edit path (ticket 55). Every change goes
  * through one of the mutators below, each of which updates the in-memory library and then either saves it or marks a
