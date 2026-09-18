@@ -242,7 +242,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     await wrapper.find('[data-color-hex="#0000ff"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
     // A stroke saves when the button is released (ticket 55), so end it before reading storage back.
     await wrapper.find('.app-shell').trigger('mouseup')
 
@@ -257,8 +257,8 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
 
     // Paint a color the picture never had, then erase one it did.
     await wrapper.find('[data-color-id="green"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
-    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('mousedown', { button: 2 })
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('pointerdown', { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(new Set(loadPatterns()[0]!.imageColors)).toEqual(new Set(['#ff0000', '#0000ff']))

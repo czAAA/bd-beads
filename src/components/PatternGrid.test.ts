@@ -94,7 +94,7 @@ describe('PatternGrid', () => {
     )
   })
 
-  it('emits cell-primary-down on mousedown, with the row and column of the pressed cell', async () => {
+  it('emits cell-primary-down on pointerdown, with the row and column of the pressed cell', async () => {
     const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
@@ -103,12 +103,12 @@ describe('PatternGrid', () => {
 
     const wrapper = mount(PatternGrid, { props: { pattern } })
     const targetRow = wrapper.findAll('[data-testid="grid-row"]')[2]!
-    await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('mousedown')
+    await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('pointerdown', { button: 0 })
 
     expect(wrapper.emitted('cell-primary-down')).toEqual([[2, 3]])
   })
 
-  it('emits cell-primary-move on entering a cell while the primary button is held, for drag-to-draw', async () => {
+  it('emits cell-primary-move on entering a cell while the primary pointer is held, for drag-to-draw -- mouse, touch, or pen alike', async () => {
     const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
@@ -118,15 +118,33 @@ describe('PatternGrid', () => {
     const wrapper = mount(PatternGrid, { props: { pattern } })
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
-    await cells[3]!.trigger('mouseenter', { buttons: 1 })
+    await cells[3]!.trigger('pointerenter', { buttons: 1 })
     expect(wrapper.emitted('cell-primary-move')).toEqual([[0, 3]])
 
-    // Hovering without the button held doesn't count as a drag move.
-    await cells[4]!.trigger('mouseenter', { buttons: 0 })
+    // Hovering without the pointer held down doesn't count as a drag move.
+    await cells[4]!.trigger('pointerenter', { buttons: 0 })
     expect(wrapper.emitted('cell-primary-move')).toEqual([[0, 3]])
   })
 
-  it('emits cell-secondary-down on right mousedown, with the row and column of the pressed cell', async () => {
+  it('drags a touch/pen stroke across cells the same way a held mouse button does (ticket 60)', async () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 30, unit: 'mm' },
+    })
+
+    const wrapper = mount(PatternGrid, { props: { pattern } })
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    await cells[0]!.trigger('pointerdown', { pointerType: 'touch', pointerId: 1 })
+    await cells[1]!.trigger('pointerenter', { pointerType: 'touch', pointerId: 1, buttons: 1 })
+    await cells[2]!.trigger('pointerenter', { pointerType: 'touch', pointerId: 1, buttons: 1 })
+
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 0]])
+    expect(wrapper.emitted('cell-primary-move')).toEqual([[0, 1], [0, 2]])
+  })
+
+  it('emits cell-secondary-down on right-button pointerdown, with the row and column of the pressed cell', async () => {
     const pattern = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
@@ -135,7 +153,7 @@ describe('PatternGrid', () => {
 
     const wrapper = mount(PatternGrid, { props: { pattern } })
     const targetRow = wrapper.findAll('[data-testid="grid-row"]')[2]!
-    await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('mousedown', { button: 2 })
+    await targetRow.findAll('[data-testid="grid-cell"]')[3]!.trigger('pointerdown', { button: 2 })
 
     expect(wrapper.emitted('cell-secondary-down')).toEqual([[2, 3]])
     expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
@@ -151,7 +169,7 @@ describe('PatternGrid', () => {
     const wrapper = mount(PatternGrid, { props: { pattern } })
     const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
-    await cells[3]!.trigger('mouseenter', { buttons: 2 })
+    await cells[3]!.trigger('pointerenter', { buttons: 2 })
 
     expect(wrapper.emitted('cell-secondary-move')).toEqual([[0, 3]])
     expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
@@ -179,8 +197,8 @@ describe('PatternGrid', () => {
     })
 
     const wrapper = mount(PatternGrid, { props: { pattern } })
-    await wrapper.findAll('[data-testid="grid-cell"]')[3]!.trigger('mouseenter')
-    await wrapper.find('.pattern-grid').trigger('mouseleave')
+    await wrapper.findAll('[data-testid="grid-cell"]')[3]!.trigger('pointerenter')
+    await wrapper.find('.pattern-grid').trigger('pointerleave')
 
     expect(wrapper.emitted('cell-hover')).toEqual([[0, 3]])
     expect(wrapper.emitted('hover-end')).toHaveLength(1)

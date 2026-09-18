@@ -86,7 +86,7 @@ describe('PatternCanvas', () => {
   it('forwards a grid cell mousedown as its own cell-primary-down event', async () => {
     const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mousedown')
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerdown')
 
     expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 5]])
   })
@@ -94,7 +94,7 @@ describe('PatternCanvas', () => {
   it('forwards a right mousedown as its own cell-secondary-down event', async () => {
     const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mousedown', { button: 2 })
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerdown', { button: 2 })
 
     expect(wrapper.emitted('cell-secondary-down')).toEqual([[0, 5]])
   })
@@ -111,10 +111,10 @@ describe('PatternCanvas', () => {
 
     expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(true)
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('mouseenter')
+    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerenter')
     expect(wrapper.emitted('cell-hover')).toEqual([[0, 5]])
 
-    await wrapper.find('.pattern-grid').trigger('mouseleave')
+    await wrapper.find('.pattern-grid').trigger('pointerleave')
     expect(wrapper.emitted('hover-end')).toHaveLength(1)
   })
 })
