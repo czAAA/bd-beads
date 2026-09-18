@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   changedCells,
   createPattern,
+  createPatternFromImage,
   deleteAll,
   fillArea,
   mirrorCurrent,
@@ -1110,5 +1111,125 @@ describe('normalizePattern', () => {
 
     expect(normalized.rowProgress.currentRow).toBe(19)
     expect(normalized.rowProgress.currentColumn).toBe(9)
+  })
+})
+
+describe('createPatternFromImage', () => {
+  const converted = {
+    grid: [
+      [{ color: '#ff0000' }, { color: null }],
+      [{ color: '#00ff00' }, { color: '#0000ff' }],
+    ],
+    imageColors: ['#ff0000', '#00ff00', '#0000ff'],
+  }
+
+  function fromImage(overrides: Partial<typeof converted> = {}) {
+    return createPatternFromImage({
+      name: 'Fox',
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' }, // 2 columns x 2 rows in 1.5mm cubes
+      ...converted,
+      ...overrides,
+    })
+  }
+
+  it('creates an ordinary Pattern that arrives already painted', () => {
+    const pattern = fromImage()
+
+    expect(pattern.columns).toBe(2)
+    expect(pattern.rows).toBe(2)
+    expect(pattern.grid.map((row) => row.map((cell) => cell.color))).toEqual([
+      ['#ff0000', null],
+      ['#00ff00', '#0000ff'],
+    ])
+    expect(pattern.name).toBe('Fox')
+    expect(pattern.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
+  })
+
+  it('saves the colors the conversion found on the Pattern', () => {
+    expect(fromImage().imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
+  })
+
+  it('keeps its own copy of the color list, so the conversion cannot change it afterwards', () => {
+    const imageColors = ['#ff0000']
+    const pattern = createPatternFromImage({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      grid: converted.grid,
+      imageColors,
+    })
+
+    imageColors.push('#00ff00')
+
+    expect(pattern.imageColors).toEqual(['#ff0000'])
+  })
+
+  it('fits a grid that does not match the stated size rather than contradicting its own dimensions', () => {
+    const pattern = fromImage({ grid: [[{ color: '#ff0000' }, { color: '#ff0000' }, { color: '#ff0000' }]] })
+
+    expect(pattern.grid).toEqual([
+      [{ color: '#ff0000' }, { color: '#ff0000' }],
+      [{ color: null }, { color: null }],
+    ])
+  })
+
+  it('leaves a Pattern created any other way without Image colors at all', () => {
+    const plain = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+    })
+
+    expect(plain.imageColors).toBeUndefined()
+  })
+})
+
+describe('Image colors are frozen (ADR 0011)', () => {
+  function converted(): Pattern {
+    return createPatternFromImage({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      grid: [
+        [{ color: '#ff0000' }, { color: '#ff0000' }],
+        [{ color: '#ff0000' }, { color: '#ff0000' }],
+      ],
+      imageColors: ['#ff0000'],
+    })
+  }
+
+  it('does not grow when a new color is painted on', () => {
+    const painted = paintCells(converted(), [{ row: 0, column: 0 }], '#0000ff', { columns: 0, rows: 0 })
+
+    expect(painted.imageColors).toEqual(['#ff0000'])
+  })
+
+  it('does not shrink when the color it recorded is erased everywhere', () => {
+    const erased = paintCells(
+      converted(),
+      [
+        { row: 0, column: 0 },
+        { row: 0, column: 1 },
+        { row: 1, column: 0 },
+        { row: 1, column: 1 },
+      ],
+      null,
+      { columns: 0, rows: 0 },
+    )
+
+    expect(erased.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(erased.imageColors).toEqual(['#ff0000'])
+  })
+
+  it('survives a Replace Bead, which resamples the whole grid', () => {
+    const replaced = replaceBead(converted(), roundBead)
+
+    expect(replaced.imageColors).toEqual(['#ff0000'])
+  })
+
+  it('survives Delete all', () => {
+    expect(deleteAll(converted()).imageColors).toEqual(['#ff0000'])
   })
 })
