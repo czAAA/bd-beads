@@ -5,6 +5,15 @@ import { decodePattern, encodePattern, type EncodedPattern } from './patternEnco
 const STORAGE_KEY = 'bd-beads:patterns'
 
 /**
+ * Where loadPatterns keeps a stored value it can't read, rather than leaving it to be overwritten. A save always writes
+ * the whole library from memory (ADR 0012), so a read that gives up and returns nothing is otherwise one edit away from
+ * replacing a real library with an empty one. That only became reachable once the format had versions at all — a build
+ * predating a format can't read what a newer one wrote (this app is served from a cache, ADR 0003) — so the bytes are
+ * kept aside for whichever build does understand them.
+ */
+const UNREADABLE_KEY = 'bd-beads:patterns:unreadable'
+
+/**
  * The stored format savePatterns writes (ADR 0009). Version 1 is the original: a bare JSON array of Patterns, each
  * carrying an object per cell with a full hex string in it. Version 2 wraps the library in this envelope and stores
  * every grid compactly (see patternEncoding).
@@ -49,13 +58,24 @@ function withName(pattern: Pattern): Pattern {
   return { ...pattern, name: bead ? beadLabel(bead) : pattern.beadId }
 }
 
+/** Sets a stored value this build can't read aside, so a later save can't quietly replace it (see UNREADABLE_KEY). */
+function keepUnreadable(raw: string): void {
+  try {
+    localStorage.setItem(UNREADABLE_KEY, raw)
+  } catch {
+    // No room for a second copy. Nothing better to do than carry on: the value is still under STORAGE_KEY for as long
+    // as nothing overwrites it, and refusing to start the app over this would help no one.
+  }
+}
+
 /**
  * Reads the whole Pattern library, in whichever stored format wrote it (see READERS). A library still in an older
  * format decodes to exactly the Patterns it held; the next save rewrites it in the current one, since savePatterns
  * always writes the whole library.
  *
- * Returns no Patterns at all — rather than throwing — for a value this build can't read: unparseable JSON, a shape
- * that doesn't match the version it claims, or a version a newer build wrote.
+ * Returns no Patterns at all — rather than throwing — for a value this build can't read: unparseable JSON, a shape that
+ * doesn't match the version it claims, or a version a newer build wrote. That value is kept aside first, because the
+ * app carrying on from an empty library is only safe if the bytes it couldn't read survive it (see UNREADABLE_KEY).
  */
 export function loadPatterns(): Pattern[] {
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -67,10 +87,15 @@ export function loadPatterns(): Pattern[] {
     const parsed: unknown = JSON.parse(raw)
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
-    return read ? read(parsed).map(withName).map(normalizePattern) : []
+    if (read) {
+      return read(parsed).map(withName).map(normalizePattern)
+    }
   } catch {
-    return []
+    // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.
   }
+
+  keepUnreadable(raw)
+  return []
 }
 
 /**

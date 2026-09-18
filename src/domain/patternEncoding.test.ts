@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { PALETTE } from './palette'
 import { createPattern, type Grid, type Pattern } from './pattern'
-import { decodePattern, encodeGrid, encodePattern } from './patternEncoding'
+import { decodePattern, encodePattern } from './patternEncoding'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -22,42 +22,50 @@ function paint(pattern: Pattern, color: (row: number, column: number) => string 
   return { ...pattern, grid }
 }
 
+/** What a Pattern's cells look like stored: the color table plus the runs (see ADR 0009). */
+function encodedCells(pattern: Pattern) {
+  return encodePattern(pattern).cells
+}
+
 function roundTrip(pattern: Pattern): Pattern {
   return decodePattern(JSON.parse(JSON.stringify(encodePattern(pattern))))
 }
 
-describe('encodeGrid', () => {
-  it('lists each distinct colour once, in the order the cells first use it', () => {
-    const grid: Grid = [
-      [{ color: '#ff0000' }, { color: '#00ff00' }],
-      [{ color: '#00ff00' }, { color: '#ff0000' }],
-    ]
+describe('the encoded cells', () => {
+  it('list each distinct color once, in the order the cells first use it', () => {
+    const pattern = paint(makePattern(2, 2), (row, column) =>
+      (row + column) % 2 === 0 ? '#ff0000' : '#00ff00',
+    )
 
-    expect(encodeGrid(grid).colors).toEqual(['#ff0000', '#00ff00'])
+    expect(encodedCells(pattern).colors).toEqual(['#ff0000', '#00ff00'])
   })
 
-  it('keeps empty cells out of the colour table', () => {
-    const grid: Grid = [[{ color: null }, { color: '#ff0000' }, { color: null }]]
+  it('keep empty cells out of the color table', () => {
+    const pattern = paint(makePattern(3, 1), (_row, column) => (column === 1 ? '#ff0000' : null))
 
-    expect(encodeGrid(grid).colors).toEqual(['#ff0000'])
+    expect(encodedCells(pattern).colors).toEqual(['#ff0000'])
   })
 
-  it('collapses a stretch of one colour into a single run', () => {
-    const grid: Grid = [Array.from({ length: 40 }, () => ({ color: '#ff0000' }))]
+  it('collapse a stretch of one color into a single run', () => {
+    const pattern = paint(makePattern(40, 1), () => '#ff0000')
 
-    expect(encodeGrid(grid).runs).toBe('1x40')
+    expect(encodedCells(pattern).runs).toBe('1x40')
   })
 
-  it('writes a whole empty grid as one run of empties', () => {
-    const grid: Grid = Array.from({ length: 3 }, () => Array.from({ length: 4 }, () => ({ color: null })))
-
-    expect(encodeGrid(grid)).toEqual({ colors: [], runs: '0x12' })
+  it('write a whole empty grid as one run of empties', () => {
+    expect(encodedCells(makePattern(4, 3))).toEqual({ colors: [], runs: '0x12' })
   })
 
-  it('runs across row ends, since cells are encoded in row-major order', () => {
-    const grid: Grid = Array.from({ length: 3 }, () => Array.from({ length: 2 }, () => ({ color: '#ff0000' })))
+  it('let a run cross a row end, since cells are encoded in row-major order', () => {
+    const pattern = paint(makePattern(2, 3), () => '#ff0000')
 
-    expect(encodeGrid(grid).runs).toBe('1x6')
+    expect(encodedCells(pattern).runs).toBe('1x6')
+  })
+
+  it('spend a couple of characters on a cell nothing runs into', () => {
+    const pattern = paint(makePattern(3, 1), (_row, column) => `#00000${column}`)
+
+    expect(encodedCells(pattern).runs).toBe('1,2,3')
   })
 })
 
@@ -70,7 +78,7 @@ describe('encodePattern / decodePattern', () => {
     expect(roundTrip(pattern)).toEqual(pattern)
   })
 
-  it('round-trips a Custom colour the Palette has never had', () => {
+  it('round-trips a Custom color the Palette has never had', () => {
     const custom = '#a1b2c3'
     expect(PALETTE.some((color) => color.hex === custom)).toBe(false)
     const pattern = paint(makePattern(4, 4), (row, column) => (row === column ? custom : null))
@@ -116,8 +124,8 @@ describe('encodePattern / decodePattern', () => {
   })
 
   it('leaves every non-grid field exactly as it was, including one added after this encoding', () => {
-    // Ticket 58's Image colors is such a field, and deliberately not this encoding's colour table (ADR 0011): the two
-    // differ the moment a colour is erased, so the encoding has to carry a field it knows nothing about, untouched.
+    // Ticket 58's Image colors is such a field, and deliberately not this encoding's color table (ADR 0011): the two
+    // differ the moment a color is erased, so the encoding has to carry a field it knows nothing about, untouched.
     const base = paint(makePattern(3, 3), (row) => (row === 0 ? '#ff0000' : null))
     const pattern = { ...base, imageColors: ['#ff0000', '#00ff00'] }
 
@@ -126,14 +134,20 @@ describe('encodePattern / decodePattern', () => {
     expect(decoded).toEqual(pattern)
   })
 
-  it('does not fold the grid colours into a field of their own on the Pattern', () => {
+  it('does not fold the grid colors into a field of their own on the Pattern', () => {
     const pattern = paint(makePattern(3, 3), () => '#ff0000')
 
     const encoded = encodePattern(pattern)
 
-    // The table belongs to the encoded grid, not to the Pattern: nothing above the storage boundary should be able to
+    // The table belongs to the encoded cells, not to the Pattern: nothing above the storage boundary should be able to
     // mistake it for a Pattern field (see ADR 0009 and ADR 0011).
     expect(Object.keys(encoded)).not.toContain('colors')
     expect(encoded.cells.colors).toEqual(['#ff0000'])
+  })
+
+  it('replaces the grid rather than storing it twice', () => {
+    const encoded = encodePattern(paint(makePattern(3, 3), () => '#ff0000'))
+
+    expect(Object.keys(encoded)).not.toContain('grid')
   })
 })

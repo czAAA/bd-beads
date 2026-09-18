@@ -148,6 +148,55 @@ describe('patternStorage', () => {
       expect(loadPatterns()).toEqual([])
     })
 
+    it('ignores a library whose shape does not match the version it claims', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, patterns: null }))
+
+      expect(loadPatterns()).toEqual([])
+    })
+
+    it('keeps a stored value it cannot read, so the next save cannot quietly replace it', () => {
+      const unreadable = JSON.stringify({ version: 99, patterns: [{ whatever: true }] })
+      localStorage.setItem(STORAGE_KEY, unreadable)
+
+      loadPatterns()
+      savePatterns([]) // what an edit made on the empty library the app started from would write
+
+      expect(localStorage.getItem('bd-beads:patterns:unreadable')).toBe(unreadable)
+    })
+
+    it('opens a Pattern whose runs do not add up to its grid, rather than refusing it', () => {
+      // A hand-edited or truncated stored value: two cells of runs for a 10x10 grid. The Pattern's own dimensions
+      // decide the shape, so the rest comes back empty instead of the Pattern being unopenable.
+      const { grid: _grid, ...rest } = makePattern()
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: 2, patterns: [{ ...rest, cells: { colors: ['#ff0000'], runs: '1x2' } }] }),
+      )
+
+      const [loaded] = loadPatterns()
+
+      expect(loaded!.grid.length).toBe(10)
+      expect(loaded!.grid.every((row) => row.length === 10)).toBe(true)
+      expect([loaded!.grid[0]![0]!.color, loaded!.grid[0]![1]!.color, loaded!.grid[0]![2]!.color]).toEqual([
+        '#ff0000',
+        '#ff0000',
+        null,
+      ])
+    })
+
+    it('drops runs that overrun the grid instead of growing it', () => {
+      const { grid: _grid, ...rest } = makePattern()
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ version: 2, patterns: [{ ...rest, cells: { colors: ['#ff0000'], runs: '1x400' } }] }),
+      )
+
+      const [loaded] = loadPatterns()
+
+      expect(loaded!.grid.length).toBe(10)
+      expect(loaded!.grid.every((row) => row.length === 10)).toBe(true)
+    })
+
     it('hands exported Pattern files plain Patterns, so a file stays readable JSON', () => {
       const pattern = paintedOrdinaryPattern()
       savePatterns([pattern])
