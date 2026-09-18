@@ -21,7 +21,7 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
 - **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
-- **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the Saved Patterns box and zoom floats over the canvas box's top-right corner, and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
+- **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the Saved Patterns box and zoom floats over the canvas panel's top-right corner (fixed to the panel, not to the Pattern's own sized box inside it), and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
 
 ## Language
 
