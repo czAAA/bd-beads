@@ -6,7 +6,6 @@ import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
 import PatternGrid from './PatternGrid.vue'
 import PatternRuler from './PatternRuler.vue'
-import ZoomControls from './ZoomControls.vue'
 
 const props = defineProps<{
   pattern: Pattern
@@ -26,9 +25,6 @@ const emit = defineEmits<{
   'cell-secondary-move': [row: number, column: number]
   'cell-hover': [row: number, column: number]
   'hover-end': []
-  'zoom-in': []
-  'zoom-out': []
-  'zoom-reset': []
 }>()
 
 /**
@@ -75,9 +71,6 @@ const rotateStyle = computed(() => ({
   height: `${unrotatedContentHeight.value}px`,
   transform: `translate(-50%, -50%) rotate(${props.pattern.rotated ? 90 : 0}deg)`,
 }))
-
-/** The floating zoom cluster's own readout: derived from the same zoom prop the grid scales by, rather than threaded down as a second prop (it's a pure Math.round(zoom * 100) either way — see usePatternZoom.ts). */
-const zoomPercent = computed(() => Math.round(props.zoom * 100))
 </script>
 
 <template>
@@ -114,24 +107,6 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
         </div>
       </div>
     </div>
-
-    <!--
-      A later sibling of pattern-canvas__rotate, not a descendant of it (ticket 35): rotation/zoom in this app are
-      view-only CSS transforms of that element alone (see rotateStyle/pattern-canvas__scaled above), so anything
-      outside it — this cluster included — never rotates or scales along with the Pattern. Being later in the DOM
-      also means it paints on top of the grid without any extra z-index/pointer-events plumbing: whatever screen
-      area it covers stops mouse events from ever reaching the grid cells underneath (see PatternGrid.vue, whose
-      paint/erase/hover handlers live on the cells themselves), which is what keeps hovering or clicking the cluster
-      from painting, erasing, selecting or previewing anything.
-    -->
-    <div class="pattern-canvas__zoom-controls">
-      <ZoomControls
-        :zoom-percent="zoomPercent"
-        @zoom-in="emit('zoom-in')"
-        @zoom-out="emit('zoom-out')"
-        @reset="emit('zoom-reset')"
-      />
-    </div>
   </div>
 </template>
 
@@ -154,9 +129,7 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
 
 /*
  * Clips only the rotated/scaled grid's own paint (rounding at odd zoom levels can bleed a fraction of a pixel past
- * its edge) — its own layer rather than overflow:hidden on .pattern-canvas itself (ticket 35), so the floating zoom
- * cluster, a sibling positioned against the box below, is never clipped by it even on a Pattern small enough that
- * its box is smaller than the cluster's own footprint.
+ * its edge) — its own layer rather than overflow:hidden on .pattern-canvas itself (ticket 35).
  */
 .pattern-canvas__clip {
   position: absolute;
@@ -175,14 +148,6 @@ const zoomPercent = computed(() => Math.round(props.zoom * 100))
 .pattern-canvas__scaled {
   display: inline-block;
   transform-origin: top left;
-}
-
-/* Fixed to the box's top-right corner, modeled on OS window chrome, at a fixed offset that doesn't scale with zoom (ticket 51; previously a right-edge stack under ticket 35). */
-.pattern-canvas__zoom-controls {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
 }
 
 /* Ruler gutter, pattern, ruler gutter — in both directions, so the grid is numbered on all four sides. */
