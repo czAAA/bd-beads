@@ -39,6 +39,10 @@ export const ru: Translations = {
   shell: {
     canvasPlaceholder: 'Схема пока не открыта',
   },
+  storage: {
+    saveFailedMessage:
+      'Не удалось сохранить на этом устройстве — последние изменения есть только на экране. Освободите место в браузере или экспортируйте схему в файл, чтобы её сохранить.',
+  },
   palette: {
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',

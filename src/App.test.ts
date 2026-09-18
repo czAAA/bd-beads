@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
-import { loadPatterns, savePattern } from './domain/patternStorage'
+import { loadPatterns, savePatterns } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 
@@ -247,6 +247,9 @@ describe('App', () => {
     expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
       'background-color: rgb(230, 55, 70)',
     )
+
+    // Releasing the button ends the stroke, which is when a stroke reaches storage (ticket 55).
+    await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
@@ -260,6 +263,7 @@ describe('App', () => {
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
@@ -338,6 +342,7 @@ describe('App', () => {
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown') // paint (0,0)
+    await wrapper.trigger('mouseup')
     const beforeRotate = loadPatterns()[0]!
 
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
@@ -441,6 +446,7 @@ describe('App', () => {
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
@@ -454,6 +460,7 @@ describe('App', () => {
     await customColorInput.trigger('input')
 
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#123456')
   })
@@ -900,6 +907,7 @@ describe('App', () => {
 
     await first.find('[data-color-id="red"]').trigger('click')
     await first.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await first.trigger('mouseup')
     first.unmount()
 
     const afterReload = mount(App)
@@ -945,7 +953,7 @@ describe('App', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    savePattern({ ...pattern, beadId: 'acme-fancy-8-0' })
+    savePatterns([{ ...pattern, beadId: 'acme-fancy-8-0' }])
 
     const wrapper = mount(App)
 
@@ -953,6 +961,7 @@ describe('App', () => {
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
 
     // Export/import round-tripping an unresolved beadId is covered directly in patternFile.test.ts; here it's
@@ -1884,7 +1893,7 @@ describe('App header bead', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    savePattern({ ...pattern, beadId: 'no-such-bead' })
+    savePatterns([{ ...pattern, beadId: 'no-such-bead' }])
 
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(ru.patterns.unknownBeadLabel)
@@ -2656,5 +2665,137 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
     await flushPromises()
 
     expect(selectedCount(wrapper)).toBe(0)
+  })
+})
+
+/** Ticket 55: saving follows the Pattern library instead of sitting on the per-cell edit path. */
+describe('App storage writes', () => {
+  const PATTERNS_KEY = 'bd-beads:patterns'
+
+  /** Counts writes to the Pattern library's key only, so the locale key's own writes don't show up as noise. */
+  function countPatternWrites() {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    setItem.mockClear()
+    return {
+      get count() {
+        return setItem.mock.calls.filter(([key]) => key === PATTERNS_KEY).length
+      },
+    }
+  }
+
+  /** Storage refuses the Pattern library (out of quota), while leaving every other key working. */
+  function refusePatternWrites() {
+    const real = Storage.prototype.setItem
+    return vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(function (this: Storage, key: string, value: string) {
+        if (key === PATTERNS_KEY) {
+          throw new DOMException('exceeded the quota', 'QuotaExceededError')
+        }
+        real.call(this, key, value)
+      })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('writes a dragged paint stroke once, when the stroke ends, rather than once per cell', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+
+    const writes = countPatternWrites()
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await cells[2]!.trigger('mouseenter', { buttons: 1 })
+
+    expect(writes.count).toBe(0)
+
+    await wrapper.trigger('mouseup')
+
+    expect(writes.count).toBe(1)
+    const grid = loadPatterns()[0]!.grid
+    expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[0]![2]!.color]).toEqual([
+      '#e63746',
+      '#e63746',
+      '#e63746',
+    ])
+  })
+
+  it('writes a dragged erase stroke once too', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('mousedown')
+    await cells[1]!.trigger('mouseenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    const writes = countPatternWrites()
+    await cells[0]!.trigger('mousedown', { button: 2 })
+    await cells[1]!.trigger('mouseenter', { buttons: 2 })
+    expect(writes.count).toBe(0)
+
+    await wrapper.trigger('mouseup')
+
+    expect(writes.count).toBe(1)
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+  })
+
+  it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    const writes = countPatternWrites()
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+
+    expect(writes.count).toBe(1)
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('says so, in the current language, when a write to storage is refused', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
+
+    refusePatternWrites()
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(ru.storage.saveFailedMessage)
+
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)
+  })
+
+  it('keeps the refused edit on screen, and takes the message down once a save gets through', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const refusing = refusePatternWrites()
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
+      'background-color: rgb(230, 55, 70)',
+    )
+
+    refusing.mockRestore()
+    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('mousedown')
+    await wrapper.trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
+    // The retry carries the refused cell too, since a save writes the whole library from memory.
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
   })
 })

@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPattern, type Technique } from './pattern'
-import { loadPatterns, removePattern, savePattern } from './patternStorage'
+import { loadPatterns, savePatterns } from './patternStorage'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -17,6 +17,10 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 describe('patternStorage', () => {
   it('returns no patterns when nothing has been saved yet', () => {
     expect(loadPatterns()).toEqual([])
@@ -25,40 +29,36 @@ describe('patternStorage', () => {
   it('saves a pattern and lists it back', () => {
     const pattern = makePattern()
 
-    savePattern(pattern)
+    savePatterns([pattern])
 
     expect(loadPatterns()).toEqual([pattern])
   })
 
-  it('accumulates multiple saved patterns instead of overwriting them', () => {
+  it('saves a whole library in one write', () => {
     const first = makePattern()
     const second = makePattern()
 
-    savePattern(first)
-    savePattern(second)
+    savePatterns([first, second])
 
     expect(loadPatterns()).toEqual([first, second])
   })
 
-  it('overwrites an existing pattern with the same id instead of duplicating it', () => {
+  it('replaces what was stored rather than merging with it', () => {
     const pattern = makePattern()
-    savePattern(pattern)
+    savePatterns([pattern])
 
     const updated = { ...pattern, updatedAt: pattern.updatedAt + 1 }
-    savePattern(updated)
+    savePatterns([updated])
 
     expect(loadPatterns()).toEqual([updated])
   })
 
-  it('removes a pattern by id, leaving the others untouched', () => {
-    const first = makePattern()
-    const second = makePattern()
-    savePattern(first)
-    savePattern(second)
+  it('saving an empty library clears what was stored', () => {
+    savePatterns([makePattern()])
 
-    removePattern(first.id)
+    savePatterns([])
 
-    expect(loadPatterns()).toEqual([second])
+    expect(loadPatterns()).toEqual([])
   })
 
   it('ignores corrupted data in storage instead of throwing', () => {
@@ -70,7 +70,7 @@ describe('patternStorage', () => {
   it.each(['peyote', 'brick'] as const)('saves and reloads a %s pattern identically to a loom one', (technique) => {
     const pattern = makePattern(technique)
 
-    savePattern(pattern)
+    savePatterns([pattern])
 
     expect(loadPatterns()).toEqual([pattern])
   })
@@ -80,5 +80,13 @@ describe('patternStorage', () => {
     localStorage.setItem('bd-beads:patterns', JSON.stringify([legacyPattern]))
 
     expect(loadPatterns()[0]!.name).toBe('TOHO Cube 1.5mm')
+  })
+
+  it('lets a write that does not fit through to the caller instead of swallowing it', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('exceeded the quota', 'QuotaExceededError')
+    })
+
+    expect(() => savePatterns([makePattern()])).toThrow()
   })
 })
