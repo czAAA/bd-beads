@@ -973,118 +973,126 @@ function onMoveRow(delta: number) {
       </aside>
 
       <div class="app-shell__right">
-        <div class="app-shell__above-canvas" data-testid="app-above-canvas">
-          <!--
-            Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools,
-            and a Pattern nobody can see is not one to offer Undo, Rotate, Mirror or Delete all against. Cancel brings
-            both the Pattern and its Toolbox straight back.
-          -->
-          <Toolbox
-            v-if="activePattern && !framing"
-            ref="toolboxRef"
-            :pattern="activePattern"
-            :active-tool="activeTool"
-            :selected-color-id="selectedColorId"
-            :custom-color="customColor"
-            :selected-image-color="selectedImageColor"
-            :can-undo="canUndo(history)"
-            :can-redo="canRedo(history)"
-            :can-copy="!!selection"
-            :mirror-axis-counts="mirrorAxisCounts"
-            :mirror-copy-mode="mirrorCopyMode"
-            @select-tool="onSelectTool"
-            @select-color="onSelectColor"
-            @select-custom-color="onSelectCustomColor"
-            @select-image-color="onSelectImageColor"
-            @undo="onUndo"
-            @redo="onRedo"
-            @toggle-rotate="onToggleRotate"
-            @copy="onCopy"
-            @set-mirror-axis-count="onSetMirrorAxisCount"
-            @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
-            @mirror-current="onMirrorCurrent"
-            @mirror-current-hover="onMirrorCurrentHover"
-            @toggle-row-progress="onToggleRowProgress"
-            @toggle-row-direction="onToggleRowDirection"
-            @move-row="onMoveRow"
-            @delete-all="onRequestDeleteAll"
-          />
-        </div>
-
-        <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
-          <div class="app-shell__canvas-scroll">
+        <!--
+          Wraps just the above-canvas panel and the canvas panel, not the below-canvas section too — this is the
+          Toolbox's sticky containing block (see .app-shell__above-canvas), so it un-pins once the canvas has
+          scrolled past rather than staying stuck over Beads needed/Saved Patterns/Export while the user scrolls on
+          into the below-canvas section.
+        -->
+        <div class="app-shell__canvas-column">
+          <div class="app-shell__above-canvas" data-testid="app-above-canvas">
             <!--
-              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
-              open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
-              entered with one open. Cancel hands the panel straight back.
+              Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools,
+              and a Pattern nobody can see is not one to offer Undo, Rotate, Mirror or Delete all against. Cancel brings
+              both the Pattern and its Toolbox straight back.
             -->
-            <ConvertImageFrame
-              v-if="framing"
-              :image="framing.image"
-              :technique="framing.technique"
-              :bead="framing.bead"
-              :dimensions="framing.dimensions"
-              :zoom="convertZoom"
-              :pan="convertPan"
-              :max-colors="convertMaxColors"
-              :available-width="canvasAreaWidth"
-              @pan="setConvertPan"
-              @set-max-colors="setConvertMaxColors"
-              @create="onConvertImageCreate"
-              @cancel="cancelConvertImage"
-            />
-            <PatternCanvas
-              v-else-if="activePattern"
+            <Toolbox
+              v-if="activePattern && !framing"
+              ref="toolboxRef"
               :pattern="activePattern"
-              :zoom="zoom"
-              :preview-cells="previewCells"
-              :preview-color="previewColor"
-              :selection="selection"
-              :mirror-axis-counts="previewedMirrorAxisCounts"
-              :dimmed-cells="mirrorCurrentDimmedCells"
-              @cell-primary-down="onCellPrimaryDown"
-              @cell-primary-move="onCellPrimaryMove"
-              @cell-secondary-down="onCellSecondaryDown"
-              @cell-secondary-move="onCellSecondaryMove"
-              @cell-hover="onCellHover"
-              @hover-end="onHoverEnd"
+              :active-tool="activeTool"
+              :selected-color-id="selectedColorId"
+              :custom-color="customColor"
+              :selected-image-color="selectedImageColor"
+              :can-undo="canUndo(history)"
+              :can-redo="canRedo(history)"
+              :can-copy="!!selection"
+              :mirror-axis-counts="mirrorAxisCounts"
+              :mirror-copy-mode="mirrorCopyMode"
+              @select-tool="onSelectTool"
+              @select-color="onSelectColor"
+              @select-custom-color="onSelectCustomColor"
+              @select-image-color="onSelectImageColor"
+              @undo="onUndo"
+              @redo="onRedo"
+              @toggle-rotate="onToggleRotate"
+              @copy="onCopy"
+              @set-mirror-axis-count="onSetMirrorAxisCount"
+              @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
+              @mirror-current="onMirrorCurrent"
+              @mirror-current-hover="onMirrorCurrentHover"
+              @toggle-row-progress="onToggleRowProgress"
+              @toggle-row-direction="onToggleRowDirection"
+              @move-row="onMoveRow"
+              @delete-all="onRequestDeleteAll"
             />
-            <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
-              {{ t.shell.canvasPlaceholder }}
-            </p>
           </div>
 
-          <!--
-            Fixed to the canvas panel's own corner (ticket 57), not the Pattern's own box inside it — a later sibling
-            of the scroll wrapper above, not a descendant of it, so it never scrolls, zooms or rotates along with the
-            Pattern underneath (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box
-            alone). Being later in the DOM also means it paints on top without any extra z-index/pointer-events
-            plumbing: whatever screen area it covers stops mouse events from ever reaching the grid cells underneath
-            (see PatternGrid.vue, whose paint/erase/hover handlers live on the cells themselves), which is what keeps
-            hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
-          -->
-          <ZoomControls
-            v-if="activePattern && !framing"
-            class="app-shell__zoom-controls"
-            :zoom-percent="zoomPercent"
-            @zoom-in="zoomIn"
-            @zoom-out="zoomOut"
-            @reset="resetZoom"
-          />
+          <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
+            <div class="app-shell__canvas-scroll">
+              <!--
+                Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
+                open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
+                entered with one open. Cancel hands the panel straight back.
+              -->
+              <ConvertImageFrame
+                v-if="framing"
+                :image="framing.image"
+                :technique="framing.technique"
+                :bead="framing.bead"
+                :dimensions="framing.dimensions"
+                :zoom="convertZoom"
+                :pan="convertPan"
+                :max-colors="convertMaxColors"
+                :available-width="canvasAreaWidth"
+                @pan="setConvertPan"
+                @set-max-colors="setConvertMaxColors"
+                @create="onConvertImageCreate"
+                @cancel="cancelConvertImage"
+              />
+              <PatternCanvas
+                v-else-if="activePattern"
+                :pattern="activePattern"
+                :zoom="zoom"
+                :preview-cells="previewCells"
+                :preview-color="previewColor"
+                :selection="selection"
+                :mirror-axis-counts="previewedMirrorAxisCounts"
+                :dimmed-cells="mirrorCurrentDimmedCells"
+                @cell-primary-down="onCellPrimaryDown"
+                @cell-primary-move="onCellPrimaryMove"
+                @cell-secondary-down="onCellSecondaryDown"
+                @cell-secondary-move="onCellSecondaryMove"
+                @cell-hover="onCellHover"
+                @hover-end="onHoverEnd"
+              />
+              <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
+                {{ t.shell.canvasPlaceholder }}
+              </p>
+            </div>
 
-          <!--
-            The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
-            over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
-            frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
-          -->
-          <ZoomControls
-            v-if="framing"
-            class="app-shell__zoom-controls"
-            :zoom-percent="convertZoomPercent"
-            @zoom-in="convertZoomIn"
-            @zoom-out="convertZoomOut"
-            @reset="convertResetZoom"
-          />
+            <!--
+              Fixed to the canvas panel's own corner (ticket 57), not the Pattern's own box inside it — a later sibling
+              of the scroll wrapper above, not a descendant of it, so it never scrolls, zooms or rotates along with the
+              Pattern underneath (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box
+              alone). Being later in the DOM also means it paints on top without any extra z-index/pointer-events
+              plumbing: whatever screen area it covers stops mouse events from ever reaching the grid cells underneath
+              (see PatternGrid.vue, whose paint/erase/hover handlers live on the cells themselves), which is what keeps
+              hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
+            -->
+            <ZoomControls
+              v-if="activePattern && !framing"
+              class="app-shell__zoom-controls"
+              :zoom-percent="zoomPercent"
+              @zoom-in="zoomIn"
+              @zoom-out="zoomOut"
+              @reset="resetZoom"
+            />
+
+            <!--
+              The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
+              over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
+              frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
+            -->
+            <ZoomControls
+              v-if="framing"
+              class="app-shell__zoom-controls"
+              :zoom-percent="convertZoomPercent"
+              @zoom-in="convertZoomIn"
+              @zoom-out="convertZoomOut"
+              @reset="convertResetZoom"
+            />
+          </div>
         </div>
 
         <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
@@ -1244,11 +1252,42 @@ function onMoveRow(delta: number) {
   gap: 16px;
 }
 
-/* New Pattern (ticket 35) has moved out to the header, and zoom (ticket 35) onto the canvas box, so the Toolbox is this panel's only remaining content — it renders directly here rather than as a second row below a first one that's now gone. */
+/*
+ * Wraps the above-canvas panel and the canvas panel only, not the below-canvas section below them: this is the
+ * Toolbox's sticky containing block (see .app-shell__above-canvas), scoped here so the stuck Toolbox un-pins once
+ * the canvas has scrolled past, rather than the whole right-hand column including Beads needed/Saved
+ * Patterns/Export, which would otherwise leave it floating over those boxes too.
+ */
+.app-shell__canvas-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/*
+ * New Pattern (ticket 35) has moved out to the header, and zoom (ticket 35) onto the canvas box, so the Toolbox is
+ * this panel's only remaining content — it renders directly here rather than as a second row below a first one
+ * that's now gone.
+ *
+ * position: sticky (rather than fixed) keeps the Toolbox reachable without a scroll-tracking script: a tall Pattern
+ * grows .app-shell__canvas past the viewport (see that rule's own comment — vertical overflow is never trapped, so
+ * the page itself, not an inner box, is what scrolls), and without this the Toolbox would scroll away with it,
+ * leaving no way to reach Paint/Fill/Undo/Mirror while working on the lower rows. top: 24px echoes .app-shell's own
+ * edge padding, so the stuck panel keeps the same breathing room from the browser edge that everything else keeps
+ * from the shell's edge. Sticking is bounded by .app-shell__canvas-column, this panel's containing block, so it
+ * un-pins once the canvas has scrolled past, rather than staying stuck over the below-canvas section too.
+ *
+ * z-index lifts it above .app-shell__canvas, a later same-level sibling: both are positioned (this one sticky, that
+ * one relative for the zoom cluster, ADR 0005) with no stacking context of their own, so without an explicit
+ * z-index here the canvas panel — later in the DOM — would paint over the stuck Toolbox as it scrolls underneath.
+ */
 .app-shell__above-canvas {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: sticky;
+  top: 24px;
+  z-index: 2;
 }
 
 /*
