@@ -81,6 +81,38 @@ export interface GridPosition {
   column: number
 }
 
+/** A point inside a grid's own footprint, in whatever unit the cell size was given in. */
+export interface CellCenter {
+  x: number
+  y: number
+}
+
+/**
+ * Where a cell's centre sits inside the grid's own footprint, measured from its top-left corner in the same unit as
+ * the cell size passed in — screen px at CELL_SIZE_PX, or real millimetres when called with a Bead's own footprint
+ * (`bead.widthMm`/`bead.heightMm`), which is what Convert image samples a picture at (ticket 58, ADR 0010).
+ *
+ * This is the Technique's real geometry rather than a plain rectangle: peyote's and brick stitch's odd rows are
+ * shifted half a cell sideways (rowOffsetPx) and peyote's rows are packed tighter than a full cell (rowHeightPx), so
+ * a picture sampled through this reproduces the stagger and packing the finished piece will actually have instead of
+ * shearing and squashing it invisibly. The two axes take their own cell size, so a non-square footprint like Delica's
+ * 1.6 × 1.3mm doesn't distort either.
+ *
+ * Accumulates exactly the way gridWidthPx/gridHeightPx do, so the last cell's centre always lands half a cell short
+ * of the footprint those report.
+ */
+export function cellCenter(
+  technique: Technique,
+  { row, column }: GridPosition,
+  cellWidth: number,
+  cellHeight: number,
+): CellCenter {
+  return {
+    x: column * cellWidth + cellWidth / 2 + rowOffsetPx(technique, row, cellWidth),
+    y: cellHeight / 2 + row * rowHeightPx(technique, cellHeight),
+  }
+}
+
 /**
  * A cell to show a hover preview on (ticket 23). `color` overrides the single preview color for this one cell,
  * which is what turns the preview multi-color for a pasted block (ticket 31); without it the cell takes whatever

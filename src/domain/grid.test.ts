@@ -6,6 +6,7 @@ import {
   RULER_GUTTER_PX,
   canvasContentHeightPx,
   canvasContentWidthPx,
+  cellCenter,
   clampZoom,
   computeFitZoom,
   computeGridDimensions,
@@ -314,5 +315,46 @@ describe('computeFitZoom rounding', () => {
     expect(computeFitZoom({ columns: 30, rows: 4, maxWidth: 418, maxHeight: 418, cellSize: 20 })).toBe(
       0.69,
     )
+  })
+})
+
+describe('cellCenter', () => {
+  it('puts a loom cell half a cell in from its own column and row', () => {
+    expect(cellCenter('loom', { row: 0, column: 0 }, 2, 2)).toEqual({ x: 1, y: 1 })
+    expect(cellCenter('loom', { row: 3, column: 4 }, 2, 2)).toEqual({ x: 9, y: 7 })
+  })
+
+  it('never staggers loom rows', () => {
+    expect(cellCenter('loom', { row: 1, column: 0 }, 2, 2).x).toBe(1)
+  })
+
+  it('shifts peyote and brick odd rows by half a cell', () => {
+    expect(cellCenter('peyote', { row: 1, column: 0 }, 2, 2).x).toBe(2)
+    expect(cellCenter('brick', { row: 1, column: 0 }, 2, 2).x).toBe(2)
+    expect(cellCenter('peyote', { row: 2, column: 0 }, 2, 2).x).toBe(1)
+  })
+
+  it('packs peyote rows at three quarters of a cell, brick and loom at a full cell', () => {
+    expect(cellCenter('peyote', { row: 2, column: 0 }, 2, 2).y).toBe(1 + 2 * 1.5)
+    expect(cellCenter('brick', { row: 2, column: 0 }, 2, 2).y).toBe(1 + 2 * 2)
+    expect(cellCenter('loom', { row: 2, column: 0 }, 2, 2).y).toBe(1 + 2 * 2)
+  })
+
+  it('uses the bead footprint independently per axis, so a Delica cell is not square', () => {
+    const center = cellCenter('loom', { row: 1, column: 1 }, 1.6, 1.3)
+    expect(center.x).toBeCloseTo(2.4)
+    expect(center.y).toBeCloseTo(1.95)
+  })
+
+  it('lands the last cell exactly half a cell short of the far edge the grid dimensions report', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const last = cellCenter(technique, { row: 4, column: 5 }, 1.6, 1.3)
+      expect(last.x).toBeLessThan(gridWidthPx(technique, 6, 1.6))
+      expect(last.y).toBeLessThan(gridHeightPx(technique, 5, 1.3))
+      // The last row is even (4), so its own right edge falls short of the grid's total width by exactly the half
+      // cell an offset technique's odd rows add on.
+      expect(last.x + 1.6 / 2).toBeCloseTo(gridWidthPx(technique, 6, 1.6) - rowOffsetPx(technique, 1, 1.6))
+      expect(last.y + 1.3 / 2).toBeCloseTo(gridHeightPx(technique, 5, 1.3))
+    }
   })
 })
