@@ -63,7 +63,7 @@ A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bo
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Toolbox** (RU: Панель инструментов):
-The strip of editing controls above the canvas while a Pattern is open, made up of Tool groups.
+The strip of editing controls above the canvas while a Pattern is open, made up of Tool groups. Stays pinned near the top of the viewport once scrolled to, so it stays reachable while working on the lower rows of a Pattern taller than the screen.
 _Avoid_: tool strip, toolbar
 
 **Tool group** (RU: Группа инструментов):
