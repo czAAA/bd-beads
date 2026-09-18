@@ -57,6 +57,17 @@ export interface Pattern {
    * unweavable schema, not the same picture turned sideways.
    */
   rotated: boolean
+  /**
+   * The colors one Convert image found (CONTEXT.md's Image colors, ADR 0011), offered in the Colors group alongside
+   * the Palette while this Pattern is open. Absent on a Pattern created any other way — which is most of them, hence
+   * optional rather than an empty array everywhere.
+   *
+   * Frozen at the moment of conversion: nothing in this file ever adds to it or takes from it, so painting a new
+   * color never grows it and erasing one never shrinks it. Deliberately not the same thing as the per-Pattern color
+   * table the compact storage encoding builds (patternEncoding.ts), which describes the grid as it stands now; the two
+   * differ the moment a color is erased and both are then correct.
+   */
+  imageColors?: string[]
   createdAt: number
   updatedAt: number
 }
@@ -78,16 +89,40 @@ function createEmptyGrid(columns: number, rows: number): Grid {
 /** Row progress exactly as a freshly created Pattern starts out — also what Delete all (ticket 42) resets it back to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-export function createPattern(input: CreatePatternInput): Pattern {
+/** What a new Pattern's stated size, Bead and Technique work out to: its real-world size in mm and the grid that implies. */
+export interface PatternGeometry extends GridDimensions {
+  bead: Bead
+  widthMm: number
+  heightMm: number
+}
+
+/**
+ * The real-world size and grid a New Pattern form state implies, or undefined when the Bead isn't in the catalog.
+ *
+ * Shared with Convert image (ticket 58), whose frame is this same geometry: the frame has to be the grid the Pattern
+ * will actually be created at, so both read it from here rather than each converting units and dividing by the Bead's
+ * footprint in their own way.
+ */
+export function patternGeometry(input: CreatePatternInput): PatternGeometry | undefined {
   // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
   const bead = findBead(input.beadId)
   if (!bead) {
-    throw new Error(`Unknown bead id: ${input.beadId}`)
+    return undefined
   }
 
   const widthMm = toMillimeters(input.size.width, input.size.unit)
   const heightMm = toMillimeters(input.size.height, input.size.unit)
-  const { columns, rows } = computeGridDimensions({ widthMm, heightMm }, bead)
+
+  return { bead, widthMm, heightMm, ...computeGridDimensions({ widthMm, heightMm }, bead) }
+}
+
+export function createPattern(input: CreatePatternInput): Pattern {
+  const geometry = patternGeometry(input)
+  if (!geometry) {
+    throw new Error(`Unknown bead id: ${input.beadId}`)
+  }
+
+  const { bead, widthMm, heightMm, columns, rows } = geometry
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
 
@@ -105,6 +140,38 @@ export function createPattern(input: CreatePatternInput): Pattern {
     rotated: false,
     createdAt: now,
     updatedAt: now,
+  }
+}
+
+/** A new Pattern made from a picture (CONTEXT.md's Convert image): the same fields as any other, plus what the conversion produced. */
+export interface CreatePatternFromImageInput extends CreatePatternInput {
+  /** The converted cells, sampled at the Pattern's own grid size (see domain/imageConversion.ts). */
+  grid: Grid
+  /** The colors that conversion found, saved on the Pattern and never changed afterwards (ADR 0011). */
+  imageColors: string[]
+}
+
+/**
+ * Creates a Pattern from a picture (ticket 58): an ordinary new Pattern in every respect — same name/size/Bead/
+ * Technique handling, same fresh Row progress — except that its cells arrive painted and it carries the conversion's
+ * Image colors.
+ *
+ * Conversion is a way of creating a Pattern, never a command on one already open (ADR 0010), so this is the only place
+ * Image colors is ever written and there is no Row progress lock, Mirror strip or undo step for it to answer to.
+ *
+ * The grid is fitted to the dimensions the stated size implies rather than trusted to match: a cell the conversion
+ * didn't reach comes back empty and a surplus one is dropped, the same tolerance the stored encoding applies, so a
+ * disagreement can never produce a Pattern whose grid and dimensions contradict each other.
+ */
+export function createPatternFromImage(input: CreatePatternFromImageInput): Pattern {
+  const pattern = createPattern(input)
+
+  return {
+    ...pattern,
+    grid: pattern.grid.map((row, rowIndex) =>
+      row.map((cell, columnIndex) => ({ color: input.grid[rowIndex]?.[columnIndex]?.color ?? cell.color })),
+    ),
+    imageColors: [...input.imageColors],
   }
 }
 

@@ -8,7 +8,14 @@ import {
   serializeLibrary,
   serializePattern,
 } from './patternFile'
-import { createPattern, moveToRow, paintCells, setRowProgressEnabled, type Pattern } from './pattern'
+import {
+  createPattern,
+  createPatternFromImage,
+  moveToRow,
+  paintCells,
+  setRowProgressEnabled,
+  type Pattern,
+} from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -177,5 +184,47 @@ describe('importPatterns', () => {
     const added = importPatterns([incoming, incoming], [], () => 'fresh-id')
 
     expect(added.map((pattern) => pattern.id)).toEqual([incoming.id, 'fresh-id'])
+  })
+})
+
+describe('Image colors through a Pattern file (ticket 58)', () => {
+  function converted(): Pattern {
+    return createPatternFromImage({
+      name: 'Logo',
+      technique: 'peyote',
+      beadId: cubeBead.id,
+      size: { width: 4.5, height: 4.5, unit: 'mm' }, // 3 columns x 3 rows in 1.5mm cubes
+      grid: [
+        [{ color: '#ff0000' }, { color: '#00ff00' }, { color: null }],
+        [{ color: null }, { color: '#ff0000' }, { color: '#0000ff' }],
+        [{ color: '#0000ff' }, { color: null }, { color: '#00ff00' }],
+      ],
+      imageColors: ['#ff0000', '#00ff00', '#0000ff'],
+    })
+  }
+
+  it('exports and imports a converted Pattern with its Image colors intact', () => {
+    const pattern = converted()
+
+    const [restored] = parsePatternsFile(serializePattern(pattern)).patterns
+
+    expect(restored).toEqual(pattern)
+    expect(restored!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
+  })
+
+  it('carries them through a whole-library file too', () => {
+    const pattern = converted()
+
+    const { patterns } = parsePatternsFile(serializeLibrary([makePattern('Plain'), pattern]))
+
+    expect(patterns[0]!.imageColors).toBeUndefined()
+    expect(patterns[1]!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
+  })
+
+  it('leaves a Pattern created any other way without the field, rather than giving it an empty list', () => {
+    const [restored] = parsePatternsFile(serializePattern(makePattern())).patterns
+
+    expect(restored!.imageColors).toBeUndefined()
+    expect('imageColors' in restored!).toBe(false)
   })
 })

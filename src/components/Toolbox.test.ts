@@ -336,3 +336,63 @@ describe('Toolbox', () => {
     ).toBe(true)
   })
 })
+
+describe('Toolbox Image colors (ticket 58)', () => {
+  function convertedPattern(): Pattern {
+    return { ...makePattern(), imageColors: ['#ff0000', '#00ff00'] }
+  }
+
+  it('shows the open Pattern Image colors in the Colors group, alongside the Palette', () => {
+    const wrapper = mountToolbox({ pattern: convertedPattern() })
+
+    const colorsGroup = wrapper.findAll('.tool-group')[1]!
+    expect(colorsGroup.find('[data-testid="palette-picker"]').exists()).toBe(true)
+    expect(colorsGroup.find('[data-testid="image-colors-picker"]').exists()).toBe(true)
+    expect(colorsGroup.findAll('[data-testid="image-color-swatch"]')).toHaveLength(2)
+  })
+
+  it('shows nothing for a Pattern created any other way', () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
+  })
+
+  it('shows nothing for a conversion that found no colors at all', () => {
+    const wrapper = mountToolbox({ pattern: { ...makePattern(), imageColors: [] } })
+
+    expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
+  })
+
+  it('emits select-image-color with the clicked hex', async () => {
+    const wrapper = mountToolbox({ pattern: convertedPattern() })
+
+    await wrapper.find('[data-color-hex="#00ff00"]').trigger('click')
+
+    expect(wrapper.emitted('select-image-color')).toEqual([['#00ff00']])
+  })
+
+  it('shows which Image color is being painted with', () => {
+    const wrapper = mountToolbox({ pattern: convertedPattern(), selectedImageColor: '#ff0000' })
+
+    expect(wrapper.find('[data-color-hex="#ff0000"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-hex="#00ff00"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('leaves the Custom color slot unselected while an Image color is the paint color', () => {
+    const wrapper = mountToolbox({
+      pattern: convertedPattern(),
+      customColor: '#abcdef',
+      selectedColorId: undefined,
+      selectedImageColor: '#ff0000',
+    })
+
+    expect(wrapper.find('[data-testid="custom-color-input"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('takes its own line rather than counting toward the group control cap', () => {
+    const wrapper = mountToolbox({ pattern: convertedPattern() })
+
+    expect(wrapper.find('[data-testid="image-colors-picker"]').classes()).toContain('tool-group__full-row')
+    expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
+  })
+})
