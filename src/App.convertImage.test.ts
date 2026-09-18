@@ -144,20 +144,17 @@ describe('App Convert image framing (ticket 58)', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
-  it('zooms the picture between 100% and 800% and never below cover', async () => {
+  it('zooms the picture in steps, never below the scale that covers the frame', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
+    // Already at cover, which is this zoom's minimum (the whole 100–800% range is pinned in useConvertImage.test.ts
+    // and clampConvertZoom's own tests, without re-rendering thousands of beads per step).
     await wrapper.find('[data-testid="zoom-out"]').trigger('click')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
 
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('125%')
-
-    for (let step = 0; step < 40; step += 1) {
-      await wrapper.find('[data-testid="zoom-in"]').trigger('click')
-    }
-    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('800%')
 
     await wrapper.find('[data-testid="zoom-reset"]').trigger('click')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')

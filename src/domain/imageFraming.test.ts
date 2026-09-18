@@ -202,7 +202,9 @@ describe('previewLattice', () => {
 
   it('stays inside the cell budget however much picture hangs over the frame', () => {
     const huge = { width: 4000, height: 4000 }
-    const big = { columns: 120, rows: 120 }
+    // An ordinary big Pattern (60 x 90, the size ADR 0009 measures against), whose own cells are well inside the
+    // budget — so what the budget has to trim here is the surround, not the frame.
+    const big = { columns: 60, rows: 90 }
     const bigFrame = frameSizeMm('loom', big, cubeBead)
     const view = framingView(huge, bigFrame, 8, CENTERED_PAN)
 

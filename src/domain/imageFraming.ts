@@ -158,8 +158,12 @@ export function sourcePixelAt(
  * 800% would be eight frames wide and eight tall, which is 64 times the DOM of the Pattern itself (the preview renders
  * a positioned element per bead, the same as PatternGrid). This caps that: the surrounding context shrinks to fit,
  * evenly in both directions, and the frame itself is always rendered whole even when the Pattern alone is past the cap.
+ *
+ * Tighter than what the Pattern editor will happily render (a 60 × 90 Pattern is 5,400 cells and opens fine), because
+ * this reflows on every pointer move of a drag rather than once when a Pattern is opened: the budget is set by what can
+ * be re-rendered smoothly, not by what can be displayed.
  */
-export const PREVIEW_MAX_CELLS = 24000
+export const PREVIEW_MAX_CELLS = 12000
 
 /**
  * The block of bead cells the framing preview draws, and where the frame sits inside it. The lattice is the frame's
