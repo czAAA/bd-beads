@@ -21,6 +21,7 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
 - **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
+- **Convert image**: a second way to create a Pattern — from a picture rather than an empty grid, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
 - **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the Saved Patterns box and zoom floats over the canvas panel's top-right corner (fixed to the panel, not to the Pattern's own sized box inside it), and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
 
 ## Language
@@ -100,6 +101,14 @@ _Avoid_: revert, step back
 **Redo** (RU: Повторить):
 Steps forward through whatever Undo has stepped back from, re-applying each undone edit in order; Undo and Redo can be alternated freely without losing or duplicating a step. A new edit that actually changes the grid clears it — the same edits that count as an Undo step in the first place, so one that lands on nothing (e.g. aimed only at finished rows) leaves it alone. Reset alongside Undo whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Shift+Z or Ctrl+Y, except while typing in a form field.
 _Avoid_: repeat, step forward
+
+**Convert image** (RU: Конвертировать изображение):
+Creating a Pattern from a picture instead of an empty grid: the picture is shown rendered as beads, and a frame — the Pattern itself, sized by its physical dimensions, Bead and Technique — is positioned over it to choose which part is kept. What falls inside the frame is resampled onto the Pattern's grid and its colors become the Pattern's Image colors. A way of creating a Pattern only, never a command that converts into one already open.
+_Avoid_: import image, trace, pixelate, image import
+
+**Image colors** (RU: Цвета изображения):
+The set of colors one Convert image produced, saved with that Pattern and offered alongside the Palette while it is open. Frozen at the moment of conversion: painting a new color never adds to it and erasing one never removes it, because it records what the conversion found rather than what the Pattern currently holds. A Pattern created any other way has none.
+_Avoid_: extracted palette, pattern palette, image palette, pattern colors
 
 ## How to run it
 
