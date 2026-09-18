@@ -102,10 +102,30 @@ function selectionEdgeShadow(row: number, column: number): string | undefined {
 }
 
 /**
- * Reports the hover for the preview, plus a drag move when a mouse button is held: primary continues a paint/fill
- * stroke (ticket 24), secondary an erase stroke (ticket 25).
+ * Pointer events (ticket 60), not mouse events, so a paint/erase stroke works the same via mouse, touch, and pen: a
+ * touch/pen contact takes an *implicit* pointer capture on pointerdown that would otherwise route every later
+ * pointermove to this first cell instead of the one now under the finger/pen -- release it right away so hit-testing
+ * (and pointerenter below) resolves per-cell again, the same as an unclaimed mouse button already does.
  */
-function onCellEnter(event: MouseEvent, row: number, column: number) {
+function onCellDown(event: PointerEvent, row: number, column: number) {
+  const target = event.currentTarget
+  if (target instanceof Element && target.hasPointerCapture?.(event.pointerId)) {
+    target.releasePointerCapture(event.pointerId)
+  }
+
+  if (event.button === 0) {
+    emit('cell-primary-down', row, column)
+  } else if (event.button === 2) {
+    emit('cell-secondary-down', row, column)
+  }
+}
+
+/**
+ * Reports the hover for the preview, plus a drag move when a pointer is held down: primary continues a paint/fill
+ * stroke (ticket 24), secondary an erase stroke (ticket 25). `buttons` reads 1 for a touch/pen still in contact, so
+ * the same primary-move branch covers all three input kinds without checking pointerType.
+ */
+function onCellEnter(event: PointerEvent, row: number, column: number) {
   emit('cell-hover', row, column)
   if (event.buttons & 1) {
     emit('cell-primary-move', row, column)
@@ -147,7 +167,7 @@ function columnProgressClass(columnIndex: number): string | null {
   <div
     class="pattern-grid"
     :class="`pattern-grid--${pattern.technique}`"
-    @mouseleave="emit('hover-end')"
+    @pointerleave="emit('hover-end')"
     @contextmenu.prevent
   >
     <div
@@ -181,9 +201,8 @@ function columnProgressClass(columnIndex: number): string | null {
           backgroundColor: cell.color ?? undefined,
           boxShadow: selectionEdgeShadow(rowIndex, columnIndex),
         }"
-        @mousedown.left="emit('cell-primary-down', rowIndex, columnIndex)"
-        @mousedown.right="emit('cell-secondary-down', rowIndex, columnIndex)"
-        @mouseenter="onCellEnter($event, rowIndex, columnIndex)"
+        @pointerdown="onCellDown($event, rowIndex, columnIndex)"
+        @pointerenter="onCellEnter($event, rowIndex, columnIndex)"
       >
         <span
           v-if="isPreviewCell(rowIndex, columnIndex) && previewCellColor(rowIndex, columnIndex)"
@@ -220,6 +239,12 @@ function columnProgressClass(columnIndex: number): string | null {
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
   overflow: hidden;
+  /*
+   * Without this (ticket 60), a touch/pen drag across the grid is fair game for the browser to treat as a
+   * scroll/pan gesture instead of delivering it to the pointermove handlers above -- there's a horizontally
+   * scrolling ancestor (.app-shell__canvas-scroll) that would otherwise compete for exactly this gesture.
+   */
+  touch-action: none;
 }
 
 /*
