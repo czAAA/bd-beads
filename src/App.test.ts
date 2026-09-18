@@ -997,15 +997,20 @@ describe('App', () => {
     }
   })
 
-  it('floats the zoom controls inside the canvas box rather than the above-canvas panel (ticket 35)', async () => {
+  it('floats the zoom controls in the canvas panel, fixed to its corner rather than the Pattern\'s own box (ticket 57)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(false)
+
+    const appCanvas = wrapper.find('[data-testid="app-canvas"]')
+    expect(appCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
+    // Fixed to the canvas panel itself, not to the Pattern's own bordered box inside it (ticket 51 anchored it there;
+    // ticket 57 moved it one level up).
     expect(
       wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('zooms the open Pattern from the floating canvas-box controls', async () => {
