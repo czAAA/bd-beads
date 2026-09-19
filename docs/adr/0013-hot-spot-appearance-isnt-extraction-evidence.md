@@ -1,0 +1,7 @@
+# A file's appearance in git-log hot-spots isn't itself evidence for extracting it
+
+An architecture review proposed pulling App.vue's Paint/erase stroke gesture (`strokeMode`/`strokeBaseline`/`beginStroke`/`endStroke`/`paintStrokeCell`) out into its own composable, citing two recent bugs in the area — ticket 60's touch/pen drag fix and a drag-selects-ruler-text fix — as evidence the code was a recurring source of trouble.
+
+Checking which files those two fixes actually touched told a different story: both bugs were fixed in PatternGrid.vue (switching to Pointer Events) and PatternCanvas.vue (a `user-select` CSS guard). App.vue's own stroke-gesture code needed an 8-line addition for one of them and wasn't touched at all for the other. The commits *mentioned* the drawing gesture in their subject lines, and App.vue is a file that shows up in nearly every recent ticket regardless — but the actual complexity those fixes resolved lived elsewhere.
+
+**Decision**: before citing a ticket or bug fix as evidence for extracting a piece of code, check the diff — which files and lines actually changed — rather than reasoning from the ticket's subject line or the fact that a file appears often in git log. App.vue's stroke-gesture code is not re-proposed for extraction on bug-history grounds alone; "App.vue is large" is a real but weaker justification that competes with every other slice of the file ([ADR 0012](0012-saving-follows-the-pattern-library.md) already deferred a big-bang split of those slices), and doesn't by itself make this slice the one to do next.
