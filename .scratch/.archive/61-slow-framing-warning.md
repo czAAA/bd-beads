@@ -9,13 +9,13 @@ Each Technique gets its own message and its own threshold constant so they can b
 Deliberately **out** of scope: changing `PREVIEW_MAX_CELLS` itself or how the framing preview renders (virtualizing it, raising the cap) — this ticket only adds an earlier, informational heads-up using the budget as it already stands.
 
 **Acceptance criteria:**
-- [ ] A per-Technique cell-count threshold exists as three independently named constants (loom / peyote / brick), all starting at `PREVIEW_MAX_CELLS`
-- [ ] The New Pattern form shows a localized (English + Russian) info hint, in the Convert image field, once the current Bead + Technique + size implies a grid (`computeGridDimensions`) with cell count ≥ that Technique's threshold, and hides it otherwise
-- [ ] The hint's wording names the Technique and says framing may be slow at this size — it is a plain hint, not styled as the field's error state
-- [ ] The hint updates live as any of Bead, Technique, width, height or unit change, with no need to resubmit the form or pick a file first
-- [ ] The hint never disables the file input or blocks conversion — informational only
-- [ ] Unit tests cover: just under threshold (hidden), at threshold (shown), just over (shown), and switching Technique alone flips it on/off at an unchanged physical size and Bead
+- [x] A per-Technique cell-count threshold exists as three independently named constants (loom / peyote / brick), all starting at `PREVIEW_MAX_CELLS`
+- [x] The New Pattern form shows a localized (English + Russian) info hint, in the Convert image field, once the current Bead + Technique + size implies a grid (`computeGridDimensions`) with cell count ≥ that Technique's threshold, and hides it otherwise
+- [x] The hint's wording names the Technique and says framing may be slow at this size — it is a plain hint, not styled as the field's error state
+- [x] The hint updates live as any of Bead, Technique, width, height or unit change, with no need to resubmit the form or pick a file first
+- [x] The hint never disables the file input or blocks conversion — informational only
+- [x] Unit tests cover: just under threshold (hidden), at threshold (shown), just over (shown), and switching Technique alone flips it on/off at an unchanged physical size and Bead
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done

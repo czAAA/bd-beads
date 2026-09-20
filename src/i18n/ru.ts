@@ -80,6 +80,12 @@ export const ru: Translations = {
     importLabel: 'Импортировать файл',
     importedLabel: 'Схем импортировано',
     importErrorLabel: 'Не удалось импортировать этот файл',
+    exportQrButton: 'Экспортировать как QR-код',
+    qrTooLargeMessage: 'Эта схема слишком велика для одного QR-кода. Используйте экспорт схемы выше.',
+    closeQrButton: 'Закрыть',
+    importQrLabel: 'Импортировать из изображения QR-кода',
+    qrImportedLabel: 'Схема импортирована из QR-кода',
+    qrImportErrorLabel: 'Не удалось найти QR-код bd-beads на этом изображении',
   },
   mirror: {
     mirrorCurrentHorizontalButton: 'Отразить текущее (по горизонтали)',
@@ -111,6 +117,7 @@ export const ru: Translations = {
   convertImage: {
     fileLabel: 'Конвертировать изображение',
     limitsHint: '{formats}, до {maxSizeMb} МБ и {maxMegapixels} мегапикселей',
+    slowFramingWarning: 'При таком размере ({technique}) рамка может обновляться медленно во время позиционирования изображения.',
     heading: 'Выберите, что станет схемой',
     panHint: 'Перетащите изображение, чтобы сдвинуть его под рамкой',
     createButton: 'Создать схему',

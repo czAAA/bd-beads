@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel, type Bead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
-import type { SizeUnit, Technique } from '../domain/grid'
+import { computeGridDimensions, toMillimeters, type SizeUnit, type Technique } from '../domain/grid'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -11,6 +11,7 @@ import {
   type PixelData,
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
+import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
 import { useI18n } from '../i18n/useI18n'
 
 const { t } = useI18n()
@@ -24,10 +25,17 @@ const props = withDefaults(
      * through withDefaults, where a function default would be taken as the value itself.
      */
     decodeImage?: DecodeImage
+    /**
+     * The per-Technique cell-count thresholds the slow-framing hint (ticket 61) compares the current grid against.
+     * Defaults to the real thresholds; a test overrides them to exercise the per-Technique lookup without the three
+     * real constants having to differ from each other.
+     */
+    slowFramingCellThresholds?: Record<Technique, number>
   }>(),
   {
     beads: () => BEAD_CATALOG,
     decodeImage: undefined,
+    slowFramingCellThresholds: () => SLOW_FRAMING_CELLS,
   },
 )
 
@@ -55,6 +63,34 @@ const isValid = computed(() => width.value > 0 && height.value > 0)
 const namePlaceholder = computed(() => {
   const bead = props.beads.find((candidate) => candidate.id === beadId.value)
   return bead ? beadLabel(bead) : ''
+})
+
+const techniqueLabel = computed<Record<Technique, string>>(() => ({
+  loom: t.value.form.techniqueLoom,
+  peyote: t.value.form.techniquePeyote,
+  brick: t.value.form.techniqueBrick,
+}))
+
+/**
+ * The slow-framing heads-up (ticket 61): shown once the current Bead + Technique + size implies a grid at or past
+ * that Technique's threshold (see domain/imageFraming's isSlowFramingSize), before any picture is even chosen. Live
+ * off the same fields the form's own `draft` emit watches, so it needs no resubmit and no file picked first.
+ */
+const slowFramingWarning = computed(() => {
+  const bead = props.beads.find((candidate) => candidate.id === beadId.value)
+  if (!isValid.value || !bead) {
+    return undefined
+  }
+
+  const dimensions = computeGridDimensions(
+    { widthMm: toMillimeters(width.value, unit.value), heightMm: toMillimeters(height.value, unit.value) },
+    bead,
+  )
+  if (!isSlowFramingSize(technique.value, dimensions, props.slowFramingCellThresholds)) {
+    return undefined
+  }
+
+  return t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueLabel.value[technique.value])
 })
 
 function currentInput(): CreatePatternInput {
@@ -203,6 +239,9 @@ async function onConvertImage(event: Event): Promise<void> {
         @change="onConvertImage"
       />
       <p class="new-pattern-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
+      <p v-if="slowFramingWarning" class="new-pattern-form__hint" data-testid="convert-image-slow-framing-warning">
+        {{ slowFramingWarning }}
+      </p>
       <p v-if="convertError" class="new-pattern-form__error" role="alert" data-testid="convert-image-error">
         {{ convertError }}
       </p>

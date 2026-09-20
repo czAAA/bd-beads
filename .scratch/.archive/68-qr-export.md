@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A Pattern within the size cap exports as a single scannable QR code
-- [ ] Scanning/importing that QR code on another device reproduces the Pattern exactly
-- [ ] A Pattern over the size cap shows a clear "too large for QR" message and offers the existing file export instead
+- [x] A Pattern within the size cap exports as a single scannable QR code
+- [x] Scanning/importing that QR code on another device reproduces the Pattern exactly
+- [x] A Pattern over the size cap shows a clear "too large for QR" message and offers the existing file export instead

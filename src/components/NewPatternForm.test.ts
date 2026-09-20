@@ -305,3 +305,67 @@ describe('NewPatternForm Convert image (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-error"]').exists()).toBe(false)
   })
 })
+
+describe('NewPatternForm slow-framing warning (ticket 61)', () => {
+  const warningTestId = '[data-testid="convert-image-slow-framing-warning"]'
+
+  /** A form sized so the default TOHO Cube 1.5mm bead yields exactly 120 x rowsMm/1.5 cells. */
+  async function mountFormWithRows(rows: number, extraProps: Record<string, unknown> = {}) {
+    const wrapper = mount(NewPatternForm, { props: extraProps })
+    await wrapper.find('[data-testid="width-input"]').setValue('180') // 120 columns at 1.5mm
+    await wrapper.find('[data-testid="height-input"]').setValue(String(rows * 1.5))
+    return wrapper
+  }
+
+  it('hides the hint just under the threshold', async () => {
+    const wrapper = await mountFormWithRows(99) // 120 x 99 = 11,880 cells
+    expect(wrapper.find(warningTestId).exists()).toBe(false)
+  })
+
+  it('shows the hint right at the threshold', async () => {
+    const wrapper = await mountFormWithRows(100) // 120 x 100 = 12,000 cells
+    expect(wrapper.find(warningTestId).exists()).toBe(true)
+  })
+
+  it('shows the hint just over the threshold', async () => {
+    const wrapper = await mountFormWithRows(101) // 120 x 101 = 12,120 cells
+    expect(wrapper.find(warningTestId).exists()).toBe(true)
+  })
+
+  it('names the current Technique in the hint, without styling it as an error', async () => {
+    const wrapper = await mountFormWithRows(100)
+    const hint = wrapper.find(warningTestId)
+
+    expect(hint.text()).toContain(ru.form.techniqueLoom)
+    expect(hint.classes()).not.toContain('new-pattern-form__error')
+  })
+
+  it('never disables the file input or blocks conversion', async () => {
+    const wrapper = await mountFormWithRows(100)
+    expect(wrapper.find('[data-testid="convert-image-input"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('updates live as width, height or bead change, with no resubmit needed', async () => {
+    const wrapper = await mountFormWithRows(50) // well under threshold
+    expect(wrapper.find(warningTestId).exists()).toBe(false)
+
+    await wrapper.find('[data-testid="height-input"]').setValue('150') // 120 x 100 = 12,000
+    expect(wrapper.find(warningTestId).exists()).toBe(true)
+  })
+
+  it('switching Technique alone flips the hint on/off at an unchanged physical size and Bead', async () => {
+    const thresholds = { loom: 100, peyote: 100000, brick: 100000 }
+    const wrapper = await mountFormWithRows(6, { slowFramingCellThresholds: thresholds }) // 120 x 6 = 720 cells
+
+    expect(wrapper.find(warningTestId).exists()).toBe(true) // loom's threshold is 100
+
+    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    expect(wrapper.find(warningTestId).exists()).toBe(false) // peyote's threshold is 100,000
+
+    await wrapper.find('[data-testid="technique-select"]').setValue('brick')
+    expect(wrapper.find(warningTestId).exists()).toBe(false) // brick's threshold is 100,000
+
+    await wrapper.find('[data-testid="technique-select"]').setValue('loom')
+    expect(wrapper.find(warningTestId).exists()).toBe(true)
+  })
+})

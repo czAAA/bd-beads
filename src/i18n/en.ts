@@ -78,6 +78,12 @@ export const en: Translations = {
     importLabel: 'Import a file',
     importedLabel: 'Patterns imported',
     importErrorLabel: 'Could not import that file',
+    exportQrButton: 'Export as QR code',
+    qrTooLargeMessage: 'This Pattern is too large for a single QR code. Use Export Pattern above instead.',
+    closeQrButton: 'Close',
+    importQrLabel: 'Import from a QR code picture',
+    qrImportedLabel: 'Pattern imported from QR code',
+    qrImportErrorLabel: 'Could not find a bd-beads QR code in that picture',
   },
   mirror: {
     mirrorCurrentHorizontalButton: 'Mirror current (horizontal)',
@@ -109,6 +115,7 @@ export const en: Translations = {
   convertImage: {
     fileLabel: 'Convert image',
     limitsHint: '{formats}, up to {maxSizeMb} MB and {maxMegapixels} megapixels',
+    slowFramingWarning: '{technique} at this size may make framing slow to update while you position a picture.',
     heading: 'Choose what becomes the Pattern',
     panHint: 'Drag the picture to move it under the frame',
     createButton: 'Create Pattern',

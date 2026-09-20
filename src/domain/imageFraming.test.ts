@@ -2,15 +2,19 @@ import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { gridHeightPx, gridWidthPx } from './grid'
 import {
+  BRICK_SLOW_FRAMING_CELLS,
   CENTERED_PAN,
   CONVERT_MAX_ZOOM,
   CONVERT_MIN_ZOOM,
   CONVERT_ZOOM_STEP,
+  LOOM_SLOW_FRAMING_CELLS,
+  PEYOTE_SLOW_FRAMING_CELLS,
   PREVIEW_MAX_CELLS,
   clampConvertZoom,
   coverScaleMm,
   frameSizeMm,
   framingView,
+  isSlowFramingSize,
   previewLattice,
   sourcePixelAt,
 } from './imageFraming'
@@ -240,5 +244,34 @@ describe('previewLattice', () => {
       frameColumn: 0,
       frameRow: 0,
     })
+  })
+})
+
+describe('isSlowFramingSize', () => {
+  it('all three catalog thresholds start at PREVIEW_MAX_CELLS', () => {
+    expect(LOOM_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
+    expect(PEYOTE_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
+    expect(BRICK_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
+  })
+
+  it('is false just under the threshold', () => {
+    expect(isSlowFramingSize('loom', { columns: 120, rows: 99 })).toBe(false) // 11,880 cells
+  })
+
+  it('is true right at the threshold', () => {
+    expect(isSlowFramingSize('loom', { columns: 120, rows: 100 })).toBe(true) // 12,000 cells
+  })
+
+  it('is true just over the threshold', () => {
+    expect(isSlowFramingSize('loom', { columns: 120, rows: 101 })).toBe(true) // 12,120 cells
+  })
+
+  it('looks up the threshold per Technique, independently of the other two', () => {
+    const thresholds = { loom: 100, peyote: 100000, brick: 100000 }
+    const dimensions = { columns: 20, rows: 6 } // 120 cells
+
+    expect(isSlowFramingSize('loom', dimensions, thresholds)).toBe(true)
+    expect(isSlowFramingSize('peyote', dimensions, thresholds)).toBe(false)
+    expect(isSlowFramingSize('brick', dimensions, thresholds)).toBe(false)
   })
 })

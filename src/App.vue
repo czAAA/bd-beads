@@ -14,6 +14,7 @@ import ZoomControls from './components/ZoomControls.vue'
 import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
+import { useMirrorState } from './composables/useMirrorState'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { useSpaceDragPan } from './composables/useSpaceDragPan'
@@ -31,7 +32,6 @@ import {
   type History,
   type HistoryStep,
 } from './domain/history'
-import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
 import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
 import {
   copySelection,
@@ -42,7 +42,6 @@ import {
   type Selection,
 } from './domain/selection'
 import {
-  changedCells,
   createPattern,
   createPatternFromImage,
   deleteAll,
@@ -50,7 +49,6 @@ import {
   floodErase,
   isInFinishedRow,
   keepFinishedRows,
-  mirrorCurrent,
   mirroredCells,
   moveToRow,
   paintCells,
@@ -228,17 +226,28 @@ const customColor = ref<string | undefined>(undefined)
 const selectedImageColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 
-/** Per-direction Mirror axis counts (ADR 0006 amendment): grid-space (see domain/mirror.ts), not saved
- * with the Pattern, reset to 0 on a Pattern switch. */
-const mirrorAxisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
-
-/** Mirror's copy-mode switch (ticket 45): strips repeat unflipped (A | A | A) instead of mirror-imaging
- * (A | A' | A) when on. One switch for both directions, editing-session only like mirrorAxisCounts -- reset on a
- * Pattern switch, never saved. */
-const mirrorCopyMode = ref(false)
-
-/** Which "Mirror current" button, if any, the pointer is over right now (ticket 47) -- grid-space ('horizontal'/'vertical'), same as the buttons themselves; null when the pointer is off both. Purely a transient hover UI concern, not persisted. */
-const hoveredMirrorCurrentAxis = ref<'horizontal' | 'vertical' | null>(null)
+/**
+ * Mirror's own session state (ticket 62): axis counts, copy mode, hover state, both preview computations, and
+ * "Mirror current" itself, all behind one small interface -- see composables/useMirrorState.ts. Destructured under
+ * their original names (rather than kept as one `mirror` object) so refs and computeds stay top-level setup
+ * bindings, which is what lets the template auto-unwrap them -- the same convention usePatternZoom's zoom/zoomIn/
+ * etc. already follow below. commitGridChange is a hoisted function declaration further down this file, so passing
+ * it here (before its own definition) is safe: by the time useMirrorState calls it, the module has finished
+ * initializing.
+ */
+const {
+  axisCounts: mirrorAxisCounts,
+  copyMode: mirrorCopyMode,
+  previewedAxisCounts: previewedMirrorAxisCounts,
+  currentDimmedCells: mirrorCurrentDimmedCells,
+  onHoverCurrent: onMirrorCurrentHover,
+  setAxisCount: onSetMirrorAxisCount,
+  toggleCopyMode: onToggleMirrorCopyMode,
+  mirrorCurrent: onMirrorCurrent,
+  restoreAxisCounts: restoreMirrorAxisCounts,
+  clearAxisCounts: clearMirrorAxisCounts,
+  reset: resetMirrorState,
+} = useMirrorState(() => activePattern.value, commitGridChange)
 
 /** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress and the Bead/grid-size/Mirror bundle for the commands that reset those too (Delete all, ticket 42, and Replace Bead, ticket 48 — see UndoEntry). */
 const history = ref<History<UndoEntry>>(emptyHistory())
@@ -290,11 +299,9 @@ watch(activePatternId, () => {
   selection.value = undefined
   // The clipboard (copiedBlock/pasteDismissed) deliberately survives a Pattern switch (ticket 92, ADR 0016) --
   // unlike Undo/Redo history and Selection above, which still reset here.
-  // Mirror's axis counts and copy mode are an editing-session setting, reset on a Pattern switch (ticket 44/45
-  // decision).
-  mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
-  mirrorCopyMode.value = false
-  hoveredMirrorCurrentAxis.value = null
+  // Mirror's session state is an editing-session setting, reset on a Pattern switch (ticket 44/45 decision) --
+  // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
+  resetMirrorState()
   deleteAllConfirmOpen.value = false
   replaceBeadPendingId.value = undefined
   // An Image color belongs to the Pattern that was converted, so it can't stay selected across a switch; the Palette's
@@ -304,43 +311,6 @@ watch(activePatternId, () => {
     selectedColorId.value = DEFAULT_PALETTE_COLOR_ID
   }
 })
-
-/**
- * Mirror's axis counts as actually shown on the canvas (ticket 47): while the pointer is over a "Mirror
- * current" button, that direction's axes preview at their *effective* count -- the same count-acts-as-1 fallback
- * mirrorCurrent itself uses (ticket 46 decision) -- without touching the stored count a click would still
- * leave alone. The other direction, and everything once the pointer leaves, is exactly mirrorAxisCounts.
- */
-const previewedMirrorAxisCounts = computed<MirrorAxisCounts>(() => {
-  const hovered = hoveredMirrorCurrentAxis.value
-  if (!hovered) {
-    return mirrorAxisCounts.value
-  }
-
-  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
-  return { ...mirrorAxisCounts.value, [axis]: mirrorAxisCounts.value[axis] || 1 }
-})
-
-/** Cells a hovered "Mirror current" button would overwrite, dimmed on the canvas (ticket 47) -- computed by asking mirrorCurrent what it *would* do and diffing that against what's there now, through the same Row progress lock a real click would go through, so a locked cell that couldn't actually change is never dimmed. */
-const mirrorCurrentDimmedCells = computed<GridPosition[]>(() => {
-  const pattern = activePattern.value
-  const hovered = hoveredMirrorCurrentAxis.value
-  if (!pattern || !hovered) {
-    return []
-  }
-
-  const axis = hovered === 'horizontal' ? 'columns' : 'rows'
-  const result = keepFinishedRows(
-    pattern,
-    mirrorCurrent(pattern, axis, mirrorAxisCounts.value[axis], mirrorCopyMode.value),
-  )
-
-  return changedCells(pattern.grid, result.grid)
-})
-
-function onMirrorCurrentHover(axis: 'horizontal' | 'vertical' | null) {
-  hoveredMirrorCurrentAxis.value = axis
-}
 
 /**
  * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
@@ -650,7 +620,7 @@ function topBottomAxis(): 'columns' | 'rows' | undefined {
   return pattern ? (pattern.rotated ? 'columns' : 'rows') : undefined
 }
 
-/** -/=/[/] (ticket 93): steps one Mirror axis count by delta, clamped exactly as the +/- buttons are (onSetMirrorAxisCount already clamps). */
+/** -/=/[/] (ticket 93): steps one Mirror axis count by delta, clamped exactly as the +/- buttons are (mirror.setAxisCount already clamps). */
 function adjustMirrorAxisCount(axis: 'columns' | 'rows' | undefined, delta: number) {
   if (!axis) {
     return
@@ -1033,7 +1003,7 @@ function applyHistoryStep(pattern: Pattern, step: HistoryStep<UndoEntry>) {
   history.value = step.history
   replacePattern(restoreSnapshot(pattern, step.snapshot))
   if (step.snapshot.bead) {
-    mirrorAxisCounts.value = step.snapshot.bead.mirrorAxisCounts
+    restoreMirrorAxisCounts(step.snapshot.bead.mirrorAxisCounts)
   }
 }
 
@@ -1119,7 +1089,7 @@ function onConfirmReplaceBead() {
 
   history.value = pushHistory(history.value, currentUndoEntry(pattern))
   replacePattern(replaceBead(pattern, bead))
-  mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
+  clearMirrorAxisCounts()
 }
 
 /**
@@ -1134,47 +1104,6 @@ function onToggleRotate() {
 
   replacePattern(toggleRotated(pattern))
   resetZoom()
-}
-
-/**
- * Sets one direction's Mirror axis count (ticket 44), clamped to what the open Pattern's current size allows --
- * Toolbox.vue works out which grid-space field ('columns'/'rows') a screen direction maps to, since that's the
- * piece that swaps under rotation (see ToolGroup usage in Toolbox.vue).
- */
-function onSetMirrorAxisCount(axis: 'columns' | 'rows', count: number) {
-  const pattern = activePattern.value
-  if (!pattern) {
-    return
-  }
-
-  const cellsAcross = axis === 'columns' ? pattern.columns : pattern.rows
-  mirrorAxisCounts.value = { ...mirrorAxisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
-}
-
-/** Flips Mirror's copy-mode switch (ticket 45): one switch for both directions. */
-function onToggleMirrorCopyMode() {
-  mirrorCopyMode.value = !mirrorCopyMode.value
-}
-
-/**
- * One-time reflect of whatever's currently painted across one direction, for content drawn before that direction's
- * live mirroring was turned on (ADR 0006, ticket 46): the strip with the most painted cells becomes the source,
- * using that direction's own axis count (the other direction is left alone, same as the per-axis buttons have
- * always done) and honouring copy mode; a count of 0 still acts as a single center axis, so the button always does
- * something. 'horizontal'/'vertical' here are grid-space, same as they've always been for these two buttons --
- * unlike the Left–right/Top–bottom counters (ticket 44), these were never rotation-relabeled.
- */
-function onMirrorCurrent(axis: 'horizontal' | 'vertical') {
-  const pattern = activePattern.value
-  if (!pattern) {
-    return
-  }
-
-  const gridAxis = axis === 'horizontal' ? 'columns' : 'rows'
-  commitGridChange(
-    pattern,
-    mirrorCurrent(pattern, gridAxis, mirrorAxisCounts.value[gridAxis], mirrorCopyMode.value),
-  )
 }
 
 function onToggleRowProgress(enabled: boolean) {

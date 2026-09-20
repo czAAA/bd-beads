@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Decisions (2026-09-19):** — from an architecture review (see ADR 0013 for a related rejected candidate)
 - Axis counts, copy mode, hover state, both preview computations, and "Mirror current" itself all move together — not just the passive state, since "Mirror current" is Mirror's own command over Mirror's own state.
@@ -14,9 +14,9 @@
 - The new module (`useMirrorState`) exposes its axis-count/copy-mode state so ticket 63's module can read it, without that module needing to know this one exists.
 - This candidate's evidence held up under scrutiny: four consecutive Mirror tickets (44, 45, 46, 47) each directly edited this exact code, unlike a rejected candidate from the same review (ADR 0013).
 
-- [ ] Axis counts, copy mode, hover state, and both preview computations live in one module, not the app shell
-- [ ] "Mirror current" lives there too, and still commits as one undo step through the existing shared path
-- [ ] Axis-count clamping still respects the open Pattern's current size
-- [ ] Mirror's session state still resets on a Pattern switch
-- [ ] Every existing Mirror test (rich-mirror, Toolbox, grid, canvas) passes unchanged
-- [ ] A new test file covers the extracted module directly
+- [x] Axis counts, copy mode, hover state, and both preview computations live in one module, not the app shell
+- [x] "Mirror current" lives there too, and still commits as one undo step through the existing shared path
+- [x] Axis-count clamping still respects the open Pattern's current size
+- [x] Mirror's session state still resets on a Pattern switch
+- [x] Every existing Mirror test (rich-mirror, Toolbox, grid, canvas) passes unchanged
+- [x] A new test file covers the extracted module directly

@@ -74,6 +74,7 @@ export interface Translations {
     colorHeading: string
     countHeading: string
   }
+  /** Export/import (CONTEXT.md's Pattern file), plus QR export/import (ticket 68, ADR 0015). */
   transfer: {
     heading: string
     exportPatternButton: string
@@ -81,6 +82,15 @@ export interface Translations {
     importLabel: string
     importedLabel: string
     importErrorLabel: string
+    /** Encodes the open Pattern as a single scannable QR code (compact encoding, ADR 0009), shown inline below. */
+    exportQrButton: string
+    /** Shown instead of the code when the Pattern doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Pattern above as the fallback rather than duplicating a download of its own. */
+    qrTooLargeMessage: string
+    closeQrButton: string
+    /** A picture believed to hold one of this app's QR exports (a photo/screenshot of the code shown on another device). */
+    importQrLabel: string
+    qrImportedLabel: string
+    qrImportErrorLabel: string
   }
   mirror: {
     mirrorCurrentHorizontalButton: string
@@ -127,6 +137,12 @@ export interface Translations {
     fileLabel: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
+    /**
+     * The heads-up shown once the current Bead + Technique + size implies a grid past that Technique's
+     * isSlowFramingSize threshold (ticket 61) — informational, not an error, and never blocks the file input.
+     * `{technique}` is filled in with the chosen Technique's own localized name (form.techniqueLoom etc).
+     */
+    slowFramingWarning: string
     /** The framing step's heading in the canvas panel. */
     heading: string
     /** How to move the picture under the frame. */

@@ -166,6 +166,40 @@ export function sourcePixelAt(
 export const PREVIEW_MAX_CELLS = 12000
 
 /**
+ * Per-Technique warning thresholds for the New Pattern form (ticket 61): once a Pattern's own grid (columns × rows,
+ * the frame alone — not the margin PREVIEW_MAX_CELLS otherwise budgets for) reaches a Technique's threshold, framing
+ * risks feeling slow once Convert image is used, and the form says so ahead of a picture being chosen.
+ *
+ * Three separate constants rather than one, even though all three start at the same number: there is no profiling
+ * data today showing one Technique's render cost differs from another's at the same cell count (it scales with cell
+ * count, not stagger or row packing), so a future ticket can move just one once someone has actually felt it lag
+ * first, without that being a change to the other two.
+ */
+export const LOOM_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
+export const PEYOTE_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
+export const BRICK_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
+
+/** The three per-Technique thresholds above, keyed by Technique — isSlowFramingSize's default, overridable in tests. */
+export const SLOW_FRAMING_CELLS: Record<Technique, number> = {
+  loom: LOOM_SLOW_FRAMING_CELLS,
+  peyote: PEYOTE_SLOW_FRAMING_CELLS,
+  brick: BRICK_SLOW_FRAMING_CELLS,
+}
+
+/**
+ * Whether a grid this size, in this Technique, is large enough that Convert image's framing preview risks feeling
+ * slow (see SLOW_FRAMING_CELLS). `thresholds` defaults to the real per-Technique constants; a test overrides it to
+ * exercise the per-Technique lookup without the three real thresholds having to differ.
+ */
+export function isSlowFramingSize(
+  technique: Technique,
+  dimensions: GridDimensions,
+  thresholds: Record<Technique, number> = SLOW_FRAMING_CELLS,
+): boolean {
+  return dimensions.columns * dimensions.rows >= thresholds[technique]
+}
+
+/**
  * The block of bead cells the framing preview draws, and where the frame sits inside it. The lattice is the frame's
  * own cell grid extended outward by a margin of cells on each side, so a cell of the lattice is a cell of the Pattern
  * offset by that margin.
