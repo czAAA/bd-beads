@@ -4,7 +4,7 @@
 
 **Blocked by:** 87, 88, 90, 91, 92, 93, 94, 95
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `?` opens an overlay listing every shortcut from tickets 87, 88, 90, 91, 92, 93, 94, 95, grouped by Tool group
 - [ ] Escape (or a close button) dismisses the overlay

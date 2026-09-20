@@ -53,7 +53,9 @@ export const en: Translations = {
     paintLabel: 'Paint',
     fillLabel: 'Fill',
     selectLabel: 'Select',
+    eraseLabel: 'Erase',
     copyButton: 'Copy',
+    pasteLabel: 'Paste',
   },
   rowProgress: {
     enabledLabel: 'Show row progress',
@@ -132,5 +134,12 @@ export const en: Translations = {
     confirmMessage: 'Existing colors will be rescaled to fit, and Row progress and Mirror will reset. This can be undone.',
     confirmButton: 'Replace bead',
     cancelButton: 'Cancel',
+  },
+  shortcutsHelp: {
+    title: 'Keyboard shortcuts',
+    closeButton: 'Close',
+    eraseOrClearSelection: 'Erase tool, or clear the Selection',
+    panCanvas: 'Pan the canvas',
+    paletteColors: 'Select a Palette color, in Palette order',
   },
 }

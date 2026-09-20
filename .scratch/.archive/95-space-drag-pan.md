@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Holding `Space` and dragging scrolls the canvas panel
 - [ ] Panning does not paint/fill/erase/select even if the pointer moves over cells while `Space` is held

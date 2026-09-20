@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Erase tool button appears in the Tools group, selectable by click
 - [ ] Clicking a painted cell with Erase active clears the connected same-color region (flood), reusing Fill's algorithm

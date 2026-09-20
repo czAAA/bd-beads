@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `Ctrl/Cmd+V` pastes at the pointer's current cell, matching click-to-paste's targeting and Mirror-strip stamping
 - [ ] `Ctrl/Cmd+V` is a no-op when the pointer isn't over the grid

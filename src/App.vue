@@ -8,6 +8,7 @@ import NewPatternForm from './components/NewPatternForm.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternList from './components/PatternList.vue'
 import PatternTransfer from './components/PatternTransfer.vue'
+import ShortcutsHelp from './components/ShortcutsHelp.vue'
 import Toolbox from './components/Toolbox.vue'
 import ZoomControls from './components/ZoomControls.vue'
 import { useConvertImage } from './composables/useConvertImage'
@@ -15,6 +16,7 @@ import { useElementSize } from './composables/useElementSize'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
+import { useSpaceDragPan } from './composables/useSpaceDragPan'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
 import { findBead } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
@@ -30,7 +32,7 @@ import {
   type HistoryStep,
 } from './domain/history'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
-import { findPaletteColor } from './domain/palette'
+import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
 import {
   copySelection,
   mirroredPasteBlock,
@@ -45,6 +47,7 @@ import {
   createPatternFromImage,
   deleteAll,
   fillArea,
+  floodErase,
   isInFinishedRow,
   keepFinishedRows,
   mirrorCurrent,
@@ -246,8 +249,22 @@ const replaceBeadPendingId = ref<string | undefined>()
 
 /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
 const selection = ref<Selection | undefined>()
-/** What Copy last snapshotted, ready to stamp. Like the undo stack it's an editing-session aid, never saved with the Pattern. */
+/**
+ * What Copy last snapshotted, ready to stamp (ticket 92 revised its lifecycle): it now clears only when a new Copy
+ * replaces it or a new Selection is made (see onCopy/extendSelection) -- no longer on a tool switch, a Pattern
+ * switch, or cancelling. Like the undo stack it's an editing-session aid, but unlike the undo stack it now survives
+ * a Pattern switch (see the activePatternId watcher below), since a snapshot of colors is meaningful on any Pattern.
+ */
 const copiedBlock = ref<CopiedBlock | undefined>()
+/**
+ * Hides the paste projection (the live preview plus click-to-stamp gesture, both Select-tool-only) without
+ * touching copiedBlock itself (ticket 92): set on leaving Select or on Escape/right-click (see cancelPaste), and
+ * only cleared by a new Copy or a new Selection (see pasteProjectionActive) -- switching back to Select alone does
+ * not revive it.
+ */
+const pasteDismissed = ref(false)
+/** Whether Select should show the live paste preview and treat a click-in-place as a stamp (ticket 92) -- copiedBlock present and not dismissed. */
+const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
 
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
@@ -255,10 +272,22 @@ const hoveredCell = ref<GridPosition | undefined>()
 /** For onKeyDown's Escape precedence: asks every Tool group to collapse before backing out of Select (ticket 41). */
 const toolboxRef = ref<InstanceType<typeof Toolbox> | null>(null)
 
+/** Whether the `?` shortcuts help overlay (ticket 96) is open. */
+const shortcutsHelpOpen = ref(false)
+
+/**
+ * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
+ * panning scrolls the window instead, since nothing in this shell traps vertical overflow of its own (see
+ * .app-shell__canvas's own comment below).
+ */
+const canvasScrollEl = ref<HTMLElement | null>(null)
+const { spaceHeld, panning: spacePanning } = useSpaceDragPan(canvasScrollEl)
+
 watch(activePatternId, () => {
   history.value = emptyHistory()
   selection.value = undefined
-  copiedBlock.value = undefined
+  // The clipboard (copiedBlock/pasteDismissed) deliberately survives a Pattern switch (ticket 92, ADR 0016) --
+  // unlike Undo/Redo history and Selection above, which still reset here.
   // Mirror's axis counts and copy mode are an editing-session setting, reset on a Pattern switch (ticket 44/45
   // decision).
   mirrorAxisCounts.value = { ...NO_MIRROR_AXES }
@@ -326,9 +355,9 @@ const previewCells = computed<PreviewCell[]>(() => {
 
 function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
   if (activeTool.value === 'select') {
-    // With nothing copied there's nothing a click would put down, so Select previews nothing.
-    return copiedBlock.value
-      ? mirroredPastedCells(pattern, copiedBlock.value, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
+    // With no active (undismissed) projection there's nothing a click would put down, so Select previews nothing.
+    return pasteProjectionActive.value
+      ? mirroredPastedCells(pattern, copiedBlock.value!, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
       : []
   }
   if (activeTool.value !== 'paint') {
@@ -513,15 +542,16 @@ const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
 function beginSelectPress(pattern: Pattern, row: number, column: number) {
   selectPress.value = { anchor: { row, column }, moved: false }
 
-  // With nothing copied, the press can only be the start of a selection, so the marquee appears from the first cell.
-  // With something copied the gesture is claimed by Paste instead, which is why re-selecting a single cell then
-  // takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it means.
-  if (!copiedBlock.value) {
+  // With no active projection, the press can only be the start of a selection, so the marquee appears from the
+  // first cell. With one active the gesture is claimed by Paste instead, which is why re-selecting a single cell
+  // then takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it
+  // means.
+  if (!pasteProjectionActive.value) {
     selection.value = selectionBetween(pattern, { row, column }, { row, column })
   }
 }
 
-/** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one. */
+/** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one (ticket 92: a new Selection is one of the two things that actually clears the clipboard). */
 function extendSelection(row: number, column: number) {
   const pattern = activePattern.value
   const press = selectPress.value
@@ -531,6 +561,7 @@ function extendSelection(row: number, column: number) {
 
   press.moved = true
   copiedBlock.value = undefined
+  pasteDismissed.value = false
   selection.value = selectionBetween(pattern, press.anchor, { row, column })
 }
 
@@ -540,31 +571,33 @@ function endSelectPress() {
   const press = selectPress.value
   selectPress.value = null
 
-  if (!pattern || !press || press.moved || !copiedBlock.value) {
+  if (!pattern || !press || press.moved || !pasteProjectionActive.value) {
     return
   }
 
   commitGridChange(
     pattern,
-    mirroredPasteBlock(pattern, copiedBlock.value, press.anchor, mirrorAxisCounts.value, mirrorCopyMode.value),
+    mirroredPasteBlock(pattern, copiedBlock.value!, press.anchor, mirrorAxisCounts.value, mirrorCopyMode.value),
   )
 }
 
 /**
- * Puts the copied block down without stamping it, so Select goes back to marking out areas — a click means Paste
- * only while something is on the clipboard (see beginSelectPress). The Selection itself is left alone (it's
- * already empty at this point, since Copy clears it — ticket 49).
+ * Hides the paste projection (ticket 92): Select goes back to marking out areas, and the live preview stops — a
+ * click means Paste only while a projection is active (see beginSelectPress). copiedBlock itself is left alone (so
+ * Ctrl/Cmd+V can still paste it regardless of tool or projection state — see pasteAtPointer): only a new Copy or a
+ * new Selection re-arms the projection (see onCopy/extendSelection). The Selection itself is also left alone
+ * (it's already empty at this point when called from Copy's own flow, since Copy clears it — ticket 49).
  */
 function cancelPaste() {
-  copiedBlock.value = undefined
+  pasteDismissed.value = true
 }
 
 /**
- * Right-click or Escape under Select backs out one step at a time: a copied block goes first (see cancelPaste);
- * with nothing copied, the Selection itself goes.
+ * Right-click or Escape under Select backs out one step at a time: an active paste projection goes first (see
+ * cancelPaste); with none active, the Selection itself goes.
  */
 function backOutOfSelect() {
-  if (copiedBlock.value) {
+  if (pasteProjectionActive.value) {
     cancelPaste()
   } else {
     selection.value = undefined
@@ -582,20 +615,62 @@ function isRedoShortcut(event: KeyboardEvent): boolean {
   return shiftZ || ctrlY
 }
 
+/** A plain, unmodified key press: guards the new single-letter/digit shortcuts (tickets 87/91/93/94) against colliding with an OS/browser chord that happens to share the same key. */
+function isPlainKey(event: KeyboardEvent): boolean {
+  return !event.ctrlKey && !event.metaKey && !event.altKey
+}
+
+/** `event.key` is exactly `key` (case-insensitively), with no modifier held at all -- the shape every plain-letter/digit shortcut below (1/2/3, R, M, H, V, P, D) shares, so each just names its own key instead of repeating the guard. */
+function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
+  return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
+}
+
+/** Withholds a shortcut while the Delete all or Replace bead confirmation, or the shortcuts help overlay, is open — same precedence Escape already gives those modals (see the Escape entry below). */
+function noModalOpen(): boolean {
+  return !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value && !shortcutsHelpOpen.value
+}
+
+/** Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox button has focus — otherwise Tab+Enter would both click that button and move the row. */
+function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
+  const target = event.target
+  return target instanceof HTMLElement && target.tagName === 'BUTTON' && target.closest('[data-testid="toolbox"]') !== null
+}
+
+/** Which grid-space axis the on-screen Left–right Mirror counter drives right now (ticket 93) -- same rotation-aware mapping Toolbox.vue's leftRightAxis uses, since rotating the Pattern swaps the two. Undefined with no Pattern open. */
+function leftRightAxis(): 'columns' | 'rows' | undefined {
+  const pattern = activePattern.value
+  return pattern ? (pattern.rotated ? 'rows' : 'columns') : undefined
+}
+
+/** The Top–bottom counter's grid-space axis (ticket 93) -- the other of the two leftRightAxis doesn't pick. */
+function topBottomAxis(): 'columns' | 'rows' | undefined {
+  const pattern = activePattern.value
+  return pattern ? (pattern.rotated ? 'columns' : 'rows') : undefined
+}
+
+/** -/=/[/] (ticket 93): steps one Mirror axis count by delta, clamped exactly as the +/- buttons are (onSetMirrorAxisCount already clamps). */
+function adjustMirrorAxisCount(axis: 'columns' | 'rows' | undefined, delta: number) {
+  if (!axis) {
+    return
+  }
+  onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
+}
+
 /**
- * The table (ticket 86) driving useKeyboardShortcuts below: Undo, Redo, and Escape today, with tickets 87-96 due to
- * add their own entries here without touching the dispatcher itself.
+ * The table (ticket 86) driving useKeyboardShortcuts below: Undo, Redo and Escape from ticket 86 itself, plus every
+ * Toolbox shortcut tickets 87-96 added, grouped the same way the Toolbox's own Tool groups are, without touching
+ * the dispatcher itself.
  */
 const keyboardShortcuts: KeyboardShortcut[] = [
   {
     /*
      * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the
-     * cursor may have left it (ticket 24). While the Delete all or Replace bead confirmation modal is open, its own
-     * Escape handling (ConfirmModal.vue) owns the key instead — withheld here so Escape can't also unexpectedly
-     * drop a copied block or collapse a Tool group behind the modal.
+     * cursor may have left it (ticket 24). While the Delete all or Replace bead confirmation modal, or the
+     * shortcuts help overlay, is open, its own Escape handling owns the key instead — withheld here so Escape can't
+     * also unexpectedly drop a copied block or collapse a Tool group behind it.
      */
     matches: (event) => event.key === 'Escape',
-    guard: () => !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value,
+    guard: noModalOpen,
     allowWhileTyping: true,
     action: () => {
       /*
@@ -620,6 +695,144 @@ const keyboardShortcuts: KeyboardShortcut[] = [
     action: (event) => {
       event.preventDefault()
       onUndo()
+    },
+  },
+  // Tools group (ticket 87): 1/2/3 select Paint/Fill/Select, the same as clicking that button.
+  {
+    matches: (event) => isPlainLetterKey(event, '1'),
+    guard: noModalOpen,
+    action: () => onSelectTool('paint'),
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, '2'),
+    guard: noModalOpen,
+    action: () => onSelectTool('fill'),
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, '3'),
+    guard: noModalOpen,
+    action: () => onSelectTool('select'),
+  },
+  // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Erase.
+  {
+    matches: (event) => event.key === 'Delete',
+    guard: noModalOpen,
+    action: () => {
+      if (activeTool.value === 'select' && selection.value) {
+        onDeleteSelection()
+      } else {
+        onSelectTool('erase')
+      }
+    },
+  },
+  // Colors group (ticket 88): Shift+1..9, Shift+0, Q, W paint with the corresponding Palette swatch, in order.
+  {
+    matches: (event) => event.shiftKey && isPlainKey(event) && PALETTE_SHORTCUTS.some((s) => s.code === event.code),
+    guard: noModalOpen,
+    action: (event) => {
+      const index = PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)
+      const color = PALETTE[index]
+      if (color) {
+        onSelectColor(color.id)
+      }
+    },
+  },
+  // Edit group (ticket 91): R toggles Rotate, Ctrl/Cmd+C copies the active Selection.
+  {
+    matches: (event) => isPlainLetterKey(event, 'r'),
+    guard: noModalOpen,
+    action: () => onToggleRotate(),
+  },
+  {
+    matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'c',
+    guard: noModalOpen,
+    action: (event) => {
+      event.preventDefault()
+      onCopy()
+    },
+  },
+  // ticket 92: Ctrl/Cmd+V pastes at the cell under the pointer, regardless of the active tool.
+  {
+    matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'v',
+    guard: noModalOpen,
+    action: pasteAtPointer,
+  },
+  // Mirror group (ticket 93): -/= step Left-right, [/] step Top-bottom, M toggles copy mode, H/V trigger Mirror current.
+  {
+    matches: (event) => event.key === '-' && isPlainKey(event),
+    guard: noModalOpen,
+    action: () => adjustMirrorAxisCount(leftRightAxis(), -1),
+  },
+  {
+    matches: (event) => event.key === '=' && isPlainKey(event),
+    guard: noModalOpen,
+    action: () => adjustMirrorAxisCount(leftRightAxis(), 1),
+  },
+  {
+    matches: (event) => event.key === '[' && isPlainKey(event),
+    guard: noModalOpen,
+    action: () => adjustMirrorAxisCount(topBottomAxis(), -1),
+  },
+  {
+    matches: (event) => event.key === ']' && isPlainKey(event),
+    guard: noModalOpen,
+    action: () => adjustMirrorAxisCount(topBottomAxis(), 1),
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, 'm'),
+    guard: noModalOpen,
+    action: () => onToggleMirrorCopyMode(),
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, 'h'),
+    guard: noModalOpen,
+    action: () => onMirrorCurrent('horizontal'),
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, 'v'),
+    guard: noModalOpen,
+    action: () => onMirrorCurrent('vertical'),
+  },
+  // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter move the pointer.
+  {
+    matches: (event) => isPlainLetterKey(event, 'p'),
+    guard: noModalOpen,
+    action: () => {
+      const pattern = activePattern.value
+      if (pattern) {
+        onToggleRowProgress(!pattern.rowProgress.enabled)
+      }
+    },
+  },
+  {
+    matches: (event) => isPlainLetterKey(event, 'd'),
+    guard: noModalOpen,
+    action: () => onToggleRowDirection(),
+  },
+  {
+    matches: (event) => event.key === 'Enter' && !event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
+    action: () => {
+      if (activePattern.value?.rowProgress.enabled) {
+        onMoveRow(1)
+      }
+    },
+  },
+  {
+    matches: (event) => event.key === 'Enter' && event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
+    action: () => {
+      if (activePattern.value?.rowProgress.enabled) {
+        onMoveRow(-1)
+      }
+    },
+  },
+  // ticket 96: ? opens the shortcuts help overlay.
+  {
+    matches: (event) => event.key === '?',
+    guard: noModalOpen,
+    action: () => {
+      shortcutsHelpOpen.value = true
     },
   },
 ]
@@ -657,10 +870,70 @@ function onCopy() {
   }
 
   copiedBlock.value = copySelection(pattern, selection.value)
+  pasteDismissed.value = false
   selection.value = undefined
 }
 
+/**
+ * Ctrl/Cmd+V (ticket 92): pastes the clipboard's block at the cell currently under the pointer, the same targeting
+ * and Mirror-strip stamping as a Select-tool click-to-paste (see endSelectPress) -- but works regardless of which
+ * tool is active, since it's driven by hoveredCell rather than the Select-only click gesture. A no-op with nothing
+ * copied or with the pointer off the grid (hoveredCell unset -- see onHoverEnd).
+ */
+function pasteAtPointer(event: KeyboardEvent) {
+  const pattern = activePattern.value
+  const cell = hoveredCell.value
+  if (!pattern || !cell || !copiedBlock.value) {
+    return
+  }
+
+  event.preventDefault()
+  commitGridChange(
+    pattern,
+    mirroredPasteBlock(pattern, copiedBlock.value, cell, mirrorAxisCounts.value, mirrorCopyMode.value),
+  )
+}
+
+/** The Erase tool (ticket 89): flood-erases the clicked cell's connected same-color region, and each of its live-mirror counterparts' own regions too, as one undo step (see floodErase). */
+function onEraseCell(row: number, column: number) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const positions = mirroredCells(pattern, { row, column }, mirrorAxisCounts.value, mirrorCopyMode.value)
+  commitGridChange(pattern, floodErase(pattern, positions))
+}
+
+/**
+ * Del with Select active and a Selection present (ticket 90): clears just the selected cells (holes, same as an
+ * ordinary erase of that rectangle), as one undo step honouring the Row progress lock and Mirror -- reusing
+ * paintCells with a null color, the same primitive a Paint stroke's own erase uses. The Selection's own rectangle
+ * is left alone; only its contents change.
+ */
+function onDeleteSelection() {
+  const pattern = activePattern.value
+  const sel = selection.value
+  if (!pattern || !sel) {
+    return
+  }
+
+  const positions: GridPosition[] = []
+  for (let rowOffset = 0; rowOffset < sel.rows; rowOffset++) {
+    for (let columnOffset = 0; columnOffset < sel.columns; columnOffset++) {
+      positions.push({ row: sel.top + rowOffset, column: sel.left + columnOffset })
+    }
+  }
+
+  commitGridChange(pattern, paintCells(pattern, positions, null, mirrorAxisCounts.value, mirrorCopyMode.value))
+}
+
 function onCellPrimaryDown(row: number, column: number) {
+  if (spaceHeld.value) {
+    // Space+drag pans the canvas (ticket 95): never a paint/fill/erase/select, regardless of the active tool.
+    return
+  }
+
   const pattern = activePattern.value
   if (!pattern) {
     return
@@ -668,6 +941,11 @@ function onCellPrimaryDown(row: number, column: number) {
 
   if (activeTool.value === 'select') {
     beginSelectPress(pattern, row, column)
+    return
+  }
+
+  if (activeTool.value === 'erase') {
+    onEraseCell(row, column)
     return
   }
 
@@ -680,6 +958,10 @@ function onCellPrimaryDown(row: number, column: number) {
 }
 
 function onCellPrimaryMove(row: number, column: number) {
+  if (spaceHeld.value) {
+    return
+  }
+
   if (activeTool.value === 'select') {
     extendSelection(row, column)
     return
@@ -697,8 +979,12 @@ function onCellPrimaryMove(row: number, column: number) {
   paintStrokeCell(row, column, color)
 }
 
-/** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint. */
+/** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint and Erase. */
 function onCellSecondaryDown(row: number, column: number) {
+  if (spaceHeld.value) {
+    return
+  }
+
   // Select never erases; under it the right button backs out of a pending Paste or the Selection, alongside Escape.
   if (activeTool.value === 'select') {
     backOutOfSelect()
@@ -709,6 +995,10 @@ function onCellSecondaryDown(row: number, column: number) {
 }
 
 function onCellSecondaryMove(row: number, column: number) {
+  if (spaceHeld.value) {
+    return
+  }
+
   if (strokeMode.value !== 'erase') {
     return
   }
@@ -1023,8 +1313,13 @@ function onMoveRow(delta: number) {
             />
           </div>
 
-          <div ref="canvasAreaEl" class="app-shell__canvas" data-testid="app-canvas">
-            <div class="app-shell__canvas-scroll">
+          <div
+            ref="canvasAreaEl"
+            class="app-shell__canvas"
+            :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
+            data-testid="app-canvas"
+          >
+            <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
               <!--
                 Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
                 open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
@@ -1138,6 +1433,8 @@ function onMoveRow(delta: number) {
       @confirm="onConfirmReplaceBead"
       @cancel="onCancelReplaceBead"
     />
+
+    <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
   </div>
 </template>
 
@@ -1363,6 +1660,15 @@ function onMoveRow(delta: number) {
   background-size: 16px 16px;
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
+}
+
+/* Space+drag panning (ticket 95): a grab cursor while Space is held, switching to grabbing once the drag actually starts. */
+.app-shell__canvas--pan {
+  cursor: grab;
+}
+
+.app-shell__canvas--panning {
+  cursor: grabbing;
 }
 
 .app-shell__canvas-scroll {

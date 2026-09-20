@@ -23,6 +23,32 @@ export function findPaletteColor(id: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.id === id)
 }
 
+/**
+ * Shift+1..9, Shift+0, Q, W (ticket 88), one per PALETTE entry in order: the physical key (`KeyboardEvent.code`,
+ * layout- and Shift-independent -- the digit row's *shifted* `.key` values like "!" vary by keyboard layout, unlike
+ * `.code`) and its display label. The one source both App.vue's dispatcher and PalettePicker.vue's tooltips read,
+ * so the two can't drift apart.
+ */
+export interface PaletteShortcut {
+  code: string
+  keyLabel: string
+}
+
+export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
+  { code: 'Digit1', keyLabel: '1' },
+  { code: 'Digit2', keyLabel: '2' },
+  { code: 'Digit3', keyLabel: '3' },
+  { code: 'Digit4', keyLabel: '4' },
+  { code: 'Digit5', keyLabel: '5' },
+  { code: 'Digit6', keyLabel: '6' },
+  { code: 'Digit7', keyLabel: '7' },
+  { code: 'Digit8', keyLabel: '8' },
+  { code: 'Digit9', keyLabel: '9' },
+  { code: 'Digit0', keyLabel: '0' },
+  { code: 'KeyQ', keyLabel: 'Q' },
+  { code: 'KeyW', keyLabel: 'W' },
+]
+
 /** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside the Palette. */
 export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.hex === hex)

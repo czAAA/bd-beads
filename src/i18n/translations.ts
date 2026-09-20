@@ -54,7 +54,11 @@ export interface Translations {
     paintLabel: string
     fillLabel: string
     selectLabel: string
+    /** The 4th Tool group member (ticket 89): flood-erases a clicked region's connected same-color cells. */
+    eraseLabel: string
     copyButton: string
+    /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names it. */
+    pasteLabel: string
   }
   rowProgress: {
     enabledLabel: string
@@ -156,5 +160,18 @@ export interface Translations {
     confirmMessage: string
     confirmButton: string
     cancelButton: string
+  }
+  /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels
+   * themselves (digits, letters, "Ctrl/Cmd+C") are locale-neutral and built inline in ShortcutsHelp.vue rather than
+   * translated here — only the description of what each one does needs a translation. */
+  shortcutsHelp: {
+    title: string
+    closeButton: string
+    /** Ticket 90: Del either activates Erase or clears the active Selection, depending on context. */
+    eraseOrClearSelection: string
+    /** Ticket 95: Space+drag. */
+    panCanvas: string
+    /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
+    paletteColors: string
   }
 }

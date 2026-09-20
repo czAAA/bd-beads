@@ -55,7 +55,9 @@ export const ru: Translations = {
     paintLabel: 'Кисть',
     fillLabel: 'Заливка',
     selectLabel: 'Выделение',
+    eraseLabel: 'Ластик',
     copyButton: 'Копировать',
+    pasteLabel: 'Вставить',
   },
   rowProgress: {
     enabledLabel: 'Показывать прогресс по рядам',
@@ -134,5 +136,12 @@ export const ru: Translations = {
     confirmMessage: 'Существующие цвета будут пересчитаны под новый размер, а прогресс по рядам и отражение сбросятся. Это действие можно отменить.',
     confirmButton: 'Заменить бисер',
     cancelButton: 'Отмена',
+  },
+  shortcutsHelp: {
+    title: 'Горячие клавиши',
+    closeButton: 'Закрыть',
+    eraseOrClearSelection: 'Инструмент «Ластик» или очистить выделение',
+    panCanvas: 'Перемещать холст',
+    paletteColors: 'Выбрать цвет палитры, по порядку палитры',
   },
 }

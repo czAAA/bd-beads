@@ -67,8 +67,12 @@ The strip of editing controls above the canvas while a Pattern is open, made up 
 _Avoid_: tool strip, toolbar
 
 **Tool group**:
-One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select), Colors, Edit, Mirror, Row progress. Holds at most 14 controls in view (two rows of seven); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit, Mirror, Row progress. Holds at most 14 controls in view (two rows of seven); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
+
+**Erase**:
+A 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: clicking a painted cell flood-erases its connected same-color region, reusing Fill's own flood algorithm but writing empty instead of a color. Behaves like every other drawing command — one undo step, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Separate from the existing right-click erase available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill), which this tool doesn't change.
+_Avoid_: eraser mode, clear tool
 
 **Delete all**:
 Resets the open Pattern to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Pattern's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
@@ -87,11 +91,11 @@ A rectangular area of a Pattern's cells, marked out by dragging with the Select 
 _Avoid_: region, highlighted area, selected block
 
 **Copy**:
-Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists, and immediately clears the Selection highlight (the clipboard stays armed; copying the same block again requires reselecting it). The clipboard is an editing-session aid like the undo stack: never saved with the Pattern, and cleared on the same events (a Pattern switch, plus a new Selection or a new Copy replacing it, the user cancelling out of Paste, or the Select tool being left — nothing outlives the marquee it came from).
+Snapshots the Selection's cells — the empty ones included — into an in-session clipboard, available only while a Selection exists, and immediately clears the Selection highlight (the clipboard stays armed; copying the same block again requires reselecting it). The clipboard is an editing-session aid like the undo stack, never saved with the Pattern, but its own lifecycle is deliberately looser (see [ADR 0016](docs/adr/0016-clipboard-survives-pattern-and-tool-switches.md)): it clears only when a new Copy replaces it or a new Selection is made, and survives a Pattern switch, a tool switch, and cancelling out of Paste — none of which touch it anymore.
 _Avoid_: duplicate, clone
 
 **Paste**:
-Stamps the copied block onto the grid with its top-left corner at the clicked cell, as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. While a block is on the clipboard, hovering previews the block at every Mirror strip it would land in (not just under the pointer), and clicking stamps all of those copies at once as a single undo step, honouring copy mode; each copy keeps Paste's own hole rule independently. While a block is on the clipboard a click means Paste, so right-clicking the canvas or pressing Escape cancels it: the block is dropped and clicking marks out Selections again.
+Stamps the copied block onto the grid with its top-left corner at the clicked cell (Select tool) or the cell under the pointer (Ctrl/Cmd+V, from any tool), as one undo step, and can be repeated at as many positions as wanted until the clipboard is replaced or cleared. A stamp reaching past the grid's edge is clipped silently rather than blocked or shifted, and the block's empty cells are holes: they leave the destination's own color alone instead of erasing it, so a motif stamped onto painted background doesn't punch through it. While a block is on the clipboard and Select is the active tool, hovering previews the block at every Mirror strip it would land in (not just under the pointer), and clicking stamps all of those copies at once as a single undo step, honouring copy mode; each copy keeps Paste's own hole rule independently. Only Select ever shows this live preview or treats a plain click as a stamp — Ctrl/Cmd+V pastes from any tool without needing one. Leaving Select, right-clicking the canvas, or pressing Escape no longer drops the clipboard: it only dismisses the live preview and the click-to-stamp behavior, which stays dismissed (even back on Select) until a new Copy or a new Selection re-arms it — Ctrl/Cmd+V keeps working on the dismissed clipboard regardless.
 _Avoid_: place, insert, apply
 
 **Undo**:

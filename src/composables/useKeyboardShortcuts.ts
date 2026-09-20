@@ -13,8 +13,13 @@ export interface KeyboardShortcut {
   action: (event: KeyboardEvent) => void
 }
 
-/** Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it should be left to type normally rather than triggering an editor-wide shortcut. */
-function isTypingInFormField(target: EventTarget | null): boolean {
+/**
+ * Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it
+ * should be left to type normally rather than triggering an editor-wide shortcut. Exported so other window-level
+ * keyboard handling outside the table above (e.g. useSpaceDragPan's Space-held tracking, ticket 95) shares the same
+ * check rather than re-implementing it.
+ */
+export function isTypingInFormField(target: EventTarget | null): boolean {
   return (
     target instanceof HTMLElement &&
     (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
