@@ -1044,7 +1044,7 @@ describe('App', () => {
     const titleBox = topBar.find('.app-shell__topbar-title')
     const summaryBox = topBar.find('.app-shell__topbar-summary')
 
-    expect(titleBox.find('h1').text()).toBe('bd-beads')
+    expect(titleBox.find('h1 img').attributes('alt')).toBe('bd-beads')
     expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
     expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)

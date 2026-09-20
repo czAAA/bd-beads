@@ -72,6 +72,8 @@ import {
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
 
+const BASE_URL = import.meta.env.BASE_URL
+
 const { t } = provideI18n()
 
 /**
@@ -1208,7 +1210,16 @@ function onMoveRow(delta: number) {
   <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
     <header class="app-shell__topbar" data-testid="app-topbar">
       <div class="app-shell__topbar-title">
-        <h1>{{ t.app.title }}</h1>
+        <h1 class="app-shell__logo">
+          <img
+            class="app-shell__logo-image"
+            data-testid="app-logo"
+            :src="`${BASE_URL}favicon.svg`"
+            :alt="t.app.title"
+            width="96"
+            height="96"
+          />
+        </h1>
       </div>
       <div class="app-shell__topbar-summary">
         <div v-if="activePattern" class="app-shell__summary-group">
@@ -1463,12 +1474,34 @@ function onMoveRow(delta: number) {
 }
 
 .app-shell__topbar-title {
-  background: var(--color-ink);
+  /* A fixed square, not stretched to the summary box's height like the flex row would otherwise do: that box grows
+     taller once a Pattern is open, and a stretched title box would turn into a tall rectangle. */
+  flex: none;
+  align-self: flex-start;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 110px;
+  height: 110px;
+  padding: 16px;
+  background: var(--color-paper);
 }
 
 .app-shell__topbar-title h1 {
   margin: 0;
   color: var(--color-paper);
+}
+
+/* The favicon stands in for the app name, on the same paper as the page so its red beads stay visible. The negative
+   margin lets it draw larger than the 72px it takes up in the box, so the box doesn't grow with it. */
+.app-shell__logo {
+  display: flex;
+  line-height: 0;
+}
+
+.app-shell__logo-image {
+  width: 96px;
+  height: 96px;
+  margin: -12px;
 }
 
 .app-shell__topbar-summary {
