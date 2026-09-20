@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `-`/`=` decrease/increase the Left-Right axis count, clamped exactly as the +/- buttons are
 - [ ] `[`/`]` decrease/increase the Top-Bottom axis count, clamped exactly as the +/- buttons are

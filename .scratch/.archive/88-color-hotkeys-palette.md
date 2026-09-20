@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `Shift+1`..`Shift+9`, `Shift+0`, `Shift+Q`, `Shift+W` select the 12 Palette colors in order
 - [ ] Each swatch's tooltip shows its shortcut

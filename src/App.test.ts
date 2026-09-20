@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
+import { PALETTE } from './domain/palette'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './domain/patternStorage'
@@ -1080,22 +1081,40 @@ describe('App', () => {
  * the Toolbox stays compact.
  */
 describe('App tool strip icon buttons', () => {
+  /**
+   * `titleSuffix`, when present, is the shortcut hint tickets 87/91/93/94 append to a button's tooltip (e.g.
+   * "Paint (1)") -- the aria-label stays the bare label either way, so screen readers hear the same name a plain
+   * click gives regardless of the shortcut hint.
+   */
   const iconButtons = [
-    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel },
-    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel },
-    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel },
+    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel, titleSuffix: ' (1)' },
+    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel, titleSuffix: ' (2)' },
+    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel, titleSuffix: ' (3)' },
+    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel },
     { testId: 'delete-all-button', label: (t: typeof en) => t.deleteAll.button },
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton },
-    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton },
-    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton },
+    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton, titleSuffix: ' (R)' },
+    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, titleSuffix: ' (Ctrl/Cmd+C)' },
     { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton },
-    { testId: 'mirror-copy-mode', label: (t: typeof en) => t.mirror.copyModeLabel },
-    { testId: 'mirror-current-horizontal', label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton },
-    { testId: 'mirror-current-vertical', label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton },
-    { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel },
-    { testId: 'row-progress-direction', label: (t: typeof en) => t.rowProgress.directionButton },
-    { testId: 'row-progress-previous', label: (t: typeof en) => t.rowProgress.previousButton },
-    { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton },
+    { testId: 'mirror-copy-mode', label: (t: typeof en) => t.mirror.copyModeLabel, titleSuffix: ' (M)' },
+    {
+      testId: 'mirror-current-horizontal',
+      label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton,
+      titleSuffix: ' (H)',
+    },
+    {
+      testId: 'mirror-current-vertical',
+      label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton,
+      titleSuffix: ' (V)',
+    },
+    { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel, titleSuffix: ' (P)' },
+    { testId: 'row-progress-direction', label: (t: typeof en) => t.rowProgress.directionButton, titleSuffix: ' (D)' },
+    {
+      testId: 'row-progress-previous',
+      label: (t: typeof en) => t.rowProgress.previousButton,
+      titleSuffix: ' (Shift+Enter)',
+    },
+    { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton, titleSuffix: ' (Enter)' },
   ]
 
   it.each(iconButtons)('renders $testId as an icon button with no visible text', async ({ testId }) => {
@@ -1108,23 +1127,23 @@ describe('App tool strip icon buttons', () => {
     expect(button.text()).toBe('')
   })
 
-  it.each(iconButtons)('names $testId for hover tooltips and screen readers alike', async ({ testId, label }) => {
+  it.each(iconButtons)('names $testId for hover tooltips and screen readers alike', async ({ testId, label, titleSuffix }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
     const button = wrapper.find(`[data-testid="${testId}"]`)
-    expect(button.attributes('title')).toBe(label(en))
+    expect(button.attributes('title')).toBe(`${label(en)}${titleSuffix ?? ''}`)
     expect(button.attributes('aria-label')).toBe(label(en))
   })
 
-  it.each(iconButtons)('translates $testId\u2019s tooltip and label with the interface language', async ({ testId, label }) => {
+  it.each(iconButtons)('translates $testId\u2019s tooltip and label with the interface language', async ({ testId, label, titleSuffix }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
 
     const button = wrapper.find(`[data-testid="${testId}"]`)
-    expect(button.attributes('title')).toBe(label(ru))
+    expect(button.attributes('title')).toBe(`${label(ru)}${titleSuffix ?? ''}`)
     expect(button.attributes('aria-label')).toBe(label(ru))
   })
 
@@ -1259,6 +1278,543 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ key: 'z', ctrlKey: true })
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+})
+
+async function pressKey(init: KeyboardEventInit, target: EventTarget = window) {
+  target.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, ...init }))
+  await flushPromises()
+}
+
+/**
+ * The window-level keyboard shortcut tests below (tickets 87-96) dispatch on `window`, which every still-mounted
+ * App instance in this file hears -- and unlike the rest of this suite, several of these assert an *incremental*
+ * state (a row-progress pointer, a mirror axis count) that isn't idempotent under a stray extra firing from an
+ * earlier test's App instance. mountAppForCleanup tracks every mount here so afterEach can unmount it, keeping
+ * each test's dispatched keydowns reaching only its own wrapper.
+ */
+const mountedAppsForCleanup: ReturnType<typeof mount>[] = []
+function mountAppForCleanup() {
+  const wrapper = mount(App)
+  mountedAppsForCleanup.push(wrapper)
+  return wrapper
+}
+afterEach(() => {
+  for (const wrapper of mountedAppsForCleanup.splice(0)) {
+    wrapper.unmount()
+  }
+})
+
+describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
+  it.each([
+    { key: '1', testId: 'tool-paint' },
+    { key: '2', testId: 'tool-fill' },
+    { key: '3', testId: 'tool-select' },
+  ])('$key selects $testId, the same as clicking it', async ({ key, testId }) => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click') // start on a different tool
+
+    await pressKey({ key })
+
+    expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-pressed')).toBe('true')
+  })
+
+  it('works even while a Selection or a paste projection is active', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('pointerdown')
+    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await pressKey({ key: '1' })
+
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+      await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+      await pressKey({ key: '1' }, field)
+
+      expect(wrapper.find('[data-testid="tool-fill"]').attributes('aria-pressed')).toBe('true')
+    } finally {
+      field.remove()
+    }
+  })
+
+  it('has no effect while a confirm modal is open', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+
+    await pressKey({ key: '1' })
+
+    expect(wrapper.find('[data-testid="tool-fill"]').attributes('aria-pressed')).toBe('true')
+  })
+})
+
+describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
+  const COLOR_SHORTCUT_CODES = [
+    'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyQ', 'KeyW',
+  ]
+
+  it.each(PALETTE.map((color, index) => ({ color, code: COLOR_SHORTCUT_CODES[index]! })))(
+    'Shift+$code paints with $color.id, in Palette order',
+    async ({ color, code }) => {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ code, shiftKey: true })
+      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+      await wrapper.trigger('mouseup')
+
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe(color.hex)
+    },
+  )
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ code: 'Digit2', shiftKey: true }, field)
+      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+      await wrapper.trigger('mouseup')
+
+      // Red is still the default selected color (ticket 27); Shift+2 (orange) never landed.
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    } finally {
+      field.remove()
+    }
+  })
+})
+
+describe('App Erase tool (ticket 89)', () => {
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await wrapper.trigger('mouseup')
+  }
+
+  /** A 2x2 Pattern (from a 3mm x 3mm cube-bead Pattern), fully painted red, for a flood-erase to act on. */
+  async function paintedSmallPattern(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '3', '3')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    for (let index = 0; index < 4; index++) {
+      await click(wrapper, index)
+    }
+  }
+
+  it('flood-erases the clicked region, reusing the Fill algorithm, as one undo step', async () => {
+    const wrapper = mountAppForCleanup()
+    await paintedSmallPattern(wrapper)
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+
+    await click(wrapper, 0)
+
+    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === '#e63746')).toBe(true)
+  })
+
+  it('erases the mirrored counterpart cells too, while a Mirror axis is active', async () => {
+    const wrapper = mountAppForCleanup()
+    await paintedSmallPattern(wrapper)
+    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+
+    await click(wrapper, 0) // (0,0) mirrors (0,1) in a 2-column grid
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+  })
+
+  it('respects the Row progress lock: a finished row is left alone', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    for (let index = 0; index < 8; index++) {
+      await click(wrapper, index) // paint the first two rows
+    }
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 finished
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+
+    await click(wrapper, 0) // (0,0), in the finished row
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('leaves right-click erase under Paint and Fill unaffected by the new tool', async () => {
+    const wrapper = mountAppForCleanup()
+    await paintedSmallPattern(wrapper)
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown', { button: 2 })
+
+    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+  })
+})
+
+describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
+  async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[indices[0]!]!.trigger('pointerdown')
+    for (const index of indices.slice(1)) {
+      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+    }
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await wrapper.trigger('mouseup')
+  }
+
+  it('clears just the selected cells, keeping the Selection and staying on Select, as one undo step', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    for (let index = 0; index < 16; index++) {
+      await click(wrapper, index)
+    }
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0, 1, 4, 5]) // a 2x2 selection
+
+    await pressKey({ key: 'Delete' })
+
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+    expect(grid[1]![0]!.color).toBeNull()
+    expect(grid[1]![1]!.color).toBeNull()
+    expect(grid[2]![2]!.color).toBe('#e63746') // outside the selection, untouched
+    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(4) // the Selection itself remains
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('activates Erase when Select is active with no Selection', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+
+    await pressKey({ key: 'Delete' })
+
+    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('activates Erase when any other tool is active', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+    await pressKey({ key: 'Delete' })
+
+    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ key: 'Delete' }, field)
+
+      expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
+    } finally {
+      field.remove()
+    }
+  })
+})
+
+describe('App Edit group hotkeys — Rotate (R) and Copy (Ctrl/Cmd+C) (ticket 91)', () => {
+  it('toggles Rotate on R, the same as clicking the button', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'r' })
+
+    expect(loadPatterns()[0]!.rotated).toBe(true)
+  })
+
+  it('copies the active Selection on Ctrl/Cmd+C, the same as clicking Copy', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('pointerdown')
+    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await pressKey({ key: 'c', ctrlKey: true })
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true) // hides the marquee, same as a click
+    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(0)
+  })
+
+  it('is a no-op copying with no Selection (Copy disabled)', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'c', ctrlKey: true })
+
+    // Nothing to assert directly beyond no error/crash; canCopy stays false either way.
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+  })
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ key: 'r' }, field)
+
+      expect(loadPatterns()[0]!.rotated).toBe(false)
+    } finally {
+      field.remove()
+    }
+  })
+})
+
+describe('App Mirror group hotkeys (ticket 93)', () => {
+  it('-/= step the Left-right axis count, clamped the same as the buttons', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: '=' })
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
+
+    await pressKey({ key: '-' })
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
+  })
+
+  it('[/] step the Top-bottom axis count, clamped the same as the buttons', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: ']' })
+    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('1')
+
+    await pressKey({ key: '[' })
+    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('0')
+  })
+
+  it('M toggles copy mode', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'm' })
+
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('H and V trigger Mirror current horizontal/vertical', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await wrapper.trigger('mouseup')
+
+    await pressKey({ key: 'h' })
+
+    // Mirror current horizontal syncs the fullest column-strip onto the rest; with 0 axes that's a straight mirror.
+    expect(loadPatterns()[0]!.grid[0]![3]!.color).toBe('#e63746')
+  })
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ key: '=' }, field)
+
+      expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
+    } finally {
+      field.remove()
+    }
+  })
+})
+
+describe('App Row progress group hotkeys (ticket 94)', () => {
+  it('P toggles Row progress on/off', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'p' })
+
+    expect(wrapper.find('[data-testid="row-progress-enabled"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('D toggles Row direction', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'd' })
+
+    expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('Enter/Shift+Enter move to the next/previous row', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    await pressKey({ key: 'Enter' })
+    await pressKey({ key: 'Enter' })
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+
+    await pressKey({ key: 'Enter', shiftKey: true })
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+  })
+
+  it('respects the disabled bounds at the first/last row', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '3', '3') // 2x2
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    await pressKey({ key: 'Enter', shiftKey: true }) // already at the first row
+
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('1 / 2')
+  })
+
+  it('is a no-op while Row progress is off', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: 'Enter' })
+
+    expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+  })
+
+  it('suppresses Enter/Shift+Enter when a Toolbox button has focus, so Tab+Enter does not also move the row', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    const button = wrapper.find('[data-testid="undo-button"]').element as HTMLButtonElement
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('1 / 20')
+  })
+})
+
+describe('App Space+drag pan (ticket 95)', () => {
+  function spaceDown() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }))
+  }
+
+  it('does not paint even if the pointer moves over cells while Space is held', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+
+    spaceDown()
+    await flushPromises()
+    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await wrapper.trigger('mouseup')
+
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+  })
+
+  it('shows a grab cursor while Space is held', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    spaceDown()
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="app-canvas"]').classes()).toContain('app-shell__canvas--pan')
+  })
+
+  it('is suppressed while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }))
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="app-canvas"]').classes()).not.toContain('app-shell__canvas--pan')
+    } finally {
+      field.remove()
+    }
+  })
+})
+
+describe('App shortcuts help overlay (ticket 96)', () => {
+  it('opens on ?', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: '?' })
+
+    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(true)
+  })
+
+  it('closes on Escape without also backing out of Select', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[0]!.trigger('pointerdown')
+    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await wrapper.trigger('mouseup')
+    await pressKey({ key: '?' })
+
+    await pressKey({ key: 'Escape' })
+
+    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
+    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(2) // untouched by that Escape
+  })
+
+  it('has no effect while typing in a form field', async () => {
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+
+      await pressKey({ key: '?' }, field)
+
+      expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
+    } finally {
+      field.remove()
+    }
+  })
+
+  it('has no effect while a confirm modal is open', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
+
+    await pressKey({ key: '?' })
+
+    expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
   })
 })
 
@@ -2595,7 +3151,7 @@ describe('App select, copy and paste', () => {
     expect(selectedCount(wrapper)).toBe(4)
   })
 
-  it('clears the selection and clipboard when a different Pattern is opened', async () => {
+  it('resets the Selection, but keeps the clipboard armed, when a different Pattern is opened (ticket 92)', async () => {
     const wrapper = mount(App)
     await patternWithMotif(wrapper)
     const firstId = loadPatterns()[0]!.id
@@ -2606,11 +3162,133 @@ describe('App select, copy and paste', () => {
     await createPatternViaForm(wrapper, '6', '6')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
+    // The Selection itself still resets on a Pattern switch, same as before ticket 92.
     expect(selectedCount(wrapper)).toBe(0)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
 
+    // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
     await click(wrapper, 0)
-    expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBeNull()
+    expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBe('#e63746')
+  })
+})
+
+describe('App clipboard lifecycle (ticket 92)', () => {
+  async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
+    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    await cells[indices[0]!]!.trigger('pointerdown')
+    for (const index of indices.slice(1)) {
+      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+    }
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  async function click(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+  }
+
+  /** A 4x4 Pattern with a red cell at (0,0), Select active and that cell copied. */
+  async function patternWithCopiedCell(wrapper: ReturnType<typeof mount>) {
+    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await click(wrapper, 0) // (0,0)
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await drag(wrapper, [0])
+    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+  }
+
+  async function hoverCell(wrapper: ReturnType<typeof mount>, index: number) {
+    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerenter')
+  }
+
+  function pasteAtHoveredCell() {
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }))
+  }
+
+  it('pastes at the cell under the pointer on Ctrl/Cmd+V, matching a click-to-paste stamp', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+    await hoverCell(wrapper, 10) // (2,2)
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('is a no-op when the pointer is not over the grid', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+    await hoverCell(wrapper, 10)
+    await wrapper.find('.pattern-grid').trigger('pointerleave')
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+  })
+
+  it.each(['tool-paint', 'tool-fill'])('pastes via Ctrl/Cmd+V while %s is the active tool', async (tool) => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+    await wrapper.find(`[data-testid="${tool}"]`).trigger('click')
+    await hoverCell(wrapper, 10)
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('keeps the clipboard armed after switching tools away from Select and back, for keyboard paste (ticket 92)', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await hoverCell(wrapper, 10)
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('hides the live preview after switching away from Select, even though Ctrl/Cmd+V can still paste', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await hoverCell(wrapper, 10)
+
+    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+  })
+
+  it('does not revive the click-to-stamp gesture after switching back to Select: a click marks out a Selection instead', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await click(wrapper, 10)
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(1)
+  })
+
+  it('can still paste via Ctrl/Cmd+V after Escape dismisses the projection', async () => {
+    const wrapper = mount(App)
+    await patternWithCopiedCell(wrapper)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await flushPromises()
+    await hoverCell(wrapper, 10)
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
   })
 })
 

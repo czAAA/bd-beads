@@ -102,7 +102,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="tool-paint"
-        :title="t.tools.paintLabel"
+        :title="`${t.tools.paintLabel} (1)`"
         :aria-label="t.tools.paintLabel"
         :aria-pressed="activeTool === 'paint'"
         :class="{ 'tool-picker__button--selected': activeTool === 'paint' }"
@@ -118,7 +118,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="tool-fill"
-        :title="t.tools.fillLabel"
+        :title="`${t.tools.fillLabel} (2)`"
         :aria-label="t.tools.fillLabel"
         :aria-pressed="activeTool === 'fill'"
         :class="{ 'tool-picker__button--selected': activeTool === 'fill' }"
@@ -134,7 +134,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="tool-select"
-        :title="t.tools.selectLabel"
+        :title="`${t.tools.selectLabel} (3)`"
         :aria-label="t.tools.selectLabel"
         :aria-pressed="activeTool === 'select'"
         :class="{ 'tool-picker__button--selected': activeTool === 'select' }"
@@ -147,6 +147,23 @@ const topBottomMax = computed(() =>
           <path d="M21 16v2a3 3 0 0 1-3 3h-2" />
           <path d="M8 21H6a3 3 0 0 1-3-3v-2" />
           <path d="M11 3h2M11 21h2M3 11v2M21 11v2" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="tool-erase"
+        :title="t.tools.eraseLabel"
+        :aria-label="t.tools.eraseLabel"
+        :aria-pressed="activeTool === 'erase'"
+        :class="{ 'tool-picker__button--selected': activeTool === 'erase' }"
+        @click="emit('select-tool', 'erase')"
+      >
+        <!-- A tilted eraser block. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M17.5 3.5 20.5 6.5 9 18H5.5v-3.5z" />
+          <path d="M13 8 16 11" />
+          <path d="M3.5 20.5h9" />
         </svg>
       </button>
       <button
@@ -212,7 +229,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="rotate-button"
-        :title="t.palette.rotateButton"
+        :title="`${t.palette.rotateButton} (R)`"
         :aria-label="t.palette.rotateButton"
         :aria-pressed="pattern.rotated"
         :class="{ 'tool-picker__button--selected': pattern.rotated }"
@@ -227,7 +244,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="copy-button"
-        :title="t.tools.copyButton"
+        :title="`${t.tools.copyButton} (Ctrl/Cmd+C)`"
         :aria-label="t.tools.copyButton"
         :disabled="!canCopy"
         @click="emit('copy')"
@@ -261,7 +278,7 @@ const topBottomMax = computed(() =>
           type="button"
           class="icon-button"
           data-testid="mirror-left-right-decrease"
-          :title="t.mirror.decreaseLeftRightButton"
+          :title="`${t.mirror.decreaseLeftRightButton} (-)`"
           :aria-label="t.mirror.decreaseLeftRightButton"
           :disabled="leftRightCount === 0"
           @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount - 1)"
@@ -275,7 +292,7 @@ const topBottomMax = computed(() =>
           type="button"
           class="icon-button"
           data-testid="mirror-left-right-increase"
-          :title="t.mirror.increaseLeftRightButton"
+          :title="`${t.mirror.increaseLeftRightButton} (=)`"
           :aria-label="t.mirror.increaseLeftRightButton"
           :disabled="leftRightCount === leftRightMax"
           @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount + 1)"
@@ -288,7 +305,7 @@ const topBottomMax = computed(() =>
           type="button"
           class="icon-button"
           data-testid="mirror-top-bottom-decrease"
-          :title="t.mirror.decreaseTopBottomButton"
+          :title="`${t.mirror.decreaseTopBottomButton} ([)`"
           :aria-label="t.mirror.decreaseTopBottomButton"
           :disabled="topBottomCount === 0"
           @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount - 1)"
@@ -302,7 +319,7 @@ const topBottomMax = computed(() =>
           type="button"
           class="icon-button"
           data-testid="mirror-top-bottom-increase"
-          :title="t.mirror.increaseTopBottomButton"
+          :title="`${t.mirror.increaseTopBottomButton} (])`"
           :aria-label="t.mirror.increaseTopBottomButton"
           :disabled="topBottomCount === topBottomMax"
           @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount + 1)"
@@ -314,7 +331,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="mirror-copy-mode"
-        :title="t.mirror.copyModeLabel"
+        :title="`${t.mirror.copyModeLabel} (M)`"
         :aria-label="t.mirror.copyModeLabel"
         :aria-pressed="mirrorCopyMode"
         :class="{ 'tool-picker__button--selected': mirrorCopyMode }"
@@ -331,7 +348,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="mirror-current-horizontal"
-        :title="t.mirror.mirrorCurrentHorizontalButton"
+        :title="`${t.mirror.mirrorCurrentHorizontalButton} (H)`"
         :aria-label="t.mirror.mirrorCurrentHorizontalButton"
         @click="emit('mirror-current', 'horizontal')"
         @mouseenter="emit('mirror-current-hover', 'horizontal')"
@@ -348,7 +365,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="mirror-current-vertical"
-        :title="t.mirror.mirrorCurrentVerticalButton"
+        :title="`${t.mirror.mirrorCurrentVerticalButton} (V)`"
         :aria-label="t.mirror.mirrorCurrentVerticalButton"
         @click="emit('mirror-current', 'vertical')"
         @mouseenter="emit('mirror-current-hover', 'vertical')"
@@ -373,7 +390,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="row-progress-enabled"
-        :title="t.rowProgress.enabledLabel"
+        :title="`${t.rowProgress.enabledLabel} (P)`"
         :aria-label="t.rowProgress.enabledLabel"
         :aria-pressed="pattern.rowProgress.enabled"
         :class="{ 'tool-picker__button--selected': pattern.rowProgress.enabled }"
@@ -390,7 +407,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="row-progress-direction"
-        :title="t.rowProgress.directionButton"
+        :title="`${t.rowProgress.directionButton} (D)`"
         :aria-label="t.rowProgress.directionButton"
         :aria-pressed="pattern.rowProgress.direction === 'columns'"
         :class="{ 'tool-picker__button--selected': pattern.rowProgress.direction === 'columns' }"
@@ -412,7 +429,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="row-progress-previous"
-        :title="t.rowProgress.previousButton"
+        :title="`${t.rowProgress.previousButton} (Shift+Enter)`"
         :aria-label="t.rowProgress.previousButton"
         :disabled="!pattern.rowProgress.enabled || rowProgressPosition(pattern).current === 0"
         @click="emit('move-row', -1)"
@@ -427,7 +444,7 @@ const topBottomMax = computed(() =>
         type="button"
         class="icon-button"
         data-testid="row-progress-next"
-        :title="t.rowProgress.nextButton"
+        :title="`${t.rowProgress.nextButton} (Enter)`"
         :aria-label="t.rowProgress.nextButton"
         :disabled="
           !pattern.rowProgress.enabled || rowProgressPosition(pattern).current === rowProgressPosition(pattern).total - 1

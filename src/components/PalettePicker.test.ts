@@ -27,4 +27,15 @@ describe('PalettePicker', () => {
     expect(selected.attributes('aria-pressed')).toBe('true')
     expect(other.attributes('aria-pressed')).toBe('false')
   })
+
+  it("shows each swatch's Shift+key shortcut in its tooltip, in Palette order (ticket 88)", () => {
+    const wrapper = mount(PalettePicker)
+
+    const swatches = wrapper.findAll('[data-testid="palette-swatch"]')
+    const shortcuts = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'W']
+
+    swatches.forEach((swatch, index) => {
+      expect(swatch.attributes('title')).toContain(`Shift+${shortcuts[index]}`)
+    })
+  })
 })

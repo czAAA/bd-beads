@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher), 89 (Erase tool)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `Del` with Select active and a Selection present clears the selected cells only, as one Undo step, respecting the Row progress lock and Mirror
 - [ ] The Selection itself remains after clearing (only its contents change); Select stays the active tool

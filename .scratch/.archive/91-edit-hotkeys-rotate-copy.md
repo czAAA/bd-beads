@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `R` toggles Rotate, same as clicking the Rotate button
 - [ ] `Ctrl/Cmd+C` copies the active Selection, same as clicking Copy (no-op if Copy is disabled, i.e. no Selection)

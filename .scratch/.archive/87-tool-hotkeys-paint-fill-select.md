@@ -4,7 +4,7 @@
 
 **Blocked by:** 86 (Table-driven keyboard-shortcut dispatcher)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `1` / `2` / `3` select Paint / Fill / Select
 - [ ] Each button's tooltip shows its number (e.g. "Paint (1)")

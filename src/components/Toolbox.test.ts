@@ -45,13 +45,31 @@ describe('Toolbox', () => {
     ])
   })
 
-  it('puts Paint, Fill, Select and Delete all inside the Tools group', () => {
+  it('puts Paint, Fill, Select, Erase and Delete all inside the Tools group', () => {
     const wrapper = mountToolbox()
 
     const toolsGroup = wrapper.findAll('.tool-group')[0]!
-    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'delete-all-button']) {
+    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'tool-erase', 'delete-all-button']) {
       expect(toolsGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it('emits select-tool with erase when the Erase button is clicked, and marks it pressed once active (ticket 89)', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+    expect(wrapper.emitted('select-tool')).toEqual([['erase']])
+
+    await wrapper.setProps({ activeTool: 'erase' })
+    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it("shows each numbered tool's shortcut in its tooltip (ticket 87)", () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('title')).toContain('(1)')
+    expect(wrapper.find('[data-testid="tool-fill"]').attributes('title')).toContain('(2)')
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('title')).toContain('(3)')
   })
 
   it('emits delete-all when its button is clicked', async () => {
@@ -94,6 +112,13 @@ describe('Toolbox', () => {
     }
   })
 
+  it("shows Rotate's and Copy's shortcuts in their tooltips (ticket 91)", () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="rotate-button"]').attributes('title')).toContain('(R)')
+    expect(wrapper.find('[data-testid="copy-button"]').attributes('title')).toContain('Ctrl/Cmd+C')
+  })
+
   it('puts the mirror axis counters and mirror-current controls inside the Mirror group', () => {
     const wrapper = mountToolbox()
 
@@ -101,6 +126,18 @@ describe('Toolbox', () => {
     for (const testId of ['mirror-left-right', 'mirror-top-bottom', 'mirror-current-horizontal', 'mirror-current-vertical']) {
       expect(mirrorGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it("shows every Mirror control's shortcut in its tooltip (ticket 93)", () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="mirror-left-right-decrease"]').attributes('title')).toContain('(-)')
+    expect(wrapper.find('[data-testid="mirror-left-right-increase"]').attributes('title')).toContain('(=)')
+    expect(wrapper.find('[data-testid="mirror-top-bottom-decrease"]').attributes('title')).toContain('([)')
+    expect(wrapper.find('[data-testid="mirror-top-bottom-increase"]').attributes('title')).toContain('(])')
+    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('title')).toContain('(M)')
+    expect(wrapper.find('[data-testid="mirror-current-horizontal"]').attributes('title')).toContain('(H)')
+    expect(wrapper.find('[data-testid="mirror-current-vertical"]').attributes('title')).toContain('(V)')
   })
 
   it('puts the row progress controls and readout inside the Row progress group', () => {
@@ -122,6 +159,15 @@ describe('Toolbox', () => {
     const wrapper = mountToolbox()
 
     expect(wrapper.find('[data-testid="row-progress-position"]').classes()).toContain('tool-group__full-row')
+  })
+
+  it("shows every Row progress control's shortcut in its tooltip (ticket 94)", () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="row-progress-enabled"]').attributes('title')).toContain('(P)')
+    expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('title')).toContain('(D)')
+    expect(wrapper.find('[data-testid="row-progress-previous"]').attributes('title')).toContain('Shift+Enter')
+    expect(wrapper.find('[data-testid="row-progress-next"]').attributes('title')).toContain('(Enter)')
   })
 
   it('emits select-tool when a tool button is clicked', async () => {
