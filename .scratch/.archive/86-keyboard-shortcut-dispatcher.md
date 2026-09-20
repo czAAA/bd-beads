@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Undo (Ctrl/Cmd+Z), Redo (Ctrl/Cmd+Shift+Z or Ctrl+Y), and Escape behave exactly as before (collapse an expanded Tool group, then back out of Select/Paste/Selection, deferring to an open confirm modal)
 - [ ] Shortcuts stay suppressed while typing in a form field (`isTypingInFormField`)

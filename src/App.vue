@@ -12,6 +12,7 @@ import Toolbox from './components/Toolbox.vue'
 import ZoomControls from './components/ZoomControls.vue'
 import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
+import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { BEAD_CATALOG, beadLabel } from './domain/beads'
@@ -570,14 +571,6 @@ function backOutOfSelect() {
   }
 }
 
-/** Whether a keydown landed in a form field — text/number inputs, a textarea, or anything contenteditable — where it should be left to type normally rather than triggering an editor-wide shortcut. */
-function isTypingInFormField(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-  )
-}
-
 function isUndoShortcut(event: KeyboardEvent): boolean {
   return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
 }
@@ -590,38 +583,48 @@ function isRedoShortcut(event: KeyboardEvent): boolean {
 }
 
 /**
- * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the cursor
- * may have left it (ticket 24). Undo/Redo's shortcuts (ticket 34) work the same way — bound to the window rather
- * than a focused element — except while the user is typing in a form field, where they're left to the field itself
- * (e.g. a browser's native text-undo) rather than firing the editor's own Undo/Redo. While the Delete all or
- * Replace bead confirmation modal is open, its own Escape handling (ConfirmModal.vue) owns the key instead —
- * deferred to here so Escape can't also unexpectedly drop a copied block or collapse a Tool group behind the modal.
+ * The table (ticket 86) driving useKeyboardShortcuts below: Undo, Redo, and Escape today, with tickets 87-96 due to
+ * add their own entries here without touching the dispatcher itself.
  */
-function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value) {
+const keyboardShortcuts: KeyboardShortcut[] = [
+  {
     /*
-     * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
-     * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
+     * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the
+     * cursor may have left it (ticket 24). While the Delete all or Replace bead confirmation modal is open, its own
+     * Escape handling (ConfirmModal.vue) owns the key instead — withheld here so Escape can't also unexpectedly
+     * drop a copied block or collapse a Tool group behind the modal.
      */
-    if (toolboxRef.value?.collapseExpandedGroup()) {
-      return
-    }
-    backOutOfSelect()
-    return
-  }
+    matches: (event) => event.key === 'Escape',
+    guard: () => !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value,
+    allowWhileTyping: true,
+    action: () => {
+      /*
+       * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
+       * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
+       */
+      if (toolboxRef.value?.collapseExpandedGroup()) {
+        return
+      }
+      backOutOfSelect()
+    },
+  },
+  {
+    matches: isRedoShortcut,
+    action: (event) => {
+      event.preventDefault()
+      onRedo()
+    },
+  },
+  {
+    matches: isUndoShortcut,
+    action: (event) => {
+      event.preventDefault()
+      onUndo()
+    },
+  },
+]
 
-  if (isTypingInFormField(event.target)) {
-    return
-  }
-
-  if (isRedoShortcut(event)) {
-    event.preventDefault()
-    onRedo()
-  } else if (isUndoShortcut(event)) {
-    event.preventDefault()
-    onUndo()
-  }
-}
+useKeyboardShortcuts(keyboardShortcuts)
 
 /**
  * The safety net for a stroke's deferred save (ticket 55): endStroke normally writes it, on the mouseup the app shell
@@ -635,11 +638,9 @@ function onPageHide() {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
   window.addEventListener('pagehide', onPageHide)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('pagehide', onPageHide)
   flushPendingSave()
 })
