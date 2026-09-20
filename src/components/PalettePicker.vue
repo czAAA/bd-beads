@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PALETTE } from '../domain/palette'
+import { PALETTE, PALETTE_SHORTCUTS } from '../domain/palette'
 import { useI18n } from '../i18n/useI18n'
 
 defineProps<{ selectedColorId?: string }>()
@@ -7,13 +7,6 @@ const emit = defineEmits<{
   select: [colorId: string]
 }>()
 const { t } = useI18n()
-
-/**
- * Shift+1..9, Shift+0, Q, W (ticket 88), in Palette order -- what each swatch's tooltip appends. Locale-neutral
- * (digits/letters read the same in every language), so built here rather than through i18n, the same way other
- * shortcut hints in Toolbox.vue are.
- */
-const COLOR_SHORTCUT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'W']
 </script>
 
 <template>
@@ -25,7 +18,7 @@ const COLOR_SHORTCUT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '
       class="palette-picker__swatch"
       :class="{ 'palette-picker__swatch--selected': color.id === selectedColorId }"
       :style="{ backgroundColor: color.hex }"
-      :title="`${t.palette.colorLabel} ${color.hex} (Shift+${COLOR_SHORTCUT_KEYS[index]})`"
+      :title="`${t.palette.colorLabel} ${color.hex} (Shift+${PALETTE_SHORTCUTS[index]!.keyLabel})`"
       :aria-label="`${t.palette.colorLabel} ${color.hex}`"
       :aria-pressed="color.id === selectedColorId"
       data-testid="palette-swatch"

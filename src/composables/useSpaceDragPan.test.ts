@@ -55,6 +55,33 @@ describe('useSpaceDragPan', () => {
     }
   })
 
+  it('does not arm Space while a button has focus, so its native Space-to-click activation still works', () => {
+    const { state } = mountHost()
+    const button = document.createElement('button')
+    document.body.appendChild(button)
+
+    try {
+      keydown({ code: 'Space' }, button)
+      expect(state.spaceHeld.value).toBe(false)
+    } finally {
+      button.remove()
+    }
+  })
+
+  it("does not preventDefault a button-focused Space, leaving the browser's own activation intact", () => {
+    mountHost()
+    const button = document.createElement('button')
+    document.body.appendChild(button)
+
+    try {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, code: 'Space' })
+      button.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(false)
+    } finally {
+      button.remove()
+    }
+  })
+
   it('pans the scroll element horizontally and the window vertically while dragging with Space held', () => {
     const scrollEl = document.createElement('div')
     scrollEl.scrollLeft = 50

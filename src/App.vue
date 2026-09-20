@@ -32,7 +32,7 @@ import {
   type HistoryStep,
 } from './domain/history'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from './domain/mirror'
-import { findPaletteColor, PALETTE } from './domain/palette'
+import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
 import {
   copySelection,
   mirroredPasteBlock,
@@ -620,6 +620,11 @@ function isPlainKey(event: KeyboardEvent): boolean {
   return !event.ctrlKey && !event.metaKey && !event.altKey
 }
 
+/** `event.key` is exactly `key` (case-insensitively), with no modifier held at all -- the shape every plain-letter/digit shortcut below (1/2/3, R, M, H, V, P, D) shares, so each just names its own key instead of repeating the guard. */
+function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
+  return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
+}
+
 /** Withholds a shortcut while the Delete all or Replace bead confirmation, or the shortcuts help overlay, is open — same precedence Escape already gives those modals (see the Escape entry below). */
 function noModalOpen(): boolean {
   return !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value && !shortcutsHelpOpen.value
@@ -630,11 +635,6 @@ function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
   const target = event.target
   return target instanceof HTMLElement && target.tagName === 'BUTTON' && target.closest('[data-testid="toolbox"]') !== null
 }
-
-/** Shift+1..9, Shift+0, Q, W (ticket 88), in Palette order -- `event.code` rather than `event.key`, since the digit row's shifted `.key` values (e.g. "!") vary by keyboard layout while `.code` names the physical key regardless of Shift. */
-const COLOR_SHORTCUT_CODES = [
-  'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyQ', 'KeyW',
-]
 
 /** Which grid-space axis the on-screen Left–right Mirror counter drives right now (ticket 93) -- same rotation-aware mapping Toolbox.vue's leftRightAxis uses, since rotating the Pattern swaps the two. Undefined with no Pattern open. */
 function leftRightAxis(): 'columns' | 'rows' | undefined {
@@ -699,17 +699,17 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   },
   // Tools group (ticket 87): 1/2/3 select Paint/Fill/Select, the same as clicking that button.
   {
-    matches: (event) => event.key === '1' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, '1'),
     guard: noModalOpen,
     action: () => onSelectTool('paint'),
   },
   {
-    matches: (event) => event.key === '2' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, '2'),
     guard: noModalOpen,
     action: () => onSelectTool('fill'),
   },
   {
-    matches: (event) => event.key === '3' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, '3'),
     guard: noModalOpen,
     action: () => onSelectTool('select'),
   },
@@ -727,9 +727,11 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   },
   // Colors group (ticket 88): Shift+1..9, Shift+0, Q, W paint with the corresponding Palette swatch, in order.
   {
-    matches: (event) => event.shiftKey && isPlainKey(event) && COLOR_SHORTCUT_CODES.includes(event.code),
+    matches: (event) => event.shiftKey && isPlainKey(event) && PALETTE_SHORTCUTS.some((s) => s.code === event.code),
+    guard: noModalOpen,
     action: (event) => {
-      const color = PALETTE[COLOR_SHORTCUT_CODES.indexOf(event.code)]
+      const index = PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)
+      const color = PALETTE[index]
       if (color) {
         onSelectColor(color.id)
       }
@@ -737,11 +739,13 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   },
   // Edit group (ticket 91): R toggles Rotate, Ctrl/Cmd+C copies the active Selection.
   {
-    matches: (event) => event.key.toLowerCase() === 'r' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'r'),
+    guard: noModalOpen,
     action: () => onToggleRotate(),
   },
   {
     matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'c',
+    guard: noModalOpen,
     action: (event) => {
       event.preventDefault()
       onCopy()
@@ -750,40 +754,49 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   // ticket 92: Ctrl/Cmd+V pastes at the cell under the pointer, regardless of the active tool.
   {
     matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'v',
+    guard: noModalOpen,
     action: pasteAtPointer,
   },
   // Mirror group (ticket 93): -/= step Left-right, [/] step Top-bottom, M toggles copy mode, H/V trigger Mirror current.
   {
     matches: (event) => event.key === '-' && isPlainKey(event),
+    guard: noModalOpen,
     action: () => adjustMirrorAxisCount(leftRightAxis(), -1),
   },
   {
     matches: (event) => event.key === '=' && isPlainKey(event),
+    guard: noModalOpen,
     action: () => adjustMirrorAxisCount(leftRightAxis(), 1),
   },
   {
     matches: (event) => event.key === '[' && isPlainKey(event),
+    guard: noModalOpen,
     action: () => adjustMirrorAxisCount(topBottomAxis(), -1),
   },
   {
     matches: (event) => event.key === ']' && isPlainKey(event),
+    guard: noModalOpen,
     action: () => adjustMirrorAxisCount(topBottomAxis(), 1),
   },
   {
-    matches: (event) => event.key.toLowerCase() === 'm' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'm'),
+    guard: noModalOpen,
     action: () => onToggleMirrorCopyMode(),
   },
   {
-    matches: (event) => event.key.toLowerCase() === 'h' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'h'),
+    guard: noModalOpen,
     action: () => onMirrorCurrent('horizontal'),
   },
   {
-    matches: (event) => event.key.toLowerCase() === 'v' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'v'),
+    guard: noModalOpen,
     action: () => onMirrorCurrent('vertical'),
   },
   // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter move the pointer.
   {
-    matches: (event) => event.key.toLowerCase() === 'p' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'p'),
+    guard: noModalOpen,
     action: () => {
       const pattern = activePattern.value
       if (pattern) {
@@ -792,11 +805,13 @@ const keyboardShortcuts: KeyboardShortcut[] = [
     },
   },
   {
-    matches: (event) => event.key.toLowerCase() === 'd' && isPlainKey(event) && !event.shiftKey,
+    matches: (event) => isPlainLetterKey(event, 'd'),
+    guard: noModalOpen,
     action: () => onToggleRowDirection(),
   },
   {
     matches: (event) => event.key === 'Enter' && !event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
     action: () => {
       if (activePattern.value?.rowProgress.enabled) {
         onMoveRow(1)
@@ -805,6 +820,7 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   },
   {
     matches: (event) => event.key === 'Enter' && event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
     action: () => {
       if (activePattern.value?.rowProgress.enabled) {
         onMoveRow(-1)

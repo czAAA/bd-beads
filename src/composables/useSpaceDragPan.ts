@@ -2,6 +2,15 @@ import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import { isTypingInFormField } from './useKeyboardShortcuts'
 
 /**
+ * Whether Space has a native meaning at `target` that panning must not steal -- a focused button (every Toolbox
+ * control) activates on Space in every browser, so hijacking the key there would silently break keyboard-only use
+ * of the Toolbox, not just cursor-driven panning.
+ */
+function activatesOnSpace(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button')
+}
+
+/**
  * Holding Space and dragging pans the canvas panel's viewport (ticket 95): a pure scroll, regardless of which tool
  * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
  * than this composable trying to intercept those events itself. Horizontal scroll lands on `scrollEl` (the canvas
@@ -20,7 +29,7 @@ export function useSpaceDragPan(scrollEl: Ref<HTMLElement | null>) {
   let lastY = 0
 
   function onKeyDown(event: KeyboardEvent) {
-    if (event.code !== 'Space' || isTypingInFormField(event.target)) {
+    if (event.code !== 'Space' || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
       return
     }
     // Without this, holding Space also triggers the browser's own page-down scroll wherever focus happens to be.
