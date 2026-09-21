@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import QrCode from './QrCode.vue'
 import { decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import type { Pattern } from '../domain/pattern'
@@ -11,7 +11,7 @@ import {
   serializeLibrary,
   serializePattern,
 } from '../domain/patternFile'
-import { parsePatternFromQrImage, patternQrMatrix, type QrMatrix } from '../domain/qrExport'
+import { parsePatternFromQrImage, patternQrMatrix } from '../domain/qrExport'
 import { useI18n } from '../i18n/useI18n'
 
 const props = withDefaults(
@@ -92,21 +92,28 @@ async function onImportFile(event: Event): Promise<void> {
   }
 }
 
+/** Where this app is being served right now, minus any query or fragment: what a scanned code's link has to open for the scanning device to get the same app. */
+function currentAppUrl(): string {
+  return window.location.origin + window.location.pathname
+}
+
 /**
- * QR export (ticket 68, ADR 0015): undefined while the panel below is closed; once open, either the code to show or
- * `'too-large'` when the open Pattern doesn't fit a single QR code's capacity — one value gates both, so the panel
- * can never disagree with itself about which to show.
+ * QR export (ticket 68, ADR 0015): the open Pattern's code, or undefined when there is no Pattern or it doesn't fit a
+ * single QR code's capacity. Worked out ahead of the click rather than at it, so the button can be disabled for a
+ * Pattern that can't be exported instead of offering a dead end — the Pattern file export is the way out for those.
  */
-const qrExport = ref<QrMatrix | 'too-large' | undefined>()
+const qrMatrix = computed(() => (props.pattern ? patternQrMatrix(props.pattern, currentAppUrl()) : undefined))
+const qrTooLarge = computed(() => props.pattern !== undefined && qrMatrix.value === undefined)
+
+/** Whether the code panel is open. It shows the current code, so it follows the Pattern (and closes itself if an edit makes it too large) rather than freezing what it was opened with. */
+const qrPanelOpen = ref(false)
 
 function onExportQr(): void {
-  if (props.pattern) {
-    qrExport.value = patternQrMatrix(props.pattern) ?? 'too-large'
-  }
+  qrPanelOpen.value = true
 }
 
 function onCloseQr(): void {
-  qrExport.value = undefined
+  qrPanelOpen.value = false
 }
 
 const qrImportedCount = ref<number | null>(null)
@@ -158,14 +165,16 @@ async function onImportQrImage(event: Event): Promise<void> {
       >
         {{ t.transfer.exportLibraryButton }}
       </button>
-      <button
-        type="button"
-        data-testid="export-qr"
-        :disabled="!pattern"
-        @click="onExportQr"
+      <!-- The tooltip sits on a wrapper: browsers don't reliably show a disabled button's own title. -->
+      <span
+        class="pattern-transfer__qr-action"
+        :title="qrTooLarge ? t.transfer.qrTooLargeMessage : undefined"
+        data-testid="export-qr-wrapper"
       >
-        {{ t.transfer.exportQrButton }}
-      </button>
+        <button type="button" data-testid="export-qr" :disabled="!qrMatrix" @click="onExportQr">
+          {{ t.transfer.exportQrButton }}
+        </button>
+      </span>
 
       <div class="pattern-transfer__import">
         <label for="import-file">{{ t.transfer.importLabel }}</label>
@@ -204,11 +213,8 @@ async function onImportQrImage(event: Event): Promise<void> {
       {{ t.transfer.qrImportErrorLabel }}
     </p>
 
-    <div v-if="qrExport" class="pattern-transfer__qr" data-testid="qr-export-panel">
-      <p v-if="qrExport === 'too-large'" class="pattern-transfer__error" data-testid="qr-too-large">
-        {{ t.transfer.qrTooLargeMessage }}
-      </p>
-      <QrCode v-else :matrix="qrExport" />
+    <div v-if="qrPanelOpen && qrMatrix" class="pattern-transfer__qr" data-testid="qr-export-panel">
+      <QrCode :matrix="qrMatrix" />
       <button type="button" data-testid="qr-export-close" @click="onCloseQr">
         {{ t.transfer.closeQrButton }}
       </button>

@@ -67,6 +67,8 @@ import {
   type UndoEntry,
 } from './domain/pattern'
 import { estimatedSizeMm, formatSizeMm, isOverCellCap } from './domain/patternSize'
+import { importPatterns } from './domain/patternFile'
+import { patternFromShareLink } from './domain/qrExport'
 import { resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
@@ -834,7 +836,30 @@ function onPageHide() {
   flushPendingSave()
 }
 
+/**
+ * Opens the Pattern a scanned QR export's link carries (ticket 68, ADR 0015). It lands as its own Pattern — under a
+ * fresh id if this device already has that one, like any import — and opens even when another is open, since scanning
+ * a code is the request to look at it. The fragment is then dropped, so a refresh or a bookmark doesn't import it a
+ * second time.
+ */
+function openSharedPatternFromUrl(): void {
+  if (!window.location.hash.startsWith('#pattern=')) {
+    return
+  }
+  try {
+    const shared = patternFromShareLink(window.location.hash)
+    if (shared) {
+      const [added] = importPatterns([shared], patterns.value)
+      addPattern(added!)
+    }
+  } catch {
+    // A link that can't be read is left as an ordinary page load: the library opens as it was.
+  }
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
+}
+
 onMounted(() => {
+  openSharedPatternFromUrl()
   window.addEventListener('pagehide', onPageHide)
 })
 onBeforeUnmount(() => {

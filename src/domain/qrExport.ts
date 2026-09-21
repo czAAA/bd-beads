@@ -12,6 +12,11 @@ import { decodePattern, encodePattern, type EncodedPattern } from './patternEnco
  *
  * Its own minimal envelope, distinct from patternFile.ts's (`bd-beads/pattern`, pretty-printed) and
  * patternStorage.ts's (a whole-library array): one Pattern, no whitespace, since every byte here is budgeted.
+ *
+ * The code doesn't hold that envelope bare, it holds a link to this app with the envelope in the URL's fragment: a
+ * phone or tablet camera opens a bare JSON payload as plain text, but opens a link in the browser, which loads the
+ * app and (see patternFromShareLink) opens the Pattern on the device that scanned it. The fragment never goes to the
+ * server, and needs no backend, so ADR 0014's local-only stance holds.
  */
 const QR_FILE_KIND = 'bd-beads/qr-pattern'
 const QR_FILE_VERSION = 1
@@ -22,14 +27,64 @@ interface QrPatternFile {
   pattern: EncodedPattern
 }
 
-/** The bytes a QR export's payload weighs, compactly encoded. What fitsInQrCode/patternQrMatrix actually measure against a QR code's real capacity — see createQrCode's own overflow, not a guessed byte count. */
-export function serializePatternForQr(pattern: Pattern): string {
-  const file: QrPatternFile = { kind: QR_FILE_KIND, version: QR_FILE_VERSION, pattern: encodePattern(pattern) }
-  return JSON.stringify(file)
+/** The fragment key the link carries the Pattern under: `<app url>#pattern=<base64url of the envelope>`. */
+const SHARE_FRAGMENT_KEY = 'pattern='
+
+/** URL-safe base64 (no padding, `-`/`_`) of the text's UTF-8 bytes: safe in a fragment untouched by any scanner or browser, and safe for a Pattern name in any script. */
+function toBase64Url(text: string): string {
+  const binary = Array.from(new TextEncoder().encode(text), (byte) => String.fromCharCode(byte)).join('')
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
 }
 
-/** Reads a Pattern back out of what a QR export encoded (see serializePatternForQr). Throws on anything else — a QR code this app didn't write, or a version this build doesn't know. */
+function fromBase64Url(encoded: string): string {
+  const binary = atob(encoded.replaceAll('-', '+').replaceAll('_', '/'))
+  return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(binary, (char) => char.charCodeAt(0)))
+}
+
+/**
+ * The bytes a QR export's payload weighs: a link to `appUrl` (the address of this app's page, without any fragment
+ * of its own) carrying the compactly encoded Pattern. What fitsInQrCode/patternQrMatrix actually measure against a
+ * QR code's real capacity — see createQrCode's own overflow, not a guessed byte count.
+ */
+export function serializePatternForQr(pattern: Pattern, appUrl: string): string {
+  const file: QrPatternFile = { kind: QR_FILE_KIND, version: QR_FILE_VERSION, pattern: encodePattern(pattern) }
+  return `${appUrl}#${SHARE_FRAGMENT_KEY}${toBase64Url(JSON.stringify(file))}`
+}
+
+/**
+ * Reads a Pattern back out of what a QR export encoded (see serializePatternForQr): the share link, or the bare
+ * envelope JSON an earlier build wrote to its codes, which are still out there as printed or saved pictures. Throws
+ * on anything else — a QR code this app didn't write, or a version this build doesn't know.
+ */
 export function parsePatternFromQr(text: string): Pattern {
+  const fragmentStart = text.indexOf(`#${SHARE_FRAGMENT_KEY}`)
+  if (fragmentStart !== -1) {
+    return parsePatternFromShareFragment(text.slice(fragmentStart + 1))
+  }
+  return parseEnvelope(text)
+}
+
+/**
+ * The Pattern a page was opened with, from its `location.hash` — what scanning a QR export's link lands on. Undefined
+ * when the hash isn't a share link at all (the ordinary case: nothing to import); throws when it is one but can't be
+ * read, so the caller can tell "nothing here" from "a link that's broken".
+ */
+export function patternFromShareLink(hash: string): Pattern | undefined {
+  const fragment = hash.startsWith('#') ? hash.slice(1) : hash
+  return fragment.startsWith(SHARE_FRAGMENT_KEY) ? parsePatternFromShareFragment(fragment) : undefined
+}
+
+function parsePatternFromShareFragment(fragment: string): Pattern {
+  let json: string
+  try {
+    json = fromBase64Url(fragment.slice(SHARE_FRAGMENT_KEY.length))
+  } catch {
+    throw new Error('Not a bd-beads QR code: its link is damaged')
+  }
+  return parseEnvelope(json)
+}
+
+function parseEnvelope(text: string): Pattern {
   let parsed: unknown
   try {
     parsed = JSON.parse(text)
@@ -51,6 +106,14 @@ export function parsePatternFromQr(text: string): Pattern {
   return normalizePattern(decodePattern(file.pattern))
 }
 
+/**
+ * The most bytes any QR code can hold: version 40 at error-correction level 'L' in byte mode, fixed by the QR
+ * specification. The payload is printable ASCII, so its length in characters is its length in bytes. Only a cheap
+ * early "no" — a payload over it would make `createQrCode` do a full-size encode just to throw, tens of milliseconds
+ * for a big Pattern — while createQrCode's own overflow stays the source of truth for everything under it.
+ */
+const MAX_QR_BYTES = 2953
+
 /** A QR code's module grid, framework-agnostic so a component can render it however it likes (inline SVG here). */
 export interface QrMatrix {
   size: number
@@ -63,22 +126,28 @@ export interface QrMatrix {
  * cover, so there's nothing this feature gains from a higher level's added robustness that its shrunk capacity is
  * worth trading away.
  *
- * Undefined once the payload is too large for even a version-40 QR code at that level: `createQrCode`'s own capacity
- * table is the source of truth for the cap (documented at roughly 2.9KB per ADR 0015), not a byte count duplicated
- * here that could drift from it.
+ * Undefined once the payload is too large for even a version-40 QR code at that level (documented at roughly 2.9KB per
+ * ADR 0015): `createQrCode`'s own overflow decides, past the MAX_QR_BYTES shortcut.
  */
-export function patternQrMatrix(pattern: Pattern): QrMatrix | undefined {
+export function patternQrMatrix(pattern: Pattern, appUrl: string): QrMatrix | undefined {
+  const text = serializePatternForQr(pattern, appUrl)
+  if (text.length > MAX_QR_BYTES) {
+    return undefined
+  }
   try {
-    const { modules } = createQrCode(serializePatternForQr(pattern), { errorCorrectionLevel: 'L' })
+    const { modules } = createQrCode(text, { errorCorrectionLevel: 'L' })
     return { size: modules.size, isDark: (row, column) => modules.get(row, column) === 1 }
   } catch {
     return undefined
   }
 }
 
-/** Whether a Pattern's QR payload fits in a single QR code (ticket 68's size cap) — the fallback trigger for "too large for QR". */
-export function fitsInQrCode(pattern: Pattern): boolean {
-  return patternQrMatrix(pattern) !== undefined
+/**
+ * Whether a Pattern's QR payload fits in a single QR code (ticket 68's size cap) — what the export button is guarded
+ * by, so it is asked on every change to the open Pattern, including each cell of a dragged stroke.
+ */
+export function fitsInQrCode(pattern: Pattern, appUrl: string): boolean {
+  return patternQrMatrix(pattern, appUrl) !== undefined
 }
 
 /**

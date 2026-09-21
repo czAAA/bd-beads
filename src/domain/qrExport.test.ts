@@ -2,16 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import type { PixelData } from './imageConversion'
 import { createPattern, type Pattern } from './pattern'
+import { encodePattern } from './patternEncoding'
 import {
   decodeQrText,
   fitsInQrCode,
   parsePatternFromQr,
   parsePatternFromQrImage,
+  patternFromShareLink,
   patternQrMatrix,
   serializePatternForQr,
 } from './qrExport'
 import { denselyColoredGrid } from '../testUtils/denselyColoredGrid'
 import { rasterizeQrMatrix } from '../testUtils/rasterizeQrMatrix'
+
+const APP_URL = 'https://czaaa.github.io/bd-beads/'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -30,7 +34,7 @@ describe('serializePatternForQr / parsePatternFromQr', () => {
     let pattern = smallPattern()
     pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
 
-    const text = serializePatternForQr(pattern)
+    const text = serializePatternForQr(pattern, APP_URL)
 
     expect(parsePatternFromQr(text)).toEqual(pattern)
   })
@@ -38,7 +42,32 @@ describe('serializePatternForQr / parsePatternFromQr', () => {
   it('round-trips an unpainted Pattern', () => {
     const pattern = smallPattern()
 
-    expect(parsePatternFromQr(serializePatternForQr(pattern))).toEqual(pattern)
+    expect(parsePatternFromQr(serializePatternForQr(pattern, APP_URL))).toEqual(pattern)
+  })
+
+  it('is a link to the app, so a camera opens it in the browser instead of showing text', () => {
+    const text = serializePatternForQr(smallPattern(), APP_URL)
+
+    expect(text.startsWith(`${APP_URL}#pattern=`)).toBe(true)
+    expect(text).toMatch(/^[\x21-\x7e]+$/) // printable ASCII only: nothing a scanner or browser would re-escape
+  })
+
+  it('round-trips a Pattern whose name is not ASCII', () => {
+    const pattern = { ...smallPattern(), name: 'Узор «Ёлка» 🎄' }
+
+    expect(parsePatternFromQr(serializePatternForQr(pattern, APP_URL))).toEqual(pattern)
+  })
+
+  it('still reads the bare JSON an earlier build wrote to its codes', () => {
+    const pattern = smallPattern()
+    const bare = JSON.stringify({ kind: 'bd-beads/qr-pattern', version: 1, pattern: encodePattern(pattern) })
+
+    expect(parsePatternFromQr(bare)).toEqual(pattern)
+  })
+
+  it('rejects a link whose payload is damaged', () => {
+    expect(() => parsePatternFromQr(`${APP_URL}#pattern=***`)).toThrow()
+    expect(() => parsePatternFromQr(`${APP_URL}#pattern=e30`)).toThrow() // "{}": valid base64, not this app's envelope
   })
 
   it('rejects text that is not valid JSON', () => {
@@ -50,8 +79,9 @@ describe('serializePatternForQr / parsePatternFromQr', () => {
   })
 
   it('rejects an unsupported format version', () => {
-    const text = serializePatternForQr(smallPattern())
-    const tampered = { ...JSON.parse(text), version: 999 }
+    const link = serializePatternForQr(smallPattern(), APP_URL)
+    const envelope = JSON.parse(atob(link.slice(link.indexOf('#pattern=') + 9).replaceAll('-', '+').replaceAll('_', '/')))
+    const tampered = { ...envelope, version: 999 }
 
     expect(() => parsePatternFromQr(JSON.stringify(tampered))).toThrow(/version/)
   })
@@ -61,14 +91,14 @@ describe('patternQrMatrix / fitsInQrCode', () => {
   it('fits an ordinary small Pattern in a single QR code', () => {
     const pattern = smallPattern()
 
-    expect(fitsInQrCode(pattern)).toBe(true)
-    const matrix = patternQrMatrix(pattern)
+    expect(fitsInQrCode(pattern, APP_URL)).toBe(true)
+    const matrix = patternQrMatrix(pattern, APP_URL)
     expect(matrix).toBeDefined()
     expect(matrix!.size).toBeGreaterThanOrEqual(21) // smallest possible QR (version 1) is 21x21
   })
 
   it('has at least one dark and one light module (a real QR code, not a blank grid)', () => {
-    const matrix = patternQrMatrix(smallPattern())!
+    const matrix = patternQrMatrix(smallPattern(), APP_URL)!
 
     let sawDark = false
     let sawLight = false
@@ -90,17 +120,31 @@ describe('patternQrMatrix / fitsInQrCode', () => {
     pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
 
     // Same shape ADR 0009 measures as its own worst case; well past a QR code's ~2.9KB capacity even RLE-compressed.
-    expect(serializePatternForQr(pattern).length).toBeGreaterThan(3000)
-    expect(fitsInQrCode(pattern)).toBe(false)
-    expect(patternQrMatrix(pattern)).toBeUndefined()
+    expect(serializePatternForQr(pattern, APP_URL).length).toBeGreaterThan(3000)
+    expect(fitsInQrCode(pattern, APP_URL)).toBe(false)
+    expect(patternQrMatrix(pattern, APP_URL)).toBeUndefined()
+  })
+})
+
+describe('patternFromShareLink (what the page does with its own URL after a scan)', () => {
+  it('reads the Pattern out of a location.hash', () => {
+    const pattern = smallPattern()
+    const link = serializePatternForQr(pattern, APP_URL)
+
+    expect(patternFromShareLink(link.slice(link.indexOf('#')))).toEqual(pattern)
+  })
+
+  it('is undefined for an ordinary page load', () => {
+    expect(patternFromShareLink('')).toBeUndefined()
+    expect(patternFromShareLink('#something-else')).toBeUndefined()
   })
 })
 
 describe('decodeQrText / parsePatternFromQrImage (the import side -- ticket 68)', () => {
   it('decodes a generated QR code back to its exact text (a jsQR decode standing in for a phone camera scan)', () => {
     const pattern = smallPattern()
-    const text = serializePatternForQr(pattern)
-    const matrix = patternQrMatrix(pattern)!
+    const text = serializePatternForQr(pattern, APP_URL)
+    const matrix = patternQrMatrix(pattern, APP_URL)!
 
     expect(decodeQrText(rasterizeQrMatrix(matrix))).toBe(text)
   })
@@ -108,7 +152,7 @@ describe('decodeQrText / parsePatternFromQrImage (the import side -- ticket 68)'
   it('reproduces the exact Pattern end to end: create -> QR matrix -> rasterized picture -> decode -> parse', () => {
     let pattern = smallPattern()
     pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
-    const matrix = patternQrMatrix(pattern)!
+    const matrix = patternQrMatrix(pattern, APP_URL)!
 
     const imported = parsePatternFromQrImage(rasterizeQrMatrix(matrix))
 

@@ -6,6 +6,7 @@ import { PALETTE } from './domain/palette'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './domain/patternStorage'
+import { serializePatternForQr } from './domain/qrExport'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
@@ -22,6 +23,54 @@ async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: st
 
 beforeEach(() => {
   localStorage.clear()
+})
+
+describe('App opened from a scanned QR link', () => {
+  afterEach(() => {
+    window.history.replaceState(null, '', '/')
+  })
+
+  function sharedPattern(): Pattern {
+    return createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Shared' })
+  }
+
+  it('imports the Pattern in the URL, opens it and clears the fragment', async () => {
+    const shared = sharedPattern()
+    const link = serializePatternForQr(shared, 'http://localhost:3000/')
+    window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Shared')
+    expect(loadPatterns()).toEqual([shared])
+    expect(window.location.hash).toBe('')
+  })
+
+  it('opens it even when another Pattern is already open, keeping both', async () => {
+    const existing = { ...sharedPattern(), id: 'existing', name: 'Mine' }
+    savePatterns([existing])
+    const shared = sharedPattern()
+    const link = serializePatternForQr(shared, 'http://localhost:3000/')
+    window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(loadPatterns().map((pattern) => pattern.name)).toEqual(['Mine', 'Shared'])
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Shared')
+  })
+
+  it('ignores a broken link and shows the library as it was', async () => {
+    window.history.replaceState(null, '', '/#pattern=***')
+
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(loadPatterns()).toEqual([])
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(window.location.hash).toBe('')
+  })
 })
 
 describe('App', () => {

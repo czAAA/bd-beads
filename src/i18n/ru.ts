@@ -82,7 +82,7 @@ export const ru: Translations = {
     importedLabel: 'Схем импортировано',
     importErrorLabel: 'Не удалось импортировать этот файл',
     exportQrButton: 'Экспортировать как QR-код',
-    qrTooLargeMessage: 'Эта схема слишком велика для одного QR-кода. Используйте экспорт схемы выше.',
+    qrTooLargeMessage: 'Слишком велика для одного QR-кода. Используйте экспорт схемы.',
     closeQrButton: 'Закрыть',
     importQrLabel: 'Импортировать из изображения QR-кода',
     qrImportedLabel: 'Схема импортирована из QR-кода',

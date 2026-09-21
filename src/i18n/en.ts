@@ -80,7 +80,7 @@ export const en: Translations = {
     importedLabel: 'Patterns imported',
     importErrorLabel: 'Could not import that file',
     exportQrButton: 'Export as QR code',
-    qrTooLargeMessage: 'This Pattern is too large for a single QR code. Use Export Pattern above instead.',
+    qrTooLargeMessage: 'Too large for a single QR code. Use Export Pattern instead.',
     closeQrButton: 'Close',
     importQrLabel: 'Import from a QR code picture',
     qrImportedLabel: 'Pattern imported from QR code',

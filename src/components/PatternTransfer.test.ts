@@ -6,8 +6,12 @@ import type { PixelData } from '../domain/imageConversion'
 import { createPattern, paintCells, type Pattern } from '../domain/pattern'
 import { serializeLibrary, serializePattern } from '../domain/patternFile'
 import { patternQrMatrix } from '../domain/qrExport'
+import { en } from '../i18n/en'
+import { ru } from '../i18n/ru'
 import { denselyColoredGrid } from '../testUtils/denselyColoredGrid'
 import { rasterizeQrMatrix } from '../testUtils/rasterizeQrMatrix'
+
+const APP_URL = 'http://localhost:3000/'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -175,10 +179,9 @@ describe('PatternTransfer QR export (ticket 68, ADR 0015)', () => {
 
     expect(wrapper.find('[data-testid="qr-code"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="qr-code-module"]').length).toBeGreaterThan(0)
-    expect(wrapper.find('[data-testid="qr-too-large"]').exists()).toBe(false)
   })
 
-  it('shows a "too large for QR" message and no code for a Pattern over the size cap, pointing at the fallback', async () => {
+  it('disables Export as QR code for a Pattern over the size cap, explaining why on hover and leaving the file export', async () => {
     let pattern = createPattern({
       name: 'Huge',
       technique: 'loom',
@@ -188,11 +191,28 @@ describe('PatternTransfer QR export (ticket 68, ADR 0015)', () => {
     pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
     const wrapper = mount(PatternTransfer, { props: { pattern, patterns: [pattern] } })
 
-    await wrapper.find('[data-testid="export-qr"]').trigger('click')
+    const button = wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]')
+    expect(button.element.disabled).toBe(true)
+    expect([en.transfer.qrTooLargeMessage, ru.transfer.qrTooLargeMessage]).toContain(
+      wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title'),
+    )
+    await button.trigger('click')
+    expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled).toBe(false)
+  })
 
-    expect(wrapper.find('[data-testid="qr-too-large"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="qr-code"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="export-pattern"]').exists()).toBe(true)
+  it('has no too-large tooltip on a Pattern that fits', () => {
+    const pattern = makePattern('Fox')
+    const wrapper = mount(PatternTransfer, { props: { pattern, patterns: [pattern] } })
+
+    expect(wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title')).toBeUndefined()
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(false)
+  })
+
+  it('has no too-large tooltip while no Pattern is open', () => {
+    const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
+
+    expect(wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title')).toBeUndefined()
   })
 
   it('closes the panel', async () => {
@@ -221,7 +241,7 @@ describe('PatternTransfer QR import (ticket 68)', () => {
 
   it('scanning/importing a Pattern exported as a QR code reproduces it exactly', async () => {
     const original = makePattern('Fox')
-    const matrix = patternQrMatrix(original)!
+    const matrix = patternQrMatrix(original, APP_URL)!
     const wrapper = mount(PatternTransfer, { props: { patterns: [] } })
 
     await pickQrPicture(wrapper, rasterizeQrMatrix(matrix))
@@ -233,7 +253,7 @@ describe('PatternTransfer QR import (ticket 68)', () => {
   it('brings in a Pattern that clashes with a local one under a new identity, keeping both', async () => {
     const local = makePattern('Fox')
     const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-    const matrix = patternQrMatrix(incoming)!
+    const matrix = patternQrMatrix(incoming, APP_URL)!
     const wrapper = mount(PatternTransfer, { props: { patterns: [local] } })
 
     await pickQrPicture(wrapper, rasterizeQrMatrix(matrix))
