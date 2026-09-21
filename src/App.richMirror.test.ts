@@ -8,6 +8,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
   await wrapper.find('[data-testid="width-input"]').setValue(width)
   await wrapper.find('[data-testid="height-input"]').setValue(height)
   await wrapper.find('form').trigger('submit')
@@ -74,7 +75,7 @@ describe('App Mirror axis counters (ticket 44)', () => {
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
   })
 
-  it('resets axis counts to 0 when Replace Bead is confirmed (ticket 48), and Undo brings them back', async () => {
+  it('keeps axis counts when Replace Bead is confirmed, since the grid they were clamped against is unchanged (ADR 0017)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
@@ -83,7 +84,7 @@ describe('App Mirror axis counters (ticket 44)', () => {
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
+    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 

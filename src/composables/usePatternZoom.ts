@@ -66,6 +66,13 @@ export function usePatternZoom(
     isAtFit.value = true
   })
 
+  // A Resize (or its Undo) changes how big the Pattern is, so the fit level moves with it — unless a zoom was chosen by hand.
+  watch(() => [currentPattern()?.columns, currentPattern()?.rows], () => {
+    if (isAtFit.value) {
+      zoom.value = fitZoom()
+    }
+  })
+
   watch(availableWidth, () => {
     if (isAtFit.value) {
       zoom.value = fitZoom()

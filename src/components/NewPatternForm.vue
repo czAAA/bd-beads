@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel, type Bead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
-import { computeGridDimensions, toMillimeters, type SizeUnit, type Technique } from '../domain/grid'
+import type { SizeUnit, Technique } from '../domain/grid'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -12,9 +12,10 @@ import {
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
+import { gridFromSize, sizeCapRefusal } from '../domain/patternSize'
 import { useI18n } from '../i18n/useI18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -55,15 +56,49 @@ const beadId = ref(props.beads[0]!.id)
 const technique = ref<Technique>('loom')
 const widthText = ref('')
 const heightText = ref('')
-const unit = ref<SizeUnit>('mm')
+/** Beads by default (ADR 0017): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
+const unit = ref<SizeUnit>('beads')
 
 const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
-const isValid = computed(() => width.value > 0 && height.value > 0)
-const namePlaceholder = computed(() => {
-  const bead = props.beads.find((candidate) => candidate.id === beadId.value)
-  return bead ? beadLabel(bead) : ''
+const selectedBead = computed(() => props.beads.find((candidate) => candidate.id === beadId.value))
+const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
+
+/** A size in beads is a whole number of them, at least one; mm/cm just have to be positive. */
+const isSizeStated = computed(() => {
+  const stated = width.value > 0 && height.value > 0
+  return unit.value === 'beads' ? stated && Number.isInteger(width.value) && Number.isInteger(height.value) : stated
 })
+
+/**
+ * The grid the stated size works out to, in whichever unit it was stated: beads are the columns and rows directly, and
+ * mm/cm are converted through the chosen Bead. The single source the cap, the slow-framing hint and (via the emitted
+ * draft, see domain/pattern's patternGeometry) Convert image's frame all read, so none of them can disagree about it.
+ */
+const dimensions = computed(() =>
+  isSizeStated.value && selectedBead.value
+    ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, selectedBead.value)
+    : undefined,
+)
+
+/**
+ * Why the stated size can't be created (ADR 0017's cell cap), worded in the unit being used, or undefined when it can.
+ * Judged on the grid the size converts to for the chosen Bead, so it re-runs whenever the Bead, the unit or either
+ * side changes — the same size can pass with one Bead and be refused with a smaller one.
+ */
+const capRefusal = computed(() =>
+  dimensions.value && selectedBead.value
+    ? sizeCapRefusal(t.value.sizeCap, {
+        unit: unit.value,
+        dimensions: dimensions.value,
+        bead: selectedBead.value,
+        unitLabels: { mm: t.value.form.unitMm, cm: t.value.form.unitCm },
+        locale: locale.value,
+      })
+    : undefined,
+)
+
+const isValid = computed(() => isSizeStated.value && !capRefusal.value)
 
 const techniqueLabel = computed<Record<Technique, string>>(() => ({
   loom: t.value.form.techniqueLoom,
@@ -77,16 +112,11 @@ const techniqueLabel = computed<Record<Technique, string>>(() => ({
  * off the same fields the form's own `draft` emit watches, so it needs no resubmit and no file picked first.
  */
 const slowFramingWarning = computed(() => {
-  const bead = props.beads.find((candidate) => candidate.id === beadId.value)
-  if (!isValid.value || !bead) {
+  if (!isValid.value || !dimensions.value) {
     return undefined
   }
 
-  const dimensions = computeGridDimensions(
-    { widthMm: toMillimeters(width.value, unit.value), heightMm: toMillimeters(height.value, unit.value) },
-    bead,
-  )
-  if (!isSlowFramingSize(technique.value, dimensions, props.slowFramingCellThresholds)) {
+  if (!isSlowFramingSize(technique.value, dimensions.value, props.slowFramingCellThresholds)) {
     return undefined
   }
 
@@ -191,8 +221,8 @@ async function onConvertImage(event: Event): Promise<void> {
         v-model="widthText"
         data-testid="width-input"
         type="number"
-        min="0"
-        step="any"
+        :min="unit === 'beads' ? 1 : 0"
+        :step="unit === 'beads' ? 1 : 'any'"
       />
     </div>
 
@@ -203,18 +233,24 @@ async function onConvertImage(event: Event): Promise<void> {
         v-model="heightText"
         data-testid="height-input"
         type="number"
-        min="0"
-        step="any"
+        :min="unit === 'beads' ? 1 : 0"
+        :step="unit === 'beads' ? 1 : 'any'"
       />
     </div>
 
     <div class="field">
       <label for="unit-select">{{ t.form.unitLabel }}</label>
       <select id="unit-select" v-model="unit" data-testid="unit-select">
+        <option value="beads">{{ t.form.unitBeads }}</option>
         <option value="mm">{{ t.form.unitMm }}</option>
         <option value="cm">{{ t.form.unitCm }}</option>
       </select>
     </div>
+
+    <!-- The cap's refusal (ADR 0017), in the unit being used and never only a bare cell count. It disables Create and Convert image below. -->
+    <p v-if="capRefusal" class="new-pattern-form__error" role="alert" data-testid="size-cap-message">
+      {{ capRefusal }}
+    </p>
 
     <button type="submit" :disabled="!isValid">{{ t.form.submit }}</button>
 

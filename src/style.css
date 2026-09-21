@@ -15,6 +15,9 @@
   --color-wedgewood-deep: #2f5a76;
   --color-aqua-island: #a7dadc;
   --color-aqua-island-ink: var(--color-ink);
+  /* The warning color: a flat orange for "this is a guide, not a fact" (the Estimated size's tooltip) — never for errors, which stay amaranth. */
+  --color-orange: #f4a340;
+  --color-orange-ink: var(--color-ink);
 
   /* Typography */
   --font-sans: 'Segoe UI', system-ui, Roboto, sans-serif;

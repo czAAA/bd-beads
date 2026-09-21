@@ -14,6 +14,8 @@ export interface Translations {
     widthLabel: string
     heightLabel: string
     unitLabel: string
+    /** The unit a Pattern's size can be stated in when it is a count of beads (ADR 0017) — the default. */
+    unitBeads: string
     unitMm: string
     unitCm: string
     submit: string
@@ -113,8 +115,42 @@ export interface Translations {
       colors: string
       edit: string
       mirror: string
+      size: string
       rowProgress: string
     }
+  }
+  /**
+   * The Size Tool group (CONTEXT.md's Estimated size and Resize, ADR 0017): the open Pattern's estimate, and the rows
+   * and columns inputs that change it. "Columns" and "Rows" are as seen on screen, so rotating the Pattern swaps which
+   * of the grid's two directions each one drives.
+   */
+  size: {
+    /** Names the Estimated size readout for assistive technology. */
+    estimateLabel: string
+    /** The info icon's accessible name; its tooltip is `estimateWarning`. */
+    estimateInfoButton: string
+    /** The warning tooltip on the Estimated size: it is a guide, not a measurement. */
+    estimateWarning: string
+    columnsLabel: string
+    rowsLabel: string
+    /** Prefix of the "change from: end | start" choice, one per direction. */
+    changeFromLabel: string
+    fromEnd: string
+    fromStart: string
+    /** Hover text on the inputs while Row progress is on and they are disabled. */
+    lockedReason: string
+    /** Stated near the rows input while it moves in steps of 2 (peyote and brick stitch, from the start). */
+    pairsHint: string
+  }
+  /**
+   * The refusal for a size past the cell cap (ADR 0017), in the unit the person is working in — for the New Pattern
+   * form and for Resize. `{count}`, `{limit}`, `{bead}`, `{size}` and `{unit}` are filled in by sizeCapRefusal (see
+   * domain/patternSize.ts); never write the numbers out here.
+   */
+  sizeCap: {
+    beads: string
+    tall: string
+    wide: string
   }
   /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
   deleteAll: {
@@ -167,12 +203,15 @@ export interface Translations {
       decodeFailed: string
     }
   }
-  /** The Replace Bead control (CONTEXT.md, ADR 0008) next to the open Pattern's Bead, and its confirmation modal (ticket 48). */
+  /** The Replace Bead control (CONTEXT.md, ADR 0017) next to the open Pattern's Bead, and its confirmation modal (ticket 48). */
   replaceBead: {
     selectLabel: string
-    /** Prefix for the new grid size shown in the confirmation message, e.g. "New size: 45×62." */
-    newSizeLabel: string
     confirmTitle: string
+    /**
+     * `{bead}` is the new Bead's label, `{new}` and `{old}` the Estimated size with it and with the current one (e.g.
+     * "3.3 × 6.6 cm"). Says the size changes, the design and its bead count don't, and that rows and columns can be
+     * adjusted afterwards to get the size back.
+     */
     confirmMessage: string
     confirmButton: string
     cancelButton: string

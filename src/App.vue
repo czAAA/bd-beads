@@ -18,8 +18,8 @@ import { useMirrorState } from './composables/useMirrorState'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { useSpaceDragPan } from './composables/useSpaceDragPan'
-import { BEAD_CATALOG, beadLabel } from './domain/beads'
-import { findBead } from './domain/beads'
+import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
+import type { Bead } from './domain/beads'
 import type { GridPosition, PreviewCell } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
 import {
@@ -53,7 +53,6 @@ import {
   moveToRow,
   paintCells,
   patternGeometry,
-  previewReplaceBead,
   replaceBead,
   resolvePatternBead,
   restoreSnapshot,
@@ -67,6 +66,8 @@ import {
   type Pattern,
   type UndoEntry,
 } from './domain/pattern'
+import { estimatedSizeMm, formatSizeMm, isOverCellCap } from './domain/patternSize'
+import { resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
 
@@ -119,20 +120,26 @@ const replaceBeadPendingBead = computed(() => {
   return id ? findBead(id) : undefined
 })
 
-/** The grid size Replace Bead's pending pick would resize to, for the confirmation message — undefined while its modal is closed. */
-const replaceBeadPreview = computed(() => {
+/**
+ * The Replace bead modal's message (ticket 48, ADR 0017): the Pattern's Estimated size with the new Bead next to the
+ * one it has now, plus the static reassurance that the design and its bead count stay put and that rows and columns
+ * can be adjusted afterwards. The grid itself never changes, so there is no new grid size to show.
+ */
+const replaceBeadConfirmMessage = computed(() => {
   const pattern = activePattern.value
   const bead = replaceBeadPendingBead.value
-  return pattern && bead ? previewReplaceBead(pattern, bead) : undefined
-})
-
-/** The Replace bead modal's message: the new grid size followed by the static rescale/reset/undo reassurance (ticket 48) — same "size line + static sentence" shape as currentPatternSummary uses elsewhere in this file. */
-const replaceBeadConfirmMessage = computed(() => {
-  const preview = replaceBeadPreview.value
-  if (!preview) {
+  if (!pattern || !bead) {
     return ''
   }
-  return `${t.value.replaceBead.newSizeLabel}: ${preview.columns}×${preview.rows}. ${t.value.replaceBead.confirmMessage}`
+
+  const unitLabels = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
+  const estimateWith = (candidate: Bead | undefined) =>
+    candidate ? formatSizeMm(estimatedSizeMm(pattern, candidate), unitLabels) : '—'
+
+  return t.value.replaceBead.confirmMessage
+    .replace('{bead}', () => beadLabel(bead))
+    .replace('{new}', () => estimateWith(bead))
+    .replace('{old}', () => estimateWith(resolvePatternBead(pattern)))
 })
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
@@ -176,7 +183,12 @@ const {
 const newPatternDraft = ref<CreatePatternInput | undefined>()
 
 function onNewPatternDraft(draft: CreatePatternInput) {
-  if (draft.size.width > 0 && draft.size.height > 0) {
+  const { width, height, unit } = draft.size
+  const geometry = patternGeometry(draft)
+  const wholeBeads = unit !== 'beads' || (Number.isInteger(width) && Number.isInteger(height))
+
+  // A size the form would refuse (not whole beads, or past the cell cap) is no more a frame to follow than an empty field is.
+  if (width > 0 && height > 0 && wholeBeads && geometry && !isOverCellCap(geometry)) {
     newPatternDraft.value = draft
   }
 }
@@ -249,7 +261,7 @@ const {
   reset: resetMirrorState,
 } = useMirrorState(() => activePattern.value, commitGridChange)
 
-/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus Row progress and the Bead/grid-size/Mirror bundle for the commands that reset those too (Delete all, ticket 42, and Replace Bead, ticket 48 — see UndoEntry). */
+/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus whatever else the command also changed: Row progress (Delete all, ticket 42, and Resize), the Bead (Replace Bead, ticket 48) and the grid size with Mirror's axis counts (Resize, ADR 0017) — see UndoEntry. */
 const history = ref<History<UndoEntry>>(emptyHistory())
 
 /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
@@ -979,18 +991,18 @@ function onCellSecondaryMove(row: number, column: number) {
 }
 
 /**
- * Everything Undo/Redo can step through right now, fully populated (ticket 48): the grid, Row progress, and the
- * Bead/grid-size/Mirror bundle Replace Bead changes. Every other command's own pushHistory call only carries what it
- * actually changed (see e.g. commitGridChange, onConfirmDeleteAll), but the snapshot recorded here — of the
- * *current* state, as the opposite stack's new top — has to be complete so a later Redo/Undo through it round-trips
- * exactly, even for fields this particular step left untouched.
+ * Everything Undo/Redo can step through right now, fully populated (ticket 48): the grid, Row progress, the Bead, and
+ * the grid size with Mirror's axis counts. Every other command's own pushHistory call only carries what it actually
+ * changed (see e.g. commitGridChange, onConfirmDeleteAll), but the snapshot recorded here — of the *current* state, as
+ * the opposite stack's new top — has to be complete so a later Redo/Undo through it round-trips exactly, even for
+ * fields this particular step left untouched.
  */
 function currentUndoEntry(pattern: Pattern): UndoEntry {
   return {
     grid: pattern.grid,
     rowProgress: pattern.rowProgress,
-    bead: {
-      beadId: pattern.beadId,
+    beadId: pattern.beadId,
+    size: {
       columns: pattern.columns,
       rows: pattern.rows,
       mirrorAxisCounts: mirrorAxisCounts.value,
@@ -998,12 +1010,22 @@ function currentUndoEntry(pattern: Pattern): UndoEntry {
   }
 }
 
-/** Applies one Undo/Redo step, shared by both directions: the grid/Row progress/Bead the snapshot carries (via restoreSnapshot), plus Mirror's axis counts when the snapshot bundles them — not a Pattern field, so restoreSnapshot alone can't apply it (see UndoEntry.bead). */
+/**
+ * Applies one Undo/Redo step, shared by both directions: the grid/Row progress/Bead/size the snapshot carries (via
+ * restoreSnapshot), plus what isn't a Pattern field and so can't ride along in it — Mirror's axis counts, and clearing
+ * a Selection (or hover) that no longer fits when the step changed the grid's size.
+ */
 function applyHistoryStep(pattern: Pattern, step: HistoryStep<UndoEntry>) {
   history.value = step.history
   replacePattern(restoreSnapshot(pattern, step.snapshot))
-  if (step.snapshot.bead) {
-    restoreMirrorAxisCounts(step.snapshot.bead.mirrorAxisCounts)
+
+  const { size } = step.snapshot
+  if (size) {
+    restoreMirrorAxisCounts(size.mirrorAxisCounts)
+    if (size.columns !== pattern.columns || size.rows !== pattern.rows) {
+      selection.value = undefined
+      hoveredCell.value = undefined
+    }
   }
 }
 
@@ -1073,11 +1095,10 @@ function onCancelReplaceBead() {
 }
 
 /**
- * Confirms Replace Bead (ticket 48, ADR 0008): swaps the Bead, resizes the grid and rescales its colors, and resets
- * Row progress, as a single undo step. Applied directly rather than through commitGridChange/keepFinishedRows, the
- * same as Delete all: Replace Bead ignores the Row progress lock on purpose, since the row count it was locking
- * against may not even exist on the new grid. Mirror's axis counts aren't a Pattern field (see UndoEntry.bead), so
- * they're reset here directly rather than inside replaceBead.
+ * Confirms Replace Bead (ticket 48, ADR 0017): swaps the Bead and nothing else, as a single undo step. The grid, Row
+ * progress and Mirror all stay as they are, since the grid — the Pattern's size — is untouched; only its Estimated size
+ * changes. Applied directly rather than through commitGridChange/keepFinishedRows: it doesn't draw, so the Row progress
+ * lock has nothing to guard.
  */
 function onConfirmReplaceBead() {
   const pattern = activePattern.value
@@ -1087,9 +1108,40 @@ function onConfirmReplaceBead() {
     return
   }
 
-  history.value = pushHistory(history.value, currentUndoEntry(pattern))
+  history.value = pushHistory(history.value, { grid: pattern.grid, beadId: pattern.beadId })
   replacePattern(replaceBead(pattern, bead))
+}
+
+/**
+ * Resize (CONTEXT.md, ADR 0017) from the Size group: adds or removes rows and columns from either end, as one undo
+ * step carrying the grid, the dimensions and Row progress's pointers (which may have been clamped) together. Like
+ * Delete all it isn't drawing, so it doesn't go through keepFinishedRows — it is instead refused outright while Row
+ * progress is on (see resizeRefusal). A Resize that changes nothing, or is refused, is not an undo step.
+ *
+ * A change to the grid's dimensions invalidates the editing-session state built against the old ones: the Selection
+ * (which may now reach past the grid) and Mirror's axis counts (clamped to the old size) are cleared, the same as
+ * Mirror's own docs say a Resize does. The clipboard survives, since a copied block is colors, not a place.
+ */
+function onResize(request: ResizeRequest) {
+  const pattern = activePattern.value
+  if (!pattern) {
+    return
+  }
+
+  const updated = resizePattern(pattern, request)
+  if (updated === pattern) {
+    return
+  }
+
+  history.value = pushHistory(history.value, {
+    grid: pattern.grid,
+    rowProgress: pattern.rowProgress,
+    size: { columns: pattern.columns, rows: pattern.rows, mirrorAxisCounts: mirrorAxisCounts.value },
+  })
+  replacePattern(updated)
   clearMirrorAxisCounts()
+  selection.value = undefined
+  hoveredCell.value = undefined
 }
 
 /**
@@ -1250,6 +1302,7 @@ function onMoveRow(delta: number) {
               @toggle-row-direction="onToggleRowDirection"
               @move-row="onMoveRow"
               @delete-all="onRequestDeleteAll"
+              @resize="onResize"
             />
           </div>
 

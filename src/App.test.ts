@@ -14,6 +14,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
   await wrapper.find('[data-testid="width-input"]').setValue(width)
   await wrapper.find('[data-testid="height-input"]').setValue(height)
   await wrapper.find('form').trigger('submit')
@@ -259,6 +260,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
     await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="unit-select"]').setValue('mm')
     await wrapper.find('[data-testid="width-input"]').setValue('15')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
     await wrapper.find('form').trigger('submit')
@@ -353,8 +355,6 @@ describe('App', () => {
     expect(afterRotate.rotated).toBe(true)
     expect(afterRotate.columns).toBe(beforeRotate.columns)
     expect(afterRotate.rows).toBe(beforeRotate.rows)
-    expect(afterRotate.widthMm).toBe(beforeRotate.widthMm)
-    expect(afterRotate.heightMm).toBe(beforeRotate.heightMm)
     expect(afterRotate.grid).toEqual(beforeRotate.grid)
     // The header summary reflects how the Pattern currently looks (swapped), even though the stored grid didn't change.
     expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
@@ -1156,7 +1156,7 @@ describe('App tool strip icon buttons', () => {
     expect(new Set(glyphs).size).toBe(glyphs.length)
   })
 
-  it('leaves each Tool group\u2019s title and the row-progress readout as the Toolbox\u2019s only text \u2014 every button label is still just a tooltip', async () => {
+  it('leaves each Tool group\u2019s title, the Size group\u2019s readout and the row-progress readout as the Toolbox\u2019s only text \u2014 every button label is still just a tooltip', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1168,6 +1168,8 @@ describe('App tool strip icon buttons', () => {
       ru.toolbox.groups.mirror,
       wrapper.find('[data-testid="mirror-left-right"]').text(),
       wrapper.find('[data-testid="mirror-top-bottom"]').text(),
+      ru.toolbox.groups.size,
+      wrapper.find('[data-testid="size-controls"]').text(),
       ru.toolbox.groups.rowProgress,
       wrapper.find('[data-testid="row-progress-position"]').text(),
     ].join('')
@@ -1178,7 +1180,7 @@ describe('App tool strip icon buttons', () => {
     expect(toolbox.text().replace(/\s+/g, '')).toBe(expectedWords.replace(/\s+/g, ''))
   })
 
-  it('gives each of the five Tool groups its own visible title, in Tools/Colors/Edit/Mirror/Row progress order', async () => {
+  it('gives each of the six Tool groups its own visible title, in Tools/Colors/Edit/Mirror/Size/Row progress order', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -1190,6 +1192,7 @@ describe('App tool strip icon buttons', () => {
       en.toolbox.groups.colors,
       en.toolbox.groups.edit,
       en.toolbox.groups.mirror,
+      en.toolbox.groups.size,
       en.toolbox.groups.rowProgress,
     ])
   })
@@ -2321,8 +2324,6 @@ describe('App delete all', () => {
     expect(after.name).toBe(before.name)
     expect(after.technique).toBe(before.technique)
     expect(after.beadId).toBe(before.beadId)
-    expect(after.widthMm).toBe(before.widthMm)
-    expect(after.heightMm).toBe(before.heightMm)
     expect(after.columns).toBe(before.columns)
     expect(after.rows).toBe(before.rows)
     expect(after.rotated).toBe(before.rotated)
@@ -2423,6 +2424,7 @@ describe('App header bead', () => {
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
     await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
+    await wrapper.find('[data-testid="unit-select"]').setValue('mm')
     await wrapper.find('[data-testid="width-input"]').setValue('15')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
     await wrapper.find('form').trigger('submit')
@@ -2489,15 +2491,32 @@ describe('App replace bead', () => {
     expect(labels).toContain('Miyuki Delica 11/0')
   })
 
-  it('opens a confirmation modal naming the new grid size instead of replacing immediately', async () => {
+  it('opens a confirmation modal showing the new Estimated size next to the current one instead of replacing immediately', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube
+    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube: about 1.5 x 3.0 cm
+
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+
+    const modal = wrapper.find('[data-testid="replace-bead-modal"]')
+    expect(modal.exists()).toBe(true)
+    // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
+    expect(modal.text()).toContain('With TOHO Round 11/0, this Pattern will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
+    expect(modal.text()).toContain('Your design and its bead count stay exactly the same')
+    expect(modal.text()).toContain('add or remove rows and columns afterwards')
+    expect(modal.text()).not.toContain('New size')
+    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+  })
+
+  it('reports the estimate the way the screen shows the Pattern, so a rotated Pattern swaps width and height', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
-    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('9×14') // round(15/1.65)=9, round(30/2.2)=14
-    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').text()).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
 
   it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
@@ -2536,7 +2555,7 @@ describe('App replace bead', () => {
     expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
   })
 
-  it('switches the Bead and resizes the grid once confirmed, keeping real-world size fixed', async () => {
+  it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube
 
@@ -2544,27 +2563,30 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().columns).toBe(9)
-    expect(loadedPattern().rows).toBe(14)
-    expect(loadedPattern().widthMm).toBe(15)
-    expect(loadedPattern().heightMm).toBe(30)
+    expect(loadedPattern().columns).toBe(10)
+    expect(loadedPattern().rows).toBe(20)
+    expect(loadedPattern()).not.toHaveProperty('widthMm')
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
   })
 
-  it('rescales existing colors onto the new grid rather than cropping them', async () => {
+  it('leaves every painted cell where it was, with no rescale', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // (0,0)
+    await wrapper.findAll('[data-testid="grid-cell"]')[199]!.trigger('pointerdown') // (19,9)
     await wrapper.find('.app-shell').trigger('mouseup')
+    const before = loadedPattern().grid
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
+    expect(loadedPattern().grid).toEqual(before)
     expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(loadedPattern().grid[19]![9]!.color).toBe('#e63746')
   })
 
-  it('resets Row progress once confirmed', async () => {
+  it('keeps Row progress as it was, since the grid it describes is unchanged', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
@@ -2574,11 +2596,30 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedPattern().rowProgress).toEqual({
-      enabled: false,
+      enabled: true,
       direction: 'rows',
-      currentRow: 0,
+      currentRow: 1,
       currentColumn: 0,
     })
+  })
+
+  it('works on a Pattern created in beads and painted on', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+    await wrapper.find('[data-testid="width-input"]').setValue('12')
+    await wrapper.find('[data-testid="height-input"]').setValue('5')
+    await wrapper.find('form').trigger('submit') // beads: 12x5
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await wrapper.findAll('[data-testid="grid-cell"]')[7]!.trigger('pointerdown')
+    await wrapper.find('.app-shell').trigger('mouseup')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('miyuki-delica-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(loadedPattern().beadId).toBe('miyuki-delica-11-0')
+    expect(loadedPattern().columns).toBe(12)
+    expect(loadedPattern().rows).toBe(5)
+    expect(loadedPattern().grid[0]![7]!.color).toBe('#e63746')
   })
 
   it('keeps name, Technique and rotation unchanged', async () => {
@@ -2596,7 +2637,7 @@ describe('App replace bead', () => {
     expect(after.rotated).toBe(true)
   })
 
-  it('is one undo step: a single Undo restores the Bead, grid size, colors and Row progress together', async () => {
+  it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -2621,6 +2662,11 @@ describe('App replace bead', () => {
       currentRow: 1,
       currentColumn: 0,
     })
+
+    await wrapper.find('[data-testid="redo-button"]').trigger('click')
+
+    expect(loadedPattern().beadId).toBe('toho-round-11-0')
+    expect(loadedPattern().columns).toBe(10)
   })
 
   it('does nothing when there is no open Pattern', () => {

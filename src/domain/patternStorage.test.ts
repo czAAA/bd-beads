@@ -106,6 +106,28 @@ describe('patternStorage', () => {
     expect(loadPatterns()[0]!.name).toBe('TOHO Cube 1.5mm')
   })
 
+  it('loads a Pattern saved before ADR 0017 that still carries its millimetre size, ignoring it', () => {
+    const pattern = makePattern()
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...pattern, widthMm: 15, heightMm: 15 }]))
+
+    const [loaded] = loadPatterns()
+
+    expect(loaded!.columns).toBe(pattern.columns)
+    expect(loaded!.rows).toBe(pattern.rows)
+    expect(loaded).not.toHaveProperty('widthMm')
+    expect(loaded).not.toHaveProperty('heightMm')
+  })
+
+  it('does not write the millimetre size back when such a Pattern is saved again', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...makePattern(), widthMm: 15, heightMm: 15 }]))
+
+    savePatterns(loadPatterns())
+
+    const raw = localStorage.getItem(STORAGE_KEY)!
+    expect(raw).not.toContain('widthMm')
+    expect(raw).not.toContain('heightMm')
+  })
+
   it('lets a write that does not fit through to the caller instead of swallowing it', () => {
     refuseStorageWrites()
 
