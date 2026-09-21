@@ -281,27 +281,27 @@ describe('App Resize (ticket 101)', () => {
     })
 
     it('opens an over-cap Pattern without blocking it, and still lets it shrink', async () => {
-      const oversize = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 200, height: 200, unit: 'beads' } })
+      const oversize = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 101, height: 100, unit: 'beads' } })
       savePatterns([oversize])
       const wrapper = mount(App)
 
       expect(wrapper.find('[data-testid="size-controls"]').exists()).toBe(true)
-      expect(columnsInput(wrapper).element.value).toBe('200')
+      expect(columnsInput(wrapper).element.value).toBe('101')
       expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
 
-      await enter(rowsInput(wrapper), 150)
+      await enter(rowsInput(wrapper), 90)
 
-      expect(stored().rows).toBe(150)
-      expect(stored().columns).toBe(200)
+      expect(stored().rows).toBe(90)
+      expect(stored().columns).toBe(101)
     })
 
     it('does not allow that over-cap Pattern to grow, though', async () => {
-      savePatterns([createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 200, height: 200, unit: 'beads' } })])
+      savePatterns([createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 101, height: 100, unit: 'beads' } })])
       const wrapper = mount(App)
 
-      await enter(rowsInput(wrapper), 201)
+      await enter(rowsInput(wrapper), 101)
 
-      expect(stored().rows).toBe(200)
+      expect(stored().rows).toBe(100)
     })
   })
 
