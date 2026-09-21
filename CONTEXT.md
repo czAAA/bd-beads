@@ -127,6 +127,14 @@ _Avoid_: import image, trace, pixelate, image import
 The set of colors one Convert image produced, saved with that Pattern and offered alongside the Palette while it is open. Frozen at the moment of conversion: painting a new color never adds to it and erasing one never removes it, because it records what the conversion found rather than what the Pattern currently holds. A Pattern created any other way has none.
 _Avoid_: extracted palette, pattern palette, image palette, pattern colors
 
+**Pattern renderer**:
+The one thing that draws a Pattern's cells — for the editor, the Convert image preview and the exports — so a bead looks the same wherever it appears. Draws whatever part of the Pattern is in view, at the current zoom and rotation, in the Technique's geometry.
+_Avoid_: grid component, exporter, preview renderer
+
+**Drawing surface**:
+What the Pattern renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
+_Avoid_: canvas (that is the panel), bitmap, canvas element
+
 ## How to run it
 
 [Add build/run instructions here as you develop.]
