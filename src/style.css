@@ -151,8 +151,10 @@ button:disabled {
 /*
  * A text/numeric control (e.g. Row progress's "row X / Y" readout) inside a Tool group's .tool-group__grid
  * (ticket 40): spans every column so it takes a full row of its own, and isn't counted toward the group's
- * two-row/14-slot cap of normal controls.
+ * 16-slot cap of normal controls. Stretched rather than centered like the single-column controls around it (the
+ * grid's justify-items), so its own content lays out against the group's left edge and full width.
  */
 .tool-group__full-row {
   grid-column: 1 / -1;
+  justify-self: stretch;
 }

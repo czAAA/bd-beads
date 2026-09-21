@@ -37,6 +37,7 @@ const groups = computed(() => [
       { keys: 'R', label: t.value.palette.rotateButton },
       { keys: 'Ctrl/Cmd+C', label: t.value.tools.copyButton },
       { keys: 'Ctrl/Cmd+V', label: t.value.tools.pasteLabel },
+      { keys: 'Ctrl/Cmd+S', label: t.value.tools.saveButton },
     ],
   },
   {

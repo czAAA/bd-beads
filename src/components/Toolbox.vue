@@ -25,6 +25,10 @@ const props = defineProps<{
   mirrorAxisCounts: MirrorAxisCounts
   /** Mirror's copy-mode switch (ticket 45). */
   mirrorCopyMode: boolean
+  /** Whether the "Saved" confirmation (ticket 115) is showing — set by whoever ran the save, cleared by itself after a moment. */
+  saved?: boolean
+  /** The open Pattern doesn't fit a single QR code (ADR 0015), so QR export is off (ticket 116). */
+  qrTooLarge?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -36,6 +40,10 @@ const emit = defineEmits<{
   redo: []
   'toggle-rotate': []
   copy: []
+  /** Save (ticket 115): write the library to this device now. */
+  save: []
+  /** QR export (ticket 116): open the QR panel for the open Pattern. */
+  'export-qr': []
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
@@ -275,6 +283,52 @@ const topBottomMax = computed(() =>
           <path d="M21 11h-11a7 7 0 1 0 7 7" />
         </svg>
       </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="save-button"
+        :title="`${t.tools.saveButton} (Ctrl/Cmd+S)`"
+        :aria-label="t.tools.saveButton"
+        @click="emit('save')"
+      >
+        <!-- A floppy disk: the shutter notch at the top, the label window below it. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 4h13l3 3v13H4z" />
+          <path d="M8 4v5h7V4" />
+          <path d="M7 20v-6h10v6" />
+        </svg>
+      </button>
+      <!-- The tooltip sits on a wrapper: browsers don't reliably show a disabled button's own title. -->
+      <span
+        class="toolbox__qr-action"
+        :title="qrTooLarge ? t.transfer.qrTooLargeMessage : undefined"
+        data-testid="export-qr-wrapper"
+      >
+        <button
+          type="button"
+          class="icon-button"
+          data-testid="export-qr"
+          :title="qrTooLarge ? undefined : t.transfer.exportQrButton"
+          :aria-label="t.transfer.exportQrButton"
+          :disabled="qrTooLarge"
+          @click="emit('export-qr')"
+        >
+          <!-- Three finder squares and a few data modules: the shape of a QR code. -->
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <path d="M14 14h3v3h-3zM19 14h2M14 19h2M19 19h2v2" />
+          </svg>
+        </button>
+      </span>
+      <!--
+        Save's confirmation (ticket 115): a status line of its own inside the group, so it sits right by the button that
+        caused it. A full row, like the other text readouts, so it doesn't count toward the group's control cap.
+      -->
+      <p v-if="saved" class="tool-group__full-row toolbox__saved" role="status" data-testid="save-confirmation">
+        {{ t.tools.savedConfirmation }}
+      </p>
     </ToolGroup>
 
     <ToolGroup ref="mirrorGroupRef" :title="t.toolbox.groups.mirror" data-testid="tool-group-mirror">
@@ -396,7 +450,6 @@ const topBottomMax = computed(() =>
     <ToolGroup
       ref="rowProgressGroupRef"
       :title="t.toolbox.groups.rowProgress"
-      class="tool-group--row-progress"
       data-testid="tool-group-row-progress"
     >
       <button
@@ -482,16 +535,34 @@ const topBottomMax = computed(() =>
 }
 
 /*
- * The Toolbox (CONTEXT.md): the strip of Tool groups above the canvas, on a dot-grid notepad-paper texture. The
- * dots are a muted tint of --color-ink, derived with color-mix rather than a new token — a decorative texture, not
- * a palette addition (ticket 20's "no new tokens" constraint is about the header boxes, not this).
+ * The Toolbox (CONTEXT.md): a fixed-width rail down the left of the app shell (ticket 114, ADR 0005), its Tool groups
+ * stacked vertically on a dot-grid notepad-paper texture. The dots are a muted tint of --color-ink, derived with
+ * color-mix rather than a new token — a decorative texture, not a palette addition (ticket 20's "no new tokens"
+ * constraint is about the header boxes, not this).
+ *
+ * The width is what the controls add up to, not a number chosen on its own: four 36px columns with their gaps, the group
+ * boxes' padding and borders, and the rail's own — 200px. On a tablet (an iPad in either orientation, or anything narrow
+ * enough to be short of room) it is three 44px columns instead, so a finger has a full-size target, for 172px. Both are
+ * the "fixed" of the rail's fixed width: it never grows with the window.
+ *
+ * Kept in view by the shell (App.vue's .app-shell__rail: sticky, and no taller than the viewport), which scrolls the
+ * rail itself when its groups add up to more than a short window can show — so overflow-x is never wanted, and every
+ * group below is laid out to fit without it.
  */
 .toolbox {
+  --tool-columns: 4;
+  --tool-size: 36px;
+  --tool-gap: 6px;
+  --tool-group-padding: 6px;
+  --swatch-size: 32px;
+
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  padding: 8px;
+  box-sizing: border-box;
+  width: 200px;
+  padding: 6px;
   background-color: var(--color-paper-solid);
   background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
   background-size: 16px 16px;
@@ -499,13 +570,45 @@ const topBottomMax = computed(() =>
   border-radius: var(--radius-lg);
 }
 
+@media (max-width: 1100px), (pointer: coarse) {
+  .toolbox {
+    --tool-columns: 3;
+    --tool-size: 44px;
+    --tool-gap: 4px;
+    --tool-group-padding: 5px;
+    --swatch-size: 40px;
+
+    width: 172px;
+    padding: 4px;
+  }
+}
+
+/* An icon button is 44px everywhere else; in the rail it takes the column's width so four fit across (three on a tablet, at the full 44px). */
+.toolbox :deep(.icon-button) {
+  width: var(--tool-size);
+  height: var(--tool-size);
+}
+
+/* Palette, Custom color and Image color swatches all take the one size, so they line up with each other and with the columns. */
+.toolbox :deep(.palette-picker__swatch),
+.toolbox :deep(.image-colors-picker__swatch),
+.toolbox :deep(.custom-color-picker) {
+  width: var(--swatch-size);
+  height: var(--swatch-size);
+}
+
 /*
- * Each Tool group sizes to its own content (ToolGroup.vue: flex: 0 0 auto) rather than stretching to fill the row —
- * a three-control group like Edit stays narrow, while Colors, with a dozen swatches, is wide (ticket 40).
- *
+ * Image colors keep their own row under the Palette (they are marked .tool-group__full-row), so they wrap on their own
+ * rather than in the group's columns: as many swatches as fit across, on the same gap as the columns.
+ */
+.toolbox :deep(.image-colors-picker) {
+  gap: var(--tool-gap);
+}
+
+/*
  * :deep() reaches into PalettePicker's own root, which normally lays its swatches out with its own flex-wrap.
  * display:contents removes that box so the 12 swatches become direct children of the Colors group's own
- * .tool-group__grid instead, wrapping at the same 7-per-row the rest of the Toolbox uses. Trade-off: this can drop
+ * .tool-group__grid instead, wrapping at the same four-per-row the rest of the Toolbox uses. Trade-off: this can drop
  * PalettePicker's own role="group"/aria-label from the accessibility tree in engines that don't preserve ARIA
  * semantics through display:contents — each swatch still names itself individually, and the Colors group itself is
  * still named via ToolGroup's aria-labelledby, so nothing becomes unreachable, just less specifically grouped.
@@ -515,15 +618,10 @@ const topBottomMax = computed(() =>
 }
 
 /*
- * Row progress always stays visually together: the toggles, the readout and the steps read as one control cluster,
- * so unlike the rest of the Toolbox this group doesn't shrink into itself on a narrow window — it claims its whole
- * content width, and when the Toolbox runs short of room it moves the whole group to its next line instead
- * (ticket 32's original reasoning, preserved through the ticket 40 reorg).
+ * Row progress's readout still reads as one cluster with the toggles and the steps, now simply stacked in the group's
+ * columns like any other; it no longer needs a width of its own (it is a full row, and nowrap keeps "Row 12 / 120" on
+ * one line inside 140-odd pixels).
  */
-.tool-group--row-progress {
-  flex-basis: max-content;
-}
-
 .row-progress__position {
   margin: 0;
   white-space: nowrap;
@@ -531,17 +629,35 @@ const topBottomMax = computed(() =>
   font-variant-numeric: tabular-nums;
 }
 
-/* Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row), decrease/value/increase laid out the same way ZoomControls does. */
+/* The wrapper is there to carry a tooltip a disabled button can't (ticket 116), so it needs a real box exactly the button's size to be hovered — display: contents would drop it. */
+.toolbox__qr-action {
+  display: inline-flex;
+}
+
+.toolbox__saved {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+}
+
+/*
+ * Mirror's per-direction axis counters (ticket 44): each takes its own full row (tool-group__full-row). The rail is too
+ * narrow for decrease / value / increase side by side, so the value takes the row's first line and the two buttons share
+ * the one beneath — `order` moves only what is seen; the markup, and so the reading and Tab order, stays decrease,
+ * value, increase.
+ */
 .mirror-axis-counter {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px var(--tool-gap);
   margin: 0;
 }
 
 .mirror-axis-counter__label {
-  min-width: 9em;
-  white-space: nowrap;
+  order: -1;
+  font-size: 15px;
+  flex: 1 1 100%;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
 }
 </style>

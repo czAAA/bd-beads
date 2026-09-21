@@ -6,13 +6,19 @@ defineProps<{ title: string }>()
 /** Unique per instance so several Tool groups on one page never share an id (ticket 40). */
 const titleId = useId()
 
-/** At most this many controls show while collapsed — two rows of seven (CONTEXT.md's Tool group entry, ticket 40). */
-const MAX_VISIBLE_CONTROLS = 14
+/**
+ * At most this many controls show while collapsed — four rows of four, the rail's own column count (CONTEXT.md's Tool
+ * group entry, ticket 114; it was two rows of seven above the canvas, ticket 40). No group reaches it today (the
+ * largest, Colors, has thirteen), which is deliberate: the rail is a vertical column with room to grow downward, and
+ * hover-expansion is no way to reach the Palette on a touch screen, so the cap is a safety net for a future group rather
+ * than a squeeze on the current ones.
+ */
+const MAX_VISIBLE_CONTROLS = 16
 
 const slots = useSlots()
 
 /**
- * Splits the slot's own vnodes into what always shows (base, at most 14 normal controls) and what only shows while
+ * Splits the slot's own vnodes into what always shows (base, at most 16 normal controls) and what only shows while
  * expanded (overflow) — ticket 41. Splitting the slot itself, rather than hiding the extra controls in place, keeps
  * the base grid's own box completely unaffected by expand state: its width and row count never change, so it can
  * anchor a plain position:absolute overlay for the overflow (see .tool-group__overflow below) without the usual
@@ -20,8 +26,8 @@ const slots = useSlots()
  * base's own stable width straight back via left/right:0.
  *
  * A control marked .tool-group__full-row (a text/numeric readout, e.g. Row progress's position readout) doesn't
- * count toward the 14-slot cap, matching .tool-group__grid's own contract below — it stays in the base group
- * wherever it falls in slot order. No current group combines that with more than 14 normal controls, so there's
+ * count toward the 16-slot cap, matching .tool-group__grid's own contract below — it stays in the base group
+ * wherever it falls in slot order. No current group combines that with more than 16 normal controls, so there's
  * nothing to verify about the two together yet.
  */
 const split = computed(() => {
@@ -97,9 +103,9 @@ defineExpose({ expanded, collapse })
 
 <style scoped>
 /*
- * One titled box in the Toolbox (CONTEXT.md's Tool group). Sizes to its own content rather than stretching to fill
- * the row — a three-control group like Edit stays narrow, while Colors, with a dozen swatches, is wide — so this
- * neither grows nor shrinks in the Toolbox's flex row (see Toolbox.vue's .toolbox).
+ * One titled box in the Toolbox (CONTEXT.md's Tool group). Every group is as wide as the rail it sits in (see
+ * Toolbox.vue's .toolbox, which stretches it) and as tall as its own content — a three-control group like Edit is
+ * short, Colors, with a dozen swatches, is tall.
  *
  * position:relative anchors .tool-group__overflow (ticket 41), which overlays downward from this box's own bottom
  * edge without this box itself ever changing size — see the `split` computed above for why that matters.
@@ -111,7 +117,7 @@ defineExpose({ expanded, collapse })
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  padding: 6px 12px 10px;
+  padding: 6px var(--tool-group-padding, 6px) 10px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-md);
@@ -128,19 +134,22 @@ defineExpose({ expanded, collapse })
 }
 
 /*
- * Controls flow left to right, at most 7 per row (ticket 40): a fixed 7-column template, sized to each column's own
- * content, so an under-full group (e.g. 3 controls) collapses the unused columns to nothing rather than stretching.
+ * Controls flow left to right in a fixed number of columns, each one control wide (ticket 114; seven columns above the
+ * canvas, ticket 40): --tool-columns and --tool-size are set by the Toolbox, which is what decides how narrow the rail
+ * is — four 36px columns on a large display, three 44px ones for a finger on an iPad. A smaller swatch centers in its
+ * column rather than shifting the ones after it.
  * A control marked .tool-group__full-row (a text/numeric readout) spans every column, forcing its own row without
- * counting toward the two-row/14-slot cap — grid auto-placement resumes normal controls on a fresh row after it.
+ * counting toward the 16-slot cap of normal controls — grid auto-placement resumes normal controls on a fresh row after it.
  *
- * This only ever holds the first 14 (the `split` computed's "base") — a group with more shows the rest in
+ * This only ever holds the first 16 (the `split` computed's "base") — a group with more shows the rest in
  * .tool-group__overflow below instead, expanding in place on hover (ticket 41).
  */
 .tool-group__grid {
   display: grid;
-  grid-template-columns: repeat(7, min-content);
-  gap: 8px;
+  grid-template-columns: repeat(var(--tool-columns, 4), var(--tool-size, 36px));
+  gap: var(--tool-gap, 6px);
   align-items: center;
+  justify-items: center;
 }
 
 /*
@@ -196,10 +205,11 @@ defineExpose({ expanded, collapse })
   right: -1px;
   margin-top: calc(-1 * var(--border-width));
   display: grid;
-  grid-template-columns: repeat(7, min-content);
-  gap: 8px;
+  grid-template-columns: repeat(var(--tool-columns, 4), var(--tool-size, 36px));
+  gap: var(--tool-gap, 6px);
   align-items: center;
-  padding: 8px 12px 10px;
+  justify-items: center;
+  padding: 8px var(--tool-group-padding, 6px) 10px;
   background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-top: none;

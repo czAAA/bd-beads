@@ -25,6 +25,8 @@ export interface PatternLibrary {
   replacePattern: (pattern: Pattern, options?: ReplaceOptions) => void
   removePattern: (id: string) => void
   flushPendingSave: () => void
+  /** Writes the library now, pending change or not, and says whether storage took it (ticket 115's Save). */
+  saveNow: () => boolean
 }
 
 /**
@@ -116,6 +118,16 @@ export function usePatternLibrary(): PatternLibrary {
       if (savePending) {
         save()
       }
+    },
+
+    /**
+     * The Save tool's write (ticket 115): unlike flushPendingSave it doesn't trust the pending flag, since what Save
+     * reports back — "Saved" — has to be true whatever state that flag is in. Returns whether the write got through;
+     * a refusal also raises saveFailed, like any other.
+     */
+    saveNow(): boolean {
+      save()
+      return !saveFailed.value
     },
   }
 }

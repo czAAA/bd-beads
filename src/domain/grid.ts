@@ -52,8 +52,8 @@ export const RULER_GUTTER_PX = 28
  * once when the editing tools left the left panel (ADR 0005) and the canvas became what reclaims that width, and
  * again here because 640 was still forcing ordinary-sized Patterns (a few dozen columns/rows) to open zoomed below
  * 100% for no reason — the box simply wasn't big enough to show them at their natural 1:1 bead size. 900 covers a
- * Pattern well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header and
- * tool strip take their share; a Pattern past that still opens fit-to-box and zooms/scrolls from there as designed.
+ * Pattern well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header take
+ * their share; a Pattern past that still opens fit-to-box and zooms/scrolls from there as designed.
  */
 export const CANVAS_MAX_PX = 900
 

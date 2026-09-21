@@ -216,4 +216,50 @@ describe('usePatternLibrary', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
     expect(library.saveFailed.value).toBe(false)
   })
+
+  describe('saveNow (ticket 115)', () => {
+    it('writes a deferred change straight away and reports that it landed', () => {
+      const library = usePatternLibrary()
+      const pattern = makePattern()
+      library.addPattern(pattern)
+      library.replacePattern(withPaintedCell(pattern, 0, 0), { deferSave: true })
+
+      const saved = library.saveNow()
+
+      expect(saved).toBe(true)
+      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    })
+
+    it('writes even with nothing pending, so a "saved" answer never rests on an assumption', () => {
+      const library = usePatternLibrary()
+      library.addPattern(makePattern())
+
+      const writes = spyOnStorageWrites()
+
+      expect(library.saveNow()).toBe(true)
+      expect(writes.count).toBe(1)
+    })
+
+    it('reports a refused write and raises saveFailed', () => {
+      const library = usePatternLibrary()
+      library.addPattern(makePattern())
+
+      refuseStorageWrites()
+
+      expect(library.saveNow()).toBe(false)
+      expect(library.saveFailed.value).toBe(true)
+    })
+
+    it('clears an earlier saveFailed once the write gets through', () => {
+      const library = usePatternLibrary()
+      const pattern = makePattern()
+      library.addPattern(pattern)
+      const failing = refuseStorageWrites()
+      library.replacePattern(withPaintedCell(pattern, 0, 0))
+      failing.mockRestore()
+
+      expect(library.saveNow()).toBe(true)
+      expect(library.saveFailed.value).toBe(false)
+    })
+  })
 })

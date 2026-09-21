@@ -59,6 +59,10 @@ export interface Translations {
     /** The 4th Tool group member (ticket 89): flood-erases a clicked region's connected same-color cells. */
     eraseLabel: string
     copyButton: string
+    /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
+    saveButton: string
+    /** The brief confirmation Save shows once storage took the write. */
+    savedConfirmation: string
     /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names it. */
     pasteLabel: string
   }
@@ -78,7 +82,6 @@ export interface Translations {
   }
   /** Export/import (CONTEXT.md's Pattern file), plus QR export/import (ticket 68, ADR 0015). */
   transfer: {
-    heading: string
     exportPatternButton: string
     exportLibraryButton: string
     importLabel: string

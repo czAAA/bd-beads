@@ -58,6 +58,8 @@ export const ru: Translations = {
     selectLabel: 'Выделение',
     eraseLabel: 'Ластик',
     copyButton: 'Копировать',
+    saveButton: 'Сохранить',
+    savedConfirmation: 'Сохранено',
     pasteLabel: 'Вставить',
   },
   rowProgress: {
@@ -75,7 +77,6 @@ export const ru: Translations = {
     countHeading: 'Бисеринок',
   },
   transfer: {
-    heading: 'Экспорт и импорт',
     exportPatternButton: 'Экспортировать схему',
     exportLibraryButton: 'Экспортировать все схемы',
     importLabel: 'Импортировать файл',
@@ -84,7 +85,7 @@ export const ru: Translations = {
     exportQrButton: 'Экспортировать как QR-код',
     qrTooLargeMessage: 'Слишком велика для одного QR-кода. Используйте экспорт схемы.',
     closeQrButton: 'Закрыть',
-    importQrLabel: 'Импортировать из изображения QR-кода',
+    importQrLabel: 'Импортировать QR-код',
     qrImportedLabel: 'Схема импортирована из QR-кода',
     qrImportErrorLabel: 'Не удалось найти QR-код bd-beads на этом изображении',
   },

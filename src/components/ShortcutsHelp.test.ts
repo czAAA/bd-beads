@@ -31,7 +31,7 @@ describe('ShortcutsHelp', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'R', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'M', 'H', 'V', 'P', 'D']) {
+    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'R', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'M', 'H', 'V', 'P', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)
@@ -39,6 +39,7 @@ describe('ShortcutsHelp', () => {
     expect(text).toContain(ru.shortcutsHelp.panCanvas)
     expect(text).toContain(ru.shortcutsHelp.paletteColors)
     expect(text).toContain(ru.tools.pasteLabel)
+    expect(text).toContain(ru.tools.saveButton)
   })
 
   it('emits close when the close button is clicked', async () => {

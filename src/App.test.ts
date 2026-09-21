@@ -198,58 +198,52 @@ describe('App', () => {
     expect(loadPatterns()).toHaveLength(0)
   })
 
-  it('lays out the app shell as a top bar, main panel, canvas, and panels above/below the canvas', async () => {
+  it('lays out the app shell as a top bar, left column, canvas, and a panel below the canvas (ticket 114 retired the panel above it)', async () => {
     const wrapper = mount(App)
 
     const topBar = wrapper.find('[data-testid="app-topbar"]')
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
-    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     const canvas = wrapper.find('[data-testid="app-canvas"]')
     const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
 
     expect(topBar.exists()).toBe(true)
     expect(mainPanel.exists()).toBe(true)
-    expect(aboveCanvas.exists()).toBe(true)
+    expect(wrapper.find('[data-testid="app-above-canvas"]').exists()).toBe(false)
     expect(canvas.exists()).toBe(true)
     expect(belowCanvas.exists()).toBe(true)
 
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
-    expect(aboveCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
-    expect(belowCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(belowCanvas.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(aboveCanvas.find('[data-testid="palette-picker"]').exists()).toBe(true)
+    expect(mainPanel.find('[data-testid="palette-picker"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
 
-  it('opens the bottom section with a dimmed divider, then exactly three boxes in order: Beads needed, Saved Patterns, Export and import (ticket 39)', () => {
+  it('opens the bottom section with a dimmed divider, then exactly two boxes in order: Beads needed, Saved Patterns (tickets 39, 118)', () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
 
     const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
     const boxes = [...belowCanvas.element.children]
-    expect(boxes.map((box) => box.getAttribute('data-testid'))).toEqual([
-      'bead-quantities',
-      'pattern-list',
-      'pattern-transfer',
-    ])
+    expect(boxes.map((box) => box.getAttribute('data-testid'))).toEqual(['bead-quantities', 'pattern-list'])
   })
 
-  it('keeps the same divider and exactly the same three boxes, in order, whether or not a Pattern is open', async () => {
+  it('keeps the same divider and exactly the same two boxes, in order, whether or not a Pattern is open', async () => {
     const wrapper = mount(App)
     const belowCanvas = wrapper.find('[data-testid="app-below-canvas"]')
     const boxOrder = () => [...belowCanvas.element.children].map((box) => box.getAttribute('data-testid'))
-    const expectedOrder = ['bead-quantities', 'pattern-list', 'pattern-transfer']
+    const expectedOrder = ['bead-quantities', 'pattern-list']
 
     expect(wrapper.find('[data-testid="app-below-canvas-divider"]').exists()).toBe(true)
     expect(boxOrder()).toEqual(expectedOrder)
@@ -265,18 +259,16 @@ describe('App', () => {
     expect(boxOrder()).toEqual(expectedOrder)
   })
 
-  it('moves editing tools into the above-canvas panel, empties the main panel, and leaves the Toolbox as that panel\'s only content (ticket 35 removed the New Pattern/zoom row above it)', async () => {
+  it('puts the Toolbox in the left column as a rail while a Pattern is open, in place of the New Pattern form (ticket 114)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
-    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
     const toolbox = wrapper.find('[data-testid="toolbox"]')
 
-    expect(mainPanel.text()).toBe('')
-    expect(toolbox.exists()).toBe(true)
-    // No empty row is left where New Pattern/zoom used to sit: the Toolbox is the panel's first element child.
-    expect(aboveCanvas.element.firstElementChild).toBe(toolbox.element)
+    expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(false)
+    expect(mainPanel.element.firstElementChild).toBe(toolbox.element)
+    expect(wrapper.find('[data-testid="app-canvas"]').find('[data-testid="toolbox"]').exists()).toBe(false)
     for (const testId of [
       'tool-paint',
       'tool-fill',
@@ -287,6 +279,29 @@ describe('App', () => {
     ]) {
       expect(toolbox.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it('shows the New Pattern form in the left column, and no Toolbox, with no Pattern open (ticket 114)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+
+    const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
+    expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(false)
+  })
+
+  it('keeps the canvas panel and the below-canvas section outside the left column, so the rail is bounded by the canvas row (ticket 114)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const mainPanel = wrapper.find('[data-testid="app-main-panel"]').element
+    expect(mainPanel.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
+    expect(mainPanel.contains(wrapper.find('[data-testid="app-below-canvas"]').element)).toBe(false)
+    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(
+      mainPanel.parentElement,
+    )
   })
 
   it('paints a cell with the selected palette color', async () => {
@@ -1061,8 +1076,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const aboveCanvas = wrapper.find('[data-testid="app-above-canvas"]')
-    expect(aboveCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="app-main-panel"]').find('[data-testid="zoom-controls"]').exists()).toBe(false)
 
     const appCanvas = wrapper.find('[data-testid="app-canvas"]')
     expect(appCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
@@ -1085,7 +1099,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
-  it('splits the top bar into a dark title box and an aqua summary box holding just the current-pattern summary and language switcher (ticket 51 moved New Pattern out)', async () => {
+  it('splits the top bar into a dark title box and an aqua summary box holding the Pattern info, the actions and the language switcher (ticket 117 moved New Pattern and Import in)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1095,22 +1109,60 @@ describe('App', () => {
 
     expect(titleBox.find('h1 img').attributes('alt')).toBe('bd-beads')
     expect(titleBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(false)
-    expect(summaryBox.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
+    expect(titleBox.find('[data-testid="new-pattern-button"]').exists()).toBe(false)
     expect(summaryBox.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(summaryBox.find('[data-testid="language-en"]').exists()).toBe(true)
   })
 
-  it('renders New Pattern as the first control of the Saved Patterns box, above the list (ticket 51)', async () => {
+  it('arranges the summary group as two clusters: Pattern info, then the actions New Pattern and both Imports (ticket 117)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const group = wrapper.find('[data-testid="summary-group"]')
+    expect([...group.element.children].map((child) => child.getAttribute('data-testid'))).toEqual([
+      'pattern-info',
+      'pattern-actions',
+    ])
+
+    const info = group.find('[data-testid="pattern-info"]')
+    for (const testId of ['current-pattern-summary', 'current-pattern-bead', 'replace-bead-select']) {
+      expect(info.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+    }
+
+    const actions = group.find('[data-testid="pattern-actions"]')
+    for (const testId of ['new-pattern-button', 'import-file', 'import-qr']) {
+      expect(actions.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+    }
+  })
+
+  it('keeps New Pattern and Import available with no Pattern open, showing no Pattern info then (ticket 117)', () => {
+    const wrapper = mount(App)
+
+    const group = wrapper.find('[data-testid="summary-group"]')
+    expect(group.find('[data-testid="pattern-info"]').exists()).toBe(false)
+    expect(group.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(group.find('[data-testid="import-file"]').exists()).toBe(true)
+    expect(group.find('[data-testid="import-qr"]').exists()).toBe(true)
+  })
+
+  it('has New Pattern and the Imports only in the summary group, not in the Saved Patterns box (ticket 117)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     const patternList = wrapper.find('[data-testid="pattern-list"]')
-    const newPatternButton = wrapper.find('[data-testid="new-pattern-button"]').element
-    const firstPatternItem = wrapper.find('[data-testid="pattern-item"]').element
+    for (const testId of ['new-pattern-button', 'import-file', 'import-qr']) {
+      expect(patternList.find(`[data-testid="${testId}"]`).exists()).toBe(false)
+    }
+  })
 
-    expect(patternList.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
-    const children = Array.from(patternList.element.children)
-    expect(children.indexOf(newPatternButton)).toBeLessThan(children.indexOf(firstPatternItem.parentElement!))
+  it('keeps the two file exports in the Saved Patterns box, with no Export and import box (ticket 118)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    const patternList = wrapper.find('[data-testid="pattern-list"]')
+    expect(patternList.find('[data-testid="export-pattern"]').exists()).toBe(true)
+    expect(patternList.find('[data-testid="export-library"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-transfer"]').exists()).toBe(false)
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {
@@ -2579,6 +2631,41 @@ describe('App replace bead', () => {
     expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
   })
 
+  it('goes back to its placeholder after Cancel, rather than keeping the declined Bead selected (ticket 113)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
+
+    await select.setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+
+    expect(select.element.value).toBe('')
+  })
+
+  it('opens the modal again when the same Bead is picked a second time after Cancel (ticket 113)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
+
+    await select.setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
+    await select.setValue('toho-round-11-0')
+
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
+  })
+
+  it('goes back to its placeholder after Confirm, with the current Bead label showing the new Bead (ticket 113)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
+
+    await select.setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(select.element.value).toBe('')
+    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
+  })
+
   it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '6', '6') // 4x4 at Cube
@@ -2859,6 +2946,30 @@ describe('App pattern transfer', () => {
 
     expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(0)
+  })
+
+  it('keeps the import result and error visible after an import, in both languages (ticket 117)', async () => {
+    const wrapper = mount(App)
+
+    await importFile(wrapper, serializeLibrary([makePattern('Fox'), makePattern('Owl')]))
+    expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${ru.transfer.importedLabel}: 2`)
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${en.transfer.importedLabel}: 2`)
+
+    await importFile(wrapper, 'definitely not a pattern file')
+    expect(wrapper.find('[data-testid="import-error"]').text()).toBe(en.transfer.importErrorLabel)
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    expect(wrapper.find('[data-testid="import-error"]').text()).toBe(ru.transfer.importErrorLabel)
+  })
+
+  it('imports into an empty library and opens what it brought in (ticket 117)', async () => {
+    const wrapper = mount(App)
+    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
+
+    await importFile(wrapper, serializeLibrary([makePattern('Fox')]))
+
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Fox')
+    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(false)
   })
 })
 

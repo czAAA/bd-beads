@@ -245,20 +245,22 @@ const tipOpen = ref(false)
 
 <style scoped>
 /*
- * Sized to its own content: the group's grid (ToolGroup.vue) has min-content columns, which would otherwise squeeze this
- * to its narrowest and stack every label above its input. The notes below opt out of contributing to that width, so a
- * long sentence wraps inside the width the rows set rather than stretching the whole group.
+ * As wide as the Tool group it sits in (a full row of ToolGroup's fixed columns — ticket 114 made the Toolbox a narrow
+ * rail), so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
+ * wrap, and each row's label, input and "change from" choice fall onto as many lines as they need.
  */
 .size-controls {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: max-content;
+  min-width: 0;
 }
 
 .size-controls__estimate {
+  /* A full-width row of the block above, so the tooltip anchored to it is as wide as the rail, not as wide as "≈ 1.5 × 3.0 cm". */
   position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
@@ -297,13 +299,14 @@ const tipOpen = ref(false)
   stroke-linejoin: round;
 }
 
-/* The warning color, not an error's: this is a guide, not a fact. Opens below the icon, over whatever is under the Toolbox. */
+/* The warning color, not an error's: this is a guide, not a fact. Opens below the estimate at the rail's width, over the controls under it — within the rail, since the rail scrolls and would clip anything wider. */
 .size-controls__tooltip {
   position: absolute;
   z-index: 10;
   top: calc(100% + 8px);
   left: 0;
-  width: min(22em, 80vw);
+  right: 0;
+  box-sizing: border-box;
   padding: 10px 14px;
   font-size: 14px;
   line-height: 1.4;
@@ -321,19 +324,18 @@ const tipOpen = ref(false)
 
 .size-controls__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
+  gap: 4px 8px;
 }
 
 .size-controls__row label {
-  min-width: 5.5em;
   margin: 0;
   text-align: center;
 }
 
 .size-controls__input {
-  width: 5em;
+  width: 4.5em;
   padding: 4px 8px;
   font-variant-numeric: tabular-nums;
 }
@@ -345,6 +347,7 @@ const tipOpen = ref(false)
 
 .size-controls__from {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 4px;
 }
@@ -368,8 +371,6 @@ const tipOpen = ref(false)
 }
 
 .size-controls__note {
-  width: 0;
-  min-width: 100%;
   margin: 0;
   font-size: 14px;
   line-height: 1.35;

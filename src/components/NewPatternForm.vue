@@ -177,7 +177,7 @@ async function onConvertImage(event: Event): Promise<void> {
   } catch (error) {
     convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
   } finally {
-    // Clear the input so re-picking the same file still counts as a change (the same reason PatternTransfer does).
+    // Clear the input so re-picking the same file still counts as a change (the same reason PatternImport does).
     input.value = ''
   }
 }

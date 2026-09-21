@@ -104,11 +104,11 @@ describe('Toolbox', () => {
     expect(customColorIndex).toBeGreaterThan(lastPaletteIndex)
   })
 
-  it('puts Undo, Rotate, Copy and Redo inside the Edit group', () => {
+  it('puts Undo, Rotate, Copy, Redo, Save and QR export inside the Edit group', () => {
     const wrapper = mountToolbox()
 
     const editGroup = wrapper.findAll('.tool-group')[2]!
-    for (const testId of ['undo-button', 'rotate-button', 'copy-button', 'redo-button']) {
+    for (const testId of ['undo-button', 'rotate-button', 'copy-button', 'redo-button', 'save-button', 'export-qr']) {
       expect(editGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
   })
@@ -441,5 +441,86 @@ describe('Toolbox Image colors (ticket 58)', () => {
 
     expect(wrapper.find('[data-testid="image-colors-picker"]').classes()).toContain('tool-group__full-row')
     expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
+  })
+})
+
+describe('Toolbox Save (ticket 115)', () => {
+  it('has a Save control with an icon, an accessible name and a tooltip naming its shortcut', () => {
+    const wrapper = mountToolbox()
+
+    const button = wrapper.find('[data-testid="save-button"]')
+    expect(button.find('svg').exists()).toBe(true)
+    expect([en.tools.saveButton, ru.tools.saveButton]).toContain(button.attributes('aria-label'))
+    expect(button.attributes('title')).toContain('Ctrl/Cmd+S')
+  })
+
+  it('emits save when clicked', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
+
+    expect(wrapper.emitted('save')).toHaveLength(1)
+  })
+
+  it('shows the "Saved" confirmation, in the interface language, only while told the save landed', async () => {
+    const wrapper = mountToolbox()
+    expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(false)
+
+    await wrapper.setProps({ saved: true })
+
+    expect([en.tools.savedConfirmation, ru.tools.savedConfirmation]).toContain(
+      wrapper.find('[data-testid="save-confirmation"]').text(),
+    )
+    expect(wrapper.find('[data-testid="tool-group-edit"]').find('[data-testid="save-confirmation"]').exists()).toBe(true)
+
+    await wrapper.setProps({ saved: false })
+
+    expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(false)
+  })
+})
+
+describe('Toolbox QR export (ticket 116)', () => {
+  it('has a QR export control with an icon, an accessible name and a tooltip', () => {
+    const wrapper = mountToolbox()
+
+    const button = wrapper.find('[data-testid="export-qr"]')
+    expect(button.find('svg').exists()).toBe(true)
+    expect([en.transfer.exportQrButton, ru.transfer.exportQrButton]).toContain(button.attributes('aria-label'))
+    expect([en.transfer.exportQrButton, ru.transfer.exportQrButton]).toContain(button.attributes('title'))
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(false)
+    expect(wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title')).toBeUndefined()
+  })
+
+  it('emits export-qr when clicked', async () => {
+    const wrapper = mountToolbox()
+
+    await wrapper.find('[data-testid="export-qr"]').trigger('click')
+
+    expect(wrapper.emitted('export-qr')).toHaveLength(1)
+  })
+
+  it('is disabled for a Pattern too large for a QR code, with the reason on the wrapper, not the button', async () => {
+    const wrapper = mountToolbox({ qrTooLarge: true })
+
+    const button = wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]')
+    expect(button.element.disabled).toBe(true)
+    expect([en.transfer.qrTooLargeMessage, ru.transfer.qrTooLargeMessage]).toContain(
+      wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title'),
+    )
+    await button.trigger('click')
+    expect(wrapper.emitted('export-qr')).toBeUndefined()
+  })
+})
+
+describe('Toolbox rail (ticket 114)', () => {
+  it('shows every control of every Tool group without any group expanding, even with Image colors', () => {
+    const wrapper = mountToolbox({
+      pattern: { ...makePattern(), imageColors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'] },
+    })
+
+    expect(wrapper.findAll('[data-testid="tool-group-chevron"]')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="palette-swatch"]').length).toBeGreaterThan(0)
+    expect(wrapper.find('[data-testid="custom-color-input"]').exists()).toBe(true)
   })
 })

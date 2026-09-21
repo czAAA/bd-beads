@@ -23,7 +23,7 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
 - **Convert image**: a second way to create a Pattern — from a picture rather than an empty grid, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md), amended by [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
-- **App shell layout**: a top bar plus four panels (left main panel, above-canvas, canvas, below-canvas) that new UI must fit into; editing tools render above the canvas while a Pattern is open, New Pattern lives in the Saved Patterns box and zoom floats over the canvas panel's top-right corner (fixed to the panel, not to the Pattern's own sized box inside it), and the left main panel is used only for the New Pattern form — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
+- **App shell layout**: a top bar plus the panels below it (a left column, the canvas, and a below-canvas panel) that new UI must fit into; the left column holds the New Pattern form when no Pattern is open (or during Convert image framing) and the Toolbox rail otherwise, the top bar's summary box holds the open Pattern's info alongside New Pattern and the Import controls, zoom floats over the canvas panel's top-right corner (fixed to the panel, not to the Pattern's own sized box inside it), and the below-canvas panel is two boxes, Beads needed and Saved Patterns (which also holds the file exports) — see [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md) before adding a new screen or control
 
 ## Language
 
@@ -32,7 +32,7 @@ A saveable, re-editable beadwork design: a grid of cells (shape depends on the c
 _Avoid_: design, drawing, chart
 
 **Pattern library**:
-Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is a flat set with no ordering, grouping or nesting: a Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file. Saves itself as it changes, with no save action to take: every command persists the moment it lands, except a dragged paint or erase stroke, which is saved when the button is released. If a save doesn't get through — the browser's storage is full — the editor says so in the top bar and keeps the change on screen rather than losing it silently. See [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md).
+Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is a flat set with no ordering, grouping or nesting: a Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file. Saves itself as it changes, so the Toolbox's Save is only reassurance: it writes at once and says "Saved", or says so if the device refuses (ticket 115). Every command persists the moment it lands, except a dragged paint or erase stroke, which is saved when the button is released. If a save doesn't get through — the browser's storage is full — the editor says so in the top bar and keeps the change on screen rather than losing it silently. See [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md).
 _Avoid_: collection, gallery, saved list, workspace
 
 **Palette**:
@@ -64,11 +64,11 @@ A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bo
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Toolbox**:
-The strip of editing controls above the canvas while a Pattern is open, made up of Tool groups. Stays pinned near the top of the viewport once scrolled to, so it stays reachable while working on the lower rows of a Pattern taller than the screen.
-_Avoid_: tool strip, toolbar
+The fixed-width rail of editing controls down the left of the app shell while a Pattern is open (no wider than 200px, thinner on a tablet), made up of Tool groups stacked vertically. Takes the left column in turn with the New Pattern form. Stays pinned near the top of the viewport while the canvas is in view, so it stays reachable while working on the lower rows of a Pattern taller than the screen, and un-pins once the canvas has scrolled past.
+_Avoid_: tool strip, toolbar, above-canvas panel
 
 **Tool group**:
-One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit, Mirror, Row progress. Holds at most 14 controls in view (two rows of seven); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit (including Save and QR export), Mirror, Size, Row progress. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
 **Erase**:

@@ -56,6 +56,8 @@ export const en: Translations = {
     selectLabel: 'Select',
     eraseLabel: 'Erase',
     copyButton: 'Copy',
+    saveButton: 'Save',
+    savedConfirmation: 'Saved',
     pasteLabel: 'Paste',
   },
   rowProgress: {
@@ -73,7 +75,6 @@ export const en: Translations = {
     countHeading: 'Beads',
   },
   transfer: {
-    heading: 'Export and import',
     exportPatternButton: 'Export Pattern',
     exportLibraryButton: 'Export all Patterns',
     importLabel: 'Import a file',
@@ -82,7 +83,7 @@ export const en: Translations = {
     exportQrButton: 'Export as QR code',
     qrTooLargeMessage: 'Too large for a single QR code. Use Export Pattern instead.',
     closeQrButton: 'Close',
-    importQrLabel: 'Import from a QR code picture',
+    importQrLabel: 'Import QR code',
     qrImportedLabel: 'Pattern imported from QR code',
     qrImportErrorLabel: 'Could not find a bd-beads QR code in that picture',
   },

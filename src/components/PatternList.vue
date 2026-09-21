@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Pattern } from '../domain/pattern'
 import { summarizePattern } from '../domain/pattern'
+import { libraryFileName, patternFileName, serializeLibrary, serializePattern } from '../domain/patternFile'
 import { useI18n } from '../i18n/useI18n'
 
-defineProps<{
+const props = defineProps<{
   patterns: Pattern[]
   activePatternId?: string
 }>()
@@ -11,23 +13,45 @@ defineProps<{
 const emit = defineEmits<{
   select: [id: string]
   remove: [id: string]
-  'new-pattern': []
 }>()
 
 const { t } = useI18n()
+
+/** The Pattern open right now, if any — the one "Export Pattern" writes out. */
+const activePattern = computed(() => props.patterns.find((pattern) => pattern.id === props.activePatternId))
+
+/**
+ * There is no backend to fetch from (ADR 0001), so the file is built in the page and handed straight to the
+ * browser. The link has to be in the document for Firefox to act on the click, and the blob URL has to outlive the
+ * click for Safari to finish reading it — hence revoking on the next tick rather than immediately.
+ */
+function download(fileName: string, contents: string): void {
+  const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.append(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url))
+}
+
+/** Export pattern (ticket 118, moved here from the retired Export and import box): the open Pattern as a Pattern file. */
+function onExportPattern(): void {
+  if (activePattern.value) {
+    download(patternFileName(activePattern.value), serializePattern(activePattern.value))
+  }
+}
+
+/** Export library: every saved Pattern in one file. */
+function onExportLibrary(): void {
+  download(libraryFileName(), serializeLibrary(props.patterns))
+}
 </script>
 
 <template>
   <section class="pattern-list" data-testid="pattern-list">
     <h2>{{ t.patterns.heading }}</h2>
-    <button
-      type="button"
-      data-testid="new-pattern-button"
-      :disabled="patterns.length === 0"
-      @click="emit('new-pattern')"
-    >
-      {{ t.patterns.newPatternButton }}
-    </button>
     <p v-if="patterns.length === 0" data-testid="pattern-list-empty">
       {{ t.patterns.noSavedPatternsMessage }}
     </p>
@@ -65,16 +89,20 @@ const { t } = useI18n()
         </button>
       </li>
     </ul>
+    <div class="pattern-list__exports">
+      <button type="button" data-testid="export-pattern" :disabled="!activePattern" @click="onExportPattern">
+        {{ t.transfer.exportPatternButton }}
+      </button>
+      <button type="button" data-testid="export-library" :disabled="patterns.length === 0" @click="onExportLibrary">
+        {{ t.transfer.exportLibraryButton }}
+      </button>
+    </div>
   </section>
 </template>
 
 <style scoped>
 .pattern-list h2 {
   margin: 0 0 12px;
-}
-
-.pattern-list > button {
-  margin-bottom: 12px;
 }
 
 .pattern-list ul {
@@ -84,6 +112,13 @@ const { t } = useI18n()
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.pattern-list__exports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .pattern-list__item {
