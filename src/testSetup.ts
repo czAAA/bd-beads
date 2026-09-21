@@ -1,3 +1,6 @@
+import { enableAutoUnmount } from '@vue/test-utils'
+import { afterEach } from 'vitest'
+
 /**
  * jsdom's PointerEvent doesn't redeclare `button`/`buttons` on its own prototype -- they're inherited, getter-only,
  * from MouseEvent.prototype (ticket 60). @vue/test-utils' `trigger(type, options)` re-assigns every option key onto
@@ -15,3 +18,9 @@ if (typeof PointerEvent !== 'undefined') {
     }
   }
 }
+
+/**
+ * Unmount every wrapper after each test. A leaked App keeps its window keydown listeners and reactive watchers
+ * alive, so each later test in the same file pays for every earlier one (App.test.ts went from ~26s to a fraction).
+ */
+enableAutoUnmount(afterEach)
