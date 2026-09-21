@@ -1259,6 +1259,35 @@ function onMoveRow(delta: number) {
             :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
             data-testid="app-canvas"
           >
+            <!--
+              Pinned to the canvas panel's top-right corner (ticket 57), in its own row ahead of the scroll wrapper
+              below — a sibling of it, not a descendant, so it never scrolls, zooms or rotates along with the Pattern
+              (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box alone). It takes
+              up real space in the panel, so the Pattern starts below it and is never covered by it.
+            -->
+            <ZoomControls
+              v-if="activePattern && !framing"
+              class="app-shell__zoom-controls"
+              :zoom-percent="zoomPercent"
+              @zoom-in="zoomIn"
+              @zoom-out="zoomOut"
+              @reset="resetZoom"
+            />
+
+            <!--
+              The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
+              over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
+              frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
+            -->
+            <ZoomControls
+              v-if="framing"
+              class="app-shell__zoom-controls"
+              :zoom-percent="convertZoomPercent"
+              @zoom-in="convertZoomIn"
+              @zoom-out="convertZoomOut"
+              @reset="convertResetZoom"
+            />
+
             <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
               <!--
                 Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
@@ -1300,38 +1329,6 @@ function onMoveRow(delta: number) {
                 {{ t.shell.canvasPlaceholder }}
               </p>
             </div>
-
-            <!--
-              Fixed to the canvas panel's own corner (ticket 57), not the Pattern's own box inside it — a later sibling
-              of the scroll wrapper above, not a descendant of it, so it never scrolls, zooms or rotates along with the
-              Pattern underneath (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box
-              alone). Being later in the DOM also means it paints on top without any extra z-index/pointer-events
-              plumbing: whatever screen area it covers stops mouse events from ever reaching the grid cells underneath
-              (see PatternGrid.vue, whose paint/erase/hover handlers live on the cells themselves), which is what keeps
-              hovering or clicking the cluster from painting, erasing, selecting or previewing anything.
-            -->
-            <ZoomControls
-              v-if="activePattern && !framing"
-              class="app-shell__zoom-controls"
-              :zoom-percent="zoomPercent"
-              @zoom-in="zoomIn"
-              @zoom-out="zoomOut"
-              @reset="resetZoom"
-            />
-
-            <!--
-              The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
-              over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
-              frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
-            -->
-            <ZoomControls
-              v-if="framing"
-              class="app-shell__zoom-controls"
-              :zoom-percent="convertZoomPercent"
-              @zoom-in="convertZoomIn"
-              @zoom-out="convertZoomOut"
-              @reset="convertResetZoom"
-            />
           </div>
         </div>
 
@@ -1609,9 +1606,9 @@ function onMoveRow(delta: number) {
  * tall Pattern just grows this frame, and the page, taller, and the browser's own scrollbar reaches the rest of it.
  * Don't give this (or an ancestor) a fixed/max height — that's what would make vertical scrolling possible again.
  *
- * position:relative makes this the zoom cluster's containing block (ticket 57): the scrolling itself lives one level
- * down, on .app-shell__canvas-scroll, so the cluster — a sibling of that scroller, not a descendant — is positioned
- * against this frame's own corner and never scrolls, zooms or rotates along with the Pattern underneath it.
+ * The scrolling itself lives one level down, on .app-shell__canvas-scroll, so the zoom cluster — a sibling of that
+ * scroller, not a descendant, sitting in its own row above it at this frame's top-right — never scrolls, zooms or
+ * rotates along with the Pattern below it.
  */
 .app-shell__canvas {
   position: relative;
@@ -1637,12 +1634,10 @@ function onMoveRow(delta: number) {
   overflow-x: auto;
 }
 
-/* Fixed to the canvas panel's top-right corner, modeled on OS window chrome, at an offset that doesn't scale with zoom or move as the panel scrolls (ticket 57; previously anchored to the Pattern's own box under ticket 51). */
+/* Its own row at the canvas panel's top-right corner, above the scroll wrapper so the Pattern starts below it rather than running underneath (ticket 57; previously floated over the panel's corner, and before that anchored to the Pattern's own box under ticket 51). Doesn't scale with zoom or move as the panel scrolls. */
 .app-shell__zoom-controls {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
+  width: fit-content;
+  margin: 0 0 12px auto;
 }
 
 </style>

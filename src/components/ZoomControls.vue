@@ -12,10 +12,9 @@ const { t } = useI18n()
 
 <template>
   <!--
-    A horizontal row, + through reset left to right (ticket 35's ordering, kept by tickets 51/57's moves). Floats
-    over the canvas panel (see App.vue, which pins this to the panel's top-right corner) rather than sitting in the
-    above-canvas row, so it carries its own translucent background/border here — unlike a plain inline control, it
-    has to stay legible with a painted Pattern running underneath it at any zoom level.
+    A horizontal row, + through reset left to right (ticket 35's ordering, kept by tickets 51/57's moves). Sits in
+    its own row at the canvas panel's top-right corner (see App.vue), above the Pattern rather than over it, so it
+    carries its own background/border here.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
     <button
@@ -59,7 +58,7 @@ const { t } = useI18n()
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: color-mix(in srgb, var(--color-paper-solid) 80%, transparent);
+  background: var(--color-paper-solid);
   border: var(--border-width) solid var(--color-ink);
   border-radius: var(--radius-lg);
 }
