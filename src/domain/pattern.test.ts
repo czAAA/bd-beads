@@ -13,7 +13,6 @@ import {
   normalizePattern,
   paintCells,
   keepFinishedRows,
-  previewReplaceBead,
   replaceBead,
   resolvePatternBead,
   restoreGrid,
@@ -28,6 +27,7 @@ import {
   type Technique,
 } from './pattern'
 import { BEAD_CATALOG } from './beads'
+import { resizePattern } from './resize'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
@@ -46,6 +46,29 @@ describe('createPattern', () => {
     expect(pattern.rows).toBe(20)
     expect(pattern.grid).toHaveLength(20)
     expect(pattern.grid[0]).toHaveLength(10)
+  })
+
+  it('takes a size in beads as the columns and rows directly', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: roundBead.id,
+      size: { width: 12, height: 7, unit: 'beads' },
+    })
+
+    expect(pattern.columns).toBe(12)
+    expect(pattern.rows).toBe(7)
+    expect(pattern.grid).toHaveLength(7)
+    expect(pattern.grid[0]).toHaveLength(12)
+  })
+
+  it('derives the grid once from an mm or cm size and keeps no real-world size', () => {
+    const fromMm = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
+    const fromCm = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 1.5, height: 3, unit: 'cm' } })
+
+    expect(fromCm.columns).toBe(fromMm.columns)
+    expect(fromCm.rows).toBe(fromMm.rows)
+    expect(fromMm).not.toHaveProperty('widthMm')
+    expect(fromMm).not.toHaveProperty('heightMm')
   })
 
   it('fills every cell with an empty (unpainted) color', () => {
@@ -205,8 +228,6 @@ describe('toggleRotated', () => {
     expect(rotated.grid).toBe(pattern.grid)
     expect(rotated.columns).toBe(pattern.columns)
     expect(rotated.rows).toBe(pattern.rows)
-    expect(rotated.widthMm).toBe(pattern.widthMm)
-    expect(rotated.heightMm).toBe(pattern.heightMm)
     expect(rotated.technique).toBe(pattern.technique)
   })
 
@@ -950,8 +971,6 @@ describe('deleteAll', () => {
     expect(cleared.name).toBe(before.name)
     expect(cleared.technique).toBe(before.technique)
     expect(cleared.beadId).toBe(before.beadId)
-    expect(cleared.widthMm).toBe(before.widthMm)
-    expect(cleared.heightMm).toBe(before.heightMm)
     expect(cleared.columns).toBe(before.columns)
     expect(cleared.rows).toBe(before.rows)
     expect(cleared.rotated).toBe(before.rotated)
@@ -983,27 +1002,13 @@ describe('deleteAll', () => {
   })
 })
 
-describe('previewReplaceBead', () => {
-  it('computes the grid size the given Bead would produce at the Pattern\'s current real-world size', () => {
-    // 6.6mm x 4.4mm at Round (1.5mm + 0.15mm correction wide, 2.2mm tall) is a 4x2 grid.
-    const pattern = createPattern({
-      technique: 'loom',
-      beadId: roundBead.id,
-      size: { width: 6.6, height: 4.4, unit: 'mm' },
-    })
-
-    // Same real-world size at Cube (1.5mm): round(6.6/1.5)=4, round(4.4/1.5)=3.
-    expect(previewReplaceBead(pattern, cubeBead)).toEqual({ columns: 4, rows: 3 })
-  })
-})
-
 describe('replaceBead', () => {
-  /** 4 columns x 2 rows (Round, at 6.6mm x 4.4mm), each cell painted with a distinct color so the resize's cell mapping is checkable. */
+  /** 4 columns x 2 rows of TOHO Round, each cell painted with a distinct color so a change to the grid is checkable. */
   function distinctlyPainted(): Pattern {
     let pattern = createPattern({
       technique: 'loom',
       beadId: roundBead.id,
-      size: { width: 6.6, height: 4.4, unit: 'mm' },
+      size: { width: 4, height: 2, unit: 'beads' },
     })
     for (let row = 0; row < pattern.rows; row++) {
       for (let column = 0; column < pattern.columns; column++) {
@@ -1019,33 +1024,25 @@ describe('replaceBead', () => {
     expect(replaced.beadId).toBe(cubeBead.id)
   })
 
-  it('keeps the real-world size fixed and recomputes columns/rows from the new footprint', () => {
-    const before = distinctlyPainted()
+  it.each(BEAD_CATALOG.flatMap((from) => BEAD_CATALOG.filter((to) => to !== from).map((to) => [from, to] as const)))(
+    'keeps the grid, columns, rows and every painted cell exactly as they were, from %s to %s',
+    (from, to) => {
+      const before = { ...distinctlyPainted(), beadId: from.id }
 
-    const replaced = replaceBead(before, cubeBead)
+      const replaced = replaceBead(before, to)
 
-    expect(replaced.widthMm).toBe(before.widthMm)
-    expect(replaced.heightMm).toBe(before.heightMm)
-    expect(replaced).toEqual(expect.objectContaining({ columns: 4, rows: 3 }))
-  })
+      expect(replaced.columns).toBe(before.columns)
+      expect(replaced.rows).toBe(before.rows)
+      expect(replaced.grid).toBe(before.grid)
+    },
+  )
 
-  it('rescales existing colors onto the new grid by proportional nearest-cell resampling, not cropping', () => {
-    const replaced = replaceBead(distinctlyPainted(), cubeBead)
-
-    const colors = replaced.grid.map((row) => row.map((cell) => cell.color))
-    expect(colors).toEqual([
-      ['r0c0', 'r0c1', 'r0c2', 'r0c3'],
-      ['r0c0', 'r0c1', 'r0c2', 'r0c3'],
-      ['r1c0', 'r1c1', 'r1c2', 'r1c3'],
-    ])
-  })
-
-  it('resets Row progress to its just-created state', () => {
+  it('keeps Row progress exactly as it was', () => {
     const before = setRowProgressEnabled(moveToRow(distinctlyPainted(), 1), true)
 
     const replaced = replaceBead(before, cubeBead)
 
-    expect(replaced.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(replaced.rowProgress).toBe(before.rowProgress)
   })
 
   it('keeps name, technique and rotation exactly as they were', () => {
@@ -1056,6 +1053,15 @@ describe('replaceBead', () => {
     expect(replaced.name).toBe(before.name)
     expect(replaced.technique).toBe(before.technique)
     expect(replaced.rotated).toBe(before.rotated)
+  })
+
+  it('works on a Pattern that was created in mm too, since nothing of the mm size is kept', () => {
+    const before = createPattern({ technique: 'loom', beadId: roundBead.id, size: { width: 15, height: 30, unit: 'mm' } })
+
+    const replaced = replaceBead(before, cubeBead)
+
+    expect(replaced.columns).toBe(before.columns)
+    expect(replaced.rows).toBe(before.rows)
   })
 
   it('bumps updatedAt', () => {
@@ -1093,23 +1099,33 @@ describe('restoreSnapshot', () => {
     expect(restored.rowProgress).toEqual(before.rowProgress)
   })
 
-  it('restores the Bead id and grid dimensions when the undo entry carries them (Replace Bead, ticket 48)', () => {
+  it('restores the Bead id when the undo entry carries it (Replace Bead, ticket 48), leaving the grid as the entry has it', () => {
     const before = createPattern({
       technique: 'loom',
       beadId: roundBead.id,
-      size: { width: 8.8, height: 4.4, unit: 'mm' },
+      size: { width: 8, height: 4, unit: 'beads' },
     })
     const replaced = replaceBead(before, cubeBead)
 
-    const restored = restoreSnapshot(replaced, {
-      grid: before.grid,
-      rowProgress: before.rowProgress,
-      bead: { beadId: before.beadId, columns: before.columns, rows: before.rows, mirrorAxisCounts: { columns: 0, rows: 0 } },
-    })
+    const restored = restoreSnapshot(replaced, { grid: before.grid, beadId: before.beadId })
 
     expect(restored.beadId).toBe(before.beadId)
     expect(restored.columns).toBe(before.columns)
     expect(restored.rows).toBe(before.rows)
+    expect(restored.grid).toBe(before.grid)
+  })
+
+  it('restores the grid dimensions when the undo entry carries them (Resize, ADR 0017)', () => {
+    const before = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
+    const resized = resizePattern(before, { columns: 2, rows: 5 })
+
+    const restored = restoreSnapshot(resized, {
+      grid: before.grid,
+      size: { columns: before.columns, rows: before.rows, mirrorAxisCounts: { columns: 0, rows: 0 } },
+    })
+
+    expect(restored.columns).toBe(4)
+    expect(restored.rows).toBe(3)
     expect(restored.grid).toBe(before.grid)
   })
 })
@@ -1166,6 +1182,19 @@ describe('normalizePattern', () => {
       currentRow: 5,
       currentColumn: 0,
     })
+  })
+
+  it('drops the stored real-world size a Pattern saved before ADR 0017 still carries, and keeps its grid', () => {
+    const base = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
+    const legacy = { ...base, widthMm: 15, heightMm: 30 }
+
+    const normalized = normalizePattern(legacy as Pattern)
+
+    expect(normalized).not.toHaveProperty('widthMm')
+    expect(normalized).not.toHaveProperty('heightMm')
+    expect(normalized.columns).toBe(10)
+    expect(normalized.rows).toBe(20)
+    expect(normalized.grid).toBe(base.grid)
   })
 
   it('clamps row and column pointers that no longer fit the Pattern', () => {
@@ -1294,7 +1323,7 @@ describe('Image colors are frozen (ADR 0011)', () => {
     expect(erased.imageColors).toEqual(['#ff0000'])
   })
 
-  it('survives a Replace Bead, which resamples the whole grid', () => {
+  it('survives a Replace Bead', () => {
     const replaced = replaceBead(converted(), roundBead)
 
     expect(replaced.imageColors).toEqual(['#ff0000'])

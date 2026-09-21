@@ -32,7 +32,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
 }
 
 describe('Toolbox', () => {
-  it('renders five Tool groups in order: Tools, Colors, Edit, Mirror, Row progress', () => {
+  it('renders six Tool groups in order: Tools, Colors, Edit, Mirror, Size, Row progress', () => {
     const wrapper = mountToolbox()
 
     const groups = wrapper.findAll('.tool-group')
@@ -41,6 +41,7 @@ describe('Toolbox', () => {
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
       ru.toolbox.groups.mirror,
+      ru.toolbox.groups.size,
       ru.toolbox.groups.rowProgress,
     ])
   })
@@ -143,7 +144,7 @@ describe('Toolbox', () => {
   it('puts the row progress controls and readout inside the Row progress group', () => {
     const wrapper = mountToolbox()
 
-    const rowProgressGroup = wrapper.findAll('.tool-group')[4]!
+    const rowProgressGroup = wrapper.findAll('.tool-group')[5]!
     for (const testId of [
       'row-progress-enabled',
       'row-progress-direction',

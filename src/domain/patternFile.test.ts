@@ -138,6 +138,28 @@ describe('parsePatternsFile', () => {
     })
   })
 
+  it('still imports a file exported before ADR 0017, ignoring the millimetre size it stored and keeping the grid', () => {
+    const original = makePattern()
+    const file = JSON.parse(serializePattern(original))
+    file.patterns[0].widthMm = 15
+    file.patterns[0].heightMm = 15
+
+    const { patterns } = parsePatternsFile(JSON.stringify(file))
+
+    expect(patterns[0]!.columns).toBe(original.columns)
+    expect(patterns[0]!.rows).toBe(original.rows)
+    expect(patterns[0]!.grid).toEqual(original.grid)
+    expect(patterns[0]).not.toHaveProperty('widthMm')
+    expect(patterns[0]).not.toHaveProperty('heightMm')
+  })
+
+  it('writes no millimetre size into a file (ADR 0017)', () => {
+    const [pattern] = JSON.parse(serializePattern(makePattern())).patterns
+
+    expect(pattern).not.toHaveProperty('widthMm')
+    expect(pattern).not.toHaveProperty('heightMm')
+  })
+
   it('still imports a file exported before this change, ignoring its color-to-bead defaults and overrides', () => {
     const file = JSON.parse(serializePattern(makePattern()))
     file.colorBeadDefaults = { red: 'toho-cube-1.5mm' }

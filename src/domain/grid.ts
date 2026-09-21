@@ -1,12 +1,16 @@
 import { beadPitchMm, type Bead } from './beads'
 
-export type SizeUnit = 'mm' | 'cm'
+/** A real-world length unit. */
+export type PhysicalUnit = 'mm' | 'cm'
+
+/** What a New Pattern's size can be stated in: a count of beads, or a real-world length converted to beads once (ADR 0017). */
+export type SizeUnit = 'beads' | PhysicalUnit
 
 /** The weaving method, which determines a Pattern's grid geometry. */
 export type Technique = 'loom' | 'peyote' | 'brick'
 
-/** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06. */
-function isOffsetTechnique(technique: Technique): boolean {
+/** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06 — every other row sits half a bead across. */
+export function isOffsetTechnique(technique: Technique): boolean {
   return technique !== 'loom'
 }
 
@@ -20,7 +24,7 @@ export interface GridDimensions {
   rows: number
 }
 
-export function toMillimeters(value: number, unit: SizeUnit): number {
+export function toMillimeters(value: number, unit: PhysicalUnit): number {
   return unit === 'cm' ? value * 10 : value
 }
 

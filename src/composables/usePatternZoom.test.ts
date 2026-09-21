@@ -111,6 +111,36 @@ describe('usePatternZoom', () => {
     expect(zoomPercent.value).toBe(LARGE_FIT_PERCENT)
   })
 
+  it('re-fits when the open Pattern’s size changes, as a Resize does, while zoom is still at the fit level', async () => {
+    const width = fixedAvailableWidth()
+    const pattern = ref<Pattern>(smallPattern())
+    const { zoomPercent } = usePatternZoom(() => pattern.value, width)
+    expect(zoomPercent.value).toBe(100)
+
+    pattern.value = { ...pattern.value, columns: 60 }
+    await nextTick()
+
+    expect(zoomPercent.value).toBe(LARGE_FIT_PERCENT)
+
+    pattern.value = { ...pattern.value, columns: 10 }
+    await nextTick()
+
+    expect(zoomPercent.value).toBe(100)
+  })
+
+  it('leaves a manually chosen zoom alone when the open Pattern’s size changes', async () => {
+    const width = fixedAvailableWidth()
+    const pattern = ref<Pattern>(smallPattern())
+    const { zoomPercent, zoomOut } = usePatternZoom(() => pattern.value, width)
+    zoomOut()
+    const manualZoom = zoomPercent.value
+
+    pattern.value = { ...pattern.value, columns: 60 }
+    await nextTick()
+
+    expect(zoomPercent.value).toBe(manualZoom)
+  })
+
   it('sits at 100% while no Pattern is open', () => {
     const width = fixedAvailableWidth()
     const { zoomPercent } = usePatternZoom(() => undefined, width)

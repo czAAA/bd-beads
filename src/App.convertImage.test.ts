@@ -48,6 +48,7 @@ function twoBlocks(width = 8, height = 8): PixelData {
 
 async function stateSize(wrapper: ReturnType<typeof mount>, width: string, height: string) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
   await wrapper.find('[data-testid="width-input"]').setValue(width)
   await wrapper.find('[data-testid="height-input"]').setValue(height)
 }

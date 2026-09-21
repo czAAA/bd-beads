@@ -3,11 +3,13 @@ import { computed, ref } from 'vue'
 import CustomColorPicker from './CustomColorPicker.vue'
 import ImageColorsPicker from './ImageColorsPicker.vue'
 import PalettePicker from './PalettePicker.vue'
+import SizeControls from './SizeControls.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import type { Tool } from '../domain/tool'
 import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
 import { rowProgressPosition, type Pattern } from '../domain/pattern'
+import type { ResizeRequest } from '../domain/resize'
 
 const props = defineProps<{
   pattern: Pattern
@@ -42,6 +44,8 @@ const emit = defineEmits<{
   'toggle-row-direction': []
   'move-row': [delta: number]
   'delete-all': []
+  /** A Resize (CONTEXT.md, ADR 0017) from the Size group, in grid space. */
+  resize: [request: ResizeRequest]
 }>()
 
 const { t } = useI18n()
@@ -60,6 +64,7 @@ const toolsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const colorsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const mirrorGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
+const sizeGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const rowProgressGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 
 /**
@@ -69,7 +74,7 @@ const rowProgressGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
  * Escape press was "used up" by collapsing a group or should fall through to its usual Select precedence.
  */
 function collapseExpandedGroup(): boolean {
-  const groups = [toolsGroupRef, colorsGroupRef, editGroupRef, mirrorGroupRef, rowProgressGroupRef]
+  const groups = [toolsGroupRef, colorsGroupRef, editGroupRef, mirrorGroupRef, sizeGroupRef, rowProgressGroupRef]
   const collapsed = groups.map((group) => group.value?.collapse() ?? false)
   return collapsed.some(Boolean)
 }
@@ -378,6 +383,14 @@ const topBottomMax = computed(() =>
           <path d="M7 15.5 12 20.5l5-5z" />
         </svg>
       </button>
+    </ToolGroup>
+
+    <!--
+      Estimated size and Resize (CONTEXT.md, ADR 0017). One full-row control, like Mirror's counters: it lays its own
+      readout, inputs and notes out inside, and doesn't count toward the group's 14-control cap.
+    -->
+    <ToolGroup ref="sizeGroupRef" :title="t.toolbox.groups.size" data-testid="tool-group-size">
+      <SizeControls class="tool-group__full-row" :pattern="pattern" @resize="(request) => emit('resize', request)" />
     </ToolGroup>
 
     <ToolGroup

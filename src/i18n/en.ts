@@ -14,6 +14,7 @@ export const en: Translations = {
     widthLabel: 'Width',
     heightLabel: 'Height',
     unitLabel: 'Unit',
+    unitBeads: 'beads',
     unitMm: 'mm',
     unitCm: 'cm',
     submit: 'Create Pattern',
@@ -102,8 +103,27 @@ export const en: Translations = {
       colors: 'Colors',
       edit: 'Edit',
       mirror: 'Mirror',
+      size: 'Size',
       rowProgress: 'Row progress',
     },
+  },
+  size: {
+    estimateLabel: 'Estimated size',
+    estimateInfoButton: 'About this estimate',
+    estimateWarning:
+      'These sizes are an estimate. We work them out from the size of one bead multiplied by how many beads you have across and down. A real piece often comes out a little different: thread, tension and small differences between beads all add up. Treat it as a guide, not a measurement.',
+    columnsLabel: 'Columns',
+    rowsLabel: 'Rows',
+    changeFromLabel: 'Change from',
+    fromEnd: 'end',
+    fromStart: 'start',
+    lockedReason: 'Turn off Row progress to change the size',
+    pairsHint: 'From the start, rows change two at a time so the beads keep their stagger.',
+  },
+  sizeCap: {
+    beads: "That's {count} beads; the limit is {limit}.",
+    tall: 'With {bead} a Pattern can hold up to {limit} beads. At this width, that\u2019s up to {size} {unit} tall.',
+    wide: 'With {bead} a Pattern can hold up to {limit} beads. At this height, that\u2019s up to {size} {unit} wide.',
   },
   deleteAll: {
     button: 'Delete all',
@@ -136,9 +156,9 @@ export const en: Translations = {
   },
   replaceBead: {
     selectLabel: 'Replace bead',
-    newSizeLabel: 'New size',
     confirmTitle: 'Replace bead?',
-    confirmMessage: 'Existing colors will be rescaled to fit, and Row progress and Mirror will reset. This can be undone.',
+    confirmMessage:
+      'With {bead}, this Pattern will be about {new} instead of {old}. Your design and its bead count stay exactly the same. If you\u2019d like to get back to the size you had, you can add or remove rows and columns afterwards. You can undo this.',
     confirmButton: 'Replace bead',
     cancelButton: 'Cancel',
   },

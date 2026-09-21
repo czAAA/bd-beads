@@ -97,12 +97,12 @@ export function useMirrorState(
     commitGridChange(pattern, mirrorCurrent(pattern, gridAxis, axisCounts.value[gridAxis], copyMode.value))
   }
 
-  /** Restores axis counts from an Undo/Redo snapshot (ReplaceBeadSnapshot.mirrorAxisCounts) -- not a Pattern field, so restoreSnapshot alone can't apply it. */
+  /** Restores axis counts from an Undo/Redo snapshot (SizeSnapshot.mirrorAxisCounts) -- not a Pattern field, so restoreSnapshot alone can't apply it. */
   function restoreAxisCounts(counts: MirrorAxisCounts) {
     axisCounts.value = counts
   }
 
-  /** Replace Bead resets just the axis counts (ticket 48): the grid it was clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
+  /** A Resize resets just the axis counts (ADR 0017): the grid they were clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
   function clearAxisCounts() {
     axisCounts.value = { ...NO_MIRROR_AXES }
   }
