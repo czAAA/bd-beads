@@ -985,25 +985,25 @@ describe('deleteAll', () => {
 
 describe('previewReplaceBead', () => {
   it('computes the grid size the given Bead would produce at the Pattern\'s current real-world size', () => {
-    // 8.8mm x 4.4mm at Round (2.2mm) is a 4x2 grid.
+    // 6.6mm x 4.4mm at Round (1.5mm + 0.15mm correction wide, 2.2mm tall) is a 4x2 grid.
     const pattern = createPattern({
       technique: 'loom',
       beadId: roundBead.id,
-      size: { width: 8.8, height: 4.4, unit: 'mm' },
+      size: { width: 6.6, height: 4.4, unit: 'mm' },
     })
 
-    // Same real-world size at Cube (1.5mm): round(8.8/1.5)=6, round(4.4/1.5)=3.
-    expect(previewReplaceBead(pattern, cubeBead)).toEqual({ columns: 6, rows: 3 })
+    // Same real-world size at Cube (1.5mm): round(6.6/1.5)=4, round(4.4/1.5)=3.
+    expect(previewReplaceBead(pattern, cubeBead)).toEqual({ columns: 4, rows: 3 })
   })
 })
 
 describe('replaceBead', () => {
-  /** 4 columns x 2 rows (Round, 2.2mm, at 8.8mm x 4.4mm), each cell painted with a distinct color so the resize's cell mapping is checkable. */
+  /** 4 columns x 2 rows (Round, at 6.6mm x 4.4mm), each cell painted with a distinct color so the resize's cell mapping is checkable. */
   function distinctlyPainted(): Pattern {
     let pattern = createPattern({
       technique: 'loom',
       beadId: roundBead.id,
-      size: { width: 8.8, height: 4.4, unit: 'mm' },
+      size: { width: 6.6, height: 4.4, unit: 'mm' },
     })
     for (let row = 0; row < pattern.rows; row++) {
       for (let column = 0; column < pattern.columns; column++) {
@@ -1026,7 +1026,7 @@ describe('replaceBead', () => {
 
     expect(replaced.widthMm).toBe(before.widthMm)
     expect(replaced.heightMm).toBe(before.heightMm)
-    expect(replaced).toEqual(expect.objectContaining({ columns: 6, rows: 3 }))
+    expect(replaced).toEqual(expect.objectContaining({ columns: 4, rows: 3 }))
   })
 
   it('rescales existing colors onto the new grid by proportional nearest-cell resampling, not cropping', () => {
@@ -1034,9 +1034,9 @@ describe('replaceBead', () => {
 
     const colors = replaced.grid.map((row) => row.map((cell) => cell.color))
     expect(colors).toEqual([
-      ['r0c0', 'r0c0', 'r0c1', 'r0c2', 'r0c2', 'r0c3'],
-      ['r0c0', 'r0c0', 'r0c1', 'r0c2', 'r0c2', 'r0c3'],
-      ['r1c0', 'r1c0', 'r1c1', 'r1c2', 'r1c2', 'r1c3'],
+      ['r0c0', 'r0c1', 'r0c2', 'r0c3'],
+      ['r0c0', 'r0c1', 'r0c2', 'r0c3'],
+      ['r1c0', 'r1c1', 'r1c2', 'r1c3'],
     ])
   })
 

@@ -2496,7 +2496,7 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('7×14') // round(15/2.2)=7, round(30/2.2)=14
+    expect(wrapper.text()).toContain('9×14') // round(15/1.65)=9, round(30/2.2)=14
     expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
   })
 
@@ -2544,7 +2544,7 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().columns).toBe(7)
+    expect(loadedPattern().columns).toBe(9)
     expect(loadedPattern().rows).toBe(14)
     expect(loadedPattern().widthMm).toBe(15)
     expect(loadedPattern().heightMm).toBe(30)

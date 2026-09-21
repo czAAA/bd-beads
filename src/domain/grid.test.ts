@@ -67,6 +67,15 @@ describe('computeGridDimensions', () => {
     })
   })
 
+  it('counts columns in the bead width plus its per-bead correction', () => {
+    const correctedBead: Bead = { ...cubeBead, widthMm: 1.5, widthCorrectionMm: 0.15 }
+    // 15 / 1.65 = 9.1 columns, where the bare 1.5mm width would give 10. Rows ignore the correction.
+    expect(computeGridDimensions({ widthMm: 15, heightMm: 15 }, correctedBead)).toEqual({
+      columns: 9,
+      rows: 10,
+    })
+  })
+
   it('rounds to the nearest whole bead', () => {
     expect(computeGridDimensions({ widthMm: 17, heightMm: 17 }, cubeBead)).toEqual({
       columns: 11,
