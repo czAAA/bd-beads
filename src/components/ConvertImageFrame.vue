@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import type { Bead } from '../domain/beads'
+import { beadPitchMm, type Bead } from '../domain/beads'
 import {
   CELL_SIZE_PX,
   GRID_BORDER_PX,
@@ -162,7 +162,7 @@ const panRangeMm = computed(() => ({
  * screen row and the millimetre row, so it cancels here.
  */
 const mmPerScreenPx = computed(() => ({
-  x: props.bead.widthMm / (CELL_SIZE_PX * fitScale.value),
+  x: beadPitchMm(props.bead) / (CELL_SIZE_PX * fitScale.value),
   y: props.bead.heightMm / (CELL_SIZE_PX * fitScale.value),
 }))
 

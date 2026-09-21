@@ -1,4 +1,4 @@
-import type { Bead } from './beads'
+import { beadPitchMm, type Bead } from './beads'
 import { cellCenter, rowHeightPx, type GridDimensions, type Technique } from './grid'
 import { nearestColor, resolveImageColors, toHex } from './imageColors'
 import {
@@ -191,7 +191,7 @@ interface SamplingInput {
   image: PixelData
   view: FramingView
   technique: Technique
-  bead: Pick<Bead, 'widthMm' | 'heightMm'>
+  bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
 
 /**
@@ -206,7 +206,7 @@ function sampleCell(
   originXMm: number,
   originYMm: number,
 ): string | undefined {
-  const center = cellCenter(technique, { row, column }, bead.widthMm, bead.heightMm)
+  const center = cellCenter(technique, { row, column }, beadPitchMm(bead), bead.heightMm)
   const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
   return pixel && pixelColorAt(image, pixel.x, pixel.y)
 }
@@ -229,7 +229,7 @@ export function sampleLattice(
    * whole number of rows down, so a lattice cell's centre is its frame cell's centre plus exactly this — including the
    * half-cell stagger, which matches because frameRow is always even (see PreviewLattice.frameRow).
    */
-  const originXMm = lattice.frameColumn * bead.widthMm
+  const originXMm = lattice.frameColumn * beadPitchMm(bead)
   const originYMm = lattice.frameRow * rowHeightPx(technique, bead.heightMm)
 
   return Array.from({ length: lattice.rows }, (_row, row) =>

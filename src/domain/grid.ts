@@ -1,4 +1,4 @@
-import type { Bead } from './beads'
+import { beadPitchMm, type Bead } from './beads'
 
 export type SizeUnit = 'mm' | 'cm'
 
@@ -25,7 +25,7 @@ export function toMillimeters(value: number, unit: SizeUnit): number {
 }
 
 export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDimensions {
-  const columns = Math.max(1, Math.round(size.widthMm / bead.widthMm))
+  const columns = Math.max(1, Math.round(size.widthMm / beadPitchMm(bead)))
   const rows = Math.max(1, Math.round(size.heightMm / bead.heightMm))
   return { columns, rows }
 }
@@ -90,7 +90,7 @@ export interface CellCenter {
 /**
  * Where a cell's centre sits inside the grid's own footprint, measured from its top-left corner in the same unit as
  * the cell size passed in — screen px at CELL_SIZE_PX, or real millimetres when called with a Bead's own footprint
- * (`bead.widthMm`/`bead.heightMm`), which is what Convert image samples a picture at (ticket 58, ADR 0010).
+ * (`beadPitchMm(bead)`/`bead.heightMm`), which is what Convert image samples a picture at (ticket 58, ADR 0010).
  *
  * This is the Technique's real geometry rather than a plain rectangle: peyote's and brick stitch's odd rows are
  * shifted half a cell sideways (rowOffsetPx) and peyote's rows are packed tighter than a full cell (rowHeightPx), so

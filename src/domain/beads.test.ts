@@ -1,8 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { findBead } from './beads'
+import { beadPitchMm, findBead } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
+})
+
+describe('beadPitchMm', () => {
+  it('is the width alone when the bead has no correction', () => {
+    expect(beadPitchMm({ widthMm: 1.5 })).toBe(1.5)
+  })
+
+  it('adds the per-bead correction to the width', () => {
+    expect(beadPitchMm({ widthMm: 1.5, widthCorrectionMm: 0.15 })).toBeCloseTo(1.65)
+  })
+
+  it('makes 15mm of TOHO Round 11/0 nine columns and 160mm seventy-three rows, as measured on a loom', () => {
+    const round = findBead('toho-round-11-0')!
+    expect(Math.round(15 / beadPitchMm(round))).toBe(9)
+    expect(Math.round(160 / round.heightMm)).toBe(73)
+  })
 })
 
 describe('findBead', () => {
