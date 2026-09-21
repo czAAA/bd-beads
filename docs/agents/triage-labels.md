@@ -11,4 +11,4 @@ This repo uses six canonical triage labels:
 | `wontfix` | Intentionally not addressed |
 | `done` | Implemented and shipped |
 
-These labels are stored in the frontmatter of `.scratch/<issue>/issue.md` and managed by the `triage` skill.
+These labels are stored in the `**Status:**` line of each ticket in `.scratch/NN-slug.md` and managed by the `triage` skill.
