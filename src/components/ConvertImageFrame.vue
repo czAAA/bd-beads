@@ -1,29 +1,28 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
 import { beadPitchMm, type Bead } from '../domain/beads'
 import {
   CELL_SIZE_PX,
   GRID_BORDER_PX,
   CANVAS_MAX_PX,
   computeFitZoom,
-  gridHeightPx,
-  gridWidthPx,
-  rowHeightPx,
-  rowOffsetPx,
   type GridDimensions,
   type Technique,
 } from '../domain/grid'
+import { approximatePreviewColors, exactPreviewColors } from '../domain/framingPreview'
 import {
   MAX_IMAGE_COLORS,
   MIN_IMAGE_COLORS,
-  convertSampledFrame,
-  previewColorOutsideFrame,
-  sampleLattice,
+  convertPackedFrame,
+  sampleLatticePacked,
   type ConvertedImage,
   type PixelData,
 } from '../domain/imageConversion'
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../domain/imageFraming'
+import type { Cell, Grid } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
+import type { BeadDrawer } from '../rendering/beadLook'
+import { patternExtentPx, renderPattern, rowTopPx } from '../rendering/patternRenderer'
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
@@ -31,12 +30,18 @@ import { useI18n } from '../i18n/useI18n'
  * right part is inside.
  *
  * The preview is the conversion, not a picture of it. Every bead on screen comes out of one sampling pass (see
- * sampleLattice), and the Pattern this creates is the block of that pass which falls inside the frame — so "what is
- * inside the frame is exactly the Pattern that will be created" is true by construction rather than by two pieces of
+ * sampleLatticePacked), and the Pattern this creates is the block of that pass which falls inside the frame — so "what
+ * is inside the frame is exactly the Pattern that will be created" is true by construction rather than by two pieces of
  * code agreeing.
  *
- * Rendered as positioned DOM elements, one per bead, the same way PatternGrid draws a Pattern — including the same
- * per-technique stagger and row packing, so the preview and the Pattern that follows it look like each other.
+ * The beads are drawn by the Pattern renderer onto one canvas (ticket 104, ADR 0018), the same way the editor draws a
+ * Pattern, so the preview and the Pattern that follows it look like each other in every Technique. The frame outline
+ * and the dimming around it stay ordinary elements over the canvas.
+ *
+ * Reducing a picture to the chosen number of colors costs more than a frame of a drag has to spend, so while the
+ * picture is being dragged the beads take the colors the conversion had when the drag began (each to the nearest of
+ * them), and it is worked out exactly again when the drag ends or the pointer pauses. At rest, and so for Create, it is
+ * exactly the conversion, as ever.
  */
 const props = defineProps<{
   image: PixelData
@@ -50,6 +55,8 @@ const props = defineProps<{
   maxColors: number
   /** The canvas panel's measured width, so the preview is fitted to the room actually available. */
   availableWidth: number
+  /** How one bead is drawn; the renderer's own flat bead unless given. */
+  drawBead?: BeadDrawer
 }>()
 
 const emit = defineEmits<{
@@ -61,61 +68,110 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** How long the pointer has to stay still, mid-drag, before the colors are worked out exactly. */
+const PAUSE_MS = 150
+
 /** The Pattern's own real-world footprint — what the picture is framed against (ADR 0010). */
 const frame = computed(() => frameSizeMm(props.technique, props.dimensions, props.bead))
 
-/** Where the picture sits under the frame right now, in the frame's millimetres. */
-const view = computed(() => framingView(props.image, frame.value, props.zoom, props.pan))
+const dragging = ref(false)
+
+/**
+ * The pan the exact conversion is for. It is the live pan whenever the picture is at rest, and stays where it was while
+ * a drag is going on (until the drag ends or pauses): everything worked out from it below is then not recomputed on each
+ * move, and its Image colors are the ones held for the approximate colors.
+ */
+const restPan = shallowRef<PanFraction>(props.pan)
+let pauseTimer: ReturnType<typeof setTimeout> | undefined
+
+function settle(): void {
+  clearTimeout(pauseTimer)
+  pauseTimer = undefined
+  restPan.value = props.pan
+}
+
+watch(
+  () => props.pan,
+  () => {
+    if (!dragging.value) {
+      settle()
+      return
+    }
+    clearTimeout(pauseTimer)
+    pauseTimer = setTimeout(settle, PAUSE_MS)
+  },
+  { flush: 'sync' },
+)
+
+/** Where the picture sits under the frame at rest, and everything the exact conversion follows from it. */
+const restView = computed(() => framingView(props.image, frame.value, props.zoom, restPan.value))
 
 /** The block of beads drawn: the frame, plus as much of the picture around it as the budget allows. */
-const lattice = computed(() =>
-  previewLattice({
-    view: view.value,
+function latticeFor(view: ReturnType<typeof framingView>) {
+  return previewLattice({
+    view,
     frame: frame.value,
     dimensions: props.dimensions,
     bead: props.bead,
     technique: props.technique,
-  }),
-)
+  })
+}
 
-/** One sampling pass over the whole lattice — the frame's own cells included. */
-const sampled = computed(() =>
-  sampleLattice({
+function sampledFor(view: ReturnType<typeof framingView>, lattice: ReturnType<typeof latticeFor>) {
+  return sampleLatticePacked({
     image: props.image,
-    view: view.value,
+    view,
     technique: props.technique,
     bead: props.bead,
-    lattice: lattice.value,
-  }),
-)
+    lattice,
+  })
+}
+
+const restLattice = computed(() => latticeFor(restView.value))
+const restSampled = computed(() => sampledFor(restView.value, restLattice.value))
 
 /** The Pattern this would create: the frame's block of that same pass, reduced to at most maxColors colors. */
 const converted = computed(() =>
-  convertSampledFrame(sampled.value, lattice.value, props.dimensions, props.maxColors),
+  convertPackedFrame(restSampled.value, restLattice.value, props.dimensions, props.maxColors),
 )
 
-/**
- * What each lattice bead shows. Inside the frame it is the converted grid itself. Outside it is the nearest Image
- * color, so the surround reads as part of the same bead picture rather than as unquantized pixels — it is context for
- * judging the crop, and it is dimmed (see the frame overlay below) precisely because it is not the Pattern.
- */
-const beadColors = computed(() => {
-  const { frameRow, frameColumn, rows, columns } = lattice.value
-  const { grid, imageColors } = converted.value
+/** Whether the picture is away from where the exact conversion was made, which is the only time the beads are approximate. */
+const moving = computed(() => dragging.value && props.pan !== restPan.value)
 
-  return Array.from({ length: rows }, (_row, row) =>
-    Array.from({ length: columns }, (_cell, column) => {
-      const inFrame = grid[row - frameRow]?.[column - frameColumn]
-      return inFrame
-        ? inFrame.color ?? undefined
-        : previewColorOutsideFrame(imageColors, sampled.value[row]?.[column])
-    }),
+const liveView = computed(() => (moving.value ? framingView(props.image, frame.value, props.zoom, props.pan) : restView.value))
+const lattice = computed(() => (moving.value ? latticeFor(liveView.value) : restLattice.value))
+const sampled = computed(() => (moving.value ? sampledFor(liveView.value, lattice.value) : restSampled.value))
+
+/**
+ * What each lattice bead shows. At rest, inside the frame it is the converted grid itself and outside it is the nearest
+ * Image color, so the surround reads as part of the same bead picture rather than as unquantized pixels — it is context
+ * for judging the crop, and it is dimmed (see the frame overlay below) precisely because it is not the Pattern. While
+ * the picture moves, every bead is the nearest of the colors held from when the move began.
+ */
+const beadColors = computed(() =>
+  moving.value
+    ? approximatePreviewColors(sampled.value, converted.value.imageColors)
+    : exactPreviewColors(sampled.value, lattice.value, props.dimensions, converted.value),
+)
+
+/** The lattice as a block of beads for the renderer: not a saved Pattern, but shaped like one, with no Row progress and upright. */
+const drawnPattern = computed(() => {
+  const { columns, rows } = lattice.value
+  const grid: Grid = Array.from({ length: rows }, (_row, row) =>
+    Array.from({ length: columns }, (_cell, column): Cell => ({ color: beadColors.value[row * columns + column] ?? null })),
   )
+  return {
+    technique: props.technique,
+    columns,
+    rows,
+    grid,
+    rowProgress: { enabled: false, direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
+    rotated: false,
+  }
 })
 
 /** The lattice at its natural bead size, in unscaled px. */
-const latticeWidthPx = computed(() => gridWidthPx(props.technique, lattice.value.columns))
-const latticeHeightPx = computed(() => gridHeightPx(props.technique, lattice.value.rows))
+const latticeExtent = computed(() => patternExtentPx(props.technique, lattice.value.columns, lattice.value.rows))
 
 /**
  * How much the whole preview is scaled down to fit the canvas panel. Only the drawing scales — the frame is still the
@@ -133,33 +189,66 @@ const fitScale = computed(() =>
 )
 
 /** The frame drawn over the beads: the lattice cells that are the Pattern, outlined and left undimmed. */
-const frameStyle = computed(() => ({
-  left: `${lattice.value.frameColumn * CELL_SIZE_PX}px`,
-  top: `${lattice.value.frameRow * rowHeightPx(props.technique)}px`,
-  width: `${gridWidthPx(props.technique, props.dimensions.columns)}px`,
-  height: `${gridHeightPx(props.technique, props.dimensions.rows)}px`,
-}))
+const frameStyle = computed(() => {
+  const { width, height } = patternExtentPx(props.technique, props.dimensions.columns, props.dimensions.rows)
+  return {
+    left: `${lattice.value.frameColumn * CELL_SIZE_PX}px`,
+    top: `${rowTopPx(props.technique, lattice.value.frameRow)}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+  }
+})
 
 /** The scaled preview has no layout size of its own (a transform doesn't reflow), so the box states it. */
+const displayedSize = computed(() => ({
+  width: latticeExtent.value.width * fitScale.value,
+  height: latticeExtent.value.height * fitScale.value,
+}))
 const boxStyle = computed(() => ({
-  width: `${latticeWidthPx.value * fitScale.value}px`,
-  height: `${latticeHeightPx.value * fitScale.value}px`,
+  width: `${displayedSize.value.width}px`,
+  height: `${displayedSize.value.height}px`,
 }))
 
-function rowOverlapPx(rowIndex: number): number {
-  return rowIndex === 0 ? 0 : rowHeightPx(props.technique) - CELL_SIZE_PX
-}
+const canvasEl = ref<HTMLCanvasElement>()
+
+/** Draws the beads whenever what is drawn or its scale changes, once the canvas has its new size. */
+watchPostEffect(() => {
+  const canvas = canvasEl.value
+  const pattern = drawnPattern.value
+  const { width, height } = displayedSize.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) {
+    return
+  }
+
+  // A high-density screen gets a bigger bitmap for the same CSS size, so the beads stay crisp.
+  const pixelRatio = window.devicePixelRatio || 1
+  const bitmapWidth = Math.max(1, Math.round(width * pixelRatio))
+  const bitmapHeight = Math.max(1, Math.round(height * pixelRatio))
+  if (canvas.width !== bitmapWidth || canvas.height !== bitmapHeight) {
+    canvas.width = bitmapWidth
+    canvas.height = bitmapHeight
+  }
+
+  renderPattern(context, {
+    pattern,
+    region: { x: 0, y: 0, width, height },
+    zoom: fitScale.value,
+    pixelRatio,
+    drawBead: props.drawBead,
+  })
+})
 
 /** Where the picture can still move under the frame, in millimetres: zero when it covers the frame exactly. */
 const panRangeMm = computed(() => ({
-  x: Math.max(0, view.value.pictureWidthMm - frame.value.widthMm),
-  y: Math.max(0, view.value.pictureHeightMm - frame.value.heightMm),
+  x: Math.max(0, liveView.value.pictureWidthMm - frame.value.widthMm),
+  y: Math.max(0, liveView.value.pictureHeightMm - frame.value.heightMm),
 }))
 
 /**
  * Millimetres of picture per screen pixel dragged. A bead is CELL_SIZE_PX wide on screen (before the fit scale) and
- * the Bead's own footprint in millimetres, in both directions — peyote's 0.75 row packing applies equally to the
- * screen row and the millimetre row, so it cancels here.
+ * the Bead's own footprint in millimetres in that direction; down the page, a row is the Technique's row pitch on
+ * screen and the Technique's row spacing in millimetres, the same ratio however the rows are packed.
  */
 const mmPerScreenPx = computed(() => ({
   x: beadPitchMm(props.bead) / (CELL_SIZE_PX * fitScale.value),
@@ -197,49 +286,49 @@ function endDrag(): void {
   drag.value = null
   window.removeEventListener('mousemove', onDragMove)
   window.removeEventListener('mouseup', endDrag)
+  if (dragging.value) {
+    // Back at rest: the exact colors, for whatever the pan is now.
+    dragging.value = false
+    settle()
+  }
 }
 
 /** The button can be released anywhere, so the drag is followed on the window rather than on the preview itself. */
 function onDragStart(event: MouseEvent): void {
   event.preventDefault()
   drag.value = { x: event.clientX, y: event.clientY, pan: { ...props.pan } }
+  dragging.value = true
   window.addEventListener('mousemove', onDragMove)
   window.addEventListener('mouseup', endDrag)
 }
 
-onBeforeUnmount(endDrag)
+onBeforeUnmount(() => {
+  endDrag()
+  clearTimeout(pauseTimer)
+})
 </script>
 
 <template>
   <section class="convert-image-frame" data-testid="convert-image-frame">
     <h2 class="convert-image-frame__heading">{{ t.convertImage.heading }}</h2>
 
-    <div class="convert-image-frame__box" :style="boxStyle" @mousedown.left="onDragStart">
+    <div class="convert-image-frame__box" data-testid="convert-image-box" :style="boxStyle" @mousedown.left="onDragStart">
+      <canvas
+        ref="canvasEl"
+        class="convert-image-frame__canvas"
+        data-testid="convert-image-canvas"
+        :data-technique="technique"
+        :data-columns="lattice.columns"
+        :data-rows="lattice.rows"
+        :style="boxStyle"
+      />
+
       <div
         class="convert-image-frame__lattice"
         data-testid="convert-image-lattice"
         :class="`convert-image-frame__lattice--${technique}`"
-        :style="{ transform: `scale(${fitScale})`, width: `${latticeWidthPx}px`, height: `${latticeHeightPx}px` }"
+        :style="{ transform: `scale(${fitScale})`, width: `${latticeExtent.width}px`, height: `${latticeExtent.height}px` }"
       >
-        <div
-          v-for="(row, rowIndex) in beadColors"
-          :key="rowIndex"
-          class="convert-image-frame__row"
-          data-testid="convert-image-row"
-          :style="{
-            marginLeft: `${rowOffsetPx(technique, rowIndex)}px`,
-            marginTop: `${rowOverlapPx(rowIndex)}px`,
-          }"
-        >
-          <div
-            v-for="(color, columnIndex) in row"
-            :key="columnIndex"
-            class="convert-image-frame__bead"
-            data-testid="convert-image-bead"
-            :style="{ width: `${CELL_SIZE_PX}px`, height: `${CELL_SIZE_PX}px`, backgroundColor: color }"
-          />
-        </div>
-
         <!--
           The frame itself. Its huge outward box-shadow is what dims everything around it in one element, so the part
           of the picture that isn't becoming the Pattern steps back without a second layer to keep in position.
@@ -325,33 +414,17 @@ onBeforeUnmount(endDrag)
   cursor: grabbing;
 }
 
+/* The beads are drawn on the canvas, which fills the box; the lattice over it only carries the frame outline, at the same scale. */
+.convert-image-frame__canvas {
+  display: block;
+}
+
 .convert-image-frame__lattice {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: top left;
-}
-
-.convert-image-frame__row {
-  display: flex;
-}
-
-.convert-image-frame__bead {
-  box-sizing: border-box;
-  border: 1px solid var(--color-paper);
-  /* The same "nothing here" tint an unpainted Pattern cell carries (PatternGrid.vue), for a pixel too transparent to weave. */
-  background-color: color-mix(in srgb, var(--color-ink) 25%, var(--color-paper-solid));
-}
-
-/* Peyote's interlocking beads read as diamonds, the same as in the Pattern this will create. */
-.convert-image-frame__lattice--peyote .convert-image-frame__bead {
-  border-radius: 30%;
-}
-
-.convert-image-frame__lattice--brick .convert-image-frame__row {
-  border-top: 1px solid var(--color-ink);
-}
-
-.convert-image-frame__lattice--brick .convert-image-frame__row:first-child {
-  border-top: none;
+  pointer-events: none;
 }
 
 .convert-image-frame__frame {

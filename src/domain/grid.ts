@@ -34,7 +34,7 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
   return { columns, rows }
 }
 
-/** The pixel size a pattern cell renders at (PatternGrid.vue reads this directly), so fit-zoom math lines up with the real grid. */
+/** The pixel size a bead is drawn at, at zoom 1 (the Pattern renderer's own size), so fit-zoom math lines up with what is drawn. */
 export const CELL_SIZE_PX = 20
 
 /**

@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "patterns": [
+    {
+      "id": "v2-brick",
+      "name": "Brick swatch",
+      "technique": "brick",
+      "beadId": "toho-cube-1.5mm",
+      "columns": 3,
+      "rows": 4,
+      "rowProgress": {
+        "enabled": false,
+        "direction": "rows",
+        "currentRow": 0,
+        "currentColumn": 0
+      },
+      "rotated": false,
+      "createdAt": 1710000000000,
+      "updatedAt": 1710000001000,
+      "cells": {
+        "colors": [
+          "#c81e3c",
+          "#1f1f1f",
+          "#1e64c8"
+        ],
+        "runs": "1,0,2,0,3,1,2,0,3,1,0x2"
+      }
+    },
+    {
+      "id": "v2-loom",
+      "name": "Loom rotated",
+      "technique": "loom",
+      "beadId": "toho-cube-1.5mm",
+      "columns": 4,
+      "rows": 3,
+      "rowProgress": {
+        "enabled": true,
+        "direction": "columns",
+        "currentRow": 2,
+        "currentColumn": 1
+      },
+      "rotated": true,
+      "imageColors": [
+        "#c81e3c",
+        "#1e64c8"
+      ],
+      "createdAt": 1710000002000,
+      "updatedAt": 1710000003000,
+      "cells": {
+        "colors": [
+          "#c81e3c",
+          "#1e64c8",
+          "#1f1f1f"
+        ],
+        "runs": "1,0,2,0x2,3,1,0,2,0x2,3"
+      }
+    }
+  ]
+}

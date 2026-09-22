@@ -1,10 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ConvertImageFrame from './ConvertImageFrame.vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import { CELL_SIZE_PX, gridWidthPx, rowHeightPx } from '../domain/grid'
+import { CELL_SIZE_PX, gridWidthPx } from '../domain/grid'
 import { DEFAULT_MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, type PixelData } from '../domain/imageConversion'
 import { CENTERED_PAN } from '../domain/imageFraming'
+import { installFakeCanvas } from '../testUtils/fakeCanvas'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -19,9 +21,28 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
+/** The canvas the beads are drawn on, and the beads drawn on it: jsdom has none, so a fake one is installed for each test. */
+let canvas: ReturnType<typeof installFakeCanvas>
+
+beforeEach(() => {
+  canvas = installFakeCanvas()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
+/** How the drawn lattice is laid out: its size in beads, as the canvas states it. */
+function latticeSize(wrapper: ReturnType<typeof mountFrame>): { columns: number; rows: number } {
+  const canvasEl = wrapper.find('[data-testid="convert-image-canvas"]')
+  return { columns: Number(canvasEl.attributes('data-columns')), rows: Number(canvasEl.attributes('data-rows')) }
+}
+
 function mountFrame(overrides: Partial<InstanceType<typeof ConvertImageFrame>['$props']> = {}) {
   return mount(ConvertImageFrame, {
     props: {
+      drawBead: canvas.drawBead,
       image: twoBlocks(),
       technique: 'loom',
       bead: cubeBead,
@@ -36,12 +57,12 @@ function mountFrame(overrides: Partial<InstanceType<typeof ConvertImageFrame>['$
 }
 
 describe('ConvertImageFrame', () => {
-  it('renders the picture as beads', () => {
+  it('draws the picture as beads, on a canvas', () => {
     const wrapper = mountFrame()
 
-    const rows = wrapper.findAll('[data-testid="convert-image-row"]')
-    expect(rows).toHaveLength(4)
-    expect(rows[0]!.findAll('[data-testid="convert-image-bead"]')).toHaveLength(4)
+    expect(latticeSize(wrapper)).toEqual({ columns: 4, rows: 4 })
+    expect(canvas.latest()).toHaveLength(16)
+    expect(canvas.latest().slice(0, 4).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [40, 0], [60, 0]])
   })
 
   it('draws the frame over exactly the Pattern own cells', () => {
@@ -55,8 +76,7 @@ describe('ConvertImageFrame', () => {
     // Twice as wide as tall against a square frame: half the picture's width hangs off each side.
     const wrapper = mountFrame({ image: twoBlocks(16, 8) })
 
-    const rows = wrapper.findAll('[data-testid="convert-image-row"]')
-    expect(rows[0]!.findAll('[data-testid="convert-image-bead"]').length).toBeGreaterThan(4)
+    expect(latticeSize(wrapper).columns).toBeGreaterThan(4)
 
     const outline = wrapper.find('[data-testid="convert-image-frame-outline"]')
     expect(outline.attributes('style')).not.toContain('left: 0px')
@@ -68,9 +88,8 @@ describe('ConvertImageFrame', () => {
 
     const zoomed = mountFrame({ zoom: 4 })
 
-    expect(zoomed.findAll('[data-testid="convert-image-bead"]').length).toBeGreaterThan(
-      wrapper.findAll('[data-testid="convert-image-bead"]').length,
-    )
+    const columns = (mounted: typeof wrapper) => latticeSize(mounted).columns
+    expect(columns(zoomed)).toBeGreaterThan(columns(wrapper))
     // The frame is still 4 x 4 cells at 4 x 4 cells: zoom moves the picture, not the frame.
     expect(zoomed.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
       `width: ${gridWidthPx('loom', 4)}px`,
@@ -78,13 +97,29 @@ describe('ConvertImageFrame', () => {
     expect(before).toContain(`width: ${gridWidthPx('loom', 4)}px`)
   })
 
-  it('follows the Technique own geometry, staggering peyote rows', () => {
-    const wrapper = mountFrame({ technique: 'peyote' })
+  it('follows the Technique own geometry, staggering peyote rows and rounding its beads', () => {
+    mountFrame({ technique: 'peyote' })
 
-    const rows = wrapper.findAll('[data-testid="convert-image-row"]')
-    expect(rows[0]!.attributes('style')).toContain('margin-left: 0px')
-    expect(rows[1]!.attributes('style')).toContain(`margin-left: ${CELL_SIZE_PX / 2}px`)
-    expect(rows[1]!.attributes('style')).toContain(`margin-top: ${rowHeightPx('peyote') - CELL_SIZE_PX}px`)
+    const beads = canvas.latest()
+    // Row 1 is half a bead across and tucked up under row 0, as in the Pattern itself.
+    expect(beads.filter(({ y }) => y === 0).map(({ x }) => x)).toEqual([0, 20, 40, 60])
+    expect(beads.filter(({ y }) => y === 15).map(({ x }) => x)).toEqual([10, 30, 50, 70])
+    expect(beads.every(({ cornerRadius }) => cornerRadius === 6)).toBe(true)
+  })
+
+  it('draws brick stitch a seam apart, where the frame outline follows the rows it draws', () => {
+    // A picture that hangs over the frame, so the frame sits below the first lattice rows and must land on a bead row.
+    const wrapper = mountFrame({ technique: 'brick', image: twoBlocks(8, 24) })
+
+    const beads = canvas.latest()
+    const { rows } = latticeSize(wrapper)
+    const rowTops = [...new Set(beads.map(({ y }) => y))]
+    expect(rowTops).toEqual(Array.from({ length: rows }, (_row, row) => row * (CELL_SIZE_PX + 1)))
+
+    const top = Number.parseFloat(
+      /top: ([\d.]+)px/.exec(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')!)![1]!,
+    )
+    expect(rowTops).toContain(top)
   })
 
   it('emits the converted Pattern when Create is pressed', async () => {
@@ -108,15 +143,8 @@ describe('ConvertImageFrame', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
     const converted = wrapper.emitted('create')![0]![0] as { grid: { color: string | null }[][] }
 
-    const onScreen = wrapper
-      .findAll('[data-testid="convert-image-row"]')
-      .map((row) =>
-        row.findAll('[data-testid="convert-image-bead"]').map((bead) => bead.attributes('style') ?? ''),
-      )
-
-    // rgb(255, 0, 0) is how a browser reports #ff0000 back through an inline style.
-    expect(onScreen[0]![0]).toContain('rgb(255, 0, 0)')
-    expect(onScreen[0]![3]).toContain('rgb(0, 0, 255)')
+    // The frame is the whole 4 × 4 lattice here: the first row of beads on screen is the first row of the Pattern.
+    expect(canvas.latest().slice(0, 4).map(({ color }) => color)).toEqual(['#ff0000', '#ff0000', '#0000ff', '#0000ff'])
     expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#ff0000', '#ff0000', '#0000ff', '#0000ff'])
   })
 
@@ -208,5 +236,118 @@ describe('ConvertImageFrame', () => {
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 200, clientY: 0 }))
 
     expect(wrapper.emitted('pan')).toBeUndefined()
+  })
+
+  describe('while the picture is being dragged (ticket 104)', () => {
+    /** Three colors side by side, each as wide as the frame: which one is under the frame depends only on the pan. */
+    function threeBlocks(): PixelData {
+      const rgba: number[][] = []
+      for (let y = 0; y < 8; y += 1) {
+        for (let x = 0; x < 24; x += 1) {
+          rgba.push(x < 8 ? [255, 0, 0, 255] : x < 16 ? [0, 255, 0, 255] : [0, 0, 255, 255])
+        }
+      }
+      return { width: 24, height: 8, data: new Uint8ClampedArray(rgba.flat()) }
+    }
+
+    /** The distinct colors drawn, leaving out the empty beads where the lattice reaches past the picture. */
+    const colorsOnScreen = () => [...new Set(canvas.latest().map(({ color }) => color))].filter((color) => color !== null)
+    const foundColors = (wrapper: ReturnType<typeof mountFrame>) =>
+      wrapper.find('[data-testid="convert-image-found-colors"]').text()
+
+    async function startDragAt(wrapper: ReturnType<typeof mountFrame>) {
+      await wrapper.find('.convert-image-frame__box').trigger('mousedown', { button: 0, clientX: 0, clientY: 0 })
+    }
+
+    it('shows the colors it had when the drag began, whatever the picture moves onto', async () => {
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      expect(colorsOnScreen()).toEqual(['#ff0000'])
+
+      await startDragAt(wrapper)
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+
+      // Blue is under the frame now, but the beads keep to the red they began with, and so does the count.
+      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      expect(foundColors(wrapper)).toContain('1')
+      window.dispatchEvent(new MouseEvent('mouseup'))
+    })
+
+    it('works out the exact colors again when the drag ends', async () => {
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      await startDragAt(wrapper)
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+
+      window.dispatchEvent(new MouseEvent('mouseup'))
+      await nextTick()
+
+      expect(colorsOnScreen()).toEqual(['#0000ff'])
+    })
+
+    it('works out the exact colors when the pointer pauses, and holds those from then on', async () => {
+      vi.useFakeTimers()
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      await startDragAt(wrapper)
+
+      await wrapper.setProps({ pan: { x: 0.5, y: 0.5 } })
+      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      await vi.advanceTimersByTimeAsync(200)
+      expect(colorsOnScreen()).toEqual(['#00ff00'])
+
+      // Still dragging: the beads now hold the green the pause settled on.
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+      expect(colorsOnScreen()).toEqual(['#00ff00'])
+
+      window.dispatchEvent(new MouseEvent('mouseup'))
+    })
+
+    it('does not wait for a pause while the pointer keeps moving', async () => {
+      vi.useFakeTimers()
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      await startDragAt(wrapper)
+
+      for (const x of [0.2, 0.5, 0.8, 1]) {
+        await wrapper.setProps({ pan: { x, y: 0.5 } })
+        await vi.advanceTimersByTimeAsync(100)
+      }
+
+      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      window.dispatchEvent(new MouseEvent('mouseup'))
+    })
+
+    it('creates exactly what a picture at rest in that place creates, however it got there', async () => {
+      const dragged = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      await startDragAt(dragged)
+      await dragged.setProps({ pan: { x: 0.7, y: 0.5 } })
+      window.dispatchEvent(new MouseEvent('mouseup'))
+      await nextTick()
+      const still = mountFrame({ image: threeBlocks(), pan: { x: 0.7, y: 0.5 } })
+
+      await dragged.find('[data-testid="convert-image-create"]').trigger('click')
+      await still.find('[data-testid="convert-image-create"]').trigger('click')
+
+      expect(dragged.emitted('create')![0]![0]).toEqual(still.emitted('create')![0]![0])
+      expect(foundColors(dragged)).toBe(foundColors(still))
+    })
+
+    it('shows the exact colors for a pan that arrives with no drag, such as Reset', async () => {
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+
+      expect(colorsOnScreen()).toEqual(['#0000ff'])
+    })
+  })
+
+  it('draws on a bitmap as big as the screen\'s density needs, so beads stay crisp', () => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true })
+    try {
+      const wrapper = mountFrame()
+
+      const canvasEl = wrapper.find<HTMLCanvasElement>('[data-testid="convert-image-canvas"]').element
+      const cssWidth = Number.parseFloat(canvasEl.style.width)
+      expect(canvasEl.width).toBe(Math.round(cssWidth * 2))
+    } finally {
+      Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
+    }
   })
 })

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import { beadColor, drawnPattern, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { gridWidthPx } from './domain/grid'
 import type { PixelData } from './domain/imageConversion'
@@ -164,7 +165,11 @@ describe('App Convert image framing (ticket 58)', () => {
   it('reflows the beads as the picture is zoomed', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
-    const beads = () => wrapper.findAll('[data-testid="convert-image-bead"]').length
+    // The beads are drawn on a canvas, which states the size of the lattice it draws.
+    const beads = () => {
+      const canvas = wrapper.find('[data-testid="convert-image-canvas"]')
+      return Number(canvas.attributes('data-columns')) * Number(canvas.attributes('data-rows'))
+    }
 
     const atCover = beads()
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
@@ -195,12 +200,10 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    const rows = wrapper.findAll('[data-testid="grid-row"]')
-    expect(rows).toHaveLength(20)
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')).toHaveLength(10)
+    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
     // The left half of the picture is red, the right half blue.
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain('rgb(255, 0, 0)')
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')[9]!.attributes('style')).toContain('rgb(0, 0, 255)')
+    expect(beadColor(wrapper, 0)).toBe('#ff0000')
+    expect(beadColor(wrapper, 9)).toBe('#0000ff')
   })
 
   it('saves it with its Image colors, so it survives a reload', async () => {
@@ -243,11 +246,11 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     await wrapper.find('[data-color-hex="#0000ff"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     // A stroke saves when the button is released (ticket 55), so end it before reading storage back.
     await wrapper.find('.app-shell').trigger('mouseup')
 
-    expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain('rgb(0, 0, 255)')
+    expect(beadColor(wrapper, 0)).toBe('#0000ff')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#0000ff')
   })
 
@@ -258,8 +261,8 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
 
     // Paint a color the picture never had, then erase one it did.
     await wrapper.find('[data-color-id="green"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
-    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0)
+    await pressBead(wrapper, 1, { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(new Set(loadPatterns()[0]!.imageColors)).toEqual(new Set(['#ff0000', '#0000ff']))

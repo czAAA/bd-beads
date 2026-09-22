@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, toRaw, type ComputedRef, type Ref } from 'vue'
 import type { Pattern } from '../domain/pattern'
 import { patternQrMatrix, type QrMatrix } from '../domain/qrExport'
 
@@ -30,7 +30,9 @@ function currentAppUrl(): string {
 export function useQrExport(pattern: () => Pattern | undefined): QrExport {
   const matrix = computed(() => {
     const open = pattern()
-    return open ? patternQrMatrix(open, currentAppUrl()) : undefined
+    // Read as the Pattern itself: the code reads every bead, and through the library's reactive wrapper that is a proxy
+    // per bead. It depends on the Pattern's identity alone, which every edit changes.
+    return open ? patternQrMatrix(toRaw(open), currentAppUrl()) : undefined
   })
   const tooLarge = computed(() => pattern() !== undefined && matrix.value === undefined)
 

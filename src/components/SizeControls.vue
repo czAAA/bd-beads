@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { estimatedSizeMm, formatSizeMm, sizeCapRefusal } from '../domain/patternSize'
+import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { resizeRefusal, resizeRowStep, type ResizeAnchor, type ResizeRequest } from '../domain/resize'
 import { useI18n } from '../i18n/useI18n'
@@ -19,7 +19,7 @@ const emit = defineEmits<{
   resize: [request: ResizeRequest]
 }>()
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 type ScreenDirection = 'horizontal' | 'vertical'
 type GridAxis = 'columns' | 'rows'
@@ -91,19 +91,6 @@ const estimate = computed(() => {
   )
 })
 
-/** Growing past the cap is refused in the same words as the New Pattern form's, in beads, since that is what is being changed here. */
-const capMessage = computed(() =>
-  refusal.value === 'over-cap'
-    ? sizeCapRefusal(t.value.sizeCap, {
-        unit: 'beads',
-        dimensions: request.value,
-        bead: bead.value,
-        unitLabels: unitLabels.value,
-        locale: locale.value,
-      })
-    : undefined,
-)
-
 /** How much the input for this direction steps by; 2 only for the grid's rows from the start on peyote and brick stitch. */
 function stepOf(direction: ScreenDirection): number {
   return axisOf(direction) === 'rows' ? resizeRowStep(props.pattern.technique, from.value[direction]) : 1
@@ -123,14 +110,9 @@ function onInput(direction: ScreenDirection, event: Event) {
 /**
  * Commits the inputs as one Resize when an edit is finished (blur, Enter, or a stepper click) rather than on every
  * keystroke, so typing "24" doesn't resize to 2 on the way — each of those would be an undo step, and shrinking one
- * drops painted cells. A size over the cap stays on screen with its message instead of snapping back, so it can be
- * read and corrected; any other refusal (not a whole number, or an odd change of rows in pairs) puts the count back.
+ * drops painted cells. A refusal (not a whole number, or an odd change of rows in pairs) puts the count back.
  */
 function onChange() {
-  if (refusal.value === 'over-cap') {
-    return
-  }
-
   const changesSize = request.value.columns !== props.pattern.columns || request.value.rows !== props.pattern.rows
   if (!refusal.value && changesSize) {
     emit('resize', request.value)
@@ -237,9 +219,6 @@ const tipOpen = ref(false)
     </div>
 
     <p v-if="pairsHintShown" class="size-controls__note" data-testid="size-pairs-hint">{{ t.size.pairsHint }}</p>
-    <p v-if="capMessage" class="size-controls__note size-controls__note--error" role="alert" data-testid="size-message">
-      {{ capMessage }}
-    </p>
   </div>
 </template>
 

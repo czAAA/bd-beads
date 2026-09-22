@@ -1,6 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import {
+  beadColor,
+  drawnPattern,
+  hoverBead,
+  leaveSurface,
+  pressBead,
+  previewedBeads,
+  rowProgressView,
+  selectedBeadCount,
+} from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { PALETTE } from './domain/palette'
 import { createPattern, type Pattern } from './domain/pattern'
@@ -78,7 +88,7 @@ describe('App', () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="grid-row"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(false)
   })
 
   it('disables the new pattern button until at least one pattern exists', async () => {
@@ -100,9 +110,7 @@ describe('App', () => {
 
     await createPatternViaForm(wrapper, '15', '30')
 
-    const rows = wrapper.findAll('[data-testid="grid-row"]')
-    expect(rows).toHaveLength(20)
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')).toHaveLength(10)
+    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(1)
@@ -120,9 +128,7 @@ describe('App', () => {
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="bead-select"]').exists()).toBe(false)
-    const rows = afterReload.findAll('[data-testid="grid-row"]')
-    expect(rows).toHaveLength(20)
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')).toHaveLength(10)
+    expect(drawnPattern(afterReload)).toMatchObject({ rows: 20, columns: 10 })
   })
 
   it('shows a summary of the currently open pattern', async () => {
@@ -159,9 +165,7 @@ describe('App', () => {
 
     await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
 
-    const rows = wrapper.findAll('[data-testid="grid-row"]')
-    expect(rows).toHaveLength(20)
-    expect(rows[0]!.findAll('[data-testid="grid-cell"]')).toHaveLength(10)
+    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
   })
 
   it('removing the open pattern switches to another remaining one', async () => {
@@ -224,7 +228,7 @@ describe('App', () => {
     expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(false)
     expect(mainPanel.find('[data-testid="palette-picker"]').exists()).toBe(true)
-    expect(canvas.find('[data-testid="grid-row"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="pattern-surface"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
     expect(belowCanvas.find('[data-testid="pattern-list"]').exists()).toBe(true)
   })
@@ -309,11 +313,9 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
-    expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
-      'background-color: rgb(230, 55, 70)',
-    )
+    expect(beadColor(wrapper, 0)).toBe('#e63746')
 
     // Releasing the button ends the stroke, which is when a stroke reaches storage (ticket 55).
     await wrapper.trigger('mouseup')
@@ -330,7 +332,7 @@ describe('App', () => {
     await wrapper.find('form').trigger('submit')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
@@ -341,16 +343,15 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerdown')
-    await cells[10]!.trigger('pointerdown')
-    await cells[11]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
+    await pressBead(wrapper, 1)
+    await pressBead(wrapper, 10)
+    await pressBead(wrapper, 11)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     const grid = loadPatterns()[0]!.grid
     expect(grid[0]![0]!.color).toBe('#2f6fed')
@@ -366,13 +367,12 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
+    await pressBead(wrapper, 1)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#2f6fed')
 
@@ -388,13 +388,12 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
+    await pressBead(wrapper, 1)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
@@ -409,7 +408,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // paint (0,0)
+    await pressBead(wrapper, 0) // paint (0,0)
     await wrapper.trigger('mouseup')
     const beforeRotate = loadPatterns()[0]!
 
@@ -451,7 +450,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '4.5', '3')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
@@ -469,7 +468,7 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
 
@@ -488,16 +487,16 @@ describe('App', () => {
 
     // Mirror off while painting (0,0), so (0,1) starts out unpainted.
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerenter') // (0,0)
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(1) // no mirrored counterpart previewed
+    await hoverBead(wrapper, 0) // (0,0)
+    expect(previewedBeads(wrapper)).toHaveLength(1) // no mirrored counterpart previewed
 
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // fill (0,0), mirror on
+    await pressBead(wrapper, 0) // fill (0,0), mirror on
 
     const grid = loadPatterns()[0]!.grid
     expect(grid[0]![0]!.color).toBe('#2f6fed')
@@ -511,7 +510,7 @@ describe('App', () => {
 
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
@@ -525,7 +524,7 @@ describe('App', () => {
     customColorInput.element.value = '#123456'
     await customColorInput.trigger('input')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#123456')
@@ -573,8 +572,7 @@ describe('App', () => {
     customColorInput.element.value = '#abcdef'
     await customColorInput.trigger('input')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#abcdef')
@@ -588,7 +586,7 @@ describe('App', () => {
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
     await customColorInput.trigger('input')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
@@ -599,10 +597,9 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[2]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     const grid = loadPatterns()[0]!.grid
@@ -618,10 +615,9 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[2]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -640,10 +636,9 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[2]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
@@ -664,9 +659,8 @@ describe('App', () => {
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown') // (0,0) -> mirrors to (0,1)
-    await cells[2]!.trigger('pointerenter', { buttons: 1 }) // (1,0) -> mirrors to (1,1)
+    await pressBead(wrapper, 0) // (0,0) -> mirrors to (0,1)
+    await hoverBead(wrapper, 2, { buttons: 1 }) // (1,0) -> mirrors to (1,1)
     await wrapper.trigger('mouseup')
 
     const grid = loadPatterns()[0]!.grid
@@ -679,21 +673,20 @@ describe('App', () => {
   it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     // Isolate cell 5 from cell 6 with different colors, so flood-fill's own same-color spread can't
     // explain either cell's result — only a (nonexistent) drag continuation could paint cell 6 green.
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[5]!.trigger('pointerdown')
+    await pressBead(wrapper, 5)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[6]!.trigger('pointerdown')
+    await pressBead(wrapper, 6)
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-color-id="green"]').trigger('click')
-    await cells[5]!.trigger('pointerdown')
-    await cells[6]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 5)
+    await hoverBead(wrapper, 6, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     const grid = loadPatterns()[0]!.grid
@@ -704,14 +697,13 @@ describe('App', () => {
   it('right-clicks a single cell to erase it with the Paint tool', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
 
-    await cells[0]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
@@ -720,17 +712,16 @@ describe('App', () => {
   it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[2]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    await cells[0]!.trigger('pointerdown', { button: 2 })
-    await cells[1]!.trigger('pointerenter', { buttons: 2 })
-    await cells[2]!.trigger('pointerenter', { buttons: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
+    await hoverBead(wrapper, 1, { buttons: 2 })
+    await hoverBead(wrapper, 2, { buttons: 2 })
     await wrapper.trigger('mouseup')
 
     let grid = loadPatterns()[0]!.grid
@@ -749,15 +740,14 @@ describe('App', () => {
   it('right-click erase under Paint also erases the mirrored counterpart cell(s), same as painting', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[0]!.trigger('pointerdown') // paints (0,0) and (0,1)
+    await pressBead(wrapper, 0) // paints (0,0) and (0,1)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
 
-    await cells[0]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
     await wrapper.trigger('mouseup')
 
     const grid = loadPatterns()[0]!.grid
@@ -768,18 +758,17 @@ describe('App', () => {
   it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[10]!.trigger('pointerenter', { buttons: 1 })
-    await cells[11]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 10, { buttons: 1 })
+    await hoverBead(wrapper, 11, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-    await cells[0]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
 
     const grid = loadPatterns()[0]!.grid
     expect(grid[0]![0]!.color).toBeNull()
@@ -793,15 +782,14 @@ describe('App', () => {
   it('undoes a single-click flood-erase as one step', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-    await cells[0]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -816,7 +804,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    wrapper.find('[data-testid="grid-cell"]').element.dispatchEvent(event)
+    wrapper.find('[data-testid="pattern-surface"]').element.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
   })
@@ -826,10 +814,10 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
@@ -850,7 +838,7 @@ describe('App', () => {
     )
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
@@ -863,10 +851,10 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -885,10 +873,10 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
@@ -908,7 +896,7 @@ describe('App', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
@@ -924,13 +912,13 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
 
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('pointerdown')
+    await pressBead(wrapper, 1)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
@@ -942,7 +930,7 @@ describe('App', () => {
     const firstId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
@@ -972,15 +960,13 @@ describe('App', () => {
     await createPatternViaForm(first, '15', '30')
 
     await first.find('[data-color-id="red"]').trigger('click')
-    await first.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(first, 0)
     await first.trigger('mouseup')
     first.unmount()
 
     const afterReload = mount(App)
 
-    expect(afterReload.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
-      'background-color: rgb(230, 55, 70)',
-    )
+    expect(beadColor(afterReload, 0)).toBe('#e63746')
   })
 
   it('never renders the Bead catalog section (ticket 38): the catalog is a fixed built-in list', () => {
@@ -1023,10 +1009,10 @@ describe('App', () => {
 
     const wrapper = mount(App)
 
-    expect(wrapper.findAll('[data-testid="grid-cell"]')).not.toHaveLength(0)
+    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
 
@@ -1319,7 +1305,7 @@ describe('App keyboard shortcuts', () => {
   async function paintFirstCell(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
   }
 
@@ -1428,9 +1414,8 @@ describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await pressKey({ key: '1' })
@@ -1479,7 +1464,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await createPatternViaForm(wrapper, '15', '30')
 
       await pressKey({ code, shiftKey: true })
-      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+      await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
 
       expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe(color.hex)
@@ -1494,7 +1479,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await createPatternViaForm(wrapper, '15', '30')
 
       await pressKey({ code: 'Digit2', shiftKey: true }, field)
-      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+      await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
 
       // Red is still the default selected color (ticket 27); Shift+2 (orange) never landed.
@@ -1507,7 +1492,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
 
 describe('App Erase tool (ticket 89)', () => {
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.trigger('mouseup')
   }
 
@@ -1567,7 +1552,7 @@ describe('App Erase tool (ticket 89)', () => {
     await paintedSmallPattern(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
 
     expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
   })
@@ -1575,16 +1560,15 @@ describe('App Erase tool (ticket 89)', () => {
 
 describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[indices[0]!]!.trigger('pointerdown')
+    await pressBead(wrapper, indices[0]!)
     for (const index of indices.slice(1)) {
-      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+      await hoverBead(wrapper, index, { buttons: 1 })
     }
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.trigger('mouseup')
   }
 
@@ -1606,7 +1590,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
     expect(grid[1]![0]!.color).toBeNull()
     expect(grid[1]![1]!.color).toBeNull()
     expect(grid[2]![2]!.color).toBe('#e63746') // outside the selection, untouched
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(4) // the Selection itself remains
+    expect(selectedBeadCount(wrapper)).toBe(4) // the Selection itself remains
     expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -1663,15 +1647,14 @@ describe('App Edit group hotkeys — Rotate (R) and Copy (Ctrl/Cmd+C) (ticket 91
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await pressKey({ key: 'c', ctrlKey: true })
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true) // hides the marquee, same as a click
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(0)
+    expect(selectedBeadCount(wrapper)).toBe(0)
   })
 
   it('is a no-op copying with no Selection (Copy disabled)', async () => {
@@ -1736,7 +1719,7 @@ describe('App Mirror group hotkeys (ticket 93)', () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6') // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     await pressKey({ key: 'h' })
@@ -1837,7 +1820,7 @@ describe('App Space+drag pan (ticket 95)', () => {
 
     spaceDown()
     await flushPromises()
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
@@ -1884,16 +1867,15 @@ describe('App shortcuts help overlay (ticket 96)', () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
     await pressKey({ key: '?' })
 
     await pressKey({ key: 'Escape' })
 
     expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(2) // untouched by that Escape
+    expect(selectedBeadCount(wrapper)).toBe(2) // untouched by that Escape
   })
 
   it('has no effect while typing in a form field', async () => {
@@ -1928,17 +1910,15 @@ describe('App hover preview', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerenter')
-    expect(wrapper.find('[data-testid="cell-preview"]').attributes('style')).toContain(
-      'background-color: rgb(230, 55, 70)',
-    )
+    await hoverBead(wrapper, 5)
+    expect(previewedBeads(wrapper)).toEqual([{ row: 0, column: 5, color: '#e63746' }])
 
-    await wrapper.find('.pattern-grid').trigger('pointerleave')
-    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(false)
+    await leaveSurface(wrapper)
+    expect(previewedBeads(wrapper)).toEqual([])
   })
 
-  // The neutral (no color selected) preview is PatternGrid's own concern and is covered directly in
-  // PatternGrid.test.ts; since ticket 27 made red App's default selection, nothing is never actually selected
+  // The neutral (no color selected) preview is the overlay renderer's own concern and is covered directly in
+  // overlayRenderer.test.ts; since ticket 27 made red App's default selection, nothing is never actually selected
   // while a Pattern is open here, so there's no reachable App-level scenario left to exercise it through.
 
   it('also previews the mirrored counterpart cells when a mirror axis is on', async () => {
@@ -1947,9 +1927,9 @@ describe('App hover preview', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerenter') // (0,0)
+    await hoverBead(wrapper, 0) // (0,0)
 
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2)
+    expect(previewedBeads(wrapper)).toHaveLength(2)
   })
 })
 
@@ -1958,11 +1938,11 @@ describe('App row progress', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(0)
+    expect(rowProgressView(wrapper).markerShown).toBe(false)
 
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-    expect(wrapper.findAll('.pattern-grid__row--current')).toHaveLength(1)
+    expect(rowProgressView(wrapper).markerShown).toBe(true)
     expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
   })
 
@@ -1975,10 +1955,8 @@ describe('App row progress', () => {
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
     expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
-    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(2)
-    expect(wrapper.findAll('[data-testid="grid-row"]')[2]!.classes()).toContain(
-      'pattern-grid__row--current',
-    )
+    // Two rows are behind the pointer and dimmed, and the third is the one outlined.
+    expect(rowProgressView(wrapper)).toMatchObject({ direction: 'rows', finished: 2, current: 2 })
   })
 
   it('moves the pointer back to an earlier row', async () => {
@@ -1991,7 +1969,7 @@ describe('App row progress', () => {
     await wrapper.find('[data-testid="row-progress-previous"]').trigger('click')
 
     expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
-    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(1)
+    expect(rowProgressView(wrapper)).toMatchObject({ finished: 1 })
   })
 
   it('will not step past either end of the Pattern', async () => {
@@ -2020,7 +1998,7 @@ describe('App row progress', () => {
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
-    expect(afterReload.findAll('.pattern-grid__row--done')).toHaveLength(1)
+    expect(rowProgressView(afterReload)).toMatchObject({ finished: 1 })
     expect(loadPatterns()[0]!.rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
@@ -2048,10 +2026,8 @@ describe('App row progress', () => {
       await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
       expect(position(wrapper)).toContain('3 / 10')
-      const firstGridRow = wrapper.findAll('[data-testid="grid-row"]')[0]!.findAll('[data-testid="grid-cell"]')
-      expect(firstGridRow[1]!.classes()).toContain('pattern-grid__cell--done')
-      expect(firstGridRow[2]!.classes()).toContain('pattern-grid__cell--current')
-      expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(0)
+      // Rows run down the columns: the first two columns are behind the pointer and dimmed, the third is outlined.
+      expect(rowProgressView(wrapper)).toMatchObject({ direction: 'columns', finished: 2, current: 2 })
     })
 
     it('will not step past the last column', async () => {
@@ -2120,7 +2096,7 @@ describe('App row progress', () => {
       const wrapper = mount(App)
       await createPatternViaForm(wrapper, '15', '30')
       await wrapper.find('[data-color-id="red"]').trigger('click')
-      await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+      await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
       await wrapper.find('[data-testid="undo-button"]').trigger('click')
       expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
@@ -2144,7 +2120,6 @@ describe('App finished rows', () => {
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    return wrapper.findAll('[data-testid="grid-cell"]')
   }
 
   function colorAt(row: number, column: number) {
@@ -2161,9 +2136,9 @@ describe('App finished rows', () => {
 
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
 
-    await cells[14]!.trigger('pointerdown') // (1,4)
+    await pressBead(wrapper, 14) // (1,4)
     await wrapper.trigger('mouseup')
 
     expect(colorAt(1, 4)).toBeNull()
@@ -2172,13 +2147,13 @@ describe('App finished rows', () => {
 
   it('an edit that lands only on a finished row changes nothing, so it leaves redo alone', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
-    await cells[24]!.trigger('pointerdown') // (2,4), the current row — a real edit
+    await withTwoRowsWoven(wrapper)
+    await pressBead(wrapper, 24) // (2,4), the current row — a real edit
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(redoDisabled(wrapper)).toBe(false)
 
-    await cells[14]!.trigger('pointerdown') // (1,4), a finished row — paints nothing
+    await pressBead(wrapper, 14) // (1,4), a finished row — paints nothing
     await wrapper.trigger('mouseup')
 
     expect(colorAt(1, 4)).toBeNull()
@@ -2189,11 +2164,11 @@ describe('App finished rows', () => {
 
   it('paints only the unfinished part of a drag that crosses into the current row', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
 
-    await cells[14]!.trigger('pointerdown') // (1,4)
-    await cells[24]!.trigger('pointerenter', { buttons: 1 }) // (2,4), the current row
-    await cells[34]!.trigger('pointerenter', { buttons: 1 }) // (3,4)
+    await pressBead(wrapper, 14) // (1,4)
+    await hoverBead(wrapper, 24, { buttons: 1 }) // (2,4), the current row
+    await hoverBead(wrapper, 34, { buttons: 1 }) // (3,4)
     await wrapper.trigger('mouseup')
 
     expect(colorAt(1, 4)).toBeNull()
@@ -2205,12 +2180,12 @@ describe('App finished rows', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('pointerdown') // (0,4), painted before it was woven
+    await pressBead(wrapper, 4) // (0,4), painted before it was woven
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 4, { button: 2 })
     await wrapper.trigger('mouseup')
 
     expect(colorAt(0, 4)).toBe('#e63746')
@@ -2218,10 +2193,10 @@ describe('App finished rows', () => {
 
   it('fills only the unfinished part of an area that reaches into finished rows', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
-    await cells[55]!.trigger('pointerdown') // (5,5), in the one empty area covering the whole grid
+    await pressBead(wrapper, 55) // (5,5), in the one empty area covering the whole grid
 
     expect(colorAt(0, 0)).toBeNull()
     expect(colorAt(1, 9)).toBeNull()
@@ -2231,17 +2206,17 @@ describe('App finished rows', () => {
 
   it('stamps a pasted block only onto the unfinished beads it covers', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
-    await cells[50]!.trigger('pointerdown') // (5,0)
-    await cells[60]!.trigger('pointerenter', { buttons: 1 }) // (6,0)
+    await withTwoRowsWoven(wrapper)
+    await pressBead(wrapper, 50) // (5,0)
+    await hoverBead(wrapper, 60, { buttons: 1 }) // (6,0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    await cells[50]!.trigger('pointerdown')
-    await cells[60]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 50)
+    await hoverBead(wrapper, 60, { buttons: 1 })
     await wrapper.find('.app-shell').trigger('mouseup')
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
 
-    await cells[10]!.trigger('pointerdown') // stamps onto (1,0) and (2,0)
+    await pressBead(wrapper, 10) // stamps onto (1,0) and (2,0)
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(colorAt(1, 0)).toBeNull()
@@ -2250,10 +2225,10 @@ describe('App finished rows', () => {
 
   it('leaves a live-mirrored counterpart alone when it lands in a finished row', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
 
-    await cells[183]!.trigger('pointerdown') // (18,3), whose counterpart across the middle is (1,3)
+    await pressBead(wrapper, 183) // (18,3), whose counterpart across the middle is (1,3)
     await wrapper.trigger('mouseup')
 
     expect(colorAt(18, 3)).toBe('#e63746')
@@ -2262,13 +2237,13 @@ describe('App finished rows', () => {
 
   it('locks the finished columns instead once rows run down them', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
 
-    await cells[0]!.trigger('pointerdown') // (0,0), a row that's finished no longer, in a column that now is
+    await pressBead(wrapper, 0) // (0,0), a row that's finished no longer, in a column that now is
     await wrapper.trigger('mouseup')
-    await cells[11]!.trigger('pointerdown') // (1,1), the current column
+    await pressBead(wrapper, 11) // (1,1), the current column
     await wrapper.trigger('mouseup')
 
     expect(colorAt(0, 0)).toBeNull()
@@ -2277,10 +2252,10 @@ describe('App finished rows', () => {
 
   it('lets every bead be drawn on again once the overlay is off', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-    await cells[14]!.trigger('pointerdown') // (1,4)
+    await pressBead(wrapper, 14) // (1,4)
     await wrapper.trigger('mouseup')
 
     expect(colorAt(1, 4)).toBe('#e63746')
@@ -2288,21 +2263,21 @@ describe('App finished rows', () => {
 
   it('previews no paint on a finished bead, and only the unfinished half of a mirrored pair', async () => {
     const wrapper = mount(App)
-    const cells = await withTwoRowsWoven(wrapper)
+    await withTwoRowsWoven(wrapper)
 
-    await cells[14]!.trigger('pointerenter') // (1,4)
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+    await hoverBead(wrapper, 14) // (1,4)
+    expect(previewedBeads(wrapper)).toHaveLength(0)
 
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
-    await cells[183]!.trigger('pointerenter') // (18,3), mirrored onto finished (1,3)
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(1)
+    await hoverBead(wrapper, 183) // (18,3), mirrored onto finished (1,3)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
   })
 
   it('still undoes in full, even a change to a row marked done since', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('pointerdown') // (0,4)
+    await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
@@ -2316,7 +2291,7 @@ describe('App finished rows', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[4]!.trigger('pointerdown') // (0,4)
+    await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
@@ -2331,7 +2306,7 @@ describe('App finished rows', () => {
 describe('App delete all', () => {
   /** Presses and releases one cell without moving — a click. */
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
@@ -2670,10 +2645,10 @@ describe('App replace bead', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '6', '6') // 4x4 at Cube
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // select (0,0)
     await wrapper.find('[data-testid="copy-button"]').trigger('click') // copiedBlock now holds the red cell
 
@@ -2686,7 +2661,7 @@ describe('App replace bead', () => {
 
     // If Escape had also run backOutOfSelect, it would have dropped the copied block, and this next click would
     // start a fresh Selection instead of stamping.
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerdown')
+    await pressBead(wrapper, 5)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
   })
@@ -2709,8 +2684,8 @@ describe('App replace bead', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // (0,0)
-    await wrapper.findAll('[data-testid="grid-cell"]')[199]!.trigger('pointerdown') // (19,9)
+    await pressBead(wrapper, 0) // (0,0)
+    await pressBead(wrapper, 199) // (19,9)
     await wrapper.find('.app-shell').trigger('mouseup')
     const before = loadedPattern().grid
 
@@ -2746,7 +2721,7 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="height-input"]').setValue('5')
     await wrapper.find('form').trigger('submit') // beads: 12x5
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[7]!.trigger('pointerdown')
+    await pressBead(wrapper, 7)
     await wrapper.find('.app-shell').trigger('mouseup')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('miyuki-delica-11-0')
@@ -2777,7 +2752,7 @@ describe('App replace bead', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
@@ -2834,11 +2809,15 @@ describe('App bead quantities', () => {
   async function patternWithPaintedCells(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerdown')
+    // Each press is a click, so each is released: the bead counts follow a stroke a few times a second (ticket 106) and
+    // settle when it ends, which is what a release does.
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('pointerup')
+    await pressBead(wrapper, 1)
+    await wrapper.trigger('pointerup')
     await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await cells[2]!.trigger('pointerdown')
+    await pressBead(wrapper, 2)
+    await wrapper.trigger('pointerup')
   }
 
   it('totals the beads each color needs from the painted cells, with no bead picker in sight', async () => {
@@ -2863,10 +2842,11 @@ describe('App bead quantities', () => {
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+    await wrapper.trigger('pointerup')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown', { button: 2 }) // right-click erase
+    await pressBead(wrapper, 0, { button: 2 }) // right-click erase
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 
@@ -2923,7 +2903,7 @@ describe('App pattern transfer', () => {
     await importFile(wrapper, serializeLibrary([woven]))
 
     expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('5 / 10')
-    expect(wrapper.findAll('.pattern-grid__row--done')).toHaveLength(4)
+    expect(rowProgressView(wrapper)).toMatchObject({ finished: 4 })
   })
 
   it('imports a Pattern that clashes with a local one as a separate entry, keeping both', async () => {
@@ -2976,22 +2956,21 @@ describe('App pattern transfer', () => {
 describe('App select, copy and paste', () => {
   /** A drag across the grid: press on one cell, move through the rest, release (release is on the shell, as a real drag can end anywhere). */
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[indices[0]!]!.trigger('pointerdown')
+    await pressBead(wrapper, indices[0]!)
     for (const index of indices.slice(1)) {
-      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+      await hoverBead(wrapper, index, { buttons: 1 })
     }
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   /** Presses and releases one cell without moving — a click, which is what stamps a copied block. */
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   function selectedCount(wrapper: ReturnType<typeof mount>) {
-    return wrapper.findAll('.pattern-grid__cell--selected').length
+    return selectedBeadCount(wrapper)
   }
 
   /** A 4x4 Pattern with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
@@ -3067,12 +3046,10 @@ describe('App select, copy and paste', () => {
     await drag(wrapper, [0, 1, 5]) // select the 2x2 holding both painted cells
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('pointerenter') // hover (2,2)
+    await hoverBead(wrapper, 10) // hover (2,2)
 
-    const previews = wrapper.findAll('[data-testid="cell-preview"]')
-    expect(previews).toHaveLength(2) // the block's two painted cells; its two empty ones preview nothing
-    expect(previews[0]!.attributes('style')).toContain('background-color: rgb(230, 55, 70)')
-    expect(previews[1]!.attributes('style')).toContain('background-color: rgb(47, 111, 237)')
+    // The block's two painted cells, each in its own color; its two empty ones preview nothing.
+    expect(previewedBeads(wrapper).map(({ color }) => color)).toEqual(['#e63746', '#2f6fed'])
   })
 
   it('stamps the copied block where it is clicked, as a single undo step', async () => {
@@ -3196,7 +3173,7 @@ describe('App select, copy and paste', () => {
     const wrapper = mount(App)
     await copiedMotif(wrapper)
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 10, { button: 2 })
     await click(wrapper, 10) // (2,2) — would have stamped the motif
 
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
@@ -3217,12 +3194,12 @@ describe('App select, copy and paste', () => {
   it('stops previewing the block once the copy is dropped', async () => {
     const wrapper = mount(App)
     await copiedMotif(wrapper)
-    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('pointerenter')
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2)
+    await hoverBead(wrapper, 10)
+    expect(previewedBeads(wrapper)).toHaveLength(2)
 
     await pressEscape(wrapper)
 
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+    expect(previewedBeads(wrapper)).toHaveLength(0)
   })
 
   it('hides the Selection marquee immediately once Copy is clicked (ticket 49)', async () => {
@@ -3272,7 +3249,7 @@ describe('App select, copy and paste', () => {
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown', { button: 2 }) // a painted cell
+    await pressBead(wrapper, 0, { button: 2 }) // a painted cell
 
     expect(selectedCount(wrapper)).toBe(0)
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
@@ -3294,7 +3271,7 @@ describe('App select, copy and paste', () => {
     await copiedMotif(wrapper)
     expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[10]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 10, { button: 2 })
 
     expect(selectedCount(wrapper)).toBe(0)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
@@ -3304,7 +3281,7 @@ describe('App select, copy and paste', () => {
     const wrapper = mount(App)
     await copiedMotif(wrapper)
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown', { button: 2 }) // a painted cell
+    await pressBead(wrapper, 0, { button: 2 }) // a painted cell
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
@@ -3380,16 +3357,15 @@ describe('App select, copy and paste', () => {
 
 describe('App clipboard lifecycle (ticket 92)', () => {
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[indices[0]!]!.trigger('pointerdown')
+    await pressBead(wrapper, indices[0]!)
     for (const index of indices.slice(1)) {
-      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+      await hoverBead(wrapper, index, { buttons: 1 })
     }
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
@@ -3404,7 +3380,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   }
 
   async function hoverCell(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerenter')
+    await hoverBead(wrapper, index)
   }
 
   function pasteAtHoveredCell() {
@@ -3426,7 +3402,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     const wrapper = mount(App)
     await patternWithCopiedCell(wrapper)
     await hoverCell(wrapper, 10)
-    await wrapper.find('.pattern-grid').trigger('pointerleave')
+    await leaveSurface(wrapper)
 
     pasteAtHoveredCell()
     await flushPromises()
@@ -3468,7 +3444,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await hoverCell(wrapper, 10)
 
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+    expect(previewedBeads(wrapper)).toHaveLength(0)
   })
 
   it('does not revive the click-to-stamp gesture after switching back to Select: a click marks out a Selection instead', async () => {
@@ -3480,7 +3456,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     await click(wrapper, 10)
 
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(1)
+    expect(selectedBeadCount(wrapper)).toBe(1)
   })
 
   it('can still paste via Ctrl/Cmd+V after Escape dismisses the projection', async () => {
@@ -3500,16 +3476,15 @@ describe('App clipboard lifecycle (ticket 92)', () => {
 
 describe('App Tool group Escape precedence (ticket 41)', () => {
   function selectedCount(wrapper: ReturnType<typeof mount>) {
-    return wrapper.findAll('.pattern-grid__cell--selected').length
+    return selectedBeadCount(wrapper)
   }
 
   async function createPatternWithSelection(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '6', '6') // 4x4
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[5]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 5, { buttons: 1 })
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
@@ -3567,12 +3542,11 @@ describe('App storage writes', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
 
     const writes = spyOnStorageWrites(PATTERNS_KEY)
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
-    await cells[2]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
 
     expect(writes.count).toBe(0)
 
@@ -3591,14 +3565,13 @@ describe('App storage writes', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     const writes = spyOnStorageWrites(PATTERNS_KEY)
-    await cells[0]!.trigger('pointerdown', { button: 2 })
-    await cells[1]!.trigger('pointerenter', { buttons: 2 })
+    await pressBead(wrapper, 0, { button: 2 })
+    await hoverBead(wrapper, 1, { buttons: 2 })
     expect(writes.count).toBe(0)
 
     await wrapper.trigger('mouseup')
@@ -3615,7 +3588,7 @@ describe('App storage writes', () => {
 
     // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
     // stroke is still only in memory.
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
 
     window.dispatchEvent(new Event('pagehide'))
@@ -3627,7 +3600,7 @@ describe('App storage writes', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     wrapper.unmount()
 
@@ -3639,16 +3612,15 @@ describe('App storage writes', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown', { pointerType: 'touch' })
-    await cells[1]!.trigger('pointerenter', { buttons: 1, pointerType: 'touch' })
+    await pressBead(wrapper, 0, { pointerType: 'touch' })
+    await hoverBead(wrapper, 1, { buttons: 1, pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointercancel')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
     expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
 
     // The cancelled stroke really ended: painting a third cell starts a fresh one rather than continuing the old.
-    await cells[2]!.trigger('pointerdown', { pointerType: 'touch' })
+    await pressBead(wrapper, 2, { pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointerup')
     expect(loadPatterns()[0]!.grid[0]![2]!.color).toBe('#e63746')
   })
@@ -3660,7 +3632,7 @@ describe('App storage writes', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const writes = spyOnStorageWrites(PATTERNS_KEY)
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
 
     expect(writes.count).toBe(1)
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
@@ -3673,7 +3645,7 @@ describe('App storage writes', () => {
 
     refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(ru.storage.saveFailedMessage)
@@ -3689,16 +3661,14 @@ describe('App storage writes', () => {
 
     const refusing = refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+    await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="grid-cell"]')[0]!.attributes('style')).toContain(
-      'background-color: rgb(230, 55, 70)',
-    )
+    expect(beadColor(wrapper, 0)).toBe('#e63746')
 
     refusing.mockRestore()
-    await wrapper.findAll('[data-testid="grid-cell"]')[1]!.trigger('pointerdown')
+    await pressBead(wrapper, 1)
     await wrapper.trigger('mouseup')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)

@@ -145,16 +145,6 @@ export interface Translations {
     /** Stated near the rows input while it moves in steps of 2 (peyote and brick stitch, from the start). */
     pairsHint: string
   }
-  /**
-   * The refusal for a size past the cell cap (ADR 0017), in the unit the person is working in — for the New Pattern
-   * form and for Resize. `{count}`, `{limit}`, `{bead}`, `{size}` and `{unit}` are filled in by sizeCapRefusal (see
-   * domain/patternSize.ts); never write the numbers out here.
-   */
-  sizeCap: {
-    beads: string
-    tall: string
-    wide: string
-  }
   /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
   deleteAll: {
     button: string

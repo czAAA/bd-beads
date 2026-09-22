@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
+import { drawnPattern, hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { createPattern, type Technique } from './domain/pattern'
 import { loadPatterns, savePatterns } from './domain/patternStorage'
 import { en } from './i18n/en'
@@ -36,7 +37,7 @@ async function enter(input: ReturnType<typeof columnsInput>, value: number) {
 
 async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = 'red') {
   await wrapper.find(`[data-color-id="${colorId}"]`).trigger('click')
-  await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+  await pressBead(wrapper, index)
   await wrapper.find('.app-shell').trigger('mouseup')
 }
 
@@ -109,7 +110,8 @@ describe('App Resize (ticket 101)', () => {
       [null, null, null, null, null],
       [null, null, null, null, null],
     ])
-    expect(wrapper.findAll('[data-testid="grid-cell"]')).toHaveLength(15)
+    // The Pattern that is drawn is the resized one: 5 columns of 3 rows, all 15 beads.
+    expect(drawnPattern(wrapper)).toMatchObject({ columns: 5, rows: 3 })
   })
 
   it('updates the Estimated size once it lands', async () => {
@@ -198,15 +200,14 @@ describe('App Resize (ticket 101)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[15]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 15, { buttons: 1 })
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(wrapper.findAll('.pattern-grid__cell--selected').length).toBeGreaterThan(0)
+    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
 
     await enter(columnsInput(wrapper), 2)
 
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(0)
+    expect(selectedBeadCount(wrapper)).toBe(0)
   })
 
   it('resets Mirror axis counts, like any change to grid dimensions, and Undo brings them back', async () => {
@@ -258,50 +259,32 @@ describe('App Resize (ticket 101)', () => {
     expect(level()).not.toBe('100%')
   })
 
-  describe('the cell cap', () => {
-    it('lets a Pattern grow to exactly 10,000 cells', async () => {
-      const wrapper = mount(App)
-      await createInBeads(wrapper, 100, 99)
-
-      await enter(rowsInput(wrapper), 100)
-
-      expect(stored().rows).toBe(100)
-      expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
-    })
-
-    it('refuses to grow past it, saying so in beads, and changes nothing', async () => {
+  describe('no limit on size (ADR 0019)', () => {
+    it('lets a Pattern grow past 10,000 cells, and undoes it', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 100, 100)
 
       await enter(rowsInput(wrapper), 101)
 
-      expect(stored().rows).toBe(100)
-      expect(canUndo(wrapper)).toBe(false)
-      expect(wrapper.find('[data-testid="size-message"]').text()).toBe("That's 10,100 beads; the limit is 10,000.")
+      expect(stored().rows).toBe(101)
+      expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
+      expect(canUndo(wrapper)).toBe(true)
     })
 
-    it('opens an over-cap Pattern without blocking it, and still lets it shrink', async () => {
+    it('opens a Pattern past the old limit, and lets it grow or shrink', async () => {
       const oversize = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 101, height: 100, unit: 'beads' } })
       savePatterns([oversize])
       const wrapper = mount(App)
 
       expect(wrapper.find('[data-testid="size-controls"]').exists()).toBe(true)
       expect(columnsInput(wrapper).element.value).toBe('101')
-      expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
 
       await enter(rowsInput(wrapper), 90)
-
       expect(stored().rows).toBe(90)
       expect(stored().columns).toBe(101)
-    })
 
-    it('does not allow that over-cap Pattern to grow, though', async () => {
-      savePatterns([createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 101, height: 100, unit: 'beads' } })])
-      const wrapper = mount(App)
-
-      await enter(rowsInput(wrapper), 101)
-
-      expect(stored().rows).toBe(100)
+      await enter(rowsInput(wrapper), 250)
+      expect(stored().rows).toBe(250)
     })
   })
 
@@ -362,7 +345,7 @@ describe('App Resize (ticket 101)', () => {
 
       expect(stored().technique).toBe(technique)
       // An end-anchored change never moves a row, so every row keeps its parity and with it its stagger.
-      expect(wrapper.findAll('[data-testid="grid-cell"]')).toHaveLength(35)
+      expect(drawnPattern(wrapper)).toMatchObject({ columns: 5, rows: 7 })
       expect(colors()[0]![0]).toBe(RED)
     })
   })
@@ -501,14 +484,13 @@ describe('App Resize from the start (ticket 102)', () => {
     })
   })
 
-  it('holds the same limits as growing from the end: the cap, the Row progress lock, the Selection clear', async () => {
+  it('holds the same limits as growing from the end: the Row progress lock, the Selection clear', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 100, 100)
     await start(wrapper, 'columns')
 
     await enter(columnsInput(wrapper), 101)
-    expect(stored().columns).toBe(100)
-    expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(true)
+    expect(stored().columns).toBe(101)
 
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="size-columns-from-end"]').element.disabled).toBe(true)

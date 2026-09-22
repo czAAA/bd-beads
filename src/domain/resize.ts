@@ -1,6 +1,5 @@
 import { isOffsetTechnique, type Technique } from './grid'
 import type { Cell, Grid, Pattern } from './pattern'
-import { isOverCellCap } from './patternSize'
 
 /** Which end of a direction a Resize changes: the right/bottom (as seen on screen) or the left/top. */
 export type ResizeAnchor = 'end' | 'start'
@@ -21,8 +20,6 @@ export type ResizeRefusal =
   | 'invalid'
   /** Row progress is on: shrinking would invalidate finished rows (ADR 0017). */
   | 'locked'
-  /** Would make the Pattern larger than the cell cap. */
-  | 'over-cap'
   /** Peyote or brick stitch, rows changed from the start by an odd number — see resizeRowStep. */
   | 'odd-start-rows'
 
@@ -41,9 +38,9 @@ function isWholeCount(value: number): boolean {
 }
 
 /**
- * Why a Resize would not be applied, or undefined when it would be. Growing past MAX_PATTERN_CELLS is refused, but a
- * change that does not make the Pattern larger is always allowed, so a Pattern that is already over the cap — one
- * imported, say — can still be trimmed and is never blocked from opening.
+ * Why a Resize would not be applied, or undefined when it would be. No size is refused for being large: what limits how
+ * big a Pattern can get is the device's storage and memory, not a rule (ADR 0019, which took away the cell cap of
+ * ADR 0017).
  */
 export function resizeRefusal(pattern: Pattern, request: ResizeRequest): ResizeRefusal | undefined {
   if (!isWholeCount(request.columns) || !isWholeCount(request.rows)) {
@@ -51,11 +48,6 @@ export function resizeRefusal(pattern: Pattern, request: ResizeRequest): ResizeR
   }
   if (pattern.rowProgress.enabled) {
     return 'locked'
-  }
-
-  const grows = request.columns * request.rows > pattern.columns * pattern.rows
-  if (grows && isOverCellCap(request)) {
-    return 'over-cap'
   }
 
   const step = resizeRowStep(pattern.technique, request.rowsFrom ?? 'end')

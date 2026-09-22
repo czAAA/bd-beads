@@ -1,5 +1,5 @@
 import vue from '@vitejs/plugin-vue'
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -11,6 +11,11 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'jsdom',
     globals: false,
+    // The browser checks (ticket 103) are Playwright's, not Vitest's.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     setupFiles: ['./src/testSetup.ts'],
+    // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
+    // finishes in milliseconds either way, so this only ever matters on a bad day.
+    testTimeout: 15000,
   },
 }))

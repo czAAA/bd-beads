@@ -230,7 +230,7 @@ export function rowProgressPosition(pattern: Pattern): { current: number; total:
 }
 
 /** Whether a bead sits in a row the weaver has already finished: before the pointer, counted the way rows run. Only while the overlay is on. */
-export function isInFinishedRow(pattern: Pattern, { row, column }: GridPosition): boolean {
+export function isInFinishedRow(pattern: Pick<Pattern, 'rowProgress'>, { row, column }: GridPosition): boolean {
   const { enabled, direction, currentRow, currentColumn } = pattern.rowProgress
   if (!enabled) {
     return false
@@ -244,11 +244,20 @@ export function isInFinishedRow(pattern: Pattern, { row, column }: GridPosition)
  * `before` itself, the same "unchanged" signal the drawing commands give, so it records no undo step.
  */
 export function keepFinishedRows(before: Pattern, after: Pattern): Pattern {
-  const grid = after.grid.map((cells, row) =>
-    cells.map((cell, column) => (isInFinishedRow(before, { row, column }) ? before.grid[row]![column]! : cell)),
-  )
-  const changed = grid.some((cells, row) =>
-    cells.some((cell, column) => cell.color !== before.grid[row]![column]!.color),
+  const { enabled, direction, currentRow, currentColumn } = before.rowProgress
+  // Only a row the edit actually replaced can hold a change, so the others (shared with `before`) are passed over.
+  const grid = after.grid.map((cells, row) => {
+    const was = before.grid[row]!
+    if (!enabled || cells === was) {
+      return cells
+    }
+    if (direction === 'rows') {
+      return row < currentRow ? was : cells
+    }
+    return cells.map((cell, column) => (column < currentColumn ? was[column]! : cell))
+  })
+  const changed = grid.some(
+    (cells, row) => cells !== before.grid[row] && cells.some((cell, column) => cell.color !== before.grid[row]![column]!.color),
   )
   return changed ? { ...after, grid } : before
 }
@@ -483,11 +492,19 @@ export function paintCells(
     return pattern
   }
 
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) =>
-      targets.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell,
-    ),
-  )
+  // Only the rows a stroke touched are copied: the others are the very arrays the Pattern already had, so an edit costs
+  // what it touched, not the size of the Pattern (and whatever compares two Patterns can tell those rows are the same by
+  // looking no further than the array).
+  const columnsByRow = new Map<number, Set<number>>()
+  for (const { row, column } of targets.values()) {
+    const columns = columnsByRow.get(row) ?? new Set<number>()
+    columns.add(column)
+    columnsByRow.set(row, columns)
+  }
+  const grid = pattern.grid.map((gridRow, rowIndex) => {
+    const columns = columnsByRow.get(rowIndex)
+    return columns ? gridRow.map((cell, columnIndex) => (columns.has(columnIndex) ? { color } : cell)) : gridRow
+  })
 
   return restoreGrid(pattern, grid)
 }

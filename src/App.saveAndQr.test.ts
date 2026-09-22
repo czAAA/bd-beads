@@ -1,12 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
+import { downloadFile } from './domain/fileDownload'
 import { createPattern } from './domain/pattern'
+import { parsePatternsFile, patternFileName } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './domain/patternStorage'
 import { en } from './i18n/en'
 import { denselyColoredGrid } from './testUtils/denselyColoredGrid'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
+
+/** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
+vi.mock('./domain/fileDownload', () => ({ downloadFile: vi.fn() }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const PATTERNS_KEY = 'bd-beads:patterns'
@@ -20,6 +26,7 @@ function mountApp() {
 }
 
 beforeEach(() => {
+  vi.mocked(downloadFile).mockClear()
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
 })
@@ -51,7 +58,7 @@ async function pressKey(init: KeyboardEventInit): Promise<KeyboardEvent> {
 /** Starts a paint stroke without releasing it, so the painted cell is on screen but its save is still deferred. */
 async function startUnfinishedStroke(wrapper: ReturnType<typeof mount>) {
   await wrapper.find('[data-color-id="red"]').trigger('click')
-  await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown')
+  await pressBead(wrapper, 0)
 }
 
 describe('App Save (ticket 115)', () => {
@@ -66,6 +73,30 @@ describe('App Save (ticket 115)', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
     expect(wrapper.find('[data-testid="save-confirmation"]').text()).toBe(en.tools.savedConfirmation)
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
+  })
+
+  it('also hands over the open Pattern as a Pattern file (ticket 119)', async () => {
+    const wrapper = mountApp()
+    await createPatternViaForm(wrapper)
+
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
+
+    const saved = loadPatterns()[0]!
+    expect(downloadFile).toHaveBeenCalledTimes(1)
+    const [fileName, contents] = vi.mocked(downloadFile).mock.calls[0]!
+    expect(fileName).toBe(patternFileName(saved))
+    expect(parsePatternsFile(contents)).toEqual({ patterns: [saved] })
+  })
+
+  it('still hands over the Pattern file when the device refuses the write, since it is then the only copy', async () => {
+    const wrapper = mountApp()
+    await createPatternViaForm(wrapper)
+
+    refuseStorageWrites(PATTERNS_KEY)
+    await wrapper.find('[data-testid="save-button"]').trigger('click')
+
+    expect(downloadFile).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(false)
   })
 
   it('takes the "Saved" confirmation down by itself after a moment', async () => {
@@ -186,16 +217,15 @@ describe('App QR export (ticket 116)', () => {
     const wrapper = mountApp()
     await createPatternViaForm(wrapper)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown')
-    await cells[1]!.trigger('pointerenter', { buttons: 1 })
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="export-qr"]').trigger('click')
 
     await pressKey({ key: 'Escape' })
 
     expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
-    expect(wrapper.findAll('.pattern-grid__cell--selected')).toHaveLength(2) // untouched by that Escape
+    expect(selectedBeadCount(wrapper)).toBe(2) // untouched by that Escape
   })
 
   it('withholds the editing shortcuts while the panel is open, like any other modal', async () => {

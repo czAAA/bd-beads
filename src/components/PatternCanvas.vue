@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { canvasContentHeightPx, canvasContentWidthPx, type GridPosition, type PreviewCell } from '../domain/grid'
+import {
+  GRID_BORDER_PX,
+  RULER_GUTTER_PX,
+  canvasContentHeightPx,
+  canvasContentWidthPx,
+  type GridPosition,
+  type PreviewCell,
+} from '../domain/grid'
 import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
-import PatternGrid from './PatternGrid.vue'
+import { patternExtentPx } from '../rendering/patternRenderer'
+import PatternSurface from './PatternSurface.vue'
 import PatternRuler from './PatternRuler.vue'
 
 const props = defineProps<{
@@ -26,6 +34,15 @@ const emit = defineEmits<{
   'cell-hover': [row: number, column: number]
   'hover-end': []
 }>()
+
+/** The space the Pattern takes up in the ruled layout: the rulers are laid out around it, and the surface (which is not inside the transform that scales the rulers) is placed over it. */
+const gridSlotStyle = computed(() => {
+  const { width, height } = patternExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows)
+  return { width: `${width + GRID_BORDER_PX * 2}px`, height: `${height + GRID_BORDER_PX * 2}px` }
+})
+
+/** Where the surface sits in the box: one ruler gutter in from the corner, whichever way the Pattern is turned (the box and the gutters turn together). */
+const surfaceLayerStyle = { left: `${RULER_GUTTER_PX}px`, top: `${RULER_GUTTER_PX}px` }
 
 /**
  * The Pattern's own footprint (columns × rows, per its technique), before the view-only rotated flag turns it on
@@ -84,20 +101,7 @@ const rotateStyle = computed(() => ({
             <span />
 
             <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" />
-            <PatternGrid
-              :pattern="pattern"
-              :preview-cells="previewCells"
-              :preview-color="previewColor"
-              :selection="selection"
-              :mirror-axis-counts="mirrorAxisCounts"
-              :dimmed-cells="dimmedCells"
-              @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
-              @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
-              @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
-              @cell-secondary-move="(row, column) => emit('cell-secondary-move', row, column)"
-              @cell-hover="(row, column) => emit('cell-hover', row, column)"
-              @hover-end="emit('hover-end')"
-            />
+            <div class="pattern-canvas__grid-slot" :style="gridSlotStyle" />
             <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" />
 
             <span />
@@ -105,6 +109,28 @@ const rotateStyle = computed(() => ({
             <span />
           </div>
         </div>
+      </div>
+
+      <!--
+        The Drawing surface (ADR 0018): not inside the CSS transform above, which would stretch a canvas rather than
+        draw it sharp at the zoom, but over the space that transform's layout left for the Pattern.
+      -->
+      <div class="pattern-canvas__surface-layer" :style="surfaceLayerStyle">
+        <PatternSurface
+          :pattern="pattern"
+          :zoom="zoom"
+          :preview-cells="previewCells"
+          :preview-color="previewColor"
+          :selection="selection"
+          :mirror-axis-counts="mirrorAxisCounts"
+          :dimmed-cells="dimmedCells"
+          @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
+          @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
+          @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
+          @cell-secondary-move="(row, column) => emit('cell-secondary-move', row, column)"
+          @cell-hover="(row, column) => emit('cell-hover', row, column)"
+          @hover-end="emit('hover-end')"
+        />
       </div>
     </div>
   </div>
@@ -155,6 +181,15 @@ const rotateStyle = computed(() => ({
 .pattern-canvas__scaled {
   display: inline-block;
   transform-origin: top left;
+}
+
+/* Keeps the ruled layout's middle cell the Pattern's size while the surface that draws it sits elsewhere (see the surface layer). */
+.pattern-canvas__grid-slot {
+  flex: none;
+}
+
+.pattern-canvas__surface-layer {
+  position: absolute;
 }
 
 /* Ruler gutter, pattern, ruler gutter — in both directions, so the grid is numbered on all four sides. */

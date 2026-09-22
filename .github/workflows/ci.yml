@@ -18,3 +18,12 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
+      - run: npx playwright install --with-deps chromium
+      - run: npm run visual
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-check-report
+          path: |
+            playwright-report
+            test-results

@@ -1,0 +1,93 @@
+{
+  "kind": "bd-beads/pattern",
+  "version": 1,
+  "patterns": [
+    {
+      "id": "file-one",
+      "name": "Shared peyote",
+      "technique": "peyote",
+      "beadId": "toho-cube-1.5mm",
+      "columns": 5,
+      "rows": 4,
+      "grid": [
+        [
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": null
+          }
+        ],
+        [
+          {
+            "color": null
+          },
+          {
+            "color": "#1f1f1f"
+          },
+          {
+            "color": "#1f1f1f"
+          },
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": null
+          }
+        ],
+        [
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": null
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#c81e3c"
+          }
+        ],
+        [
+          {
+            "color": null
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#1f1f1f"
+          },
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": "#1e64c8"
+          }
+        ]
+      ],
+      "rowProgress": {
+        "enabled": true,
+        "direction": "rows",
+        "currentRow": 1,
+        "currentColumn": 0
+      },
+      "rotated": false,
+      "createdAt": 1730000000000,
+      "updatedAt": 1730000001000
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PatternCanvas from './PatternCanvas.vue'
+import { hoverBead, leaveSurface, pressBead, previewedBeads } from '../testUtils/beads'
 import { createPattern, type Pattern, type Technique } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
 import { GRID_BORDER_PX, RULER_GUTTER_PX, gridHeightPx, gridWidthPx } from '../domain/grid'
@@ -86,7 +87,7 @@ describe('PatternCanvas', () => {
   it('forwards a grid cell mousedown as its own cell-primary-down event', async () => {
     const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerdown')
+    await pressBead(wrapper, 5)
 
     expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 5]])
   })
@@ -94,7 +95,7 @@ describe('PatternCanvas', () => {
   it('forwards a right mousedown as its own cell-secondary-down event', async () => {
     const wrapper = mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 1 } })
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 5, { button: 2 })
 
     expect(wrapper.emitted('cell-secondary-down')).toEqual([[0, 5]])
   })
@@ -109,12 +110,86 @@ describe('PatternCanvas', () => {
       },
     })
 
-    expect(wrapper.find('[data-testid="cell-preview"]').exists()).toBe(true)
+    expect(previewedBeads(wrapper)).toEqual([{ row: 0, column: 5, color: '#e63746' }])
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[5]!.trigger('pointerenter')
+    await hoverBead(wrapper, 5)
     expect(wrapper.emitted('cell-hover')).toEqual([[0, 5]])
 
-    await wrapper.find('.pattern-grid').trigger('pointerleave')
+    await leaveSurface(wrapper)
     expect(wrapper.emitted('hover-end')).toHaveLength(1)
+  })
+})
+
+describe('PatternCanvas drawing the Pattern on a Drawing surface (ticket 105)', () => {
+  it('draws on a surface by default, and makes no element per bead', () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(30, 7.5), zoom: 1 } })
+
+    expect(wrapper.find('[data-testid="pattern-surface-cells"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-surface-overlay"]').exists()).toBe(true)
+    // A handful of elements (the outline, the clip, two canvases), however many beads there are: none for a bead.
+    expect(wrapper.find('[data-testid="pattern-surface"]').findAll('*').length).toBeLessThan(10)
+  })
+
+  it('keeps the four rulers around the Pattern, and the zoom box that scales them', () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(30, 7.5), zoom: 2 } })
+
+    expect(wrapper.findAll('.pattern-ruler')).toHaveLength(4)
+    expect(wrapper.find('.pattern-canvas__scaled').attributes('style')).toContain('scale(2)')
+  })
+
+  it('leaves the space the DOM grid took, so the rulers sit where they did', () => {
+    const wide = pattern(30, 7.5)
+
+    const wrapper = mount(PatternCanvas, { props: { pattern: wide, zoom: 1 } })
+
+    const slot = wrapper.find('.pattern-canvas__grid-slot').attributes('style')
+    expect(slot).toContain(`width: ${gridWidthPx('loom', wide.columns) + GRID_BORDER_PX * 2}px`)
+    expect(slot).toContain(`height: ${gridHeightPx('loom', wide.rows) + GRID_BORDER_PX * 2}px`)
+  })
+
+  it('puts the surface one ruler gutter in from the box\'s corner, outside the transform that zooms and turns the rulers', () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: { ...pattern(30, 7.5), rotated: true }, zoom: 1 } })
+
+    const layer = wrapper.find('.pattern-canvas__surface-layer')
+    expect(layer.attributes('style')).toContain(`left: ${RULER_GUTTER_PX}px`)
+    expect(layer.attributes('style')).toContain(`top: ${RULER_GUTTER_PX}px`)
+    expect(wrapper.find('.pattern-canvas__scaled').find('[data-testid="pattern-surface-cells"]').exists()).toBe(false)
+    // The renderer turns and scales the beads itself, so the surface is not inside the element that does it by CSS.
+    expect(wrapper.find('.pattern-canvas__rotate').find('[data-testid="pattern-surface"]').exists()).toBe(false)
+  })
+
+  it('hands the Selection, Mirror\'s axes, the dimmed beads and the hover preview to the surface', () => {
+    const selection = { top: 1, left: 1, rows: 2, columns: 2 }
+    const mirrorAxisCounts = { columns: 1, rows: 0 }
+    const dimmedCells = [{ row: 0, column: 0 }]
+    const previewCells = [{ row: 2, column: 2 }]
+
+    const wrapper = mount(PatternCanvas, {
+      props: { pattern: pattern(30, 7.5), zoom: 1, selection, mirrorAxisCounts, dimmedCells, previewCells, previewColor: '#e63746' },
+    })
+
+    const surface = wrapper.findComponent({ name: 'PatternSurface' })
+    expect(surface.props()).toMatchObject({ selection, mirrorAxisCounts, dimmedCells, previewCells, previewColor: '#e63746' })
+  })
+
+  it('re-emits the surface\'s pointer events as the DOM grid\'s, so its parent need not know which draws', async () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(30, 7.5), zoom: 1 } })
+    const surface = wrapper.findComponent({ name: 'PatternSurface' })
+
+    surface.vm.$emit('cell-primary-down', 1, 2)
+    surface.vm.$emit('cell-primary-move', 1, 3)
+    surface.vm.$emit('cell-secondary-down', 2, 2)
+    surface.vm.$emit('cell-secondary-move', 2, 3)
+    surface.vm.$emit('cell-hover', 3, 3)
+    surface.vm.$emit('hover-end')
+
+    expect(wrapper.emitted()).toMatchObject({
+      'cell-primary-down': [[1, 2]],
+      'cell-primary-move': [[1, 3]],
+      'cell-secondary-down': [[2, 2]],
+      'cell-secondary-move': [[2, 3]],
+      'cell-hover': [[3, 3]],
+      'hover-end': [[]],
+    })
   })
 })

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import type { PixelData } from './imageConversion'

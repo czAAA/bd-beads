@@ -3,7 +3,7 @@ import pluginVue from 'eslint-plugin-vue'
 
 export default tseslint.config(
   {
-    ignores: ['dist/**'],
+    ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
   },
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/essential'],

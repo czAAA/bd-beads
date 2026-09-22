@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { createPattern, moveToRow, paintCells, setRowProgressEnabled, toggleRotated, type Pattern, type Technique } from './pattern'
@@ -178,34 +179,42 @@ describe('resizeRowStep', () => {
   })
 })
 
-describe('the cell cap', () => {
+describe('no limit on size (ADR 0019)', () => {
   const blank = (columns: number, rows: number, technique: Technique = 'loom') =>
     createPattern({ technique, beadId: cube.id, size: { width: columns, height: rows, unit: 'beads' } })
 
-  it('lets a Pattern grow to exactly 10,000 cells and refuses one more', () => {
+  it('lets a Pattern grow past 10,000 cells, which used to be the most', () => {
     const pattern = blank(100, 99)
 
     expect(resizeRefusal(pattern, { columns: 100, rows: 100 })).toBeUndefined()
-    expect(resizeRefusal(pattern, { columns: 101, rows: 100 })).toBe('over-cap')
-    expect(resizePattern(pattern, { columns: 101, rows: 100 })).toBe(pattern)
+    expect(resizeRefusal(pattern, { columns: 101, rows: 100 })).toBeUndefined()
+    expect(resizePattern(pattern, { columns: 101, rows: 100 })).not.toBe(pattern)
   })
 
-  it('limits the product, not either side', () => {
-    expect(resizeRefusal(blank(10, 10), { columns: 500, rows: 20 })).toBeUndefined()
-    expect(resizeRefusal(blank(10, 10), { columns: 200, rows: 200 })).toBe('over-cap')
+  it('grows to 250 × 250, or to a 70 × 250 bracelet, with every cell there', () => {
+    const grown = resizePattern(blank(10, 10), { columns: 250, rows: 250 })
+
+    expect([grown.columns, grown.rows]).toEqual([250, 250])
+    expect(grown.grid).toHaveLength(250)
+    expect(grown.grid.every((row) => row.length === 250)).toBe(true)
+    expect(resizeRefusal(blank(10, 10), { columns: 70, rows: 250 })).toBeUndefined()
   })
 
-  it('refuses growth from the start as well', () => {
-    expect(resizeRefusal(blank(100, 100), { columns: 101, rows: 100, columnsFrom: 'start' })).toBe('over-cap')
+  it('grows from the start as well', () => {
+    expect(resizeRefusal(blank(100, 100), { columns: 101, rows: 100, columnsFrom: 'start' })).toBeUndefined()
   })
 
-  it('always lets a Pattern already over the cap shrink, or change without getting larger', () => {
-    const over = blank(200, 200)
+  it('shrinks a big Pattern, and changes it without getting larger, as ever', () => {
+    const big = blank(200, 200)
 
-    expect(resizeRefusal(over, { columns: 200, rows: 199 })).toBeUndefined()
-    expect(resizeRefusal(over, { columns: 150, rows: 250 })).toBeUndefined() // 37,500 < 40,000: one grows, the total does not
-    expect(resizeRefusal(over, { columns: 200, rows: 200 })).toBeUndefined()
-    expect(resizeRefusal(over, { columns: 200, rows: 201 })).toBe('over-cap')
+    expect(resizeRefusal(big, { columns: 200, rows: 199 })).toBeUndefined()
+    expect(resizeRefusal(big, { columns: 150, rows: 250 })).toBeUndefined()
+    expect(resizeRefusal(big, { columns: 200, rows: 201 })).toBeUndefined()
+  })
+
+  it('still turns away what is not a whole count, however big', () => {
+    expect(resizeRefusal(blank(100, 100), { columns: 1000.5, rows: 100 })).toBe('invalid')
+    expect(resizeRefusal(blank(100, 100), { columns: 100_000, rows: 0 })).toBe('invalid')
   })
 })
 

@@ -238,58 +238,40 @@ describe('SizeControls inputs (ticket 101)', () => {
   })
 })
 
-describe('SizeControls cap (ticket 101)', () => {
+describe('SizeControls with no limit on size (ADR 0019)', () => {
   const message = (wrapper: ReturnType<typeof mountControls>) => wrapper.find('[data-testid="size-message"]')
 
-  it('lets a Pattern grow to exactly 10,000 cells', async () => {
-    const wrapper = mountControls(pattern(100, 99))
-
-    await enter(rowsInput(wrapper), '100')
-
-    expect(wrapper.emitted('resize')).toHaveLength(1)
-    expect(message(wrapper).exists()).toBe(false)
-  })
-
-  it('refuses growth past 10,000 cells in the New Pattern form’s words, in beads, and keeps what was typed to correct', async () => {
+  it('lets a Pattern grow past 10,000 cells, which used to be the most, and says nothing against it', async () => {
     const wrapper = mountControls(pattern(100, 100))
 
     await enter(rowsInput(wrapper), '101')
 
-    expect(wrapper.emitted('resize')).toBeUndefined()
-    expect(message(wrapper).text()).toBe("That's 10,100 beads; the limit is 10,000.")
-    expect(message(wrapper).attributes('role')).toBe('alert')
-    expect(rowsInput(wrapper).element.value).toBe('101')
-  })
-
-  it('does not pull the estimate along to a size it refused', async () => {
-    const wrapper = mountControls(pattern(100, 100))
-
-    await type(rowsInput(wrapper), '101')
-
-    expect(estimate(wrapper)).toBe('≈ 15.0 × 15.0 cm')
-  })
-
-  it('clears the message once the size is back under the cap', async () => {
-    const wrapper = mountControls(pattern(100, 100))
-    await enter(rowsInput(wrapper), '101')
-
-    await enter(rowsInput(wrapper), '100')
-
+    expect(wrapper.emitted('resize')).toEqual([[{ columns: 100, rows: 101, columnsFrom: 'end', rowsFrom: 'end' }]])
     expect(message(wrapper).exists()).toBe(false)
-    expect(wrapper.emitted('resize')).toBeUndefined()
   })
 
-  it('always lets a Pattern that is already over the cap shrink', async () => {
+  it('lets a Pattern grow all the way to 250 × 250', async () => {
+    const wrapper = mountControls(pattern(100, 100))
+
+    await enter(columnsInput(wrapper), '250')
+
+    expect(wrapper.emitted('resize')).toEqual([[{ columns: 250, rows: 100, columnsFrom: 'end', rowsFrom: 'end' }]])
+  })
+
+  it('pulls the estimate along to the bigger size as it is typed', async () => {
+    const wrapper = mountControls(pattern(100, 100))
+
+    await type(rowsInput(wrapper), '200')
+
+    expect(estimate(wrapper)).toBe('≈ 15.0 × 30.0 cm')
+  })
+
+  it('always lets a big Pattern shrink', async () => {
     const wrapper = mountControls(pattern(200, 200))
 
     await enter(rowsInput(wrapper), '150')
 
     expect(wrapper.emitted('resize')).toEqual([[{ columns: 200, rows: 150, columnsFrom: 'end', rowsFrom: 'end' }]])
-    expect(message(wrapper).exists()).toBe(false)
-  })
-
-  it('says nothing about the cap for an over-cap Pattern that is simply open', () => {
-    expect(message(mountControls(pattern(200, 200))).exists()).toBe(false)
   })
 })
 

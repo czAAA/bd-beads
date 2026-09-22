@@ -1,13 +1,10 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, beadLabel, findBead } from './beads'
+import { BEAD_CATALOG, findBead } from './beads'
 import {
-  MAX_PATTERN_CELLS,
   estimatedSizeMm,
   formatSizeMm,
   gridFromSize,
-  isOverCellCap,
-  sizeCapRefusal,
-  type SizeCapMessages,
 } from './patternSize'
 
 const cube = findBead('toho-cube-1.5mm')!
@@ -33,21 +30,6 @@ describe('gridFromSize', () => {
 
   it('converts cm as ten times the mm', () => {
     expect(gridFromSize({ width: 1.5, height: 3, unit: 'cm' }, cube)).toEqual({ columns: 10, rows: 20 })
-  })
-})
-
-describe('isOverCellCap', () => {
-  it('lets exactly the cap through and refuses one more cell', () => {
-    expect(MAX_PATTERN_CELLS).toBe(10_000)
-    expect(isOverCellCap({ columns: 100, rows: 100 })).toBe(false)
-    expect(isOverCellCap({ columns: 10_001, rows: 1 })).toBe(true)
-    expect(isOverCellCap({ columns: 101, rows: 100 })).toBe(true)
-  })
-
-  it('limits the product, with no per-side maximum', () => {
-    expect(isOverCellCap({ columns: 500, rows: 10 })).toBe(false)
-    expect(isOverCellCap({ columns: 10_000, rows: 1 })).toBe(false)
-    expect(isOverCellCap({ columns: 200, rows: 200 })).toBe(true)
   })
 })
 
@@ -104,89 +86,5 @@ describe('formatSizeMm', () => {
   it('uses the language’s own unit labels', () => {
     expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, { mm: 'мм', cm: 'см' })).toBe('1.5 × 3.0 см')
     expect(formatSizeMm({ widthMm: 5, heightMm: 30 }, { mm: 'мм', cm: 'см' })).toBe('5 × 30 мм')
-  })
-})
-
-const messages: SizeCapMessages = {
-  beads: "That's {count} beads; the limit is {limit}.",
-  tall: 'With {bead} a Pattern can hold up to {limit} beads. At this width, that’s up to {size} {unit} tall.',
-  wide: 'With {bead} a Pattern can hold up to {limit} beads. At this height, that’s up to {size} {unit} wide.',
-}
-
-describe('sizeCapRefusal', () => {
-  it('is nothing at or under the cap', () => {
-    expect(sizeCapRefusal(messages, { unit: 'beads', dimensions: { columns: 100, rows: 100 }, bead: cube, unitLabels: units })).toBeUndefined()
-  })
-
-  it('speaks in beads when the size is in beads', () => {
-    const message = sizeCapRefusal(messages, {
-      unit: 'beads',
-      dimensions: { columns: 100, rows: 101 },
-      bead: cube,
-      unitLabels: units,
-    })
-    expect(message).toBe("That's 10,100 beads; the limit is 10,000.")
-  })
-
-  it('names the Bead and how tall the Pattern can be at this width in cm', () => {
-    const message = sizeCapRefusal(messages, {
-      unit: 'cm',
-      dimensions: { columns: 200, rows: 200 },
-      bead: round,
-      unitLabels: units,
-    })
-    // 10,000 / 200 columns = 50 rows of 2.2mm = 110mm = 11.0cm
-    expect(message).toBe(
-      `With ${beadLabel(round)} a Pattern can hold up to 10,000 beads. At this width, that’s up to 11 cm tall.`,
-    )
-  })
-
-  it('speaks in mm when the size is in mm', () => {
-    const message = sizeCapRefusal(messages, {
-      unit: 'mm',
-      dimensions: { columns: 200, rows: 200 },
-      bead: cube,
-      unitLabels: units,
-    })
-    expect(message).toContain('up to 75 mm tall')
-  })
-
-  it('suggests a width instead when even one row at this width is over the cap', () => {
-    const message = sizeCapRefusal(messages, {
-      unit: 'cm',
-      dimensions: { columns: 12_000, rows: 3 },
-      bead: cube,
-      unitLabels: units,
-    })
-    // 10,000 / 3 rows = 3,333 columns of 1.5mm = 4999.5mm = 499.9cm (rounded down)
-    expect(message).toContain('At this height')
-    expect(message).toContain('up to 499.9 cm wide')
-  })
-
-  it('formats the limit for the given locale', () => {
-    const message = sizeCapRefusal(messages, {
-      unit: 'beads',
-      dimensions: { columns: 101, rows: 100 },
-      bead: cube,
-      unitLabels: units,
-      locale: 'de',
-    })
-    expect(message).toBe("That's 10.100 beads; the limit is 10.000.")
-  })
-
-  it('suggests a maximum that, typed back in, is accepted, for every Bead and unit', () => {
-    for (const bead of BEAD_CATALOG) {
-      for (const unit of ['mm', 'cm'] as const) {
-        for (const columns of [7, 13, 61, 200, 999]) {
-          const dimensions = { columns, rows: 10_000 }
-          const message = sizeCapRefusal(messages, { unit, dimensions, bead, unitLabels: units })!
-          const suggested = Number(/up to ([\d.]+) \S+ tall/.exec(message)![1])
-          const width = (columns * (bead.widthMm + (bead.widthCorrectionMm ?? 0))) / (unit === 'cm' ? 10 : 1)
-          const accepted = gridFromSize({ width, height: suggested, unit }, bead)
-          expect(accepted.columns).toBe(columns)
-          expect(isOverCellCap(accepted)).toBe(false)
-        }
-      }
-    }
   })
 })

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { gridHeightPx, gridWidthPx } from './grid'

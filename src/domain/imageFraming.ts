@@ -155,13 +155,13 @@ export function sourcePixelAt(
 /**
  * How many bead cells the framing preview renders at most. The preview shows the picture around the frame as beads
  * too, so that the crop can be judged, and at a high zoom the picture reaches far past the frame — a 60 × 90 frame at
- * 800% would be eight frames wide and eight tall, which is 64 times the DOM of the Pattern itself (the preview renders
- * a positioned element per bead, the same as PatternGrid). This caps that: the surrounding context shrinks to fit,
- * evenly in both directions, and the frame itself is always rendered whole even when the Pattern alone is past the cap.
+ * 800% would be eight frames wide and eight tall, which is 64 times the beads of the Pattern itself. This caps that:
+ * the surrounding context shrinks to fit, evenly in both directions, and the frame itself is always rendered whole
+ * even when the Pattern alone is past the cap.
  *
- * Tighter than what the Pattern editor will happily render (a 60 × 90 Pattern is 5,400 cells and opens fine), because
- * this reflows on every pointer move of a drag rather than once when a Pattern is opened: the budget is set by what can
- * be re-rendered smoothly, not by what can be displayed.
+ * Set when every bead was a DOM element and is kept since (ticket 104 moved the drawing to a canvas, which made a
+ * bead far cheaper but not free): the preview is redrawn and resampled on every pointer move of a drag rather than once
+ * when a Pattern is opened, so the budget is set by what can be redrawn smoothly, not by what can be displayed.
  */
 export const PREVIEW_MAX_CELLS = 12000
 

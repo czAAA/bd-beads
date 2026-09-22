@@ -1,8 +1,9 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { computeGridDimensions, type Technique } from './grid'
+import { cellCenter, computeGridDimensions, rowHeightPx, type Technique } from './grid'
 import { fromHex } from './imageColors'
-import { CENTERED_PAN, frameSizeMm, framingView, previewLattice } from './imageFraming'
+import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, sourcePixelAt } from './imageFraming'
 import {
   ACCEPTED_IMAGE_FORMATS,
   DEFAULT_MAX_IMAGE_COLORS,
@@ -14,11 +15,16 @@ import {
   MIN_IMAGE_COLORS,
   clampMaxImageColors,
   convertImage,
+  convertPackedFrame,
   convertSampledFrame,
   imageInputAccept,
   formatImageLimits,
+  NO_COLOR,
+  packedToHex,
   pixelColorAt,
+  pixelPackedAt,
   sampleLattice,
+  sampleLatticePacked,
   validateImageFile,
   validateImagePixelCount,
   type PixelData,
@@ -112,6 +118,105 @@ describe('pixelColorAt', () => {
     expect(pixelColorAt(image, 1, 0)).toBe('#020000')
     expect(pixelColorAt(image, 0, 1)).toBe('#030000')
     expect(pixelColorAt(image, 1, 1)).toBe('#040000')
+  })
+})
+
+describe('pixelPackedAt', () => {
+  it('is the same color as pixelColorAt, as a number', () => {
+    const image = pixels(3, 1, [
+      [18, 52, 86, 255],
+      [0, 0, 0, 128],
+      [200, 30, 90, 200],
+    ])
+
+    for (const x of [0, 1, 2]) {
+      expect(packedToHex(pixelPackedAt(image, x, 0))).toBe(pixelColorAt(image, x, 0))
+    }
+  })
+
+  it('says NO_COLOR for a pixel below half alpha', () => {
+    expect(pixelPackedAt(pixels(1, 1, [[18, 52, 86, 127]]), 0, 0)).toBe(NO_COLOR)
+  })
+
+  it('writes a packed color as a #rrggbb with its leading zeros', () => {
+    expect(packedToHex(0x000102)).toBe('#000102')
+    expect(packedToHex(0)).toBe('#000000')
+  })
+})
+
+describe('sampleLatticePacked', () => {
+  /** What one cell took, the way it was worked out before sampling ran a row at a time: cellCenter, then sourcePixelAt, then the pixel's color. */
+  function cellByCell(
+    image: PixelData,
+    technique: Technique,
+    bead: Bead,
+    view: ReturnType<typeof framingView>,
+    lattice: ReturnType<typeof previewLattice>,
+  ): (string | undefined)[] {
+    const originXMm = lattice.frameColumn * bead.widthMm
+    const originYMm = lattice.frameRow * rowHeightPx(technique, bead.heightMm)
+    const cells: (string | undefined)[] = []
+    for (let row = 0; row < lattice.rows; row += 1) {
+      for (let column = 0; column < lattice.columns; column += 1) {
+        const center = cellCenter(technique, { row, column }, bead.widthMm, bead.heightMm)
+        const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
+        cells.push(pixel && pixelColorAt(image, pixel.x, pixel.y))
+      }
+    }
+    return cells
+  }
+
+  /** A picture with a bit of everything: every color channel varying, some pixels see-through. */
+  function busyImage(width: number, height: number): PixelData {
+    const rgba: number[][] = []
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        rgba.push([(x * 37) % 256, (y * 91) % 256, ((x + y) * 13) % 256, (x + 2 * y) % 5 === 0 ? 40 : 255])
+      }
+    }
+    return pixels(width, height, rgba)
+  }
+
+  it.each([
+    ['loom', cubeBead],
+    ['peyote', cubeBead],
+    ['brick', delicaBead],
+  ] as const)('takes exactly the colors sampling cell by cell does, in %s, at every zoom and pan', (technique, bead) => {
+    const image = busyImage(53, 41)
+    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
+    const frame = frameSizeMm(technique, dimensions, bead)
+
+    for (const zoom of [1, 1.75, 4]) {
+      for (const pan of [{ x: 0, y: 0 }, CENTERED_PAN, { x: 1, y: 0.3 }]) {
+        const view = framingView(image, frame, zoom, pan)
+        const lattice = previewLattice({ view, frame, dimensions, bead, technique })
+
+        const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
+
+        expect(Array.from(packed, (color) => (color === NO_COLOR ? undefined : packedToHex(color)))).toEqual(
+          cellByCell(image, technique, bead, view, lattice),
+        )
+      }
+    }
+  })
+
+  it('leaves off-picture cells as NO_COLOR', () => {
+    const image = flat(2, 2, [10, 20, 30])
+    const dimensions = { columns: 2, rows: 2 }
+    const frame = frameSizeMm('loom', dimensions, cubeBead)
+    const view = framingView(image, frame, 1, CENTERED_PAN)
+
+    // A lattice bigger than the picture: 6 × 6 cells with the frame in the middle.
+    const packed = sampleLatticePacked({
+      image,
+      view,
+      technique: 'loom',
+      bead: cubeBead,
+      lattice: { columns: 6, rows: 6, frameColumn: 2, frameRow: 2 },
+    })
+
+    expect(packed[0]).toBe(NO_COLOR)
+    expect(packed[2 * 6 + 2]).not.toBe(NO_COLOR)
   })
 })
 
@@ -349,6 +454,29 @@ describe('convertImage', () => {
     expect(delica.dimensions).not.toEqual(cube.dimensions)
     expect(delicaCorner.x).toBeCloseTo(cubeCorner.x, -1)
     expect(delicaCorner.y).toBeCloseTo(cubeCorner.y, -1)
+  })
+})
+
+describe('convertPackedFrame', () => {
+  it('makes the same Pattern convertSampledFrame does from the same lattice', () => {
+    const image = {
+      width: 40,
+      height: 30,
+      data: new Uint8ClampedArray(
+        Array.from({ length: 40 * 30 }, (_unused, index) => [(index * 7) % 256, (index * 13) % 256, (index * 29) % 256, index % 11 === 0 ? 10 : 255]).flat(),
+      ),
+    }
+    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, cubeBead)
+    const frame = frameSizeMm('peyote', dimensions, cubeBead)
+    const view = framingView(image, frame, 2, { x: 0.3, y: 0.6 })
+    const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique: 'peyote' })
+    const input = { image, view, technique: 'peyote' as const, bead: cubeBead, lattice }
+
+    for (const maxColors of [2, 5, 14]) {
+      expect(convertPackedFrame(sampleLatticePacked(input), lattice, dimensions, maxColors)).toEqual(
+        convertSampledFrame(sampleLattice(input), lattice, dimensions, maxColors),
+      )
+    }
   })
 })
 

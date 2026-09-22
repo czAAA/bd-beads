@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import ConvertImageFrame from './components/ConvertImageFrame.vue'
@@ -19,6 +19,7 @@ import { useMirrorState } from './composables/useMirrorState'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { useQrExport } from './composables/useQrExport'
+import { useSettledPattern } from './composables/useSettledPattern'
 import { useSpaceDragPan } from './composables/useSpaceDragPan'
 import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
@@ -68,8 +69,9 @@ import {
   type Pattern,
   type UndoEntry,
 } from './domain/pattern'
-import { estimatedSizeMm, formatSizeMm, isOverCellCap } from './domain/patternSize'
-import { importPatterns } from './domain/patternFile'
+import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
+import { downloadFile } from './domain/fileDownload'
+import { importPatterns, patternFileName, serializePattern } from './domain/patternFile'
 import { patternFromShareLink } from './domain/qrExport'
 import { resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
@@ -149,9 +151,10 @@ const replaceBeadConfirmMessage = computed(() => {
 
 /**
  * QR export (ticket 68, 116): the Toolbox's Edit group opens the panel and this file shows it, so its state lives
- * here rather than in either.
+ * here rather than in either. The code reads every bead of the Pattern, so it waits for a stroke to end (see
+ * useSettledPattern) rather than being worked out on each step of it.
  */
-const qrExport = useQrExport(() => activePattern.value)
+const qrExport = useQrExport(() => shareablePattern.value)
 
 /** How long Save's "Saved" confirmation stays up (ticket 115): long enough to read, short enough to be gone before the next edit. */
 const SAVED_CONFIRMATION_MS = 2000
@@ -166,14 +169,23 @@ function clearSavedConfirmation() {
 }
 
 /**
- * Save (ticket 115): edits already reach this device as they land (ADR 0012), so this is reassurance rather than a new
- * kind of storage — it writes whatever is pending now and says so. "Saved" is only claimed once the write got through;
- * if the device refuses it the library's own "couldn't save" notice shows instead (saveFailed). A second press starts
- * the confirmation's clock over.
+ * Save (ticket 115): edits already reach this device as they land (ADR 0012), so the write to this device is
+ * reassurance rather than a new kind of storage — it writes whatever is pending now and says so. "Saved" is only
+ * claimed once the write got through; if the device refuses it the library's own "couldn't save" notice shows instead
+ * (saveFailed). A second press starts the confirmation's clock over.
+ *
+ * Save also hands over the open Pattern as a Pattern file (ticket 119), so it can be opened on another device. The
+ * file goes out even when the device refuses the write: it is then the only copy that survives.
  */
 function onSave() {
   clearSavedConfirmation()
-  if (!activePattern.value || !saveNow()) {
+  if (!activePattern.value) {
+    return
+  }
+
+  const saveSucceeded = saveNow()
+  downloadFile(patternFileName(activePattern.value), serializePattern(activePattern.value))
+  if (!saveSucceeded) {
     return
   }
 
@@ -226,8 +238,8 @@ function onNewPatternDraft(draft: CreatePatternInput) {
   const geometry = patternGeometry(draft)
   const wholeBeads = unit !== 'beads' || (Number.isInteger(width) && Number.isInteger(height))
 
-  // A size the form would refuse (not whole beads, or past the cell cap) is no more a frame to follow than an empty field is.
-  if (width > 0 && height > 0 && wholeBeads && geometry && !isOverCellCap(geometry)) {
+  // A size the form would refuse (not whole beads) is no more a frame to follow than an empty field is.
+  if (width > 0 && height > 0 && wholeBeads && geometry) {
     newPatternDraft.value = draft
   }
 }
@@ -492,6 +504,19 @@ function commitGridChange(pattern: Pattern, updated: Pattern) {
  * (see endStroke) — every cell touched in between just updates the live Pattern directly.
  */
 const strokeMode = ref<'paint' | 'erase' | null>(null)
+
+/** The open Pattern for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
+const settledPattern = useSettledPattern(
+  () => activePattern.value,
+  () => strokeMode.value !== null,
+)
+
+/** The open Pattern for the code that shares it, which nobody watches change: it waits for the stroke to end. */
+const shareablePattern = useSettledPattern(
+  () => activePattern.value,
+  () => strokeMode.value !== null,
+  Number.POSITIVE_INFINITY,
+)
 const strokeBaseline = ref<Grid | null>(null)
 
 function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
@@ -528,7 +553,9 @@ function endStroke() {
  * screen and undoable either way — and endStroke turns the whole stroke into a single write.
  */
 function paintStrokeCell(row: number, column: number, color: string | null) {
-  const pattern = activePattern.value
+  // Worked on as the Pattern itself, not through the library's reactive wrapper: a stroke step reads a bead or two, but
+  // comparing what it left for finished rows reads them all, and each read through a proxy is many times the cost.
+  const pattern = activePattern.value && toRaw(activePattern.value)
   if (!pattern) {
     return
   }
@@ -1495,7 +1522,7 @@ function onMoveRow(delta: number) {
         <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
 
         <div class="app-shell__below-canvas" data-testid="app-below-canvas">
-          <BeadQuantities :pattern="activePattern" />
+          <BeadQuantities :pattern="settledPattern" />
           <PatternList
             :patterns="patterns"
             :active-pattern-id="activePatternId"

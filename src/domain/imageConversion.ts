@@ -1,8 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
-import { cellCenter, rowHeightPx, type GridDimensions, type Technique } from './grid'
-import { nearestColor, resolveImageColors, toHex } from './imageColors'
+import { rowHeightPx, rowOffsetPx, type GridDimensions, type Technique } from './grid'
+import { nearestColor, resolveImageColors } from './imageColors'
 import {
-  sourcePixelAt,
   type FramingView,
   type ImageSize,
   type PreviewLattice,
@@ -34,26 +33,44 @@ export interface PixelData extends ImageSize {
  */
 export const ALPHA_THRESHOLD = 128
 
+/** What a packed color holds for a pixel that is too transparent to weave, or a cell that falls off the picture. */
+export const NO_COLOR = -1
+
 /**
- * The color a picture's pixel contributes to a cell, or undefined for a pixel below half alpha (an empty cell — see
- * ALPHA_THRESHOLD). A partly transparent pixel at or above the line is composited over white, the paper it would be
- * seen against.
+ * The color a picture's pixel contributes to a cell as one number, 0xRRGGBB, or NO_COLOR for a pixel below half alpha
+ * (an empty cell — see ALPHA_THRESHOLD). A partly transparent pixel at or above the line is composited over white, the
+ * paper it would be seen against.
+ *
+ * The same color as pixelColorAt, without making a string of it: sampling a whole framing lattice on every move of a
+ * drag is tens of thousands of these, and the preview only ever needs the string for the few distinct colors it holds.
  */
-export function pixelColorAt(image: PixelData, x: number, y: number): string | undefined {
+export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
   const alpha = image.data[at + 3] ?? 0
   if (alpha < ALPHA_THRESHOLD) {
-    return undefined
+    return NO_COLOR
   }
 
   const over = alpha / 255
-  const onWhite = (channel: number) => channel * over + 255 * (1 - over)
+  const onWhite = (channel: number) => Math.round(channel * over + 255 * (1 - over))
 
-  return toHex({
-    r: onWhite(image.data[at] ?? 0),
-    g: onWhite(image.data[at + 1] ?? 0),
-    b: onWhite(image.data[at + 2] ?? 0),
-  })
+  return (
+    (onWhite(image.data[at] ?? 0) << 16) | (onWhite(image.data[at + 1] ?? 0) << 8) | onWhite(image.data[at + 2] ?? 0)
+  )
+}
+
+/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores. */
+export function packedToHex(packed: number): string {
+  return `#${packed.toString(16).padStart(6, '0')}`
+}
+
+/**
+ * The color a picture's pixel contributes to a cell, or undefined for a pixel below half alpha (an empty cell — see
+ * ALPHA_THRESHOLD).
+ */
+export function pixelColorAt(image: PixelData, x: number, y: number): string | undefined {
+  const packed = pixelPackedAt(image, x, y)
+  return packed === NO_COLOR ? undefined : packedToHex(packed)
 }
 
 /** A picture format Convert image accepts, named the way the file input, the validation and the helper text each need it. */
@@ -195,25 +212,59 @@ interface SamplingInput {
 }
 
 /**
- * The raw color under one cell of a lattice, sampled at the cell's true centre in millimetres (see grid.ts's
- * cellCenter): `origin` is where the frame's own cell (0, 0) sits in that lattice, so subtracting it puts the point
- * back in the frame's own coordinates, which is what the picture's position is measured in.
+ * The picture's raw colors for every cell of a framing preview's lattice (see imageFraming's previewLattice), row by
+ * row, as packed colors (see pixelPackedAt) — NO_COLOR where a cell falls off the picture, or on a pixel too
+ * transparent to weave.
+ *
+ * Each cell is sampled at its true centre in millimetres (see grid.ts's cellCenter): `origin` is where the frame's own
+ * cell (0, 0) sits in that lattice, so subtracting it puts the point back in the frame's own coordinates, which is what
+ * the picture's position is measured in. The arithmetic is cellCenter's and sourcePixelAt's, in the same order, written
+ * out over a whole row at a time because this runs on every move of a drag.
  */
-function sampleCell(
-  { image, view, technique, bead }: SamplingInput,
-  row: number,
-  column: number,
-  originXMm: number,
-  originYMm: number,
-): string | undefined {
-  const center = cellCenter(technique, { row, column }, beadPitchMm(bead), bead.heightMm)
-  const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
-  return pixel && pixelColorAt(image, pixel.x, pixel.y)
+export function sampleLatticePacked({
+  image,
+  view,
+  technique,
+  bead,
+  lattice,
+}: SamplingInput & { lattice: PreviewLattice }): Int32Array {
+  const cellWidth = beadPitchMm(bead)
+  const cellHeight = bead.heightMm
+
+  /*
+   * Where the frame's top-left corner sits in the lattice's own coordinates. A whole number of cells across and a
+   * whole number of rows down, so a lattice cell's centre is its frame cell's centre plus exactly this — including the
+   * half-cell stagger, which matches because frameRow is always even (see PreviewLattice.frameRow).
+   */
+  const originXMm = lattice.frameColumn * cellWidth
+  const originYMm = lattice.frameRow * rowHeightPx(technique, cellHeight)
+
+  const packed = new Int32Array(lattice.rows * lattice.columns)
+  for (let row = 0; row < lattice.rows; row += 1) {
+    const centerY = cellHeight / 2 + row * rowHeightPx(technique, cellHeight)
+    const sourceY = Math.floor((centerY - originYMm - view.offsetYMm) / view.scaleMm)
+    const rowStart = row * lattice.columns
+
+    if (sourceY < 0 || sourceY >= image.height) {
+      packed.fill(NO_COLOR, rowStart, rowStart + lattice.columns)
+      continue
+    }
+
+    const stagger = rowOffsetPx(technique, row, cellWidth)
+    for (let column = 0; column < lattice.columns; column += 1) {
+      const centerX = column * cellWidth + cellWidth / 2 + stagger
+      const sourceX = Math.floor((centerX - originXMm - view.offsetXMm) / view.scaleMm)
+      packed[rowStart + column] =
+        sourceX < 0 || sourceX >= image.width ? NO_COLOR : pixelPackedAt(image, sourceX, sourceY)
+    }
+  }
+
+  return packed
 }
 
 /**
- * The picture's raw colors for every cell of a framing preview's lattice (see imageFraming's previewLattice) —
- * undefined where a cell falls off the picture, or on a pixel too transparent to weave.
+ * The same lattice as sampleLatticePacked, as `#rrggbb` strings — undefined where a cell falls off the picture, or on a
+ * pixel too transparent to weave.
  *
  * The lattice's frame block is the Pattern's own cells, so the preview and the Pattern it will create come out of this
  * one sampling pass: what is inside the frame on screen is not a separate rendering of the same idea, it is the same
@@ -222,20 +273,23 @@ function sampleCell(
 export function sampleLattice(
   input: SamplingInput & { lattice: PreviewLattice },
 ): (string | undefined)[][] {
-  const { lattice, technique, bead } = input
-
-  /*
-   * Where the frame's top-left corner sits in the lattice's own coordinates. A whole number of cells across and a
-   * whole number of rows down, so a lattice cell's centre is its frame cell's centre plus exactly this — including the
-   * half-cell stagger, which matches because frameRow is always even (see PreviewLattice.frameRow).
-   */
-  const originXMm = lattice.frameColumn * beadPitchMm(bead)
-  const originYMm = lattice.frameRow * rowHeightPx(technique, bead.heightMm)
+  const { lattice } = input
+  const packed = sampleLatticePacked(input)
+  const hexes = new Map<number, string>()
 
   return Array.from({ length: lattice.rows }, (_row, row) =>
-    Array.from({ length: lattice.columns }, (_cell, column) =>
-      sampleCell(input, row, column, originXMm, originYMm),
-    ),
+    Array.from({ length: lattice.columns }, (_cell, column) => {
+      const color = packed[row * lattice.columns + column]!
+      if (color === NO_COLOR) {
+        return undefined
+      }
+      let hex = hexes.get(color)
+      if (hex === undefined) {
+        hex = packedToHex(color)
+        hexes.set(color, hex)
+      }
+      return hex
+    }),
   )
 }
 
@@ -243,6 +297,25 @@ export function sampleLattice(
 export interface ConvertedImage {
   grid: Grid
   imageColors: string[]
+}
+
+/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the Palette; see convertSampledFrame. */
+function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColors: number): ConvertedImage {
+  const counts = new Map<string, number>()
+  for (const row of raw) {
+    for (const hex of row) {
+      if (hex !== undefined) {
+        counts.set(hex, (counts.get(hex) ?? 0) + 1)
+      }
+    }
+  }
+
+  const { mapping, colors } = resolveImageColors(counts, maxColors)
+  const grid: Grid = raw.map((row) =>
+    row.map<Cell>((hex) => ({ color: hex === undefined ? null : mapping.get(hex) ?? hex })),
+  )
+
+  return { grid, imageColors: colors }
 }
 
 /**
@@ -259,28 +332,43 @@ export function convertSampledFrame(
   dimensions: GridDimensions,
   maxColors: number,
 ): ConvertedImage {
-  const raw = Array.from({ length: dimensions.rows }, (_row, row) =>
-    Array.from(
-      { length: dimensions.columns },
-      (_cell, column) => sampled[row + lattice.frameRow]?.[column + lattice.frameColumn],
+  return reduceFrame(
+    Array.from({ length: dimensions.rows }, (_row, row) =>
+      Array.from(
+        { length: dimensions.columns },
+        (_cell, column) => sampled[row + lattice.frameRow]?.[column + lattice.frameColumn],
+      ),
     ),
+    maxColors,
   )
+}
 
-  const counts = new Map<string, number>()
-  for (const row of raw) {
-    for (const hex of row) {
-      if (hex !== undefined) {
-        counts.set(hex, (counts.get(hex) ?? 0) + 1)
-      }
-    }
-  }
+/** convertSampledFrame for a lattice sampled into packed colors (see sampleLatticePacked): the same Pattern out of the same cells. */
+export function convertPackedFrame(
+  sampled: Int32Array,
+  lattice: PreviewLattice,
+  dimensions: GridDimensions,
+  maxColors: number,
+): ConvertedImage {
+  const hexes = new Map<number, string>()
 
-  const { mapping, colors } = resolveImageColors(counts, maxColors)
-  const grid: Grid = raw.map((row) =>
-    row.map<Cell>((hex) => ({ color: hex === undefined ? null : mapping.get(hex) ?? hex })),
+  return reduceFrame(
+    Array.from({ length: dimensions.rows }, (_row, row) =>
+      Array.from({ length: dimensions.columns }, (_cell, column) => {
+        const color = sampled[(row + lattice.frameRow) * lattice.columns + column + lattice.frameColumn]!
+        if (color === NO_COLOR) {
+          return undefined
+        }
+        let hex = hexes.get(color)
+        if (hex === undefined) {
+          hex = packedToHex(color)
+          hexes.set(color, hex)
+        }
+        return hex
+      }),
+    ),
+    maxColors,
   )
-
-  return { grid, imageColors: colors }
 }
 
 /**

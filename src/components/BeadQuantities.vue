@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRaw } from 'vue'
 import { computeColorQuantities } from '../domain/beadQuantities'
 import type { Pattern } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
@@ -11,7 +11,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-const quantities = computed(() => (props.pattern ? computeColorQuantities(props.pattern) : []))
+// Read from the Pattern itself, not through the library's reactive wrapper: a Pattern is replaced whole by every edit, so
+// its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is slow.
+const quantities = computed(() => (props.pattern ? computeColorQuantities(toRaw(props.pattern)) : []))
 </script>
 
 <template>

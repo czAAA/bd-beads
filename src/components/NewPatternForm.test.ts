@@ -311,8 +311,8 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
   const warningTestId = '[data-testid="convert-image-slow-framing-warning"]'
 
   /**
-   * The real threshold (12,000 cells) now sits above the 10,000-cell cap (ADR 0017), so no size the form accepts can
-   * reach it; these tests lower it to something reachable instead, to keep covering the lookup itself.
+   * The real threshold is 12,000 cells; these tests lower it so the sizes they build stay small, and cover the lookup
+   * itself.
    */
   const reachable = { loom: 5000, peyote: 5000, brick: 5000 }
 
@@ -392,6 +392,7 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
 })
 
 describe('NewPatternForm size in beads (ticket 100)', () => {
+  /** What the form once said against a size that was too big: it says nothing now (ADR 0019). */
   const messageTestId = '[data-testid="size-cap-message"]'
   const createButton = (wrapper: ReturnType<typeof mount>) => wrapper.find<HTMLButtonElement>('button[type="submit"]')
   const convertInput = (wrapper: ReturnType<typeof mount>) =>
@@ -455,152 +456,58 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
     expect(createButton(wrapper).element.disabled).toBe(false)
   })
 
-  it('accepts exactly 10,000 cells and refuses 10,001, in beads', async () => {
-    const wrapper = mount(NewPatternForm)
+  describe('has no limit on size (ADR 0019)', () => {
+    it.each([
+      ['10,001 cells', '10001', '1'],
+      ['500 × 10', '500', '10'],
+      ['200 × 200', '200', '200'],
+      ['70 × 250, a bracelet', '70', '250'],
+      ['250 × 250', '250', '250'],
+    ])('accepts %s in beads: Create is on, Convert image is on, and nothing is said against it', async (_label, width, height) => {
+      const wrapper = mount(NewPatternForm)
 
-    await state(wrapper, { width: '100', height: '100' })
-    expect(createButton(wrapper).element.disabled).toBe(false)
-    expect(wrapper.find(messageTestId).exists()).toBe(false)
+      await state(wrapper, { width, height })
 
-    await state(wrapper, { width: '10001', height: '1' })
-    expect(createButton(wrapper).element.disabled).toBe(true)
-    expect(wrapper.find(messageTestId).exists()).toBe(true)
+      expect(createButton(wrapper).element.disabled).toBe(false)
+      expect(convertInput(wrapper).element.disabled).toBe(false)
+      expect(wrapper.find(messageTestId).exists()).toBe(false)
+    })
 
-    await state(wrapper, { width: '10000', height: '1' })
-    expect(createButton(wrapper).element.disabled).toBe(false)
+    it('submits a size that used to be too big, as it is', async () => {
+      const wrapper = mount(NewPatternForm)
+
+      await state(wrapper, { width: '250', height: '250' })
+      await wrapper.find('form').trigger('submit')
+
+      expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ size: { width: 250, height: 250, unit: 'beads' } })
+    })
+
+    it('accepts a big size in mm and cm as well, whichever Bead and Technique', async () => {
+      const wrapper = mount(NewPatternForm)
+
+      for (const bead of BEAD_CATALOG) {
+        for (const technique of ['loom', 'peyote', 'brick']) {
+          await state(wrapper, { unit: 'cm', bead: bead.id, technique, width: '60', height: '60' })
+          expect(createButton(wrapper).element.disabled).toBe(false)
+          expect(wrapper.find(messageTestId).exists()).toBe(false)
+        }
+      }
+    })
+
+    it('still wants a size that means something: whole beads, and at least 1', async () => {
+      const wrapper = mount(NewPatternForm)
+
+      await state(wrapper, { width: '250.5', height: '250' })
+
+      expect(createButton(wrapper).element.disabled).toBe(true)
+    })
   })
 
-  it('limits the product, not either side: 500 x 10 is fine and 200 x 200 is not', async () => {
-    const wrapper = mount(NewPatternForm)
-
-    await state(wrapper, { width: '500', height: '10' })
-    expect(createButton(wrapper).element.disabled).toBe(false)
-
-    await state(wrapper, { width: '200', height: '200' })
-    expect(createButton(wrapper).element.disabled).toBe(true)
-  })
-
-  it('says how many beads it is against the limit, in beads', async () => {
-    const wrapper = mount(NewPatternForm)
-    await wrapper.find('[data-testid="unit-select"]').setValue('beads')
-
-    await state(wrapper, { width: '200', height: '200' })
-
-    expect(wrapper.find(messageTestId).text()).toBe(
-      ru.sizeCap.beads.replace('{count}', (40000).toLocaleString('ru')).replace('{limit}', (10000).toLocaleString('ru')),
-    )
-    expect(wrapper.find(messageTestId).attributes('role')).toBe('alert')
-  })
-
-  it('names the Bead and how tall the Pattern can be at this width, in cm', async () => {
-    const wrapper = mount(NewPatternForm)
-    const round = BEAD_CATALOG[1]!
-
-    // 300 cm / 1.65mm = 182 columns, 100 cm / 2.2mm = 45 rows: 8,190 cells... so make it taller: 200 cm = 91 rows
-    await state(wrapper, { unit: 'cm', bead: round.id, width: '30', height: '20' })
-    expect(wrapper.find(messageTestId).exists()).toBe(true)
-
-    const text = wrapper.find(messageTestId).text()
-    expect(text).toContain('TOHO Round 11/0')
-    expect(text).toContain(ru.form.unitCm)
-    expect(text).not.toBe('')
-    // 30cm = 182 columns, so up to floor(10,000 / 182) = 54 rows of 2.2mm = 118.8mm = 11.8cm.
-    expect(text).toContain('11.8')
-  })
-
-  it('speaks in mm when the size is in mm', async () => {
-    const wrapper = mount(NewPatternForm)
-
-    await state(wrapper, { unit: 'mm', bead: BEAD_CATALOG[0]!.id, width: '300', height: '300' })
-
-    expect(wrapper.find(messageTestId).text()).toContain(ru.form.unitMm)
-    expect(wrapper.find(messageTestId).text()).not.toContain(ru.form.unitCm)
-  })
-
-  it('accepts the suggested maximum when it is typed back in', async () => {
-    const wrapper = mount(NewPatternForm)
-    await state(wrapper, { unit: 'cm', bead: BEAD_CATALOG[1]!.id, width: '30', height: '20' })
-    const suggested = /(\d+\.?\d*)\s*см|(\d+\.?\d*)\s*cm/.exec(wrapper.find(messageTestId).text())!
-    expect(suggested).not.toBeNull()
-
-    await wrapper.find('[data-testid="height-input"]').setValue(suggested[1] ?? suggested[2]!)
-
-    expect(wrapper.find(messageTestId).exists()).toBe(false)
-    expect(createButton(wrapper).element.disabled).toBe(false)
-  })
-
-  it('judges mm/cm on the grid it converts to for the chosen Bead: the same size passes for one and not another', async () => {
-    const wrapper = mount(NewPatternForm)
-    const [cube, round, delica] = BEAD_CATALOG.map((bead) => bead.id)
-
-    // 150mm x 150mm: Cube 100 x 100 = 10,000 (passes); Delica 94 x 115 = 10,810 (refused); Round 91 x 68 = 6,188.
-    await state(wrapper, { unit: 'mm', bead: cube!, width: '150', height: '150' })
-    expect(createButton(wrapper).element.disabled).toBe(false)
-
-    await wrapper.find('[data-testid="bead-select"]').setValue(delica!)
-    expect(createButton(wrapper).element.disabled).toBe(true)
-    expect(wrapper.find(messageTestId).text()).toContain('Miyuki Delica 11/0')
-
-    await wrapper.find('[data-testid="bead-select"]').setValue(round!)
-    expect(createButton(wrapper).element.disabled).toBe(false)
-    expect(wrapper.find(messageTestId).exists()).toBe(false)
-  })
-
-  it('re-checks when the unit, width or height changes', async () => {
-    const wrapper = mount(NewPatternForm)
-    await state(wrapper, { unit: 'mm', bead: BEAD_CATALOG[0]!.id, width: '150', height: '150' })
-    expect(createButton(wrapper).element.disabled).toBe(false)
-
-    await wrapper.find('[data-testid="width-input"]').setValue('152') // 101 columns
-    expect(createButton(wrapper).element.disabled).toBe(true)
-
-    await wrapper.find('[data-testid="unit-select"]').setValue('cm') // 152cm x 150cm: far over
-    expect(createButton(wrapper).element.disabled).toBe(true)
-
-    await wrapper.find('[data-testid="unit-select"]').setValue('beads') // 152 x 150 beads: still over
-    expect(createButton(wrapper).element.disabled).toBe(true)
-
-    await wrapper.find('[data-testid="width-input"]').setValue('50')
-    await wrapper.find('[data-testid="height-input"]').setValue('50')
-    expect(createButton(wrapper).element.disabled).toBe(false)
-  })
-
-  it('re-checks when the Technique changes, though the cap is the same for every Technique', async () => {
-    const wrapper = mount(NewPatternForm)
-    await state(wrapper, { width: '101', height: '100', technique: 'peyote' })
-    expect(createButton(wrapper).element.disabled).toBe(true)
-
-    await wrapper.find('[data-testid="technique-select"]').setValue('brick')
-    expect(createButton(wrapper).element.disabled).toBe(true)
-  })
-
-  it('disables Convert image as well, so a refused size has no frame to fit a picture into', async () => {
-    const wrapper = mount(NewPatternForm)
-    await state(wrapper, { width: '100', height: '100' })
-    expect(convertInput(wrapper).element.disabled).toBe(false)
-
-    await state(wrapper, { width: '100', height: '101' })
-
-    expect(convertInput(wrapper).element.disabled).toBe(true)
-  })
-
-  it('does not submit a refused size even when the form is submitted directly', async () => {
-    const wrapper = mount(NewPatternForm)
-    await state(wrapper, { width: '200', height: '200' })
-
-    await wrapper.find('form').trigger('submit')
-
-    expect(wrapper.emitted('submit')).toBeUndefined()
-  })
-
-  it('words its refusal in English too', async () => {
+  it('words the unit in English too', async () => {
     const { en } = await import('../i18n/en')
     localStorage.setItem('bd-beads:locale', 'en')
     const wrapper = mount(NewPatternForm)
 
-    await state(wrapper, { width: '200', height: '200' })
-
-    expect(wrapper.find(messageTestId).text()).toBe("That's 40,000 beads; the limit is 10,000.")
     expect(en.form.unitBeads).toBe('beads')
     expect(wrapper.find('[data-testid="unit-select"] option').text()).toBe('beads')
   })

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
+import { beadColors, dimmedBeads, hoverBead, mirrorAxes, pressBead, previewedBeads } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { loadPatterns } from './domain/patternStorage'
 
@@ -32,11 +33,11 @@ describe('App Mirror axis counters (ticket 44)', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10x20
 
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+    expect(mirrorAxes(wrapper).columns).toBe(0)
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[0]!.trigger('pointerdown') // paint (0,0)
+    await pressBead(wrapper, 0) // paint (0,0)
 
-    expect(wrapper.findAll('[data-testid="grid-cell"]').filter((cell) => !!cell.attributes('style')?.includes('background-color'))).toHaveLength(1)
+    expect(beadColors(wrapper).flat().filter((color) => color !== null)).toHaveLength(1)
   })
 
   it('1 left-right axis draws one axis line and mirrors across the center exactly like the legacy toggle', async () => {
@@ -45,14 +46,12 @@ describe('App Mirror axis counters (ticket 44)', () => {
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
 
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+    expect(mirrorAxes(wrapper).columns).toBe(1)
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[0]!.trigger('pointerdown') // paint (0,0), 10 columns wide -> mirrors to (0,9)
+    await pressBead(wrapper, 0) // paint (0,0), 10 columns wide -> mirrors to (0,9)
 
-    const painted = cells.filter((cell) => cell.attributes('style')?.includes('background-color'))
-    expect(painted).toHaveLength(2)
+    expect(beadColors(wrapper).flat().filter((color) => color !== null)).toHaveLength(2)
   })
 
   it('still shows the Mirror current buttons, unchanged', async () => {
@@ -114,14 +113,13 @@ describe("App's Mirror copy mode (ticket 45)", () => {
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis, 2 strips of 5
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
+    /** The indices, counting along the rows, of every painted bead. */
     const paintedColumns = () =>
-      cells
-        .map((cell, index) => ({ index, painted: cell.attributes('style')?.includes('background-color') }))
-        .filter((cell) => cell.painted)
-        .map((cell) => cell.index)
+      beadColors(wrapper)
+        .flat()
+        .flatMap((color, index) => (color !== null ? [index] : []))
 
-    await cells[0]!.trigger('pointerdown') // paint (0,0)
+    await pressBead(wrapper, 0) // paint (0,0)
     await wrapper.trigger('mouseup') // ends the stroke, so it becomes one undo step
     expect(paintedColumns()).toEqual([0, 9]) // mirror-image by default: 0 <-> 9
 
@@ -132,7 +130,7 @@ describe("App's Mirror copy mode (ticket 45)", () => {
     await copyModeButton.trigger('click')
     expect(copyModeButton.attributes('aria-pressed')).toBe('true')
 
-    await cells[0]!.trigger('pointerdown') // paint (0,0) again, now in copy mode
+    await pressBead(wrapper, 0) // paint (0,0) again, now in copy mode
     expect(paintedColumns()).toEqual([0, 5]) // plain repeat: same relative cell in the other strip, 0 <-> 5
   })
 
@@ -158,8 +156,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
 
     // Paint (0,9) *before* turning the axis on, so it's a plain, un-mirrored paint -- exactly the "content drawn
     // before that direction's live mirroring was turned on" scenario ADR 0006 built "Mirror current" for.
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('pointerdown') // (0, 9)
+    await pressBead(wrapper, 9) // (0, 9)
     await wrapper.trigger('mouseup')
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull() // not live-mirrored: only column 9 got painted
 
@@ -180,8 +177,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     await createPatternViaForm(wrapper, '15', '30') // 10 columns
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('pointerdown') // (0, 9), before the axis is on
+    await pressBead(wrapper, 9) // (0, 9), before the axis is on
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
@@ -201,8 +197,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click') // 1 axis, 2 strips of 10 rows
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[19 * 10]!.trigger('pointerdown') // (row 19, column 0) -- its mirror counterpart is row 0
+    await pressBead(wrapper, 19 * 10) // (row 19, column 0) -- its mirror counterpart is row 0
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('click')
@@ -217,23 +212,23 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(0)
+    expect(mirrorAxes(wrapper).columns).toBe(0)
 
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
 
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-row"]')).toHaveLength(0) // the other direction is untouched
+    expect(mirrorAxes(wrapper).columns).toBe(1)
+    expect(mirrorAxes(wrapper).rows).toBe(0) // the other direction is untouched
   })
 
   it('leaves an actual count above 0 alone (does not add a second axis)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+    expect(mirrorAxes(wrapper).columns).toBe(1)
 
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
 
-    expect(wrapper.findAll('[data-testid="mirror-axis-line-column"]')).toHaveLength(1)
+    expect(mirrorAxes(wrapper).columns).toBe(1)
   })
 
   it('dims exactly the cells the click would overwrite, and clears on mouseleave', async () => {
@@ -241,24 +236,20 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await createPatternViaForm(wrapper, '15', '30') // 10 columns
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('pointerdown') // (0, 9)
+    await pressBead(wrapper, 9) // (0, 9)
     await wrapper.trigger('mouseup')
 
-    expect(cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))).toHaveLength(0)
+    expect(dimmedBeads(wrapper)).toEqual([])
 
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
 
     // Count 0 -> acts as 1 axis, 2 strips of 5. Column 9 is the (already-painted) source; only its counterpart,
     // column 0, would actually change color when clicked.
-    const dimmed = cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))
-    expect(dimmed).toHaveLength(1)
-    expect(dimmed[0]!.attributes('data-testid')).toBe('grid-cell')
-    expect(cells.indexOf(dimmed[0]!)).toBe(0) // (0, 0)
+    expect(dimmedBeads(wrapper)).toEqual([{ row: 0, column: 0 }])
 
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseleave')
 
-    expect(cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed'))).toHaveLength(0)
+    expect(dimmedBeads(wrapper)).toEqual([])
   })
 
   it('clicking produces exactly the change the dimmed preview showed', async () => {
@@ -266,12 +257,11 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[9]!.trigger('pointerdown')
+    await pressBead(wrapper, 9)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
 
-    const dimmedCount = cells.filter((cell) => cell.classes().includes('pattern-grid__cell--dimmed')).length
+    const dimmedCount = dimmedBeads(wrapper).length
 
     await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
 
@@ -286,32 +276,30 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // finishes row 0
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[19 * 10]!.trigger('pointerdown') // (row 19, column 0) -- mirrors onto row 0
+    await pressBead(wrapper, 19 * 10) // (row 19, column 0) -- mirrors onto row 0
     await wrapper.trigger('mouseup')
 
     await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('mouseenter')
 
     // Row 0 would naively change under the raw sync, but it's finished/locked, so a click couldn't actually
     // change it -- it must not be dimmed either.
-    expect(cells[0]!.classes()).not.toContain('pattern-grid__cell--dimmed')
+    expect(dimmedBeads(wrapper)).not.toContainEqual({ row: 0, column: 0 })
   })
 })
 
 describe('App Paste through Mirror (ticket 50)', () => {
   /** A drag across the grid: press on one cell, move through the rest, release. */
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
-    const cells = wrapper.findAll('[data-testid="grid-cell"]')
-    await cells[indices[0]!]!.trigger('pointerdown')
+    await pressBead(wrapper, indices[0]!)
     for (const index of indices.slice(1)) {
-      await cells[index]!.trigger('pointerenter', { buttons: 1 })
+      await hoverBead(wrapper, index, { buttons: 1 })
     }
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
   /** Presses and releases one cell without moving -- a click, which is what stamps a copied block. */
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
-    await wrapper.findAll('[data-testid="grid-cell"]')[index]!.trigger('pointerdown')
+    await pressBead(wrapper, index)
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
@@ -341,8 +329,8 @@ describe('App Paste through Mirror (ticket 50)', () => {
     await patternWithCopiedDot(wrapper)
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click') // 1 axis: column c <-> column 9-c
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('pointerenter') // hover (2,2)
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(2) // aimed spot + its mirrored counterpart
+    await hoverBead(wrapper, 22) // hover (2,2)
+    expect(previewedBeads(wrapper)).toHaveLength(2) // aimed spot + its mirrored counterpart
 
     await click(wrapper, 22) // (2,2)
 
@@ -388,9 +376,9 @@ describe('App Paste through Mirror (ticket 50)', () => {
     await patternWithCopiedDot(wrapper)
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
 
-    await wrapper.findAll('[data-testid="grid-cell"]')[22]!.trigger('pointerdown', { button: 2 })
+    await pressBead(wrapper, 22, { button: 2 })
 
-    expect(wrapper.findAll('[data-testid="cell-preview"]')).toHaveLength(0)
+    expect(previewedBeads(wrapper)).toHaveLength(0)
     await click(wrapper, 22)
     expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull() // the click landed as a fresh Selection, not a stamp
   })

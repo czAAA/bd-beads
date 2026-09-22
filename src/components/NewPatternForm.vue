@@ -12,10 +12,10 @@ import {
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
-import { gridFromSize, sizeCapRefusal } from '../domain/patternSize'
+import { gridFromSize } from '../domain/patternSize'
 import { useI18n } from '../i18n/useI18n'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -72,7 +72,7 @@ const isSizeStated = computed(() => {
 
 /**
  * The grid the stated size works out to, in whichever unit it was stated: beads are the columns and rows directly, and
- * mm/cm are converted through the chosen Bead. The single source the cap, the slow-framing hint and (via the emitted
+ * mm/cm are converted through the chosen Bead. The single source the slow-framing hint and (via the emitted
  * draft, see domain/pattern's patternGeometry) Convert image's frame all read, so none of them can disagree about it.
  */
 const dimensions = computed(() =>
@@ -81,24 +81,7 @@ const dimensions = computed(() =>
     : undefined,
 )
 
-/**
- * Why the stated size can't be created (ADR 0017's cell cap), worded in the unit being used, or undefined when it can.
- * Judged on the grid the size converts to for the chosen Bead, so it re-runs whenever the Bead, the unit or either
- * side changes — the same size can pass with one Bead and be refused with a smaller one.
- */
-const capRefusal = computed(() =>
-  dimensions.value && selectedBead.value
-    ? sizeCapRefusal(t.value.sizeCap, {
-        unit: unit.value,
-        dimensions: dimensions.value,
-        bead: selectedBead.value,
-        unitLabels: { mm: t.value.form.unitMm, cm: t.value.form.unitCm },
-        locale: locale.value,
-      })
-    : undefined,
-)
-
-const isValid = computed(() => isSizeStated.value && !capRefusal.value)
+const isValid = computed(() => isSizeStated.value)
 
 const techniqueLabel = computed<Record<Technique, string>>(() => ({
   loom: t.value.form.techniqueLoom,
@@ -246,11 +229,6 @@ async function onConvertImage(event: Event): Promise<void> {
         <option value="cm">{{ t.form.unitCm }}</option>
       </select>
     </div>
-
-    <!-- The cap's refusal (ADR 0017), in the unit being used and never only a bare cell count. It disables Create and Convert image below. -->
-    <p v-if="capRefusal" class="new-pattern-form__error" role="alert" data-testid="size-cap-message">
-      {{ capRefusal }}
-    </p>
 
     <button type="submit" :disabled="!isValid">{{ t.form.submit }}</button>
 

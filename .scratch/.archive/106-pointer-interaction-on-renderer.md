@@ -1,0 +1,40 @@
+# 106: Pointer interaction and hover preview on the renderer
+
+**What to build:** With the temporary switch on (ticket 105), every pointer tool works on the Drawing surface: a click or touch lands on the bead under the pointer, worked out from where it is on the surface and the current zoom, rotation, technique stagger and scroll, rather than from per-bead elements. Paint (dragging a stroke), right-click erase, Fill, the Erase tool and the Select drag all behave exactly as they do on the DOM grid, with mouse, touch and pen. Hovering shows the preview of where paint will land, including its live-mirror counterparts; moving the pointer costs a repaint of a handful of beads, not of the whole grid.
+
+Behaviour that must not change: the Row progress lock (finished rows are never touched), Mirror while painting, Space-drag pan taking precedence over painting, a dragged stroke being one undo step and saving once when it ends (ADR 0012), and a touch or pen stroke not scrolling the page while drawing. Undo, Redo and every keyboard shortcut keep working.
+
+The Selection marquee, paste preview, Mirror axis lines and "Mirror current" dimming are 107.
+
+**Blocked by:** 105 (Editor draws the Pattern on the renderer)
+
+**Status:** done
+
+- [x] With the switch on, Paint, right-click erase, Fill, the Erase tool and the Select drag work with mouse, touch and pen, on loom, peyote and brick stitch, at every zoom and rotated
+- [x] Which bead a point lands on is correct across peyote's and brick stitch's staggered rows and tighter row packing, on the bead's edge, in the gap between beads, and outside the grid
+- [x] The hover preview shows the paint color (or the neutral outline with no color selected) on the hovered bead and its live-mirror counterparts, and a pasted block previews in its own colors
+- [x] Hovering and painting hold the floor target (at least 30 fps at 4× CPU slowdown) at 70×250 and at 250×250; the numbers from ticket 103's performance check are recorded in this ticket
+- [x] The Row progress lock, Mirror painting, Space-drag pan, one-undo-step-per-stroke and save-once-per-stroke behave exactly as with the DOM grid
+- [x] Every behaviour test that finds beads through DOM elements has an equivalent for the renderer path, at the domain, hit-test or pointer-event-at-coordinates level; hit-testing has its own unit tests including staggered rows
+- [x] With the switch off (the default) nothing changes
+
+## How it came out
+
+- **Hit-testing** (`src/rendering/hitTest.ts`, `beadAt`): which bead a point is on, from the Pattern's geometry alone, answering as the DOM grid did: a bead is its whole 20px box with its rim; where peyote's rows nest the later row is on top, except in its rounded corners (a 6px circular radius, 30% of the bead, tested to the arc), where the row underneath shows; brick stitch's seam and the gaps beside a shifted row, and the outline, are on no bead; edges are top/left-inclusive; rotated Patterns are turned back first. 16 unit tests, including staggered rows, the overlap, corners, the seam, zoom and rotation.
+- **Pointer events on the surface** (`PatternSurface.vue`): pointerdown/move/leave and contextmenu on the surface root, emitting the six events the DOM grid did (`cell-primary-down`, `-move`, `cell-secondary-down`, `-move`, `cell-hover`, `hover-end`), re-emitted unchanged by `PatternCanvas`, so `App.vue` is not involved. A move only says something on entering a different bead (as `pointerenter` did), leaving a bead for a gap and coming back says it again, a touch press hovers its bead first, `touch-action: none` keeps a touch stroke from scrolling the page (mutation-checked in a real browser: without it the touch test fails), the cursor is a pointer over a bead. Space-drag pan, the Row progress lock, one undo step and one save per stroke are `App.vue`'s and needed no change.
+- **Hover preview on the overlay** (`renderOverlay`'s `preview`): the paint color at 45% inside the bead's rim (each bead of a pasted block in its own color), or a 2px dark outline with no color; the hovered bead and its live-mirror counterparts arrive as `previewCells` exactly as before. Drawn under the Row progress marker. Overlay redraws are one clear and a handful of beads: hover holds 60 fps everywhere (below).
+- **Edits redraw a few rows, not the surface**: `renderPattern` takes `rows: { first, last }` and draws just that band (clipped, cleared, its neighbours redrawn), and `PatternSurface` finds what an edit changed by comparing rows against what it last drew (rows that are the same array are skipped), drawing one band per cluster of changed rows, all of it again for a big change (Undo, Fill: past 40 rows), and none at all if nothing on screen changed. Tested at the renderer (band rectangle for each Technique, rotation, zoom, pixel ratio, brick seam, same beads as a full draw) and at the surface (one band for one bead, two for a Mirror stroke, none for an unchanged edit, all for a big one and for Row progress moving, the canvases never sent away).
+- **The edit path had to be tightened for paint to hold the floor**, which ticket 112 anticipated: measured from the app, a stroke step at 70×250 spent most of its time in things that read every bead. Fixed here, with no change to what anyone sees or to storage: `paintCells` copies only the rows it touches (the others are the same arrays; `editSharing.test.ts` pins it, along with `keepFinishedRows`, now proportional to the rows it replaced); the stroke step works on the Pattern rather than through the library's reactive wrapper (a proxy read per bead); the bead counts (`BeadQuantities`) follow a stroke at most every 250 ms and are exact when it ends, with the first change of a stroke shown at once (`useSettledPattern`); the QR code, worked out from every bead, waits for the stroke to end. Two App tests that pressed several beads without releasing now release between presses, which is what a click is; they still assert the counts move as soon as a bead is painted or erased.
+- **Verified in a real browser with the switch on** (`e2e/visual/renderer-interaction.spec.ts`, in CI): hover preview looks against ticket 103's references for loom, peyote, brick (paint) and peyote (erase, neutral outline), at 25%/100%/300%, upright and rotated (16 comparisons, the previewed bead excluded from the color check); click paints the right bead in each Technique upright and rotated; a drag paints every bead crossed and is one Undo step; right click and right-drag erase; Fill; the Erase tool; finished rows untouched while the row being woven is painted; Mirror paints the counterpart; Space + drag pans and paints nothing; a touch stroke (real touch events over CDP) paints and does not scroll the page.
+
+### Performance (`RENDERER=1 npm run perf`, the pointer moving over beads on screen; DOM baseline from ticket 103 in brackets)
+
+| At 4× slowdown | 60×90 | 70×250 | 250×250 |
+| --- | --- | --- | --- |
+| hover | **60 fps** 5 ms (11 fps) | **60 fps** 6 ms (3 fps) | **60 fps** 6 ms (1 fps) |
+| paint stroke | **60 fps** 8 ms (23 fps) | **56 fps** 11 ms (7 fps) | **39 fps** 19 ms (2 fps) |
+
+At 6×: hover 60 fps at every size (7–9 ms), paint 60 fps at every size (10–11 ms). The floor (30 fps at 4×) is held at 70×250 and 250×250 for both. At 250×250 (fit zoom 30%, all 43,250 beads on screen) painting is 39 fps at 4× and is the number to watch: what is left is the per-step copy of the changed row and the library's bookkeeping, not drawing. Ticket 112's remaining scope (Undo history as changed cells rather than whole-grid snapshots, memory with long histories) is untouched.
+
+### Still on the DOM grid (tickets 107, 108)
+The Selection marquee, the paste preview's Selection outline, Mirror axis lines and the "Mirror current" dimming are not on the surface yet, so with the switch on they do not show (Selection and Mirror still work; you just cannot see them); 107 draws them. Where nested peyote rows overlap by 5px, a hover preview is drawn over the row above it instead of under it, as the DOM had it: too small to see, noted for 107's comparisons.

@@ -121,11 +121,6 @@ export const en: Translations = {
     lockedReason: 'Turn off Row progress to change the size',
     pairsHint: 'From the start, rows change two at a time so the beads keep their stagger.',
   },
-  sizeCap: {
-    beads: "That's {count} beads; the limit is {limit}.",
-    tall: 'With {bead} a Pattern can hold up to {limit} beads. At this width, that\u2019s up to {size} {unit} tall.',
-    wide: 'With {bead} a Pattern can hold up to {limit} beads. At this height, that\u2019s up to {size} {unit} wide.',
-  },
   deleteAll: {
     button: 'Delete all',
     confirmTitle: 'Delete all?',
