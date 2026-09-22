@@ -13,7 +13,7 @@ Both placements are `position: sticky`, so Progress bar stays reachable while sc
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A Pattern-shape helper computes vertical/horizontal from the rendered grid box (technique- and rotation-aware), not raw column/row counts
 - [ ] Progress bar renders on the canvas panel: a "row X of Y" readout plus Previous/Next icon-only buttons, moving the current-row pointer exactly as the existing Toolbox buttons do today, disabled at either end the same way

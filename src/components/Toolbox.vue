@@ -8,7 +8,7 @@ import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import type { Tool } from '../domain/tool'
 import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
-import { rowProgressPosition, type Pattern } from '../domain/pattern'
+import type { Pattern } from '../domain/pattern'
 import type { ResizeRequest } from '../domain/resize'
 
 const props = defineProps<{
@@ -52,7 +52,6 @@ const emit = defineEmits<{
   'mirror-current-hover': [axis: 'horizontal' | 'vertical' | null]
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
-  'move-row': [delta: number]
   'delete-all': []
   /** "Remove selected row/column" (ticket 123): the Selection names which one, so it takes no payload of its own. */
   'remove-selected-line': []
@@ -469,6 +468,10 @@ const topBottomMax = computed(() =>
       <SizeControls class="tool-group__full-row" :pattern="pattern" @resize="(request) => emit('resize', request)" />
     </ToolGroup>
 
+    <!--
+      Row progress's moment-to-moment controls — the readout and Previous/Next — moved to Progress bar on the canvas
+      (CONTEXT.md; ADR 0005's 2026-09-22 amendment, ticket 124). This group keeps only what's set once per session.
+    -->
     <ToolGroup
       ref="rowProgressGroupRef"
       :title="t.toolbox.groups.rowProgress"
@@ -507,41 +510,6 @@ const topBottomMax = computed(() =>
           <rect x="16" y="10" width="5" height="11" rx="1.5" />
           <path d="M6 11.5v1.5a4 4 0 0 0 4 4h2.5" />
           <path d="M10.5 14.5 13 17l-2.5 2.5" />
-        </svg>
-      </button>
-      <p class="row-progress__position tool-group__full-row" data-testid="row-progress-position">
-        {{ t.rowProgress.positionLabel }}
-        {{ rowProgressPosition(pattern).current + 1 }} / {{ rowProgressPosition(pattern).total }}
-      </p>
-      <button
-        type="button"
-        class="icon-button"
-        data-testid="row-progress-previous"
-        :title="`${t.rowProgress.previousButton} (Shift+Enter)`"
-        :aria-label="t.rowProgress.previousButton"
-        :disabled="!pattern.rowProgress.enabled || rowProgressPosition(pattern).current === 0"
-        @click="emit('move-row', -1)"
-      >
-        <!-- Rows are woven top to bottom, so stepping back up the Pattern is a plain up arrow. -->
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 20V5" />
-          <path d="M5.5 11.5 12 5l6.5 6.5" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        class="icon-button"
-        data-testid="row-progress-next"
-        :title="`${t.rowProgress.nextButton} (Enter)`"
-        :aria-label="t.rowProgress.nextButton"
-        :disabled="
-          !pattern.rowProgress.enabled || rowProgressPosition(pattern).current === rowProgressPosition(pattern).total - 1
-        "
-        @click="emit('move-row', 1)"
-      >
-        <!-- A tick, not a down arrow: what this button means is "this row is woven", and advancing is the consequence. -->
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M4 13l5.5 5.5L20 6" />
         </svg>
       </button>
     </ToolGroup>
@@ -637,18 +605,6 @@ const topBottomMax = computed(() =>
  */
 .toolbox :deep(.palette-picker) {
   display: contents;
-}
-
-/*
- * Row progress's readout still reads as one cluster with the toggles and the steps, now simply stacked in the group's
- * columns like any other; it no longer needs a width of its own (it is a full row, and nowrap keeps "Row 12 / 120" on
- * one line inside 140-odd pixels).
- */
-.row-progress__position {
-  margin: 0;
-  white-space: nowrap;
-  /* Same-width digits, so stepping from row 9 to 10 doesn't nudge the steps sideways. */
-  font-variant-numeric: tabular-nums;
 }
 
 /* The wrapper is there to carry a tooltip a disabled button can't (ticket 116), so it needs a real box exactly the button's size to be hovered — display: contents would drop it. */

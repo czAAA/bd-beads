@@ -322,7 +322,7 @@ describe('App Resize (ticket 101)', () => {
       await createInBeads(wrapper, 4, 6)
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
       for (let index = 0; index < 5; index += 1) {
-        await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+        await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
       }
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click') // off, pointer on row 6
       expect(stored().rowProgress.currentRow).toBe(5)

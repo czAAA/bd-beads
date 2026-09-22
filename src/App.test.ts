@@ -1164,8 +1164,9 @@ describe('App', () => {
 
 /*
  * Every control in the Toolbox is an icon: no button label, just each Tool group's own small title (ticket 40) and
- * the row-progress readout as text. Button words survive as a hover/focus tooltip plus the screen-reader name, so
- * the Toolbox stays compact.
+ * the Size group's readout as text (ticket 124 moved the Row progress group's own readout out to Progress bar, on
+ * the canvas — see the "App Progress bar" describe block below). Button words survive as a hover/focus tooltip plus
+ * the screen-reader name, so the Toolbox stays compact.
  */
 describe('App tool strip icon buttons', () => {
   /**
@@ -1196,12 +1197,6 @@ describe('App tool strip icon buttons', () => {
     },
     { testId: 'row-progress-enabled', label: (t: typeof en) => t.rowProgress.enabledLabel, titleSuffix: ' (P)' },
     { testId: 'row-progress-direction', label: (t: typeof en) => t.rowProgress.directionButton, titleSuffix: ' (D)' },
-    {
-      testId: 'row-progress-previous',
-      label: (t: typeof en) => t.rowProgress.previousButton,
-      titleSuffix: ' (Shift+Enter)',
-    },
-    { testId: 'row-progress-next', label: (t: typeof en) => t.rowProgress.nextButton, titleSuffix: ' (Enter)' },
   ]
 
   it.each(iconButtons)('renders $testId as an icon button with no visible text', async ({ testId }) => {
@@ -1243,7 +1238,7 @@ describe('App tool strip icon buttons', () => {
     expect(new Set(glyphs).size).toBe(glyphs.length)
   })
 
-  it('leaves each Tool group\u2019s title, the Size group\u2019s readout and the row-progress readout as the Toolbox\u2019s only text \u2014 every button label is still just a tooltip', async () => {
+  it('leaves each Tool group\u2019s title and the Size group\u2019s readout as the Toolbox\u2019s only text \u2014 every button label is still just a tooltip', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1258,7 +1253,6 @@ describe('App tool strip icon buttons', () => {
       ru.toolbox.groups.size,
       wrapper.find('[data-testid="size-controls"]').text(),
       ru.toolbox.groups.rowProgress,
-      wrapper.find('[data-testid="row-progress-position"]').text(),
     ].join('')
 
     // Whitespace stripped entirely, not just collapsed: the mirror axis counters (unlike every other Toolbox
@@ -1291,6 +1285,105 @@ describe('App tool strip icon buttons', () => {
     expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain(
       'tool-picker__button--selected',
     )
+  })
+})
+
+/*
+ * Progress bar (ticket 124, ADR 0005's 2026-09-22 amendment): Row progress's readout and Previous/Next, moved off
+ * the Toolbox and onto the canvas panel. Its own icon buttons are covered here rather than in the "App tool strip
+ * icon buttons" describe block above, since — unlike every other icon button there — it doesn't exist in the DOM at
+ * all until Row progress is switched on.
+ */
+describe('App Progress bar', () => {
+  async function enableRowProgress(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
+    await createPatternViaForm(wrapper, width, height)
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+  }
+
+  const progressBarButtons = [
+    {
+      testId: 'progress-bar-previous',
+      label: (t: typeof en) => t.rowProgress.previousButton,
+      titleSuffix: ' (Shift+Enter)',
+    },
+    { testId: 'progress-bar-next', label: (t: typeof en) => t.rowProgress.nextButton, titleSuffix: ' (Enter)' },
+  ]
+
+  it('renders nothing until Row progress is switched on', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
+
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
+  })
+
+  it.each(progressBarButtons)('renders $testId as an icon button with no visible text', async ({ testId }) => {
+    const wrapper = mount(App)
+    await enableRowProgress(wrapper)
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.classes()).toContain('icon-button')
+    expect(button.find('svg').exists()).toBe(true)
+    expect(button.text()).toBe('')
+  })
+
+  it.each(progressBarButtons)('names $testId for hover tooltips and screen readers alike', async ({ testId, label, titleSuffix }) => {
+    const wrapper = mount(App)
+    await enableRowProgress(wrapper)
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(`${label(en)}${titleSuffix}`)
+    expect(button.attributes('aria-label')).toBe(label(en))
+  })
+
+  it.each(progressBarButtons)('translates $testId’s tooltip and label with the interface language', async ({ testId, label, titleSuffix }) => {
+    const wrapper = mount(App)
+    await enableRowProgress(wrapper)
+    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.attributes('title')).toBe(`${label(ru)}${titleSuffix}`)
+    expect(button.attributes('aria-label')).toBe(label(ru))
+  })
+
+  it('draws a different glyph for Previous and Next', async () => {
+    const wrapper = mount(App)
+    await enableRowProgress(wrapper)
+
+    const previous = wrapper.find('[data-testid="progress-bar-previous"] svg').html()
+    const next = wrapper.find('[data-testid="progress-bar-next"] svg').html()
+
+    expect(previous).not.toBe(next)
+  })
+
+  it('reflows into a column for a taller-than-wide Pattern and a row for a wider-than-tall one (Pattern shape)', async () => {
+    const tall = mount(App)
+    await enableRowProgress(tall, '15', '30') // 10 columns x 20 rows
+    expect(tall.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--vertical')
+    tall.unmount()
+
+    localStorage.clear() // a fresh library for the second Pattern, or it would reopen the one just created above
+    const wide = mount(App)
+    await enableRowProgress(wide, '30', '15') // 20 columns x 10 rows
+    expect(wide.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--horizontal')
+  })
+
+  it('follows Rotate, since Pattern shape reads the rendered box rather than the raw grid', async () => {
+    const wrapper = mount(App)
+    await enableRowProgress(wrapper, '15', '30') // 10 columns x 20 rows: vertical
+    expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--vertical')
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--horizontal')
   })
 })
 
@@ -1539,7 +1632,7 @@ describe('App Erase tool (ticket 89)', () => {
       await click(wrapper, index) // paint the first two rows
     }
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 finished
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // row 0 finished
     await wrapper.find('[data-testid="tool-erase"]').trigger('click')
 
     await click(wrapper, 0) // (0,0), in the finished row
@@ -1770,10 +1863,10 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
 
     await pressKey({ key: 'Enter' })
     await pressKey({ key: 'Enter' })
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('3 / 20')
 
     await pressKey({ key: 'Enter', shiftKey: true })
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('2 / 20')
   })
 
   it('respects the disabled bounds at the first/last row', async () => {
@@ -1783,7 +1876,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
 
     await pressKey({ key: 'Enter', shiftKey: true }) // already at the first row
 
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('1 / 2')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('1 / 2')
   })
 
   it('is a no-op while Row progress is off', async () => {
@@ -1804,7 +1897,19 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
     button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('1 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('1 / 20')
+  })
+
+  it('suppresses Enter/Shift+Enter when a Progress bar button itself has focus (ticket 124 moved it off the Toolbox), so a plain click there does not also double-move the row', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+
+    const button = wrapper.find('[data-testid="progress-bar-next"]').element as HTMLButtonElement
+    button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('1 / 20')
   })
 })
 
@@ -1951,10 +2056,10 @@ describe('App row progress', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('3 / 20')
     // Two rows are behind the pointer and dimmed, and the third is the one outlined.
     expect(rowProgressView(wrapper)).toMatchObject({ direction: 'rows', finished: 2, current: 2 })
   })
@@ -1963,12 +2068,12 @@ describe('App row progress', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    await wrapper.find('[data-testid="row-progress-previous"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-previous"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('2 / 20')
     expect(rowProgressView(wrapper)).toMatchObject({ finished: 1 })
   })
 
@@ -1978,13 +2083,13 @@ describe('App row progress', () => {
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-previous"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled,
     ).toBe(true)
 
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled,
     ).toBe(true)
   })
 
@@ -1992,12 +2097,12 @@ describe('App row progress', () => {
     const first = mount(App)
     await createPatternViaForm(first, '15', '30')
     await first.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await first.find('[data-testid="row-progress-next"]').trigger('click')
+    await first.find('[data-testid="progress-bar-next"]').trigger('click')
     first.unmount()
 
     const afterReload = mount(App)
 
-    expect(afterReload.find('[data-testid="row-progress-position"]').text()).toContain('2 / 20')
+    expect(afterReload.find('[data-testid="progress-bar-position"]').text()).toContain('2 / 20')
     expect(rowProgressView(afterReload)).toMatchObject({ finished: 1 })
     expect(loadPatterns()[0]!.rowProgress).toEqual({
       enabled: true,
@@ -2009,7 +2114,7 @@ describe('App row progress', () => {
 
   describe('row direction', () => {
     function position(wrapper: ReturnType<typeof mount>) {
-      return wrapper.find('[data-testid="row-progress-position"]').text()
+      return wrapper.find('[data-testid="progress-bar-position"]').text()
     }
 
     it('turns rows to run down the columns: the readout counts columns and the steps move through them', async () => {
@@ -2022,8 +2127,8 @@ describe('App row progress', () => {
       expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('aria-pressed')).toBe('true')
       expect(position(wrapper)).toContain('1 / 10')
 
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
       expect(position(wrapper)).toContain('3 / 10')
       // Rows run down the columns: the first two columns are behind the pointer and dimmed, the third is outlined.
@@ -2036,12 +2141,12 @@ describe('App row progress', () => {
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
       await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
 
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
       expect(position(wrapper)).toContain('3 / 3')
       expect(
-        wrapper.find<HTMLButtonElement>('[data-testid="row-progress-next"]').element.disabled,
+        wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled,
       ).toBe(true)
     })
 
@@ -2049,11 +2154,11 @@ describe('App row progress', () => {
       const wrapper = mount(App)
       await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
       await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
       expect(position(wrapper)).toContain('2 / 10')
 
       await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
@@ -2065,7 +2170,7 @@ describe('App row progress', () => {
       await createPatternViaForm(first, '15', '30')
       await first.find('[data-testid="row-progress-direction"]').trigger('click')
       await first.find('[data-testid="row-progress-enabled"]').trigger('click')
-      await first.find('[data-testid="row-progress-next"]').trigger('click')
+      await first.find('[data-testid="progress-bar-next"]').trigger('click')
       first.unmount()
 
       const afterReload = mount(App)
@@ -2103,7 +2208,7 @@ describe('App row progress', () => {
 
       await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-      await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
       expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
       await wrapper.find('[data-testid="redo-button"]').trigger('click')
@@ -2117,8 +2222,8 @@ describe('App finished rows', () => {
   async function withTwoRowsWoven(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-color-id="red"]').trigger('click')
   }
 
@@ -2183,7 +2288,7 @@ describe('App finished rows', () => {
     await pressBead(wrapper, 4) // (0,4), painted before it was woven
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await pressBead(wrapper, 4, { button: 2 })
     await wrapper.trigger('mouseup')
@@ -2239,7 +2344,7 @@ describe('App finished rows', () => {
     const wrapper = mount(App)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await pressBead(wrapper, 0) // (0,0), a row that's finished no longer, in a column that now is
     await wrapper.trigger('mouseup')
@@ -2280,7 +2385,7 @@ describe('App finished rows', () => {
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
@@ -2295,7 +2400,7 @@ describe('App finished rows', () => {
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // row 0 now finished
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
@@ -2368,10 +2473,10 @@ describe('App delete all', () => {
     await click(wrapper, 0)
     await click(wrapper, 25)
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="row-progress-direction"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2412,7 +2517,7 @@ describe('App delete all', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4), painted before it's locked
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // row 0 now finished/locked
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // row 0 now finished/locked
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2440,8 +2545,8 @@ describe('App delete all', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4)
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // rows 0-1 finished
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // rows 0-1 finished
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2456,7 +2561,7 @@ describe('App delete all', () => {
       currentRow: 2,
       currentColumn: 0,
     })
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('3 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('3 / 20')
   })
 
   it('does nothing when there is no open Pattern', () => {
@@ -2701,7 +2806,7 @@ describe('App replace bead', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2755,7 +2860,7 @@ describe('App replace bead', () => {
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2902,7 +3007,7 @@ describe('App pattern transfer', () => {
 
     await importFile(wrapper, serializeLibrary([woven]))
 
-    expect(wrapper.find('[data-testid="row-progress-position"]').text()).toContain('5 / 10')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('5 / 10')
     expect(rowProgressView(wrapper)).toMatchObject({ finished: 4 })
   })
 

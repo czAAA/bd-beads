@@ -1,5 +1,13 @@
 import { beadLabel, findBead, type Bead } from './beads'
-import { neighborsOf, positionKey, type GridDimensions, type GridPosition, type Technique } from './grid'
+import {
+  gridHeightPx,
+  gridWidthPx,
+  neighborsOf,
+  positionKey,
+  type GridDimensions,
+  type GridPosition,
+  type Technique,
+} from './grid'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
 import { gridFromSize, type StatedSize } from './patternSize'
 
@@ -584,6 +592,24 @@ export function changedCells(before: Grid, after: Grid): GridPosition[] {
 export function summarizePattern(pattern: Pattern): string {
   const [width, height] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   return `${pattern.name} · ${width}×${height}`
+}
+
+/** Whether a Pattern's rendered grid box is taller than it is wide, or the reverse — see CONTEXT.md's Pattern shape. */
+export type PatternShape = 'vertical' | 'horizontal'
+
+/**
+ * Pattern shape (CONTEXT.md; ADR 0005's 2026-09-22 amendment): decides where Progress bar sits. Read from the
+ * rendered grid box's own width and height (gridWidthPx/gridHeightPx, which already bakes in a Technique's row
+ * packing — e.g. peyote's tighter rows and every offset technique's extra half-cell of width) rather than the raw
+ * column/row counts, which the box's actual proportions can disagree with. The view-only rotated flag swaps the two
+ * the same way it swaps what's on screen (see Pattern.rotated); Row direction never enters into it, since that only
+ * changes which way the weaver counts rows, not the box's shape. "Horizontal" includes square (width === height).
+ */
+export function patternShape(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotated'>): PatternShape {
+  const width = gridWidthPx(pattern.technique, pattern.columns)
+  const height = gridHeightPx(pattern.technique, pattern.rows)
+  const [renderedWidth, renderedHeight] = pattern.rotated ? [height, width] : [width, height]
+  return renderedWidth < renderedHeight ? 'vertical' : 'horizontal'
 }
 
 /**

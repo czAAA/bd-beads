@@ -193,7 +193,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // finishes row 0
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // finishes row 0
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click') // 1 axis, 2 strips of 10 rows
 
@@ -273,7 +273,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click') // finishes row 0
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // finishes row 0
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 19 * 10) // (row 19, column 0) -- mirrors onto row 0

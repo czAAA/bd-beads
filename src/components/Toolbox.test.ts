@@ -153,34 +153,23 @@ describe('Toolbox', () => {
     expect(wrapper.find('[data-testid="mirror-current-vertical"]').attributes('title')).toContain('(V)')
   })
 
-  it('puts the row progress controls and readout inside the Row progress group', () => {
+  it('puts only the Enabled and Direction toggles inside the Row progress group (ticket 124: the readout and Previous/Next moved to Progress bar on the canvas)', () => {
     const wrapper = mountToolbox()
 
     const rowProgressGroup = wrapper.findAll('.tool-group')[5]!
-    for (const testId of [
-      'row-progress-enabled',
-      'row-progress-direction',
-      'row-progress-position',
-      'row-progress-previous',
-      'row-progress-next',
-    ]) {
+    for (const testId of ['row-progress-enabled', 'row-progress-direction']) {
       expect(rowProgressGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
+    }
+    for (const testId of ['row-progress-position', 'row-progress-previous', 'row-progress-next']) {
+      expect(rowProgressGroup.find(`[data-testid="${testId}"]`).exists()).toBe(false)
     }
   })
 
-  it('gives the row progress readout its own full row, not counted among the icon controls', () => {
-    const wrapper = mountToolbox()
-
-    expect(wrapper.find('[data-testid="row-progress-position"]').classes()).toContain('tool-group__full-row')
-  })
-
-  it("shows every Row progress control's shortcut in its tooltip (ticket 94)", () => {
+  it("shows the Enabled and Direction toggles' shortcut in their tooltip (ticket 94)", () => {
     const wrapper = mountToolbox()
 
     expect(wrapper.find('[data-testid="row-progress-enabled"]').attributes('title')).toContain('(P)')
     expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('title')).toContain('(D)')
-    expect(wrapper.find('[data-testid="row-progress-previous"]').attributes('title')).toContain('Shift+Enter')
-    expect(wrapper.find('[data-testid="row-progress-next"]').attributes('title')).toContain('(Enter)')
   })
 
   it('emits select-tool when a tool button is clicked', async () => {
@@ -268,16 +257,6 @@ describe('Toolbox', () => {
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
     expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
-  })
-
-  it('emits move-row with the step direction', async () => {
-    const pattern = makePattern()
-    pattern.rowProgress.enabled = true
-    const wrapper = mountToolbox({ pattern })
-
-    await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
-
-    expect(wrapper.emitted('move-row')).toEqual([[1]])
   })
 
   it('reflects rotated/row-progress state from the pattern prop', () => {

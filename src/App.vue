@@ -8,6 +8,7 @@ import NewPatternForm from './components/NewPatternForm.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternImport from './components/PatternImport.vue'
 import PatternList from './components/PatternList.vue'
+import ProgressBar from './components/ProgressBar.vue'
 import QrExportPanel from './components/QrExportPanel.vue'
 import ShortcutsHelp from './components/ShortcutsHelp.vue'
 import Toolbox from './components/Toolbox.vue'
@@ -56,6 +57,7 @@ import {
   moveToRow,
   paintCells,
   patternGeometry,
+  patternShape,
   replaceBead,
   resolvePatternBead,
   restoreSnapshot,
@@ -204,6 +206,14 @@ const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
 
 /** The floating zoom cluster's own readout (ticket 57 moved the cluster here, off PatternCanvas): derived from the same zoom the grid scales by, rather than threaded down as a second prop — it's a pure Math.round(zoom * 100) either way (see usePatternZoom.ts). */
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
+
+/** Where Progress bar goes (ticket 124, ADR 0005's 2026-09-22 amendment): undefined with no Pattern open, since there's then nothing to shape. */
+const progressBarShape = computed(() => (activePattern.value ? patternShape(activePattern.value) : undefined))
+
+/** Whether Progress bar renders at all: a Pattern has to be open, not taken over by framing, with Row progress itself switched on (CONTEXT.md's Progress bar: "reserves no space and renders nothing" otherwise). Shared by both orientation's `v-if` below so the two never drift apart on this. */
+const progressBarVisible = computed(
+  () => !!activePattern.value && !framing.value && activePattern.value.rowProgress.enabled,
+)
 
 /**
  * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
@@ -684,10 +694,18 @@ function noModalOpen(): boolean {
   )
 }
 
-/** Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox button has focus — otherwise Tab+Enter would both click that button and move the row. */
+/**
+ * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox or Progress bar button has
+ * focus — otherwise Tab+Enter would both click that button and move the row. Progress bar (ticket 124) moved
+ * Previous/Next onto the canvas, outside the Toolbox, so this checks both containers.
+ */
 function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
   const target = event.target
-  return target instanceof HTMLElement && target.tagName === 'BUTTON' && target.closest('[data-testid="toolbox"]') !== null
+  return (
+    target instanceof HTMLElement &&
+    target.tagName === 'BUTTON' &&
+    target.closest('[data-testid="toolbox"], [data-testid="progress-bar"]') !== null
+  )
 }
 
 /** Which grid-space axis the on-screen Left–right Mirror counter drives right now (ticket 93) -- same rotation-aware mapping Toolbox.vue's leftRightAxis uses, since rotating the Pattern swaps the two. Undefined with no Pattern open. */
@@ -1460,7 +1478,6 @@ function onMoveRow(delta: number) {
           @mirror-current-hover="onMirrorCurrentHover"
           @toggle-row-progress="onToggleRowProgress"
           @toggle-row-direction="onToggleRowDirection"
-          @move-row="onMoveRow"
           @delete-all="onRequestDeleteAll"
           @resize="onResize"
           @remove-selected-line="onRemoveSelectedLine"
@@ -1508,47 +1525,72 @@ function onMoveRow(delta: number) {
             @reset="convertResetZoom"
           />
 
-          <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
-            <!--
-              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
-              open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
-              entered with one open. Cancel hands the panel straight back.
-            -->
-            <ConvertImageFrame
-              v-if="framing"
-              :image="framing.image"
-              :technique="framing.technique"
-              :bead="framing.bead"
-              :dimensions="framing.dimensions"
-              :zoom="convertZoom"
-              :pan="convertPan"
-              :max-colors="convertMaxColors"
-              :available-width="canvasAreaWidth"
-              @pan="setConvertPan"
-              @set-max-colors="setConvertMaxColors"
-              @create="onConvertImageCreate"
-              @cancel="cancelConvertImage"
-            />
-            <PatternCanvas
-              v-else-if="activePattern"
+          <!--
+            Progress bar (ticket 124, ADR 0005's 2026-09-22 amendment), horizontal case: its own row, stacked below
+            the zoom cluster's row above (not merged with it) rather than beside the grid — see the vertical case
+            below, next to .app-shell__canvas-scroll. Only one of the two is ever mounted, chosen by Pattern shape;
+            neither is while Row progress is off or framing has the panel.
+          -->
+          <ProgressBar
+            v-if="activePattern && progressBarVisible && progressBarShape === 'horizontal'"
+            class="app-shell__progress-bar app-shell__progress-bar--horizontal"
+            :pattern="activePattern"
+            orientation="horizontal"
+            @move-row="onMoveRow"
+          />
+
+          <div class="app-shell__canvas-row">
+            <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
+              <!--
+                Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
+                open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
+                entered with one open. Cancel hands the panel straight back.
+              -->
+              <ConvertImageFrame
+                v-if="framing"
+                :image="framing.image"
+                :technique="framing.technique"
+                :bead="framing.bead"
+                :dimensions="framing.dimensions"
+                :zoom="convertZoom"
+                :pan="convertPan"
+                :max-colors="convertMaxColors"
+                :available-width="canvasAreaWidth"
+                @pan="setConvertPan"
+                @set-max-colors="setConvertMaxColors"
+                @create="onConvertImageCreate"
+                @cancel="cancelConvertImage"
+              />
+              <PatternCanvas
+                v-else-if="activePattern"
+                :pattern="activePattern"
+                :zoom="zoom"
+                :preview-cells="previewCells"
+                :preview-color="previewColor"
+                :selection="selection"
+                :mirror-axis-counts="previewedMirrorAxisCounts"
+                :dimmed-cells="mirrorCurrentDimmedCells"
+                @cell-primary-down="onCellPrimaryDown"
+                @cell-primary-move="onCellPrimaryMove"
+                @cell-secondary-down="onCellSecondaryDown"
+                @cell-secondary-move="onCellSecondaryMove"
+                @cell-hover="onCellHover"
+                @hover-end="onHoverEnd"
+                @select-line="onSelectLine"
+              />
+              <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
+                {{ t.shell.canvasPlaceholder }}
+              </p>
+            </div>
+
+            <!-- Progress bar, vertical case: its own column next to the grid, on the canvas panel's right edge. -->
+            <ProgressBar
+              v-if="activePattern && progressBarVisible && progressBarShape === 'vertical'"
+              class="app-shell__progress-bar app-shell__progress-bar--vertical"
               :pattern="activePattern"
-              :zoom="zoom"
-              :preview-cells="previewCells"
-              :preview-color="previewColor"
-              :selection="selection"
-              :mirror-axis-counts="previewedMirrorAxisCounts"
-              :dimmed-cells="mirrorCurrentDimmedCells"
-              @cell-primary-down="onCellPrimaryDown"
-              @cell-primary-move="onCellPrimaryMove"
-              @cell-secondary-down="onCellSecondaryDown"
-              @cell-secondary-move="onCellSecondaryMove"
-              @cell-hover="onCellHover"
-              @hover-end="onHoverEnd"
-              @select-line="onSelectLine"
+              orientation="vertical"
+              @move-row="onMoveRow"
             />
-            <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
-              {{ t.shell.canvasPlaceholder }}
-            </p>
           </div>
         </div>
       </div>
@@ -1889,7 +1931,32 @@ function onMoveRow(delta: number) {
   cursor: grabbing;
 }
 
+/*
+ * Wraps the scroll box together with a vertical Progress bar (ticket 124) as flex siblings, so the column sits
+ * right next to the grid rather than stretching away to the panel's actual right edge — justify-content: center
+ * keeps the pair snug and centers them as a unit (the scroll box no longer grows to fill the leftover width; see
+ * .app-shell__canvas-scroll below), the same centering .pattern-canvas's own margin: 0 auto used to do alone.
+ * align-items: flex-start keeps the column its own content size while this row (as tall as the grid) is what its
+ * sticky positioning below pins within. With no Progress bar mounted (Row progress off, or a horizontal Pattern
+ * which mounts its own instead — see .app-shell__progress-bar--horizontal), the scroll box is this row's only
+ * child and the wrapper is invisible in effect.
+ */
+.app-shell__canvas-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/*
+ * flex-shrink (the flex default already gives 1) still lets it shrink for its own overflow-x scroll when a zoomed-in
+ * Pattern (plus the Progress bar column and the row's gap) outgrows the panel; min-width: 0 makes that shrinking
+ * reach all the way down rather than stopping at the content's own min-content width. Deliberately no flex-grow
+ * (ticket 124 dropped this box's earlier `flex: 1 1 auto`): growing to fill the row's leftover width is what used
+ * to strand Progress bar out at the panel's actual right edge, far past the grid it's meant to sit next to.
+ */
 .app-shell__canvas-scroll {
+  min-width: 0;
   overflow-x: auto;
 }
 
@@ -1897,6 +1964,28 @@ function onMoveRow(delta: number) {
 .app-shell__zoom-controls {
   width: fit-content;
   margin: 0 0 12px auto;
+}
+
+/*
+ * Progress bar (ticket 124, ADR 0005's 2026-09-22 amendment): sticky like the Toolbox rail (.app-shell__rail),
+ * top: 24px echoing the same shell edge padding, and for the same reason — a tall Pattern grows the canvas panel
+ * past the viewport, and without this Progress bar would scroll out of reach while working the lower rows. Each
+ * orientation's own containing block (below) is exactly as tall as the Pattern, so it un-pins once that's scrolled
+ * past, the same way the rail un-pins once the canvas has.
+ */
+.app-shell__progress-bar {
+  position: sticky;
+  top: 24px;
+}
+
+/* Its containing block is .app-shell__canvas-row (flex, above), which is exactly as tall as the grid beside it; flex: none keeps it its own content width rather than sharing the row's leftover space with the scroll box. */
+.app-shell__progress-bar--vertical {
+  flex: none;
+}
+
+/* Its own row, centered the way the grid itself is (PatternCanvas.vue's margin: 0 auto), stacked below the zoom cluster rather than merged with it. Its containing block is .app-shell__canvas itself, exactly as tall as the zoom row, this row and the grid together. */
+.app-shell__progress-bar--horizontal {
+  margin: 0 auto 12px;
 }
 
 </style>
