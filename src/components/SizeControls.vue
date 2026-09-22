@@ -2,14 +2,15 @@
 import { computed, ref, useId, watch } from 'vue'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
-import { resizeRefusal, resizeRowStep, type ResizeAnchor, type ResizeRequest } from '../domain/resize'
+import { resizeRowStep, type ResizeAnchor, type ResizeRequest } from '../domain/resize'
 import { useI18n } from '../i18n/useI18n'
 
 /**
  * The body of the Size Tool group (CONTEXT.md's Estimated size and Resize, ADR 0017): the open Pattern's Estimated
- * size with its warning tooltip, and the columns and rows inputs that resize it.
+ * size with its warning tooltip, and the columns and rows counters that resize it a line at a time (ticket 123
+ * replaced the old typeable inputs with Mirror's axis-counter look).
  *
- * Everything is as seen on screen: the first input is the horizontal one, so rotating the Pattern swaps which of the
+ * Everything is as seen on screen: the first counter is the horizontal one, so rotating the Pattern swaps which of the
  * grid's two directions it drives, the same relabeling Mirror's counters get (Toolbox.vue). The request it emits is
  * in grid space, which is what App.vue and the domain speak.
  */
@@ -33,15 +34,6 @@ function axisOf(direction: ScreenDirection): GridAxis {
 /** Which end each screen direction changes from — an editing-session setting, not saved with the Pattern (ticket 102). Kept per screen direction, so rotating carries each choice to the other grid axis. */
 const from = ref<Record<ScreenDirection, ResizeAnchor>>({ horizontal: 'end', vertical: 'end' })
 
-/** What each input holds while it is being edited, before it is committed on change; undefined shows the Pattern's own count. */
-const drafts = ref<Record<ScreenDirection, string | undefined>>({ horizontal: undefined, vertical: undefined })
-
-function clearDrafts() {
-  drafts.value = { horizontal: undefined, vertical: undefined }
-}
-
-// A draft is about the grid it was typed against: any change to it (a Resize landing, an Undo, another Pattern) drops it.
-watch(() => [props.pattern.id, props.pattern.columns, props.pattern.rows, props.pattern.rotated], clearDrafts)
 watch(() => props.pattern.id, () => {
   from.value = { horizontal: 'end', vertical: 'end' }
 })
@@ -50,84 +42,68 @@ function count(direction: ScreenDirection): number {
   return props.pattern[axisOf(direction)]
 }
 
-function inputValue(direction: ScreenDirection): string {
-  return drafts.value[direction] ?? String(count(direction))
+/** How much a step of this direction's counter moves the grid by; 2 only for the grid's rows from the start on peyote and brick stitch (resizeRowStep) — a stepper button only ever moves by its own step, so it can never land on a change Resize itself would refuse for being an odd change of paired rows. */
+function stepOf(direction: ScreenDirection): number {
+  return axisOf(direction) === 'rows' ? resizeRowStep(props.pattern.technique, from.value[direction]) : 1
 }
-
-/** The size the inputs currently ask for, in grid space: the draft where there is one, else the Pattern's own count. NaN when a draft isn't a number. */
-function requestedCount(direction: ScreenDirection): number {
-  const draft = drafts.value[direction]
-  return draft === undefined ? count(direction) : Number(draft)
-}
-
-const request = computed<ResizeRequest>(() => {
-  const requested: Record<GridAxis, number> = { columns: 0, rows: 0 }
-  const anchors: Record<GridAxis, ResizeAnchor> = { columns: 'end', rows: 'end' }
-  for (const direction of DIRECTIONS) {
-    requested[axisOf(direction)] = requestedCount(direction)
-    anchors[axisOf(direction)] = from.value[direction]
-  }
-  return { ...requested, columnsFrom: anchors.columns, rowsFrom: anchors.rows }
-})
-
-const refusal = computed(() => resizeRefusal(props.pattern, request.value))
-
-/** Whether the inputs are asking for something other than the Pattern's own size. */
-const isEditing = computed(() => DIRECTIONS.some((direction) => drafts.value[direction] !== undefined))
 
 const locked = computed(() => props.pattern.rowProgress.enabled)
 const bead = computed(() => resolvePatternBead(props.pattern))
 const unitLabels = computed(() => ({ mm: t.value.form.unitMm, cm: t.value.form.unitCm }))
 
-/** The Estimated size, live: what the inputs ask for while it is acceptable, otherwise the Pattern's own. */
+/** The Estimated size for the Pattern as it stands: every click already lands as its own Resize, so there is no in-progress typed value to preview against (unlike the old typeable inputs). */
 const estimate = computed(() => {
   if (!bead.value) {
     return undefined
   }
-  const target = isEditing.value && !refusal.value ? request.value : props.pattern
   return formatSizeMm(
-    estimatedSizeMm({ columns: target.columns, rows: target.rows, rotated: props.pattern.rotated }, bead.value),
+    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotated: props.pattern.rotated }, bead.value),
     unitLabels.value,
   )
 })
 
-/** How much the input for this direction steps by; 2 only for the grid's rows from the start on peyote and brick stitch. */
-function stepOf(direction: ScreenDirection): number {
-  return axisOf(direction) === 'rows' ? resizeRowStep(props.pattern.technique, from.value[direction]) : 1
-}
-
-/** With a step of 2 the smallest allowed value must share the current count's parity, so stepping keeps landing on allowed sizes (an input steps from its `min`). */
-function minOf(direction: ScreenDirection): number {
-  return stepOf(direction) === 2 && count(direction) % 2 === 0 ? 2 : 1
-}
-
 const pairsHintShown = computed(() => DIRECTIONS.some((direction) => stepOf(direction) === 2))
 
-function onInput(direction: ScreenDirection, event: Event) {
-  drafts.value = { ...drafts.value, [direction]: (event.target as HTMLInputElement).value }
+/** Disabled the same way Resize itself is already refused today (ticket 123): Row progress locked, or a step down that would take the count below 1. Growing has no ceiling of its own (ADR 0019), so only the lock ever turns the + button away. */
+function decreaseDisabled(direction: ScreenDirection): boolean {
+  return locked.value || count(direction) - stepOf(direction) < 1
 }
 
-/**
- * Commits the inputs as one Resize when an edit is finished (blur, Enter, or a stepper click) rather than on every
- * keystroke, so typing "24" doesn't resize to 2 on the way — each of those would be an undo step, and shrinking one
- * drops painted cells. A refusal (not a whole number, or an odd change of rows in pairs) puts the count back.
- */
-function onChange() {
-  const changesSize = request.value.columns !== props.pattern.columns || request.value.rows !== props.pattern.rows
-  if (!refusal.value && changesSize) {
-    emit('resize', request.value)
+/** One click is one Resize, one undo step: a stepper button always asks for a size Resize will actually accept, moving this direction's own count by its own step. */
+function onStep(direction: ScreenDirection, delta: 1 | -1) {
+  const requested: Record<GridAxis, number> = { columns: props.pattern.columns, rows: props.pattern.rows }
+  requested[axisOf(direction)] = count(direction) + delta * stepOf(direction)
+
+  const anchors: Record<GridAxis, ResizeAnchor> = { columns: 'end', rows: 'end' }
+  for (const screenDirection of DIRECTIONS) {
+    anchors[axisOf(screenDirection)] = from.value[screenDirection]
   }
-  clearDrafts()
+
+  emit('resize', { ...requested, columnsFrom: anchors.columns, rowsFrom: anchors.rows })
 }
 
 function setFrom(direction: ScreenDirection, anchor: ResizeAnchor) {
   from.value = { ...from.value, [direction]: anchor }
-  clearDrafts()
 }
 
 const labels: Record<ScreenDirection, () => string> = {
   horizontal: () => t.value.size.columnsLabel,
   vertical: () => t.value.size.rowsLabel,
+}
+
+const decreaseLabels: Record<ScreenDirection, () => string> = {
+  horizontal: () => t.value.size.decreaseColumnsButton,
+  vertical: () => t.value.size.decreaseRowsButton,
+}
+
+const increaseLabels: Record<ScreenDirection, () => string> = {
+  horizontal: () => t.value.size.increaseColumnsButton,
+  vertical: () => t.value.size.increaseRowsButton,
+}
+
+/** The screen-direction-keyed half of each testid ("columns"/"rows"), independent of which grid axis it currently drives (rotating swaps that, not this). */
+function testIdAxis(direction: ScreenDirection): 'columns' | 'rows' {
+  return direction === 'horizontal' ? 'columns' : 'rows'
 }
 
 const tooltipId = useId()
@@ -174,27 +150,45 @@ const tipOpen = ref(false)
       </span>
     </div>
 
-    <!-- The reason goes on the wrapper, not the inputs: a browser shows no tooltip for a disabled control. -->
+    <!-- The reason goes on the wrapper, not the counters: a browser shows no tooltip for a disabled control. -->
     <div
       class="size-controls__inputs"
       :title="locked ? t.size.lockedReason : undefined"
       data-testid="size-inputs"
     >
       <div v-for="direction in DIRECTIONS" :key="direction" class="size-controls__row">
-        <label :for="`size-${direction}-input`">{{ labels[direction]() }}</label>
-        <input
-          :id="`size-${direction}-input`"
-          class="size-controls__input"
-          type="number"
-          inputmode="numeric"
-          :data-testid="direction === 'horizontal' ? 'size-columns-input' : 'size-rows-input'"
-          :min="minOf(direction)"
-          :step="stepOf(direction)"
-          :value="inputValue(direction)"
-          :disabled="locked"
-          @input="onInput(direction, $event)"
-          @change="onChange"
-        />
+        <p
+          class="size-controls__counter"
+          role="group"
+          :aria-label="labels[direction]()"
+          :data-testid="`size-${testIdAxis(direction)}`"
+        >
+          <button
+            type="button"
+            class="icon-button"
+            :data-testid="`size-${testIdAxis(direction)}-decrease`"
+            :title="decreaseLabels[direction]()"
+            :aria-label="decreaseLabels[direction]()"
+            :disabled="decreaseDisabled(direction)"
+            @click="onStep(direction, -1)"
+          >
+            −
+          </button>
+          <span class="size-controls__counter-label" :data-testid="`size-${testIdAxis(direction)}-value`">
+            {{ labels[direction]() }}: {{ count(direction) }}
+          </span>
+          <button
+            type="button"
+            class="icon-button"
+            :data-testid="`size-${testIdAxis(direction)}-increase`"
+            :title="increaseLabels[direction]()"
+            :aria-label="increaseLabels[direction]()"
+            :disabled="locked"
+            @click="onStep(direction, 1)"
+          >
+            +
+          </button>
+        </p>
         <div
           class="size-controls__from"
           role="group"
@@ -207,7 +201,7 @@ const tipOpen = ref(false)
             type="button"
             class="size-controls__from-option"
             :class="{ 'size-controls__from-option--selected': from[direction] === anchor }"
-            :data-testid="`size-${direction === 'horizontal' ? 'columns' : 'rows'}-from-${anchor}`"
+            :data-testid="`size-${testIdAxis(direction)}-from-${anchor}`"
             :aria-pressed="from[direction] === anchor"
             :disabled="locked"
             @click="setFrom(direction, anchor)"
@@ -226,7 +220,7 @@ const tipOpen = ref(false)
 /*
  * As wide as the Tool group it sits in (a full row of ToolGroup's fixed columns — ticket 114 made the Toolbox a narrow
  * rail), so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
- * wrap, and each row's label, input and "change from" choice fall onto as many lines as they need.
+ * wrap, and each row's counter and "change from" choice fall onto as many lines as they need.
  */
 .size-controls {
   display: flex;
@@ -298,30 +292,36 @@ const tipOpen = ref(false)
 .size-controls__inputs {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .size-controls__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 6px 8px;
+}
+
+/*
+ * The columns/rows counter (ticket 123): decrease / label / increase, matching Mirror's axis-counter look
+ * (Toolbox.vue's .mirror-axis-counter) — the rail is too narrow for all three side by side, so the label takes the
+ * row's first line and the two buttons share the one beneath it (`order` moves only what is seen, so reading and Tab
+ * order stay decrease, label, increase).
+ */
+.size-controls__counter {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 4px 8px;
-}
-
-.size-controls__row label {
   margin: 0;
-  text-align: center;
 }
 
-.size-controls__input {
-  width: 4.5em;
-  padding: 4px 8px;
+.size-controls__counter-label {
+  order: -1;
+  flex: 1 1 100%;
+  min-width: 0;
   font-variant-numeric: tabular-nums;
-}
-
-.size-controls__input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .size-controls__from {
@@ -337,7 +337,7 @@ const tipOpen = ref(false)
   opacity: 0.7;
 }
 
-/* The two "change from" choices are small pills: a setting sitting beside an input, not a control of their own. */
+/* The two "change from" choices are small pills: a setting sitting beside the counter, not a control of their own. */
 .size-controls__from-option {
   padding: 2px 10px;
   font-size: 14px;

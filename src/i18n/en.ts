@@ -59,6 +59,11 @@ export const en: Translations = {
     saveButton: 'Save',
     savedConfirmation: 'Saved',
     pasteLabel: 'Paste',
+    removeLineButton: 'Remove selected row/column',
+  },
+  rulers: {
+    selectRowLabel: 'Select row {number}',
+    selectColumnLabel: 'Select column {number}',
   },
   rowProgress: {
     enabledLabel: 'Show row progress',
@@ -115,6 +120,10 @@ export const en: Translations = {
       'These sizes are an estimate. We work them out from the size of one bead multiplied by how many beads you have across and down. A real piece often comes out a little different: thread, tension and small differences between beads all add up. Treat it as a guide, not a measurement.',
     columnsLabel: 'Columns',
     rowsLabel: 'Rows',
+    decreaseColumnsButton: 'Fewer columns',
+    increaseColumnsButton: 'More columns',
+    decreaseRowsButton: 'Fewer rows',
+    increaseRowsButton: 'More rows',
     changeFromLabel: 'Change from',
     fromEnd: 'end',
     fromStart: 'start',

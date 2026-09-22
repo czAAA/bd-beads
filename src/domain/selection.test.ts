@@ -6,7 +6,9 @@ import {
   mirroredPasteBlock,
   mirroredPastedCells,
   pastedCells,
+  selectedLine,
   selectionBetween,
+  wholeLineSelection,
   type CopiedBlock,
 } from './selection'
 import { createPattern, type Pattern } from './pattern'
@@ -77,6 +79,40 @@ describe('selectionBetween', () => {
       rows: 3,
       columns: 4,
     })
+  })
+})
+
+describe('wholeLineSelection and selectedLine (ticket 123)', () => {
+  const dimensions = { columns: 5, rows: 4 }
+
+  it('builds the Selection a row ruler number picks out, spanning every column', () => {
+    expect(wholeLineSelection(dimensions, 'row', 2)).toEqual({ top: 2, left: 0, rows: 1, columns: 5 })
+  })
+
+  it('builds the Selection a column ruler number picks out, spanning every row', () => {
+    expect(wholeLineSelection(dimensions, 'column', 3)).toEqual({ top: 0, left: 3, rows: 4, columns: 1 })
+  })
+
+  it('reads a whole-row Selection back as that row', () => {
+    expect(selectedLine(dimensions, { top: 2, left: 0, rows: 1, columns: 5 })).toEqual({ axis: 'row', index: 2 })
+  })
+
+  it('reads a whole-column Selection back as that column', () => {
+    expect(selectedLine(dimensions, { top: 0, left: 3, rows: 4, columns: 1 })).toEqual({ axis: 'column', index: 3 })
+  })
+
+  it('is undefined for an ordinary block, a partial row, and no Selection at all', () => {
+    expect(selectedLine(dimensions, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
+    expect(selectedLine(dimensions, { top: 1, left: 0, rows: 1, columns: 4 })).toBeUndefined()
+    expect(selectedLine(dimensions, undefined)).toBeUndefined()
+  })
+
+  it('round-trips through both directions', () => {
+    const rowSelection = wholeLineSelection(dimensions, 'row', 1)
+    expect(selectedLine(dimensions, rowSelection)).toEqual({ axis: 'row', index: 1 })
+
+    const columnSelection = wholeLineSelection(dimensions, 'column', 4)
+    expect(selectedLine(dimensions, columnSelection)).toEqual({ axis: 'column', index: 4 })
   })
 })
 

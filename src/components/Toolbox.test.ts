@@ -24,6 +24,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       canUndo: false,
       canRedo: false,
       canCopy: false,
+      canRemoveSelectedLine: false,
       mirrorAxisCounts: { columns: 0, rows: 0 },
       mirrorCopyMode: false,
       ...overrides,
@@ -46,13 +47,24 @@ describe('Toolbox', () => {
     ])
   })
 
-  it('puts Paint, Fill, Select, Erase and Delete all inside the Tools group', () => {
+  it('puts Paint, Fill, Select, Erase, remove-line and Delete all inside the Tools group', () => {
     const wrapper = mountToolbox()
 
     const toolsGroup = wrapper.findAll('.tool-group')[0]!
-    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'tool-erase', 'delete-all-button']) {
+    for (const testId of ['tool-paint', 'tool-fill', 'tool-select', 'tool-erase', 'tool-remove-line', 'delete-all-button']) {
       expect(toolsGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
+  })
+
+  it('disables "remove selected row/column" unless canRemoveSelectedLine is true, and emits when clicked (ticket 123)', async () => {
+    const wrapper = mountToolbox()
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').element.disabled).toBe(true)
+
+    await wrapper.setProps({ canRemoveSelectedLine: true })
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').element.disabled).toBe(false)
+
+    await wrapper.find('[data-testid="tool-remove-line"]').trigger('click')
+    expect(wrapper.emitted('remove-selected-line')).toHaveLength(1)
   })
 
   it('emits select-tool with erase when the Erase button is clicked, and marks it pressed once active (ticket 89)', async () => {

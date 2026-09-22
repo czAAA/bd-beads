@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PatternRuler from './PatternRuler.vue'
 import { createPattern, type Pattern, type Technique } from '../domain/pattern'
@@ -10,6 +10,11 @@ import {
   rowHeightPx,
   rowOffsetPx,
 } from '../domain/grid'
+
+beforeEach(() => {
+  localStorage.clear()
+  localStorage.setItem('bd-beads:locale', 'en')
+})
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -128,5 +133,51 @@ describe('PatternRuler', () => {
     const numbers = labels(mountRuler({ axis: 'row', zoom: 0.25 })).map((label) => label.text())
 
     expect(numbers).toEqual(['5', '10', '15', '20'])
+  })
+})
+
+describe('PatternRuler line selection (ticket 123)', () => {
+  it('is a real button per number, not hidden from assistive technology like a plain label', () => {
+    const wrapper = mountRuler({ axis: 'row' })
+
+    expect(wrapper.attributes('aria-hidden')).toBeUndefined()
+    expect(labels(wrapper).every((label) => label.element.tagName === 'BUTTON')).toBe(true)
+  })
+
+  it('names each row button for what clicking it does, with its own number', () => {
+    const rendered = labels(mountRuler({ axis: 'row' }))
+
+    expect(rendered[0]!.attributes('aria-label')).toBe('Select row 1')
+    expect(rendered[3]!.attributes('aria-label')).toBe('Select row 4')
+  })
+
+  it('names each column button the same way', () => {
+    const rendered = labels(mountRuler({ axis: 'column' }))
+
+    expect(rendered[0]!.attributes('aria-label')).toBe('Select column 1')
+  })
+
+  it('emits the whole row as a Selection when a row number is clicked', async () => {
+    const wrapper = mountRuler({ axis: 'row' })
+
+    await labels(wrapper)[3]!.trigger('click') // the 4th row, 1-based label "4"
+
+    expect(wrapper.emitted('select')).toEqual([[{ top: 3, left: 0, rows: 1, columns: 10 }]])
+  })
+
+  it('emits the whole column as a Selection when a column number is clicked', async () => {
+    const wrapper = mountRuler({ axis: 'column' })
+
+    await labels(wrapper)[2]!.trigger('click') // the 3rd column
+
+    expect(wrapper.emitted('select')).toEqual([[{ top: 0, left: 2, rows: 20, columns: 1 }]])
+  })
+
+  it('emits the same Selection whichever edge (start/end) the ruler is', async () => {
+    const wrapper = mountRuler({ axis: 'row', edge: 'end' })
+
+    await labels(wrapper)[0]!.trigger('click')
+
+    expect(wrapper.emitted('select')).toEqual([[{ top: 0, left: 0, rows: 1, columns: 10 }]])
   })
 })

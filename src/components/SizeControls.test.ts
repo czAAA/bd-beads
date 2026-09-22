@@ -24,25 +24,16 @@ function mountControls(target: Pattern) {
 }
 
 const estimate = (wrapper: ReturnType<typeof mountControls>) => wrapper.find('[data-testid="size-estimate"]').text()
-const columnsInput = (wrapper: ReturnType<typeof mountControls>) =>
-  wrapper.find<HTMLInputElement>('[data-testid="size-columns-input"]')
-const rowsInput = (wrapper: ReturnType<typeof mountControls>) =>
-  wrapper.find<HTMLInputElement>('[data-testid="size-rows-input"]')
-
-/**
- * Types into an input without finishing the edit, the way a keystroke does. (`setValue` would also fire `change`,
- * which a browser only does on blur, Enter or a stepper click.)
- */
-async function type(input: ReturnType<typeof columnsInput>, value: string) {
-  input.element.value = value
-  await input.trigger('input')
-}
-
-/** Types into an input and finishes the edit the way blur, Enter or a stepper click does. */
-async function enter(input: ReturnType<typeof columnsInput>, value: string) {
-  await type(input, value)
-  await input.trigger('change')
-}
+const columnsValue = (wrapper: ReturnType<typeof mountControls>) => wrapper.find('[data-testid="size-columns-value"]').text()
+const rowsValue = (wrapper: ReturnType<typeof mountControls>) => wrapper.find('[data-testid="size-rows-value"]').text()
+const columnsDecrease = (wrapper: ReturnType<typeof mountControls>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-columns-decrease"]')
+const columnsIncrease = (wrapper: ReturnType<typeof mountControls>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-columns-increase"]')
+const rowsDecrease = (wrapper: ReturnType<typeof mountControls>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-rows-decrease"]')
+const rowsIncrease = (wrapper: ReturnType<typeof mountControls>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-rows-increase"]')
 
 describe('SizeControls Estimated size (ticket 98)', () => {
   it('shows the estimate for TOHO Cube 1.5mm: columns x 1.5mm, rows x 1.5mm', () => {
@@ -167,111 +158,70 @@ describe('SizeControls warning tooltip (ticket 98)', () => {
   })
 })
 
-describe('SizeControls inputs (ticket 101)', () => {
-  it('shows the Pattern’s current columns and rows', () => {
+describe('SizeControls counters (ticket 123)', () => {
+  it('shows the Pattern’s current columns and rows as a read-only count, not a typeable input', () => {
     const wrapper = mountControls(pattern(10, 20))
 
-    expect(columnsInput(wrapper).element.value).toBe('10')
-    expect(rowsInput(wrapper).element.value).toBe('20')
+    expect(columnsValue(wrapper)).toContain('10')
+    expect(rowsValue(wrapper)).toContain('20')
+    expect(wrapper.find('input').exists()).toBe(false)
   })
 
-  it('takes whole numbers of at least 1', () => {
+  it('emits one resize in grid space when the + button is clicked', async () => {
     const wrapper = mountControls(pattern(10, 20))
 
-    expect(columnsInput(wrapper).attributes('type')).toBe('number')
-    expect(columnsInput(wrapper).attributes('min')).toBe('1')
-    expect(columnsInput(wrapper).attributes('step')).toBe('1')
-    expect(rowsInput(wrapper).attributes('min')).toBe('1')
+    await columnsIncrease(wrapper).trigger('click')
+
+    expect(wrapper.emitted('resize')).toEqual([[{ columns: 11, rows: 20, columnsFrom: 'end', rowsFrom: 'end' }]])
   })
 
-  it('emits one resize in grid space when an edit is committed', async () => {
+  it('emits one resize in grid space when the − button is clicked', async () => {
     const wrapper = mountControls(pattern(10, 20))
 
-    await enter(columnsInput(wrapper), '12')
+    await rowsDecrease(wrapper).trigger('click')
 
-    expect(wrapper.emitted('resize')).toEqual([[{ columns: 12, rows: 20, columnsFrom: 'end', rowsFrom: 'end' }]])
+    expect(wrapper.emitted('resize')).toEqual([[{ columns: 10, rows: 19, columnsFrom: 'end', rowsFrom: 'end' }]])
   })
 
-  it('waits for the edit to finish instead of resizing on every keystroke', async () => {
-    const wrapper = mountControls(pattern(10, 20))
+  it('disables the − button once the count would go below 1', () => {
+    const wrapper = mountControls(pattern(1, 5))
 
-    await type(columnsInput(wrapper), '1')
-    await type(columnsInput(wrapper), '12')
-
-    expect(wrapper.emitted('resize')).toBeUndefined()
+    expect(columnsDecrease(wrapper).element.disabled).toBe(true)
+    expect(rowsDecrease(wrapper).element.disabled).toBe(false)
   })
 
-  it('updates the estimate live as the inputs change, before the edit is committed', async () => {
-    const wrapper = mountControls(pattern(10, 20))
+  it('never disables the + button for size (ADR 0019): there is no ceiling', () => {
+    const wrapper = mountControls(pattern(500, 500))
 
-    await type(columnsInput(wrapper), '20')
-    await type(rowsInput(wrapper), '40')
-
-    expect(estimate(wrapper)).toBe('≈ 3.0 × 6.0 cm')
+    expect(columnsIncrease(wrapper).element.disabled).toBe(false)
+    expect(rowsIncrease(wrapper).element.disabled).toBe(false)
   })
 
-  it.each(['', '0', '-2', '2.5', 'abc'])('puts the count back on %j instead of resizing', async (bad) => {
+  it('follows the Pattern when it changes underneath it', async () => {
     const wrapper = mountControls(pattern(10, 20))
-
-    await enter(columnsInput(wrapper), bad)
-
-    expect(wrapper.emitted('resize')).toBeUndefined()
-    expect(columnsInput(wrapper).element.value).toBe('10')
-    expect(estimate(wrapper)).toBe('≈ 1.5 × 3.0 cm')
-  })
-
-  it('does not emit a Resize for a change that changes nothing', async () => {
-    const wrapper = mountControls(pattern(10, 20))
-
-    await enter(columnsInput(wrapper), '10')
-
-    expect(wrapper.emitted('resize')).toBeUndefined()
-  })
-
-  it('follows the Pattern when it changes underneath it, dropping a half-typed value', async () => {
-    const wrapper = mountControls(pattern(10, 20))
-    await type(columnsInput(wrapper), '15')
 
     await wrapper.setProps({ pattern: { ...pattern(10, 20), columns: 8 } })
 
-    expect(columnsInput(wrapper).element.value).toBe('8')
+    expect(columnsValue(wrapper)).toContain('8')
   })
 })
 
 describe('SizeControls with no limit on size (ADR 0019)', () => {
-  const message = (wrapper: ReturnType<typeof mountControls>) => wrapper.find('[data-testid="size-message"]')
-
   it('lets a Pattern grow past 10,000 cells, which used to be the most, and says nothing against it', async () => {
     const wrapper = mountControls(pattern(100, 100))
 
-    await enter(rowsInput(wrapper), '101')
+    await rowsIncrease(wrapper).trigger('click')
 
     expect(wrapper.emitted('resize')).toEqual([[{ columns: 100, rows: 101, columnsFrom: 'end', rowsFrom: 'end' }]])
-    expect(message(wrapper).exists()).toBe(false)
-  })
-
-  it('lets a Pattern grow all the way to 250 × 250', async () => {
-    const wrapper = mountControls(pattern(100, 100))
-
-    await enter(columnsInput(wrapper), '250')
-
-    expect(wrapper.emitted('resize')).toEqual([[{ columns: 250, rows: 100, columnsFrom: 'end', rowsFrom: 'end' }]])
-  })
-
-  it('pulls the estimate along to the bigger size as it is typed', async () => {
-    const wrapper = mountControls(pattern(100, 100))
-
-    await type(rowsInput(wrapper), '200')
-
-    expect(estimate(wrapper)).toBe('≈ 15.0 × 30.0 cm')
+    expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
   })
 
   it('always lets a big Pattern shrink', async () => {
     const wrapper = mountControls(pattern(200, 200))
 
-    await enter(rowsInput(wrapper), '150')
+    await rowsDecrease(wrapper).trigger('click')
 
-    expect(wrapper.emitted('resize')).toEqual([[{ columns: 200, rows: 150, columnsFrom: 'end', rowsFrom: 'end' }]])
+    expect(wrapper.emitted('resize')).toEqual([[{ columns: 200, rows: 199, columnsFrom: 'end', rowsFrom: 'end' }]])
   })
 })
 
@@ -280,11 +230,12 @@ describe('SizeControls Row progress lock (ticket 101)', () => {
     return setRowProgressEnabled(moveToRow(pattern(10, 20), 3), true)
   }
 
-  it('disables the whole group’s inputs while Row progress is on', () => {
+  it('disables every counter and “change from” button while Row progress is on', () => {
     const wrapper = mountControls(woven())
 
-    expect(columnsInput(wrapper).element.disabled).toBe(true)
-    expect(rowsInput(wrapper).element.disabled).toBe(true)
+    for (const button of [columnsDecrease(wrapper), columnsIncrease(wrapper), rowsDecrease(wrapper), rowsIncrease(wrapper)]) {
+      expect(button.element.disabled).toBe(true)
+    }
     for (const testId of ['columns-from-end', 'columns-from-start', 'rows-from-end', 'rows-from-start']) {
       expect(wrapper.find<HTMLButtonElement>(`[data-testid="size-${testId}"]`).element.disabled).toBe(true)
     }
@@ -300,7 +251,7 @@ describe('SizeControls Row progress lock (ticket 101)', () => {
     const wrapper = mountControls(pattern(10, 20))
 
     expect(wrapper.find('[data-testid="size-inputs"]').attributes('title')).toBeUndefined()
-    expect(columnsInput(wrapper).element.disabled).toBe(false)
+    expect(columnsIncrease(wrapper).element.disabled).toBe(false)
   })
 
   it('re-enables when Row progress is turned off', async () => {
@@ -308,8 +259,8 @@ describe('SizeControls Row progress lock (ticket 101)', () => {
 
     await wrapper.setProps({ pattern: setRowProgressEnabled(woven(), false) })
 
-    expect(columnsInput(wrapper).element.disabled).toBe(false)
-    expect(rowsInput(wrapper).element.disabled).toBe(false)
+    expect(columnsIncrease(wrapper).element.disabled).toBe(false)
+    expect(rowsIncrease(wrapper).element.disabled).toBe(false)
   })
 
   it('still shows the estimate while locked', () => {
@@ -318,24 +269,24 @@ describe('SizeControls Row progress lock (ticket 101)', () => {
 })
 
 describe('SizeControls rotation (ticket 101)', () => {
-  it('drives the grid’s columns from the first input and its rows from the second when upright', async () => {
+  it('drives the grid’s columns from the first counter and its rows from the second when upright', async () => {
     const wrapper = mountControls(pattern(10, 20))
 
-    await enter(columnsInput(wrapper), '12')
+    await columnsIncrease(wrapper).trigger('click')
 
-    expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ columns: 12, rows: 20 })
+    expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ columns: 11, rows: 20 })
   })
 
-  it('swaps the two inputs when the Pattern is rotated, the way Mirror’s counts do', async () => {
+  it('swaps the two counters when the Pattern is rotated, the way Mirror’s counts do', async () => {
     const wrapper = mountControls(toggleRotated(pattern(10, 20)))
 
-    expect(columnsInput(wrapper).element.value).toBe('20')
-    expect(rowsInput(wrapper).element.value).toBe('10')
+    expect(columnsValue(wrapper)).toContain('20')
+    expect(rowsValue(wrapper)).toContain('10')
 
-    await enter(columnsInput(wrapper), '25')
+    await columnsIncrease(wrapper).trigger('click')
 
-    // On screen the first input is the horizontal one, which is now the grid's rows.
-    expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ columns: 10, rows: 25 })
+    // On screen the first counter is the horizontal one, which is now the grid's rows.
+    expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ columns: 10, rows: 21 })
   })
 
   it('carries each direction’s “change from” choice with the screen direction, not the grid axis', async () => {
@@ -344,10 +295,10 @@ describe('SizeControls rotation (ticket 101)', () => {
     await wrapper.find('[data-testid="size-columns-from-start"]').trigger('click')
     await wrapper.setProps({ pattern: toggleRotated(upright) })
 
-    await enter(columnsInput(wrapper), '25')
+    await columnsIncrease(wrapper).trigger('click')
 
     // The horizontal direction was set to start; horizontally it now drives the grid's rows.
-    expect(wrapper.emitted('resize')![0]![0]).toEqual({ columns: 10, rows: 25, columnsFrom: 'end', rowsFrom: 'start' })
+    expect(wrapper.emitted('resize')![0]![0]).toEqual({ columns: 10, rows: 21, columnsFrom: 'end', rowsFrom: 'start' })
   })
 })
 
@@ -376,9 +327,9 @@ describe('SizeControls change from (ticket 102)', () => {
     const wrapper = mountControls(pattern(10, 20))
     await wrapper.find('[data-testid="size-columns-from-start"]').trigger('click')
 
-    await enter(columnsInput(wrapper), '12')
+    await columnsIncrease(wrapper).trigger('click')
 
-    expect(wrapper.emitted('resize')![0]![0]).toEqual({ columns: 12, rows: 20, columnsFrom: 'start', rowsFrom: 'end' })
+    expect(wrapper.emitted('resize')![0]![0]).toEqual({ columns: 11, rows: 20, columnsFrom: 'start', rowsFrom: 'end' })
   })
 
   it('is forgotten when another Pattern is opened, being an editing-session setting', async () => {
@@ -393,65 +344,43 @@ describe('SizeControls change from (ticket 102)', () => {
   describe.each<Technique>(['peyote', 'brick'])('on %s', (technique) => {
     const target = () => pattern(6, 8, { technique })
 
-    it('steps rows by 2 from the start, with the reason stated beside the input', async () => {
+    it('steps rows by 2 from the start, and states why beside the counter', async () => {
       const wrapper = mountControls(target())
-      expect(rowsInput(wrapper).attributes('step')).toBe('1')
       expect(wrapper.find('[data-testid="size-pairs-hint"]').exists()).toBe(false)
 
       await wrapper.find('[data-testid="size-rows-from-start"]').trigger('click')
-
-      expect(rowsInput(wrapper).attributes('step')).toBe('2')
       expect(wrapper.find('[data-testid="size-pairs-hint"]').text()).toBe(en.size.pairsHint)
+
+      await rowsIncrease(wrapper).trigger('click')
+      expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ rows: 10, rowsFrom: 'start' })
     })
 
-    it('keeps the stepper on the current count’s parity, so stepping lands on allowed sizes', async () => {
-      const even = mountControls(target()) // 8 rows
-      await even.find('[data-testid="size-rows-from-start"]').trigger('click')
-      expect(rowsInput(even).attributes('min')).toBe('2')
-
-      const odd = mountControls(pattern(6, 9, { technique }))
-      await odd.find('[data-testid="size-rows-from-start"]').trigger('click')
-      expect(rowsInput(odd).attributes('min')).toBe('1')
-    })
-
-    it('does not accept an odd change of rows from the start, and puts the count back', async () => {
-      const wrapper = mountControls(target())
+    it('disables the − button once removing one more step would drop below 1, honouring the pairs rule', async () => {
+      const wrapper = mountControls(pattern(6, 2, { technique }))
       await wrapper.find('[data-testid="size-rows-from-start"]').trigger('click')
 
-      await enter(rowsInput(wrapper), '9')
-
-      expect(wrapper.emitted('resize')).toBeUndefined()
-      expect(rowsInput(wrapper).element.value).toBe('8')
-    })
-
-    it('accepts an even change of rows from the start', async () => {
-      const wrapper = mountControls(target())
-      await wrapper.find('[data-testid="size-rows-from-start"]').trigger('click')
-
-      await enter(rowsInput(wrapper), '10')
-
-      expect(wrapper.emitted('resize')![0]![0]).toEqual({ columns: 6, rows: 10, columnsFrom: 'end', rowsFrom: 'start' })
+      // 2 rows, stepping by 2: one more decrease would reach 0, so it's disabled rather than landing on an odd count.
+      expect(rowsDecrease(wrapper).element.disabled).toBe(true)
     })
 
     it('leaves columns, and every change from the end, unrestricted', async () => {
       const wrapper = mountControls(target())
       await wrapper.find('[data-testid="size-columns-from-start"]').trigger('click')
 
-      expect(columnsInput(wrapper).attributes('step')).toBe('1')
-      await enter(columnsInput(wrapper), '7')
+      await columnsIncrease(wrapper).trigger('click')
       expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ columns: 7, columnsFrom: 'start' })
 
-      await enter(rowsInput(wrapper), '9') // rows from the end
+      await rowsIncrease(wrapper).trigger('click') // rows from the end
       expect(wrapper.emitted('resize')![1]![0]).toMatchObject({ rows: 9, rowsFrom: 'end' })
     })
 
-    it('applies the pairs rule to whichever input drives the grid’s rows when rotated', async () => {
+    it('applies the pairs rule to whichever counter drives the grid’s rows when rotated', async () => {
       const wrapper = mountControls(toggleRotated(target()))
 
       await wrapper.find('[data-testid="size-columns-from-start"]').trigger('click') // horizontal, so the grid's rows
 
-      expect(columnsInput(wrapper).attributes('step')).toBe('2')
-      expect(rowsInput(wrapper).attributes('step')).toBe('1')
+      await columnsIncrease(wrapper).trigger('click')
+      expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ rows: 10 }) // stepped by 2, not 1
     })
   })
 
@@ -460,9 +389,8 @@ describe('SizeControls change from (ticket 102)', () => {
 
     await wrapper.find('[data-testid="size-rows-from-start"]').trigger('click')
 
-    expect(rowsInput(wrapper).attributes('step')).toBe('1')
     expect(wrapper.find('[data-testid="size-pairs-hint"]').exists()).toBe(false)
-    await enter(rowsInput(wrapper), '9')
+    await rowsIncrease(wrapper).trigger('click')
     expect(wrapper.emitted('resize')![0]![0]).toMatchObject({ rows: 9, rowsFrom: 'start' })
   })
 

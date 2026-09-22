@@ -61,6 +61,11 @@ export const ru: Translations = {
     saveButton: 'Сохранить',
     savedConfirmation: 'Сохранено',
     pasteLabel: 'Вставить',
+    removeLineButton: 'Удалить выделенный ряд/столбец',
+  },
+  rulers: {
+    selectRowLabel: 'Выделить ряд {number}',
+    selectColumnLabel: 'Выделить столбец {number}',
   },
   rowProgress: {
     enabledLabel: 'Показывать прогресс по рядам',
@@ -117,6 +122,10 @@ export const ru: Translations = {
       'Эти размеры — оценка. Мы считаем их как размер одной бисеринки, умноженный на число бисерин в ширину и в высоту. Готовое изделие часто выходит немного другим: нитка, натяжение и небольшие различия между бисеринками складываются. Считайте это ориентиром, а не измерением.',
     columnsLabel: 'Столбцы',
     rowsLabel: 'Ряды',
+    decreaseColumnsButton: 'Меньше столбцов',
+    increaseColumnsButton: 'Больше столбцов',
+    decreaseRowsButton: 'Меньше рядов',
+    increaseRowsButton: 'Больше рядов',
     changeFromLabel: 'Менять с',
     fromEnd: 'конца',
     fromStart: 'начала',

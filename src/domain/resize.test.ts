@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { createPattern, moveToRow, paintCells, setRowProgressEnabled, toggleRotated, type Pattern, type Technique } from './pattern'
-import { resizePattern, resizeRefusal, resizeRowStep } from './resize'
+import { removeLineRefusal, removeSelectedLine, resizePattern, resizeRefusal, resizeRowStep } from './resize'
+import { wholeLineSelection } from './selection'
 
 const cube = findBead('toho-cube-1.5mm')!
 
@@ -244,6 +245,107 @@ describe('Row progress', () => {
     const pointed = moveToRow(numbered(3, 5), 1)
 
     expect(resizePattern(pointed, { columns: 3, rows: 4 }).rowProgress).toBe(pointed.rowProgress)
+  })
+})
+
+describe('removeSelectedLine (ticket 123)', () => {
+  it('removes the selected row and shifts the rows below it up', () => {
+    const removed = removeSelectedLine(numbered(3, 4), wholeLineSelection({ columns: 3, rows: 4 }, 'row', 1))
+
+    expect(removed.rows).toBe(3)
+    expect(removed.columns).toBe(3)
+    expect(colors(removed)).toEqual([
+      ['r0c0', 'r0c1', 'r0c2'],
+      ['r2c0', 'r2c1', 'r2c2'],
+      ['r3c0', 'r3c1', 'r3c2'],
+    ])
+  })
+
+  it('removes the selected column and shifts the columns after it left', () => {
+    const removed = removeSelectedLine(numbered(4, 3), wholeLineSelection({ columns: 4, rows: 3 }, 'column', 2))
+
+    expect(removed.columns).toBe(3)
+    expect(colors(removed)).toEqual([
+      ['r0c0', 'r0c1', 'r0c3'],
+      ['r1c0', 'r1c1', 'r1c3'],
+      ['r2c0', 'r2c1', 'r2c3'],
+    ])
+  })
+
+  it('removes a row from any index, not just an end', () => {
+    const removed = removeSelectedLine(numbered(2, 5), wholeLineSelection({ columns: 2, rows: 5 }, 'row', 3))
+
+    expect(colors(removed)).toEqual([
+      ['r0c0', 'r0c1'],
+      ['r1c0', 'r1c1'],
+      ['r2c0', 'r2c1'],
+      ['r4c0', 'r4c1'],
+    ])
+  })
+
+  it('applies to peyote and brick stitch with no pairing restriction, unlike Resize from the start', () => {
+    for (const technique of ['peyote', 'brick'] as const) {
+      const removed = removeSelectedLine(numbered(2, 5, technique), wholeLineSelection({ columns: 2, rows: 5 }, 'row', 2))
+      expect(removed.rows).toBe(4)
+    }
+  })
+
+  it('keeps the rest of the Pattern as it was, and bumps updatedAt', () => {
+    const before = { ...toggleRotated(numbered(3, 3)), imageColors: ['#ff0000'], updatedAt: 0 }
+
+    const removed = removeSelectedLine(before, wholeLineSelection(before, 'row', 1))
+
+    expect(removed.id).toBe(before.id)
+    expect(removed.technique).toBe(before.technique)
+    expect(removed.rotated).toBe(true)
+    expect(removed.imageColors).toEqual(['#ff0000'])
+    expect(removed.updatedAt).toBeGreaterThan(0)
+  })
+
+  it('hands back the same instance, unchanged, with no Selection, or one that is not a whole line', () => {
+    const pattern = numbered(3, 3)
+
+    expect(removeSelectedLine(pattern, undefined)).toBe(pattern)
+    expect(removeSelectedLine(pattern, { top: 0, left: 0, rows: 2, columns: 2 })).toBe(pattern)
+  })
+
+  it('is refused, and returns the same instance, while Row progress is on', () => {
+    const woven = setRowProgressEnabled(numbered(3, 3), true)
+
+    expect(removeLineRefusal(woven, wholeLineSelection(woven, 'row', 0))).toBe('locked')
+    expect(removeSelectedLine(woven, wholeLineSelection(woven, 'row', 0))).toBe(woven)
+  })
+
+  it('is refused for a Selection that is not exactly one whole row or column', () => {
+    const pattern = numbered(3, 3)
+
+    expect(removeLineRefusal(pattern, undefined)).toBe('no-line')
+    expect(removeLineRefusal(pattern, { top: 0, left: 0, rows: 2, columns: 3 })).toBe('no-line')
+  })
+
+  it('is refused for the Pattern’s only remaining row or column, the same floor Resize keeps', () => {
+    const oneRow = numbered(3, 1)
+    const oneColumn = numbered(1, 3)
+
+    expect(removeLineRefusal(oneRow, wholeLineSelection(oneRow, 'row', 0))).toBe('only-line')
+    expect(removeSelectedLine(oneRow, wholeLineSelection(oneRow, 'row', 0))).toBe(oneRow)
+    expect(removeLineRefusal(oneColumn, wholeLineSelection(oneColumn, 'column', 0))).toBe('only-line')
+  })
+
+  it('clamps Row progress’s pointers onto a row that still exists, same as Resize', () => {
+    const pointed = moveToRow(numbered(3, 5), 4)
+
+    const removed = removeSelectedLine(pointed, wholeLineSelection(pointed, 'row', 0))
+
+    expect(removed.rowProgress.currentRow).toBe(3)
+  })
+
+  it('leaves the pointers alone when they still fit', () => {
+    const pointed = moveToRow(numbered(3, 5), 1)
+
+    const removed = removeSelectedLine(pointed, wholeLineSelection(pointed, 'row', 4))
+
+    expect(removed.rowProgress).toBe(pointed.rowProgress)
   })
 })
 

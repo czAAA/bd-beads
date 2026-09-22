@@ -22,6 +22,8 @@ const props = defineProps<{
   canUndo: boolean
   canRedo: boolean
   canCopy: boolean
+  /** Whether "remove selected row/column" (ticket 123) would apply right now: the Selection is exactly one whole row or column, and Row progress isn't locking it. */
+  canRemoveSelectedLine: boolean
   mirrorAxisCounts: MirrorAxisCounts
   /** Mirror's copy-mode switch (ticket 45). */
   mirrorCopyMode: boolean
@@ -52,6 +54,8 @@ const emit = defineEmits<{
   'toggle-row-direction': []
   'move-row': [delta: number]
   'delete-all': []
+  /** "Remove selected row/column" (ticket 123): the Selection names which one, so it takes no payload of its own. */
+  'remove-selected-line': []
   /** A Resize (CONTEXT.md, ADR 0017) from the Size group, in grid space. */
   resize: [request: ResizeRequest]
 }>()
@@ -177,6 +181,24 @@ const topBottomMax = computed(() =>
           <path d="M17.5 3.5 20.5 6.5 9 18H5.5v-3.5z" />
           <path d="M13 8 16 11" />
           <path d="M3.5 20.5h9" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="tool-remove-line"
+        :title="t.tools.removeLineButton"
+        :aria-label="t.tools.removeLineButton"
+        :disabled="!canRemoveSelectedLine"
+        @click="emit('remove-selected-line')"
+      >
+        <!-- A row lifted out of a stack, arrows closing the gap it leaves behind: works the same read sideways for a column. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M3 6h18" />
+          <path d="M3 18h18" />
+          <path d="M3 12h18" stroke-dasharray="2.5 2.5" />
+          <path d="M9 8.5 12 5.5l3 3" />
+          <path d="M9 15.5l3 3 3-3" />
         </svg>
       </button>
       <button

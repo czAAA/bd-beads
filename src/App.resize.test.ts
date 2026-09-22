@@ -25,14 +25,22 @@ async function createInBeads(wrapper: ReturnType<typeof mount>, columns: number,
 
 const stored = () => loadPatterns()[0]!
 const colors = () => stored().grid.map((row) => row.map((cell) => cell.color))
-const columnsInput = (wrapper: ReturnType<typeof mount>) => wrapper.find<HTMLInputElement>('[data-testid="size-columns-input"]')
-const rowsInput = (wrapper: ReturnType<typeof mount>) => wrapper.find<HTMLInputElement>('[data-testid="size-rows-input"]')
+const columnsValue = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="size-columns-value"]').text()
+const rowsValue = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="size-rows-value"]').text()
+const columnsIncrease = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-columns-increase"]')
+const columnsDecrease = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-columns-decrease"]')
+const rowsIncrease = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-rows-increase"]')
+const rowsDecrease = (wrapper: ReturnType<typeof mount>) =>
+  wrapper.find<HTMLButtonElement>('[data-testid="size-rows-decrease"]')
 
-/** Types into a Size input and commits it, the way blur or Enter does. */
-async function enter(input: ReturnType<typeof columnsInput>, value: number) {
-  input.element.value = String(value)
-  await input.trigger('input')
-  await input.trigger('change')
+/** Clicks a stepper button `times` times, each one its own Resize (ticket 123: a click always lands as its own Resize, unlike the old typed-and-committed inputs, which could jump straight to a size in one go). */
+async function step(button: ReturnType<typeof columnsIncrease>, times = 1) {
+  for (let i = 0; i < times; i += 1) {
+    await button.trigger('click')
+  }
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = 'red') {
@@ -100,8 +108,8 @@ describe('App Resize (ticket 101)', () => {
     await createInBeads(wrapper, 3, 2)
     await paint(wrapper, 0)
 
-    await enter(columnsInput(wrapper), 5)
-    await enter(rowsInput(wrapper), 3)
+    await step(columnsIncrease(wrapper), 2)
+    await step(rowsIncrease(wrapper), 1)
 
     expect(stored().columns).toBe(5)
     expect(stored().rows).toBe(3)
@@ -118,7 +126,7 @@ describe('App Resize (ticket 101)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 22, 44)
 
-    await enter(columnsInput(wrapper), 20)
+    await step(columnsDecrease(wrapper), 2)
 
     expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 3.0 × 6.6 cm')
   })
@@ -129,8 +137,8 @@ describe('App Resize (ticket 101)', () => {
     await paint(wrapper, 0)
     await paint(wrapper, 8, 'blue') // (2,2)
 
-    await enter(columnsInput(wrapper), 2)
-    await enter(rowsInput(wrapper), 2)
+    await step(columnsDecrease(wrapper))
+    await step(rowsDecrease(wrapper))
 
     expect(wrapper.find('[data-testid="confirm-modal-backdrop"]').exists()).toBe(false)
     expect(colors()).toEqual([
@@ -147,14 +155,14 @@ describe('App Resize (ticket 101)', () => {
     await paint(wrapper, 8, 'blue')
     const before = colors()
 
-    await enter(columnsInput(wrapper), 2)
+    await step(columnsDecrease(wrapper))
     await undo(wrapper)
 
     expect(stored().columns).toBe(3)
     expect(stored().rows).toBe(3)
     expect(colors()).toEqual(before)
     expect(colors()[2]![2]).toBe(BLUE)
-    expect(columnsInput(wrapper).element.value).toBe('3')
+    expect(columnsValue(wrapper)).toContain('3')
 
     await redo(wrapper)
 
@@ -165,8 +173,8 @@ describe('App Resize (ticket 101)', () => {
   it('takes exactly one Undo per Resize, whichever direction it changed', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 3, 3)
-    await enter(columnsInput(wrapper), 4)
-    await enter(rowsInput(wrapper), 5)
+    await step(columnsIncrease(wrapper))
+    await step(rowsIncrease(wrapper))
 
     await undo(wrapper)
     expect(stored().rows).toBe(3)
@@ -177,20 +185,11 @@ describe('App Resize (ticket 101)', () => {
     expect(canUndo(wrapper)).toBe(false)
   })
 
-  it('is not an undo step when it changes nothing', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 3, 3)
-
-    await enter(columnsInput(wrapper), 3)
-
-    expect(canUndo(wrapper)).toBe(false)
-  })
-
   it('saves as it lands, so it survives a reload', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 3, 3)
 
-    await enter(columnsInput(wrapper), 6)
+    await step(columnsIncrease(wrapper), 3)
 
     expect(stored().columns).toBe(6)
     expect(stored().grid[0]).toHaveLength(6)
@@ -205,7 +204,7 @@ describe('App Resize (ticket 101)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
 
-    await enter(columnsInput(wrapper), 2)
+    await step(columnsDecrease(wrapper))
 
     expect(selectedBeadCount(wrapper)).toBe(0)
   })
@@ -216,7 +215,7 @@ describe('App Resize (ticket 101)', () => {
     await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
 
-    await enter(columnsInput(wrapper), 8)
+    await step(columnsIncrease(wrapper))
 
     expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
 
@@ -230,20 +229,20 @@ describe('App Resize (ticket 101)', () => {
     await createInBeads(wrapper, 6, 6)
     await wrapper.find('[data-testid="mirror-copy-mode"]').trigger('click')
 
-    await enter(columnsInput(wrapper), 8)
+    await step(columnsIncrease(wrapper))
 
     expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('swaps the two inputs when the Pattern is rotated', async () => {
+  it('swaps the two counters when the Pattern is rotated', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 6)
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
-    expect(columnsInput(wrapper).element.value).toBe('6')
-    expect(rowsInput(wrapper).element.value).toBe('4')
+    expect(columnsValue(wrapper)).toContain('6')
+    expect(rowsValue(wrapper)).toContain('4')
 
-    await enter(columnsInput(wrapper), 7) // horizontal on screen, so the grid's rows
+    await step(columnsIncrease(wrapper)) // horizontal on screen, so the grid's rows
 
     expect(stored().columns).toBe(4)
     expect(stored().rows).toBe(7)
@@ -251,10 +250,12 @@ describe('App Resize (ticket 101)', () => {
 
   it('refits the zoom to the new size while it is still at fit', async () => {
     const wrapper = mount(App)
-    await createInBeads(wrapper, 40, 3)
+    // 41 columns just fits the (unmeasured, so CANVAS_MAX_PX-based) canvas area at 100%; one more tips it over.
+    await createInBeads(wrapper, 41, 3)
     const level = () => wrapper.find('[data-testid="zoom-level"]').text()
+    expect(level()).toBe('100%')
 
-    await enter(columnsInput(wrapper), 400)
+    await step(columnsIncrease(wrapper))
 
     expect(level()).not.toBe('100%')
   })
@@ -264,7 +265,7 @@ describe('App Resize (ticket 101)', () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 100, 100)
 
-      await enter(rowsInput(wrapper), 101)
+      await step(rowsIncrease(wrapper))
 
       expect(stored().rows).toBe(101)
       expect(wrapper.find('[data-testid="size-message"]').exists()).toBe(false)
@@ -277,41 +278,41 @@ describe('App Resize (ticket 101)', () => {
       const wrapper = mount(App)
 
       expect(wrapper.find('[data-testid="size-controls"]').exists()).toBe(true)
-      expect(columnsInput(wrapper).element.value).toBe('101')
+      expect(columnsValue(wrapper)).toContain('101')
 
-      await enter(rowsInput(wrapper), 90)
-      expect(stored().rows).toBe(90)
+      await step(rowsDecrease(wrapper))
+      expect(stored().rows).toBe(99)
       expect(stored().columns).toBe(101)
 
-      await enter(rowsInput(wrapper), 250)
-      expect(stored().rows).toBe(250)
+      await step(rowsIncrease(wrapper), 3)
+      expect(stored().rows).toBe(102)
     })
   })
 
   describe('Row progress', () => {
-    it('disables the Size inputs while it is on, with the reason on hover, and re-enables them when it is off', async () => {
+    it('disables every counter while it is on, with the reason on hover, and re-enables them when it is off', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 4, 4)
-      expect(columnsInput(wrapper).element.disabled).toBe(false)
+      expect(columnsIncrease(wrapper).element.disabled).toBe(false)
 
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-      expect(columnsInput(wrapper).element.disabled).toBe(true)
-      expect(rowsInput(wrapper).element.disabled).toBe(true)
+      expect(columnsIncrease(wrapper).element.disabled).toBe(true)
+      expect(rowsIncrease(wrapper).element.disabled).toBe(true)
       expect(wrapper.find('[data-testid="size-inputs"]').attributes('title')).toBe('Turn off Row progress to change the size')
 
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-      expect(columnsInput(wrapper).element.disabled).toBe(false)
+      expect(columnsIncrease(wrapper).element.disabled).toBe(false)
       expect(wrapper.find('[data-testid="size-inputs"]').attributes('title')).toBeUndefined()
     })
 
-    it('does not resize through a stray change event either', async () => {
+    it('does not resize through a stray click either, since resizePattern itself refuses under the lock', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 4, 4)
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
 
-      await enter(columnsInput(wrapper), 2)
+      await columnsDecrease(wrapper).trigger('click')
 
       expect(stored().columns).toBe(4)
     })
@@ -320,14 +321,14 @@ describe('App Resize (ticket 101)', () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 4, 6)
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-      for (let step = 0; step < 5; step += 1) {
+      for (let index = 0; index < 5; index += 1) {
         await wrapper.find('[data-testid="row-progress-next"]').trigger('click')
       }
       await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click') // off, pointer on row 6
       expect(stored().rowProgress.currentRow).toBe(5)
 
-      await enter(rowsInput(wrapper), 3)
-      expect(stored().rowProgress.currentRow).toBe(2)
+      await step(rowsDecrease(wrapper))
+      expect(stored().rowProgress.currentRow).toBe(4)
 
       await undo(wrapper)
       expect(stored().rowProgress.currentRow).toBe(5)
@@ -340,8 +341,8 @@ describe('App Resize (ticket 101)', () => {
       await createInBeads(wrapper, 3, 4, technique)
       await paint(wrapper, 0)
 
-      await enter(rowsInput(wrapper), 7)
-      await enter(columnsInput(wrapper), 5)
+      await step(rowsIncrease(wrapper), 3)
+      await step(columnsIncrease(wrapper), 2)
 
       expect(stored().technique).toBe(technique)
       // An end-anchored change never moves a row, so every row keeps its parity and with it its stagger.
@@ -361,7 +362,7 @@ describe('App Resize from the start (ticket 102)', () => {
     await paint(wrapper, 0)
     await start(wrapper, 'columns')
 
-    await enter(columnsInput(wrapper), 5)
+    await step(columnsIncrease(wrapper), 2)
 
     expect(colors()).toEqual([
       [null, null, RED, null, null],
@@ -375,7 +376,7 @@ describe('App Resize from the start (ticket 102)', () => {
     await paint(wrapper, 0)
     await start(wrapper, 'rows')
 
-    await enter(rowsInput(wrapper), 4)
+    await step(rowsIncrease(wrapper), 2)
 
     expect(colors()).toEqual([
       [null, null],
@@ -385,7 +386,7 @@ describe('App Resize from the start (ticket 102)', () => {
     ])
   })
 
-  it('removes the leftmost columns and top-most rows with their beads, and shifts the rest back', async () => {
+  it('removes the leftmost column and top-most row with their beads, and shifts the rest back', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 3, 3)
     await paint(wrapper, 0) // (0,0), which goes
@@ -393,8 +394,8 @@ describe('App Resize from the start (ticket 102)', () => {
     await start(wrapper, 'columns')
     await start(wrapper, 'rows')
 
-    await enter(columnsInput(wrapper), 2)
-    await enter(rowsInput(wrapper), 2)
+    await step(columnsDecrease(wrapper))
+    await step(rowsDecrease(wrapper))
 
     expect(colors()).toEqual([
       [null, null],
@@ -410,8 +411,8 @@ describe('App Resize from the start (ticket 102)', () => {
     const before = colors()
     await start(wrapper, 'columns')
 
-    await enter(columnsInput(wrapper), 1) // the two leftmost columns go, with the red bead
-    expect(colors()).toEqual([[null], [null], [BLUE]])
+    await step(columnsDecrease(wrapper)) // the leftmost column goes, with the red bead
+    expect(colors()).toEqual([[null, null], [null, null], [null, BLUE]])
     await undo(wrapper)
 
     expect(colors()).toEqual(before)
@@ -419,29 +420,30 @@ describe('App Resize from the start (ticket 102)', () => {
     expect(stored().rows).toBe(3)
 
     await redo(wrapper)
-    expect(stored().columns).toBe(1)
+    expect(stored().columns).toBe(2)
   })
 
-  it('swaps directions with the rotated view: the horizontal choice follows the horizontal input', async () => {
+  it('swaps directions with the rotated view: the horizontal choice follows the horizontal counter', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 2, 3)
     await paint(wrapper, 0)
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
     await start(wrapper, 'columns') // horizontal on screen: the grid's rows
 
-    await enter(columnsInput(wrapper), 5)
+    await step(columnsIncrease(wrapper), 2)
 
     expect(stored().columns).toBe(2)
     expect(colors()[2]![0]).toBe(RED) // two new rows on top pushed the design down two
   })
 
   describe.each<Technique>(['peyote', 'brick'])('on %s', (technique) => {
-    it('moves rows from the start in steps of 2, stating why beside the input', async () => {
+    it('states why beside the counter once rows step by 2 from the start', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 3, 4, technique)
+      expect(wrapper.find('[data-testid="size-pairs-hint"]').exists()).toBe(false)
+
       await start(wrapper, 'rows')
 
-      expect(rowsInput(wrapper).attributes('step')).toBe('2')
       expect(wrapper.find('[data-testid="size-pairs-hint"]').text()).toBe(en.size.pairsHint)
     })
 
@@ -452,24 +454,11 @@ describe('App Resize from the start (ticket 102)', () => {
       await paint(wrapper, 4, 'blue') // (1,1)
       await start(wrapper, 'rows')
 
-      await enter(rowsInput(wrapper), 6)
+      await step(rowsIncrease(wrapper)) // steps by 2 on this technique from the start
 
       expect(colors()[2]![0]).toBe(RED)
       expect(colors()[3]![1]).toBe(BLUE)
       expect(colors()[0]!.every((color) => color === null)).toBe(true)
-    })
-
-    it('refuses an odd change of rows from the start and leaves the Pattern alone', async () => {
-      const wrapper = mount(App)
-      await createInBeads(wrapper, 3, 4, technique)
-      await paint(wrapper, 0)
-      await start(wrapper, 'rows')
-
-      await enter(rowsInput(wrapper), 5)
-
-      expect(stored().rows).toBe(4)
-      expect(colors()[0]![0]).toBe(RED)
-      expect(rowsInput(wrapper).element.value).toBe('4')
     })
 
     it('leaves columns from the start unrestricted', async () => {
@@ -478,7 +467,7 @@ describe('App Resize from the start (ticket 102)', () => {
       await paint(wrapper, 0)
       await start(wrapper, 'columns')
 
-      await enter(columnsInput(wrapper), 4)
+      await step(columnsIncrease(wrapper))
 
       expect(colors()[0]![1]).toBe(RED)
     })
@@ -489,7 +478,7 @@ describe('App Resize from the start (ticket 102)', () => {
     await createInBeads(wrapper, 100, 100)
     await start(wrapper, 'columns')
 
-    await enter(columnsInput(wrapper), 101)
+    await step(columnsIncrease(wrapper))
     expect(stored().columns).toBe(101)
 
     await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')

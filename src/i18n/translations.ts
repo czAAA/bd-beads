@@ -65,6 +65,14 @@ export interface Translations {
     savedConfirmation: string
     /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names it. */
     pasteLabel: string
+    /** The Tools-group button next to Erase (ticket 123): removes the selected whole row/column, enabled only while the Selection is exactly one. */
+    removeLineButton: string
+  }
+  /** The row and column rulers (ticket 123): each number is now a button that selects that whole line, the same Selection a Select-tool drag across it would leave. */
+  rulers: {
+    /** `{number}` is the 1-based row/column number shown. */
+    selectRowLabel: string
+    selectColumnLabel: string
   }
   rowProgress: {
     enabledLabel: string
@@ -136,11 +144,16 @@ export interface Translations {
     estimateWarning: string
     columnsLabel: string
     rowsLabel: string
+    /** The −/+ buttons either side of each count (ticket 123, matching Mirror's axis-counter look): one row/column at a time, from whichever end "change from" points at. */
+    decreaseColumnsButton: string
+    increaseColumnsButton: string
+    decreaseRowsButton: string
+    increaseRowsButton: string
     /** Prefix of the "change from: end | start" choice, one per direction. */
     changeFromLabel: string
     fromEnd: string
     fromStart: string
-    /** Hover text on the inputs while Row progress is on and they are disabled. */
+    /** Hover text on the counters while Row progress is on and they are disabled. */
     lockedReason: string
     /** Stated near the rows input while it moves in steps of 2 (peyote and brick stitch, from the start). */
     pairsHint: string

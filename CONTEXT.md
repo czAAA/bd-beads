@@ -88,8 +88,12 @@ A Pattern's width and height in mm/cm, worked out from its Pattern size and Bead
 _Avoid_: real size, actual size, physical size
 
 **Resize**:
-Adding or removing whole rows and columns on an open Pattern, from either end of each direction; removing them removes the beads painted on them. Not available while Row progress is on.
+Adding or removing one whole row/column at a time on an open Pattern, from either end of each direction, via −/+ buttons on the Size group's columns/rows counts (not a typeable number); removing them removes the beads painted on them. Not available while Row progress is on.
 _Avoid_: crop, stretch, scale, change grid
+
+**Remove row/column**:
+A Tools-group tool, next to Erase, that removes the specific row or column the Selection marks out — any index, not just an end the way Resize is limited to — shifting the rest of the grid to close the gap, as one undo step. Enabled only when the Selection is exactly one whole row or column (see Selection); refused while Row progress is on, the same lock Resize itself respects.
+_Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
 Swaps a Pattern's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Pattern size and every painted cell stay as they are, whichever unit the Pattern was created in — see [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md), superseding [ADR 0008](docs/adr/0008-replace-bead-recalculates-grid.md).
@@ -100,7 +104,7 @@ A one-off paint color chosen freely with the color picker in the Colors group, o
 _Avoid_: user color, extra palette color
 
 **Selection**:
-A rectangular area of a Pattern's cells, marked out by dragging with the Select tool and left highlighted once the drag ends. Exactly one is active at a time: a new drag replaces the previous one, and leaving the Select tool, switching or creating a Pattern, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
+A rectangular area of a Pattern's cells, marked out by dragging with the Select tool, or by clicking a number on the row or column ruler (which marks out that whole row/column, from any tool), and left highlighted once made. Exactly one is active at a time: a new drag or ruler click replaces the previous one, and leaving the Select tool, switching or creating a Pattern, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it. It marks out cells, it does not change them — selecting never paints anything.
 _Avoid_: region, highlighted area, selected block
 
 **Copy**:

@@ -33,7 +33,14 @@ const emit = defineEmits<{
   'cell-secondary-move': [row: number, column: number]
   'cell-hover': [row: number, column: number]
   'hover-end': []
+  /** A ruler number was clicked (ticket 123): relayed up from whichever of the four PatternRuler instances it came from. */
+  'select-line': [selection: Selection]
 }>()
+
+/** Relays a ruler's own `select` (see PatternRuler.vue) as this component's `select-line`, shared by all four rulers below rather than each carrying its own copy of the same lambda. */
+function onSelectLine(selection: Selection) {
+  emit('select-line', selection)
+}
 
 /** The space the Pattern takes up in the ruled layout: the rulers are laid out around it, and the surface (which is not inside the transform that scales the rulers) is placed over it. */
 const gridSlotStyle = computed(() => {
@@ -97,15 +104,15 @@ const rotateStyle = computed(() => ({
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
           <div class="pattern-canvas__ruled">
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" />
+            <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" @select="onSelectLine" />
             <span />
 
-            <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" />
+            <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" @select="onSelectLine" />
             <div class="pattern-canvas__grid-slot" :style="gridSlotStyle" />
-            <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" />
+            <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" @select="onSelectLine" />
 
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" />
+            <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" @select="onSelectLine" />
             <span />
           </div>
         </div>

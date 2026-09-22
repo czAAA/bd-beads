@@ -1,5 +1,6 @@
 import { isOffsetTechnique, type Technique } from './grid'
-import type { Cell, Grid, Pattern } from './pattern'
+import type { Cell, Grid, Pattern, RowProgress } from './pattern'
+import { selectedLine, type Selection } from './selection'
 
 /** Which end of a direction a Resize changes: the right/bottom (as seen on screen) or the left/top. */
 export type ResizeAnchor = 'end' | 'start'
@@ -64,6 +65,15 @@ function sourceIndex(index: number, from: ResizeAnchor, oldCount: number, newCou
   return source >= 0 && source < oldCount ? source : undefined
 }
 
+/** Row progress's pointers, moved onto a row/column that still exists once the grid shrinks to `rows`x`columns` — shared by resizePattern and removeSelectedLine, which can each drop the row or column a pointer sat on. Hands back the same RowProgress instance, unchanged, when both pointers already fit. */
+function clampRowProgress(rowProgress: RowProgress, rows: number, columns: number): RowProgress {
+  const currentRow = Math.min(rowProgress.currentRow, rows - 1)
+  const currentColumn = Math.min(rowProgress.currentColumn, columns - 1)
+  return currentRow === rowProgress.currentRow && currentColumn === rowProgress.currentColumn
+    ? rowProgress
+    : { ...rowProgress, currentRow, currentColumn }
+}
+
 function resizeGrid(pattern: Pattern, request: ResizeRequest): Grid {
   const { columnsFrom = 'end', rowsFrom = 'end' } = request
 
@@ -92,17 +102,72 @@ export function resizePattern(pattern: Pattern, request: ResizeRequest): Pattern
     return pattern
   }
 
-  const { currentRow, currentColumn } = pattern.rowProgress
-  const clampedRow = Math.min(currentRow, request.rows - 1)
-  const clampedColumn = Math.min(currentColumn, request.columns - 1)
-  const pointersFit = clampedRow === currentRow && clampedColumn === currentColumn
-
   return {
     ...pattern,
     columns: request.columns,
     rows: request.rows,
     grid: resizeGrid(pattern, request),
-    rowProgress: pointersFit ? pattern.rowProgress : { ...pattern.rowProgress, currentRow: clampedRow, currentColumn: clampedColumn },
+    rowProgress: clampRowProgress(pattern.rowProgress, request.rows, request.columns),
+    updatedAt: Date.now(),
+  }
+}
+
+/** Why "remove selected row/column" (ticket 123) would not apply, or undefined when it would. */
+export type RemoveLineRefusal =
+  /** The Selection isn't exactly one whole row or column (see selectedLine) — there's nothing this Tool acts on. */
+  | 'no-line'
+  /** Row progress is on, the same lock Resize itself refuses under (ADR 0017). */
+  | 'locked'
+  /** The Pattern has only the one row or column the Selection names — removing it is a Resize to 0, which nothing here allows any more than resizeRefusal's 'invalid' does. */
+  | 'only-line'
+
+/**
+ * Whether "remove selected row/column" (ticket 123) would be refused, or undefined when it would apply — what the
+ * Tool's own enabled state reads (see Toolbox.vue/App.vue).
+ */
+export function removeLineRefusal(pattern: Pattern, selection: Selection | undefined): RemoveLineRefusal | undefined {
+  const line = selectedLine(pattern, selection)
+  if (!line) {
+    return 'no-line'
+  }
+  if (pattern.rowProgress.enabled) {
+    return 'locked'
+  }
+  if ((line.axis === 'row' ? pattern.rows : pattern.columns) <= 1) {
+    return 'only-line'
+  }
+  return undefined
+}
+
+/**
+ * Removes exactly the row or column the Selection marks out (ticket 123, CONTEXT.md's Resize entry) — any index, not
+ * just an end the way Resize itself is limited to — shifting the rest of the grid up or left to close the gap. Row
+ * progress's pointers are clamped exactly as resizePattern's are, since the grid shrinks by one line the same way;
+ * clearing the Selection and Mirror's axis counts is the caller's job, same division of labor as resizePattern (see
+ * UndoEntry.size). Unlike Resize this never refuses for a technique's row-pairing (there's no "from the start" to
+ * keep in step here — a single row can be removed from anywhere and the rest simply shift up).
+ *
+ * Hands back the same Pattern instance, unchanged, when refused (see removeLineRefusal).
+ */
+export function removeSelectedLine(pattern: Pattern, selection: Selection | undefined): Pattern {
+  const line = selectedLine(pattern, selection)
+  if (!line || removeLineRefusal(pattern, selection)) {
+    return pattern
+  }
+
+  const grid: Grid =
+    line.axis === 'row'
+      ? pattern.grid.filter((_row, rowIndex) => rowIndex !== line.index)
+      : pattern.grid.map((row) => row.filter((_cell, columnIndex) => columnIndex !== line.index))
+  const rows = line.axis === 'row' ? pattern.rows - 1 : pattern.rows
+  const columns = line.axis === 'column' ? pattern.columns - 1 : pattern.columns
+
+  return {
+    ...pattern,
+    columns,
+    rows,
+    grid,
+    rowProgress: clampRowProgress(pattern.rowProgress, rows, columns),
     updatedAt: Date.now(),
   }
 }

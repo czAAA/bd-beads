@@ -62,6 +62,38 @@ export function selectionBetween(
   }
 }
 
+/**
+ * Which whole line — a full row or a full column — a Selection exactly covers, or undefined when it's neither
+ * (ticket 123): what the "remove selected row/column" Tool (see resize.ts's removeSelectedLine) requires, and the
+ * inverse of wholeLineSelection below. On a 1x1 Pattern, where a Selection of the single cell fits both readings,
+ * this calls it a row — an arbitrary but deterministic tiebreak, since there is only ever one cell either way.
+ */
+export function selectedLine(dimensions: GridDimensions, selection: Selection | undefined): SelectedLine | undefined {
+  if (!selection) {
+    return undefined
+  }
+  if (selection.rows === 1 && selection.columns === dimensions.columns) {
+    return { axis: 'row', index: selection.top }
+  }
+  if (selection.columns === 1 && selection.rows === dimensions.rows) {
+    return { axis: 'column', index: selection.left }
+  }
+  return undefined
+}
+
+/** What selectedLine reads a Selection as: the axis it runs along, and that line's index along the other axis. */
+export interface SelectedLine {
+  axis: 'row' | 'column'
+  index: number
+}
+
+/** The Selection a ruler number picks out (ticket 123): the whole row or column at `index`, exactly what dragging the Select tool across it would leave behind. */
+export function wholeLineSelection(dimensions: GridDimensions, axis: 'row' | 'column', index: number): Selection {
+  return axis === 'row'
+    ? { top: index, left: 0, rows: 1, columns: dimensions.columns }
+    : { top: 0, left: index, rows: dimensions.rows, columns: 1 }
+}
+
 /** Whether a cell falls inside the Selection — what the marquee is drawn from, cell by cell. */
 export function isWithinSelection(selection: Selection, position: GridPosition): boolean {
   return (

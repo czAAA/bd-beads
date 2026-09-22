@@ -11,6 +11,8 @@ import {
   rulerLabelStep,
 } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
+import { wholeLineSelection, type Selection } from '../domain/selection'
+import { useI18n } from '../i18n/useI18n'
 
 const props = defineProps<{
   pattern: Pattern
@@ -21,6 +23,13 @@ const props = defineProps<{
   zoom: number
 }>()
 
+const emit = defineEmits<{
+  /** A ruler number was clicked (ticket 123): the Selection of that whole row/column, ready to hand to whatever else the app does with a Selection. */
+  select: [selection: Selection]
+}>()
+
+const { t } = useI18n()
+
 /** Numbers stay this big on screen whatever the zoom, so the ruler thins out instead of shrinking into illegibility. */
 const FONT_SIZE_PX = 11
 const LABEL_GAP_PX = 4
@@ -29,8 +38,10 @@ const MIN_ROW_LABEL_PX = 13
 const MIN_COLUMN_LABEL_PX = 20
 
 /*
- * The gutter is aria-hidden: the numbers only mean anything next to the grid they line up with, and there are four
- * gutters, so reading them out would be noise rather than orientation.
+ * Each number is a button now (ticket 123): clicking it selects that whole row/column, the same Selection a
+ * Select-tool drag across it would leave (see wholeLineSelection). They carry their own accessible name
+ * (t.rulers.selectRowLabel/selectColumnLabel) rather than being hidden from assistive technology, since they now do
+ * something rather than merely label the grid.
  */
 
 /** Undo the canvas scale, so a length written here comes out the same on screen at every zoom level. */
@@ -112,6 +123,17 @@ function labelStyle(label: RulerLabel) {
         bottom: '0',
       }
 }
+
+function labelAriaLabel(label: RulerLabel): string {
+  return (isRowRuler.value ? t.value.rulers.selectRowLabel : t.value.rulers.selectColumnLabel).replace(
+    '{number}',
+    String(label.number),
+  )
+}
+
+function onLabelClick(label: RulerLabel) {
+  emit('select', wholeLineSelection(props.pattern, props.axis, label.index))
+}
 </script>
 
 <template>
@@ -120,17 +142,19 @@ function labelStyle(label: RulerLabel) {
     :class="[`pattern-ruler--${axis}`, `pattern-ruler--${edge}`]"
     :data-testid="`pattern-ruler-${axis}-${edge}`"
     :style="gutterStyle"
-    aria-hidden="true"
   >
-    <span
+    <button
       v-for="label in labels"
       :key="label.index"
+      type="button"
       class="pattern-ruler__label"
       data-testid="ruler-label"
+      :aria-label="labelAriaLabel(label)"
       :style="labelStyle(label)"
+      @click="onLabelClick(label)"
     >
       {{ label.number }}
-    </span>
+    </button>
   </div>
 </template>
 
@@ -150,6 +174,20 @@ function labelStyle(label: RulerLabel) {
   /* A number wider than its bead spills into the neighbouring gutter space rather than being clipped. */
   overflow: visible;
   white-space: nowrap;
+  /* Reset the app's default pill-button chrome: this reads as a plain number until hovered/focused. */
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pattern-ruler__label:hover,
+.pattern-ruler__label:focus-visible {
+  background: color-mix(in srgb, var(--color-ink) 15%, transparent);
 }
 
 .pattern-ruler--row.pattern-ruler--start .pattern-ruler__label {

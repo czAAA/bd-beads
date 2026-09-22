@@ -73,7 +73,7 @@ import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
 import { downloadFile } from './domain/fileDownload'
 import { importPatterns, patternFileName, serializePattern } from './domain/patternFile'
 import { patternFromShareLink } from './domain/qrExport'
-import { resizePattern, type ResizeRequest } from './domain/resize'
+import { removeLineRefusal, removeSelectedLine, resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
 
@@ -1229,22 +1229,18 @@ function onConfirmReplaceBead() {
 }
 
 /**
- * Resize (CONTEXT.md, ADR 0017) from the Size group: adds or removes rows and columns from either end, as one undo
- * step carrying the grid, the dimensions and Row progress's pointers (which may have been clamped) together. Like
- * Delete all it isn't drawing, so it doesn't go through keepFinishedRows — it is instead refused outright while Row
- * progress is on (see resizeRefusal). A Resize that changes nothing, or is refused, is not an undo step.
+ * Commits a command that changed the grid's own dimensions (Resize, or "remove selected row/column", ticket 123) as
+ * one undo step carrying the grid, the dimensions and Row progress's pointers (which may have been clamped)
+ * together. Neither is drawing, so neither goes through keepFinishedRows — both are instead refused outright while
+ * Row progress is on (see resizeRefusal/removeLineRefusal). A no-op `updated` (refused, or changing nothing) is not
+ * an undo step.
  *
  * A change to the grid's dimensions invalidates the editing-session state built against the old ones: the Selection
- * (which may now reach past the grid) and Mirror's axis counts (clamped to the old size) are cleared, the same as
- * Mirror's own docs say a Resize does. The clipboard survives, since a copied block is colors, not a place.
+ * (which may now reach past the grid, or no longer name a whole line) and Mirror's axis counts (clamped to the old
+ * size) are cleared, the same as Mirror's own docs say a Resize does. The clipboard survives, since a copied block is
+ * colors, not a place.
  */
-function onResize(request: ResizeRequest) {
-  const pattern = activePattern.value
-  if (!pattern) {
-    return
-  }
-
-  const updated = resizePattern(pattern, request)
+function commitSizeChange(pattern: Pattern, updated: Pattern) {
   if (updated === pattern) {
     return
   }
@@ -1258,6 +1254,42 @@ function onResize(request: ResizeRequest) {
   clearMirrorAxisCounts()
   selection.value = undefined
   hoveredCell.value = undefined
+}
+
+/** Resize (CONTEXT.md, ADR 0017) from the Size group: adds or removes rows and columns from either end (see commitSizeChange for what landing one does). */
+function onResize(request: ResizeRequest) {
+  const pattern = activePattern.value
+  if (pattern) {
+    commitSizeChange(pattern, resizePattern(pattern, request))
+  }
+}
+
+/**
+ * A row or column ruler number was clicked (ticket 123): selects that whole line, the same Selection a Select-tool
+ * drag across it would leave — so it works from whichever tool is active, and clears whatever was copied, the same
+ * as a new drag-marked Selection does (see extendSelection).
+ */
+function onSelectLine(newSelection: Selection) {
+  copiedBlock.value = undefined
+  pasteDismissed.value = false
+  selection.value = newSelection
+}
+
+/** Whether "remove selected row/column" (ticket 123) applies right now — the Tools group button's own enabled state. */
+const canRemoveSelectedLine = computed(() => {
+  const pattern = activePattern.value
+  return !!pattern && !removeLineRefusal(pattern, selection.value)
+})
+
+/**
+ * "Remove selected row/column" (ticket 123): unlike Resize, this removes the specific line the Selection marks out
+ * from any index, shifting the rest of the grid to close the gap (see commitSizeChange for what landing it does).
+ */
+function onRemoveSelectedLine() {
+  const pattern = activePattern.value
+  if (pattern) {
+    commitSizeChange(pattern, removeSelectedLine(pattern, selection.value))
+  }
 }
 
 /**
@@ -1407,6 +1439,7 @@ function onMoveRow(delta: number) {
           :can-undo="canUndo(history)"
           :can-redo="canRedo(history)"
           :can-copy="!!selection"
+          :can-remove-selected-line="canRemoveSelectedLine"
           :mirror-axis-counts="mirrorAxisCounts"
           :mirror-copy-mode="mirrorCopyMode"
           :saved="saved"
@@ -1430,6 +1463,7 @@ function onMoveRow(delta: number) {
           @move-row="onMoveRow"
           @delete-all="onRequestDeleteAll"
           @resize="onResize"
+          @remove-selected-line="onRemoveSelectedLine"
         />
       </aside>
 
@@ -1510,6 +1544,7 @@ function onMoveRow(delta: number) {
               @cell-secondary-move="onCellSecondaryMove"
               @cell-hover="onCellHover"
               @hover-end="onHoverEnd"
+              @select-line="onSelectLine"
             />
             <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
               {{ t.shell.canvasPlaceholder }}

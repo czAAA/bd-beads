@@ -192,4 +192,12 @@ describe('PatternCanvas drawing the Pattern on a Drawing surface (ticket 105)', 
       'hover-end': [[]],
     })
   })
+
+  it('re-emits select-line from any of the four rulers (ticket 123)', async () => {
+    const wrapper = mount(PatternCanvas, { props: { pattern: pattern(30, 7.5), zoom: 1 } })
+
+    await wrapper.find('[data-testid="pattern-ruler-row-start"] [data-testid="ruler-label"]').trigger('click')
+
+    expect(wrapper.emitted('select-line')).toEqual([[{ top: 0, left: 0, rows: 1, columns: 20 }]])
+  })
 })
