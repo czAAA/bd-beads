@@ -20,6 +20,7 @@ import { useMirrorState } from './composables/useMirrorState'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { useQrExport } from './composables/useQrExport'
+import { useSelectionGesture } from './composables/useSelectionGesture'
 import { useSettledPattern } from './composables/useSettledPattern'
 import { useSpaceDragPan } from './composables/useSpaceDragPan'
 import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
@@ -37,14 +38,6 @@ import {
   type HistoryStep,
 } from './domain/history'
 import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
-import {
-  copySelection,
-  mirroredPasteBlock,
-  mirroredPastedCells,
-  selectionBetween,
-  type CopiedBlock,
-  type Selection,
-} from './domain/selection'
 import {
   createPattern,
   createPatternFromImage,
@@ -331,24 +324,33 @@ const deleteAllConfirmOpen = ref(false)
 /** The Bead id picked from the Replace bead select, awaiting confirmation (ticket 48); undefined when its modal is closed. */
 const replaceBeadPendingId = ref<string | undefined>()
 
-/** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
-const selection = ref<Selection | undefined>()
 /**
- * What Copy last snapshotted, ready to stamp (ticket 92 revised its lifecycle): it now clears only when a new Copy
- * replaces it or a new Selection is made (see onCopy/extendSelection) -- no longer on a tool switch, a Pattern
- * switch, or cancelling. Like the undo stack it's an editing-session aid, but unlike the undo stack it now survives
- * a Pattern switch (see the activePatternId watcher below), since a snapshot of colors is meaningful on any Pattern.
+ * The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the
+ * Select-tool paste preview, behind one small interface -- see composables/useSelectionGesture.ts. Destructured under
+ * the names this file already used, for the same reason as Mirror above. Mirror's axis counts and copy mode come from
+ * useMirrorState's own refs, passed as accessors so this module never needs to know that one exists. Only ever called
+ * into while Select is the active tool (or from a command that isn't tied to a tool, like Copy or a ruler click):
+ * the module itself never reads activeTool.
  */
-const copiedBlock = ref<CopiedBlock | undefined>()
-/**
- * Hides the paste projection (the live preview plus click-to-stamp gesture, both Select-tool-only) without
- * touching copiedBlock itself (ticket 92): set on leaving Select or on Escape/right-click (see cancelPaste), and
- * only cleared by a new Copy or a new Selection (see pasteProjectionActive) -- switching back to Select alone does
- * not revive it.
- */
-const pasteDismissed = ref(false)
-/** Whether Select should show the live paste preview and treat a click-in-place as a stamp (ticket 92) -- copiedBlock present and not dismissed. */
-const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
+const {
+  selection,
+  beginPress: beginSelectPress,
+  extendPress: extendSelection,
+  endPress: endSelectPress,
+  cancel: backOutOfSelect,
+  leaveSelectTool,
+  copy: onCopy,
+  pasteAt: pasteAtCell,
+  deleteSelection: onDeleteSelection,
+  selectLine: onSelectLine,
+  pastePreviewCells,
+  clearSelection: resetSelection,
+} = useSelectionGesture(
+  () => activePattern.value,
+  commitGridChange,
+  () => mirrorAxisCounts.value,
+  () => mirrorCopyMode.value,
+)
 
 /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
 const hoveredCell = ref<GridPosition | undefined>()
@@ -369,9 +371,9 @@ const { spaceHeld, panning: spacePanning } = useSpaceDragPan(canvasScrollEl)
 
 watch(activePatternId, () => {
   history.value = emptyHistory()
-  selection.value = undefined
-  // The clipboard (copiedBlock/pasteDismissed) deliberately survives a Pattern switch (ticket 92, ADR 0016) --
-  // unlike Undo/Redo history and Selection above, which still reset here.
+  // Selection resets here through the module's reset(); the clipboard deliberately survives a Pattern switch
+  // (ticket 92, ADR 0016), unlike Undo/Redo history and Selection.
+  resetSelection()
   // Mirror's session state is an editing-session setting, reset on a Pattern switch (ticket 44/45 decision) --
   // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
   resetMirrorState()
@@ -402,10 +404,7 @@ const previewCells = computed<PreviewCell[]>(() => {
 
 function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
   if (activeTool.value === 'select') {
-    // With no active (undismissed) projection there's nothing a click would put down, so Select previews nothing.
-    return pasteProjectionActive.value
-      ? mirroredPastedCells(pattern, copiedBlock.value!, hovered, mirrorAxisCounts.value, mirrorCopyMode.value)
-      : []
+    return pastePreviewCells(pattern, hovered)
   }
   if (activeTool.value !== 'paint') {
     // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
@@ -487,8 +486,7 @@ function onSelectTool(tool: Tool) {
    * stamp a block out of nowhere. Re-choosing Select while it's already active leaves both alone.
    */
   if (tool !== 'select') {
-    selection.value = undefined
-    cancelPaste()
+    leaveSelectTool()
   }
 
   activeTool.value = tool
@@ -592,78 +590,6 @@ function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: 
 
   beginStroke(mode, pattern)
   paintStrokeCell(row, column, color)
-}
-
-/**
- * Where a Select-tool press started, and whether it has left that cell yet. A press under Select is ambiguous until
- * one of those happens: dragging marks out a new Selection, while a click in place stamps whatever was copied. So
- * the press only records its anchor here, and endSelectPress decides which it turned out to be.
- */
-const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
-
-function beginSelectPress(pattern: Pattern, row: number, column: number) {
-  selectPress.value = { anchor: { row, column }, moved: false }
-
-  // With no active projection, the press can only be the start of a selection, so the marquee appears from the
-  // first cell. With one active the gesture is claimed by Paste instead, which is why re-selecting a single cell
-  // then takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it
-  // means.
-  if (!pasteProjectionActive.value) {
-    selection.value = selectionBetween(pattern, { row, column }, { row, column })
-  }
-}
-
-/** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one (ticket 92: a new Selection is one of the two things that actually clears the clipboard). */
-function extendSelection(row: number, column: number) {
-  const pattern = activePattern.value
-  const press = selectPress.value
-  if (!pattern || !press) {
-    return
-  }
-
-  press.moved = true
-  copiedBlock.value = undefined
-  pasteDismissed.value = false
-  selection.value = selectionBetween(pattern, press.anchor, { row, column })
-}
-
-/** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
-function endSelectPress() {
-  const pattern = activePattern.value
-  const press = selectPress.value
-  selectPress.value = null
-
-  if (!pattern || !press || press.moved || !pasteProjectionActive.value) {
-    return
-  }
-
-  commitGridChange(
-    pattern,
-    mirroredPasteBlock(pattern, copiedBlock.value!, press.anchor, mirrorAxisCounts.value, mirrorCopyMode.value),
-  )
-}
-
-/**
- * Hides the paste projection (ticket 92): Select goes back to marking out areas, and the live preview stops — a
- * click means Paste only while a projection is active (see beginSelectPress). copiedBlock itself is left alone (so
- * Ctrl/Cmd+V can still paste it regardless of tool or projection state — see pasteAtPointer): only a new Copy or a
- * new Selection re-arms the projection (see onCopy/extendSelection). The Selection itself is also left alone
- * (it's already empty at this point when called from Copy's own flow, since Copy clears it — ticket 49).
- */
-function cancelPaste() {
-  pasteDismissed.value = true
-}
-
-/**
- * Right-click or Escape under Select backs out one step at a time: an active paste projection goes first (see
- * cancelPaste); with none active, the Selection itself goes.
- */
-function backOutOfSelect() {
-  if (pasteProjectionActive.value) {
-    cancelPaste()
-  } else {
-    selection.value = undefined
-  }
 }
 
 function isUndoShortcut(event: KeyboardEvent): boolean {
@@ -965,39 +891,14 @@ onBeforeUnmount(() => {
 })
 
 /**
- * Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see
- * endSelectPress). The Selection's marquee is hidden immediately, the same as a right-click or Escape with nothing
- * copied (ticket 49) — copying the same block again means dragging a new Selection over it first.
- */
-function onCopy() {
-  const pattern = activePattern.value
-  if (!pattern || !selection.value) {
-    return
-  }
-
-  copiedBlock.value = copySelection(pattern, selection.value)
-  pasteDismissed.value = false
-  selection.value = undefined
-}
-
-/**
- * Ctrl/Cmd+V (ticket 92): pastes the clipboard's block at the cell currently under the pointer, the same targeting
- * and Mirror-strip stamping as a Select-tool click-to-paste (see endSelectPress) -- but works regardless of which
- * tool is active, since it's driven by hoveredCell rather than the Select-only click gesture. A no-op with nothing
- * copied or with the pointer off the grid (hoveredCell unset -- see onHoverEnd).
+ * Ctrl/Cmd+V (ticket 92): pastes at the cell under the pointer, regardless of the active tool -- driven by hoveredCell
+ * rather than the Select-only click gesture. Claims the chord from the browser only when something was pasted, so a
+ * no-op (nothing copied, pointer off the grid -- see onHoverEnd) leaves the browser's own handling alone.
  */
 function pasteAtPointer(event: KeyboardEvent) {
-  const pattern = activePattern.value
-  const cell = hoveredCell.value
-  if (!pattern || !cell || !copiedBlock.value) {
-    return
+  if (pasteAtCell(hoveredCell.value)) {
+    event.preventDefault()
   }
-
-  event.preventDefault()
-  commitGridChange(
-    pattern,
-    mirroredPasteBlock(pattern, copiedBlock.value, cell, mirrorAxisCounts.value, mirrorCopyMode.value),
-  )
 }
 
 /** The Erase tool (ticket 89): flood-erases the clicked cell's connected same-color region, and each of its live-mirror counterparts' own regions too, as one undo step (see floodErase). */
@@ -1009,29 +910,6 @@ function onEraseCell(row: number, column: number) {
 
   const positions = mirroredCells(pattern, { row, column }, mirrorAxisCounts.value, mirrorCopyMode.value)
   commitGridChange(pattern, floodErase(pattern, positions))
-}
-
-/**
- * Del with Select active and a Selection present (ticket 90): clears just the selected cells (holes, same as an
- * ordinary erase of that rectangle), as one undo step honouring the Row progress lock and Mirror -- reusing
- * paintCells with a null color, the same primitive a Paint stroke's own erase uses. The Selection's own rectangle
- * is left alone; only its contents change.
- */
-function onDeleteSelection() {
-  const pattern = activePattern.value
-  const sel = selection.value
-  if (!pattern || !sel) {
-    return
-  }
-
-  const positions: GridPosition[] = []
-  for (let rowOffset = 0; rowOffset < sel.rows; rowOffset++) {
-    for (let columnOffset = 0; columnOffset < sel.columns; columnOffset++) {
-      positions.push({ row: sel.top + rowOffset, column: sel.left + columnOffset })
-    }
-  }
-
-  commitGridChange(pattern, paintCells(pattern, positions, null, mirrorAxisCounts.value, mirrorCopyMode.value))
 }
 
 function onCellPrimaryDown(row: number, column: number) {
@@ -1046,7 +924,7 @@ function onCellPrimaryDown(row: number, column: number) {
   }
 
   if (activeTool.value === 'select') {
-    beginSelectPress(pattern, row, column)
+    beginSelectPress(row, column)
     return
   }
 
@@ -1145,7 +1023,7 @@ function applyHistoryStep(pattern: Pattern, step: HistoryStep<UndoEntry>) {
   if (size) {
     restoreMirrorAxisCounts(size.mirrorAxisCounts)
     if (size.columns !== pattern.columns || size.rows !== pattern.rows) {
-      selection.value = undefined
+      resetSelection()
       hoveredCell.value = undefined
     }
   }
@@ -1270,7 +1148,7 @@ function commitSizeChange(pattern: Pattern, updated: Pattern) {
   })
   replacePattern(updated)
   clearMirrorAxisCounts()
-  selection.value = undefined
+  resetSelection()
   hoveredCell.value = undefined
 }
 
@@ -1280,17 +1158,6 @@ function onResize(request: ResizeRequest) {
   if (pattern) {
     commitSizeChange(pattern, resizePattern(pattern, request))
   }
-}
-
-/**
- * A row or column ruler number was clicked (ticket 123): selects that whole line, the same Selection a Select-tool
- * drag across it would leave — so it works from whichever tool is active, and clears whatever was copied, the same
- * as a new drag-marked Selection does (see extendSelection).
- */
-function onSelectLine(newSelection: Selection) {
-  copiedBlock.value = undefined
-  pasteDismissed.value = false
-  selection.value = newSelection
 }
 
 /** Whether "remove selected row/column" (ticket 123) applies right now — the Tools group button's own enabled state. */
