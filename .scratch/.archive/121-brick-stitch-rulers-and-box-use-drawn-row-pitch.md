@@ -10,10 +10,10 @@ None of this is new: the one-element-per-bead grid it replaced had the same drif
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The row ruler's numbers line up with brick stitch's rows at every zoom, upright and rotated, at 10 rows and at 90
-- [ ] The box shows every row of a brick stitch Pattern and its bottom ruler, at every zoom
-- [ ] Fit-to-panel zoom fits a rotated brick stitch Pattern
-- [ ] Loom and peyote are unchanged (their rulers and box are pixel-for-pixel as before)
-- [ ] A test for each: the ruler's label positions, the box's height against `patternExtentPx`, and the fit zoom, for brick stitch at more than a handful of rows
+- [x] The row ruler's numbers line up with brick stitch's rows at every zoom, upright and rotated, at 10 rows and at 90
+- [x] The box shows every row of a brick stitch Pattern and its bottom ruler, at every zoom
+- [x] Fit-to-panel zoom fits a rotated brick stitch Pattern
+- [x] Loom and peyote are unchanged (their rulers and box are pixel-for-pixel as before)
+- [x] A test for each: the ruler's label positions, the box's height against `patternExtentPx`, and the fit zoom, for brick stitch at more than a handful of rows

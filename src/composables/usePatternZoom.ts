@@ -1,6 +1,7 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom, computeFitZoom } from '../domain/grid'
+import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
+import { patternExtentPx } from '../rendering/patternRenderer'
 
 /** What's left for the grid itself, given an outer size, once the two ruler gutters and the grid's outline have had their share. */
 function fitMaxPx(outerPx: number): number {
@@ -41,15 +42,11 @@ export function usePatternZoom(
     // available width constrains swaps, since a rotated Pattern's natural height becomes its visual width.
     const available = fitMaxPx(availableWidth.value || CANVAS_MAX_PX)
 
-    return clampZoom(
-      computeFitZoom({
-        columns: pattern.columns,
-        rows: pattern.rows,
-        maxWidth: pattern.rotated ? Infinity : available,
-        maxHeight: pattern.rotated ? available : Infinity,
-        technique: pattern.technique,
-      }),
-    )
+    // The drawn extent (the Pattern renderer's), not the layout maths': brick stitch's rows are a seam further apart.
+    const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
+    const constrained = pattern.rotated ? extent.height : extent.width
+
+    return clampZoom(Math.floor(Math.min(1, available / constrained) * 100) / 100)
   }
 
   const zoom = ref(fitZoom())

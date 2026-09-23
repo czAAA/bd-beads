@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import {
   GRID_BORDER_PX,
   RULER_GUTTER_PX,
-  canvasContentHeightPx,
   canvasContentWidthPx,
   type GridPosition,
   type PreviewCell,
@@ -59,9 +58,11 @@ const surfaceLayerStyle = { left: `${RULER_GUTTER_PX}px`, top: `${RULER_GUTTER_P
 const unrotatedContentWidth = computed(() =>
   canvasContentWidthPx(props.pattern.technique, props.pattern.columns, props.zoom),
 )
-const unrotatedContentHeight = computed(() =>
-  canvasContentHeightPx(props.pattern.technique, props.pattern.rows, props.zoom),
-)
+// The height is the drawn Pattern's (brick stitch's seams included), not the layout maths' canvasContentHeightPx, so the box shows every row.
+const unrotatedContentHeight = computed(() => {
+  const { height } = patternExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows)
+  return RULER_GUTTER_PX * 2 + (height + GRID_BORDER_PX * 2) * props.zoom
+})
 
 /**
  * The box hugs the Pattern: it's exactly as big as the zoomed Pattern and its rulers (ticket 18), with no cap of its

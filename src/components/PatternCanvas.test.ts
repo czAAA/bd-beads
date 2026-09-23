@@ -4,6 +4,7 @@ import PatternCanvas from './PatternCanvas.vue'
 import { hoverBead, leaveSurface, pressBead, previewedBeads } from '../testUtils/beads'
 import { createPattern, type Pattern, type Technique } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
+import { patternExtentPx } from '../rendering/patternRenderer'
 import { GRID_BORDER_PX, RULER_GUTTER_PX, gridHeightPx, gridWidthPx } from '../domain/grid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -117,6 +118,17 @@ describe('PatternCanvas', () => {
 
     await leaveSurface(wrapper)
     expect(wrapper.emitted('hover-end')).toHaveLength(1)
+  })
+})
+
+describe('PatternCanvas box around a brick stitch Pattern (ticket 121)', () => {
+  it.each([1, 0.5, 2])('is tall enough for every row and the bottom ruler at zoom %s', (zoom) => {
+    const brick = pattern(15, 135, 'brick')
+    const wrapper = mount(PatternCanvas, { props: { pattern: brick, zoom } })
+
+    const { height } = patternExtentPx('brick', brick.columns, brick.rows)
+    expect(brick.rows).toBeGreaterThan(80)
+    expect(boxSize(wrapper).height).toBe(RULER_GUTTER_PX * 2 + (height + GRID_BORDER_PX * 2) * zoom)
   })
 })
 

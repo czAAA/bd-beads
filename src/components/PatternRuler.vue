@@ -4,15 +4,13 @@ import {
   CELL_SIZE_PX,
   GRID_BORDER_PX,
   RULER_GUTTER_PX,
-  gridHeightPx,
-  gridWidthPx,
-  rowHeightPx,
   rowOffsetPx,
   rulerLabelStep,
 } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { wholeLineSelection, type Selection } from '../domain/selection'
 import { useI18n } from '../i18n/useI18n'
+import { patternExtentPx, rowPitchPx } from '../rendering/patternRenderer'
 
 const props = defineProps<{
   pattern: Pattern
@@ -51,9 +49,9 @@ function unscaled(px: number): string {
 
 const isRowRuler = computed(() => props.axis === 'row')
 
-/** Distance from one row's (or column's) start to the next, per the Pattern's technique — peyote's rows pack tighter. */
+/** Distance from one row's (or column's) start to the next, as the Pattern renderer draws it: peyote's rows pack tighter, brick stitch's are a seam further apart. */
 const spacingPx = computed(() =>
-  isRowRuler.value ? rowHeightPx(props.pattern.technique) : CELL_SIZE_PX,
+  isRowRuler.value ? rowPitchPx(props.pattern.technique) : CELL_SIZE_PX,
 )
 
 const count = computed(() => (isRowRuler.value ? props.pattern.rows : props.pattern.columns))
@@ -93,15 +91,17 @@ const labels = computed<RulerLabel[]>(() =>
     })),
 )
 
+const extent = computed(() => patternExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows))
+
 const gutterStyle = computed(() =>
   isRowRuler.value
     ? {
         width: unscaled(RULER_GUTTER_PX),
-        height: `${gridHeightPx(props.pattern.technique, props.pattern.rows) + GRID_BORDER_PX * 2}px`,
+        height: `${extent.value.height + GRID_BORDER_PX * 2}px`,
         fontSize: unscaled(FONT_SIZE_PX),
       }
     : {
-        width: `${gridWidthPx(props.pattern.technique, props.pattern.columns) + GRID_BORDER_PX * 2}px`,
+        width: `${extent.value.width + GRID_BORDER_PX * 2}px`,
         height: unscaled(RULER_GUTTER_PX),
         fontSize: unscaled(FONT_SIZE_PX),
       },

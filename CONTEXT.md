@@ -76,7 +76,7 @@ The fixed-width rail of editing controls down the left of the app shell while a 
 _Avoid_: tool strip, toolbar, above-canvas panel
 
 **Tool group**:
-One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit (including Save and QR export), Mirror, Size, Row progress. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit (including Save, QR export and PNG and PDF export), Mirror, Size, Row progress. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
 **Erase**:

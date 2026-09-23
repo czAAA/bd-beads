@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] At least three free-tier providers are compared against bd-beads' actual data shape and expected scale
-- [ ] Findings state what stays free indefinitely vs. what triggers a paid tier
-- [ ] A recommendation is written down and ready to hand to ticket 71
+- [x] At least three free-tier providers are compared against bd-beads' actual data shape and expected scale
+- [x] Findings state what stays free indefinitely vs. what triggers a paid tier
+- [x] A recommendation is written down and ready to hand to ticket 71
+
+**Done:** see `docs/research/database-choice.md` (recommendation: Turso/libSQL, D1 as runner-up).

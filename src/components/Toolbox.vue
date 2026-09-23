@@ -31,6 +31,8 @@ const props = defineProps<{
   saved?: boolean
   /** The open Pattern doesn't fit a single QR code (ADR 0015), so QR export is off (ticket 116). */
   qrTooLarge?: boolean
+  /** A PNG or PDF is being drawn (tickets 73, 74): its buttons wait, so a second press doesn't start a second one. */
+  exporting?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,6 +48,9 @@ const emit = defineEmits<{
   save: []
   /** QR export (ticket 116): open the QR panel for the open Pattern. */
   'export-qr': []
+  /** PNG and PDF export (tickets 73, 74): hand the open Pattern over as a picture / a printable document. */
+  'export-png': []
+  'export-pdf': []
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
@@ -343,6 +348,38 @@ const topBottomMax = computed(() =>
           </svg>
         </button>
       </span>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="export-png"
+        :title="t.transfer.exportPngButton"
+        :aria-label="t.transfer.exportPngButton"
+        :disabled="exporting"
+        @click="emit('export-png')"
+      >
+        <!-- A picture: a frame with a sun and a hill. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <circle cx="9" cy="10" r="1.5" />
+          <path d="m21 16-5-5-8 8" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="icon-button"
+        data-testid="export-pdf"
+        :title="t.transfer.exportPdfButton"
+        :aria-label="t.transfer.exportPdfButton"
+        :disabled="exporting"
+        @click="emit('export-pdf')"
+      >
+        <!-- A sheet with a folded corner and lines of text: a document to print. -->
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M6 3h9l4 4v14H6z" />
+          <path d="M15 3v4h4" />
+          <path d="M9 12h7M9 15h7M9 18h4" />
+        </svg>
+      </button>
       <!--
         Save's confirmation (ticket 115): a status line of its own inside the group, so it sits right by the button that
         caused it. A full row, like the other text readouts, so it doesn't count toward the group's control cap.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, type Pattern } from '../domain/pattern'
+import { patternExtentPx } from '../rendering/patternRenderer'
 import { usePatternZoom } from './usePatternZoom'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -173,5 +174,19 @@ describe('usePatternZoom', () => {
     await nextTick()
 
     expect(zoomPercent.value).toBe(manualZoom)
+  })
+})
+
+describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
+  it('fits a rotated one by the height that is drawn, seams included', () => {
+    const brick = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 150, unit: 'mm' } })
+    brick.rotated = true
+    const available = 900
+    const { zoom } = usePatternZoom(() => brick, ref(available))
+
+    const drawnHeight = patternExtentPx('brick', brick.columns, brick.rows).height
+    const room = available - (28 + 3) * 2
+    expect(zoom.value * drawnHeight).toBeLessThanOrEqual(room)
+    expect((zoom.value + 0.01) * drawnHeight).toBeGreaterThan(room)
   })
 })

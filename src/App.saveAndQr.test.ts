@@ -85,7 +85,7 @@ describe('App Save (ticket 115)', () => {
     expect(downloadFile).toHaveBeenCalledTimes(1)
     const [fileName, contents] = vi.mocked(downloadFile).mock.calls[0]!
     expect(fileName).toBe(patternFileName(saved))
-    expect(parsePatternsFile(contents)).toEqual({ patterns: [saved] })
+    expect(parsePatternsFile(contents as string)).toEqual({ patterns: [saved] })
   })
 
   it('still hands over the Pattern file when the device refuses the write, since it is then the only copy', async () => {

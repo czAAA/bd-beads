@@ -66,7 +66,8 @@ import {
 } from './domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
 import { downloadFile } from './domain/fileDownload'
-import { importPatterns, patternFileName, serializePattern } from './domain/patternFile'
+import { importPatterns, patternExportFileName, patternFileName, serializePattern } from './domain/patternFile'
+import { exportPatternPdf, exportPatternPng } from './rendering/patternExport'
 import { patternFromShareLink } from './domain/qrExport'
 import { removeLineRefusal, removeSelectedLine, resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
@@ -859,6 +860,49 @@ function onPageHide() {
 }
 
 /**
+ * PNG and PDF export (tickets 73, 74): the open Pattern drawn by the Pattern renderer into a picture, or into printable
+ * pages with its color legend and bead counts, and handed over as a download. Drawing a large Pattern takes a moment, so
+ * the buttons wait until it is done.
+ */
+const exporting = ref(false)
+
+async function runExport(make: (pattern: Pattern) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
+  const pattern = activePattern.value
+  if (!pattern || exporting.value) {
+    return
+  }
+  exporting.value = true
+  try {
+    // Read as the Pattern itself, as the QR export does: drawing reads every bead.
+    downloadFile(patternExportFileName(pattern, extension), await make(toRaw(pattern)), type)
+  } finally {
+    exporting.value = false
+  }
+}
+
+function onExportPng() {
+  return runExport(exportPatternPng, 'png', 'image/png')
+}
+
+function onExportPdf() {
+  const { transfer } = t.value
+  return runExport(
+    (pattern) =>
+      exportPatternPdf(pattern, {
+        legendHeading: transfer.pdfLegendHeading,
+        colorHeading: transfer.pdfColorHeading,
+        countHeading: transfer.pdfCountHeading,
+        totalLabel: transfer.pdfTotalLabel,
+        noColorsMessage: transfer.pdfNoColorsMessage,
+        pageLabel: transfer.pdfPageLabel,
+        partLabel: transfer.pdfPartLabel,
+      }),
+    'pdf',
+    'application/pdf',
+  )
+}
+
+/**
  * Opens the Pattern a scanned QR export's link carries (ticket 68, ADR 0015). It lands as its own Pattern — under a
  * fresh id if this device already has that one, like any import — and opens even when another is open, since scanning
  * a code is the request to look at it. The fragment is then dropped, so a refresh or a bookmark doesn't import it a
@@ -1329,6 +1373,7 @@ function onMoveRow(delta: number) {
           :mirror-copy-mode="mirrorCopyMode"
           :saved="saved"
           :qr-too-large="qrExport.tooLarge.value"
+          :exporting="exporting"
           @select-tool="onSelectTool"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
@@ -1339,6 +1384,8 @@ function onMoveRow(delta: number) {
           @copy="onCopy"
           @save="onSave"
           @export-qr="qrExport.open"
+          @export-png="onExportPng"
+          @export-pdf="onExportPdf"
           @set-mirror-axis-count="onSetMirrorAxisCount"
           @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
           @mirror-current="onMirrorCurrent"

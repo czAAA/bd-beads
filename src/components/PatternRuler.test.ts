@@ -7,9 +7,9 @@ import {
   CELL_SIZE_PX,
   GRID_BORDER_PX,
   gridWidthPx,
-  rowHeightPx,
   rowOffsetPx,
 } from '../domain/grid'
+import { patternExtentPx, rowPitchPx } from '../rendering/patternRenderer'
 
 beforeEach(() => {
   localStorage.clear()
@@ -77,7 +77,7 @@ describe('PatternRuler', () => {
     const rendered = labels(mountRuler({ axis: 'row', technique: 'peyote' }))
 
     expect(rendered[3]!.attributes('style')).toContain(
-      `top: ${GRID_BORDER_PX + 3 * rowHeightPx('peyote')}px`,
+      `top: ${GRID_BORDER_PX + 3 * rowPitchPx('peyote')}px`,
     )
   })
 
@@ -179,5 +179,19 @@ describe('PatternRuler line selection (ticket 123)', () => {
     await labels(wrapper)[0]!.trigger('click')
 
     expect(wrapper.emitted('select')).toEqual([[{ top: 0, left: 0, rows: 1, columns: 10 }]])
+  })
+
+  it("puts a brick stitch row's number level with the row it counts, however far down (ticket 121)", () => {
+    const tall = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 135, unit: 'mm' } })
+    const wrapper = mount(PatternRuler, { props: { pattern: tall, axis: 'row', edge: 'start', zoom: 1 } })
+    const tops = wrapper.findAll('[data-testid="ruler-label"]').map((label) => label.attributes('style')!.match(/top: ([\d.]+)px/)![1])
+
+    expect(tall.rows).toBeGreaterThan(80)
+    // Row n (1-based) starts at (n - 1) × rowPitchPx below the outline; the numbers shown are 1, 2, 5, 10… steps apart.
+    const shown = wrapper.findAll('[data-testid="ruler-label"]').map((label) => Number(label.text()))
+    shown.forEach((number, position) => {
+      expect(Number(tops[position])).toBe(GRID_BORDER_PX + (number - 1) * rowPitchPx('brick'))
+    })
+    expect(wrapper.attributes('style')).toContain(`height: ${patternExtentPx('brick', tall.columns, tall.rows).height + GRID_BORDER_PX * 2}px`)
   })
 })

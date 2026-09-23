@@ -515,3 +515,34 @@ describe('Toolbox rail (ticket 114)', () => {
     expect(wrapper.find('[data-testid="custom-color-input"]').exists()).toBe(true)
   })
 })
+
+describe('Toolbox PNG and PDF export (tickets 73, 74)', () => {
+  it.each([
+    ['export-png', 'export-png', en.transfer.exportPngButton, ru.transfer.exportPngButton],
+    ['export-pdf', 'export-pdf', en.transfer.exportPdfButton, ru.transfer.exportPdfButton],
+  ])('has an icon button, named for what it makes, that asks for %s', async (testId, event, english, russian) => {
+    const wrapper = mountToolbox()
+
+    const button = wrapper.find(`[data-testid="${testId}"]`)
+    expect(button.find('svg').exists()).toBe(true)
+    expect([english, russian]).toContain(button.attributes('aria-label'))
+    expect(button.attributes('title')).toBe(button.attributes('aria-label'))
+
+    await button.trigger('click')
+    expect(wrapper.emitted(event)).toHaveLength(1)
+  })
+
+  it('waits while one is being drawn, so a second press does not start a second', () => {
+    const wrapper = mountToolbox({ exporting: true })
+
+    expect(wrapper.find('[data-testid="export-png"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="export-pdf"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('sits in the Edit group without pushing it over its control cap', () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="tool-group-edit"] [data-testid="export-png"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
+  })
+})

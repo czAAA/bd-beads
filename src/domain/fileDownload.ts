@@ -18,8 +18,8 @@ function isIosFamily(): boolean {
  * The link has to be in the document for Firefox to act on the click, and the blob URL has to outlive the click for
  * Safari to finish reading it — hence revoking on the next tick rather than immediately.
  */
-function downloadViaLink(fileName: string, contents: string): void {
-  const url = URL.createObjectURL(new Blob([contents], { type: JSON_TYPE }))
+function downloadViaLink(fileName: string, contents: BlobPart, type: string): void {
+  const url = URL.createObjectURL(new Blob([contents], { type }))
   const link = document.createElement('a')
   link.href = url
   link.download = fileName
@@ -29,19 +29,20 @@ function downloadViaLink(fileName: string, contents: string): void {
   setTimeout(() => URL.revokeObjectURL(url))
 }
 
-export function downloadFile(fileName: string, contents: string): void {
+/** Hands over a file: a Pattern file by default, or a picture or document built in the page (ticket 73, 74) when the type says so. */
+export function downloadFile(fileName: string, contents: BlobPart, type = JSON_TYPE): void {
   if (isIosFamily() && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
-    const file = new File([contents], fileName, { type: JSON_TYPE })
+    const file = new File([contents], fileName, { type })
     if (navigator.canShare({ files: [file] })) {
       navigator.share({ files: [file] }).catch((error: unknown) => {
         // Closing the share sheet is the person's choice, not a failure; anything else falls back to a download.
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
-          downloadViaLink(fileName, contents)
+          downloadViaLink(fileName, contents, type)
         }
       })
       return
     }
   }
 
-  downloadViaLink(fileName, contents)
+  downloadViaLink(fileName, contents, type)
 }

@@ -99,6 +99,18 @@ export interface Translations {
     exportQrButton: string
     /** Shown instead of the code when the Pattern doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Pattern above as the fallback rather than duplicating a download of its own. */
     qrTooLargeMessage: string
+    /** Picture and print exports of the open Pattern (tickets 73, 74); the pdf* strings are drawn onto the printed pages. */
+    exportPngButton: string
+    exportPdfButton: string
+    pdfLegendHeading: string
+    pdfColorHeading: string
+    pdfCountHeading: string
+    pdfTotalLabel: string
+    pdfNoColorsMessage: string
+    /** With {page} and {pages}. */
+    pdfPageLabel: string
+    /** With {across}, {acrossTotal}, {down} and {downTotal}: which piece of a chart cut over several pages this is. */
+    pdfPartLabel: string
     closeQrButton: string
     /** A picture believed to hold one of this app's QR exports (a photo/screenshot of the code shown on another device). */
     importQrLabel: string

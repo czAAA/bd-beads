@@ -49,6 +49,11 @@ export function patternFileName(pattern: Pattern): string {
   return `bd-beads-${fileNameSlug(pattern.name)}.json`
 }
 
+/** The name a picture or document of the Pattern is saved under (ticket 73, 74), e.g. `bd-beads-my-scarf.png`. */
+export function patternExportFileName(pattern: Pattern, extension: 'png' | 'pdf'): string {
+  return `bd-beads-${fileNameSlug(pattern.name)}.${extension}`
+}
+
 export function libraryFileName(): string {
   return 'bd-beads-library.json'
 }

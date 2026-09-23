@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] Current code structure has been walked through and its seams identified
+- [x] Current code structure has been walked through and its seams identified
 - [ ] A target module/component/service boundary is agreed and written down (e.g. as an ADR or a doc)
-- [ ] The decision explicitly covers where a future backend-facing "services" layer would live, distinct from domain logic and UI components
+- [x] The decision explicitly covers where a future backend-facing "services" layer would live, distinct from domain logic and UI components
+
+**Progress:** ADR 0020 is drafted as *proposed*. The middle criterion ("agreed") needs a person, so the ticket stays open (status `ready-for-human`) until they have read it and agreed or changed it.
