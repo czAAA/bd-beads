@@ -51,6 +51,15 @@ const emit = defineEmits<{
 /** How much beyond the screen the canvases reach, so that a little scrolling does not need a redraw. */
 const MARGIN_PX = 160
 
+/**
+ * A Pattern whose whole bitmap is no bigger than this many device pixels is held whole (ticket 122): its window is all
+ * of it, so scrolling never leaves what is drawn and costs nothing. Without this, a Pattern only a little bigger than
+ * the screen (250 × 250 at its fit zoom is 1500 px each way) runs out of margin on the side its window is cut to the
+ * Pattern's edge and is drawn again every few wheel clicks. Well inside the roughly 16 megapixels of iPad Safari's
+ * canvas limit, since the cells and the overlay each have one.
+ */
+const WHOLE_PATTERN_MAX_DEVICE_PX = 10_000_000
+
 const displayed = computed(() =>
   displayedExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows, props.zoom, props.pattern.rotated),
 )
@@ -164,7 +173,9 @@ function update(): void {
   if (!visible || (held.value && contains(held.value, visible))) {
     return
   }
-  held.value = drawingWindow(visible, displayed.value, MARGIN_PX)
+  const pixelRatio = globalThis.devicePixelRatio || 1
+  const wholeArea = displayed.value.width * displayed.value.height * pixelRatio * pixelRatio
+  held.value = drawingWindow(visible, displayed.value, wholeArea <= WHOLE_PATTERN_MAX_DEVICE_PX ? Infinity : MARGIN_PX)
 }
 
 /** Drawing is at most once a frame however many scroll events arrive. */

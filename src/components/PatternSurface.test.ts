@@ -114,6 +114,34 @@ describe('PatternSurface', () => {
     expect(larger).toBe(large)
   })
 
+  it('holds a Pattern that is bigger than the screen but not big for a canvas whole, so that scrolling it draws nothing (ticket 122)', async () => {
+    const { wrapper } = await mountSurface(patternOf(75, 75), 1)
+    const before = draws()
+
+    // 1500px each way against a screen of 1000 × 800: the whole of it, with no margin to run out of.
+    expect(windowOf(wrapper)).toBe('0,0,1500,1500')
+
+    for (const top of [-300, -700, -100, 0]) {
+      layout.surface.top = top
+      window.dispatchEvent(new Event('scroll'))
+      await nextTick()
+      await nextTick()
+    }
+    expect(draws()).toBe(before)
+  })
+
+  it('still holds a window when the Pattern would need a bigger bitmap than a canvas is safe at, on a dense screen', async () => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 3, configurable: true })
+    try {
+      // 1500px across is 4500 device px: 20 million of them, both ways.
+      const { wrapper } = await mountSurface(patternOf(75, 75), 1)
+
+      expect(windowOf(wrapper)).toBe('0,0,1157,957')
+    } finally {
+      Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
+    }
+  })
+
   it('cuts what is on screen by whatever clips the Pattern, such as the canvas panel\'s scroll', async () => {
     layout.clip = { left: 0, top: 0, right: 500, bottom: 800 }
     const { wrapper } = await mountSurface(patternOf(250, 250), 1)
@@ -166,13 +194,13 @@ describe('PatternSurface', () => {
     const { wrapper } = await mountSurface(patternOf(250, 250), 1)
     expect(windowOf(wrapper)).toBe('0,0,1157,957')
 
-    await wrapper.setProps({ zoom: 0.25 })
+    await wrapper.setProps({ zoom: 1.5 })
     await nextTick()
     await nextTick()
 
-    // At 25% the Pattern is 1,250 px across and 1,250 tall: the screen's 1000 × 800 (less a 0.75px outline), and 160 more.
-    expect(windowOf(wrapper)).toBe('0,0,1160,960')
-    expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toContain('width: 1251.5px')
+    // At 150% the Pattern is 7,500 px across and tall: the screen's 1000 × 800 (less a 4.5px outline), and 160 more.
+    expect(windowOf(wrapper)).toBe('0,0,1156,956')
+    expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toContain('width: 7509px')
   })
 
   describe('when the Pattern is edited', () => {
@@ -228,7 +256,7 @@ describe('PatternSurface', () => {
       })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(context.named('clearRect')[0]!.args).toEqual([0, 0, 400, 958])
+      expect(context.named('clearRect')[0]!.args).toEqual([0, 0, 400, 1200])
     })
 
     it('draws everything again when Row progress moves, since rows are faded by it', async () => {

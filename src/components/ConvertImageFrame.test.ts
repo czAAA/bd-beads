@@ -8,6 +8,14 @@ import { DEFAULT_MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, type PixelData } from '../d
 import { CENTERED_PAN } from '../domain/imageFraming'
 import { installFakeCanvas } from '../testUtils/fakeCanvas'
 
+// Whether a block is too big to draw bead by bead is the draft renderer's own rule (tested there); here it is made to
+// answer as a huge one would, and what is drawn is what is watched.
+const draft = vi.hoisted(() => ({ big: false, rendered: [] as unknown[] }))
+vi.mock('../rendering/draftRenderer', () => ({
+  usesDraftLook: () => draft.big,
+  renderDraft: (_context: unknown, input: unknown) => draft.rendered.push(input),
+}))
+
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 /** A picture of flat color blocks: the left half red, the right half blue. */
@@ -26,6 +34,8 @@ let canvas: ReturnType<typeof installFakeCanvas>
 
 beforeEach(() => {
   canvas = installFakeCanvas()
+  draft.big = false
+  draft.rendered = []
 })
 
 afterEach(() => {
@@ -269,6 +279,36 @@ describe('ConvertImageFrame', () => {
       // Blue is under the frame now, but the beads keep to the red they began with, and so does the count.
       expect(colorsOnScreen()).toEqual(['#ff0000'])
       expect(foundColors(wrapper)).toContain('1')
+      window.dispatchEvent(new MouseEvent('mouseup'))
+    })
+
+    it('draws a block too big for beads coarsely while the picture moves, and as beads again once it is at rest (ticket 122)', async () => {
+      draft.big = true
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+      expect(draft.rendered).toHaveLength(0)
+      expect(canvas.latest()).not.toHaveLength(0)
+
+      await startDragAt(wrapper)
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+
+      expect(draft.rendered).toHaveLength(1)
+      expect(draft.rendered[0]).toMatchObject({ technique: 'loom' })
+      const beadsBefore = canvas.renders()
+
+      window.dispatchEvent(new MouseEvent('mouseup'))
+      await nextTick()
+
+      expect(canvas.renders()).toBe(beadsBefore + 1)
+      expect(colorsOnScreen()).toEqual(['#0000ff'])
+    })
+
+    it('draws beads all through a drag of a block that is not too big', async () => {
+      const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
+
+      await startDragAt(wrapper)
+      await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
+
+      expect(draft.rendered).toHaveLength(0)
       window.dispatchEvent(new MouseEvent('mouseup'))
     })
 

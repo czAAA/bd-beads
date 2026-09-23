@@ -21,7 +21,8 @@ import {
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../domain/imageFraming'
 import type { Cell, Grid } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
-import type { BeadDrawer } from '../rendering/beadLook'
+import { DEFAULT_THEME, type BeadDrawer } from '../rendering/beadLook'
+import { renderDraft, usesDraftLook } from '../rendering/draftRenderer'
 import { patternExtentPx, renderPattern, rowTopPx } from '../rendering/patternRenderer'
 
 /**
@@ -37,6 +38,9 @@ import { patternExtentPx, renderPattern, rowTopPx } from '../rendering/patternRe
  * The beads are drawn by the Pattern renderer onto one canvas (ticket 104, ADR 0018), the same way the editor draws a
  * Pattern, so the preview and the Pattern that follows it look like each other in every Technique. The frame outline
  * and the dimming around it stay ordinary elements over the canvas.
+ *
+ * A block too big to draw bead by bead on every move of a drag is drawn in a coarser look while the picture moves (ticket
+ * 122, see draftRenderer), so that the drag holds its frame rate; the beads are back when it is at rest.
  *
  * Reducing a picture to the chosen number of colors costs more than a frame of a drag has to spend, so while the
  * picture is being dragged the beads take the colors the conversion had when the drag began (each to the nearest of
@@ -214,7 +218,6 @@ const canvasEl = ref<HTMLCanvasElement>()
 /** Draws the beads whenever what is drawn or its scale changes, once the canvas has its new size. */
 watchPostEffect(() => {
   const canvas = canvasEl.value
-  const pattern = drawnPattern.value
   const { width, height } = displayedSize.value
   const context = canvas?.getContext('2d')
   if (!canvas || !context) {
@@ -230,8 +233,23 @@ watchPostEffect(() => {
     canvas.height = bitmapHeight
   }
 
+  // A block too big to draw bead by bead on every move of a drag is drawn coarsely for as long as the picture moves (see
+  // draftRenderer); the beads themselves, and the Pattern they are, come back when it is at rest.
+  if (moving.value && usesDraftLook(props.technique, lattice.value.columns * lattice.value.rows)) {
+    renderDraft(context, {
+      technique: props.technique,
+      columns: lattice.value.columns,
+      rows: lattice.value.rows,
+      colors: beadColors.value,
+      theme: DEFAULT_THEME,
+      bitmapWidth,
+      bitmapHeight,
+    })
+    return
+  }
+
   renderPattern(context, {
-    pattern,
+    pattern: drawnPattern.value,
     region: { x: 0, y: 0, width, height },
     zoom: fitScale.value,
     pixelRatio,
