@@ -26,3 +26,6 @@ dist-ssr
 # Playwright output
 test-results
 playwright-report
+
+# Design exploration (tickets 125–134): prototypes and screenshots are local-only
+design-exploration/
