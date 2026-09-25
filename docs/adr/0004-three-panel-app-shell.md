@@ -1,5 +1,7 @@
 # App shell is a four-panel tool layout, scoped to bd-beads' own features
 
+_Amended by [ADR 0021](0021-visual-language-follows-design-md.md) (decided, not yet built): the regions become a header, one left column that scrolls on its own, and the canvas box. The column holds four separate boxes: Toolbox (or the New Pattern form in its place), save box, Beads needed, Saved Patterns. The canvas box takes all the remaining width, with zoom in its header strip and the Progress bar along its bottom edge. The below-canvas panel is removed, and the page itself no longer scrolls. [DESIGN.md](../../DESIGN.md) §4 has the layout. The amendments below describe the app until the implementation tickets land._
+
 _Amended by [ADR 0005](0005-tools-above-canvas.md): editing tools (tool picker, palette, undo, mirror, row progress) moved from the main panel to the above-canvas panel. The rest of this ADR — the four regions themselves, and the main panel's role for the New Pattern form — still holds._
 
 _Amended by ticket 35: "New Pattern" is no longer an above-canvas control — it moved into the top bar's aqua summary box, as the first item before the current-Pattern summary and the language switcher. The zoom controls moved off the above-canvas panel too, into a floating stack on the canvas box's own right edge (see [ADR 0005](0005-tools-above-canvas.md)'s amendment). The above-canvas panel's only remaining content is the Toolbox._
