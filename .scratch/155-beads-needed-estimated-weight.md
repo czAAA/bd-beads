@@ -14,16 +14,16 @@ Sources: [Miyuki Delica 11/0 7.2 g ≈ 1440 beads (Amazon listing)](https://www.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** ready-for-agent (built; per-bead weights still provisional, awaiting dealer confirmation)
 
 **Note:** If ticket 146 (Beads needed as an expandable panel) or 151 lands first, put the weight in whatever layout it leaves; nothing here depends on them.
 
-- [ ] Each Bead in the catalog carries an average weight of one bead in grams, kept in one place beside its other physical data, with a comment naming it provisional until confirmed by a dealer
-- [ ] Beads needed shows the estimated grams per color and a total for the Pattern, computed as count × grams per bead and never stored on the Pattern; if a Pattern's Bead has no weight (an unknown or removed Bead), the weights are hidden rather than shown as zero
-- [ ] Grams are shown with sensible rounding: one decimal from 10 g up, two decimals below 10 g, and "< 0.01 g" for a color too small to weigh; the unit label follows the app language (g / г)
-- [ ] An info icon opens a tooltip on hover and keyboard focus, in the warning color like the Estimated size tooltip, saying it is an estimated weight, that it is the bead count multiplied by the number of grams per bead and showing that number for the Pattern's Bead, and that real beads vary. EN and RU copy
-- [ ] The weights update when the Pattern's Bead changes (Replace Bead) and when cells are painted or erased
-- [ ] The box follows DESIGN.md in both themes, and the Pattern with no colors painted shows no weight
-- [ ] Tests cover all three catalog Beads, the rounding boundaries, the hidden case for a Bead with no weight, and the tooltip text
-- [ ] CONTEXT.md gains an entry for Estimated weight (an estimate, derived and never stored, like Estimated size)
+- [x] Each Bead in the catalog carries an average weight of one bead in grams, kept in one place beside its other physical data, with a comment naming it provisional until confirmed by a dealer
+- [x] Beads needed shows the estimated grams per color and a total for the Pattern, computed as count × grams per bead and never stored on the Pattern; if a Pattern's Bead has no weight (an unknown or removed Bead), the weights are hidden rather than shown as zero
+- [x] Grams are shown with sensible rounding: one decimal from 10 g up, two decimals below 10 g, and "< 0.01 g" for a color too small to weigh; the unit label follows the app language (g / г)
+- [x] An info icon opens a tooltip on hover and keyboard focus, in the warning color like the Estimated size tooltip, saying it is an estimated weight, that it is the bead count multiplied by the number of grams per bead and showing that number for the Pattern's Bead, and that real beads vary. EN and RU copy (Also says the average is preliminary, from seller listings, until a dealer confirms it; remove that sentence with the last criterion.)
+- [x] The weights update when the Pattern's Bead changes (Replace Bead) and when cells are painted or erased
+- [x] The box follows DESIGN.md in both themes, and the Pattern with no colors painted shows no weight
+- [x] Tests cover all three catalog Beads, the rounding boundaries, the hidden case for a Bead with no weight, and the tooltip text
+- [x] CONTEXT.md gains an entry for Estimated weight (an estimate, derived and never stored, like Estimated size)
 - [ ] **Before this is marked done, a person confirms the three per-bead weights with the bead dealer or seller** (or by weighing a counted sample) and updates the table and the comment above. The agent cannot do this: it has no contact with a dealer, so it must leave the values marked provisional and say so when it hands the ticket back

@@ -6,16 +6,28 @@ import { onBeforeUnmount, onMounted, ref, useId } from 'vue'
  * (ticket 42's Delete all is the first caller). The parent owns whether it's mounted at all — usually via `v-if` —
  * and decides what confirming/cancelling means; this component only asks the question and reports the answer.
  */
-defineProps<{
-  title: string
-  message: string
-  confirmLabel: string
-  cancelLabel: string
-}>()
+withDefaults(
+  defineProps<{
+    title: string
+    message: string
+    confirmLabel: string
+    cancelLabel: string
+    /** Turns the confirm button off while what the modal asks for isn't valid yet (Change size, ticket 153). */
+    confirmDisabled?: boolean
+    /** Styles the confirm as a destructive action; off for a confirmation that only moves the person along (ticket 154). */
+    confirmDanger?: boolean
+    /** A third, side action shown before Cancel (Import's "Save current", ticket 154); absent means there is none. */
+    extraLabel?: string
+    /** Shows the message as a problem, in the alarm color and announced at once. */
+    messageError?: boolean
+  }>(),
+  { confirmDisabled: false, confirmDanger: true, extraLabel: undefined, messageError: false },
+)
 
 const emit = defineEmits<{
   confirm: []
   cancel: []
+  extra: []
 }>()
 
 const titleId = useId()
@@ -48,8 +60,21 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
       :aria-describedby="messageId"
     >
       <h2 :id="titleId" class="confirm-modal__title">{{ title }}</h2>
-      <p :id="messageId" class="confirm-modal__message">{{ message }}</p>
+      <!-- Anything the question needs beyond a message: Change size's inputs, an error line under an import's. -->
+      <slot />
+      <p
+        :id="messageId"
+        class="confirm-modal__message"
+        :class="{ 'confirm-modal__message--error': messageError }"
+        :role="messageError ? 'alert' : undefined"
+        data-testid="confirm-modal-message"
+      >
+        {{ message }}
+      </p>
       <div class="confirm-modal__actions">
+        <button v-if="extraLabel" type="button" data-testid="confirm-modal-extra" @click="emit('extra')">
+          {{ extraLabel }}
+        </button>
         <button
           ref="cancelButtonEl"
           type="button"
@@ -60,8 +85,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
         </button>
         <button
           type="button"
-          class="button--danger"
+          :class="{ 'button--danger': confirmDanger }"
           data-testid="confirm-modal-confirm"
+          :disabled="confirmDisabled"
           @click="emit('confirm')"
         >
           {{ confirmLabel }}
@@ -99,8 +125,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
   margin: 0 0 24px;
 }
 
+.confirm-modal__message--error {
+  color: var(--color-amaranth);
+  font-weight: var(--font-weight-bold);
+}
+
 .confirm-modal__actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
 }

@@ -6,15 +6,15 @@ Prefactor first: if the mm/cm-to-grid conversion is not already a shared functio
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The Size group has a "Change size…" button, disabled while Row progress is on (the same lock Resize respects), with the reason available on hover and keyboard focus
-- [ ] The modal offers beads, mm and cm; the numbers start as the current columns × rows, and switching the unit keeps the numbers as typed
-- [ ] The message updates as the unit or numbers change and always names the before and after in the chosen unit and in beads (for example "160 × 30 beads will become 160 × 30 mm ≈ 106 × 14 beads"); for a beads-to-beads change it reads as a plain "160 × 30 → 100 × 30 beads"
-- [ ] When the new grid is smaller in either direction, the message also says that painted cells outside it will be removed; this is only a message, with no extra tick required
-- [ ] Growing adds empty rows/columns; shrinking keeps the top-left of the grid (an anchor choice is out of scope)
-- [ ] Confirm applies the new grid as one undo step, and Mirror axis counts reset because grid dimensions changed, as after Resize today; Cancel and Escape close the modal with the Pattern unchanged
-- [ ] Invalid input (empty, zero, negative, not a number) disables Confirm and says why; there is no upper limit on size ([ADR 0019](../docs/adr/0019-a-pattern-has-no-size-limit.md))
-- [ ] The modal follows DESIGN.md's modal template and tokens in both themes, and all copy is available in EN and RU
-- [ ] Tests cover the conversion for all three catalog Beads (including TOHO Round 11/0's width correction), growing, shrinking, the Row progress lock, undo, and the message text
-- [ ] CONTEXT.md (Resize, Pattern size) and ADR 0017 note that an mm/cm size can be applied to an open Pattern and is still converted once and forgotten
+- [x] The Size group has a "Change size…" button, disabled while Row progress is on (the same lock Resize respects), with the reason available on hover and keyboard focus
+- [x] The modal offers beads, mm and cm; the numbers start as the current columns × rows, and switching the unit keeps the numbers as typed
+- [x] The message updates as the unit or numbers change and always names the before and after in the chosen unit and in beads (for example "160 × 30 beads will become 160 × 30 mm ≈ 106 × 14 beads"); for a beads-to-beads change it reads as a plain "160 × 30 → 100 × 30 beads"
+- [x] When the new grid is smaller in either direction, the message also says that painted cells outside it will be removed; this is only a message, with no extra tick required
+- [x] Growing adds empty rows/columns; shrinking keeps the top-left of the grid (an anchor choice is out of scope)
+- [x] Confirm applies the new grid as one undo step, and Mirror axis counts reset because grid dimensions changed, as after Resize today; Cancel and Escape close the modal with the Pattern unchanged
+- [x] Invalid input (empty, zero, negative, not a number) disables Confirm and says why; there is no upper limit on size ([ADR 0019](../docs/adr/0019-a-pattern-has-no-size-limit.md))
+- [x] The modal follows DESIGN.md's modal template and tokens in both themes, and all copy is available in EN and RU
+- [x] Tests cover the conversion for all three catalog Beads (including TOHO Round 11/0's width correction), growing, shrinking, the Row progress lock, undo, and the message text
+- [x] CONTEXT.md (Resize, Pattern size) and ADR 0017 note that an mm/cm size can be applied to an open Pattern and is still converted once and forgotten

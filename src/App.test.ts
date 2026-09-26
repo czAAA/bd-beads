@@ -2970,6 +2970,43 @@ describe('App bead quantities', () => {
   })
 })
 
+describe('App estimated weight (ticket 155)', () => {
+  it('follows painting and erasing, and Replace bead', async () => {
+    localStorage.setItem('bd-beads:locale', 'en')
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('0.01 g')
+
+    await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('< 0.01 g')
+    expect(wrapper.find('[data-testid="quantities-weight-tooltip"]').text()).toContain('about 0.0091 g')
+
+    await pressBead(wrapper, 0, { button: 2 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+  })
+
+  it('labels the weight in grams or in Russian «г» by the app language', async () => {
+    localStorage.setItem('bd-beads:locale', 'ru')
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('0.01 г')
+    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('0.01 g')
+  })
+})
+
 describe('App pattern transfer', () => {
   function makePattern(name: string): Pattern {
     return createPattern({
@@ -3017,6 +3054,7 @@ describe('App pattern transfer', () => {
     const local = loadPatterns()[0]!
 
     await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }]))
+    await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(2)

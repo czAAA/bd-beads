@@ -20,7 +20,7 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
 - **Pattern size**: the grid's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps the grid — see [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md), which supersedes [ADR 0008](docs/adr/0008-replace-bead-recalculates-grid.md). There is no limit on size beyond what the device can hold ([ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cell cap)
-- **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
+- **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors (with an Estimated weight beside them) — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
 - **Convert image**: a second way to create a Pattern — from a picture rather than an empty grid, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md), amended by [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
 - **Visual language**: how the app looks — light and dark themes, tokens, layout and components — is set by [DESIGN.md](DESIGN.md), see [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md). Its layout replaces the App shell layout below as the redesign tickets land; until then the entry below describes the app as built
@@ -33,7 +33,7 @@ A saveable, re-editable beadwork design: a grid of cells (shape depends on the c
 _Avoid_: design, drawing, chart
 
 **Pattern library**:
-Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is a flat set with no ordering, grouping or nesting: a Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file. Saves itself as it changes, so the Toolbox's Save only reassures on the device side: it writes at once and says "Saved", or says so if the device refuses (ticket 115). Save also hands over the open Pattern as a Pattern file, so a Pattern can be opened on another device without a separate Export (ticket 119). Every command persists the moment it lands, except a dragged paint or erase stroke, which is saved when the button is released. If a save doesn't get through — the browser's storage is full — the editor says so in the top bar and keeps the change on screen rather than losing it silently. See [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md).
+Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is a flat set with no ordering, grouping or nesting: a Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file. Saves itself as it changes, so the Toolbox's Save only reassures on the device side: it writes at once and says "Saved", or says so if the device refuses (ticket 115). Save also hands over the open Pattern as a Pattern file, so a Pattern can be opened on another device without a separate Export (ticket 119). Every command persists the moment it lands, except a dragged paint or erase stroke, which is saved when the button is released. If a save doesn't get through — the browser's storage is full — the editor says so in the top bar and keeps the change on screen rather than losing it silently. Importing while a Pattern is open asks first whether to switch to the imported Pattern (saying the current one's progress is saved, or, after a failed save, offering to save it first); either way the imported Pattern joins the library, and with no Pattern open it opens without asking (ticket 154). See [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md).
 _Avoid_: collection, gallery, saved list, workspace
 
 **Palette**:
@@ -89,15 +89,21 @@ Resets the open Pattern to how it was when first created at its size: every cell
 _Avoid_: clear, reset, wipe
 
 **Pattern size**:
-How big a Pattern is: its columns × rows, counted in beads. A size given in mm/cm is converted to whole beads when the Pattern is created and not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
+How big a Pattern is: its columns × rows, counted in beads. A size given in mm/cm is converted to whole beads when the Pattern is created, or when it is applied to an open Pattern with Resize's Change size, and is not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
 _Avoid_: dimensions, resolution, physical size
 
 **Estimated size**:
 A Pattern's width and height in mm/cm, worked out from its Pattern size and Bead as one bead's size multiplied by the bead count, and never stored. Always presented as an estimate, since a real piece comes out a little different.
 _Avoid_: real size, actual size, physical size
 
+**Estimated weight**:
+The grams of beads a Pattern needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Pattern's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
+_Avoid_: real weight, exact weight
+
 **Resize**:
 Adding or removing one whole row/column at a time on an open Pattern, from either end of each direction, via −/+ buttons on the Size group's columns/rows counts (not a typeable number); removing them removes the beads painted on them. Not available while Row progress is on.
+
+Change size is the other way to Resize: a modal from the Size group that sets the whole grid from a size stated in beads, mm or cm (mm/cm converted through the Pattern's Bead, once, and forgotten, as when creating a Pattern), with a message saying what will happen before it is confirmed. Growing adds empty rows/columns and shrinking keeps the top-left. It is one undo step, resets Mirror axis counts, and is refused while Row progress is on, like any Resize.
 _Avoid_: crop, stretch, scale, change grid
 
 **Remove row/column**:

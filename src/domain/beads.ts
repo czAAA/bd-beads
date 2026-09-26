@@ -20,6 +20,12 @@ export interface Bead {
    * manufacturer's dimensions don't include. Empirical rather than published; absent means none.
    */
   widthCorrectionMm?: number
+  /**
+   * Average weight of one bead in grams, used only for the Beads needed box's Estimated weight (never stored on a
+   * Pattern). PROVISIONAL: taken from public seller listings' counts per gram, not measured and not yet confirmed with
+   * a dealer (ticket 155). Real beads vary by color and finish, so this is an average.
+   */
+  gramsPerBead?: number
 }
 
 /** A Bead's real column pitch: its own width plus the per-bead correction. What a grid's columns are counted in. */
@@ -37,6 +43,7 @@ export const BEAD_CATALOG: readonly Bead[] = [
     color: null,
     widthMm: 1.5,
     heightMm: 1.5,
+    gramsPerBead: 0.0108,
   },
   {
     id: 'toho-round-11-0',
@@ -49,6 +56,7 @@ export const BEAD_CATALOG: readonly Bead[] = [
     widthMm: 1.5,
     heightMm: 2.2,
     widthCorrectionMm: 0.15,
+    gramsPerBead: 0.0091,
   },
   {
     id: 'miyuki-delica-11-0',
@@ -59,6 +67,7 @@ export const BEAD_CATALOG: readonly Bead[] = [
     color: null,
     widthMm: 1.6,
     heightMm: 1.3,
+    gramsPerBead: 0.005,
   },
 ]
 

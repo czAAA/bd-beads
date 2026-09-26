@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import BeadQuantities from './components/BeadQuantities.vue'
+import ChangeSizeModal from './components/ChangeSizeModal.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import ConvertImageFrame from './components/ConvertImageFrame.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
@@ -47,6 +48,7 @@ import {
   isInFinishedRow,
   keepFinishedRows,
   mirroredCells,
+  mostRecentlyUpdated,
   moveToRow,
   paintCells,
   patternGeometry,
@@ -322,6 +324,21 @@ const history = ref<History<UndoEntry>>(emptyHistory())
 /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
 const deleteAllConfirmOpen = ref(false)
 
+/** Whether the Change size modal (ticket 153) is open. */
+const changeSizeOpen = ref(false)
+
+/**
+ * The Patterns an import brought in while another Pattern is open, held back until the person says whether to switch
+ * to one of them (ticket 154); undefined when there is nothing to ask. They join the library on either answer.
+ */
+const pendingImport = ref<Pattern[] | undefined>()
+
+/** Whether Save current, offered when the last save failed, was tried and the device refused it too. */
+const importSaveRefused = ref(false)
+
+/** The Pattern the import would open: the most recently updated of what came in, the same pick the library makes for an empty library. */
+const pendingImportOpens = computed(() => (pendingImport.value ? mostRecentlyUpdated(pendingImport.value) : undefined))
+
 /** The Bead id picked from the Replace bead select, awaiting confirmation (ticket 48); undefined when its modal is closed. */
 const replaceBeadPendingId = ref<string | undefined>()
 
@@ -379,6 +396,7 @@ watch(activePatternId, () => {
   // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
   resetMirrorState()
   deleteAllConfirmOpen.value = false
+  changeSizeOpen.value = false
   replaceBeadPendingId.value = undefined
   qrExport.close()
   clearSavedConfirmation()
@@ -614,10 +632,15 @@ function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
   return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
 }
 
-/** Withholds a shortcut while the Delete all or Replace bead confirmation, the QR panel or the shortcuts help overlay is open — same precedence Escape already gives those modals (see the Escape entry below). */
+/** Withholds a shortcut while the Delete all, Replace bead, Change size or import confirmation, the QR panel or the shortcuts help overlay is open — same precedence Escape already gives those modals (see the Escape entry below). */
 function noModalOpen(): boolean {
   return (
-    !deleteAllConfirmOpen.value && !replaceBeadPendingBead.value && !qrExport.panelOpen.value && !shortcutsHelpOpen.value
+    !deleteAllConfirmOpen.value &&
+    !replaceBeadPendingBead.value &&
+    !changeSizeOpen.value &&
+    !pendingImport.value &&
+    !qrExport.panelOpen.value &&
+    !shortcutsHelpOpen.value
   )
 }
 
@@ -1204,6 +1227,59 @@ function onResize(request: ResizeRequest) {
   }
 }
 
+/** Opens the Change size modal (ticket 153); refused under the same Row progress lock as Resize. */
+function onRequestChangeSize() {
+  if (activePattern.value && !activePattern.value.rowProgress.enabled) {
+    changeSizeOpen.value = true
+  }
+}
+
+/** Confirming Change size is a Resize like any other: one undo step, Mirror's axis counts reset (see commitSizeChange). */
+function onConfirmChangeSize(request: ResizeRequest) {
+  changeSizeOpen.value = false
+  onResize(request)
+}
+
+/**
+ * Imported Patterns (ticket 154): with none open they simply join the library, which opens one. With one open they
+ * wait for the person's answer, so nothing on screen changes before it.
+ */
+function onImportPatterns(imported: Pattern[]) {
+  if (!activePattern.value || imported.length === 0) {
+    addPatterns(imported)
+    return
+  }
+  importSaveRefused.value = false
+  pendingImport.value = imported
+}
+
+/** Keep current (and Escape): the import joins the library and the open Pattern stays open, as importing always did. */
+function onKeepCurrentAfterImport() {
+  const imported = pendingImport.value
+  pendingImport.value = undefined
+  if (imported) {
+    addPatterns(imported)
+  }
+}
+
+/** Switch: the import joins the library and its most recent Pattern opens (Undo history and Selection reset, the clipboard survives, as on any Pattern switch). */
+function onSwitchToImported() {
+  const imported = pendingImport.value
+  const opens = pendingImportOpens.value
+  pendingImport.value = undefined
+  if (imported) {
+    addPatterns(imported)
+    if (opens) {
+      activePatternId.value = opens.id
+    }
+  }
+}
+
+/** Save current: writes the library as it stands now; the modal turns to the plain question once that gets through (saveFailed clears), or says so if it didn't. */
+function onSaveBeforeImportSwitch() {
+  importSaveRefused.value = !saveNow()
+}
+
 /** Whether "remove selected row/column" (ticket 123) applies right now — the Tools group button's own enabled state. */
 const canRemoveSelectedLine = computed(() => {
   const pattern = activePattern.value
@@ -1312,7 +1388,7 @@ function onMoveRow(delta: number) {
               {{ t.patterns.newPatternButton }}
             </button>
             <!-- Imported Patterns go straight into the library, which decides what to open and persists them. -->
-            <PatternImport :patterns="patterns" @import="addPatterns" />
+            <PatternImport :patterns="patterns" @import="onImportPatterns" />
           </div>
         </div>
         <LanguageSwitcher />
@@ -1394,6 +1470,7 @@ function onMoveRow(delta: number) {
           @toggle-row-direction="onToggleRowDirection"
           @delete-all="onRequestDeleteAll"
           @resize="onResize"
+          @change-size="onRequestChangeSize"
           @remove-selected-line="onRemoveSelectedLine"
         />
       </aside>
@@ -1545,6 +1622,39 @@ function onMoveRow(delta: number) {
       @confirm="onConfirmReplaceBead"
       @cancel="onCancelReplaceBead"
     />
+
+    <ChangeSizeModal
+      v-if="changeSizeOpen && activePattern"
+      :pattern="activePattern"
+      @confirm="onConfirmChangeSize"
+      @cancel="changeSizeOpen = false"
+    />
+
+    <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->
+    <ConfirmModal
+      v-if="pendingImport && pendingImportOpens && activePattern"
+      data-testid="import-switch-modal"
+      :title="t.importSwitch.title"
+      :message="
+        saveFailed
+          ? t.importSwitch.unsavedMessage.replace('{current}', () => activePattern!.name)
+          : (pendingImport.length === 1 ? t.importSwitch.messageOne : t.importSwitch.messageMany)
+              .replace('{count}', () => String(pendingImport!.length))
+              .replaceAll('{imported}', () => pendingImportOpens!.name)
+              .replaceAll('{current}', () => activePattern!.name)
+      "
+      :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.importSwitch.switchButton"
+      :cancel-label="t.importSwitch.keepButton"
+      :extra-label="saveFailed ? t.importSwitch.saveButton : undefined"
+      :confirm-danger="false"
+      @confirm="onSwitchToImported"
+      @cancel="onKeepCurrentAfterImport"
+      @extra="onSaveBeforeImportSwitch"
+    >
+      <p v-if="saveFailed && importSaveRefused" role="alert" data-testid="import-switch-save-failed">
+        {{ t.storage.saveFailedMessage }}
+      </p>
+    </ConfirmModal>
 
     <QrExportPanel v-if="qrExport.panelOpen.value" :matrix="qrExport.matrix.value!" @close="qrExport.close" />
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { beadPitchMm, findBead } from './beads'
+import { BEAD_CATALOG, beadPitchMm, findBead } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -48,5 +48,13 @@ describe('findBead', () => {
     )
 
     expect(findBead('custom-1')).toBeUndefined()
+  })
+})
+
+describe('Bead weights (ticket 155)', () => {
+  it('gives every catalog Bead a positive average weight of one bead in grams', () => {
+    for (const bead of BEAD_CATALOG) {
+      expect(bead.gramsPerBead).toBeGreaterThan(0)
+    }
   })
 })

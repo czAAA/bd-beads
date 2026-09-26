@@ -1,3 +1,4 @@
+import type { Bead } from './beads'
 import { findPaletteColorByHex } from './palette'
 import type { Pattern } from './pattern'
 
@@ -27,4 +28,26 @@ export function computeColorQuantities(pattern: Pattern): ColorQuantity[] {
   return [...counts.entries()]
     .map(([hex, count]) => ({ colorId: findPaletteColorByHex(hex)?.id ?? null, hex, count }))
     .sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
+}
+
+/**
+ * A quantity's Estimated weight in grams (CONTEXT.md): the bead count times the Bead's average weight of one bead.
+ * Derived on the spot and never stored; undefined when the Bead has no weight, so a caller hides the weights rather
+ * than showing zero.
+ */
+export function estimatedGrams(count: number, bead: Pick<Bead, 'gramsPerBead'> | undefined): number | undefined {
+  return bead?.gramsPerBead === undefined ? undefined : count * bead.gramsPerBead
+}
+
+/** Grams below this are too small to weigh and read "< 0.01 g" instead. */
+const MIN_WEIGHABLE_GRAMS = 0.01
+/** From here up (once rounded to two decimals it would read 10.00) the weight has one decimal. */
+const ONE_DECIMAL_FROM_GRAMS = 9.995
+
+/** "12.3 g" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit follows the app language. */
+export function formatGrams(grams: number, unit: string): string {
+  if (grams < MIN_WEIGHABLE_GRAMS) {
+    return `< ${MIN_WEIGHABLE_GRAMS} ${unit}`
+  }
+  return `${grams.toFixed(grams >= ONE_DECIMAL_FROM_GRAMS ? 1 : 2)} ${unit}`
 }

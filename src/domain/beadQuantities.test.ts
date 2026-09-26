@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
-import { computeColorQuantities } from './beadQuantities'
+import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
 import { createPattern, paintCells, type Pattern } from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -60,5 +60,44 @@ describe('computeColorQuantities', () => {
     const quantities = computeColorQuantities(painted([[0, 0, '#123456']]))
 
     expect(quantities).toEqual([{ colorId: null, hex: '#123456', count: 1 }])
+  })
+})
+
+describe('estimatedGrams', () => {
+  it.each([
+    ['toho-cube-1.5mm', 100, 1.08],
+    ['toho-round-11-0', 100, 0.91],
+    ['miyuki-delica-11-0', 100, 0.5],
+  ])('multiplies the count by the average weight of a %s bead', (id, count, expected) => {
+    expect(estimatedGrams(count, BEAD_CATALOG.find((bead) => bead.id === id))).toBeCloseTo(expected, 10)
+  })
+
+  it('is undefined for a Bead with no weight, or no Bead at all', () => {
+    expect(estimatedGrams(100, { gramsPerBead: undefined })).toBeUndefined()
+    expect(estimatedGrams(100, undefined)).toBeUndefined()
+  })
+})
+
+describe('formatGrams', () => {
+  it('uses two decimals below 10 g and one from 10 g up', () => {
+    expect(formatGrams(1.2345, 'g')).toBe('1.23 g')
+    expect(formatGrams(9.99, 'g')).toBe('9.99 g')
+    expect(formatGrams(10, 'g')).toBe('10.0 g')
+    expect(formatGrams(12.34, 'g')).toBe('12.3 g')
+  })
+
+  it('never shows 10.00 for a value that rounds up to ten', () => {
+    expect(formatGrams(9.996, 'g')).toBe('10.0 g')
+  })
+
+  it('says "< 0.01 g" for a color too small to weigh, and shows 0.01 g from there', () => {
+    expect(formatGrams(0.0099, 'g')).toBe('< 0.01 g')
+    expect(formatGrams(0.005, 'g')).toBe('< 0.01 g')
+    expect(formatGrams(0.01, 'g')).toBe('0.01 g')
+  })
+
+  it('takes the unit label from the caller', () => {
+    expect(formatGrams(2, 'г')).toBe('2.00 г')
+    expect(formatGrams(0.001, 'г')).toBe('< 0.01 г')
   })
 })

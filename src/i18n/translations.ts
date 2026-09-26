@@ -87,6 +87,14 @@ export interface Translations {
     noColorsMessage: string
     colorHeading: string
     countHeading: string
+    /** The grams column's heading and the unit after each weight (g / г). */
+    weightHeading: string
+    gramsUnit: string
+    totalLabel: string
+    /** The info icon's accessible name; its tooltip is `weightInfo`. */
+    weightInfoButton: string
+    /** The Estimated weight tooltip (ticket 155); `{grams}` is the Bead's average weight of one bead. */
+    weightInfo: string
   }
   /** Export/import (CONTEXT.md's Pattern file), plus QR export/import (ticket 68, ADR 0015). */
   transfer: {
@@ -171,6 +179,39 @@ export interface Translations {
     pairsHint: string
   }
   /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
+  /** Change size (ticket 153): the Size group's button and the modal that sets the grid in beads, mm or cm. */
+  changeSize: {
+    button: string
+    title: string
+    columnsLabel: string
+    rowsLabel: string
+    /** A beads-to-beads change; `{from}` and `{to}` are "columns × rows". */
+    messageBeads: string
+    /** A mm/cm change; `{from}` and `{to}` are in beads, `{size}` is "width × height" and `{unit}` the chosen unit. */
+    messagePhysical: string
+    shrinkWarning: string
+    problemEmpty: string
+    problemNotANumber: string
+    problemNotPositive: string
+    problemNotWhole: string
+    problemNoBead: string
+    confirmButton: string
+    cancelButton: string
+  }
+  /** Importing while a Pattern is open asks first whether to switch to what came in (ticket 154). */
+  importSwitch: {
+    title: string
+    /** `{current}` and `{imported}` are Pattern names. */
+    messageOne: string
+    /** `{count}` Patterns came in, and `{imported}` is the one that would open. */
+    messageMany: string
+    /** The open Pattern's last save didn't get through. */
+    unsavedMessage: string
+    switchButton: string
+    switchAnywayButton: string
+    keepButton: string
+    saveButton: string
+  }
   deleteAll: {
     button: string
     confirmTitle: string

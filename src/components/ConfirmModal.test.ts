@@ -85,4 +85,21 @@ describe('ConfirmModal', () => {
     // and no listener is left registered (a leaked one would double-fire in the next test's assertions).
     expect(true).toBe(true)
   })
+
+  it('can disable the confirm button, and show a slot and an extra action', async () => {
+    const wrapper = mount(ConfirmModal, {
+      props: { title: 'T', message: 'M', confirmLabel: 'Yes', cancelLabel: 'No', confirmDisabled: true, extraLabel: 'Save' },
+      slots: { default: '<p data-testid="slotted">inside</p>' },
+      attachTo: document.body,
+    })
+
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="confirm-modal-confirm"]').element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="slotted"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="confirm-modal-extra"]').trigger('click')
+    expect(wrapper.emitted('extra')).toHaveLength(1)
+  })
+
+  it('has no extra action unless one is labelled', () => {
+    expect(mountModal().find('[data-testid="confirm-modal-extra"]').exists()).toBe(false)
+  })
 })

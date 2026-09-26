@@ -62,6 +62,7 @@ const emit = defineEmits<{
   'remove-selected-line': []
   /** A Resize (CONTEXT.md, ADR 0017) from the Size group, in grid space. */
   resize: [request: ResizeRequest]
+  'change-size': []
 }>()
 
 const { t } = useI18n()
@@ -502,7 +503,7 @@ const topBottomMax = computed(() =>
       readout, inputs and notes out inside, and doesn't count toward the group's 14-control cap.
     -->
     <ToolGroup ref="sizeGroupRef" :title="t.toolbox.groups.size" data-testid="tool-group-size">
-      <SizeControls class="tool-group__full-row" :pattern="pattern" @resize="(request) => emit('resize', request)" />
+      <SizeControls class="tool-group__full-row" :pattern="pattern" @resize="(request) => emit('resize', request)" @change-size="emit('change-size')" />
     </ToolGroup>
 
     <!--

@@ -80,6 +80,12 @@ export const ru: Translations = {
     noColorsMessage: 'Пока ничего не закрашено',
     colorHeading: 'Цвет',
     countHeading: 'Бисеринок',
+    weightHeading: 'Вес',
+    gramsUnit: 'г',
+    totalLabel: 'Всего',
+    weightInfoButton: 'Об оценке веса',
+    weightInfo:
+      'Примерный вес: число бисеринок × около {grams} г на бисеринку. Это среднее значение предварительное: оно взято из объявлений продавцов и пока не подтверждено. Настоящий бисер отличается по цвету и покрытию, поэтому берите с небольшим запасом.',
   },
   transfer: {
     exportPatternButton: 'Экспортировать схему',
@@ -140,6 +146,35 @@ export const ru: Translations = {
     fromStart: 'начала',
     lockedReason: 'Выключите прогресс по рядам, чтобы изменить размер',
     pairsHint: 'С начала ряды меняются по два, чтобы бисеринки сохранили сдвиг.',
+  },
+  changeSize: {
+    button: 'Изменить размер…',
+    title: 'Изменить размер',
+    columnsLabel: 'Столбцы (ширина)',
+    rowsLabel: 'Ряды (высота)',
+    messageBeads: '{from} → {to} бисеринок',
+    messagePhysical: '{from} бисеринок станут {size} {unit} ≈ {to} бисеринок',
+    shrinkWarning: 'Закрашенные ячейки за пределами нового размера будут удалены.',
+    problemEmpty: 'Введите оба числа.',
+    problemNotANumber: 'Вводите только числа.',
+    problemNotPositive: 'Каждое число должно быть больше нуля.',
+    problemNotWhole: 'Размер в бисеринках должен быть целым числом.',
+    problemNoBead: 'Бисер этой схемы неизвестен, поэтому размер можно задать только в бисеринках.',
+    confirmButton: 'Изменить размер',
+    cancelButton: 'Отмена',
+  },
+  importSwitch: {
+    title: 'Перейти к импортированной схеме?',
+    messageOne:
+      'Схема «{imported}» импортирована. Ваш прогресс в схеме «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
+    messageMany:
+      'Импортировано схем: {count}. Ваш прогресс в схеме «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
+    unsavedMessage:
+      'Схема «{current}» ещё не сохранена на этом устройстве. Сначала сохраните её или перейдите, рискуя потерять последнее изменение.',
+    switchButton: 'Перейти',
+    switchAnywayButton: 'Всё равно перейти',
+    keepButton: 'Оставить текущую',
+    saveButton: 'Сохранить текущую',
   },
   deleteAll: {
     button: 'Очистить всё',

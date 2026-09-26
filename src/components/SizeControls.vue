@@ -18,6 +18,8 @@ const props = defineProps<{ pattern: Pattern }>()
 
 const emit = defineEmits<{
   resize: [request: ResizeRequest]
+  /** Asks App to open the Change size modal (ticket 153). */
+  'change-size': []
 }>()
 
 const { t } = useI18n()
@@ -106,6 +108,7 @@ function testIdAxis(direction: ScreenDirection): 'columns' | 'rows' {
   return direction === 'horizontal' ? 'columns' : 'rows'
 }
 
+const lockedNoteId = useId()
 const tooltipId = useId()
 const tipOpen = ref(false)
 </script>
@@ -211,6 +214,25 @@ const tipOpen = ref(false)
         </div>
       </div>
     </div>
+
+    <!--
+      Kept focusable while Row progress is on (aria-disabled, not disabled) so the reason can be reached from the
+      keyboard too: it is on the button's title and read out as its description, and shown below.
+    -->
+    <button
+      type="button"
+      class="size-controls__change"
+      data-testid="size-change-size"
+      :aria-disabled="locked"
+      :aria-describedby="locked ? lockedNoteId : undefined"
+      :title="locked ? t.size.lockedReason : undefined"
+      @click="locked || emit('change-size')"
+    >
+      {{ t.changeSize.button }}
+    </button>
+    <p v-if="locked" :id="lockedNoteId" class="size-controls__note" data-testid="size-change-size-locked">
+      {{ t.size.lockedReason }}
+    </p>
 
     <p v-if="pairsHintShown" class="size-controls__note" data-testid="size-pairs-hint">{{ t.size.pairsHint }}</p>
   </div>
@@ -347,6 +369,11 @@ const tipOpen = ref(false)
 .size-controls__from-option--selected:hover:not(:disabled) {
   background: var(--color-ink);
   color: var(--color-paper);
+}
+
+.size-controls__change[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .size-controls__note {

@@ -78,6 +78,12 @@ export const en: Translations = {
     noColorsMessage: 'Nothing painted yet',
     colorHeading: 'Color',
     countHeading: 'Beads',
+    weightHeading: 'Weight',
+    gramsUnit: 'g',
+    totalLabel: 'Total',
+    weightInfoButton: 'About the estimated weight',
+    weightInfo:
+      'Estimated weight: bead count × about {grams} g per bead. That average is preliminary, taken from seller listings and not yet confirmed. Real beads vary by color and finish, so buy a little extra.',
   },
   transfer: {
     exportPatternButton: 'Export Pattern',
@@ -138,6 +144,35 @@ export const en: Translations = {
     fromStart: 'start',
     lockedReason: 'Turn off Row progress to change the size',
     pairsHint: 'From the start, rows change two at a time so the beads keep their stagger.',
+  },
+  changeSize: {
+    button: 'Change size…',
+    title: 'Change size',
+    columnsLabel: 'Columns (width)',
+    rowsLabel: 'Rows (height)',
+    messageBeads: '{from} → {to} beads',
+    messagePhysical: '{from} beads will become {size} {unit} ≈ {to} beads',
+    shrinkWarning: 'Painted cells outside the new size will be removed.',
+    problemEmpty: 'Enter both numbers.',
+    problemNotANumber: 'Enter numbers only.',
+    problemNotPositive: 'Each number must be more than zero.',
+    problemNotWhole: 'A size in beads must be a whole number.',
+    problemNoBead: 'This Pattern’s bead is unknown, so only a size in beads can be set.',
+    confirmButton: 'Change size',
+    cancelButton: 'Cancel',
+  },
+  importSwitch: {
+    title: 'Switch to the imported Pattern?',
+    messageOne:
+      '“{imported}” was imported. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
+    messageMany:
+      '{count} Patterns were imported. Your progress on “{current}” is saved. Switch to “{imported}”, or keep “{current}” open?',
+    unsavedMessage:
+      '“{current}” is not saved on this device yet. Save it first, or switch anyway and risk losing your latest change.',
+    switchButton: 'Switch',
+    switchAnywayButton: 'Switch anyway',
+    keepButton: 'Keep current',
+    saveButton: 'Save current',
   },
   deleteAll: {
     button: 'Delete all',
