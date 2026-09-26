@@ -1,13 +1,15 @@
 # bd-beads
 beads drawing app
 
-Live at: https://czAAA.github.io/bd-beads/
+Proprietary software, all rights reserved (see [LICENSE](LICENSE)). This is a private repository, not open source, and is not accepting outside contributions.
+
+Hosted privately (tailnet only): https://tailnet-host.example:8444/bd-beads/
 
 ## Deploy
 
-Hosted on GitHub Pages — see [ADR 0003](docs/adr/0003-github-pages-hosting.md) for why and what that requires from the build. Every push to `main` triggers [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which builds the app and publishes it to Pages; no manual deploy step is needed.
+The build is served from the owner's Flint 2 router, reachable only over Tailscale; see [ADR 0022](docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md) for why and what a new host would need. Every push to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): it tests and builds the app, joins the tailnet as `tag:ci` and rsyncs `dist/` to the router. No manual deploy step is needed. A run can also be started by hand from the Actions tab ("Run workflow").
 
-One-time repo setup: under Settings → Pages, set Source to "GitHub Actions".
+The host and path come from GitHub Actions settings, not the workflow. Variables: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (with a trailing slash), `DEPLOY_BASE` (the URL path the app is served from, default `/bd-beads/`). Secrets: `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`. Don't set `DEPLOY_BASE` when running `npm run visual` locally; the browser checks expect the default.
 
 ## Checks
 

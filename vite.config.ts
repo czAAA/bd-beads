@@ -1,12 +1,13 @@
 import vue from '@vitejs/plugin-vue'
 import { configDefaults, defineConfig } from 'vitest/config'
+import { resolveBase } from './vite.base.ts'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  // GitHub Pages serves this repo at /bd-beads/, not /, so assets built
-  // for production (build and preview alike) need to resolve relative to
-  // that subpath; only the dev server stays at /.
-  base: mode === 'production' ? '/bd-beads/' : '/',
+  // The app is served from a subpath (/bd-beads/ on the Flint 2 router), not /, so production builds (build and
+  // preview alike) resolve assets relative to it. `DEPLOY_BASE` overrides the path per host (ADR 0022); only the dev
+  // server stays at /.
+  base: resolveBase(mode, process.env.DEPLOY_BASE),
   plugins: [vue()],
   test: {
     environment: 'jsdom',
