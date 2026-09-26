@@ -1,0 +1,14 @@
+# 145: Pattern library remembers last-saved order
+
+**What to build:** Saving a Pattern records when it was last saved, so the library can list Patterns most recently saved first. Today the Pattern library is a flat set with no ordering (`CONTEXT.md`). Existing stored Patterns keep working: they get a sensible order the first time the app loads them, with no data loss. This is the prefactor for the Saved Patterns box (ticket 147) and changes no visible UI by itself.
+
+**Blocked by:** None (can start immediately)
+
+**Status:** ready-for-agent
+
+- [ ] Saving a Pattern (new or existing) moves it to the front of the library's order
+- [ ] The order persists across reloads and is stored with the Pattern library, following ADR 0012 and ADR 0001
+- [ ] Patterns saved before this change load unchanged and are given a stable order
+- [ ] Importing, replacing and removing Patterns keep the order consistent
+- [ ] `CONTEXT.md`'s Pattern library entry is updated to say it is ordered by last save
+- [ ] Tests cover save, re-save, remove, import and migration of a pre-existing library

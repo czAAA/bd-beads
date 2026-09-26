@@ -9,6 +9,10 @@ It documents the design approved in ticket 135. The two approved screenshots, `d
 screenshots don't show (messages, modals, hover and focus states, the empty Row progress state) is marked
 **Derived**: worked out from the same tokens, not approved pixel by pixel.
 
+The same design, with its logo, icon and favicon files, component previews and machine-readable tokens, lives in
+[`docs/design/system/`](docs/design/system/README.md) (§10). This file is the spec; that folder holds the files the
+spec points at.
+
 ---
 
 ## 1. Principles
@@ -128,7 +132,8 @@ CSS custom properties with role names. Hex values are exact.
 | body | Inter | 14 / 20 | 400 | | Text, Beads needed rows |
 | tab | Inter | 13 / 18 | 500 | | Tool tab labels under their icons; small buttons (Custom, Image colors) |
 | pill | Inter | 13 / 18 | 500 | | Bead pill |
-| small | Inter | 12 / 15 | 500 | | Saved Pattern names under thumbnails |
+| small | Inter | 12 / 15 | 500 | | Saved Pattern names under thumbnails; tooltips |
+| title | Inter | 16 / 24 | 600 | | Modal titles (Derived) |
 | label | DM Mono | 13 / 18 | 400 | lowercase | Group labels ("tools", "colors", "edit"), "currently editing", "saved · this device" |
 | meta | DM Mono | 13 / 18 | 400 | lowercase | Values next to a label: "l–r 1 · t–b 0", "64×48 mm", "40 columns · 30 rows", "of 30 · top to bottom", counts, "100%" |
 | meta-small | DM Mono | 12 / 16 | 400 | lowercase | "qr · png · pdf", "5 of 12" |
@@ -188,6 +193,20 @@ A 4px base, with 2px and 6px steps for tight control groups.
 
 Dark surface steps, darkest first: `--canvas #0a0a0a` → `--surface #121212` → `--panel #1a1a1a` → `--elevated #242424`.
 
+### 3.6 Contrast
+
+The source values are kept exactly. Where one falls short of 4.5:1, the rule for using it is:
+
+- White `--on-accent` on the light `--accent` is 3.3:1. Use it for icons and bold 19px+ text, not for 14px labels. On
+  `--accent-hover` it is 5.0:1.
+- The light `--accent` as text on `--panel` is 3.0:1. Keep it to short active labels (the active tool, the open
+  Saved Pattern's name).
+- Light `--subtle` is 3.4:1 on `--canvas`: secondary glyphs only ("/ RU", the inactive theme icon).
+- `--ruler` is 3.3:1 (light) and 2.5:1 (dark) by design; the current row's number uses `--marker`.
+- In dark, `--muted` on `--elevated` is 4.4:1. Keep dark meta on `--panel` or `--box`.
+- `--warning` is never text: only a message edge or a warning icon.
+- Everything else passes 4.5:1 in both themes.
+
 ---
 
 ## 4. Layout
@@ -222,7 +241,8 @@ the header, the Toolbox's top and the Progress bar stay in view on a Pattern of 
 
 64px tall on `--canvas`, 1px `--line-soft` bottom border, items 10px apart, none shrinking. In order:
 
-1. **Brand:** the bead glyph (22px, `--accent`) and "bd-beads" (brand), 10px extra space after.
+1. **Brand:** the logo mark (§6.2: 22px, `--accent`, stroke 3.8) and "bd-beads" (brand), 8px apart, 10px extra space
+   after.
 2. **"currently editing"** (label), then the Pattern summary "Logo panel · 40×30" (control), then the **Bead pill**
    (pill on `--pill`, radius full, padding 4 12). Only while a Pattern is open.
 3. **Replace bead:** a select, filled with the accent (§5.1 primary select).
@@ -429,20 +449,88 @@ For "couldn't save", import results and errors, confirmations of an action.
 
 ---
 
-## 6. Icons
+## 6. Icons and logo
 
-The app's own line icons: 24px grid, `stroke: currentColor`, stroke-width 1.75, round caps and joins, no fill.
+### 6.1 Icons
+
+The app's own line icons, **Icons v2**: 40 icons in [`docs/design/system/assets/Icons/`](docs/design/system/assets/Icons).
+24px grid with a keyline of 3.5 to 20.5, `stroke: currentColor`, stroke-width 1.75, round caps and joins, no fill.
+Containers use 2.5 corners (1.75 on small modules). Draw as few strokes as the meaning needs.
+
+**The signature is the bead.** Wherever an icon has a point, a drop, a ray or a module, draw it as a round bead: a
+zero-length stroke (`M x y h.01`) at stroke-width 2.6, which round caps turn into a dot. Paint is a pin placing a
+bead. Fill's bucket drops one. Select is a frame strung from beads (`stroke-dasharray: 0 4`, width 2.4), and so is the
+mirror axis. The sun's rays, the QR modules and the Pattern's 3×3 grid are beads too, and so is the dot on info and
+warning. Use the bead where it carries meaning, not on every icon.
 
 | Where | Size |
 |---|---|
 | Buttons | 15px |
-| Links, disclosure rows | 16px |
-| Zoom buttons | 16px |
+| Links, disclosure rows, zoom buttons, messages | 16px |
 | Edit buttons | 17px |
 | Tool tabs | 18px |
+| Expand button, saved check | 14px |
 | Brand mark | 22px |
 
-The theme toggle adds **sun** and **moon**, and expandable panels add **arrow down** and **arrow up**.
+**Color:** icons take their text color (`--ink`; `--muted` for chevrons; `--accent` on the active tool; `--on-accent`
+inside primary buttons; `--danger` on Delete all; the message's tone color in messages; `--faint` when disabled).
+The SVG files carry a fixed `#1f1f1f` stroke because an `<img>` can't inherit color, so **inline them in UI** and set
+`stroke: currentColor`.
+
+**Which icon goes where:**
+
+| Icons | Where |
+|---|---|
+| `paint` `fill` `select` `erase` | The four tools; `remove-line` and `delete` sit under them |
+| `undo` `redo` `rotate` `copy` | The Edit row |
+| `image` | Image colors, and the PNG image menu item |
+| `save` `export` | Save Pattern, Export ▾; `qr-code` and `pdf` are the other Export menu items |
+| `import` `scan` | Import a file, Import QR code (`plus` is New Pattern) |
+| `sun` `moon` `keyboard` | Theme toggle, Keyboard shortcuts |
+| `mirror-horizontal` `mirror-vertical` `mirror-copy-mode` `size` | Mirror and Size controls |
+| `grid` `zoom-out` `zoom-in` `fit` | Canvas box strip |
+| `turn-row-direction` `chevron-left` `check` | Progress bar: direction, Row not done, Row done |
+| `arrow-down` `arrow-up` | Expand and collapse a panel |
+| `chevron-down` `chevron-up` | Selects, disclosure rows, Export ▾ |
+| `info` `warning` `close` | Messages |
+| `row-progress` | Kept for the legacy Row progress group only |
+
+`docs/design/system/assets/Icons v1/` holds the 23 icons the app ships today, for reference until it switches over.
+
+### 6.2 Logo
+
+**The X1 Cross-weave mark:** two linked beads (the bowls of b and d) with the two stems rising, crossing and passing
+through a shared third bead from opposite sides, as two needles do in ladder weave. The loose thread tails flick out
+past the stems. It follows the icon rules: one stroke, round caps and joins, no fill. There is no outlined wordmark
+file: set "bd-beads" in the brand role, to the right of the mark, 8px apart at header size.
+
+- **Color:** `--accent` on `--canvas` (orange in light, yellow in dark), `--on-accent` on an `--accent` tile (the app
+  icon), or one color in `--ink` or `--canvas`. Nothing else: no gradients, shadows, outlines or other colors.
+- **Stroke** on the 48-unit grid: 3.2 by default, 3.6 at 32px, 3.8 at 22px (the header), 4.2 at 16px. It gets
+  heavier as it shrinks so it keeps the same weight to the eye. Use `bd-beads-mark-small.svg` at 16 to 20px.
+- **Clear space:** a quarter of the mark's height on every side. **Minimum size:** 16px.
+- **Don't:** fill the beads, vary the stroke within the mark, rotate, stretch or flip it, move the shared bead, cut the
+  tails, or turn it into a face.
+- **Files** in [`docs/design/system/assets/Logos/`](docs/design/system/assets/Logos): `bd-beads-mark.svg` (light
+  accent), `bd-beads-mark-dark.svg`, `bd-beads-mark-ink.svg`, `bd-beads-mark-white.svg`, `bd-beads-mark-small.svg`,
+  `bd-beads-app-icon.svg` and `bd-beads-app-icon-dark.svg` (the mark on an accent tile). In UI, inline the mark and
+  set `stroke: var(--accent)`.
+- Before the mark is registered as a trademark, run an image search (WIPO Global Brand Database, EUIPO TMview) and a
+  professional clearance search.
+
+### 6.3 Favicon
+
+The favicon is the mark at the small stroke (4.2). It follows the **browser's** light or dark setting, not the app's
+theme toggle, because the tab bar belongs to the browser: orange `#fa520f` on light tab bars, yellow `#faff69` on dark
+ones.
+
+- Ship one `favicon.svg` with its own `prefers-color-scheme` rule (the source is in
+  [`docs/design/system/README.md`](docs/design/system/README.md), "Favicon"). Chrome, Edge and Firefox switch it live;
+  Safari may keep the light version.
+- Fallbacks: `favicon.ico` (16, 32, 48) for older browsers, `favicon-32.png`, and `apple-touch-icon.png` (180×180,
+  white mark on full-bleed `#fa520f`).
+- The Logos folder holds `favicon.svg` (light) and `favicon-dark.svg` as separate single-color files, plus
+  `favicon-32.png` and `apple-touch-icon.png`. The theme-aware file is built from the source in the README.
 
 ---
 
@@ -478,6 +566,11 @@ PNG and PDF exports use the light values (§2).
 
 - "Previous row" is **"Row not done"**; "Next row" is **"Row done"**.
 - Group labels and meta are lowercased by style, not in the strings (§3.2).
+- Sentence case in every string ("Save Pattern", "Beads needed"). Product nouns are capitalized: Pattern, Bead,
+  Palette, Technique, Row progress.
+- Join meta values with a spaced middle dot ("40 columns · 30 rows", "l–r 1 · t–b 0"). Use × for sizes ("40×30",
+  "64×48 mm").
+- No emoji.
 - The app's own words only: no brand names, no marketing phrases. English and Russian as today.
 
 ---
@@ -499,5 +592,38 @@ A map for implementation tickets. The current UI follows ADRs 0004 and 0005, whi
 | Beads needed | list with total | expandable panel, total in its title (§5.8) |
 | Bead drawing | white background, paper rim, grey dimmed rows | board, per-theme colors, light rows fade toward the board (§7). The renderer's reference images (ADR 0018) are redrawn for the new look |
 | Fonts | system UI | Inter, DM Mono, Instrument Serif, bundled (§3.2) |
+| Icons | Icons v1: 23 icons drawn inline in the Vue components | Icons v2: 40 icons with the bead signature (§6.1). Files in `docs/design/system/assets/Icons/` |
+| Logo, favicon | a QR-style bead-grid `public/favicon.svg`; a generic bead glyph in the header | the X1 mark in the header and as a theme-aware favicon, with `.ico`, PNG and Apple touch icon fallbacks (§6.2, §6.3) |
 
 Tickets 75 (Toolbox), 76 (messages and popups) and 77 (landing page) implement against this file.
+
+---
+
+## 10. Design system files
+
+[`docs/design/system/`](docs/design/system/README.md) is a copy of the bd-beads design system (a Claude design system
+artifact), kept in the repo so every developer and agent has the same files without an account.
+
+| Path | What it is |
+|---|---|
+| `README.md` | The brand book: principles, content, color, type, logo, favicon and iconography rules |
+| `tokens.json` | Every token as data: colors for both themes, type styles, spacing, radii, elevation |
+| `components/bundle.css` | Static styles behind the component previews; also holds values that aren't plain color tokens (`--track-fill`, the modal scrims) |
+| `components/<Name>/README.md`, `preview.html` | A short guideline and a static preview per component (17 components and the cover). Open a preview in a browser to see it |
+| `assets/Logos/` | The mark, the app icons and the favicon files (§6.2, §6.3) |
+| `assets/Icons/` | Icons v2, 40 SVGs (§6.1) |
+| `assets/Icons v1/` | The icons the app shipped before Icons v2, for reference |
+
+**Which one wins:**
+
+- For tokens, layout and component behavior, **this file wins**. `tokens.json` and the component READMEs restate it.
+  When they disagree, fix them to match this file.
+- For the logo, icon and favicon **files**, the SVG and PNG files in the folder are the source. This file describes
+  how to use them.
+- The previews are static renditions written from this file. They are not the app's components, so the Vue
+  components stay the implementation.
+
+**Keeping the copy current:** the claude.ai design system is where the design is edited. After a change there, copy
+its files over `docs/design/system/` in one commit, together with the matching change to this file. Don't edit the
+folder by hand except to fix a mismatch with this file. Its previews load Inter, DM Mono and Instrument Serif from
+Google Fonts for display only; the app itself bundles its fonts (§3.2).

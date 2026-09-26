@@ -1,0 +1,33 @@
+<!-- @dsCard group="States" height=820 width=960 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Motion preview</title><style>.card{background:var(--panel);border-radius:12px;padding:18px 20px}.card h4{margin:0 0 8px;font-size:14px}.rules{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--body);font-size:13.5px;line-height:19px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}</style></head>
+<body>
+<div style="padding:16px"><div class="grid2"><div class="card"><h4>Motion tokens</h4><table class="tk2"><tr><td><code>--duration-instant</code></td><td>80ms</td><td>Press feedback, bead hover outline.</td></tr><tr><td><code>--duration-fast</code></td><td>120ms</td><td>Hover and colour changes, tooltips, the Remove × on thumbnails.</td></tr><tr><td><code>--duration-base</code></td><td>200ms</td><td>Menus, popovers, toasts, modals, disclosure rows and expandable panels, the current-row marker. Leaving uses 150ms.</td></tr><tr><td><code>--duration-slow</code></td><td>280ms</td><td>Bottom sheets and the Drawer coming in (they leave in 200ms).</td></tr><tr><td><code>--ease-out</code></td><td>cubic-bezier(.2,.8,.2,1)</td><td>Anything arriving: it starts fast and settles.</td></tr><tr><td><code>--ease-in</code></td><td>cubic-bezier(.4,0,1,1)</td><td>Anything leaving: it gathers speed and goes.</td></tr><tr><td><code>--ease-standard</code></td><td>cubic-bezier(.2,0,0,1)</td><td>Anything moving from one place to another: the row marker, a panel growing.</td></tr></table></div><div class="card"><h4>Rules</h4><ul class="rules">
+<li>Only <code>transform</code> and <code>opacity</code> animate over the canvas (ADR 0018): sheets, the Drawer, menus, toasts and modals slide or fade <em>over</em> it; the drawing surface never resizes during an animation. Height animates only inside the left column (disclosure rows, expandable panels).</li>
+<li>Arrive with <code>--ease-out</code>, leave with <code>--ease-in</code>, a little faster than arriving. Nothing bounces or overshoots.</li>
+<li>Row done moves the current-row marker to the next row in 200ms and grows the progress line with it: the one moment of motion on the Pattern itself, because it confirms the most repeated action.</li>
+<li>No motion on painting, the theme switch (colours change at once, so the canvas redraws once) or zoom steps (the Pattern jumps to the new scale; pinch follows the fingers directly).</li>
+<li>Toasts leave after 5s unless hovered or focused; errors never leave by themselves.</li>
+<li><b>Reduced motion</b> (<code>prefers-reduced-motion: reduce</code>): nothing slides or scales: sheets, the Drawer, menus and modals fade in 120ms; the row marker jumps; the loading beads stand still. Colour and opacity feedback stay.</li></ul></div></div><div class="mo-ctl">
+<button class="ix ix-sec" onclick="tg('sh')">Sheet</button><button class="ix ix-sec" onclick="tg('dr')">Drawer</button>
+<button class="ix ix-sec" onclick="tg('mn')">Menu</button><button class="ix ix-sec" onclick="tg('md')">Modal</button>
+<button class="ix ix-sec" onclick="toast()">Toast</button><button class="ix ix-sec" onclick="tg('ds')">Disclosure</button><button class="ix ix-pri" onclick="rowDone()"><svg class="ic" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4.5 12.5l5 5 10-10.5" /></svg>Row done</button>
+<label class="ix ix-txt" style="gap:8px"><input type="checkbox" id="rmc" onchange="document.getElementById('stage').classList.toggle('rm',this.checked)"> Reduced motion</label></div>
+<div class="mo-stage" id="stage"><div class="bg"><div style="display:flex;gap:24px;align-items:center"><div class="mo-rows" id="rows"><i></i><i></i><i></i><i></i><i></i><i></i><span class="mo-mark" id="mark" style="top:44px"></span></div>
+<div style="width:270px;background:var(--panel);border-radius:10px;padding:8px 12px"><div style="font:500 14px var(--font-sans);display:flex;justify-content:space-between">Mirror<span style="font:400 12px var(--font-mono);color:var(--muted)">l–r 1</span></div><div class="mo-disc" id="ds"><div><div style="padding-top:10px;display:grid;gap:8px"><span class="f-srow" style="min-height:0"><span style="font-size:13px">Left–right axes</span><span class="f-step" style="height:32px"><b style="height:30px;width:30px">−</b><em style="line-height:30px">1</em><b style="height:30px;width:30px">+</b></span></span><span class="f-sw" style="min-height:0;font-size:13px"><span>Copy mode</span><span class="m-sw1 off"></span></span></div></div></div></div></div></div>
+<div class="mo-scrim" id="scrim" onclick="closeAll()"></div>
+<div class="mo-sheet" id="sh"><span class="m-grab" style="display:block;margin:0 auto 10px"></span><b style="font:600 15px var(--font-sans)">Tools</b><div class="fa-tag" style="margin-top:6px">slides up 280ms · leaves 200ms</div></div>
+<div class="mo-drawer" id="dr"><b style="font:600 14px var(--font-sans)">Left column</b><div class="fa-tag" style="margin-top:6px">slides in 280ms</div></div>
+<div class="mo-menu" id="mn"><b>Import a file</b><b>Import QR code</b><b>Dark theme</b></div>
+<div class="mo-modal" id="md"><b style="font:600 16px var(--font-sans)">Delete all?</b><div class="fa-tag" style="margin-top:6px">fades and settles 200ms</div></div>
+<div class="mo-toast" id="to">Pattern exported.</div></div>
+<script>
+var modal={sh:1,dr:1,md:1};
+function closeAll(){['sh','dr','mn','md'].forEach(function(i){document.getElementById(i).classList.remove('show')});document.getElementById('scrim').classList.remove('show')}
+function tg(id){var e=document.getElementById(id);var on=!e.classList.contains('show');if(id!=='ds')closeAll();e.classList.toggle('show',on);if(modal[id])document.getElementById('scrim').classList.toggle('show',on)}
+var tt;function toast(){var t=document.getElementById('to');t.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){t.classList.remove('show')},2500)}
+var r=2;function rowDone(){r=(r+1)%6;document.getElementById('mark').style.top=(4+r*18-4)+'px'}
+</script></div>
+</body>
+</html>

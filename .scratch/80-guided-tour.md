@@ -1,8 +1,8 @@
 # 80: Guided first-pattern tour (skippable)
 
-**What to build:** An in-app guided walkthrough that helps a first-time user build their first Pattern, using ticket 76's popup/message templates, and can be skipped at any point.
+**What to build:** An in-app guided walkthrough that helps a first-time user build their first Pattern, using ticket 76's popup/message templates (the shared Modal, Menu and Tooltip) and the redesigned layout, and can be skipped at any point.
 
-**Blocked by:** 76 (Apply design system to messages/popups)
+**Blocked by:** 76 (Apply design system to messages/popups), 152 (Redesign audit and contract), so the tour points at the finished layout
 
 **Status:** ready-for-agent
 
