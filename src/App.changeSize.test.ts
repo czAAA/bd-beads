@@ -27,7 +27,7 @@ const confirmButton = (wrapper: Wrapper) => wrapper.find<HTMLButtonElement>('[da
 
 async function type(wrapper: Wrapper, columns: string, rows: string, unit?: string) {
   if (unit) {
-    await wrapper.find('[data-testid="change-size-unit"]').setValue(unit)
+    await wrapper.find(`[data-testid="change-size-unit"] [data-value="${unit}"]`).trigger('click')
   }
   await wrapper.find('[data-testid="change-size-width"]').setValue(columns)
   await wrapper.find('[data-testid="change-size-height"]').setValue(rows)
@@ -55,7 +55,7 @@ describe('App Change size (ticket 153)', () => {
 
     expect(wrapper.find<HTMLInputElement>('[data-testid="change-size-width"]').element.value).toBe('4')
     expect(wrapper.find<HTMLInputElement>('[data-testid="change-size-height"]').element.value).toBe('3')
-    expect(wrapper.find<HTMLSelectElement>('[data-testid="change-size-unit"]').element.value).toBe('beads')
+    expect(wrapper.find('[data-testid="change-size-unit"] [aria-checked="true"]').attributes('data-value')).toBe('beads')
     expect(message(wrapper)).toBe('4 × 3 → 4 × 3 beads')
   })
 
@@ -64,7 +64,7 @@ describe('App Change size (ticket 153)', () => {
     await create(wrapper, 'toho-round-11-0', 160, 30)
     await openModal(wrapper)
 
-    await wrapper.find('[data-testid="change-size-unit"]').setValue('mm')
+    await wrapper.find('[data-testid="change-size-unit"] [data-value="mm"]').trigger('click')
 
     expect(wrapper.find<HTMLInputElement>('[data-testid="change-size-width"]').element.value).toBe('160')
     // 160mm / (1.5mm + 0.15mm correction) and 30mm / 2.2mm, TOHO Round 11/0
@@ -217,7 +217,7 @@ describe('App Change size (ticket 153)', () => {
   it('is locked while Row progress is on, with the reason on hover and available to keyboard focus', async () => {
     const wrapper = mount(App)
     await create(wrapper, 'toho-cube-1.5mm', 4, 4)
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     const button = wrapper.find('[data-testid="size-change-size"]')
     expect(button.attributes('aria-disabled')).toBe('true')
@@ -227,7 +227,7 @@ describe('App Change size (ticket 153)', () => {
     await button.trigger('click')
     expect(modal(wrapper).exists()).toBe(false)
 
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     expect(wrapper.find('[data-testid="size-change-size"]').attributes('aria-disabled')).toBe('false')
     await openModal(wrapper)
     expect(modal(wrapper).exists()).toBe(true)

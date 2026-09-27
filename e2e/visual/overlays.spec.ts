@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { openApp, setZoom } from '../support/app'
 import { fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 import { SCENARIOS } from './scenarios'
 
 /**
@@ -33,7 +33,9 @@ for (const scenario of SCENARIOS.filter(({ name }) => COVERED.test(name))) {
         await scenario.place?.(page, { pattern, zoom })
 
         const box = (await page.getByTestId('pattern-surface').boundingBox())!
-        const expected = readFileSync(`${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`)
+        const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
+        if (UPDATING_REFERENCES) await writeReference(page, reference, box, { x: Math.floor(box.x), y: Math.floor(box.y) })
+        const expected = readFileSync(reference)
         const { width, height } = PNG.sync.read(expected)
         const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
         const actual = await page.screenshot({ clip: { ...origin, width, height } })

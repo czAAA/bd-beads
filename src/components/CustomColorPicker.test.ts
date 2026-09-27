@@ -31,12 +31,13 @@ describe('CustomColorPicker', () => {
   it('shows the last chosen color as its own swatch fill, selected or not', () => {
     const wrapper = mount(CustomColorPicker, { props: { color: '#123456', selected: false } })
 
-    expect(wrapper.get('.custom-color-picker').attributes('style')).toContain('background-color: rgb(18, 52, 86)')
+    expect(wrapper.get('.custom-color-picker__swatch').attributes('style')).toContain('background-color: rgb(18, 52, 86)')
   })
 
-  it('has no fill color yet before anything has ever been chosen', () => {
+  it('has no fill color yet before anything has ever been chosen, but a hatched swatch', () => {
     const wrapper = mount(CustomColorPicker, { props: { selected: false } })
 
-    expect(wrapper.get('.custom-color-picker').attributes('style')).toBeFalsy()
+    expect(wrapper.get('.custom-color-picker__swatch').attributes('style')).toBeFalsy()
+    expect(wrapper.get('.custom-color-picker__swatch').classes()).toContain('custom-color-picker__swatch--none')
   })
 })

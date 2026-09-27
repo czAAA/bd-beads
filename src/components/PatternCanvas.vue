@@ -24,6 +24,10 @@ const props = defineProps<{
   mirrorAxisCounts?: MirrorAxisCounts
   /** Mirror's "Mirror current" hover preview (ticket 47): cells a hovered button would overwrite. */
   dimmedCells?: GridPosition[]
+  /** The keyboard's bead cursor (ticket 159): drawn by the surface, its row and column marked on the rulers. */
+  cursor?: GridPosition
+  /** The Pattern's accessible name, for the surface. */
+  label?: string
 }>()
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -32,6 +36,8 @@ const emit = defineEmits<{
   'cell-secondary-move': [row: number, column: number]
   'cell-hover': [row: number, column: number]
   'hover-end': []
+  'cursor-key': [event: KeyboardEvent]
+  'keyboard-focus': [focused: boolean]
   /** A ruler number was clicked (ticket 123): relayed up from whichever of the four PatternRuler instances it came from. */
   'select-line': [selection: Selection]
 }>()
@@ -105,15 +111,15 @@ const rotateStyle = computed(() => ({
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
           <div class="pattern-canvas__ruled">
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
 
-            <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" :cursor-index="cursor?.row" @select="onSelectLine" />
             <div class="pattern-canvas__grid-slot" :style="gridSlotStyle" />
-            <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" :cursor-index="cursor?.row" @select="onSelectLine" />
 
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
           </div>
         </div>
@@ -132,6 +138,10 @@ const rotateStyle = computed(() => ({
           :selection="selection"
           :mirror-axis-counts="mirrorAxisCounts"
           :dimmed-cells="dimmedCells"
+          :cursor="cursor"
+          :label="label"
+          @cursor-key="(event) => emit('cursor-key', event)"
+          @keyboard-focus="(focused) => emit('keyboard-focus', focused)"
           @cell-primary-down="(row, column) => emit('cell-primary-down', row, column)"
           @cell-primary-move="(row, column) => emit('cell-primary-move', row, column)"
           @cell-secondary-down="(row, column) => emit('cell-secondary-down', row, column)"
@@ -156,9 +166,7 @@ const rotateStyle = computed(() => ({
 .pattern-canvas {
   position: relative;
   margin: 0 auto;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  /* No frame of its own since ticket 143: the canvas box around it is the frame, and the board carries the beads. */
   /*
    * Painting is a mousedown-drag across cells and ruler numbers alike; without this, that drag also selects the
    * ruler's number text, and a later drag starting inside that selection triggers the browser's native "drag the

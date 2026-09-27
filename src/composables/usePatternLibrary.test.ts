@@ -40,7 +40,7 @@ describe('usePatternLibrary', () => {
 
     const library = usePatternLibrary()
 
-    expect(library.patterns.value.map((pattern) => pattern.id)).toEqual([older.id, newer.id])
+    expect(library.patterns.value.map((pattern) => pattern.id)).toEqual([newer.id, older.id])
     expect(library.activePatternId.value).toBe(newer.id)
     expect(library.activePattern.value?.id).toBe(newer.id)
   })
@@ -158,7 +158,7 @@ describe('usePatternLibrary', () => {
 
     library.addPatterns(imported)
 
-    expect(loadPatterns().map((pattern) => pattern.id)).toEqual(imported.map((pattern) => pattern.id))
+    expect(loadPatterns().map((pattern) => pattern.id)).toEqual([imported[1]!.id, imported[0]!.id])
     expect(library.activePatternId.value).toBe(imported[1]!.id)
   })
 
@@ -260,6 +260,92 @@ describe('usePatternLibrary', () => {
 
       expect(library.saveNow()).toBe(true)
       expect(library.saveFailed.value).toBe(false)
+    })
+  })
+
+  describe('last-saved order (ticket 145)', () => {
+    const ids = (library: ReturnType<typeof usePatternLibrary>) => library.patterns.value.map((pattern) => pattern.id)
+
+    function storedLibrary(...patterns: Pattern[]) {
+      localStorage.setItem('bd-beads:patterns', JSON.stringify(patterns))
+    }
+
+    it('gives a library saved before the order existed a stable order, newest edit first, loading every Pattern unchanged', () => {
+      const a = makePattern({ updatedAt: 1000 })
+      const b = makePattern({ updatedAt: 3000 })
+      const c = makePattern({ updatedAt: 2000 })
+      const d = makePattern({ updatedAt: 2000 })
+      storedLibrary(a, b, c, d)
+
+      const library = usePatternLibrary()
+
+      expect(ids(library)).toEqual([b.id, c.id, d.id, a.id])
+      expect(library.patterns.value.find((pattern) => pattern.id === a.id)).toEqual(a)
+      expect(ids(usePatternLibrary())).toEqual([b.id, c.id, d.id, a.id])
+    })
+
+    it('puts a new Pattern first, and keeps that order across a reload', () => {
+      const older = makePattern({ updatedAt: 5000, savedAt: 5000 })
+      storedLibrary(older)
+      const library = usePatternLibrary()
+
+      const created = makePattern({ updatedAt: 1 })
+      library.addPattern(created)
+
+      expect(ids(library)).toEqual([created.id, older.id])
+      expect(ids(usePatternLibrary())).toEqual([created.id, older.id])
+    })
+
+    it('moves a Pattern to the front when a change to it is saved, even one saved before', () => {
+      const first = makePattern({ savedAt: 3000 })
+      const second = makePattern({ savedAt: 2000 })
+      const third = makePattern({ savedAt: 1000 })
+      storedLibrary(first, second, third)
+      const library = usePatternLibrary()
+
+      library.replacePattern(withPaintedCell(third, 0, 0))
+
+      expect(ids(library)).toEqual([third.id, first.id, second.id])
+      expect(ids(usePatternLibrary())).toEqual([third.id, first.id, second.id])
+    })
+
+    it('moves the open Pattern to the front on Save, even with nothing changed', () => {
+      const first = makePattern({ savedAt: 3000, updatedAt: 3000 })
+      const opened = makePattern({ savedAt: 1000, updatedAt: 1000 })
+      storedLibrary(first, opened)
+      const library = usePatternLibrary()
+      library.activePatternId.value = opened.id
+
+      library.saveNow()
+
+      expect(ids(library)).toEqual([opened.id, first.id])
+      expect(ids(usePatternLibrary())).toEqual([opened.id, first.id])
+    })
+
+    it('puts imported Patterns first, the most recently edited of them leading', () => {
+      const existing = makePattern({ savedAt: 5000, updatedAt: 9000 })
+      storedLibrary(existing)
+      const library = usePatternLibrary()
+
+      const older = makePattern({ updatedAt: 1000 })
+      const newer = makePattern({ updatedAt: 2000 })
+      library.addPatterns([older, newer])
+
+      expect(ids(library)).toEqual([newer.id, older.id, existing.id])
+      expect(ids(usePatternLibrary())).toEqual([newer.id, older.id, existing.id])
+    })
+
+    it('keeps the order of the rest when one is removed', () => {
+      const first = makePattern({ savedAt: 3000 })
+      const second = makePattern({ savedAt: 2000 })
+      const third = makePattern({ savedAt: 1000 })
+      storedLibrary(first, second, third)
+      const library = usePatternLibrary()
+
+      library.removePattern(second.id)
+
+      expect(ids(library)).toEqual([first.id, third.id])
+      expect(ids(usePatternLibrary())).toEqual([first.id, third.id])
     })
   })
 })

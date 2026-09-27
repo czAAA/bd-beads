@@ -1,0 +1,63 @@
+/*
+ * Sizes the component cards give that tokens.json has no token for (ticket 157), in rem like the tokens. Take them
+ * from here rather than writing the number into a component.
+ */
+:root {
+  /* Button card: 34 default, 38 in the save box and Edit row, 32 in the Saved Patterns footer */
+  --control-height: 2.125rem;
+  --control-height-lg: 2.375rem;
+  --control-height-sm: 2rem;
+  /* CanvasStrip card: zoom and fit buttons, no fill; the strip itself; the zoom level's fixed width */
+  --control-height-plain: 1.875rem;
+  --strip-height: 2.875rem;
+  --zoom-level-width: 3rem;
+  /* ProgressBar card: the bar along the canvas box's bottom edge, and its switch (30 × 18, a 12px knob) */
+  --progress-height: 3.5rem;
+  --switch-width: 1.875rem;
+  --switch-height: 1.125rem;
+  --switch-knob: 0.75rem;
+  /* ProgressBar card: the progress track's thickness */
+  --track-height: 0.25rem;
+  /* Button card: the expand button */
+  --expand-size: 1.75rem;
+  /* Modal card: a confirmation, and a panel (QR export, Keyboard shortcuts) */
+  --modal-width: 26.25rem;
+  --modal-width-panel: 35rem;
+  /* QrExport and NameOnExports cards: the narrow modal */
+  --modal-width-narrow: 21.25rem;
+  /* ShortcutsHelp card: a key chip */
+  --kbd-height: 1.375rem;
+  /* Message card: the widest a message gets, its tone edge, and its close button */
+  --message-max-width: 26.25rem;
+  --tone-edge: 3px;
+  --message-close-size: 1.75rem;
+  /* Menu card: the narrowest a menu gets, and an item */
+  --menu-width: 12.5rem;
+  --menu-item-height: 2.125rem;
+  /* BeadsNeeded and SavedPatterns cards: an expandable panel's header, a Beads needed row (three fill the collapsed
+     body), the Saved Patterns collapsed body, and a color's 12px dot */
+  --panel-head-height: 1.75rem;
+  --panel-row-height: 2rem;
+  --panel-body-height: 6rem;
+  --saved-body-height: 6.5rem;
+  --swatch-dot: 0.75rem;
+  --swatch-dot-radius: 3px;
+  --grams-width: 3.5rem;
+  /* A tooltip that holds a sentence or two (the estimated weight) wraps at this width */
+  --tooltip-wide: 16rem;
+  /* SavedPatterns card: the 44px circle, the 36px thumbnail in it, the widest a name gets, and the 20px Remove × */
+  --thumbnail-circle: 2.75rem;
+  --thumbnail-size: 2.25rem;
+  --thumbnail-name-width: 3.625rem;
+  --thumbnail-remove: 1.25rem;
+  /* SegmentedControl card: a small option; Stepper card: the value's width and its 15px figures */
+  --control-height-small: 1.75rem;
+  --stepper-value-width: 2.75rem;
+  --stepper-value-size: 0.9375rem;
+  /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
+  --framing-dim: rgba(0, 0, 0, .45);
+  /* ColorPickers card: an Image colors swatch */
+  --image-color-size: 1.75rem;
+  /* InteractionStates card: the pressed shrink */
+  --press-scale: 0.98;
+}

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
+import AppButton from './AppButton.vue'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { resizeRowStep, type ResizeAnchor, type ResizeRequest } from '../domain/resize'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
   'change-size': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 type ScreenDirection = 'horizontal' | 'vertical'
 type GridAxis = 'columns' | 'rows'
@@ -61,6 +62,7 @@ const estimate = computed(() => {
   return formatSizeMm(
     estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotated: props.pattern.rotated }, bead.value),
     unitLabels.value,
+    locale.value,
   )
 })
 
@@ -166,9 +168,9 @@ const tipOpen = ref(false)
           :aria-label="labels[direction]()"
           :data-testid="`size-${testIdAxis(direction)}`"
         >
-          <button
-            type="button"
-            class="icon-button"
+          <AppButton
+            variant="toolbox"
+            size="sm"
             :data-testid="`size-${testIdAxis(direction)}-decrease`"
             :title="decreaseLabels[direction]()"
             :aria-label="decreaseLabels[direction]()"
@@ -176,13 +178,13 @@ const tipOpen = ref(false)
             @click="onStep(direction, -1)"
           >
             −
-          </button>
+          </AppButton>
           <span class="size-controls__counter-label" :data-testid="`size-${testIdAxis(direction)}-value`">
             {{ labels[direction]() }}: {{ count(direction) }}
           </span>
-          <button
-            type="button"
-            class="icon-button"
+          <AppButton
+            variant="toolbox"
+            size="sm"
             :data-testid="`size-${testIdAxis(direction)}-increase`"
             :title="increaseLabels[direction]()"
             :aria-label="increaseLabels[direction]()"
@@ -190,7 +192,7 @@ const tipOpen = ref(false)
             @click="onStep(direction, 1)"
           >
             +
-          </button>
+          </AppButton>
         </p>
         <div
           class="size-controls__from"
@@ -261,7 +263,7 @@ const tipOpen = ref(false)
 }
 
 .size-controls__estimate-text {
-  font-weight: var(--font-weight-bold);
+  font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -274,14 +276,15 @@ const tipOpen = ref(false)
   width: 28px;
   height: 28px;
   padding: 0;
-  color: var(--color-ink);
-  background: var(--color-orange);
-  border-radius: var(--radius-pill);
+  color: var(--ink);
+  background: var(--warning);
+  border: 0;
+  border-radius: var(--radius-full);
 }
 
-.size-controls__info:hover:not(:disabled) {
-  color: var(--color-ink);
-  background: var(--color-orange);
+.size-controls__info:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .size-controls__info svg {
@@ -305,9 +308,9 @@ const tipOpen = ref(false)
   padding: 10px 14px;
   font-size: 14px;
   line-height: 1.4;
-  color: var(--color-orange-ink);
-  background: var(--color-orange);
-  border: var(--border-width) solid var(--color-ink);
+  color: var(--ink);
+  background: var(--warning);
+  border: 1px solid var(--ink);
   border-radius: var(--radius-md);
 }
 
@@ -363,12 +366,65 @@ const tipOpen = ref(false)
 .size-controls__from-option {
   padding: 2px 10px;
   font-size: 14px;
+  color: var(--body);
+  background: var(--elevated);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.size-controls__from-option:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.size-controls__from-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .size-controls__from-option--selected,
 .size-controls__from-option--selected:hover:not(:disabled) {
-  background: var(--color-ink);
-  color: var(--color-paper);
+  color: var(--canvas);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/*
+ * The design system's `toolbox` AppButton look, hand-drawn: this button stays reachable while Row progress locks it
+ * (aria-disabled, not disabled), which AppButton's own `disabled` prop can't do (BeadQuantities and the reason under
+ * it need it focusable).
+ */
+.size-controls__change {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  height: var(--control-height);
+  padding: 0 var(--space-12);
+  box-sizing: border-box;
+  font: var(--type-control);
+  color: var(--ink);
+  background: var(--elevated);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+:root[data-theme='dark'] .size-controls__change {
+  border-color: var(--elevated);
+}
+
+@media (hover: hover) {
+  .size-controls__change:hover[aria-disabled='false'] {
+    background: var(--elevated);
+    border-color: var(--ink);
+  }
+}
+
+.size-controls__change:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .size-controls__change[aria-disabled='true'] {
@@ -384,8 +440,8 @@ const tipOpen = ref(false)
 }
 
 .size-controls__note--error {
-  color: var(--color-amaranth);
-  font-weight: var(--font-weight-bold);
+  color: var(--danger);
+  font-weight: 700;
   opacity: 1;
 }
 </style>

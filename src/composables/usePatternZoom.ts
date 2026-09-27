@@ -3,34 +3,39 @@ import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom } 
 import type { Pattern } from '../domain/pattern'
 import { patternExtentPx } from '../rendering/patternRenderer'
 
-/** What's left for the grid itself, given an outer size, once the two ruler gutters and the grid's outline have had their share. */
-function fitMaxPx(outerPx: number): number {
-  return outerPx - (RULER_GUTTER_PX + GRID_BORDER_PX) * 2
+/**
+ * Room left free around the ruled Pattern at the fit level (CanvasStrip and BeadBoard cards: the board fills the
+ * drawing area with about 36px spare left and right, 18px top and bottom).
+ */
+export const FIT_SPARE_X_PX = 36
+export const FIT_SPARE_Y_PX = 18
+
+/**
+ * The largest zoom at which a Pattern of this drawn extent, with its rulers and board padding, fits an outer size.
+ * The rulers keep their size at every zoom; the board's padding scales with the beads.
+ */
+function fitAlong(outerPx: number, spare: number, extentPx: number): number {
+  return (outerPx - spare * 2 - RULER_GUTTER_PX * 2) / (extentPx + GRID_BORDER_PX * 2)
 }
 
 /**
  * The canvas zoom for whichever Pattern is open: it starts and resets at the level that fits the Pattern in the
- * canvas area, and steps in and out within the usable range. Lives outside PatternCanvas because the fit level
- * depends on the canvas area's own measured width (see availableWidth below), which is App.vue's to measure, not
- * PatternCanvas's — the zoom controls themselves float inside PatternCanvas's box instead (ticket 35), reading
- * PatternCanvas's own zoom prop rather than this composable's zoomPercent below (a duplicate of the same
- * Math.round(zoom * 100), so there's nothing to keep in sync by not sharing it).
+ * drawing area, and steps in and out within the usable range. Lives outside PatternCanvas because the fit level
+ * depends on the drawing area's own measured size, which is App.vue's to measure.
  *
- * availableWidth is the canvas area's live measured width (ticket 27's useElementSize, backed by ResizeObserver)
- * rather than a fixed constant, so the fit level tracks whatever room the real window actually has instead of a
- * guessed box size. Before the first measurement lands (briefly, on mount — see useElementSize) it reads 0;
- * CANVAS_MAX_PX stands in for the unmeasured case so the Pattern doesn't flash in at a degenerate near-zero zoom,
- * and the fit re-runs (see the watch below) as soon as the real size arrives.
+ * availableWidth and availableHeight are the drawing area's live measured size (useElementSize, backed by
+ * ResizeObserver), so the fit tracks whatever room the window has. Before the first measurement lands they read 0;
+ * CANVAS_MAX_PX stands in for an unmeasured width, and an unmeasured height doesn't constrain, so the Pattern doesn't
+ * flash in at a degenerate zoom, and the fit re-runs as soon as the real size arrives.
  *
- * Height deliberately isn't part of this fit: the canvas box has no height cap of its own (see the "never trapped"
- * comment on .app-shell__canvas in App.vue) and grows to whatever the Pattern needs, with the page scrolling past
- * it. Measuring the box's own rendered height and feeding it back into the zoom that produced that height is
- * circular — it would ratchet the zoom down every resize tick until it bottomed out at MIN_ZOOM instead of settling
- * at 100% for an ordinary Pattern (ticket 27 shipped that bug unnoticed since it went untested in a real browser).
+ * Measuring height is safe since ticket 141: the drawing area is a fixed share of a canvas box that fills the screen,
+ * and the Pattern scrolls inside it, so its height doesn't depend on the zoom that it feeds (before, the box grew
+ * with the Pattern, and feeding its height back in ratcheted the zoom down every resize tick: ticket 27).
  */
 export function usePatternZoom(
   currentPattern: () => Pattern | undefined,
   availableWidth: Ref<number>,
+  availableHeight: Ref<number> = ref(0),
 ) {
   function fitZoom(): number {
     const pattern = currentPattern()
@@ -38,15 +43,15 @@ export function usePatternZoom(
       return 1
     }
 
-    // columns/rows/technique stay the Pattern's real (unrotated) geometry — only which on-screen dimension the
-    // available width constrains swaps, since a rotated Pattern's natural height becomes its visual width.
-    const available = fitMaxPx(availableWidth.value || CANVAS_MAX_PX)
-
     // The drawn extent (the Pattern renderer's), not the layout maths': brick stitch's rows are a seam further apart.
+    // columns/rows/technique stay the Pattern's real (unrotated) geometry; a rotated Pattern's height is drawn across.
     const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-    const constrained = pattern.rotated ? extent.height : extent.width
+    const across = pattern.rotated ? extent.height : extent.width
+    const down = pattern.rotated ? extent.width : extent.height
 
-    return clampZoom(Math.floor(Math.min(1, available / constrained) * 100) / 100)
+    const byWidth = fitAlong(availableWidth.value || CANVAS_MAX_PX, FIT_SPARE_X_PX, across)
+    const byHeight = availableHeight.value > 0 ? fitAlong(availableHeight.value, FIT_SPARE_Y_PX, down) : Infinity
+    return clampZoom(Math.floor(Math.min(1, byWidth, byHeight) * 100) / 100)
   }
 
   const zoom = ref(fitZoom())
@@ -70,7 +75,7 @@ export function usePatternZoom(
     }
   })
 
-  watch(availableWidth, () => {
+  watch([availableWidth, availableHeight], () => {
     if (isAtFit.value) {
       zoom.value = fitZoom()
     }

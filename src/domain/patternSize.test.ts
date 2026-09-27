@@ -87,4 +87,16 @@ describe('formatSizeMm', () => {
     expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, { mm: 'мм', cm: 'см' })).toBe('1.5 × 3.0 см')
     expect(formatSizeMm({ widthMm: 5, heightMm: 30 }, { mm: 'мм', cm: 'см' })).toBe('5 × 30 мм')
   })
+
+  it('uses the Russian decimal comma (writing.md, Numbers) when locale is ru', () => {
+    expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, { mm: 'мм', cm: 'см' }, 'ru')).toBe('1,5 × 3,0 см')
+    expect(formatSizeMm({ widthMm: 9.9, heightMm: 30 }, { mm: 'мм', cm: 'см' }, 'ru')).toBe('9,9 × 30 мм')
+    // A whole number still drops its trailing zero, comma included.
+    expect(formatSizeMm({ widthMm: 10, heightMm: 30 }, { mm: 'мм', cm: 'см' }, 'ru')).toBe('1,0 × 3,0 см')
+  })
+
+  it('keeps the English decimal point when locale is left out or set to en', () => {
+    expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, units, 'en')).toBe('1.5 × 3.0 cm')
+    expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, units)).toBe('1.5 × 3.0 cm')
+  })
 })

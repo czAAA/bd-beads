@@ -6,9 +6,9 @@ import type { Technique } from '../../src/domain/grid'
 import { decodePattern } from '../../src/domain/patternEncoding'
 import type { EncodedPattern } from '../../src/domain/patternEncoding'
 import { PALETTE } from '../../src/domain/palette'
-import { gridBox, openApp, setZoom, settle } from '../support/app'
+import { gridBox, openApp, openToolboxRow, setZoom, settle } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 
 /**
  * The pointer tools on the Drawing surface, in a real browser: the hover preview looks as the references have it, and
@@ -60,7 +60,9 @@ test.describe('the hover preview', () => {
           await settle(page)
 
           const box = (await page.getByTestId('pattern-surface').boundingBox())!
-          const expected = readFileSync(`${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`)
+          const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
+          if (UPDATING_REFERENCES) await writeReference(page, reference, box, { x: Math.floor(box.x), y: Math.floor(box.y) })
+          const expected = readFileSync(reference)
           const { width, height } = PNG.sync.read(expected)
           const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
           const actual = await page.screenshot({ clip: { ...origin, width, height } })
@@ -178,6 +180,7 @@ test.describe('the pointer tools', () => {
 
   test('Mirror paints the counterpart as well', async ({ page }) => {
     await openBlank(page)
+    await openToolboxRow(page, 'tool-group-mirror')
     await page.getByTestId('mirror-left-right-increase').click()
 
     const at = await pointOn(page, 'loom', false, 100, 4, 2)
@@ -208,8 +211,9 @@ test.describe('touch', () => {
   test.use({ hasTouch: true })
 
   test('a touch stroke paints the beads it crosses and does not scroll the page', async ({ page }) => {
-    // Tall enough that the page can scroll, so a stroke that scrolled it instead would be seen.
-    const pattern = fixturePattern({ technique: 'loom', rows: 60, blank: true })
+    // The page itself never scrolls (ticket 141), so a stroke that scrolled it instead would be seen at once. 40 rows fit
+    // the drawing area at 100%, the level this test strokes at.
+    const pattern = fixturePattern({ technique: 'loom', rows: 40, blank: true })
     await openApp(page, [pattern])
     await setZoom(page, 100)
     const cdp = await page.context().newCDPSession(page)

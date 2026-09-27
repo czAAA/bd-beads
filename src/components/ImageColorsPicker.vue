@@ -48,28 +48,32 @@ const { t } = useI18n()
 </template>
 
 <style scoped>
-/*
- * Its own wrapping row inside the Colors group rather than flowing into the Palette's grid (the group marks this
- * .tool-group__full-row), so Image colors read as a set of their own next to the twelve fixed swatches instead of
- * running on from them.
- */
+/* The popover's grid (ColorPickers card): seven columns of square swatches, the chosen one ringed like a Palette swatch. */
 .image-colors-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, var(--image-color-size));
+  gap: var(--space-6);
 }
 
 .image-colors-picker__swatch {
-  width: 32px;
-  height: 32px;
+  width: var(--image-color-size);
+  aspect-ratio: 1;
   padding: 0;
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
+  border: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
   cursor: pointer;
 }
 
 .image-colors-picker__swatch--selected {
-  outline: 3px solid var(--color-wedgewood);
-  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 0 1px var(--swatch-edge),
+    0 0 0 2px var(--overlay-fill),
+    0 0 0 4px var(--ring);
+}
+
+.image-colors-picker__swatch:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 3px;
 }
 </style>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
 import { PALETTE } from '../domain/palette'
+import { ru } from '../i18n/ru'
 
 describe('PalettePicker', () => {
   it('renders one swatch per palette color', () => {
@@ -26,6 +27,15 @@ describe('PalettePicker', () => {
 
     expect(selected.attributes('aria-pressed')).toBe('true')
     expect(other.attributes('aria-pressed')).toBe('false')
+  })
+
+  it('names each swatch "Цвет N, {name}" for screen readers (accessibility.md, ticket 165; mounted standalone falls back to Russian)', () => {
+    const wrapper = mount(PalettePicker)
+
+    const swatches = wrapper.findAll('[data-testid="palette-swatch"]')
+    PALETTE.forEach((color, index) => {
+      expect(swatches[index]!.attributes('aria-label')).toBe(`${ru.palette.colorLabel} ${index + 1}, ${ru.colorNames[color.id]}`)
+    })
   })
 
   it("shows each swatch's Shift+key shortcut in its tooltip, in Palette order (ticket 88)", () => {

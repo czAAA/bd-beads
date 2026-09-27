@@ -1,7 +1,9 @@
+import { writeFileSync } from 'node:fs'
+import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Pattern } from '../../src/domain/pattern'
 import { isInFinishedRow } from '../../src/domain/pattern'
-import { DEFAULT_THEME, DIMMED_OPACITY } from '../../src/rendering/beadLook'
+import { LIGHT_THEME } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './patterns'
 
@@ -39,16 +41,18 @@ function rgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
 }
 
-/** The color a bead should show at its centre, from the Pattern alone. A finished row's beads are their grey at 35% over the white behind them. */
+/** How much of its own color a finished bead keeps in the light theme, over the board (BeadBoard card: 28%). */
+const FINISHED_SHARE = 0.28
+
+/** The color a bead should show at its centre, from the Pattern alone. A finished row's beads are their own color at 28% over the board. */
 function expectedCentre(pattern: Pattern, row: number, column: number): [number, number, number] {
   const color = pattern.grid[row]![column]!.color
-  const [r, g, b] = rgb(color ?? DEFAULT_THEME.emptyBead)
+  const own = rgb(color ?? LIGHT_THEME.emptyBead)
   if (!isInFinishedRow(pattern, { row, column })) {
-    return [r, g, b]
+    return own
   }
-  const grey = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  const over = (value: number) => DIMMED_OPACITY * value + (1 - DIMMED_OPACITY) * 255
-  return [over(grey), over(grey), over(grey)]
+  const board = rgb(LIGHT_THEME.background)
+  return own.map((channel, index) => FINISHED_SHARE * channel + (1 - FINISHED_SHARE) * board[index]!) as [number, number, number]
 }
 
 /**
@@ -106,4 +110,17 @@ export function compareToReference(
     look: typeof differing === 'number' ? differing / Math.ceil((width * height) / blockFor(zoom) ** 2) : differing,
     wrong: wrongBeads(actual, pattern, zoom / 100, box, origin, ignore),
   }
+}
+
+/**
+ * `UPDATE_REFERENCES=1 npm run visual` redraws the reference screenshots from the app as it is: only right when the
+ * look is meant to change (ticket 140 redrew them for the design system's board and colors), never to make a failing
+ * run pass. Each scenario's reference is then the surface as drawn, and its comparison passes against itself.
+ */
+export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
+
+/** Writes a new reference: the whole Pattern surface, from `origin`, at its drawn size. */
+export async function writeReference(page: Page, path: string, box: { width: number; height: number }, origin: { x: number; y: number }): Promise<void> {
+  const image = await page.screenshot({ clip: { ...origin, width: Math.ceil(box.width), height: Math.ceil(box.height) } })
+  writeFileSync(path, image)
 }

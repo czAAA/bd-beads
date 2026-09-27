@@ -18,4 +18,10 @@ Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for a
 
 ### Design
 
-All UI work follows `DESIGN.md` at the repo root: tokens, light and dark themes, layout, component templates and bead drawing. The approved reference screenshots are `docs/design/light.png` and `docs/design/dark.png`, and the decision is ADR 0021. Use its role-named tokens; don't hardcode colors, fonts, sizes or shadows. If a UI need isn't covered, extend `DESIGN.md` first (mark it **Derived**), then build it. The logo, favicon and icon SVGs, `tokens.json` and static component previews are in `docs/design/system/` (`DESIGN.md` §10). Take icons and logo files from there; don't redraw them.
+All UI work follows the bd-beads design system (version 14), copied into `docs/design/system/`. `DESIGN.md` at the repo root is its entry point: the rule for which source wins, a map of where each topic lives, and the app-specific notes (the canvas `PatternTheme`, light-only exports, bundled fonts). The design system wins for tokens, component specs, copy and artwork; `DESIGN.md` wins only for its app-specific notes. Use the role-named tokens from `docs/design/system/tokens.json`; don't hardcode colors, fonts, sizes or shadows. If a UI need isn't covered, add it to the design system on claude.ai first, then copy it in (`DESIGN.md` §6); don't edit `docs/design/system/` by hand. Take icons, logo and favicon files from `docs/design/system/`; don't redraw them. The decision to follow the design system is ADR 0021.
+
+## Context hygiene
+- Search with grep/glob before reading; read with offset/limit, not whole large files.
+- Don't re-read files already in context unless they changed.
+- Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
+- Never cat lock files, generated files, minified bundles, or large logs.

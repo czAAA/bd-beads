@@ -13,7 +13,7 @@ test.describe('Convert image framing', () => {
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
     test(technique, async ({ page }) => {
       await openApp(page, [])
-      await page.getByTestId('technique-select').selectOption(technique)
+      await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
       await page.getByTestId('width-input').fill('16')
       await page.getByTestId('height-input').fill('10')
       await page.getByTestId('convert-image-input').setInputFiles({

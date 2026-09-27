@@ -2,8 +2,8 @@ import { cachedSprite, type Sprite } from './sprites'
 
 /**
  * How a single bead looks (ADR 0018): the one part of the Pattern renderer that knows. The renderer decides where a
- * bead goes and how big it is; a `BeadDrawer` decides what is drawn there. Only today's look exists — a flat square or
- * rounded bead with a thin paper-colored rim — but a richer one (glossy, faceted) is a different function handed to
+ * bead goes and how big it is; a `BeadDrawer` decides what is drawn there. Only one look exists — the design system's flat
+ * square or rounded bead on the board — but a richer one (glossy, faceted) is a different function handed to
  * `renderPattern`, not a rewrite of it.
  */
 
@@ -31,35 +31,83 @@ export type DrawingContext = Pick<
 >
 
 /**
- * The colors a Pattern is drawn in. The defaults are the app's own (style.css): the values are copied rather than read
- * from CSS so the renderer draws the same in a canvas, an export and a test, none of which have a stylesheet to ask.
+ * The colors a Pattern is drawn in, one set per theme (DESIGN.md §4.2). The values are copied from the design system's
+ * tokens rather than read from CSS, so the renderer draws the same in a canvas, an export and a test, none of which have
+ * a stylesheet to ask; patternThemes.test.ts keeps them equal to tokens.json.
  */
 export interface PatternTheme {
-  /** Behind everything: what shows through the gaps and what a finished row is dimmed against. */
+  /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
-  /** The rim around every bead. */
-  rim: string
-  /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank canvas. */
+  /** The faint rim round every bead (`bead-rim`), or null for none: dark draws none. */
+  rim: string | null
+  /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
-  /** Brick stitch's seam between rows. */
+  /** Brick stitch's seam between rows (`bead-seam`). */
   seam: string
-  /** The mark that shows where the weaver has got to (the Row progress marker). */
+  /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
-  /** The dark outline of a hover preview that has no color to show. */
+  /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
+  /**
+   * How a bead in a finished row is drawn: its own color, or its grey, at `opacity` over the board. Light fades the
+   * color (28%), so a finished row still reads as the Pattern; dark greys it (45%).
+   */
+  finished: { grey: boolean; opacity: number }
+  /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
+  cursor: string
+  cursorWidth: number
 }
 
-export const DEFAULT_THEME: PatternTheme = {
-  background: '#ffffff', // --color-paper-solid
-  rim: '#f2faef', // --color-paper
-  emptyBead: '#c7cdd5', // --color-ink (#1d3658) 25% over --color-paper-solid
-  seam: '#1d3658', // --color-ink
-  marker: '#447a9c', // --color-wedgewood
-  outline: '#1d3658', // --color-ink
+/** The light theme (BeadBoard card). */
+export const LIGHT_THEME: PatternTheme = {
+  background: '#e8e3df',
+  rim: 'rgba(20,20,19,.12)',
+  emptyBead: '#d8d2cc',
+  seam: '#1f1f1f',
+  marker: '#1f1f1f',
+  outline: '#1f1f1f',
+  finished: { grey: false, opacity: 0.28 },
+  cursor: '#c23604',
+  cursorWidth: 2,
 }
 
-/** How faded a finished row is: the same 0.35 the DOM grid gave it. */
-export const DIMMED_OPACITY = 0.35
+/** The dark theme: no rim, finished rows in grey. */
+export const DARK_THEME: PatternTheme = {
+  background: '#1a1a1a',
+  rim: null,
+  emptyBead: '#2a2a2a',
+  seam: '#888888',
+  marker: '#faff69',
+  outline: '#ffffff',
+  finished: { grey: true, opacity: 0.45 },
+  cursor: '#faff69',
+  cursorWidth: 2,
+}
+
+/** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
+export const CONTRAST_THEME: PatternTheme = {
+  background: '#e8e3df',
+  rim: 'rgba(0,0,0,.35)',
+  emptyBead: '#b8b0a8',
+  seam: '#000000',
+  marker: '#000000',
+  outline: '#000000',
+  finished: { grey: false, opacity: 0.28 },
+  cursor: '#000000',
+  cursorWidth: 3,
+}
+
+/** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */
+export const PRINT_THEME: PatternTheme = { ...LIGHT_THEME, background: '#f7f3ec' }
+
+/** The theme a renderer uses when it isn't told one. */
+export const DEFAULT_THEME = LIGHT_THEME
+
+export const PATTERN_THEMES: Readonly<Record<'light' | 'dark' | 'contrast', PatternTheme>> = {
+  light: LIGHT_THEME,
+  dark: DARK_THEME,
+  contrast: CONTRAST_THEME,
+}
 
 /** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Pattern's own px at zoom 1: the renderer has already set the transform for zoom and rotation. */
 export interface BeadShape {
@@ -85,8 +133,11 @@ export interface BeadShape {
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
 
-/** Width of the rim around each bead, in the Pattern's own px. */
-export const RIM_PX = 1
+/** The gap between two beads is twice this: each bead stands this far in from its cell on every side, in the Pattern's own px. */
+export const GAP_PX = 1
+
+/** Width of the faint rim inside each bead's edge, in the Pattern's own px. */
+export const RIM_PX = 0.75
 
 /**
  * A color's grey, worked out directly. A finished row is drawn as its greyscale at reduced opacity, and canvas filters
@@ -166,47 +217,70 @@ export function fadeOver(color: string, backdrop: string, opacity: number): stri
   return `rgb(${r}, ${g}, ${b})`
 }
 
-/** The bead drawn straight onto a context, every shape a fill. */
-function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
-  const fill = color ?? theme.emptyBead
-  const innerSize = size - RIM_PX * 2
-  const innerRadius = Math.max(0, cornerRadius - RIM_PX)
+/**
+ * Blends worked out so far. Every square bead on screen asks for its rim over its own color, and a Pattern has only a
+ * handful of colors, so parsing them again for each of thousands of beads is what a scroll or a framing drag would pay.
+ */
+const blends = new Map<string, string>()
 
-  if (!dimmed || backdrop) {
-    // A faded bead over a known backdrop is the same two shapes in the colors that fade comes to.
-    context.fillStyle = dimmed ? fadeOver(greyscale(theme.rim), backdrop!, DIMMED_OPACITY) : theme.rim
-    fillShape(context, x, y, size, cornerRadius)
-    context.fillStyle = dimmed ? fadeOver(greyscale(fill), backdrop!, DIMMED_OPACITY) : fill
-    fillShape(context, x + RIM_PX, y + RIM_PX, innerSize, innerRadius)
+/** A translucent rgba(r,g,b,a) over an opaque color, as one opaque color; anything else is returned as it is. */
+export function blendOver(color: string, backdrop: string): string {
+  const key = `${color}|${backdrop}`
+  let blended = blends.get(key)
+  if (blended === undefined) {
+    blended = blendUncached(color, backdrop)
+    if (blends.size > 4096) blends.clear()
+    blends.set(key, blended)
+  }
+  return blended
+}
+
+function blendUncached(color: string, backdrop: string): string {
+  const rgba = /^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/.exec(color.trim())
+  if (!rgba) {
+    return color
+  }
+  const hex = `#${[rgba[1], rgba[2], rgba[3]].map((channel) => Number(channel).toString(16).padStart(2, '0')).join('')}`
+  return fadeOver(hex, backdrop, Number(rgba[4]))
+}
+
+/** A finished row's bead: its color, or its grey, faded toward the board (or the backdrop it is drawn over). */
+export function finishedColor(color: string, theme: PatternTheme, backdrop = theme.background): string {
+  return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
+}
+
+/**
+ * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and in light a
+ * faint rim just inside its edge. A finished bead is the same shapes in the colors its fade comes to, so it covers
+ * whatever is under it (a finished bead drawn on the overlay covers the bead on the cells layer).
+ */
+function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
+  const own = color ?? theme.emptyBead
+  const fill = dimmed ? finishedColor(own, theme, backdrop) : own
+  const outerSize = size - GAP_PX * 2
+  const outerRadius = Math.max(0, cornerRadius - GAP_PX)
+
+  if (!theme.rim) {
+    context.fillStyle = fill
+    fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
     return
   }
-
-  context.save()
-  context.globalAlpha = DIMMED_OPACITY
-  context.fillStyle = greyscale(fill)
-  context.beginPath()
-  roundedRectPath(context, x + RIM_PX, y + RIM_PX, innerSize, innerSize, innerRadius)
-  context.fill()
-
-  context.fillStyle = greyscale(theme.rim)
-  context.beginPath()
-  roundedRectPath(context, x, y, size, size, cornerRadius)
-  roundedRectPath(context, x + RIM_PX, y + RIM_PX, innerSize, innerSize, innerRadius)
-  context.fill('evenodd')
-  context.restore()
+  context.fillStyle = blendOver(theme.rim, fill)
+  fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
+  context.fillStyle = fill
+  fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerSize - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))
 }
 
 function spriteFor(bead: BeadShape): Sprite | undefined {
   const pixels = Math.max(1, Math.round(bead.size * bead.deviceScale))
   const { theme } = bead
-  const key = ['bead', pixels, bead.cornerRadius, bead.dimmed ? 'd' : 'p', bead.backdrop ?? '', bead.color ?? '', theme.rim, theme.emptyBead].join('|')
+  const key = ['bead', pixels, bead.cornerRadius, bead.dimmed ? 'd' : 'p', bead.backdrop ?? '', bead.color ?? '', theme.background, theme.rim ?? '', theme.emptyBead].join('|')
   return cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }))
 }
 
 /**
- * Today's bead: a square (or, for peyote, rounded) bead in its color inside a thin rim in the paper color, a finished
- * row's beads in grey at reduced opacity (their rim and their bead as pieces that don't overlap, so the faded rim
- * doesn't show the bead through it).
+ * The design system's bead (BeadBoard card): a square (or, for peyote, rounded) bead in its color on the board, a gap
+ * from its neighbours, with a faint rim in light; a finished row's beads faded toward the board.
  *
  * A Pattern of thousands of beads is redrawn on every move of a drag in the Convert image preview, and on every scroll
  * of the editor, so how cheaply a bead is drawn is what keeps those smooth. A square bead is two rectangles, the

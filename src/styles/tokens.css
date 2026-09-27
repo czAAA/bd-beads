@@ -1,0 +1,298 @@
+/*
+ * Design system v13 tokens (docs/design/system/tokens.json), with the few values that aren't plain tokens from
+ * components/bundle.css. Light is the default; data-theme="dark" or "contrast" on <html> selects the others
+ * (src/theme). Sizes are in rem so the browser's text size scales the chrome. src/styles/tokens.test.ts keeps this
+ * file equal to tokens.json: refresh both together (DESIGN.md §6).
+ */
+
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+  --canvas: #ffffff;
+  --surface: #fafafa;
+  --panel: #f5f1e8;
+  --panel-line: #e8e3df;
+  --panel-rule: #e8e3df;
+  --elevated: #ffffff;
+  --pill: #f5f1e8;
+  --ink: #1f1f1f;
+  --body: #4a4a4a;
+  --muted: #6a6a6a;
+  --subtle: #767676;
+  --faint: #a8a8a8;
+  --line: #e5e5e5;
+  --line-soft: #ededed;
+  --line-strong: #c7c7c7;
+  --field-line: #858585;
+  --accent: #fa520f;
+  --accent-hover: #ff6a2b;
+  --accent-strong: #c23604;
+  --focus-ring: #c23604;
+  --accent-disabled-bg: #e5e5e5;
+  --accent-disabled-fg: #a8a8a8;
+  --on-accent: #1f1f1f;
+  --ring: #1f1f1f;
+  --danger: #c23604;
+  --on-danger: #ffffff;
+  --warning: #ffa110;
+  --swatch-edge: rgba(0,0,0,.2);
+  --button: #ffffff;
+  --button-line: #c7c7c7;
+  --box: #fafafa;
+  --box-line: #e5e5e5;
+  --box-muted: #6a6a6a;
+  --box-button: #00000000;
+  --box-button-line: #c7c7c7;
+  --switch-off: #858585;
+  --board: #e8e3df;
+  --ruler: #6a6a6a;
+  --marker: #1f1f1f;
+  --track: #e5e5e5;
+  --word: #f1eadd;
+  --print-board: #f7f3ec;
+  --curve: rgba(250,82,15,.32);
+  --bead-rim: rgba(20,20,19,.12);
+  --bead-empty: #d8d2cc;
+  --bead-seam: #1f1f1f;
+  --bead-outline: #1f1f1f;
+  --elevation-1: 0 4px 12px rgba(0,0,0,.04);
+  --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08);
+  --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12);
+  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
+  --track-fill: linear-gradient(90deg, #fa520f, #ffa110);
+  --scrim: rgba(0, 0, 0, .32);
+  --overlay-fill: var(--canvas);
+  --overlay-line: var(--panel-line);
+  --overlay-hover: var(--surface);
+  --secondary-hover: var(--surface);
+  --in-box-line: var(--line-strong);
+  --hover-fill: var(--surface);
+  --press-fill: var(--line);
+  --focus-width: 2px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0a0a0a;
+  --surface: #121212;
+  --panel: #1a1a1a;
+  --panel-line: #1a1a1a;
+  --panel-rule: #2a2a2a;
+  --elevated: #242424;
+  --pill: #1a1a1a;
+  --ink: #ffffff;
+  --body: #cccccc;
+  --muted: #949494;
+  --subtle: #888888;
+  --faint: #5a5a5a;
+  --line: #2a2a2a;
+  --line-soft: #2a2a2a;
+  --line-strong: #3a3a3a;
+  --field-line: #7a7a7a;
+  --accent: #faff69;
+  --accent-hover: #e6eb52;
+  --accent-strong: #faff69;
+  --focus-ring: #faff69;
+  --accent-disabled-bg: #3a3a1f;
+  --accent-disabled-fg: #888888;
+  --on-accent: #0a0a0a;
+  --ring: #faff69;
+  --danger: #ef4444;
+  --on-danger: #0a0a0a;
+  --warning: #f59e0b;
+  --swatch-edge: #3a3a3a;
+  --button: #1a1a1a;
+  --button-line: #1a1a1a;
+  --box: #1a1a1a;
+  --box-line: #1a1a1a;
+  --box-muted: #949494;
+  --box-button: #242424;
+  --box-button-line: #242424;
+  --switch-off: #7a7a7a;
+  --board: #1a1a1a;
+  --ruler: #888888;
+  --marker: #faff69;
+  --track: #2a2a2a;
+  --word: #202020;
+  --print-board: #f7f3ec;
+  --curve: rgba(250,255,105,.14);
+  --bead-rim: #1a1a1a;
+  --bead-empty: #2a2a2a;
+  --bead-seam: #888888;
+  --bead-outline: #ffffff;
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
+  --track-fill: #faff69;
+  --scrim: rgba(0, 0, 0, .6);
+  --overlay-fill: var(--panel);
+  --overlay-line: var(--line-strong);
+  --overlay-hover: var(--elevated);
+  --secondary-hover: var(--elevated);
+  --in-box-line: var(--elevated);
+  --hover-fill: var(--elevated);
+  --press-fill: var(--line-strong);
+  --focus-width: 2px;
+}
+
+:root[data-theme="contrast"] {
+  color-scheme: light;
+  --canvas: #ffffff;
+  --surface: #f0f0f0;
+  --panel: #ffffff;
+  --panel-line: #595959;
+  --panel-rule: #595959;
+  --elevated: #ffffff;
+  --pill: #ffffff;
+  --ink: #000000;
+  --body: #1f1f1f;
+  --muted: #3d3d3d;
+  --subtle: #3d3d3d;
+  --faint: #6a6a6a;
+  --line: #595959;
+  --line-soft: #595959;
+  --line-strong: #000000;
+  --field-line: #595959;
+  --accent: #a82c00;
+  --accent-hover: #8a2400;
+  --accent-strong: #a82c00;
+  --focus-ring: #000000;
+  --accent-disabled-bg: #e5e5e5;
+  --accent-disabled-fg: #595959;
+  --on-accent: #ffffff;
+  --ring: #000000;
+  --danger: #a82c00;
+  --on-danger: #ffffff;
+  --warning: #9a5b00;
+  --swatch-edge: #595959;
+  --button: #ffffff;
+  --button-line: #595959;
+  --box: #ffffff;
+  --box-line: #595959;
+  --box-muted: #3d3d3d;
+  --box-button: #ffffff;
+  --box-button-line: #595959;
+  --switch-off: #595959;
+  --board: #e8e3df;
+  --ruler: #3d3d3d;
+  --marker: #000000;
+  --track: #d0d0d0;
+  --word: #f5f5f5;
+  --print-board: #f7f3ec;
+  --curve: #00000000;
+  --bead-rim: rgba(0,0,0,.35);
+  --bead-empty: #b8b0a8;
+  --bead-seam: #000000;
+  --bead-outline: #000000;
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
+  --track-fill: var(--accent);
+  --scrim: rgba(0, 0, 0, .6);
+  --overlay-fill: var(--canvas);
+  --overlay-line: var(--line-strong);
+  --overlay-hover: var(--surface);
+  --secondary-hover: var(--surface);
+  --in-box-line: var(--line-strong);
+  --hover-fill: #f0f0f0;
+  --press-fill: #d4d4d4;
+  --focus-width: 3px;
+}
+
+:root {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, serif;
+  /* Type roles: font shorthand, plus letter-spacing where the role has one */
+  --type-brand: 700 1.125rem/1 var(--font-sans);
+  --tracking-brand: -0.3px;
+  --type-title: 600 1rem/1.5rem var(--font-sans);
+  --type-control: 500 0.875rem/1.25rem var(--font-sans);
+  --type-body: 400 0.875rem/1.25rem var(--font-sans);
+  --type-tab: 500 0.8125rem/1.125rem var(--font-sans);
+  --type-pill: 500 0.8125rem/1.125rem var(--font-sans);
+  --type-small: 500 0.75rem/0.9375rem var(--font-sans);
+  --type-label: 400 0.8125rem/1.125rem var(--font-mono);
+  --type-meta: 400 0.8125rem/1.125rem var(--font-mono);
+  --type-meta-small: 400 0.75rem/1rem var(--font-mono);
+  --type-meta-tiny: 400 0.6875rem/0.9375rem var(--font-mono);
+  --type-ruler: 400 0.6875rem var(--font-mono);
+  --type-word: italic 400 15rem/1 var(--font-serif);
+  --tracking-word: -4px;
+  --space-2: 0.125rem;
+  --space-4: 0.25rem;
+  --space-6: 0.375rem;
+  --space-8: 0.5rem;
+  --space-10: 0.625rem;
+  --space-12: 0.75rem;
+  --space-14: 0.875rem;
+  --space-16: 1rem;
+  --space-20: 1.25rem;
+  --space-24: 1.5rem;
+  --space-32: 2rem;
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-board: 2rem;
+  --radius-full: 9999px;
+  /* Layout. Media queries can't read custom properties: breakpoints are mirrored as literal px there. */
+  --bp-tablet: 744px;
+  --bp-tablet-lg: 1024px;
+  --bp-laptop: 1280px;
+  --bp-desktop: 1920px;
+  --bp-phone-landscape: 499px;
+  --column-width-tablet-lg: 18.75rem;
+  --column-width: 20.375rem;
+  --column-width-desktop: 22.5rem;
+  --drawer-width: 20.375rem;
+  --header-height: 4rem;
+  --header-height-phone: 3.25rem;
+  --dock-height: 4rem;
+  --progress-height-phone: 3.5rem;
+  --touch-target: 2.75rem;
+  --field-height: 2.5rem;
+  --field-height-phone: 3rem;
+  --loading-delay: 300ms;
+  --z-canvas-overlay: 10;
+  --z-chrome: 20;
+  --z-context-bar: 30;
+  --z-drawer: 40;
+  --z-sheet: 50;
+  --z-popover: 60;
+  --z-toast: 70;
+  --z-modal: 80;
+  --z-tooltip: 90;
+  /* Motion (interaction-and-motion.md) */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 280ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --print-page-width: 210mm;
+  --print-page-height: 297mm;
+  --print-dpi: 150;
+  --print-margin: 10mm;
+  --print-header: 16mm;
+  --print-footer: 8mm;
+  --print-name-band: 12mm;
+  --print-bead-base: 4.6mm;
+  --print-bead-max: 7mm;
+  --print-legend-width: 48mm;
+  --print-line-width: 0.5mm;
+  --print-line-opacity: 0.38;
+  --print-mark-opacity: 0.07;
+  --print-name-opacity: 0.14;
+  --print-png-bead: 30px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-base: 120ms;
+    --duration-slow: 120ms;
+  }
+}

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
-import { GRID_BORDER_PX, type GridPosition, type PreviewCell } from '../domain/grid'
+import { BOARD_RADIUS_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell } from '../domain/grid'
 import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
 import type { Pattern } from '../domain/pattern'
 import { beadAt } from '../rendering/hitTest'
 import { renderOverlay } from '../rendering/overlayRenderer'
+import { PATTERN_THEMES, type PatternTheme } from '../rendering/beadLook'
 import { displayedExtentPx, renderPattern } from '../rendering/patternRenderer'
 import { contains, drawingWindow, type Rect } from '../rendering/surfaceWindow'
+import { useResolvedTheme } from '../theme/useResolvedTheme'
 
 /**
  * A Pattern drawn by the Pattern renderer instead of one DOM element per bead (ADR 0018): the Drawing surface of
@@ -37,6 +39,10 @@ const props = defineProps<{
   mirrorAxisCounts?: MirrorAxisCounts
   /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded. */
   dimmedCells?: GridPosition[]
+  /** The keyboard's bead cursor (ticket 159), drawn only while the surface has keyboard focus. */
+  cursor?: GridPosition
+  /** The Pattern's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
+  label?: string
 }>()
 
 const emit = defineEmits<{
@@ -46,7 +52,30 @@ const emit = defineEmits<{
   'cell-secondary-move': [row: number, column: number]
   'cell-hover': [row: number, column: number]
   'hover-end': []
+  /** A key pressed while the Pattern has focus (ticket 159): App.vue moves the bead cursor and uses the tool. */
+  'cursor-key': [event: KeyboardEvent]
+  /** Keyboard focus arrived (true) or left (false): the cursor shows only after focus by keyboard. */
+  'keyboard-focus': [focused: boolean]
 }>()
+
+/**
+ * Set by a press on the surface: a press focuses it too, but the bead cursor shows only for focus that didn't come from
+ * a pointer (Tab, or Skip to Pattern).
+ */
+let pressed = false
+
+function onPress() {
+  pressed = true
+}
+
+function onFocus() {
+  if (!pressed) emit('keyboard-focus', true)
+}
+
+function onBlur() {
+  pressed = false
+  emit('keyboard-focus', false)
+}
 
 /** How much beyond the screen the canvases reach, so that a little scrolling does not need a redraw. */
 const MARGIN_PX = 160
@@ -64,7 +93,7 @@ const displayed = computed(() =>
   displayedExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows, props.zoom, props.pattern.rotated),
 )
 
-/** The outline is 3 px in the Pattern's own px, so it is 3 px × the zoom on screen: a fraction at most zooms. */
+/** The board's padding round the beads is in the Pattern's own px, so it scales with the zoom like the beads do. */
 const border = computed(() => GRID_BORDER_PX * props.zoom)
 
 /** Where the beads start inside the clip, which begins on a whole pixel: the part of the border past it. */
@@ -76,23 +105,31 @@ const rootStyle = computed(() => ({
 }))
 
 /**
- * The outline and the paper. Drawn under the same kind of transform the DOM grid was, because a border of 0.75 px is
- * laid out as 1 px but painted as 0.75 px when scaled, and this must look like the box it replaces at every zoom.
+ * The board. Drawn under the same kind of transform the DOM grid was, because a border of 0.75 px is laid out as 1 px
+ * but painted as 0.75 px when scaled, and this must line up with the canvases at every zoom.
  */
 const frameStyle = computed(() => ({
+  '--board-padding': GRID_BORDER_PX,
+  '--board-radius': BOARD_RADIUS_PX,
   width: `${displayed.value.width / props.zoom}px`,
   height: `${displayed.value.height / props.zoom}px`,
   transform: `scale(${props.zoom})`,
 }))
 
-/** Holds the canvases and cuts them to the outline's inner corners. Starts on a whole pixel so the canvases can. */
+/**
+ * Holds the canvases. Square: the board's corners are rounded wider than its padding, but the beads' own rectangle
+ * still sits inside them. Starts on a whole pixel so the canvases can.
+ */
 const clipStyle = computed(() => ({
   left: `${Math.floor(border.value)}px`,
   top: `${Math.floor(border.value)}px`,
   width: `${displayed.value.width + shift.value.x}px`,
   height: `${displayed.value.height + shift.value.y}px`,
-  borderRadius: `calc((var(--radius-md) - ${GRID_BORDER_PX}px) * ${props.zoom})`,
 }))
+
+/** The colors the beads are drawn in follow the app's theme; a change redraws both layers, at the same size and scroll. */
+const resolvedTheme = useResolvedTheme()
+const theme = computed(() => PATTERN_THEMES[resolvedTheme.value])
 
 const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
@@ -190,7 +227,7 @@ function schedule(): void {
 }
 
 /** What the cells were last drawn from, to draw only what an edit changed. */
-let drawn: { pattern: Pattern; zoom: number; held: Rect; pixelRatio: number } | undefined
+let drawn: { pattern: Pattern; zoom: number; held: Rect; pixelRatio: number; theme: PatternTheme } | undefined
 
 /** Whether two Patterns are laid out and dimmed alike, so that what differs between them is only which color each bead holds. */
 function sameLayout(a: Pattern, b: Pattern): boolean {
@@ -282,18 +319,18 @@ function drawCells(): void {
   }
 
   const before = drawn
-  drawn = { pattern, zoom: props.zoom, held: window, pixelRatio }
+  drawn = { pattern, zoom: props.zoom, held: window, pixelRatio, theme: theme.value }
   const bands =
-    !resized && before && before.held === window && before.zoom === props.zoom && before.pixelRatio === pixelRatio && sameLayout(before.pattern, pattern)
+    !resized && before && before.held === window && before.zoom === props.zoom && before.pixelRatio === pixelRatio && before.theme === theme.value && sameLayout(before.pattern, pattern)
       ? changedBands(before.pattern, pattern)
       : undefined
 
   if (bands === undefined) {
-    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio })
+    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio, theme: theme.value })
     return
   }
   for (const rows of bands) {
-    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio, rows })
+    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
   }
 }
 
@@ -315,6 +352,8 @@ function drawOverlay(): void {
       region,
       zoom: props.zoom,
       pixelRatio,
+      theme: theme.value,
+      cursor: props.cursor,
       preview: props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
@@ -338,7 +377,7 @@ watch(
 
 // The Pattern is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([held, () => props.pattern, () => props.zoom], drawCells, { flush: 'post' })
+watch([held, () => props.pattern, () => props.zoom, theme], drawCells, { flush: 'post' })
 watch(
   [
     held,
@@ -349,6 +388,8 @@ watch(
     () => props.selection,
     () => props.mirrorAxisCounts,
     () => props.dimmedCells,
+    () => props.cursor,
+    theme,
   ],
   drawOverlay,
   { flush: 'post' },
@@ -453,7 +494,15 @@ defineExpose({ update })
     :data-rows="pattern.rows"
     :data-rotated="pattern.rotated"
     :data-zoom="zoom"
-    :style="[rootStyle, { cursor: overBead ? 'pointer' : undefined }]"
+    :class="{ 'pattern-surface--over-bead': overBead }"
+    :style="rootStyle"
+    tabindex="0"
+    role="img"
+    :aria-label="label"
+    @focus="onFocus"
+    @blur="onBlur"
+    @keydown="emit('cursor-key', $event)"
+    @pointerdown.capture="onPress"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerleave="onPointerLeave"
@@ -479,6 +528,11 @@ defineExpose({ update })
 </template>
 
 <style scoped>
+.pattern-surface:focus {
+  /* The bead cursor on the overlay is the focus indicator (BeadCursor card). */
+  outline: none;
+}
+
 .pattern-surface {
   position: relative;
   /*
@@ -489,15 +543,23 @@ defineExpose({ update })
   touch-action: none;
 }
 
-/* The outline and the paper behind the beads, at the surface's size. */
+/* A crosshair over the board's beads (BeadHover card). */
+.pattern-surface--over-bead {
+  cursor: crosshair;
+}
+
+/*
+ * The board the beads sit on (BeadBoard card): `board`, rounded, its padding the frame's border in the same color. Its
+ * sizes are in the Pattern's own px, scaled with it by frameStyle's transform.
+ */
 .pattern-surface__frame {
   position: absolute;
   top: 0;
   left: 0;
   box-sizing: content-box;
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
-  background: var(--color-paper-solid);
+  border: calc(var(--board-padding) * 1px) solid var(--board);
+  border-radius: calc(var(--board-radius) * 1px);
+  background: var(--board);
   transform-origin: top left;
 }
 

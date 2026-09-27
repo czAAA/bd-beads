@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, useId } from 'vue'
+import { useId } from 'vue'
+import AppButton from './AppButton.vue'
+import AppModal from './AppModal.vue'
 
 /**
- * A reusable in-app confirmation dialog, styled like the rest of the app rather than the browser's own `confirm()`
- * (ticket 42's Delete all is the first caller). The parent owns whether it's mounted at all — usually via `v-if` —
- * and decides what confirming/cancelling means; this component only asks the question and reports the answer.
+ * A confirmation (ticket 76; ConfirmDialogs card): the Modal template asking one question. The title is the question,
+ * Cancel sits on the left and takes focus first, and the confirm button repeats the title (`writing.md`). A destructive
+ * confirm is danger-filled (Delete all), any other is primary (Replace bead, Switch). The parent owns whether it's
+ * mounted at all — usually via `v-if` — and decides what confirming/cancelling means. Cancel and the side action
+ * take the in-box look, an `elevated` fill with a `line-strong` edge, so they stand out on the dialog in every theme.
  */
 withDefaults(
   defineProps<{
@@ -18,7 +22,7 @@ withDefaults(
     confirmDanger?: boolean
     /** A third, side action shown before Cancel (Import's "Save current", ticket 154); absent means there is none. */
     extraLabel?: string
-    /** Shows the message as a problem, in the alarm color and announced at once. */
+    /** Shows the message as a problem, in the danger color and announced at once. */
     messageError?: boolean
   }>(),
   { confirmDisabled: false, confirmDanger: true, extraLabel: undefined, messageError: false },
@@ -30,110 +34,59 @@ const emit = defineEmits<{
   extra: []
 }>()
 
-const titleId = useId()
 const messageId = useId()
-const cancelButtonEl = ref<HTMLButtonElement | null>(null)
-
-function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    emit('cancel')
-  }
-}
-
-// Bound to the window rather than the dialog itself: like the app's other Escape handling (see App.vue), nothing
-// here takes keyboard focus reliably enough to rely on a local keydown handler.
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-  cancelButtonEl.value?.focus()
-})
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 </script>
 
 <template>
-  <div class="confirm-modal" data-testid="confirm-modal-backdrop" @click.self="emit('cancel')">
-    <div
-      class="confirm-modal__dialog"
-      data-testid="confirm-modal-dialog"
-      role="alertdialog"
-      aria-modal="true"
-      :aria-labelledby="titleId"
-      :aria-describedby="messageId"
+  <AppModal
+    :title="title"
+    role="alertdialog"
+    :describedby="messageId"
+    data-testid="confirm-modal-dialog"
+    @cancel="emit('cancel')"
+  >
+    <!-- Anything the question needs beyond a message: Change size's inputs, an error line under an import's. -->
+    <slot />
+    <p
+      :id="messageId"
+      class="confirm-modal__message"
+      :class="{ 'confirm-modal__message--error': messageError }"
+      :role="messageError ? 'alert' : undefined"
+      data-testid="confirm-modal-message"
     >
-      <h2 :id="titleId" class="confirm-modal__title">{{ title }}</h2>
-      <!-- Anything the question needs beyond a message: Change size's inputs, an error line under an import's. -->
-      <slot />
-      <p
-        :id="messageId"
-        class="confirm-modal__message"
-        :class="{ 'confirm-modal__message--error': messageError }"
-        :role="messageError ? 'alert' : undefined"
-        data-testid="confirm-modal-message"
+      {{ message }}
+    </p>
+    <template #actions>
+      <AppButton v-if="extraLabel" variant="in-box" class="confirm-modal__extra" data-testid="confirm-modal-extra" @click="emit('extra')">
+        {{ extraLabel }}
+      </AppButton>
+      <AppButton variant="in-box" data-testid="confirm-modal-cancel" data-autofocus @click="emit('cancel')">
+        {{ cancelLabel }}
+      </AppButton>
+      <AppButton
+        :variant="confirmDanger ? 'danger' : 'primary'"
+        data-testid="confirm-modal-confirm"
+        :disabled="confirmDisabled"
+        @click="emit('confirm')"
       >
-        {{ message }}
-      </p>
-      <div class="confirm-modal__actions">
-        <button v-if="extraLabel" type="button" data-testid="confirm-modal-extra" @click="emit('extra')">
-          {{ extraLabel }}
-        </button>
-        <button
-          ref="cancelButtonEl"
-          type="button"
-          data-testid="confirm-modal-cancel"
-          @click="emit('cancel')"
-        >
-          {{ cancelLabel }}
-        </button>
-        <button
-          type="button"
-          :class="{ 'button--danger': confirmDanger }"
-          data-testid="confirm-modal-confirm"
-          :disabled="confirmDisabled"
-          @click="emit('confirm')"
-        >
-          {{ confirmLabel }}
-        </button>
-      </div>
-    </div>
-  </div>
+        {{ confirmLabel }}
+      </AppButton>
+    </template>
+  </AppModal>
 </template>
 
 <style scoped>
-.confirm-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
-}
-
-.confirm-modal__dialog {
-  width: min(380px, 100%);
-  padding: 24px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-
-.confirm-modal__title {
-  margin: 0 0 12px;
-}
-
 .confirm-modal__message {
-  margin: 0 0 24px;
+  font: var(--type-body);
+  color: var(--body);
 }
 
 .confirm-modal__message--error {
-  color: var(--color-amaranth);
-  font-weight: var(--font-weight-bold);
+  color: var(--danger);
 }
 
-.confirm-modal__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
+/* A side action sits apart from the pair it doesn't belong to. */
+.confirm-modal__extra {
+  margin-right: auto;
 }
 </style>

@@ -17,6 +17,7 @@ bd-beads is a bead-pattern editor. The Pattern is the largest thing on screen; e
 - Group thousands with a no-break space: "1 200". Weights in grams, rounded up to 0.1: "≈ 24 g". Russian uses a decimal comma ("9,6 см"). The full rules, the glossary and the Russian strings are in the Writing section.
 - Row progress says **"Row not done"** and **"Row done"**, never "Previous row" / "Next row".
 - No emoji.
+- No em dashes.
 
 ## Color
 
@@ -97,7 +98,7 @@ In `index.html`:
 
 ## Iconography
 
-- **Icons v2** (the Icons group, 44 icons) replaces every icon the app draws. Rules: 24-unit grid, keyline 3.5–20.5, stroke-width 1.75, round caps and joins, no fill, `stroke: currentColor`. Containers use 2.5 corners (1.75 for small modules). Draw as few strokes as the meaning needs.
+- **Icons** (the Icons group, 44 icons) replaces every icon the app draws. Rules: 24-unit grid, keyline 3.5–20.5, stroke-width 1.75, round caps and joins, no fill, `stroke: currentColor`. Containers use 2.5 corners (1.75 for small modules). Draw as few strokes as the meaning needs.
 - **The signature is the bead.** Wherever an icon has a point, a drop, a ray or a module, draw it as a round bead: a zero-length stroke (`M x y h.01`) at stroke-width 2.6, which round caps turn into a dot. Paint is a pin placing a bead. Fill's bucket drops one. Select is a frame strung from beads (`stroke-dasharray: 0 4`, width 2.4), and so is the mirror axis. The sun's rays, the QR modules and the Pattern's 3×3 grid are beads too. The dot on info and warning is a bead. Use the bead where it carries meaning, not on every icon.
 - Sizes: 15 in buttons, 16 in links, disclosure rows, zoom and messages, 17 in the Edit row, 18 in tool tabs, 14 in the expand button and saved check, 22 for the brand mark.
 - Color: icons take their text color (`ink`, `muted` for chevrons, `accent` on the active tool, `on-accent` inside primary buttons, `danger` on Delete all, the message's tone color in messages, `faint` when disabled). As files they carry a fixed `ink` (#1f1f1f) stroke, because `<img>` can't inherit color. Inline them in UI.

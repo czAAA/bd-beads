@@ -114,7 +114,7 @@ describe('ConvertImageFrame', () => {
     // Row 1 is half a bead across and tucked up under row 0, as in the Pattern itself.
     expect(beads.filter(({ y }) => y === 0).map(({ x }) => x)).toEqual([0, 20, 40, 60])
     expect(beads.filter(({ y }) => y === 15).map(({ x }) => x)).toEqual([10, 30, 50, 70])
-    expect(beads.every(({ cornerRadius }) => cornerRadius === 6)).toBe(true)
+    expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
   })
 
   it('draws brick stitch a seam apart, where the frame outline follows the rows it draws', () => {

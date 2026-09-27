@@ -1,11 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Pattern } from '../domain/pattern'
 import { summarizePattern } from '../domain/pattern'
 import { downloadFile } from '../domain/fileDownload'
 import { libraryFileName, patternFileName, serializeLibrary, serializePattern } from '../domain/patternFile'
 import { useI18n } from '../i18n/useI18n'
+import AppButton from './AppButton.vue'
+import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
+import ExpandablePanel from './ExpandablePanel.vue'
+import PatternThumbnail from './PatternThumbnail.vue'
 
+/**
+ * Saved Patterns (ticket 147; SavedPatterns and SavedPatternsExpanded cards): the five most recently saved Patterns as
+ * round thumbnails, with name and size under each; expanded, every Pattern and a footer with Export Pattern and Export
+ * all. The open Pattern is ringed in the accent. Remove is a small × at a thumbnail's top-right, shown on hover or
+ * keyboard focus. `patterns` comes in the library's own order, most recently saved first (ticket 145).
+ */
 const props = defineProps<{
   patterns: Pattern[]
   activePatternId?: string
@@ -18,10 +29,25 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** How many thumbnails the collapsed box holds: one row of five. */
+const RECENT = 5
+
+const expanded = ref(false)
+const shown = computed(() => (expanded.value ? props.patterns : props.patterns.slice(0, RECENT)))
+
+const meta = computed(() =>
+  t.value.patterns.shownOf.replace('{shown}', String(shown.value.length)).replace('{total}', String(props.patterns.length)),
+)
+
 /** The Pattern open right now, if any — the one "Export Pattern" writes out. */
 const activePattern = computed(() => props.patterns.find((pattern) => pattern.id === props.activePatternId))
 
-/** Export pattern (ticket 118, moved here from the retired Export and import box): the open Pattern as a Pattern file. */
+/** A thumbnail's size line, as the Pattern shows on screen. */
+function sizeOf(pattern: Pattern): string {
+  return pattern.rotated ? `${pattern.rows}×${pattern.columns}` : `${pattern.columns}×${pattern.rows}`
+}
+
+/** Export pattern (ticket 118): the open Pattern as a Pattern file. */
 function onExportPattern(): void {
   if (activePattern.value) {
     downloadFile(patternFileName(activePattern.value), serializePattern(activePattern.value))
@@ -35,107 +61,209 @@ function onExportLibrary(): void {
 </script>
 
 <template>
-  <section class="pattern-list" data-testid="pattern-list">
-    <h2>{{ t.patterns.heading }}</h2>
-    <p v-if="patterns.length === 0" data-testid="pattern-list-empty">
+  <ExpandablePanel
+    v-model:expanded="expanded"
+    class="pattern-list"
+    :title="t.patterns.heading"
+    :expandable="patterns.length > 0"
+    :empty="patterns.length === 0"
+    collapsed-height="var(--saved-body-height)"
+    data-testid="pattern-list"
+  >
+    <template v-if="patterns.length > 0" #meta>
+      <span data-testid="pattern-list-meta">{{ meta }}</span>
+    </template>
+
+    <p v-if="patterns.length === 0" class="pattern-list__empty" data-testid="pattern-list-empty">
       {{ t.patterns.noSavedPatternsMessage }}
     </p>
-    <ul v-else>
+    <ul v-else class="pattern-list__grid">
       <li
-        v-for="pattern in patterns"
+        v-for="pattern in shown"
         :key="pattern.id"
         class="pattern-list__item"
         data-testid="pattern-item"
         :class="{ 'pattern-list__item--active': pattern.id === activePatternId }"
       >
+        <AppTooltip :text="pattern.name" :announce="false">
+          <button
+            type="button"
+            class="ui-control pattern-list__select"
+            :data-testid="`select-pattern-${pattern.id}`"
+            :aria-label="summarizePattern(pattern)"
+            :aria-pressed="pattern.id === activePatternId"
+            @click="emit('select', pattern.id)"
+          >
+            <span class="pattern-list__circle">
+              <PatternThumbnail :pattern="pattern" />
+            </span>
+            <span class="pattern-list__name">{{ pattern.name }}</span>
+            <span class="pattern-list__size">{{ sizeOf(pattern) }}</span>
+          </button>
+        </AppTooltip>
         <button
           type="button"
-          class="pattern-list__select"
-          :data-testid="`select-pattern-${pattern.id}`"
-          :aria-pressed="pattern.id === activePatternId"
-          @click="emit('select', pattern.id)"
-        >
-          {{ summarizePattern(pattern) }}
-        </button>
-        <button
-          type="button"
-          class="pattern-list__remove button--danger icon-button"
+          class="ui-control pattern-list__remove"
           :data-testid="`remove-pattern-${pattern.id}`"
           :aria-label="`${t.patterns.removeButton}: ${summarizePattern(pattern)}`"
           @click="emit('remove', pattern.id)"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M4 7h16" />
-            <path d="M9 7V4h6v3" />
-            <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-          </svg>
+          <AppIcon name="close" :size="14" />
         </button>
       </li>
     </ul>
-    <div class="pattern-list__exports">
-      <button type="button" data-testid="export-pattern" :disabled="!activePattern" @click="onExportPattern">
+
+    <template #footer>
+      <AppButton variant="in-box" size="sm" data-testid="export-pattern" :disabled="!activePattern" @click="onExportPattern">
         {{ t.transfer.exportPatternButton }}
-      </button>
-      <button type="button" data-testid="export-library" :disabled="patterns.length === 0" @click="onExportLibrary">
+      </AppButton>
+      <AppButton variant="in-box" size="sm" data-testid="export-library" :disabled="patterns.length === 0" @click="onExportLibrary">
         {{ t.transfer.exportLibraryButton }}
-      </button>
-    </div>
-  </section>
+      </AppButton>
+    </template>
+  </ExpandablePanel>
 </template>
 
 <style scoped>
-.pattern-list h2 {
-  margin: 0 0 12px;
+.pattern-list__empty {
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
 }
 
-.pattern-list ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+/* Five columns, rows 12 apart, columns 4 apart. */
+.pattern-list__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-12) var(--space-4);
   margin: 0;
-  padding: 0;
+  padding: var(--space-4) 0 0;
   list-style: none;
 }
 
-.pattern-list__exports {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-}
-
 .pattern-list__item {
+  position: relative;
   display: flex;
-  align-items: stretch;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  justify-content: center;
+  min-width: 0;
 }
 
-.pattern-list__item--active {
-  border-color: var(--color-wedgewood);
+.pattern-list__item > :deep(.app-tooltip) {
+  min-width: 0;
 }
 
 .pattern-list__select {
-  color: var(--color-ink);
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 8px 14px;
-}
-
-.pattern-list__item--active .pattern-list__select {
-  color: var(--color-wedgewood-ink);
-  background: var(--color-wedgewood);
-}
-
-.pattern-list__remove {
-  border: none;
-  border-left: var(--border-width) solid var(--color-ink);
-  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
   padding: 0;
+  color: var(--ink);
+  text-align: center;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pattern-list__select:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A 44px circle on `elevated`, holding the Pattern's own 36px thumbnail. */
+.pattern-list__circle {
+  display: grid;
+  place-items: center;
+  width: var(--thumbnail-circle);
+  height: var(--thumbnail-circle);
+  background: var(--elevated);
+  border-radius: var(--radius-full);
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+@media (hover: hover) {
+  .pattern-list__select:hover .pattern-list__circle {
+    box-shadow: 0 0 0 1px var(--line-strong);
+  }
+}
+
+.pattern-list__name {
+  display: block;
+  width: var(--thumbnail-name-width);
+  margin-top: var(--space-6);
+  overflow: hidden;
+  font: var(--type-small);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pattern-list__size {
+  font: var(--type-meta-tiny);
+  color: var(--muted);
+}
+
+/* The open Pattern: the accent ring around its circle, and its name in the accent. */
+.pattern-list__item--active .pattern-list__circle {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px var(--accent-strong);
+}
+
+.pattern-list__item--active .pattern-list__name {
+  color: var(--accent-strong);
+}
+
+/* Remove: a 20px round × at the circle's top-right, shown on hover or keyboard focus, and always without hover. */
+.pattern-list__remove {
+  position: absolute;
+  top: calc(-1 * var(--space-4));
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: var(--thumbnail-remove);
+  height: var(--thumbnail-remove);
+  padding: 0;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.pattern-list__remove :deep(.icon) {
+  width: 0.6875rem !important;
+  height: 0.6875rem !important;
+}
+
+.pattern-list__item:hover .pattern-list__remove,
+.pattern-list__item:focus-within .pattern-list__remove {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .pattern-list__remove {
+    opacity: 1;
+  }
+}
+
+.pattern-list__remove:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+:root[data-theme='contrast'] .pattern-list__remove {
+  border-width: 2px;
+}
+
+/* Forced colors: the open Pattern keeps a visible ring. */
+@media (forced-colors: active) {
+  .pattern-list__item--active .pattern-list__circle {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
 }
 </style>

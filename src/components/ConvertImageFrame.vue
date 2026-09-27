@@ -21,7 +21,9 @@ import {
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../domain/imageFraming'
 import type { Cell, Grid } from '../domain/pattern'
 import { useI18n } from '../i18n/useI18n'
-import { DEFAULT_THEME, type BeadDrawer } from '../rendering/beadLook'
+import AppButton from './AppButton.vue'
+import AppStepper from './form/AppStepper.vue'
+import { LIGHT_THEME, type BeadDrawer } from '../rendering/beadLook'
 import { renderDraft, usesDraftLook } from '../rendering/draftRenderer'
 import { patternExtentPx, renderPattern, rowTopPx } from '../rendering/patternRenderer'
 
@@ -61,6 +63,11 @@ const props = defineProps<{
   availableWidth: number
   /** How one bead is drawn; the renderer's own flat bead unless given. */
   drawBead?: BeadDrawer
+  /**
+   * Where the conversion controls go (ConvertImage card): the canvas box's bottom, in the Progress bar's place. Left
+   * out, they stay under the preview.
+   */
+  controlsTo?: HTMLElement
 }>()
 
 const emit = defineEmits<{
@@ -241,7 +248,7 @@ watchPostEffect(() => {
       columns: lattice.value.columns,
       rows: lattice.value.rows,
       colors: beadColors.value,
-      theme: DEFAULT_THEME,
+      theme: LIGHT_THEME,
       bitmapWidth,
       bitmapHeight,
     })
@@ -253,8 +260,16 @@ watchPostEffect(() => {
     region: { x: 0, y: 0, width, height },
     zoom: fitScale.value,
     pixelRatio,
+    // The board look in light, whatever the app's theme (ticket 150), like the Pattern the picture becomes will print.
+    theme: LIGHT_THEME,
     drawBead: props.drawBead,
   })
+})
+
+/** "Colors at most" as the Stepper sets it: the parent keeps the count (useConvertImage). */
+const maxColorsModel = computed({
+  get: () => props.maxColors,
+  set: (count: number) => emit('set-max-colors', count),
 })
 
 /** Where the picture can still move under the frame, in millimetres: zero when it covers the frame exactly. */
@@ -327,9 +342,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="convert-image-frame" data-testid="convert-image-frame">
-    <h2 class="convert-image-frame__heading">{{ t.convertImage.heading }}</h2>
-
+  <!--
+    The framing step (ticket 150; ConvertImage card) inside the canvas box: the canvas strip names the step, the picture
+    fills the drawing area as beads with the frame at the Pattern's size, everything outside the frame dimmed, and the
+    hint on the picture, bottom-left. The controls take the Progress bar's place.
+  -->
+  <section class="convert-image-frame" :aria-label="t.convertImage.heading" data-testid="convert-image-frame">
     <div class="convert-image-frame__box" data-testid="convert-image-box" :style="boxStyle" @mousedown.left="onDragStart">
       <canvas
         ref="canvasEl"
@@ -353,51 +371,50 @@ onBeforeUnmount(() => {
         -->
         <div class="convert-image-frame__frame" data-testid="convert-image-frame-outline" :style="frameStyle" />
       </div>
+
+      <p class="convert-image-frame__hint">{{ t.convertImage.panHint }}</p>
     </div>
 
-    <p class="convert-image-frame__hint">{{ t.convertImage.panHint }}</p>
-
-    <div class="convert-image-frame__controls">
-      <p class="convert-image-frame__colors" data-testid="convert-image-colors">
-        <button
-          type="button"
-          class="icon-button"
-          data-testid="convert-image-colors-decrease"
-          :title="t.convertImage.decreaseColorsButton"
-          :aria-label="t.convertImage.decreaseColorsButton"
-          :disabled="maxColors <= MIN_IMAGE_COLORS"
-          @click="emit('set-max-colors', maxColors - 1)"
-        >
-          −
-        </button>
-        <span class="convert-image-frame__colors-label" data-testid="convert-image-max-colors">
-          {{ t.convertImage.maxColorsLabel }}: {{ maxColors }}
+    <Teleport :to="controlsTo ?? 'body'" :disabled="!controlsTo">
+      <div class="convert-image-frame__controls" data-testid="convert-image-controls">
+        <span class="convert-image-frame__setting" data-testid="convert-image-colors">
+          <span class="convert-image-frame__label" data-testid="convert-image-max-colors">
+            {{ t.convertImage.maxColorsLabel }}
+            <AppStepper
+              v-model="maxColorsModel"
+              :min="MIN_IMAGE_COLORS"
+              :max="MAX_IMAGE_COLORS"
+              :decrease-label="t.convertImage.decreaseColorsButton"
+              :increase-label="t.convertImage.increaseColorsButton"
+              decrease-testid="convert-image-colors-decrease"
+              increase-testid="convert-image-colors-increase"
+            />
+          </span>
         </span>
-        <button
-          type="button"
-          class="icon-button"
-          data-testid="convert-image-colors-increase"
-          :title="t.convertImage.increaseColorsButton"
-          :aria-label="t.convertImage.increaseColorsButton"
-          :disabled="maxColors >= MAX_IMAGE_COLORS"
-          @click="emit('set-max-colors', maxColors + 1)"
-        >
-          +
-        </button>
-        <span class="convert-image-frame__colors-label" data-testid="convert-image-found-colors">
-          {{ t.convertImage.foundColorsLabel }}: {{ converted.imageColors.length }}
+        <span class="convert-image-frame__setting">
+          <span class="convert-image-frame__swatches" aria-hidden="true">
+            <span
+              v-for="color in converted.imageColors"
+              :key="color"
+              class="convert-image-frame__swatch"
+              :style="{ backgroundColor: color }"
+            />
+          </span>
+          <span class="convert-image-frame__label" data-testid="convert-image-found-colors">
+            {{ t.convertImage.foundColorsLabel }}: {{ converted.imageColors.length }}
+          </span>
         </span>
-      </p>
 
-      <div class="convert-image-frame__actions">
-        <button type="button" data-testid="convert-image-create" @click="emit('create', converted)">
-          {{ t.convertImage.createButton }}
-        </button>
-        <button type="button" data-testid="convert-image-cancel" @click="emit('cancel')">
-          {{ t.convertImage.cancelButton }}
-        </button>
+        <span class="convert-image-frame__actions">
+          <AppButton variant="box" data-testid="convert-image-cancel" @click="emit('cancel')">
+            {{ t.convertImage.cancelButton }}
+          </AppButton>
+          <AppButton variant="primary" icon="plus" data-testid="convert-image-create" @click="emit('create', converted)">
+            {{ t.convertImage.createButton }}
+          </AppButton>
+        </span>
       </div>
-    </div>
+    </Teleport>
   </section>
 </template>
 
@@ -406,25 +423,17 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-}
-
-.convert-image-frame__heading {
-  margin: 0;
-  font-size: 20px;
+  gap: var(--space-12);
 }
 
 /*
- * The preview's own box, sized to the scaled lattice (a transform leaves no layout size behind), carrying the same
- * card frame the Pattern's own box does. It clips the frame outline's dimming shadow, which reaches far past the
- * beads on purpose.
+ * The preview's own box, sized to the scaled lattice (a transform leaves no layout size behind); the canvas fills it
+ * with the light board. It clips the frame outline's dimming shadow, which reaches far past the beads on purpose.
  */
 .convert-image-frame__box {
   position: relative;
   overflow: hidden;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   cursor: grab;
 }
 
@@ -449,34 +458,73 @@ onBeforeUnmount(() => {
   position: absolute;
   z-index: 1;
   pointer-events: none;
-  border: var(--border-width) solid var(--color-wedgewood);
+  outline: 2px solid var(--accent);
   /* One element dims everything outside the frame: an outward shadow big enough to cover the rest of the box. */
-  box-shadow: 0 0 0 9999px color-mix(in srgb, var(--color-paper-solid) 65%, transparent);
+  box-shadow: 0 0 0 9999px var(--framing-dim);
 }
 
+/* The hint sits on the picture, bottom-left, on its own dark label so it reads over any picture. */
 .convert-image-frame__hint {
+  position: absolute;
+  bottom: var(--space-8);
+  left: var(--space-8);
+  z-index: 2;
   margin: 0;
-  opacity: 0.6;
+  padding: var(--space-4) var(--space-8);
+  font: var(--type-small);
+  color: var(--canvas);
+  pointer-events: none;
+  background: var(--ink);
+  border-radius: var(--radius-sm);
 }
 
+/* In the Progress bar's place: the same height and rule, the settings on the left and Cancel and Create on the right. */
 .convert-image-frame__controls {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  gap: var(--space-8) var(--space-20);
+  box-sizing: border-box;
+  min-height: var(--progress-height);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
+  border-top: 1px solid var(--box-line);
 }
 
-.convert-image-frame__colors,
-.convert-image-frame__actions {
-  display: flex;
+.convert-image-frame__setting {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
+  gap: var(--space-8);
 }
 
-.convert-image-frame__colors-label {
+.convert-image-frame__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+  font: var(--type-label);
+  color: var(--box-muted);
+  text-transform: lowercase;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.convert-image-frame__swatches {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  max-width: calc(7 * (var(--swatch-dot) + var(--space-2)));
+}
+
+.convert-image-frame__swatch {
+  width: var(--swatch-dot);
+  height: var(--swatch-dot);
+  border-radius: var(--swatch-dot-radius);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+}
+
+.convert-image-frame__actions {
+  display: inline-flex;
+  gap: var(--space-8);
+  margin-left: auto;
 }
 </style>

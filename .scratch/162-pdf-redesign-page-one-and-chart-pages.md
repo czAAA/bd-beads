@@ -4,11 +4,13 @@
 
 **Blocked by:** 140, 161
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Page 1 and chart pages match their cards on A4 portrait
-- [ ] Grams are the count divided by the Bead's beads per gram, rounded up to 0.1g with a trailing ".0" dropped; the Total is rounded up from the total count
-- [ ] Every page shows the mark and "bd-beads", technique and name, the maker's name (left out when empty), the export date and time, and "Page 2 of 5"
-- [ ] The export uses the light values regardless of the app's theme
-- [ ] The Russian export fits (longer technique word, Cyrillic fallback fonts)
-- [ ] Export stays within today's memory and time limits for large Patterns (ADR 0019); `patternExport` tests are updated
+- [x] Page 1 and chart pages match their cards on A4 portrait
+- [x] Grams are the count divided by the Bead's beads per gram, rounded up to 0.1g with a trailing ".0" dropped; the Total is rounded up from the total count
+- [x] Every page shows the mark and "bd-beads", technique and name, the maker's name (left out when empty), the export date and time, and "Page 2 of 5"
+- [x] The export uses the light values regardless of the app's theme
+- [x] The Russian export fits (longer technique word, Cyrillic fallback fonts)
+- [x] Export stays within today's memory and time limits for large Patterns (ADR 0019); `patternExport` tests are updated
+
+**Done (ticket 162):** the PDF is planned in `rendering/printPlan.ts` (A4 at 150 dpi, the page count from the 4.6 mm base, equal parts, one bead size up to 7 mm, the "continues" pages), worded in `rendering/printText.ts` (all strings in the app's language, grams by `domain/printGrams.ts`: rounded up to 0.1 g, trailing .0 dropped, decimal comma in Russian, the Total from the total count), and drawn in `rendering/printPages.ts`, loaded only when a PDF is asked for. The print colors, sizes and opacities are tested equal to tokens.json. Page 1: brand, maker, date and time; the technique word and name; the meta line; how to read the parts; the whole Pattern with rulers every 10, the 10-bead lines and the parts dashed and numbered; the 48 mm Beads needed column with beads and grams, the note and the facts (under the board for a wider-than-tall Pattern). Chart pages: the 16 mm header with the mini map, rulers on four sides (every 5th muted, every 10th bold), the name band and the footer's "Continues right on page 3, below on page 4 →". The old `pdf*` strings became the `print` section; the old planChart and its tests are gone (printPlan.test.ts replaces them). Checked by exporting a 60×80 Delica Pattern in Chromium. Landscape and stacked strips are ticket 163.

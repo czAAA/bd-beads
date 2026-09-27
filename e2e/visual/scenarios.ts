@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { Technique } from '../../src/domain/grid'
 import type { Pattern, RowProgress } from '../../src/domain/pattern'
-import { gridBox, settle } from '../support/app'
+import { gridBox, openToolboxRow, settle } from '../support/app'
 import { beadCentre } from '../support/patterns'
 
 /** What a scenario's steps are working on: the Pattern as seeded, and the zoom the page is at right now, in percent. */
@@ -62,6 +62,7 @@ async function dragSelection(page: Page, context: Context, from: [number, number
 }
 
 async function addMirrorAxes(page: Page, leftRight: number, topBottom: number): Promise<void> {
+  await openToolboxRow(page, 'tool-group-mirror')
   for (let count = 0; count < leftRight; count += 1) {
     await page.getByTestId('mirror-left-right-increase').click()
   }

@@ -1,10 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- The X1 mark, following the browser's light or dark setting; .ico and PNG for older browsers (DESIGN.md §3, favicon/). -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>bd-beads</title>
+    <!-- Before first paint: the theme (src/theme/theme.ts has the same rules) and the language, so neither flashes. -->
+    <script>
+      (function () {
+        var root = document.documentElement
+        var pick = null
+        var locale = null
+        try {
+          pick = localStorage.getItem('bd-beads:theme')
+          locale = localStorage.getItem('bd-beads:locale')
+        } catch (e) {}
+        var theme =
+          pick === 'light' || pick === 'dark' || pick === 'contrast'
+            ? pick
+            : matchMedia('(prefers-contrast: more)').matches
+              ? 'contrast'
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+        root.dataset.theme = theme
+        root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
+        root.lang = locale === 'en' ? 'en' : 'ru'
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

@@ -17,7 +17,7 @@ const BLUE = '#2f6fed'
 /** Creates a Pattern through the form, in beads (the default unit): columns x rows, on TOHO Cube 1.5mm. */
 async function createInBeads(wrapper: ReturnType<typeof mount>, columns: number, rows: number, technique: Technique = 'loom') {
   await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="technique-select"]').setValue(technique)
+  await wrapper.find(`[data-testid="technique-select"] [data-value="${technique}"]`).trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue(String(columns))
   await wrapper.find('[data-testid="height-input"]').setValue(String(rows))
   await wrapper.find('form').trigger('submit')
@@ -61,7 +61,7 @@ describe('App Size group (ticket 98)', () => {
     await createInBeads(wrapper, 22, 44)
 
     expect(wrapper.find('[data-testid="tool-group-size"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="tool-group-size"] .tool-group__title').text()).toBe(en.toolbox.groups.size)
+    expect(wrapper.find('[data-testid="tool-group-size"] .disclosure-row__label').text()).toBe(en.toolbox.groups.size)
   })
 
   it('shows the open Pattern’s Estimated size', async () => {
@@ -92,13 +92,13 @@ describe('App Size group (ticket 98)', () => {
     expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 6.6 × 3.3 cm')
   })
 
-  it('follows the app language for its unit label', async () => {
+  it('follows the app language for its unit label and decimal sign (writing.md)', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 22, 44)
 
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 3.3 × 6.6 см')
+    expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 3,3 × 6,6 см')
   })
 })
 
@@ -140,7 +140,7 @@ describe('App Resize (ticket 101)', () => {
     await step(columnsDecrease(wrapper))
     await step(rowsDecrease(wrapper))
 
-    expect(wrapper.find('[data-testid="confirm-modal-backdrop"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="modal-scrim"]').exists()).toBe(false)
     expect(colors()).toEqual([
       [RED, null],
       [null, null],
@@ -250,8 +250,9 @@ describe('App Resize (ticket 101)', () => {
 
   it('refits the zoom to the new size while it is still at fit', async () => {
     const wrapper = mount(App)
-    // 41 columns just fits the (unmeasured, so CANVAS_MAX_PX-based) canvas area at 100%; one more tips it over.
-    await createInBeads(wrapper, 41, 3)
+    // 37 columns just fit the (unmeasured, so CANVAS_MAX_PX-based) drawing area at 100%, rulers and spare included;
+    // one more tips it over.
+    await createInBeads(wrapper, 37, 3)
     const level = () => wrapper.find('[data-testid="zoom-level"]').text()
     expect(level()).toBe('100%')
 
@@ -295,13 +296,13 @@ describe('App Resize (ticket 101)', () => {
       await createInBeads(wrapper, 4, 4)
       expect(columnsIncrease(wrapper).element.disabled).toBe(false)
 
-      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       expect(columnsIncrease(wrapper).element.disabled).toBe(true)
       expect(rowsIncrease(wrapper).element.disabled).toBe(true)
       expect(wrapper.find('[data-testid="size-inputs"]').attributes('title')).toBe('Turn off Row progress to change the size')
 
-      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       expect(columnsIncrease(wrapper).element.disabled).toBe(false)
       expect(wrapper.find('[data-testid="size-inputs"]').attributes('title')).toBeUndefined()
@@ -310,7 +311,7 @@ describe('App Resize (ticket 101)', () => {
     it('does not resize through a stray click either, since resizePattern itself refuses under the lock', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 4, 4)
-      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       await columnsDecrease(wrapper).trigger('click')
 
@@ -320,11 +321,11 @@ describe('App Resize (ticket 101)', () => {
     it('is untouched by the Resize that happens before it is turned on: the pointer stays on a row that exists', async () => {
       const wrapper = mount(App)
       await createInBeads(wrapper, 4, 6)
-      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       for (let index = 0; index < 5; index += 1) {
         await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
       }
-      await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click') // off, pointer on row 6
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click') // off, pointer on row 6
       expect(stored().rowProgress.currentRow).toBe(5)
 
       await step(rowsDecrease(wrapper))
@@ -481,7 +482,7 @@ describe('App Resize from the start (ticket 102)', () => {
     await step(columnsIncrease(wrapper))
     expect(stored().columns).toBe(101)
 
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="size-columns-from-end"]').element.disabled).toBe(true)
   })
 })

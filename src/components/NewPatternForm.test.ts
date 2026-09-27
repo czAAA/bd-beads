@@ -40,7 +40,7 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, file: File) {
 /** A form with a size already stated, since Convert image needs one before there is a frame to fit a picture into. */
 async function mountSizedForm(props: Record<string, unknown> = {}) {
   const wrapper = mount(NewPatternForm, { props })
-  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
+  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue('15')
   await wrapper.find('[data-testid="height-input"]').setValue('30')
   return wrapper
@@ -61,7 +61,7 @@ describe('NewPatternForm', () => {
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
     await wrapper.find('[data-testid="width-input"]').setValue('10')
     await wrapper.find('[data-testid="height-input"]').setValue('15')
-    await wrapper.find('[data-testid="unit-select"]').setValue('cm')
+    await wrapper.find('[data-testid="unit-select"] [data-value="cm"]').trigger('click')
     await wrapper.find('form').trigger('submit')
 
     const events = wrapper.emitted('submit')
@@ -111,21 +111,21 @@ describe('NewPatternForm', () => {
   it('defaults the unit to beads and technique to loom', () => {
     const wrapper = mount(NewPatternForm)
 
-    expect(wrapper.find<HTMLSelectElement>('[data-testid="unit-select"]').element.value).toBe('beads')
-    expect(wrapper.find('[data-testid="technique-select"]').text()).toContain(ru.form.techniqueLoom)
+    expect(wrapper.find('[data-testid="unit-select"] [aria-checked="true"]').attributes('data-value')).toBe('beads')
+    expect(wrapper.find('[data-testid="technique-select"] [aria-checked="true"]').text()).toBe(ru.form.techniqueLoom)
   })
 
   it('lists Peyote and Brick stitch alongside Loom', () => {
     const wrapper = mount(NewPatternForm)
 
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="technique-select"] option')
-    expect(options.map((option) => option.element.value)).toEqual(['loom', 'peyote', 'brick'])
+    const options = wrapper.findAll('[data-testid="technique-select"] [role="radio"]')
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
     const wrapper = mount(NewPatternForm)
 
-    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('20')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
     await wrapper.find('form').trigger('submit')
@@ -152,9 +152,9 @@ describe('NewPatternForm draft (ticket 58)', () => {
 
     await wrapper.find('[data-testid="width-input"]').setValue('15')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
-    await wrapper.find('[data-testid="technique-select"]').setValue('brick')
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[2]!.id)
-    await wrapper.find('[data-testid="unit-select"]').setValue('cm')
+    await wrapper.find('[data-testid="unit-select"] [data-value="cm"]').trigger('click')
 
     const drafts = wrapper.emitted('draft')!
     expect(drafts.at(-1)![0]).toEqual({
@@ -319,7 +319,7 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
   /** A form sized so the default TOHO Cube 1.5mm bead yields exactly 100 columns by `rows` rows. */
   async function mountFormWithRows(rows: number, extraProps: Record<string, unknown> = {}) {
     const wrapper = mount(NewPatternForm, { props: { slowFramingCellThresholds: reachable, ...extraProps } })
-    await wrapper.find('[data-testid="unit-select"]').setValue('mm')
+    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('150') // 100 columns at 1.5mm
     await wrapper.find('[data-testid="height-input"]').setValue(String(rows * 1.5))
     return wrapper
@@ -344,7 +344,7 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
     const wrapper = await mountFormWithRows(50)
     expect(wrapper.find(warningTestId).exists()).toBe(true)
 
-    await wrapper.find('[data-testid="unit-select"]').setValue('beads')
+    await wrapper.find('[data-testid="unit-select"] [data-value="beads"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('100')
     await wrapper.find('[data-testid="height-input"]').setValue('49')
     expect(wrapper.find(warningTestId).exists()).toBe(false)
@@ -380,13 +380,13 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
 
     expect(wrapper.find(warningTestId).exists()).toBe(true) // loom's threshold is 100
 
-    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
     expect(wrapper.find(warningTestId).exists()).toBe(false) // peyote's threshold is 100,000
 
-    await wrapper.find('[data-testid="technique-select"]').setValue('brick')
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
     expect(wrapper.find(warningTestId).exists()).toBe(false) // brick's threshold is 100,000
 
-    await wrapper.find('[data-testid="technique-select"]').setValue('loom')
+    await wrapper.find('[data-testid="technique-select"] [data-value="loom"]').trigger('click')
     expect(wrapper.find(warningTestId).exists()).toBe(true)
   })
 })
@@ -403,8 +403,8 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
     { unit, width, height, bead, technique }: { unit?: string; width: string; height: string; bead?: string; technique?: string },
   ) {
     if (bead) await wrapper.find('[data-testid="bead-select"]').setValue(bead)
-    if (technique) await wrapper.find('[data-testid="technique-select"]').setValue(technique)
-    if (unit) await wrapper.find('[data-testid="unit-select"]').setValue(unit)
+    if (technique) await wrapper.find(`[data-testid="technique-select"] [data-value="${technique}"]`).trigger('click')
+    if (unit) await wrapper.find(`[data-testid="unit-select"] [data-value="${unit}"]`).trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue(width)
     await wrapper.find('[data-testid="height-input"]').setValue(height)
   }
@@ -412,8 +412,8 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
   it('offers beads first, then mm and cm, with the beads label in the interface language', () => {
     const wrapper = mount(NewPatternForm)
 
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="unit-select"] option')
-    expect(options.map((option) => option.element.value)).toEqual(['beads', 'mm', 'cm'])
+    const options = wrapper.findAll('[data-testid="unit-select"] [role="radio"]')
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['beads', 'mm', 'cm'])
     expect(options[0]!.text()).toBe(ru.form.unitBeads)
   })
 
@@ -509,6 +509,66 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
     const wrapper = mount(NewPatternForm)
 
     expect(en.form.unitBeads).toBe('beads')
-    expect(wrapper.find('[data-testid="unit-select"] option').text()).toBe('beads')
+    expect(wrapper.find('[data-testid="unit-select"] [role="radio"]').text()).toBe('beads')
+  })
+})
+
+describe('NewPatternForm on the design system (ticket 149)', () => {
+  beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+
+  it('says what to enter at a size field once it has been left empty, and not before', async () => {
+    const { en } = await import('../i18n/en')
+    const wrapper = mount(NewPatternForm)
+    expect(wrapper.find('[data-testid="height-error"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="height-input"]').trigger('blur')
+
+    expect(wrapper.find('[data-testid="height-error"]').text()).toBe(en.form.enterHeight)
+    expect(wrapper.find('[data-testid="height-input"]').attributes('aria-invalid')).toBe('true')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    expect(wrapper.find('[data-testid="height-error"]').exists()).toBe(false)
+  })
+
+  it('asks for a whole number of beads, and not in mm', async () => {
+    const { en } = await import('../i18n/en')
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="width-input"]').setValue('2.5')
+    await wrapper.find('[data-testid="width-input"]').trigger('blur')
+    expect(wrapper.find('[data-testid="width-error"]').text()).toBe(en.form.enterWholeBeads)
+
+    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
+    expect(wrapper.find('[data-testid="width-error"]').exists()).toBe(false)
+  })
+
+  it('shows the size in the other unit beside Unit', async () => {
+    const wrapper = mount(NewPatternForm)
+    await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+    await wrapper.find('[data-testid="width-input"]').setValue('40')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+
+    expect(wrapper.find('.form-field__aside:not(:empty)').exists()).toBe(true)
+    const asides = wrapper.findAll('.form-field__aside').map((aside) => aside.text())
+    expect(asides.some((text) => text.startsWith('≈') && /cm|mm/.test(text))).toBe(true)
+
+    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
+    expect(wrapper.findAll('.form-field__aside').map((aside) => aside.text())).toContain('≈ 27×20 beads')
+  })
+
+  it('says Convert image waits for a size, and takes a dropped picture once there is one', async () => {
+    const { en } = await import('../i18n/en')
+    const decodeImage = vi.fn().mockResolvedValue(onePixel)
+    const wrapper = mount(NewPatternForm, { props: { decodeImage } })
+    expect(wrapper.find('[data-testid="convert-image-field"]').text()).toContain(en.form.enterSizeFirst)
+
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    await wrapper.find('[data-testid="height-input"]').setValue('10')
+    const drop = new Event('drop', { bubbles: true, cancelable: true })
+    Object.defineProperty(drop, 'dataTransfer', { value: { files: [imageFile('fox.png', 'image/png')] } })
+    wrapper.find('[data-testid="convert-image-field"] label').element.dispatchEvent(drop)
+    await flushPromises()
+
+    expect(decodeImage).toHaveBeenCalledTimes(1)
+    expect(wrapper.emitted('convert-image')).toEqual([[onePixel]])
   })
 })

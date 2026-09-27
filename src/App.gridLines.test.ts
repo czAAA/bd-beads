@@ -21,7 +21,7 @@ const BLUE = '#2f6fed'
 
 async function createInBeads(wrapper: ReturnType<typeof mount>, columns: number, rows: number, technique: Technique = 'loom') {
   await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="technique-select"]').setValue(technique)
+  await wrapper.find(`[data-testid="technique-select"] [data-value="${technique}"]`).trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue(String(columns))
   await wrapper.find('[data-testid="height-input"]').setValue(String(rows))
   await wrapper.find('form').trigger('submit')
@@ -175,7 +175,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
     await rulerLabels(wrapper, 'row')[0]!.trigger('click')
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(removeLineButton(wrapper).element.disabled).toBe(true)
 

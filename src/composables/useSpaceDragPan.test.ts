@@ -82,9 +82,10 @@ describe('useSpaceDragPan', () => {
     }
   })
 
-  it('pans the scroll element horizontally and the window vertically while dragging with Space held', () => {
+  it('pans the scroll element both ways while dragging with Space held', () => {
     const scrollEl = document.createElement('div')
     scrollEl.scrollLeft = 50
+    scrollEl.scrollTop = 40
     const { state } = mountHost(scrollEl)
     const scrollBySpy = vi.spyOn(window, 'scrollBy').mockImplementation(() => {})
 
@@ -95,7 +96,8 @@ describe('useSpaceDragPan', () => {
     pointer('pointermove', { clientX: 80, clientY: 70 })
 
     expect(scrollEl.scrollLeft).toBe(70) // dx = -20, scrollLeft -= dx
-    expect(scrollBySpy).toHaveBeenCalledWith(0, 30) // dy = -30, scrollBy(0, -dy)
+    expect(scrollEl.scrollTop).toBe(70) // dy = -30, scrollTop -= dy
+    expect(scrollBySpy).not.toHaveBeenCalled() // the page never scrolls
 
     pointer('pointerup', { clientX: 80, clientY: 70 })
     expect(state.panning.value).toBe(false)

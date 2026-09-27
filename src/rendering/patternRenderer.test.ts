@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { createPattern, type Grid, type Pattern, type Technique } from '../domain/pattern'
-import { DEFAULT_THEME, DIMMED_OPACITY, drawFlatBead, fadeOver, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import {
   displayedExtentPx,
   patternExtentPx,
@@ -77,7 +77,7 @@ describe('renderPattern', () => {
     const beads = beadsDrawn(pattern, whole(pattern))
 
     expect(beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 15], [30, 15], [0, 30], [20, 30]])
-    expect(beads.every(({ cornerRadius }) => cornerRadius === 6)).toBe(true)
+    expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
   })
 
   it('places brick stitch beads with the stagger and a seam between rows, square', () => {
@@ -275,12 +275,13 @@ describe('renderPattern', () => {
         const pattern = patternOf('brick', 2, 3, { rowProgress: { ...progress(direction), currentRow: 2, currentColumn: 0 } })
         const { context, named } = recordingContext()
         renderPattern(context, { pattern, region: whole(pattern), zoom: 1, drawBead: noBead })
-        return named('fillRect').slice(1).map((call) => call.globalAlpha)
+        return named('fillRect').slice(1).map((call) => call.fillStyle)
       }
 
-      // Rows 1 and 2 have seams above them; only row 1 is before the current row (2).
-      expect(seamAlpha('rows')).toEqual([DIMMED_OPACITY, 1])
-      expect(seamAlpha('columns')).toEqual([1, 1])
+      // Rows 1 and 2 have seams above them; only row 1 is before the current row (2): faded toward the board, opaque.
+      const faded = finishedColor(DEFAULT_THEME.seam, DEFAULT_THEME)
+      expect(seamAlpha('rows')).toEqual([faded, DEFAULT_THEME.seam])
+      expect(seamAlpha('columns')).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
     })
   })
 
@@ -434,16 +435,29 @@ describe('the bead look', () => {
     ...overrides,
   })
 
-  it('draws a square bead as its rim and, inside it, its color: two rectangles', () => {
+  it('draws a square bead a pixel in from its cell, its faint rim and, inside that, its color: two rectangles', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead())
 
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([
-      [DEFAULT_THEME.rim, 40, 20, 20, 20],
-      ['#e63746', 41, 21, 18, 18],
+      [blendOver(DEFAULT_THEME.rim!, '#e63746'), 41, 21, 18, 18],
+      ['#e63746', 41.75, 21.75, 16.5, 16.5],
     ])
     expect(named('fill')).toHaveLength(0)
+  })
+
+  it('draws no rim in dark: the bead alone, a pixel in from its cell', () => {
+    const { context, named } = recordingContext()
+
+    drawFlatBead(context, bead({ theme: DARK_THEME }))
+
+    expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([['#e63746', 41, 21, 18, 18]])
+  })
+
+  it('blends the translucent rim over the bead color into one opaque color', () => {
+    expect(blendOver('rgba(20,20,19,.12)', '#ffffff')).toBe('rgb(227, 227, 227)')
+    expect(blendOver('#123456', '#ffffff')).toBe('#123456')
   })
 
   it('draws a rounded bead as its rim\'s shape and, inside it a pixel tighter, its color', () => {
@@ -452,10 +466,10 @@ describe('the bead look', () => {
     drawFlatBead(context, bead({ cornerRadius: 6 }))
 
     expect(named('roundRect').map((call) => call.args)).toEqual([
-      [40, 20, 20, 20, 6],
       [41, 21, 18, 18, 5],
+      [41.75, 21.75, 16.5, 16.5, 4.25],
     ])
-    expect(named('fill').map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.rim, '#e63746'])
+    expect(named('fill').map((call) => call.fillStyle)).toEqual([blendOver(DEFAULT_THEME.rim!, '#e63746'), '#e63746'])
   })
 
   it('draws a rounded bead from arcs where the browser has no roundRect', () => {
@@ -464,7 +478,7 @@ describe('the bead look', () => {
 
     drawFlatBead(context, bead({ cornerRadius: 6 }))
 
-    expect(named('arcTo').map((call) => call.args[4])).toEqual([6, 6, 6, 6, 5, 5, 5, 5])
+    expect(named('arcTo').map((call) => call.args[4])).toEqual([5, 5, 5, 5, 4.25, 4.25, 4.25, 4.25])
   })
 
   it('draws an empty bead in the empty tint', () => {
@@ -475,17 +489,24 @@ describe('the bead look', () => {
     expect(named('fillRect')[1]!.fillStyle).toBe(DEFAULT_THEME.emptyBead)
   })
 
-  it('draws a finished bead in grey at reduced opacity, the bead and its rim as pieces that don\'t overlap', () => {
+  it('draws a finished bead in light as its own color at 28% over the board, opaque', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ dimmed: true }))
 
-    const fills = named('fill')
-    expect(fills.map((call) => call.fillStyle)).toEqual([greyscale('#e63746'), greyscale(DEFAULT_THEME.rim)])
-    expect(fills.map((call) => call.globalAlpha)).toEqual([DIMMED_OPACITY, DIMMED_OPACITY])
-    // The bead is the inside square only; the rim is the outer minus that, filled even-odd.
-    expect(named('moveTo').map((call) => call.args)).toEqual([[41, 21], [40, 20], [41, 21]])
-    expect(fills[1]!.args).toEqual(['evenodd'])
+    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.28)
+    expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha])).toEqual([
+      [blendOver(DEFAULT_THEME.rim!, faded), 1],
+      [faded, 1],
+    ])
+  })
+
+  it('draws a finished bead in dark as its grey at 45% over the board', () => {
+    const { context, named } = recordingContext()
+
+    drawFlatBead(context, bead({ dimmed: true, theme: DARK_THEME }))
+
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver(greyscale('#e63746'), DARK_THEME.background, 0.45)])
   })
 
   it('leaves the context as it found it', () => {
@@ -571,9 +592,10 @@ describe('the bead look', () => {
 
       drawFlatBead(context, bead({ dimmed: true, backdrop: '#ffffff' }))
 
+      const faded = fadeOver('#e63746', '#ffffff', 0.28)
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [fadeOver(greyscale(DEFAULT_THEME.rim), '#ffffff', DIMMED_OPACITY), 1, 40, 20, 20, 20],
-        [fadeOver(greyscale('#e63746'), '#ffffff', DIMMED_OPACITY), 1, 41, 21, 18, 18],
+        [blendOver(DEFAULT_THEME.rim!, faded), 1, 41, 21, 18, 18],
+        [faded, 1, 41.75, 21.75, 16.5, 16.5],
       ])
       expect(named('fill')).toHaveLength(0)
     })

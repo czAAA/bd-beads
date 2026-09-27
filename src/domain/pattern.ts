@@ -1,7 +1,5 @@
 import { beadLabel, findBead, type Bead } from './beads'
 import {
-  gridHeightPx,
-  gridWidthPx,
   neighborsOf,
   positionKey,
   type GridDimensions,
@@ -72,6 +70,11 @@ export interface Pattern {
   imageColors?: string[]
   createdAt: number
   updatedAt: number
+  /**
+   * When the Pattern last reached this device's storage (ticket 145): what orders the Pattern library, most recently
+   * saved first. Absent on a Pattern saved before the order existed, whose updatedAt stands in for it (see lastSaved).
+   */
+  savedAt?: number
 }
 
 export interface CreatePatternInput {
@@ -594,24 +597,6 @@ export function summarizePattern(pattern: Pattern): string {
   return `${pattern.name} · ${width}×${height}`
 }
 
-/** Whether a Pattern's rendered grid box is taller than it is wide, or the reverse — see CONTEXT.md's Pattern shape. */
-export type PatternShape = 'vertical' | 'horizontal'
-
-/**
- * Pattern shape (CONTEXT.md; ADR 0005's 2026-09-22 amendment): decides where Progress bar sits. Read from the
- * rendered grid box's own width and height (gridWidthPx/gridHeightPx, which already bakes in a Technique's row
- * packing — e.g. peyote's tighter rows and every offset technique's extra half-cell of width) rather than the raw
- * column/row counts, which the box's actual proportions can disagree with. The view-only rotated flag swaps the two
- * the same way it swaps what's on screen (see Pattern.rotated); Row direction never enters into it, since that only
- * changes which way the weaver counts rows, not the box's shape. "Horizontal" includes square (width === height).
- */
-export function patternShape(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotated'>): PatternShape {
-  const width = gridWidthPx(pattern.technique, pattern.columns)
-  const height = gridHeightPx(pattern.technique, pattern.rows)
-  const [renderedWidth, renderedHeight] = pattern.rotated ? [height, width] : [width, height]
-  return renderedWidth < renderedHeight ? 'vertical' : 'horizontal'
-}
-
 /**
  * The Bead a Pattern was woven from (ticket 37), or undefined when the catalog no longer has it — a custom Bead
  * removed since (ticket 38), or one an imported file names that this device never had. Callers show a neutral
@@ -619,6 +604,27 @@ export function patternShape(pattern: Pick<Pattern, 'technique' | 'columns' | 'r
  */
 export function resolvePatternBead(pattern: Pattern): Bead | undefined {
   return findBead(pattern.beadId)
+}
+
+/** When a Pattern was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */
+export function lastSaved(pattern: Pattern): number {
+  return pattern.savedAt ?? pattern.updatedAt
+}
+
+/** Stamps a Pattern as saved just now: the library's front (ticket 145). */
+export function markSaved(pattern: Pattern, at = Date.now()): Pattern {
+  return { ...pattern, savedAt: at }
+}
+
+/**
+ * The Pattern library's order (ticket 145): most recently saved first; saved at the same moment, most recently edited
+ * first; and otherwise as they were, so a library read twice comes out the same twice.
+ */
+export function inSavedOrder(patterns: Pattern[]): Pattern[] {
+  return patterns
+    .map((pattern, index) => ({ pattern, index }))
+    .sort((a, b) => lastSaved(b.pattern) - lastSaved(a.pattern) || b.pattern.updatedAt - a.pattern.updatedAt || a.index - b.index)
+    .map(({ pattern }) => pattern)
 }
 
 export function mostRecentlyUpdated(patterns: Pattern[]): Pattern | undefined {

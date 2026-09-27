@@ -5,6 +5,7 @@ import type { Pattern } from '../domain/pattern'
 import { importPatterns, parsePatternsFile } from '../domain/patternFile'
 import { parsePatternFromQrImage } from '../domain/qrExport'
 import { useI18n } from '../i18n/useI18n'
+import AppIcon from './AppIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -17,6 +18,11 @@ const props = withDefaults(
      * as the value itself.
      */
     decodeImage?: DecodeImage
+    /**
+     * Icons only, each name kept as its tooltip and accessible name: the header's first step when it runs out of room
+     * (ticket 142; `writing.md`, Fitting longer text).
+     */
+    compact?: boolean
   }>(),
   {
     decodeImage: undefined,
@@ -86,70 +92,107 @@ async function onImportQrImage(event: Event): Promise<void> {
 
 <template>
   <!--
-    Both Import controls and their outcome (ticket 117): from a Pattern file, and from a QR-code picture. Each control is
-    a button-looking label around a visually hidden file input, so it reads as one of the top bar's actions while the
-    browser's own file picker still opens from it — and keyboard focus on the input still shows on the label.
-    A fragment of several roots rather than one wrapping box, so the controls flow in the same row as whatever sits
-    beside them in the parent, and the results take a line of their own beneath (flex-basis: 100% below).
+    Both Import controls and their outcome (tickets 117, 142): from a Pattern file, and from a QR-code picture. Each is a
+    text button (Button card) that is a label around a visually hidden file input, so the browser's own file picker
+    opens from it, and keyboard focus on the input shows on the label. A fragment, so the controls and their one-line
+    result sit in the header's own row.
   -->
-  <label class="pattern-import__button" for="import-file">
+  <label
+    class="pattern-import__button"
+    :class="{ 'pattern-import__button--compact': compact }"
+    for="import-file"
+    :title="compact ? t.transfer.importLabel : undefined"
+  >
     <input
       id="import-file"
       type="file"
       class="pattern-import__input"
       accept="application/json,.json"
       data-testid="import-file"
+      :aria-label="compact ? t.transfer.importLabel : undefined"
       @change="onImportFile"
     />
-    {{ t.transfer.importLabel }}
+    <AppIcon name="import" :size="15" />
+    <span v-if="!compact">{{ t.transfer.importLabel }}</span>
   </label>
 
-  <label class="pattern-import__button" for="import-qr">
+  <label
+    class="pattern-import__button"
+    :class="{ 'pattern-import__button--compact': compact }"
+    for="import-qr"
+    :title="compact ? t.transfer.importQrLabel : undefined"
+  >
     <input
       id="import-qr"
       type="file"
       class="pattern-import__input"
       accept="image/*"
       data-testid="import-qr"
+      :aria-label="compact ? t.transfer.importQrLabel : undefined"
       @change="onImportQrImage"
     />
-    {{ t.transfer.importQrLabel }}
+    <AppIcon name="scan" :size="15" />
+    <span v-if="!compact">{{ t.transfer.importQrLabel }}</span>
   </label>
 
-  <!-- role="status" / "alert": announced as they appear, since the file picker has already closed by then. -->
+  <!--
+    One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
+    announced as it appears, since the file picker has already closed by then.
+  -->
   <p v-if="importedCount !== null" class="pattern-import__result" role="status" data-testid="import-result">
     {{ t.transfer.importedLabel }}: {{ importedCount }}
   </p>
   <p v-if="importFailed" class="pattern-import__error" role="alert" data-testid="import-error">
-    {{ t.transfer.importErrorLabel }}
+    <AppIcon name="warning" :size="16" />{{ t.transfer.importErrorLabel }}
   </p>
 
   <p v-if="qrImportedCount !== null" class="pattern-import__result" role="status" data-testid="qr-import-result">
     {{ t.transfer.qrImportedLabel }}
   </p>
   <p v-if="qrImportFailed" class="pattern-import__error" role="alert" data-testid="qr-import-error">
-    {{ t.transfer.qrImportErrorLabel }}
+    <AppIcon name="warning" :size="16" />{{ t.transfer.qrImportErrorLabel }}
   </p>
 </template>
 
 <style scoped>
-/* Same look as every other button (style.css's `button`), on a label: the wedgewood pill with the ink outline. */
+/* A text button (Button card) on a label: no fill or border, padding 0 6, hover fill with a fine pointer. */
 .pattern-import__button {
+  position: relative;
   display: inline-flex;
+  flex: none;
   align-items: center;
+  gap: var(--space-8);
   box-sizing: border-box;
+  height: var(--control-height);
   margin: 0;
-  padding: 10px 22px;
-  font-weight: 700;
-  color: var(--color-wedgewood-ink);
-  background: var(--color-wedgewood);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-pill);
+  padding: 0 var(--space-6);
+  font: var(--type-control);
+  color: var(--ink);
+  white-space: nowrap;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-instant) var(--ease-standard);
 }
 
-.pattern-import__button:hover {
-  background: var(--color-wedgewood-deep);
+.pattern-import__button--compact {
+  justify-content: center;
+  width: var(--control-height);
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .pattern-import__button:hover {
+    background: var(--hover-fill);
+  }
+}
+
+.pattern-import__button:active {
+  background: var(--press-fill);
+  transform: scale(var(--press-scale));
 }
 
 /* Visually hidden, not display: none, so it stays focusable and reachable by keyboard and screen reader. */
@@ -164,22 +207,30 @@ async function onImportQrImage(event: Event): Promise<void> {
   border: 0;
 }
 
-.pattern-import__button:focus-within {
-  outline: 3px solid var(--color-ink);
+.pattern-import__button:has(:focus-visible) {
+  outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
 }
 
 .pattern-import__result,
 .pattern-import__error {
-  flex: 1 1 100%;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-6);
   margin: 0;
-  font-weight: var(--font-weight-bold);
+  font: var(--type-body);
+  color: var(--body);
+  white-space: nowrap;
 }
 
 .pattern-import__error {
-  padding: 4px 12px;
-  color: var(--color-amaranth-ink);
-  background: var(--color-amaranth);
-  border-radius: var(--radius-md);
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pattern-import__button:active {
+    transform: none;
+  }
 }
 </style>

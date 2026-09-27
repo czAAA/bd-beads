@@ -48,6 +48,13 @@ const split = computed(() => {
   return { base, overflow }
 })
 
+/**
+ * The two halves as components of their own, made once: an arrow written inline in the template would be a new
+ * component on every render, and remount every control in the group each time the group re-renders.
+ */
+const Base = () => split.value.base
+const Overflow = () => split.value.overflow
+
 const overflows = computed(() => split.value.overflow.length > 0)
 const expanded = ref(false)
 
@@ -87,7 +94,7 @@ defineExpose({ expanded, collapse })
   >
     <p :id="titleId" class="tool-group__title">{{ title }}</p>
     <div class="tool-group__grid">
-      <component :is="() => split.base" />
+      <component :is="Base" />
     </div>
     <span v-if="overflows" class="tool-group__chevron" aria-hidden="true" data-testid="tool-group-chevron">
       <!-- A simple downward chevron: "there's more below," not a "+N" count (2026-09-16 decision). -->
@@ -96,123 +103,52 @@ defineExpose({ expanded, collapse })
       </svg>
     </span>
     <div v-if="expanded" class="tool-group__overflow" data-testid="tool-group-overflow">
-      <component :is="() => split.overflow" />
+      <component :is="Overflow" />
     </div>
   </section>
 </template>
 
 <style scoped>
-/*
- * One titled box in the Toolbox (CONTEXT.md's Tool group). Every group is as wide as the rail it sits in (see
- * Toolbox.vue's .toolbox, which stretches it) and as tall as its own content — a three-control group like Edit is
- * short, Colors, with a dozen swatches, is tall.
- *
- * position:relative anchors .tool-group__overflow (ticket 41), which overlays downward from this box's own bottom
- * edge without this box itself ever changing size — see the `split` computed above for why that matters.
- */
+/* A Tool group (Toolbox card): a label, 8px above its controls, and no box of its own; the Toolbox is the box. */
 .tool-group {
   position: relative;
   display: flex;
-  flex: 0 0 auto;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 6px var(--tool-group-padding, 6px) 10px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
 }
 
 .tool-group__title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-ink);
-  opacity: 0.55;
+  margin: 0 0 var(--space-8);
+  font: var(--type-label);
+  color: var(--muted);
+  text-transform: lowercase;
 }
 
-/*
- * Controls flow left to right in a fixed number of columns, each one control wide (ticket 114; seven columns above the
- * canvas, ticket 40): --tool-columns and --tool-size are set by the Toolbox, which is what decides how narrow the rail
- * is — four 36px columns on a large display, three 44px ones for a finger on an iPad. A smaller swatch centers in its
- * column rather than shifting the ones after it.
- * A control marked .tool-group__full-row (a text/numeric readout) spans every column, forcing its own row without
- * counting toward the 16-slot cap of normal controls — grid auto-placement resumes normal controls on a fresh row after it.
- *
- * This only ever holds the first 16 (the `split` computed's "base") — a group with more shows the rest in
- * .tool-group__overflow below instead, expanding in place on hover (ticket 41).
- */
 .tool-group__grid {
-  display: grid;
-  grid-template-columns: repeat(var(--tool-columns, 4), var(--tool-size, 36px));
-  gap: var(--tool-gap, 6px);
-  align-items: center;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
 }
 
-/*
- * The expand indicator (ticket 41's chevron/hover-expand affordance): a small downward chevron centered on the
- * group's own bottom border, in a paper-colored disc so it reads clearly against the canvas's dot-grid texture
- * behind it. Purely a signal, not a control of its own — hovering anywhere in the group expands it, not just this
- * icon — so it takes no pointer events and isn't in the tab order.
- */
 .tool-group__chevron {
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  translate: -50% 50%;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-pill);
-  pointer-events: none;
+  top: 0;
+  right: 0;
+  color: var(--muted);
 }
 
 .tool-group__chevron svg {
-  width: 12px;
-  height: 12px;
+  width: var(--space-16);
+  height: var(--space-16);
   fill: none;
-  stroke: var(--color-ink);
-  stroke-width: 2.5;
+  stroke: currentColor;
+  stroke-width: 1.75;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-/* Nothing left to hint at once the group is already open. */
-.tool-group--expanded .tool-group__chevron {
-  visibility: hidden;
-}
-
-/*
- * The overflow controls (ticket 41's 15th-and-later controls): the group's own box extending downward in place,
- * per the 2026-09-16 decision — not a separate dropdown/popup, so it repeats .tool-group's own background/border/
- * radius/grid and sits flush against its bottom edge (the negative margin overlaps rather than doubles the shared
- * border) rather than floating apart from it. position:absolute keeps it from contributing to .tool-group's own
- * flow height, so expanding overlays whatever is below (the canvas) instead of pushing it down — see the `split`
- * computed above for why .tool-group's width stays correct regardless.
- */
 .tool-group__overflow {
-  position: absolute;
-  z-index: 1;
-  top: 100%;
-  left: -1px;
-  right: -1px;
-  margin-top: calc(-1 * var(--border-width));
-  display: grid;
-  grid-template-columns: repeat(var(--tool-columns, 4), var(--tool-size, 36px));
-  gap: var(--tool-gap, 6px);
-  align-items: center;
-  justify-items: center;
-  padding: 8px var(--tool-group-padding, 6px) 10px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
 }
 </style>

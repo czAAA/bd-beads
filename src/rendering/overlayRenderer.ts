@@ -24,11 +24,15 @@ import {
  * overlay lands on the bead it belongs to at every zoom and rotation.
  */
 
-/** The marker's thickness in the Pattern's own px, as the DOM grid drew it. */
-const MARKER_PX = 3
+/** The marker's thickness in the Pattern's own px (BeadBoard card: a 2px `marker` outline). */
+const MARKER_PX = 2
 
-/** What a hover preview shows a bead in: faint, over whatever the bead already holds. */
-const PREVIEW_OPACITY = 0.45
+/** How far outside its row the current-row outline sits, and its corner radius (BeadBoard card). */
+const ROW_OUTLINE_OUTSET_PX = 3
+const ROW_OUTLINE_RADIUS_PX = 5
+
+/** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
+const PREVIEW_OPACITY = 0.6
 
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
 export interface HoverPreview {
@@ -54,6 +58,8 @@ export interface OverlayInput {
   mirrorAxisCounts?: MirrorAxisCounts
   /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping back. */
   dimmedCells?: readonly GridPosition[]
+  /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Pattern has keyboard focus. */
+  cursor?: GridPosition
 }
 
 /** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
@@ -66,7 +72,8 @@ function outlineRect(context: DrawingContext, x: number, y: number, width: numbe
 
 /**
  * The outline round the row being woven now, while Row progress is on and rows run along the grid's rows: the row's own
- * rectangle, so on peyote and brick stitch it follows the row's half-bead shift.
+ * rectangle, 3px outside it with rounded corners, so on peyote and brick stitch it follows the row's half-bead shift.
+ * It stays inside the Pattern's own extent, so the first and last rows' outlines aren't cut off at the surface's edge.
  */
 function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, theme: PatternTheme): void {
   const { technique, columns, rows } = pattern
@@ -75,8 +82,19 @@ function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, theme: P
     return
   }
 
+  const extent = patternExtentPx(technique, columns, rows)
+  const left = Math.max(0, rowShiftPx(technique, row) - ROW_OUTLINE_OUTSET_PX)
+  const top = Math.max(0, rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX)
+  const right = Math.min(extent.width, rowShiftPx(technique, row) + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX)
+  const bottom = Math.min(extent.height, rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX)
+  const width = right - left
+  const height = bottom - top
+
   context.fillStyle = theme.marker
-  outlineRect(context, rowShiftPx(technique, row), rowTopPx(technique, row), columns * CELL_SIZE_PX, CELL_SIZE_PX)
+  context.beginPath()
+  roundedRect(context, left, top, width, height, ROW_OUTLINE_RADIUS_PX)
+  roundedRect(context, left + MARKER_PX, top + MARKER_PX, width - MARKER_PX * 2, height - MARKER_PX * 2, ROW_OUTLINE_RADIUS_PX - MARKER_PX)
+  context.fill('evenodd')
 }
 
 /**
@@ -307,6 +325,30 @@ function drawDimmed(
   }
 }
 
+/**
+ * The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px wide in
+ * high contrast), following its corners. Drawn last, over everything, so it is never hidden.
+ */
+function drawCursor(context: DrawingContext, pattern: DrawnPattern, cursor: GridPosition, theme: PatternTheme): void {
+  const { technique, columns, rows } = pattern
+  if (cursor.row < 0 || cursor.row >= rows || cursor.column < 0 || cursor.column >= columns) {
+    return
+  }
+  // The bead stands a pixel in from its cell (its gap); the ring starts 2px outside that.
+  const offset = 2 - 1
+  const width = theme.cursorWidth
+  const x = rowShiftPx(technique, cursor.row) + cursor.column * CELL_SIZE_PX - offset
+  const y = rowTopPx(technique, cursor.row) - offset
+  const size = CELL_SIZE_PX + offset * 2
+  const radius = beadRoundness(technique) * CELL_SIZE_PX + offset
+
+  context.fillStyle = theme.cursor
+  context.beginPath()
+  roundedRect(context, x - width, y - width, size + width * 2, size + width * 2, radius + width)
+  roundedRect(context, x, y, size, size, radius)
+  context.fill('evenodd')
+}
+
 /** Mirror's axis lines (ticket 44): super-thin but clearly visible, drawn over the whole Pattern whatever the tool. */
 const AXIS_OPACITY = 0.65
 const AXIS_PX = 2
@@ -326,7 +368,7 @@ function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, counts: 
 
 /** Draws the overlay for the part of the Pattern in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells } = input
+  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -334,7 +376,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const { enabled, direction } = pattern.rowProgress
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
-  if (!enabled && !preview && !selection && !axes && !dimmed) {
+  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor) {
     return
   }
 
@@ -363,5 +405,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (axes) {
     drawMirrorAxes(context, pattern, axes, theme)
+  }
+  if (cursor) {
+    drawCursor(context, pattern, cursor, theme)
   }
 }

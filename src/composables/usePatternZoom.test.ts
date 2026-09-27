@@ -37,8 +37,8 @@ function largePattern(): Pattern {
   })
 }
 
-/** The level largePattern fits a 900px-wide canvas area at: 1200px of grid into 900px minus the two ruler gutters and the grid outline. Move it if fixedAvailableWidth's default changes. */
-const LARGE_FIT_PERCENT = 69
+/** The level largePattern fits a 900px-wide canvas area at: 1200px of grid (plus its 14px board padding each side) into 900px less 36px spare and a 28px ruler each side. Move it if fixedAvailableWidth's default changes. */
+const LARGE_FIT_PERCENT = 62
 
 describe('usePatternZoom', () => {
   it('opens a Pattern that already fits at 100%', () => {
@@ -184,9 +184,28 @@ describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
     const available = 900
     const { zoom } = usePatternZoom(() => brick, ref(available))
 
+    // Across the screen, the rotated Pattern's drawn height, with its board padding, scaled; the rulers and spare stay put.
     const drawnHeight = patternExtentPx('brick', brick.columns, brick.rows).height
-    const room = available - (28 + 3) * 2
-    expect(zoom.value * drawnHeight).toBeLessThanOrEqual(room)
-    expect((zoom.value + 0.01) * drawnHeight).toBeGreaterThan(room)
+    const room = available - 36 * 2 - 28 * 2
+    const drawn = (zoomLevel: number) => (drawnHeight + 14 * 2) * zoomLevel
+    expect(drawn(zoom.value)).toBeLessThanOrEqual(room)
+    expect(drawn(zoom.value + 0.01)).toBeGreaterThan(room)
+  })
+})
+
+describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () => {
+  it('fits a tall Pattern by the height it has, leaving 18px spare top and bottom', () => {
+    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 60, unit: 'beads' } })
+    const { zoom } = usePatternZoom(() => tall, ref(1400), ref(600))
+
+    const room = 600 - 18 * 2 - 28 * 2
+    const drawn = (zoomLevel: number) => (patternExtentPx('loom', tall.columns, tall.rows).height + 14 * 2) * zoomLevel
+    expect(drawn(zoom.value)).toBeLessThanOrEqual(room)
+    expect(drawn(zoom.value + 0.01)).toBeGreaterThan(room)
+  })
+
+  it('ignores a height not measured yet', () => {
+    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 60, unit: 'beads' } })
+    expect(usePatternZoom(() => tall, ref(1400), ref(0)).zoomPercent.value).toBe(100)
   })
 })

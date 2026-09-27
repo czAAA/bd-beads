@@ -3,7 +3,8 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PatternSurface from './PatternSurface.vue'
 import { createPattern, type Pattern, type RowProgress, type Technique } from '../domain/pattern'
-import { DEFAULT_THEME } from '../rendering/beadLook'
+import { GRID_BORDER_PX } from '../domain/grid'
+import { DARK_THEME, DEFAULT_THEME } from '../rendering/beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 
 /** A Pattern of this many beads, with any of its fields changed. */
@@ -77,22 +78,45 @@ const windowOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) 
 const draws = () => context.named('clearRect').length / 2
 
 describe('PatternSurface', () => {
+  it('redraws both layers in the new theme\'s colors when the theme changes, at the same size and window', async () => {
+    const { wrapper } = await mountSurface(patternOf(20, 10), 1)
+    const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
+    const window = windowOf(wrapper)
+    context.calls.length = 0
+
+    document.documentElement.dataset.theme = 'dark'
+    try {
+      await nextTick()
+      await nextTick()
+      await nextTick()
+
+      expect(draws()).toBe(1)
+      // The whole surface is cleared and painted the dark board first.
+      expect(context.named('fillRect')[0]!.fillStyle).toBe(DARK_THEME.background)
+      expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toBe(style)
+      expect(windowOf(wrapper)).toBe(window)
+    } finally {
+      document.documentElement.dataset.theme = 'light'
+      await nextTick()
+    }
+  })
+
   it('is the box the DOM grid was, the size of the Pattern and its outline', async () => {
     const { wrapper } = await mountSurface(patternOf(20, 10), 1)
 
     const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
-    // 20 × 10 loom beads at 20px, and 3px of outline on every side.
-    expect(style).toContain('width: 406px')
-    expect(style).toContain('height: 206px')
+    // 20 × 10 loom beads at 20px, and the board's 14px padding on every side.
+    expect(style).toContain('width: 428px')
+    expect(style).toContain('height: 228px')
   })
 
   it('holds a window of a Pattern too big to draw whole: the screen and a margin, not the Pattern', async () => {
     const { wrapper } = await mountSurface(patternOf(250, 250), 3)
 
-    // 15,000 px across at 300%; the screen shows 1000 × 800 of it less the 9px outline, from the first bead, and 160 more.
-    expect(windowOf(wrapper)).toBe('0,0,1151,951')
+    // 15,000 px across at 300%; the screen shows 1000 × 800 of it less the board's 42px padding, from the first bead, and 160 more.
+    expect(windowOf(wrapper)).toBe('0,0,1118,918')
     const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
-    expect([canvas.width, canvas.height]).toEqual([1152, 952])
+    expect([canvas.width, canvas.height]).toEqual([1119, 919])
   })
 
   it('draws a Pattern that fits on screen whole, and no bigger', async () => {
@@ -136,7 +160,7 @@ describe('PatternSurface', () => {
       // 1500px across is 4500 device px: 20 million of them, both ways.
       const { wrapper } = await mountSurface(patternOf(75, 75), 1)
 
-      expect(windowOf(wrapper)).toBe('0,0,1157,957')
+      expect(windowOf(wrapper)).toBe('0,0,1146,946')
     } finally {
       Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
     }
@@ -146,14 +170,14 @@ describe('PatternSurface', () => {
     layout.clip = { left: 0, top: 0, right: 500, bottom: 800 }
     const { wrapper } = await mountSurface(patternOf(250, 250), 1)
 
-    // 500px visible across (less the outline's 3px), and 160 more on the right; the whole screen's height as before.
-    expect(windowOf(wrapper)).toBe('0,0,657,957')
+    // 500px visible across (less the board's 14px padding), and 160 more on the right; the whole screen's height as before.
+    expect(windowOf(wrapper)).toBe('0,0,646,946')
   })
 
   it('draws it again when scrolling takes the screen out of what it holds, and not before', async () => {
     const { wrapper } = await mountSurface(patternOf(250, 250), 1)
     const before = draws()
-    expect(windowOf(wrapper)).toBe('0,0,1157,957')
+    expect(windowOf(wrapper)).toBe('0,0,1146,946')
 
     // Scrolled 100px: still inside the margin. Nothing to draw.
     layout.surface.top = -100
@@ -168,7 +192,7 @@ describe('PatternSurface', () => {
 
     await nextTick()
     await nextTick()
-    expect(windowOf(wrapper)).toBe('0,237,1157,1120')
+    expect(windowOf(wrapper)).toBe('0,226,1146,1120')
     expect(draws()).toBe(before + 1)
   })
 
@@ -192,15 +216,15 @@ describe('PatternSurface', () => {
 
   it('starts again from what is on screen when the zoom changes', async () => {
     const { wrapper } = await mountSurface(patternOf(250, 250), 1)
-    expect(windowOf(wrapper)).toBe('0,0,1157,957')
+    expect(windowOf(wrapper)).toBe('0,0,1146,946')
 
     await wrapper.setProps({ zoom: 1.5 })
     await nextTick()
     await nextTick()
 
-    // At 150% the Pattern is 7,500 px across and tall: the screen's 1000 × 800 (less a 4.5px outline), and 160 more.
-    expect(windowOf(wrapper)).toBe('0,0,1156,956')
-    expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toContain('width: 7509px')
+    // At 150% the Pattern is 7,500 px across and tall: the screen's 1000 × 800 (less the board's 21px padding), and 160 more.
+    expect(windowOf(wrapper)).toBe('0,0,1139,939')
+    expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toContain('width: 7542px')
   })
 
   describe('when the Pattern is edited', () => {
@@ -286,8 +310,8 @@ describe('PatternSurface', () => {
     const { wrapper } = await mountSurface(patternOf(20, 10, { rotated: true }), 1)
 
     const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
-    expect(style).toContain('width: 206px')
-    expect(style).toContain('height: 406px')
+    expect(style).toContain('width: 228px')
+    expect(style).toContain('height: 428px')
     expect(windowOf(wrapper)).toBe('0,0,200,400')
   })
 
@@ -295,11 +319,11 @@ describe('PatternSurface', () => {
     const progress = (enabled: boolean): RowProgress => ({ enabled, direction: 'rows', currentRow: 2, currentColumn: 0 })
 
     await mountSurface(patternOf(20, 10, { rowProgress: progress(false) }))
-    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(false)
+    expect(context.named('fill').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(false)
 
     context.calls.length = 0
     await mountSurface(patternOf(20, 10, { rowProgress: progress(true) }))
-    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
+    expect(context.named('fill').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
   })
 
   it('makes a bitmap as dense as the screen: twice the pixels on a 2× display', async () => {
@@ -321,7 +345,7 @@ describe('PatternSurface', () => {
       const pitch = pattern.technique === 'peyote' ? 15 : pattern.technique === 'brick' ? 21 : 20
       const x = shiftX + column * 20 + 10
       const y = row * pitch + 10
-      const border = 3 * zoom
+      const border = GRID_BORDER_PX * zoom
       return pattern.rotated
         ? { clientX: border + (Math.round((pattern.technique === 'loom' ? pattern.rows * 20 : pattern.rows * pitch + (20 - pitch)) - y) * zoom), clientY: border + x * zoom }
         : { clientX: border + x * zoom, clientY: border + y * zoom }
@@ -468,16 +492,16 @@ describe('PatternSurface', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('shows a pointer over a bead, and the ordinary one elsewhere', async () => {
+    it('shows a crosshair over a bead, and the ordinary cursor elsewhere', async () => {
       const pattern = patternOf(20, 10)
       const { wrapper } = await mountSurface(pattern)
       const surface = wrapper.find('[data-testid="pattern-surface"]')
 
       await surface.trigger('pointermove', { ...centreOf(pattern, 0, 0), buttons: 0 })
-      expect(surface.attributes('style')).toContain('cursor: pointer')
+      expect(surface.classes()).toContain('pattern-surface--over-bead')
 
       await surface.trigger('pointerleave')
-      expect(surface.attributes('style')).not.toContain('cursor')
+      expect(surface.classes()).not.toContain('pattern-surface--over-bead')
     })
   })
 
@@ -488,7 +512,7 @@ describe('PatternSurface', () => {
 
       await wrapper.setProps({ previewCells: [{ row: 1, column: 2 }, { row: 1, column: 17 }], previewColor: '#e63746' })
 
-      const faint = context.named('fillRect').filter((call) => call.globalAlpha === 0.45)
+      const faint = context.named('fillRect').filter((call) => call.globalAlpha === 0.6)
       expect(faint.map((call) => call.args)).toEqual([[41, 21, 18, 18], [341, 21, 18, 18]])
       // The cells were not drawn again for it.
       expect(context.named('rect')).toHaveLength(0)

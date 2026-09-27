@@ -38,10 +38,13 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
 export const CELL_SIZE_PX = 20
 
 /**
- * The pattern grid's bold outline in unscaled px — mirrors `--border-width` in style.css. It sits outside the
- * cells, so the canvas box has to make room for it or the right and bottom edges get clipped (ticket 18).
+ * The board's padding round the beads, in unscaled px (BeadBoard card: 14). It sits outside the cells, so the canvas
+ * box has to make room for it or the right and bottom edges get clipped (ticket 18).
  */
-export const GRID_BORDER_PX = 3
+export const GRID_BORDER_PX = 14
+
+/** The board's corner radius in unscaled px: `radius-board`. */
+export const BOARD_RADIUS_PX = 32
 
 /** Width of each ruler gutter (ticket 19). Rendered at a fixed screen size, so it does not scale with the zoom. */
 export const RULER_GUTTER_PX = 28

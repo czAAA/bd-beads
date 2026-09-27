@@ -13,9 +13,8 @@ function activatesOnSpace(target: EventTarget | null): boolean {
 /**
  * Holding Space and dragging pans the canvas panel's viewport (ticket 95): a pure scroll, regardless of which tool
  * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
- * than this composable trying to intercept those events itself. Horizontal scroll lands on `scrollEl` (the canvas
- * panel's own horizontal scroller, `.app-shell__canvas-scroll` in App.vue); vertical scroll lands on the window,
- * since nothing in the shell traps vertical overflow of its own — see that element's own CSS comment in App.vue.
+ * than this composable trying to intercept those events itself. Both directions land on `scrollEl` (the canvas
+ * box's own scroller, `.app-shell__canvas-scroll` in App.vue): the page itself never scrolls (ticket 141).
  * Bound to the window, the same way useKeyboardShortcuts is: the canvas takes no keyboard focus of its own, and a
  * drag can wander (or start) anywhere once Space is held.
  */
@@ -63,10 +62,11 @@ export function useSpaceDragPan(scrollEl: Ref<HTMLElement | null>) {
     lastX = event.clientX
     lastY = event.clientY
 
+    // The Pattern scrolls inside the canvas box both ways (ticket 141): the page itself never does.
     if (scrollEl.value) {
       scrollEl.value.scrollLeft -= dx
+      scrollEl.value.scrollTop -= dy
     }
-    window.scrollBy(0, -dy)
   }
 
   function onPointerEnd() {

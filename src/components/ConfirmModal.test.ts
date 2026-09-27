@@ -49,7 +49,7 @@ describe('ConfirmModal', () => {
   it('emits cancel on Escape', async () => {
     const wrapper = mountModal()
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await wrapper.vm.$nextTick()
 
     expect(wrapper.emitted('cancel')).toHaveLength(1)
@@ -61,7 +61,7 @@ describe('ConfirmModal', () => {
     await wrapper.find('[data-testid="confirm-modal-dialog"]').trigger('click')
     expect(wrapper.emitted('cancel')).toBeUndefined()
 
-    await wrapper.find('[data-testid="confirm-modal-backdrop"]').trigger('click')
+    await wrapper.find('[data-testid="modal-scrim"]').trigger('click')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 
@@ -97,6 +97,24 @@ describe('ConfirmModal', () => {
     expect(wrapper.find('[data-testid="slotted"]').exists()).toBe(true)
     await wrapper.find('[data-testid="confirm-modal-extra"]').trigger('click')
     expect(wrapper.emitted('extra')).toHaveLength(1)
+  })
+
+  it('puts Cancel on the left of the confirm button, with focus on it first', () => {
+    const wrapper = mountModal()
+    const buttons = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
+
+    expect(buttons.indexOf('confirm-modal-cancel')).toBeLessThan(buttons.indexOf('confirm-modal-confirm'))
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="confirm-modal-cancel"]').element)
+  })
+
+  it('makes a destructive confirm danger-filled and any other primary', () => {
+    expect(mountModal().find('[data-testid="confirm-modal-confirm"]').classes()).toContain('app-button--danger')
+
+    const plain = mount(ConfirmModal, {
+      props: { title: 'Switch?', message: 'M', confirmLabel: 'Switch', cancelLabel: 'Keep', confirmDanger: false },
+      attachTo: document.body,
+    })
+    expect(plain.find('[data-testid="confirm-modal-confirm"]').classes()).toContain('app-button--primary')
   })
 
   it('has no extra action unless one is labelled', () => {

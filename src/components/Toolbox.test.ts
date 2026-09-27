@@ -33,7 +33,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
 }
 
 describe('Toolbox', () => {
-  it('renders six Tool groups in order: Tools, Colors, Edit, Mirror, Size, Row progress', () => {
+  it('renders Tools, Colors and Edit as groups, then Mirror and Size as disclosure rows (tickets 75, 144)', () => {
     const wrapper = mountToolbox()
 
     const groups = wrapper.findAll('.tool-group')
@@ -41,10 +41,11 @@ describe('Toolbox', () => {
       ru.toolbox.groups.tools,
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
-      ru.toolbox.groups.mirror,
-      ru.toolbox.groups.size,
-      ru.toolbox.groups.rowProgress,
     ])
+    // Mirror and Size are disclosure rows (ticket 75), closed until pressed.
+    const rows = wrapper.findAll('.disclosure-row')
+    expect(rows.map((row) => row.find('.disclosure-row__label').text())).toEqual([ru.toolbox.groups.mirror, ru.toolbox.groups.size])
+    expect(rows.map((row) => row.find('button').attributes('aria-expanded'))).toEqual(['false', 'false'])
   })
 
   it('puts Paint, Fill, Select, Erase, remove-line and Delete all inside the Tools group', () => {
@@ -116,11 +117,11 @@ describe('Toolbox', () => {
     expect(customColorIndex).toBeGreaterThan(lastPaletteIndex)
   })
 
-  it('puts Undo, Rotate, Copy, Redo, Save and QR export inside the Edit group', () => {
+  it('puts Undo, Rotate, Copy and Redo inside the Edit group', () => {
     const wrapper = mountToolbox()
 
     const editGroup = wrapper.findAll('.tool-group')[2]!
-    for (const testId of ['undo-button', 'rotate-button', 'copy-button', 'redo-button', 'save-button', 'export-qr']) {
+    for (const testId of ['undo-button', 'rotate-button', 'copy-button', 'redo-button']) {
       expect(editGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
   })
@@ -135,7 +136,7 @@ describe('Toolbox', () => {
   it('puts the mirror axis counters and mirror-current controls inside the Mirror group', () => {
     const wrapper = mountToolbox()
 
-    const mirrorGroup = wrapper.findAll('.tool-group')[3]!
+    const mirrorGroup = wrapper.find('[data-testid="tool-group-mirror"]')
     for (const testId of ['mirror-left-right', 'mirror-top-bottom', 'mirror-current-horizontal', 'mirror-current-vertical']) {
       expect(mirrorGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
@@ -151,25 +152,6 @@ describe('Toolbox', () => {
     expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('title')).toContain('(M)')
     expect(wrapper.find('[data-testid="mirror-current-horizontal"]').attributes('title')).toContain('(H)')
     expect(wrapper.find('[data-testid="mirror-current-vertical"]').attributes('title')).toContain('(V)')
-  })
-
-  it('puts only the Enabled and Direction toggles inside the Row progress group (ticket 124: the readout and Previous/Next moved to Progress bar on the canvas)', () => {
-    const wrapper = mountToolbox()
-
-    const rowProgressGroup = wrapper.findAll('.tool-group')[5]!
-    for (const testId of ['row-progress-enabled', 'row-progress-direction']) {
-      expect(rowProgressGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
-    }
-    for (const testId of ['row-progress-position', 'row-progress-previous', 'row-progress-next']) {
-      expect(rowProgressGroup.find(`[data-testid="${testId}"]`).exists()).toBe(false)
-    }
-  })
-
-  it("shows the Enabled and Direction toggles' shortcut in their tooltip (ticket 94)", () => {
-    const wrapper = mountToolbox()
-
-    expect(wrapper.find('[data-testid="row-progress-enabled"]').attributes('title')).toContain('(P)')
-    expect(wrapper.find('[data-testid="row-progress-direction"]').attributes('title')).toContain('(D)')
   })
 
   it('emits select-tool when a tool button is clicked', async () => {
@@ -251,23 +233,20 @@ describe('Toolbox', () => {
     expect(wrapper.emitted('mirror-current-hover')).toEqual([['horizontal'], [null], ['vertical']])
   })
 
-  it('emits toggle-row-progress with the next enabled state', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
-
-    expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
-  })
-
-  it('reflects rotated/row-progress state from the pattern prop', () => {
+  it('reflects the rotated state from the pattern prop', () => {
     const pattern = makePattern()
     pattern.rotated = true
-    pattern.rowProgress.enabled = true
 
     const wrapper = mountToolbox({ pattern })
 
     expect(wrapper.find('[data-testid="rotate-button"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="row-progress-enabled"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('has no Row progress controls of its own (ticket 144)', () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-direction"]').exists()).toBe(false)
   })
 
   it('names every group for screen readers via its own title', () => {
@@ -314,13 +293,6 @@ describe('Toolbox', () => {
     const wrapper = mountToolbox({ mirrorCopyMode: true })
 
     expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
-  })
-
-  it('gives each counter its own full row, not counted among the icon controls', () => {
-    const wrapper = mountToolbox()
-
-    expect(wrapper.find('[data-testid="mirror-left-right"]').classes()).toContain('tool-group__full-row')
-    expect(wrapper.find('[data-testid="mirror-top-bottom"]').classes()).toContain('tool-group__full-row')
   })
 
   it('shows each counter its current value', () => {
@@ -430,76 +402,20 @@ describe('Toolbox Image colors (ticket 58)', () => {
   it('takes its own line rather than counting toward the group control cap', () => {
     const wrapper = mountToolbox({ pattern: convertedPattern() })
 
-    expect(wrapper.find('[data-testid="image-colors-picker"]').classes()).toContain('tool-group__full-row')
+    expect(wrapper.find('[data-testid="tool-group-colors"] [data-testid="image-colors-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
   })
 })
 
-describe('Toolbox Save (ticket 115)', () => {
-  it('has a Save control with an icon, an accessible name and a tooltip naming its shortcut', () => {
+describe('Toolbox without Save or Export (ticket 148)', () => {
+  it('leaves Save and the exports to the save box: the Edit row is Undo, Redo, Rotate and Copy', () => {
     const wrapper = mountToolbox()
 
-    const button = wrapper.find('[data-testid="save-button"]')
-    expect(button.find('svg').exists()).toBe(true)
-    expect([en.tools.saveButton, ru.tools.saveButton]).toContain(button.attributes('aria-label'))
-    expect(button.attributes('title')).toContain('Ctrl/Cmd+S')
-  })
-
-  it('emits save when clicked', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="save-button"]').trigger('click')
-
-    expect(wrapper.emitted('save')).toHaveLength(1)
-  })
-
-  it('shows the "Saved" confirmation, in the interface language, only while told the save landed', async () => {
-    const wrapper = mountToolbox()
-    expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(false)
-
-    await wrapper.setProps({ saved: true })
-
-    expect([en.tools.savedConfirmation, ru.tools.savedConfirmation]).toContain(
-      wrapper.find('[data-testid="save-confirmation"]').text(),
-    )
-    expect(wrapper.find('[data-testid="tool-group-edit"]').find('[data-testid="save-confirmation"]').exists()).toBe(true)
-
-    await wrapper.setProps({ saved: false })
-
-    expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(false)
-  })
-})
-
-describe('Toolbox QR export (ticket 116)', () => {
-  it('has a QR export control with an icon, an accessible name and a tooltip', () => {
-    const wrapper = mountToolbox()
-
-    const button = wrapper.find('[data-testid="export-qr"]')
-    expect(button.find('svg').exists()).toBe(true)
-    expect([en.transfer.exportQrButton, ru.transfer.exportQrButton]).toContain(button.attributes('aria-label'))
-    expect([en.transfer.exportQrButton, ru.transfer.exportQrButton]).toContain(button.attributes('title'))
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(false)
-    expect(wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title')).toBeUndefined()
-  })
-
-  it('emits export-qr when clicked', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="export-qr"]').trigger('click')
-
-    expect(wrapper.emitted('export-qr')).toHaveLength(1)
-  })
-
-  it('is disabled for a Pattern too large for a QR code, with the reason on the wrapper, not the button', async () => {
-    const wrapper = mountToolbox({ qrTooLarge: true })
-
-    const button = wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]')
-    expect(button.element.disabled).toBe(true)
-    expect([en.transfer.qrTooLargeMessage, ru.transfer.qrTooLargeMessage]).toContain(
-      wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title'),
-    )
-    await button.trigger('click')
-    expect(wrapper.emitted('export-qr')).toBeUndefined()
+    for (const testId of ['save-button', 'export-qr', 'export-png', 'export-pdf']) {
+      expect(wrapper.find(`[data-testid="${testId}"]`).exists()).toBe(false)
+    }
+    const edit = wrapper.findAll('[data-testid="tool-group-edit"] button').map((button) => button.attributes('data-testid'))
+    expect(edit).toEqual(['undo-button', 'redo-button', 'rotate-button', 'copy-button'])
   })
 })
 
@@ -516,33 +432,32 @@ describe('Toolbox rail (ticket 114)', () => {
   })
 })
 
-describe('Toolbox PNG and PDF export (tickets 73, 74)', () => {
-  it.each([
-    ['export-png', 'export-png', en.transfer.exportPngButton, ru.transfer.exportPngButton],
-    ['export-pdf', 'export-pdf', en.transfer.exportPdfButton, ru.transfer.exportPdfButton],
-  ])('has an icon button, named for what it makes, that asks for %s', async (testId, event, english, russian) => {
-    const wrapper = mountToolbox()
+describe('Toolbox disclosure rows (ticket 75)', () => {
+  it('opens Mirror in place below its row, the chevron turning up, and sums it up as ↔ · ↕', async () => {
+    const wrapper = mountToolbox({ mirrorAxisCounts: { columns: 1, rows: 0 } })
+    const row = wrapper.find('[data-testid="tool-group-mirror"]')
 
-    const button = wrapper.find(`[data-testid="${testId}"]`)
-    expect(button.find('svg').exists()).toBe(true)
-    expect([english, russian]).toContain(button.attributes('aria-label'))
-    expect(button.attributes('title')).toBe(button.attributes('aria-label'))
+    expect(row.find('.disclosure-row__summary').text()).toBe('↔ 1 · ↕ 0')
+    expect(row.find('.disclosure-row__panel').isVisible()).toBe(false)
 
-    await button.trigger('click')
-    expect(wrapper.emitted(event)).toHaveLength(1)
+    await row.find('button').trigger('click')
+
+    expect(row.find('button').attributes('aria-expanded')).toBe('true')
+    expect(row.find('.disclosure-row__chevron').attributes('data-icon')).toBe('chevron-up')
   })
 
-  it('waits while one is being drawn, so a second press does not start a second', () => {
-    const wrapper = mountToolbox({ exporting: true })
+  it('closes an open row on Escape before anything else', async () => {
+    const wrapper = mountToolbox()
+    await wrapper.find('[data-testid="tool-group-size"] button').trigger('click')
 
-    expect(wrapper.find('[data-testid="export-png"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.find('[data-testid="export-pdf"]').attributes('disabled')).toBeDefined()
+    expect((wrapper.vm as unknown as { collapseExpandedGroup: () => boolean }).collapseExpandedGroup()).toBe(true)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="tool-group-size"] button').attributes('aria-expanded')).toBe('false')
+    expect((wrapper.vm as unknown as { collapseExpandedGroup: () => boolean }).collapseExpandedGroup()).toBe(false)
   })
 
-  it('sits in the Edit group without pushing it over its control cap', () => {
+  it('sums Size up with the Estimated size', () => {
     const wrapper = mountToolbox()
-
-    expect(wrapper.find('[data-testid="tool-group-edit"] [data-testid="export-png"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="tool-group-size"] .disclosure-row__summary').text()).toMatch(/\d/)
   })
 })

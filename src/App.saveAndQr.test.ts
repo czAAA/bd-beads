@@ -41,7 +41,7 @@ afterEach(() => {
 
 async function createPatternViaForm(wrapper: ReturnType<typeof mount>) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
+  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue('15')
   await wrapper.find('[data-testid="height-input"]').setValue('30')
   await wrapper.find('form').trigger('submit')
@@ -197,13 +197,19 @@ describe('App Save (ticket 115)', () => {
   })
 })
 
+/** QR code is an item of the save box's Export menu (ticket 148). */
+async function openQrPanel(wrapper: ReturnType<typeof mount>) {
+  await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
+  await wrapper.find('[data-testid="export-qr"]').trigger('click')
+}
+
 describe('App QR export (ticket 116)', () => {
-  it('opens the QR panel for the open Pattern from the Edit group, and Close hides it', async () => {
+  it('opens the QR panel for the open Pattern from the Export menu, and Close hides it', async () => {
     const wrapper = mountApp()
     await createPatternViaForm(wrapper)
     expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="tool-group-edit"] [data-testid="export-qr"]').trigger('click')
+    await openQrPanel(wrapper)
 
     expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="qr-code-module"]').length).toBeGreaterThan(0)
@@ -220,7 +226,7 @@ describe('App QR export (ticket 116)', () => {
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="export-qr"]').trigger('click')
+    await openQrPanel(wrapper)
 
     await pressKey({ key: 'Escape' })
 
@@ -231,14 +237,14 @@ describe('App QR export (ticket 116)', () => {
   it('withholds the editing shortcuts while the panel is open, like any other modal', async () => {
     const wrapper = mountApp()
     await createPatternViaForm(wrapper)
-    await wrapper.find('[data-testid="export-qr"]').trigger('click')
+    await openQrPanel(wrapper)
 
     await pressKey({ key: 'r' })
 
     expect(loadPatterns()[0]!.rotated).toBe(false)
   })
 
-  it('disables the control for a Pattern too large for a QR code, with the reason as its tooltip', async () => {
+  it('turns the menu item off for a Pattern too large for a QR code, with the reason under it', async () => {
     const huge = createPattern({
       name: 'Huge',
       technique: 'loom',
@@ -247,9 +253,10 @@ describe('App QR export (ticket 116)', () => {
     })
     savePatterns([{ ...huge, grid: denselyColoredGrid(huge.columns, huge.rows) }])
     const wrapper = mountApp()
+    await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="export-qr-wrapper"]').attributes('title')).toBe(en.transfer.qrTooLargeMessage)
+    expect(wrapper.find('[data-testid="export-qr-reason"]').text()).toBe(en.transfer.qrTooLargeMessage)
   })
 
   it('is gone from the Export and import box', async () => {

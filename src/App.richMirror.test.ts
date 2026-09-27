@@ -9,7 +9,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
+  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue(width)
   await wrapper.find('[data-testid="height-input"]').setValue(height)
   await wrapper.find('form').trigger('submit')
@@ -192,7 +192,7 @@ describe("App's Mirror current across strips (ticket 46)", () => {
   it('leaves woven rows untouched (Row progress lock)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // finishes row 0
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click') // 1 axis, 2 strips of 10 rows
@@ -272,7 +272,7 @@ describe("App's Mirror current hover preview (ticket 47)", () => {
   it('does not dim a cell a click could not actually change (Row progress lock)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30') // 10 columns, 20 rows
-    await wrapper.find('[data-testid="row-progress-enabled"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // finishes row 0
     await wrapper.find('[data-color-id="red"]').trigger('click')
 

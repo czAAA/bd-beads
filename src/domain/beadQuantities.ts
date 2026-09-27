@@ -1,4 +1,5 @@
 import type { Bead } from './beads'
+import type { Locale } from '../i18n/translations'
 import { findPaletteColorByHex } from './palette'
 import type { Pattern } from './pattern'
 
@@ -44,10 +45,11 @@ const MIN_WEIGHABLE_GRAMS = 0.01
 /** From here up (once rounded to two decimals it would read 10.00) the weight has one decimal. */
 const ONE_DECIMAL_FROM_GRAMS = 9.995
 
-/** "12.3 g" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit follows the app language. */
-export function formatGrams(grams: number, unit: string): string {
+/** "12.3 g" / "12,3 г" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit and decimal sign follow the app language (writing.md). */
+export function formatGrams(grams: number, unit: string, locale: Locale = 'en'): string {
+  const decimal = locale === 'ru' ? ',' : '.'
   if (grams < MIN_WEIGHABLE_GRAMS) {
-    return `< ${MIN_WEIGHABLE_GRAMS} ${unit}`
+    return `< ${String(MIN_WEIGHABLE_GRAMS).replace('.', decimal)} ${unit}`
   }
-  return `${grams.toFixed(grams >= ONE_DECIMAL_FROM_GRAMS ? 1 : 2)} ${unit}`
+  return `${grams.toFixed(grams >= ONE_DECIMAL_FROM_GRAMS ? 1 : 2).replace('.', decimal)} ${unit}`
 }

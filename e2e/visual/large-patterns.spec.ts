@@ -109,11 +109,14 @@ for (const { columns, rows } of SIZES) {
       await settle(page)
 
       await expect(page.getByTestId('save-failed-message')).toBeVisible()
-      // The bead is drawn: its centre is the color it was painted.
+      await settle(page)
+      // The bead is drawn: its centre is the color it was painted. The notice row under the header has pushed the canvas
+      // box down (ticket 141), so the bead is found again where it is now.
+      const now = await firstBeadPoint(page, 2, 3)
       const box = (await page.getByTestId('pattern-surface').boundingBox())!
       const shot = PNG.sync.read(await page.screenshot({ clip: { x: Math.floor(box.x), y: Math.floor(box.y), width: Math.ceil(box.width), height: Math.ceil(box.height) } }))
-      const x = Math.floor(at.x - Math.floor(box.x))
-      const y = Math.floor(at.y - Math.floor(box.y))
+      const x = Math.floor(now.x - Math.floor(box.x))
+      const y = Math.floor(now.y - Math.floor(box.y))
       const pixel = [0, 1, 2].map((channel) => shot.data[(y * shot.width + x) * 4 + channel]!)
       const expected = [1, 3, 5].map((index) => Number.parseInt(RED.slice(index, index + 2), 16))
       expect(pixel.every((value, index) => Math.abs(value - expected[index]!) <= 10)).toBe(true)

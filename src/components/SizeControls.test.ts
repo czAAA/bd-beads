@@ -76,10 +76,10 @@ describe('SizeControls Estimated size (ticket 98)', () => {
     expect(estimate(mountControls(toggleRotated(upright)))).toBe('≈ 3.0 × 1.5 cm')
   })
 
-  it('follows the app language for the unit label', () => {
+  it('follows the app language for the unit label and decimal sign (writing.md)', () => {
     localStorage.setItem('bd-beads:locale', 'ru')
 
-    expect(estimate(mountControls(pattern(10, 20)))).toBe('≈ 1.5 × 3.0 см')
+    expect(estimate(mountControls(pattern(10, 20)))).toBe('≈ 1,5 × 3,0 см')
     expect(estimate(mountControls(pattern(6, 20)))).toBe('≈ 9 × 30 мм')
   })
 

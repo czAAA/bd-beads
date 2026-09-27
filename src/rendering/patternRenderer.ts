@@ -2,9 +2,8 @@ import { CELL_SIZE_PX, isOffsetTechnique, type Technique } from '../domain/grid'
 import { isInFinishedRow, type Pattern } from '../domain/pattern'
 import {
   DEFAULT_THEME,
-  DIMMED_OPACITY,
   drawFlatBead,
-  greyscale,
+  finishedColor,
   type BeadDrawer,
   type DrawingContext,
   type PatternTheme,
@@ -27,9 +26,12 @@ import {
 /** Brick stitch's seam between rows, in grid px: a rule the full width of the row that takes 1px of height of its own. */
 export const SEAM_PX = 1
 
-/** How much of a bead's width its corners are rounded by, per Technique: peyote's 30%, as the grid of elements had them; loom and brick stitch are square. The one place the look is decided: the hit-test and the overlay read it too. */
+/** A rounded bead's corners, as a share of its width (BeadBoard card). */
+const ROUNDED_BEAD_CORNER = 0.22
+
+/** How much of a bead's width its corners are rounded by, per Technique: peyote's beads are rounded; loom and brick stitch are square. The one place the look is decided: the hit-test and the overlay read it too. */
 export function beadRoundness(technique: Technique): number {
-  return technique === 'peyote' ? 0.3 : 0
+  return technique === 'peyote' ? ROUNDED_BEAD_CORNER : 0
 }
 
 /**
@@ -278,9 +280,6 @@ export function renderPattern(context: DrawingContext, input: RenderInput): void
 }
 
 function drawSeam(context: DrawingContext, x: number, y: number, width: number, dimmed: boolean, theme: PatternTheme): void {
-  context.save()
-  context.globalAlpha = dimmed ? DIMMED_OPACITY : 1
-  context.fillStyle = dimmed ? greyscale(theme.seam) : theme.seam
+  context.fillStyle = dimmed ? finishedColor(theme.seam, theme) : theme.seam
   context.fillRect(x, y, width, SEAM_PX)
-  context.restore()
 }

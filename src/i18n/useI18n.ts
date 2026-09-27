@@ -1,4 +1,4 @@
-import { type ComputedRef, type InjectionKey, type Ref, computed, inject, provide, ref } from 'vue'
+import { type ComputedRef, type InjectionKey, type Ref, computed, inject, provide, ref, watchEffect } from 'vue'
 import { en } from './en'
 import { ru } from './ru'
 import { loadLocale, saveLocale } from './localeStorage'
@@ -27,6 +27,10 @@ function createI18n(): I18n {
 /** Call once, at the root of the component tree, so descendants share one language via useI18n(). */
 export function provideI18n(): I18n {
   const i18n = createI18n()
+  // `lang` on <html> follows the app language, so screen readers and hyphenation use the right one.
+  watchEffect(() => {
+    document.documentElement.lang = i18n.locale.value
+  })
   provide(I18N_KEY, i18n)
   return i18n
 }

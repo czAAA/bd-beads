@@ -100,4 +100,10 @@ describe('formatGrams', () => {
     expect(formatGrams(2, 'г')).toBe('2.00 г')
     expect(formatGrams(0.001, 'г')).toBe('< 0.01 г')
   })
+
+  it('uses the Russian decimal comma (writing.md, Numbers) when locale is ru', () => {
+    expect(formatGrams(2, 'г', 'ru')).toBe('2,00 г')
+    expect(formatGrams(12.34, 'г', 'ru')).toBe('12,3 г')
+    expect(formatGrams(0.001, 'г', 'ru')).toBe('< 0,01 г')
+  })
 })

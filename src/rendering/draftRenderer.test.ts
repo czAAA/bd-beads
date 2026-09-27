@@ -15,7 +15,7 @@ describe('draftImage', () => {
     expect([image.width, image.height]).toEqual([2, 2])
     expect(pixel(image, 0, 0)).toEqual([255, 0, 0])
     expect(pixel(image, 1, 0)).toEqual([0, 255, 0])
-    expect(pixel(image, 0, 1)).toEqual([199, 205, 213]) // an empty bead: the theme's empty color
+    expect(pixel(image, 0, 1)).toEqual([216, 210, 204]) // an empty bead: the theme's empty color
     expect(pixel(image, 1, 1)).toEqual([0, 0, 255])
     expect(image.data[3]).toBe(255)
   })
@@ -24,8 +24,8 @@ describe('draftImage', () => {
     const image = draftImage('peyote', 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([5, 2])
-    expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 0))).toEqual([[255, 0, 0], [255, 0, 0], [0, 255, 0], [0, 255, 0], [255, 255, 255]])
-    expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 1))).toEqual([[255, 255, 255], [0, 0, 255], [0, 0, 255], [255, 255, 0], [255, 255, 0]])
+    expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 0))).toEqual([[255, 0, 0], [255, 0, 0], [0, 255, 0], [0, 255, 0], [232, 227, 223]])
+    expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 1))).toEqual([[232, 227, 223], [0, 0, 255], [0, 0, 255], [255, 255, 0], [255, 255, 0]])
   })
 
   it('shifts brick stitch rows the same way', () => {

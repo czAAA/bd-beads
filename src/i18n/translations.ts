@@ -1,3 +1,5 @@
+import type { PluralForms } from './plural'
+
 export type Locale = 'en' | 'ru'
 
 export interface Translations {
@@ -19,9 +21,56 @@ export interface Translations {
     unitMm: string
     unitCm: string
     submit: string
+    /** Right of an optional field's label (TextField card). */
+    optional: string
+    /** Field errors say what to enter (`writing.md`, Field error). */
+    enterWidth: string
+    enterHeight: string
+    enterWholeBeads: string
+    /** Under Convert image while it waits for a size. */
+    enterSizeFirst: string
+    /** Between Create Pattern and Convert image. */
+    or: string
+    /** Beside Unit: the stated size in the other unit, "≈ 40×30 beads". */
+    estimateBeads: string
+  }
+  /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
+  a11y: {
+    skipToPattern: string
+    toolsLandmark: string
+    /** Announced as the bead cursor moves. */
+    cursorPosition: string
+    /** Announced after Space or Enter uses the current tool. */
+    painted: string
+    filled: string
+    erased: string
+    emptyBead: string
+    /** The Pattern's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
+    patternLabel: string
+    colorsCount: PluralForms
+    progressDone: string
+    /** Shown in the canvas strip while the Pattern has keyboard focus. */
+    keyboardHint: string
+    /** A message's close ×. */
+    closeMessage: string
+    /** An expandable panel's expand button (BeadsNeeded, SavedPatterns cards). */
+    expandPanel: string
+    collapsePanel: string
+  }
+  /** The Palette's color names (`writing.md`, Color names). */
+  colorNames: Record<string, string>
+  /** The header's theme control (ticket 139). */
+  theme: {
+    groupLabel: string
+    matchDevice: string
+    light: string
+    dark: string
+    contrast: string
   }
   languageSwitcher: {
     ariaLabel: string
+    /** EN / RU's accessible name: what pressing it does, in the language it switches from. */
+    switchLabel: string
   }
   patterns: {
     heading: string
@@ -30,13 +79,22 @@ export interface Translations {
     currentLabel: string
     unknownBeadLabel: string
     noSavedPatternsMessage: string
+    /** Saved Patterns' meta: how many of the library the box shows ("5 of 12"). */
+    shownOf: string
   }
   canvas: {
     zoomInLabel: string
     zoomOutLabel: string
     zoomResetLabel: string
+    /** The canvas strip's title (ticket 143). */
+    stripTitle: string
+    /** The strip's size meta, "40 columns · 30 rows": each count in its plural form, joined by a spaced middle dot. */
+    columnsCount: PluralForms
+    rowsCount: PluralForms
   }
   shell: {
+    /** Under 'No Pattern open yet': what to do (EmptyCanvas card). */
+    canvasPlaceholderHint: string
     canvasPlaceholder: string
   }
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
@@ -67,6 +125,8 @@ export interface Translations {
     pasteLabel: string
     /** The Tools-group button next to Erase (ticket 123): removes the selected whole row/column, enabled only while the Selection is exactly one. */
     removeLineButton: string
+    /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
+    removeLineShort: string
   }
   /** The row and column rulers (ticket 123): each number is now a button that selects that whole line, the same Selection a Select-tool drag across it would leave. */
   rulers: {
@@ -80,6 +140,12 @@ export interface Translations {
     positionLabel: string
     previousButton: string
     nextButton: string
+    /** The Progress bar's meta after "Row 12": "of {total} · {direction}" (ticket 144). */
+    ofTotal: string
+    topToBottom: string
+    leftToRight: string
+    /** The progress track's accessible name. */
+    finishedLabel: string
   }
   quantities: {
     heading: string
@@ -97,7 +163,67 @@ export interface Translations {
     weightInfo: string
   }
   /** Export/import (CONTEXT.md's Pattern file), plus QR export/import (ticket 68, ADR 0015). */
+  /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
+  print: {
+    /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */
+    metaLine: string
+    /** On page 1, when the chart is split over pages. */
+    readParts: string
+    beadsNeeded: string
+    total: string
+    /** Beads needed's two columns. */
+    beadsGrams: string
+    beadsCount: PluralForms
+    /** Under the Total: how the grams are worked out. */
+    gramsNote: string
+    spares: string
+    noColors: string
+    madeBy: string
+    technique: string
+    bead: string
+    size: string
+    estimatedSize: string
+    /** On the PNG: "by Maria". */
+    byMaker: string
+    page: string
+    part: string
+    /** A part on a sheet it shares with others (ticket 163): "Part 2 · columns 39–76". */
+    partColumns: string
+    partRows: string
+    continuesBoth: string
+    continuesRight: string
+    continuesBelow: string
+    lastPart: string
+  }
+  /** The save box (ticket 148; SaveBox and SaveStates cards). */
+  saveBox: {
+    saveButton: string
+    exportButton: string
+    /** The label row: the library's save state on this device. */
+    savedState: string
+    failedState: string
+    menuQr: string
+    menuPng: string
+    menuPdf: string
+    formatsHint: string
+    /** While an export is drawn (Loading card): what is happening, to which Pattern. */
+    makingPng: string
+    makingPdf: string
+    /** The way out when a Pattern is too large for a QR code, or a save fails: the Pattern as a file. */
+    exportPatternFile: string
+    /** The Export menu's last row and its modal (NameOnExports card). */
+    nameOnExports: string
+    nameNotSet: string
+    changeName: string
+    addName: string
+    yourName: string
+    nameHint: string
+    saveName: string
+    cancelName: string
+  }
   transfer: {
+    /** Under the QR code: how to use it (QrExport card). */
+    qrScanHint: string
     exportPatternButton: string
     exportLibraryButton: string
     importLabel: string
@@ -107,18 +233,11 @@ export interface Translations {
     exportQrButton: string
     /** Shown instead of the code when the Pattern doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Pattern above as the fallback rather than duplicating a download of its own. */
     qrTooLargeMessage: string
-    /** Picture and print exports of the open Pattern (tickets 73, 74); the pdf* strings are drawn onto the printed pages. */
+    /** Picture and print exports of the open Pattern (tickets 73, 74). */
     exportPngButton: string
     exportPdfButton: string
-    pdfLegendHeading: string
-    pdfColorHeading: string
-    pdfCountHeading: string
-    pdfTotalLabel: string
-    pdfNoColorsMessage: string
     /** With {page} and {pages}. */
-    pdfPageLabel: string
     /** With {across}, {acrossTotal}, {down} and {downTotal}: which piece of a chart cut over several pages this is. */
-    pdfPartLabel: string
     closeQrButton: string
     /** A picture believed to hold one of this app's QR exports (a photo/screenshot of the code shown on another device). */
     importQrLabel: string
@@ -138,6 +257,8 @@ export interface Translations {
     increaseTopBottomButton: string
     /** Mirror's copy-mode switch (ticket 45): one switch for both directions. */
     copyModeLabel: string
+    /** The Mirror row's line holding the two Mirror current buttons (ticket 75). */
+    mirrorCurrentLabel: string
   }
   /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
   toolbox: {
@@ -228,6 +349,8 @@ export interface Translations {
    * limits it applies cannot drift apart. Never write the numbers out here.
    */
   convertImage: {
+    /** While a chosen picture is read (Loading card). */
+    readingPicture: string
     /** The file input's own label in the New Pattern form. */
     fileLabel: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
@@ -252,6 +375,8 @@ export interface Translations {
     foundColorsLabel: string
     /** Names the Image colors swatches in the Colors group (CONTEXT.md's Image colors). */
     imageColorsLabel: string
+    /** Why Image colors is off: the Pattern wasn't made from a picture (ColorPickers card). */
+    noImageColors: string
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
       heic: string

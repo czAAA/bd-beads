@@ -2,18 +2,29 @@
 import { computed, ref, toRaw, useId } from 'vue'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../domain/beadQuantities'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
+import { groupThousands } from '../i18n/formatNumber'
 import { useI18n } from '../i18n/useI18n'
+import AppIcon from './AppIcon.vue'
+import ExpandablePanel from './ExpandablePanel.vue'
 
+/**
+ * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 · ≈ 6 g". Collapsed it
+ * shows the three most-needed colors (swatch, name, count, weight); expanded, every color. The rows stay a table, with
+ * its column headings for screen readers only.
+ */
 const props = defineProps<{
   /** The Pattern whose bead counts are shown; without one the box just asks for a Pattern to be opened. */
   pattern?: Pattern
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // Read from the Pattern itself, not through the library's reactive wrapper: a Pattern is replaced whole by every edit, so
 // its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is slow.
 const quantities = computed(() => (props.pattern ? computeColorQuantities(toRaw(props.pattern)) : []))
+
+/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body). */
+const SUMMARY_ROWS = 3
 
 /**
  * Estimated weight (ticket 155, CONTEXT.md): count × the Bead's average weight of one bead, worked out here and never
@@ -23,175 +34,216 @@ const gramsPerBead = computed(() => (props.pattern ? resolvePatternBead(props.pa
 
 function weightOf(count: number): string | undefined {
   const grams = estimatedGrams(count, { gramsPerBead: gramsPerBead.value })
-  return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit)
+  return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
 }
 
 const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
 
+/** A color's name: the Palette's word for it, or its hex for a color from outside the Palette. */
+function colorName(colorId: string | null | undefined, hex: string): string {
+  return (colorId && t.value.colorNames[colorId]) || hex.toUpperCase()
+}
+
+const expanded = ref(false)
 const tooltipId = useId()
 const tipOpen = ref(false)
 </script>
 
 <template>
-  <section class="bead-quantities" data-testid="bead-quantities">
-    <h2>{{ t.quantities.heading }}</h2>
+  <ExpandablePanel
+    v-model:expanded="expanded"
+    class="bead-quantities"
+    :title="t.quantities.heading"
+    :expandable="quantities.length > SUMMARY_ROWS"
+    :empty="quantities.length === 0"
+    data-testid="bead-quantities"
+  >
+    <template v-if="quantities.length > 0" #suffix>
+      <span class="bead-quantities__part">· <span data-testid="quantity-total-count">{{ groupThousands(totalCount) }}</span></span>
+      <span v-if="gramsPerBead !== undefined" class="bead-quantities__part">
+        · ≈&nbsp;<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span>
+      </span>
+    </template>
 
-    <p v-if="!pattern" data-testid="quantities-no-pattern">
+    <template v-if="quantities.length > 0 && gramsPerBead !== undefined" #meta>
+      <span class="bead-quantities__info-wrap">
+        <button
+          type="button"
+          class="ui-control bead-quantities__info"
+          data-testid="quantities-weight-info"
+          :aria-label="t.quantities.weightInfoButton"
+          :aria-describedby="tooltipId"
+          @mouseenter="tipOpen = true"
+          @mouseleave="tipOpen = false"
+          @focus="tipOpen = true"
+          @blur="tipOpen = false"
+          @keydown.escape.stop="tipOpen = false"
+        >
+          <AppIcon name="info" :size="16" />
+        </button>
+        <span
+          v-show="tipOpen"
+          :id="tooltipId"
+          class="bead-quantities__tooltip"
+          role="tooltip"
+          data-testid="quantities-weight-tooltip"
+        >
+          {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
+        </span>
+      </span>
+    </template>
+
+    <p v-if="!pattern" class="bead-quantities__empty" data-testid="quantities-no-pattern">
       {{ t.quantities.noPatternMessage }}
     </p>
-    <p v-else-if="quantities.length === 0" data-testid="quantities-empty">
+    <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">
       {{ t.quantities.noColorsMessage }}
     </p>
 
-    <table v-else>
-      <thead>
+    <table v-else class="bead-quantities__table">
+      <thead class="bead-quantities__headings">
         <tr>
           <th>{{ t.quantities.colorHeading }}</th>
           <th>{{ t.quantities.countHeading }}</th>
-          <th v-if="gramsPerBead !== undefined" class="bead-quantities__weight-heading">
-            {{ t.quantities.weightHeading }}
-            <span class="bead-quantities__info-wrap">
-              <button
-                type="button"
-                class="bead-quantities__info"
-                data-testid="quantities-weight-info"
-                :aria-label="t.quantities.weightInfoButton"
-                :aria-describedby="tooltipId"
-                @mouseenter="tipOpen = true"
-                @mouseleave="tipOpen = false"
-                @focus="tipOpen = true"
-                @blur="tipOpen = false"
-                @keydown.escape="tipOpen = false"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M12 11v6" />
-                  <path d="M12 7.5v.01" />
-                </svg>
-              </button>
-              <span
-                v-show="tipOpen"
-                :id="tooltipId"
-                class="bead-quantities__tooltip"
-                role="tooltip"
-                data-testid="quantities-weight-tooltip"
-              >
-                {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
-              </span>
-            </span>
-          </th>
+          <th v-if="gramsPerBead !== undefined">{{ t.quantities.weightHeading }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="quantity in quantities" :key="quantity.hex" data-testid="quantity-row">
-          <td>
+        <tr v-for="quantity in quantities" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
+          <td class="bead-quantities__color">
             <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
+            {{ colorName(quantity.colorId, quantity.hex) }}
           </td>
-          <td :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
-            {{ quantity.count }}
+          <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
+            {{ groupThousands(quantity.count) }}
           </td>
-          <td v-if="gramsPerBead !== undefined" :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`">
+          <td
+            v-if="gramsPerBead !== undefined"
+            class="bead-quantities__grams"
+            :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`"
+          >
             {{ weightOf(quantity.count) }}
           </td>
         </tr>
       </tbody>
-      <tfoot>
-        <tr data-testid="quantity-total-row">
-          <th scope="row">{{ t.quantities.totalLabel }}</th>
-          <td data-testid="quantity-total-count">{{ totalCount }}</td>
-          <td v-if="gramsPerBead !== undefined" data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</td>
-        </tr>
-      </tfoot>
     </table>
-  </section>
+  </ExpandablePanel>
 </template>
 
 <style scoped>
-.bead-quantities h2 {
-  margin: 0 0 12px;
+/* The title breaks only between its parts, never inside "≈ 6 g". */
+.bead-quantities__part {
+  white-space: nowrap;
 }
 
-.bead-quantities table {
+.bead-quantities__empty {
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.bead-quantities__table {
+  width: 100%;
   border-collapse: collapse;
 }
 
-.bead-quantities th,
-.bead-quantities td {
-  padding: 6px 12px;
-  text-align: left;
+/* Column headings for screen readers only: the rows speak for themselves on screen. */
+.bead-quantities__headings {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.bead-quantities th {
-  font-weight: var(--font-weight-bold);
-  border-bottom: var(--border-width) solid var(--color-ink);
+/* A row: 32px, a line-soft rule above, the swatch and name, then the count and the weight on the right. */
+.bead-quantities__row > td {
+  height: var(--panel-row-height);
+  padding: 0;
+  border-top: 1px solid var(--line-soft);
+}
+
+.bead-quantities__color {
+  font: var(--type-body);
+  color: var(--body);
+  white-space: nowrap;
 }
 
 .bead-quantities__swatch {
   display: inline-block;
-  width: 24px;
-  height: 24px;
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
+  width: var(--swatch-dot);
+  height: var(--swatch-dot);
+  margin-right: var(--space-10);
+  vertical-align: -1px;
+  border-radius: var(--swatch-dot-radius);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 
-.bead-quantities tfoot th,
-.bead-quantities tfoot td {
-  font-weight: var(--font-weight-bold);
-  border-top: var(--border-width) solid var(--color-ink);
-}
-
-.bead-quantities td {
+.bead-quantities__count,
+.bead-quantities__grams {
+  font: var(--type-meta);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bead-quantities__count {
+  width: 100%;
+  color: var(--ink);
+}
+
+.bead-quantities__grams {
+  min-width: var(--grams-width);
+  padding-left: var(--space-8);
+  color: var(--muted);
 }
 
 .bead-quantities__info-wrap {
   position: relative;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-/* The same small warning-colored glyph as the Estimated size's (SizeControls.vue): an estimate, not a fact. */
-.bead-quantities__info {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
+}
+
+/* The estimate's info button: a plain 16px icon in `muted`, with the design system's tooltip. */
+.bead-quantities__info {
+  display: inline-grid;
+  place-items: center;
+  width: var(--expand-size);
+  height: var(--expand-size);
   padding: 0;
-  color: var(--color-ink);
-  background: var(--color-orange);
-  border-radius: var(--radius-pill);
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: help;
 }
 
-.bead-quantities__info:hover:not(:disabled) {
-  color: var(--color-ink);
-  background: var(--color-orange);
+@media (hover: hover) {
+  .bead-quantities__info:hover {
+    color: var(--ink);
+    background: var(--hover-fill);
+  }
 }
 
-.bead-quantities__info svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.bead-quantities__info:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .bead-quantities__tooltip {
   position: absolute;
-  z-index: 10;
-  top: calc(100% + 8px);
+  top: calc(100% + var(--space-6));
   right: 0;
+  z-index: var(--z-tooltip);
   box-sizing: border-box;
-  width: 260px;
-  padding: 10px 14px;
-  font-size: 14px;
-  font-weight: normal;
-  line-height: 1.4;
-  color: var(--color-orange-ink);
-  background: var(--color-orange);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
+  width: var(--tooltip-wide);
+  padding: var(--space-6) var(--space-8);
+  font: var(--type-small);
+  line-height: 1rem;
+  color: var(--canvas);
+  white-space: normal;
+  background: var(--ink);
+  border-radius: var(--radius-sm);
 }
 </style>

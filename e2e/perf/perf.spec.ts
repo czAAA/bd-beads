@@ -250,7 +250,7 @@ for (const slowdown of SLOWDOWNS) {
 
       test(`framing ${name} at ${slowdown}× slowdown`, async ({ page }) => {
         await openApp(page, [])
-        await page.getByTestId('technique-select').selectOption(technique)
+        await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
         await page.getByTestId('width-input').fill(String(size.columns))
         await page.getByTestId('height-input').fill(String(size.rows))
         await page.getByTestId('convert-image-input').setInputFiles({

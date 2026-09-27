@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, useId } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '../i18n/useI18n'
+import AppModal from './AppModal.vue'
+import IconButton from './IconButton.vue'
 
 /**
  * The `?` shortcuts help overlay (ticket 96): every keyboard shortcut from tickets 87, 88, 90, 91, 92, 93, 94, 95,
@@ -9,6 +11,9 @@ import { useI18n } from '../i18n/useI18n'
  * under Tools as the closest fit; Paste (ticket 92) has no Toolbox button of its own, and sits under Edit next to
  * Copy. Key labels (digits, letters, "Ctrl/Cmd+C") are locale-neutral and written out directly here rather than
  * translated, matching the shortcut hints already appended to Toolbox tooltips.
+ *
+ * The Modal template (ticket 151; ShortcutsHelp card): two columns of groups in the Toolbox's order, each a `label`
+ * heading, each row the action and its keys as Kbd chips.
  */
 const emit = defineEmits<{
   close: []
@@ -63,135 +68,132 @@ const groups = computed(() => [
   },
 ])
 
-const titleId = useId()
-const closeButtonEl = ref<HTMLButtonElement | null>(null)
-
-function onKeyDown(event: KeyboardEvent) {
-  if (event.key === 'Escape') {
-    emit('close')
-  }
+/** A shortcut's keys as chips: "Shift+1…9, Shift+0" is two alternatives, each a chord of keys. */
+function chords(keys: string): string[][] {
+  return keys.split(', ').map((chord) => chord.split(/\s*\+\s*/))
 }
-
-// Bound to the window rather than the dialog itself, the same as ConfirmModal: nothing here takes keyboard focus
-// reliably enough to rely on a local keydown handler.
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-  closeButtonEl.value?.focus()
-})
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
 </script>
 
 <template>
-  <div class="shortcuts-help" data-testid="shortcuts-help-backdrop" @click.self="emit('close')">
-    <div
-      class="shortcuts-help__dialog"
-      data-testid="shortcuts-help-dialog"
-      role="dialog"
-      aria-modal="true"
-      :aria-labelledby="titleId"
-    >
-      <div class="shortcuts-help__header">
-        <h2 :id="titleId" class="shortcuts-help__title">{{ t.shortcutsHelp.title }}</h2>
-        <button
-          ref="closeButtonEl"
-          type="button"
-          class="icon-button"
-          data-testid="shortcuts-help-close"
-          :title="t.shortcutsHelp.closeButton"
-          :aria-label="t.shortcutsHelp.closeButton"
-          @click="emit('close')"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M5 5l14 14M19 5 5 19" />
-          </svg>
-        </button>
-      </div>
+  <AppModal
+    :title="t.shortcutsHelp.title"
+    size="panel"
+    scrim-testid="shortcuts-help-backdrop"
+    initial-focus="dialog"
+    data-testid="shortcuts-help-dialog"
+    @cancel="emit('close')"
+  >
+    <template #header>
+      <IconButton
+        icon="close"
+        shape="round"
+        :label="t.shortcutsHelp.closeButton"
+        data-testid="shortcuts-help-close"
+        @click="emit('close')"
+      />
+    </template>
 
-      <section
-        v-for="group in groups"
-        :key="group.title"
-        class="shortcuts-help__group"
-        data-testid="shortcuts-help-group"
-      >
+    <div class="shortcuts-help__groups">
+      <section v-for="group in groups" :key="group.title" class="shortcuts-help__group" data-testid="shortcuts-help-group">
         <h3 class="shortcuts-help__group-title">{{ group.title }}</h3>
         <dl class="shortcuts-help__list">
-          <template v-for="shortcut in group.shortcuts" :key="shortcut.keys">
-            <dt class="shortcuts-help__keys">{{ shortcut.keys }}</dt>
-            <dd class="shortcuts-help__label">{{ shortcut.label }}</dd>
-          </template>
+          <div v-for="shortcut in group.shortcuts" :key="shortcut.keys" class="shortcuts-help__row">
+            <dt class="shortcuts-help__label">{{ shortcut.label }}</dt>
+            <dd class="shortcuts-help__keys">
+              <template v-for="(chord, alternative) in chords(shortcut.keys)" :key="alternative">
+                <span v-if="alternative > 0" class="shortcuts-help__or" aria-hidden="true">,</span>
+                <template v-for="(key, index) in chord" :key="index">
+                  <span v-if="index > 0" class="shortcuts-help__plus" aria-hidden="true">+</span>
+                  <kbd class="shortcuts-help__kbd" aria-hidden="true">{{ key }}</kbd>
+                </template>
+              </template>
+              <span class="shortcuts-help__spoken">{{ shortcut.keys }}</span>
+            </dd>
+          </div>
         </dl>
       </section>
     </div>
-  </div>
+  </AppModal>
 </template>
 
 <style scoped>
-.shortcuts-help {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+.shortcuts-help__groups {
+  columns: 2;
+  column-gap: var(--space-24);
 }
 
-.shortcuts-help__dialog {
-  width: min(480px, 100%);
-  max-height: min(640px, 100%);
-  overflow-y: auto;
-  padding: 24px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-
-.shortcuts-help__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.shortcuts-help__title {
-  margin: 0;
-}
-
-.shortcuts-help__group + .shortcuts-help__group {
-  margin-top: 16px;
+.shortcuts-help__group {
+  break-inside: avoid;
+  margin-bottom: var(--space-16);
 }
 
 .shortcuts-help__group-title {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: var(--font-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--color-ink);
-  opacity: 0.55;
+  margin: 0 0 var(--space-6);
+  font: var(--type-label);
+  color: var(--muted);
+  text-transform: lowercase;
 }
 
 .shortcuts-help__list {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px 12px;
   margin: 0;
 }
 
-.shortcuts-help__keys {
-  padding: 1px 6px;
-  font-family: monospace;
-  font-weight: var(--font-weight-bold);
-  white-space: nowrap;
-  background: var(--color-paper);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-md);
+.shortcuts-help__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-8);
+  padding: var(--space-4) 0;
+  min-height: var(--control-height);
+  border-top: 1px solid var(--line-soft);
 }
 
 .shortcuts-help__label {
-  margin: 0;
-  align-self: center;
+  flex: 1 0 auto;
+  font: var(--type-body);
+  color: var(--body);
+}
+
+.shortcuts-help__keys {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 0 auto;
+}
+
+/* Kbd (ShortcutsHelp card): 22px, DM Mono 12, a line-strong edge with a 2px bottom, radius-xs, on elevated. */
+.shortcuts-help__kbd {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: var(--kbd-height);
+  height: var(--kbd-height);
+  padding: 0 var(--space-4);
+  font: var(--type-meta-small);
+  color: var(--ink);
+  background: var(--elevated);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.shortcuts-help__plus,
+.shortcuts-help__or {
+  font: var(--type-meta-tiny);
+  color: var(--muted);
+}
+
+/* The keys as one phrase for screen readers and for copying; the chips are for the eye. */
+.shortcuts-help__spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 </style>

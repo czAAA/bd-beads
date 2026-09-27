@@ -49,7 +49,7 @@ function twoBlocks(width = 8, height = 8): PixelData {
 
 async function stateSize(wrapper: ReturnType<typeof mount>, width: string, height: string) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"]').setValue('mm')
+  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue(width)
   await wrapper.find('[data-testid="height-input"]').setValue(height)
 }
@@ -87,6 +87,18 @@ describe('App Convert image framing (ticket 58)', () => {
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
   })
 
+  it('names the step in the canvas strip and puts its controls in the Progress bar\'s place (ticket 150)', async () => {
+    const wrapper = mount(App)
+    await startFraming(wrapper)
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(ru.convertImage.heading)
+    const bottom = wrapper.find('[data-testid="app-canvas"]').element.lastElementChild!
+    expect(bottom.getAttribute('data-testid')).toBe('framing-controls')
+    expect(bottom.querySelector('[data-testid="convert-image-create"]')).not.toBeNull()
+    expect(wrapper.find('[data-testid="convert-image-frame"] [data-testid="convert-image-create"]').exists()).toBe(false)
+  })
+
   it('keeps the New Pattern form up and editable while framing', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
@@ -116,7 +128,7 @@ describe('App Convert image framing (ticket 58)', () => {
       'convert-image-frame__lattice--loom',
     )
 
-    await wrapper.find('[data-testid="technique-select"]').setValue('peyote')
+    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-lattice"]').classes()).toContain(
       'convert-image-frame__lattice--peyote',
@@ -136,13 +148,13 @@ describe('App Convert image framing (ticket 58)', () => {
     )
   })
 
-  it('swaps the editor zoom cluster for the framing one, in the same panel corner', async () => {
+  it('swaps the editor zoom for the framing one, in the same canvas strip (ticket 143)', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
     const controls = wrapper.findAll('[data-testid="zoom-controls"]')
     expect(controls).toHaveLength(1)
-    expect(controls[0]!.classes()).toContain('app-shell__zoom-controls')
+    expect(wrapper.find('[data-testid="canvas-strip"]').find('[data-testid="zoom-controls"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
@@ -409,5 +421,18 @@ describe('App Convert image edge cases (ticket 58)', () => {
     }
 
     expect(found()).toBeLessThanOrEqual(4)
+  })
+})
+
+describe('App empty canvas (ticket 158)', () => {
+  it('keeps the canvas box with an empty board, what is missing and what to do, and no Progress bar', () => {
+    const wrapper = mount(App)
+
+    const empty = wrapper.find('[data-testid="app-canvas-placeholder"]')
+    expect(empty.find('.empty-canvas__board').exists()).toBe(true)
+    expect(empty.text()).toContain(ru.shell.canvasPlaceholder)
+    expect(empty.text()).toContain(ru.shell.canvasPlaceholderHint)
+    expect(wrapper.find('[data-testid="app-canvas"] [data-testid="canvas-strip"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
   })
 })

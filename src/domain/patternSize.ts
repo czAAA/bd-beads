@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { computeGridDimensions, toMillimeters, type GridDimensions, type SizeUnit } from './grid'
+import type { Locale } from '../i18n/translations'
 
 /** A size as the New Pattern form states it: a number of beads across and down, or a real-world size in mm/cm. */
 export interface StatedSize {
@@ -48,25 +49,26 @@ export interface SizeUnitLabels {
   cm: string
 }
 
-/** At most one decimal, with a whole number shown without a trailing ".0". */
-function trimmedOneDecimal(value: number): string {
-  return String(Number(value.toFixed(1)))
+/** At most one decimal, with a whole number shown without a trailing ".0", in the language's own decimal sign (writing.md). */
+function trimmedOneDecimal(value: number, decimal: string): string {
+  return String(Number(value.toFixed(1))).replace('.', decimal)
 }
 
 /** A tenth of a centimetre is a whole millimetre, so rounding the mm first rounds half up, where dividing first would leave 1.65 to float representation. */
-function inCentimetres(mm: number): string {
-  return (Math.round(mm) / 10).toFixed(1)
+function inCentimetres(mm: number, decimal: string): string {
+  return (Math.round(mm) / 10).toFixed(1).replace('.', decimal)
 }
 
 /**
- * "3.3 × 6.6 cm": cm with one decimal, or mm when a side is under 10mm (a small piece reads better in mm than as
- * "0.6 cm"). Both sides share the unit. A side that only rounds up to 10mm counts as 10mm, so the unit doesn't flip on
- * a value the reader can't see the difference of.
+ * "3.3 × 6.6 cm" / "3,3 × 6,6 см": cm with one decimal, or mm when a side is under 10mm (a small piece reads better in
+ * mm than as "0.6 cm"). Both sides share the unit. A side that only rounds up to 10mm counts as 10mm, so the unit
+ * doesn't flip on a value the reader can't see the difference of. `locale` picks the decimal sign (writing.md).
  */
-export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: SizeUnitLabels): string {
+export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: SizeUnitLabels, locale: Locale = 'en'): string {
+  const decimal = locale === 'ru' ? ',' : '.'
   const smallest = Math.round(Math.min(widthMm, heightMm) * 10) / 10
   if (smallest < 10) {
-    return `${trimmedOneDecimal(widthMm)} × ${trimmedOneDecimal(heightMm)} ${labels.mm}`
+    return `${trimmedOneDecimal(widthMm, decimal)} × ${trimmedOneDecimal(heightMm, decimal)} ${labels.mm}`
   }
-  return `${inCentimetres(widthMm)} × ${inCentimetres(heightMm)} ${labels.cm}`
+  return `${inCentimetres(widthMm, decimal)} × ${inCentimetres(heightMm, decimal)} ${labels.cm}`
 }

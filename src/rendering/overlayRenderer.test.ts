@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createPattern, type Pattern, type RowProgress, type Technique } from '../domain/pattern'
-import { DEFAULT_THEME, DIMMED_OPACITY, fadeOver, greyscale } from './beadLook'
+import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { displayedExtentPx } from './patternRenderer'
@@ -35,20 +35,18 @@ describe('renderOverlay', () => {
   })
 
   describe('the row being woven (rows along the grid\'s rows)', () => {
-    it('outlines the row\'s own rectangle, 3px inside its edges', () => {
+    it('outlines the row 3px outside it, 2px thick with rounded corners, kept inside the Pattern', () => {
       const pattern = patternOf('loom', 4, 5, { currentRow: 2 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1 })
 
-      // Row 2 of a 4-wide loom: x 0..80, y 40..60.
-      expect(named('fillRect').map((call) => call.args)).toEqual([
-        [0, 40, 80, 3],
-        [0, 57, 80, 3],
-        [0, 43, 3, 14],
-        [77, 43, 3, 14],
+      // Row 2 of a 4-wide loom: x 0..80, y 40..60; 3px out, but not past the Pattern's own left and right edges.
+      expect(named('roundRect').map((call) => call.args)).toEqual([
+        [0, 37, 80, 26, 5],
+        [2, 39, 76, 22, 3],
       ])
-      expect(named('fillRect').every((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
+      expect(named('fill').map((call) => [call.fillStyle, call.args[0]])).toEqual([[DEFAULT_THEME.marker, 'evenodd']])
     })
 
     it('follows a shifted row on peyote and brick stitch, and peyote\'s tighter packing', () => {
@@ -58,12 +56,12 @@ describe('renderOverlay', () => {
       const topLeft = (pattern: Pattern) => {
         const { context, named } = recordingContext()
         renderOverlay(context, { pattern, region: whole(pattern), zoom: 1 })
-        return named('fillRect')[0]!.args.slice(0, 2)
+        return named('roundRect')[0]!.args.slice(0, 2)
       }
 
-      // Row 1 is half a bead across in both; it starts 15px down in peyote and 21px in brick stitch.
-      expect(topLeft(peyote)).toEqual([10, 15])
-      expect(topLeft(brick)).toEqual([10, 21])
+      // Row 1 is half a bead across in both; it starts 15px down in peyote and 21px in brick stitch; the outline 3px out.
+      expect(topLeft(peyote)).toEqual([7, 12])
+      expect(topLeft(brick)).toEqual([7, 18])
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -73,6 +71,7 @@ describe('renderOverlay', () => {
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1 })
 
       expect(named('fillRect')).toHaveLength(0)
+      expect(named('fill')).toHaveLength(0)
     })
   })
 
@@ -84,13 +83,13 @@ describe('renderOverlay', () => {
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1 })
 
       const rects = named('fillRect').map((call) => call.args)
-      // Each bead: a 22px box a pixel out from the bead, with its left and right 3px.
-      expect(rects).toContainEqual([19, -1, 3, 22])
-      expect(rects).toContainEqual([38, -1, 3, 22])
-      expect(rects).toContainEqual([19, 39, 3, 22])
+      // Each bead: a 22px box a pixel out from the bead, with its left and right 2px.
+      expect(rects).toContainEqual([19, -1, 2, 22])
+      expect(rects).toContainEqual([39, -1, 2, 22])
+      expect(rects).toContainEqual([19, 39, 2, 22])
       // The top of the first row and the bottom of the last close the strip.
-      expect(rects).toContainEqual([22, -1, 16, 3])
-      expect(rects).toContainEqual([22, 58, 16, 3])
+      expect(rects).toContainEqual([21, -1, 18, 2])
+      expect(rects).toContainEqual([21, 59, 18, 2])
       // A middle row has sides only.
       expect(rects.filter((rect) => rect[1] === 19)).toHaveLength(2)
     })
@@ -104,7 +103,7 @@ describe('renderOverlay', () => {
       const outers = named('roundRect').filter((call) => call.args[2] === 22)
       // Row 0 at x 20, row 1 (shifted half a bead) at x 30 and 15px down; each a pixel out.
       expect(outers.map((call) => call.args.slice(0, 2))).toEqual([[19, -1], [29, 14]])
-      expect(outers[0]!.args[4]).toBeCloseTo(6.6)
+      expect(outers[0]!.args[4]).toBeCloseTo(4.84)
       expect(named('fill').every((call) => call.args[0] === 'evenodd')).toBe(true)
     })
 
@@ -117,7 +116,7 @@ describe('renderOverlay', () => {
       // Each bead is a 22px square outline (a top and a bottom strip 22px wide; the sides are shorter). Row 1 is half a
       // bead across and 21px down, a pixel out from its bead: the seam is between the rows, not inside the outline.
       const tops = named('fillRect').filter((call) => call.args[2] === 22).map((call) => call.args.slice(0, 2))
-      expect(tops).toEqual([[-1, -1], [-1, 18], [9, 20], [9, 39]])
+      expect(tops).toEqual([[-1, -1], [-1, 19], [9, 20], [9, 40]])
     })
   })
 
@@ -140,7 +139,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1, preview: { cells: [{ row: 1, column: 2 }], color: '#e63746' } })
 
-      expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.45, 41, 21, 18, 18]])
+      expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 41, 21, 18, 18]])
       expect(context.globalAlpha).toBe(1)
     })
 
@@ -179,7 +178,11 @@ describe('renderOverlay', () => {
 
       // Row 1: half a bead across (10) and 15px down; the color goes inside the 1px rim.
       expect(named('fillRect')[0]!.args).toEqual([31, 16, 18, 18])
-      expect(named('roundRect').map((call) => call.args)).toEqual([[31, 16, 18, 18, 5], [33, 18, 14, 14, 3]])
+      const outline = named('roundRect').map((call) => call.args as number[])
+      expect(outline.map((args) => args.slice(0, 4))).toEqual([[31, 16, 18, 18], [33, 18, 14, 14]])
+      // Rounded at 22% of the bead less its gap, and 2px less inside.
+      expect(outline[0]![4]).toBeCloseTo(3.4)
+      expect(outline[1]![4]).toBeCloseTo(1.4)
     })
 
     it('leaves out a bead that is not in the Pattern', () => {
@@ -278,9 +281,10 @@ describe('renderOverlay', () => {
         expect(spriteContext.named('roundRect')).toHaveLength(1)
         expect(spriteContext.named('fill')[0]!.fillStyle).toBe(DEFAULT_THEME.marker)
         expect(spriteContext.named('fill')[0]!.globalAlpha).toBe(0.3)
-        // Each of the 10 beads on the edge is clipped to its rounded inside (radius 5) before its strips.
+        // Each of the 10 beads on the edge is clipped to its rounded inside (22% of the bead, less the gap) before its strips.
         expect(named('clip')).toHaveLength(10)
-        expect(named('roundRect')[0]!.args).toEqual([31, 16, 18, 18, 5])
+        expect(named('roundRect')[0]!.args.slice(0, 4)).toEqual([31, 16, 18, 18])
+        expect(named('roundRect')[0]!.args[4]).toBeCloseTo(3.4)
       })
     })
 
@@ -310,7 +314,7 @@ describe('renderOverlay', () => {
 
     it('is drawn under the hover preview and the Row progress marker', () => {
       const pattern = patternOf('loom', 6, 5, { currentRow: 2 })
-      const { context, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, {
         pattern,
@@ -320,7 +324,9 @@ describe('renderOverlay', () => {
         preview: { cells: [{ row: 1, column: 1 }], color: '#e63746' },
       })
 
-      const order = named('fillRect').map((call) => (call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : call.args[3] === 3 || call.args[2] === 3 ? 'marker' : 'outline'))
+      const order = calls
+        .filter((call) => call.name === 'fillRect' || (call.name === 'fill' && call.fillStyle === DEFAULT_THEME.marker && call.globalAlpha === 1))
+        .map((call) => (call.name === 'fill' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
       expect(order.indexOf('wash')).toBeLessThan(order.indexOf('outline'))
       expect(order.indexOf('outline')).toBeLessThan(order.indexOf('preview'))
       expect(order.indexOf('preview')).toBeLessThan(order.indexOf('marker'))
@@ -411,13 +417,15 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1, dimmedCells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] })
 
-      // The bead's own color faded to grey at 35% over white, and the rim likewise: opaque, so it covers what it is over.
-      const paper = fadeOver(greyscale(DEFAULT_THEME.rim), '#ffffff', DIMMED_OPACITY)
+      // The bead's own color at 28% over the board, its faint rim over that: opaque, so it covers what it is over.
+      const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.28)
+      const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.28)
+      expect(red).toBe('rgb(231, 179, 180)')
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [paper, 1, 0, 0, 20, 20],
-        ['rgb(198, 198, 198)', 1, 1, 1, 18, 18],
-        [paper, 1, 20, 20, 20, 20],
-        [fadeOver(greyscale('#1a1a1a'), '#ffffff', DIMMED_OPACITY), 1, 21, 21, 18, 18],
+        [blendOver(DEFAULT_THEME.rim!, red), 1, 1, 1, 18, 18],
+        [red, 1, 1.75, 1.75, 16.5, 16.5],
+        [blendOver(DEFAULT_THEME.rim!, black), 1, 21, 21, 18, 18],
+        [black, 1, 21.75, 21.75, 16.5, 16.5],
       ])
     })
 
@@ -427,7 +435,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1, dimmedCells: [{ row: 0, column: 0 }] })
 
-      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(greyscale(DEFAULT_THEME.emptyBead), '#ffffff', DIMMED_OPACITY))
+      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(DEFAULT_THEME.emptyBead, DEFAULT_THEME.background, 0.28))
     })
 
     it('draws only the beads named, on screen and in the Pattern', () => {
@@ -457,8 +465,35 @@ describe('renderOverlay', () => {
       })
 
       const rects = named('fillRect')
-      expect(rects[0]!.args).toEqual([0, 0, 20, 20])
+      expect(rects[0]!.args).toEqual([1, 1, 18, 18])
       expect(rects.at(-5)!.globalAlpha).toBe(0.3)
     })
+  })
+})
+
+describe('the bead cursor (ticket 159)', () => {
+  it('rings the bead 2px outside it in the focus-ring color, drawn over everything else', () => {
+    const pattern = patternOf('loom', 4, 3, { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 })
+    const { context, calls } = recordingContext()
+
+    renderOverlay(context, { pattern, region: whole(pattern), zoom: 1, cursor: { row: 1, column: 2 } })
+
+    const fills = calls.filter((call) => call.name === 'fill')
+    expect(fills.at(-1)!.fillStyle).toBe(DEFAULT_THEME.cursor)
+    // Bead (2, 1) stands at x 41, y 21, 18 across; the ring's inside is 2px out from it, and 2px wide.
+    const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
+    expect(rects).toEqual([
+      [37, 17, 26, 26],
+      [39, 19, 22, 22],
+    ])
+  })
+
+  it('draws nothing without a cursor', () => {
+    const pattern = patternOf('loom', 4, 3, { enabled: false })
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { pattern, region: whole(pattern), zoom: 1 })
+
+    expect(named('fill')).toHaveLength(0)
   })
 })

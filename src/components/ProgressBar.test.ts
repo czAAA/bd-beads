@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import { createPattern, moveToRow, setRowProgressEnabled, type Pattern } from '../domain/pattern'
+import { createPattern, moveToRow, setRowProgressEnabled, toggleRowDirection, type Pattern } from '../domain/pattern'
 import { ru } from '../i18n/ru'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -19,13 +19,13 @@ function makePattern(): Pattern {
 
 describe('ProgressBar', () => {
   it('shows the current row and total, 1-based', () => {
-    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4), orientation: 'vertical' } })
+    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4) } })
 
-    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toContain('5 / 20')
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b5\D+20\b/)
   })
 
   it('emits move-row(1) from Next and move-row(-1) from Previous', async () => {
-    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4), orientation: 'vertical' } })
+    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4) } })
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-previous"]').trigger('click')
@@ -36,31 +36,52 @@ describe('ProgressBar', () => {
   it('disables Previous at the first row and Next at the last, same as the Toolbox buttons did', () => {
     const pattern = makePattern()
 
-    const atStart = mount(ProgressBar, { props: { pattern, orientation: 'vertical' } })
+    const atStart = mount(ProgressBar, { props: { pattern } })
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(true)
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(false)
 
-    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.rows - 1), orientation: 'vertical' } })
+    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.rows - 1) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(false)
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(true)
   })
 
-  it("names each control and shows its hotkey (Enter/Shift+Enter, ticket 94's shortcuts kept unchanged)", () => {
-    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4), orientation: 'vertical' } })
+  it("names Row not done and Row done in words and keeps their hotkeys in the tooltip (ticket 94's shortcuts unchanged)", () => {
+    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4) } })
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
-    expect(previous.attributes('aria-label')).toBe(ru.rowProgress.previousButton)
+    expect(previous.text()).toBe(ru.rowProgress.previousButton)
     expect(previous.attributes('title')).toContain('Shift+Enter')
-    expect(next.attributes('aria-label')).toBe(ru.rowProgress.nextButton)
+    expect(next.text()).toBe(ru.rowProgress.nextButton)
     expect(next.attributes('title')).toContain('(Enter)')
   })
 
-  it('carries the given orientation as a modifier class, for App.vue to place it by Pattern shape', () => {
-    const vertical = mount(ProgressBar, { props: { pattern: makePattern(), orientation: 'vertical' } })
-    const horizontal = mount(ProgressBar, { props: { pattern: makePattern(), orientation: 'horizontal' } })
+  it('says which way the rows run after the total', () => {
+    const rows = mount(ProgressBar, { props: { pattern: makePattern() } })
+    expect(rows.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.topToBottom)
 
-    expect(vertical.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--vertical')
-    expect(horizontal.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--horizontal')
+    const columns = mount(ProgressBar, { props: { pattern: toggleRowDirection(makePattern()) } })
+    expect(columns.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.leftToRight)
+  })
+
+  it('shows only the switch and a label while Row progress is off, and turns it on', async () => {
+    const wrapper = mount(ProgressBar, { props: { pattern: setRowProgressEnabled(makePattern(), false) } })
+
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(wrapper.text()).toBe(ru.toolbox.groups.rowProgress)
+    expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--off')
+
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+    expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
+  })
+
+  it('turns Row progress off from the switch and the row direction from its button', async () => {
+    const wrapper = mount(ProgressBar, { props: { pattern: makePattern() } })
+
+    await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+
+    expect(wrapper.emitted('toggle-row-direction')).toHaveLength(1)
+    expect(wrapper.emitted('toggle-row-progress')).toEqual([[false]])
   })
 })

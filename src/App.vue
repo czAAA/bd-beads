@@ -1,21 +1,36 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import AppButton from './components/AppButton.vue'
+import AppLogo from './components/AppLogo.vue'
+import AppMessage from './components/AppMessage.vue'
+import AppSelect from './components/AppSelect.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import ChangeSizeModal from './components/ChangeSizeModal.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
+import CanvasBackdrop from './components/CanvasBackdrop.vue'
+import CanvasStrip from './components/CanvasStrip.vue'
 import ConvertImageFrame from './components/ConvertImageFrame.vue'
+import EmptyCanvas from './components/EmptyCanvas.vue'
+import IconButton from './components/IconButton.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
+import NameOnExportsModal from './components/NameOnExportsModal.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternImport from './components/PatternImport.vue'
 import PatternList from './components/PatternList.vue'
 import ProgressBar from './components/ProgressBar.vue'
+import SaveBox from './components/SaveBox.vue'
 import QrExportPanel from './components/QrExportPanel.vue'
 import ShortcutsHelp from './components/ShortcutsHelp.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
+import ToastRegion from './components/ToastRegion.vue'
 import Toolbox from './components/Toolbox.vue'
-import ZoomControls from './components/ZoomControls.vue'
 import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
+import { hasOpenLayer } from './composables/useEscapeLayer'
+import { useFitByPriority } from './composables/useFitByPriority'
+import { plural } from './i18n/plural'
+import { patternExtentPx, rowShiftPx, rowTopPx } from './rendering/patternRenderer'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
 import { useMirrorState } from './composables/useMirrorState'
 import { usePatternLibrary } from './composables/usePatternLibrary'
@@ -24,9 +39,10 @@ import { useQrExport } from './composables/useQrExport'
 import { useSelectionGesture } from './composables/useSelectionGesture'
 import { useSettledPattern } from './composables/useSettledPattern'
 import { useSpaceDragPan } from './composables/useSpaceDragPan'
+import { useToasts } from './composables/useToasts'
 import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
-import type { GridPosition, PreviewCell } from './domain/grid'
+import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
 import {
   canRedo,
@@ -52,7 +68,6 @@ import {
   moveToRow,
   paintCells,
   patternGeometry,
-  patternShape,
   replaceBead,
   resolvePatternBead,
   restoreSnapshot,
@@ -68,16 +83,23 @@ import {
 } from './domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
 import { downloadFile } from './domain/fileDownload'
-import { importPatterns, patternExportFileName, patternFileName, serializePattern } from './domain/patternFile'
+import { loadMakerName, saveMakerName } from './domain/makerName'
+import {
+  importPatterns,
+  libraryFileName,
+  patternExportFileName,
+  patternFileName,
+  serializeLibrary,
+  serializePattern,
+} from './domain/patternFile'
 import { exportPatternPdf, exportPatternPng } from './rendering/patternExport'
+import { printText } from './rendering/printText'
 import { patternFromShareLink } from './domain/qrExport'
 import { removeLineRefusal, removeSelectedLine, resizePattern, type ResizeRequest } from './domain/resize'
 import type { Tool } from './domain/tool'
 import { provideI18n } from './i18n/useI18n'
 
-const BASE_URL = import.meta.env.BASE_URL
-
-const { t } = provideI18n()
+const { t, locale } = provideI18n()
 
 /**
  * The Pattern library, which one is open, and persistence (ticket 55, ADR 0012) — every Pattern change in this file
@@ -139,7 +161,7 @@ const replaceBeadConfirmMessage = computed(() => {
 
   const unitLabels = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
   const estimateWith = (candidate: Bead | undefined) =>
-    candidate ? formatSizeMm(estimatedSizeMm(pattern, candidate), unitLabels) : '—'
+    candidate ? formatSizeMm(estimatedSizeMm(pattern, candidate), unitLabels, locale.value) : '—'
 
   return t.value.replaceBead.confirmMessage
     .replace('{bead}', () => beadLabel(bead))
@@ -154,16 +176,17 @@ const replaceBeadConfirmMessage = computed(() => {
  */
 const qrExport = useQrExport(() => shareablePattern.value)
 
-/** How long Save's "Saved" confirmation stays up (ticket 115): long enough to read, short enough to be gone before the next edit. */
-const SAVED_CONFIRMATION_MS = 2000
+/** Short-lived results, shown as toasts in the canvas box (ticket 76). */
+const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
-/** Whether the "Saved" confirmation is showing. Only ever raised by a write that landed; a refused one raises saveFailed instead. */
-const saved = ref(false)
-let savedTimer: ReturnType<typeof setTimeout> | undefined
+/**
+ * The "Saved" toast (tickets 115, 76; SaveStates card). Only ever raised by a write that landed; a refused one raises
+ * saveFailed instead.
+ */
+const SAVED_TOAST = 'save-confirmation'
 
 function clearSavedConfirmation() {
-  clearTimeout(savedTimer)
-  saved.value = false
+  dismissToast(SAVED_TOAST)
 }
 
 /**
@@ -187,29 +210,25 @@ function onSave() {
     return
   }
 
-  saved.value = true
-  savedTimer = setTimeout(clearSavedConfirmation, SAVED_CONFIRMATION_MS)
+  showToast(SAVED_TOAST, t.value.tools.savedConfirmation)
 }
+
+/** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
+const headerEl = ref<HTMLElement>()
+const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activePattern.value])
 
 /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
 const canvasAreaEl = ref<HTMLElement | null>(null)
-const { width: canvasAreaWidth } = useElementSize(canvasAreaEl)
+const { width: canvasAreaWidth, height: canvasAreaHeight } = useElementSize(canvasAreaEl)
 
 const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(
   () => activePattern.value,
   canvasAreaWidth,
+  canvasAreaHeight,
 )
 
 /** The floating zoom cluster's own readout (ticket 57 moved the cluster here, off PatternCanvas): derived from the same zoom the grid scales by, rather than threaded down as a second prop — it's a pure Math.round(zoom * 100) either way (see usePatternZoom.ts). */
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
-
-/** Where Progress bar goes (ticket 124, ADR 0005's 2026-09-22 amendment): undefined with no Pattern open, since there's then nothing to shape. */
-const progressBarShape = computed(() => (activePattern.value ? patternShape(activePattern.value) : undefined))
-
-/** Whether Progress bar renders at all: a Pattern has to be open, not taken over by framing, with Row progress itself switched on (CONTEXT.md's Progress bar: "reserves no space and renders nothing" otherwise). Shared by both orientation's `v-if` below so the two never drift apart on this. */
-const progressBarVisible = computed(
-  () => !!activePattern.value && !framing.value && activePattern.value.rowProgress.enabled,
-)
 
 /**
  * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
@@ -273,6 +292,26 @@ const framing = computed(() => {
       }
     : undefined
 })
+
+/** The canvas strip's size meta: the open Pattern's own grid, or the Pattern a framed picture will make. */
+const stripSize = computed(() =>
+  framing.value
+    ? framing.value.dimensions
+    : activePattern.value
+      ? { columns: activePattern.value.columns, rows: activePattern.value.rows }
+      : undefined,
+)
+
+/** The strip's zoom level: framing's own while framing, the Pattern's otherwise, none with nothing on the board. */
+const stripZoomPercent = computed(() =>
+  framing.value ? convertZoomPercent.value : activePattern.value ? zoomPercent.value : undefined,
+)
+
+/** The Technique's name, the background word behind the board (ticket 143). */
+function techniqueWord(technique: Technique): string {
+  const form = t.value.form
+  return technique === 'peyote' ? form.techniquePeyote : technique === 'brick' ? form.techniqueBrick : form.techniqueLoom
+}
 
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
 const DEFAULT_PALETTE_COLOR_ID = 'red'
@@ -385,6 +424,9 @@ const shortcutsHelpOpen = ref(false)
  * .app-shell__canvas's own comment below).
  */
 const canvasScrollEl = ref<HTMLElement | null>(null)
+
+/** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
+const framingControlsEl = ref<HTMLElement>()
 const { spaceHeld, panning: spacePanning } = useSpaceDragPan(canvasScrollEl)
 
 watch(activePatternId, () => {
@@ -449,6 +491,197 @@ function onCellHover(row: number, column: number) {
 
 function onHoverEnd() {
   hoveredCell.value = undefined
+}
+
+/*
+ * Painting with the keyboard (ticket 159; BeadCursor card). The Pattern is one Tab stop with a bead cursor: arrows move
+ * it, Shift + arrows extend a Selection, Home / End go to the row's ends, Page Up / Down move ten rows, Space or Enter
+ * uses the current tool through the same handlers (and undo history) as a pointer press, and Escape leaves. The cursor
+ * shows only after keyboard focus, and one polite announcement follows each action.
+ */
+const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
+const keyboardOnPattern = ref(false)
+/** Whether Shift + arrows is stretching a Selection, begun at the bead the cursor was on. */
+let keyboardSelecting = false
+const announcement = ref('')
+
+function announce(text: string) {
+  // Cleared first, so the same words said twice are still heard twice.
+  announcement.value = ''
+  void nextTick(() => {
+    announcement.value = text
+  })
+}
+
+/** A bead color in words: the Palette's name for it, "Custom" for any other color, "empty" for none. */
+function colorWords(hex: string | null | undefined): string {
+  if (!hex) return t.value.a11y.emptyBead
+  const color = PALETTE.find((entry) => entry.hex.toLowerCase() === hex.toLowerCase())
+  return color ? (t.value.colorNames[color.id] ?? hex) : t.value.colorNames.custom!
+}
+
+function announceCursor() {
+  const pattern = activePattern.value
+  if (!pattern) return
+  const { row, column } = beadCursor.value
+  announce(
+    t.value.a11y.cursorPosition
+      .replace('{row}', String(row + 1))
+      .replace('{column}', String(column + 1))
+      .replace('{color}', colorWords(pattern.grid[row]?.[column]?.color)),
+  )
+}
+
+function onPatternKeyboardFocus(focused: boolean) {
+  keyboardOnPattern.value = focused
+  const pattern = activePattern.value
+  if (focused && pattern) {
+    beadCursor.value = {
+      row: Math.min(beadCursor.value.row, pattern.rows - 1),
+      column: Math.min(beadCursor.value.column, pattern.columns - 1),
+    }
+    onCellHover(beadCursor.value.row, beadCursor.value.column)
+    announceCursor()
+  } else {
+    finishKeyboardSelection()
+    onHoverEnd()
+  }
+}
+
+function finishKeyboardSelection() {
+  if (keyboardSelecting) {
+    keyboardSelecting = false
+    endStroke()
+  }
+}
+
+/** Keeps the cursor two beads from any edge of the visible part of the canvas box. */
+function keepCursorInView() {
+  const pattern = activePattern.value
+  const scroller = canvasScrollEl.value
+  const surface = scroller?.querySelector<HTMLElement>('[data-testid="pattern-surface"]')
+  if (!pattern || !scroller || !surface) return
+  const { row, column } = beadCursor.value
+  const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
+  let x = rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX
+  let y = rowTopPx(pattern.technique, row)
+  if (pattern.rotated) [x, y] = [extent.height - y - CELL_SIZE_PX, x]
+  const bead = CELL_SIZE_PX * zoom.value
+  const margin = bead * 2
+  const box = scroller.getBoundingClientRect()
+  const origin = surface.getBoundingClientRect()
+  const left = origin.left + (x + GRID_BORDER_PX) * zoom.value
+  const top = origin.top + (y + GRID_BORDER_PX) * zoom.value
+  if (left - margin < box.left) scroller.scrollLeft -= box.left - (left - margin)
+  else if (left + bead + margin > box.right) scroller.scrollLeft += left + bead + margin - box.right
+  if (top - margin < box.top) scroller.scrollTop -= box.top - (top - margin)
+  else if (top + bead + margin > box.bottom) scroller.scrollTop += top + bead + margin - box.bottom
+}
+
+function moveCursor(row: number, column: number, extend: boolean) {
+  const pattern = activePattern.value
+  if (!pattern) return
+  const next = {
+    row: Math.max(0, Math.min(pattern.rows - 1, row)),
+    column: Math.max(0, Math.min(pattern.columns - 1, column)),
+  }
+  if (extend) {
+    if (!keyboardSelecting) {
+      keyboardSelecting = true
+      beginSelectPress(beadCursor.value.row, beadCursor.value.column)
+    }
+    extendSelection(next.row, next.column)
+  } else {
+    finishKeyboardSelection()
+  }
+  beadCursor.value = next
+  onCellHover(next.row, next.column)
+  keepCursorInView()
+  announceCursor()
+}
+
+/** Space or Enter: the current tool on the bead under the cursor, as one pointer press and release. */
+function useToolAtCursor() {
+  const pattern = activePattern.value
+  if (!pattern) return
+  const { row, column } = beadCursor.value
+  const before = pattern.grid
+  const color = selectedColorHex()
+  onCellPrimaryDown(row, column)
+  endStroke()
+  if (activePattern.value?.grid === before) return
+  const tool = activeTool.value
+  announce(
+    tool === 'erase'
+      ? t.value.a11y.erased
+      : (tool === 'fill' ? t.value.a11y.filled : t.value.a11y.painted).replace('{color}', colorWords(color)),
+  )
+}
+
+function onPatternKey(event: KeyboardEvent) {
+  const { row, column } = beadCursor.value
+  const pattern = activePattern.value
+  if (!pattern) return
+  // Rotated, the picture is turned a quarter clockwise: on-screen arrows move along the other grid axis.
+  const turn = (dRow: number, dColumn: number): [number, number] => (pattern.rotated ? [-dColumn, dRow] : [dRow, dColumn])
+  const steps: Record<string, [number, number]> = {
+    ArrowUp: turn(-1, 0),
+    ArrowDown: turn(1, 0),
+    ArrowLeft: turn(0, -1),
+    ArrowRight: turn(0, 1),
+  }
+  const step = steps[event.key]
+  if (step) {
+    moveCursor(row + step[0], column + step[1], event.shiftKey)
+  } else if (event.key === 'Home') {
+    moveCursor(row, 0, false)
+  } else if (event.key === 'End') {
+    moveCursor(row, pattern.columns - 1, false)
+  } else if (event.key === 'PageUp') {
+    moveCursor(row - 10, column, false)
+  } else if (event.key === 'PageDown') {
+    moveCursor(row + 10, column, false)
+  } else if (event.key === ' ' || event.key === 'Enter') {
+    useToolAtCursor()
+  } else if (event.key === 'Escape' && !selection.value) {
+    // Leaves the Pattern; with a Selection up, Escape clears that first (the app's own Escape order).
+    ;(event.target as HTMLElement).blur()
+  } else {
+    return
+  }
+  // Handled here: Space doesn't pan, Enter doesn't mark a row done, the arrows don't scroll the box.
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function onPatternKeyUp(event: KeyboardEvent) {
+  if (event.key === 'Shift') finishKeyboardSelection()
+}
+
+/** The Pattern's accessible name (ScreenReaders card): "Logo panel, 40 by 30 beads, 2 colors, row 12 of 30 done". */
+const patternLabel = computed(() => {
+  const pattern = activePattern.value
+  if (!pattern) return undefined
+  const colors = new Set(pattern.grid.flat().map((cell) => cell.color).filter(Boolean)).size
+  const [columns, rows] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  const parts = [
+    t.value.a11y.patternLabel
+      .replace('{name}', pattern.name)
+      .replace('{columns}', String(columns))
+      .replace('{rows}', String(rows))
+      .replace('{colors}', plural(locale.value, colors, t.value.a11y.colorsCount)),
+  ]
+  if (pattern.rowProgress.enabled) {
+    const position = pattern.rowProgress.direction === 'rows' ? pattern.rowProgress.currentRow : pattern.rowProgress.currentColumn
+    const total = pattern.rowProgress.direction === 'rows' ? pattern.rows : pattern.columns
+    parts.push(t.value.a11y.progressDone.replace('{row}', String(position)).replace('{total}', String(total)))
+  }
+  return parts.join(', ')
+})
+
+/** Skip to Pattern: moves keyboard focus straight onto the Pattern. */
+function focusPattern() {
+  canvasScrollEl.value?.querySelector<HTMLElement>('[data-testid="pattern-surface"]')?.focus()
 }
 
 function onCreatePattern(payload: CreatePatternInput) {
@@ -632,9 +865,10 @@ function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
   return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
 }
 
-/** Withholds a shortcut while the Delete all, Replace bead, Change size or import confirmation, the QR panel or the shortcuts help overlay is open — same precedence Escape already gives those modals (see the Escape entry below). */
+/** Withholds a shortcut while the Delete all, Replace bead, Change size or import confirmation, the QR panel, the shortcuts help overlay or a menu is open — same precedence Escape already gives those modals (see the Escape entry below). */
 function noModalOpen(): boolean {
   return (
+    !hasOpenLayer() &&
     !deleteAllConfirmOpen.value &&
     !replaceBeadPendingBead.value &&
     !changeSizeOpen.value &&
@@ -887,39 +1121,61 @@ function onPageHide() {
  * pages with its color legend and bead counts, and handed over as a download. Drawing a large Pattern takes a moment, so
  * the buttons wait until it is done.
  */
-const exporting = ref(false)
+/**
+ * The maker's name for the PDF and PNG exports (ticket 161; CONTEXT.md): kept on this device like the theme, set from
+ * the Export menu's last row through its modal.
+ */
+const makerName = ref(loadMakerName())
+const nameOnExportsOpen = ref(false)
+
+function onSaveMakerName(name: string) {
+  makerName.value = saveMakerName(name)
+  nameOnExportsOpen.value = false
+}
+
+/** Which export is being drawn, if any: the save box says so while it takes a while (ticket 158). */
+const exporting = ref<'png' | 'pdf' | undefined>()
 
 async function runExport(make: (pattern: Pattern) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
   const pattern = activePattern.value
   if (!pattern || exporting.value) {
     return
   }
-  exporting.value = true
+  exporting.value = extension
   try {
     // Read as the Pattern itself, as the QR export does: drawing reads every bead.
     downloadFile(patternExportFileName(pattern, extension), await make(toRaw(pattern)), type)
   } finally {
-    exporting.value = false
+    exporting.value = undefined
+  }
+}
+
+/**
+ * Export Pattern as the way out (ticket 158; forms-and-states.md): the open Pattern as a Pattern file, offered when a
+ * save fails and when a Pattern is too large for a QR code. With none open, a failed save offers the whole library.
+ */
+function onExportPatternFile() {
+  const pattern = activePattern.value
+  if (pattern) {
+    downloadFile(patternFileName(pattern), serializePattern(pattern))
+  } else {
+    downloadFile(libraryFileName(), serializeLibrary(patterns.value))
   }
 }
 
 function onExportPng() {
-  return runExport(exportPatternPng, 'png', 'image/png')
+  // The words the picture prints (ticket 164), in the app's language, with the maker's name (ticket 161).
+  return runExport(
+    (pattern) => exportPatternPng(pattern, printText(pattern, t.value, locale.value, makerName.value, new Date())),
+    'png',
+    'image/png',
+  )
 }
 
 function onExportPdf() {
-  const { transfer } = t.value
+  // The words the pages print (ticket 162), in the app's language, with the maker's name (ticket 161).
   return runExport(
-    (pattern) =>
-      exportPatternPdf(pattern, {
-        legendHeading: transfer.pdfLegendHeading,
-        colorHeading: transfer.pdfColorHeading,
-        countHeading: transfer.pdfCountHeading,
-        totalLabel: transfer.pdfTotalLabel,
-        noColorsMessage: transfer.pdfNoColorsMessage,
-        pageLabel: transfer.pdfPageLabel,
-        partLabel: transfer.pdfPartLabel,
-      }),
+    (pattern) => exportPatternPdf(pattern, printText(pattern, t.value, locale.value, makerName.value, new Date())),
     'pdf',
     'application/pdf',
   )
@@ -953,7 +1209,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('pagehide', onPageHide)
-  clearTimeout(savedTimer)
   flushPendingSave()
 })
 
@@ -1342,91 +1597,108 @@ function onMoveRow(delta: number) {
 
 <template>
   <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
-    <header class="app-shell__topbar" data-testid="app-topbar">
-      <div class="app-shell__topbar-title">
-        <h1 class="app-shell__logo">
-          <img
-            class="app-shell__logo-image"
-            data-testid="app-logo"
-            :src="`${BASE_URL}favicon.svg`"
-            :alt="t.app.title"
-            width="96"
-            height="96"
-          />
-        </h1>
-      </div>
-      <div class="app-shell__topbar-summary">
-        <!--
-          Two clusters (ticket 117): what the open Pattern is (its summary, Bead and Replace Bead), then what can be done
-          to the library (New Pattern, and both Imports with their outcome). Pattern info only exists while a Pattern is
-          open; the actions are always here, since Import has to work on an empty library and New Pattern's own
-          disabled state already says when there is nothing to leave.
-        -->
-        <div class="app-shell__summary-group" data-testid="summary-group">
-          <div v-if="activePattern" class="app-shell__pattern-info" data-testid="pattern-info">
-            <p class="app-shell__summary" data-testid="current-pattern-summary">
-              {{ t.patterns.currentLabel }}: {{ summarizePattern(activePattern) }}
-            </p>
-            <p class="app-shell__summary" data-testid="current-pattern-bead">
-              {{ activeBeadLabel }}
-            </p>
-            <select
-              data-testid="replace-bead-select"
-              :aria-label="t.replaceBead.selectLabel"
-              :value="''"
-              @change="onPickReplaceBead($event.target as HTMLSelectElement)"
-            >
-              <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
-              <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
-                {{ beadLabel(bead) }}
-              </option>
-            </select>
-          </div>
+    <!-- Skip to Pattern (ticket 159): the first Tab stop, visible only while focused. -->
+    <a v-if="activePattern && !framing" class="app-shell__skip" href="#pattern" data-testid="skip-to-pattern" @click.prevent="focusPattern">
+      {{ t.a11y.skipToPattern }}
+    </a>
+    <!-- One polite announcement per action (ticket 159): the bead cursor's place, what the key just did. -->
+    <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
 
-          <div class="app-shell__actions" data-testid="pattern-actions">
-            <button type="button" data-testid="new-pattern-button" :disabled="patterns.length === 0" @click="onNewPattern">
-              {{ t.patterns.newPatternButton }}
-            </button>
-            <!-- Imported Patterns go straight into the library, which decides what to open and persists them. -->
-            <PatternImport :patterns="patterns" @import="onImportPatterns" />
-          </div>
-        </div>
-        <LanguageSwitcher />
-      </div>
+    <!--
+      The header (ticket 142; Header card): 64px, in order — the brand; what is being edited (only while a Pattern is
+      open) and Replace bead; a flexible gap; the two imports with their one-line results; New Pattern; EN / RU; the
+      theme control; Keyboard shortcuts. Nothing shrinks but the Pattern's name. When it still doesn't fit, it fits by
+      priority (`writing.md`, Fitting longer text): the imports drop their labels first (compactImports).
+    -->
+    <header ref="headerEl" class="app-header" :class="{ 'app-header--compact': compactImports }" data-testid="app-topbar">
+      <h1 class="app-header__brand">
+        <AppLogo class="app-header__mark" :size="22" />
+        <span class="app-header__name">{{ t.app.title }}</span>
+      </h1>
 
-      <!--
-        A failed write to this device's storage (ticket 55, ADR 0012). It belongs to the top bar rather than to any of
-        the four panels (ADR 0004): it's about the whole Pattern library, not the open Pattern, and it has to be
-        visible whether or not one is open. It takes a line of its own below the title and summary boxes (see the
-        wrap on .app-shell__topbar), so it reads at a glance instead of squeezing the boxes narrower. role="alert" so
-        it's announced the moment it appears, and it stays up until a save gets through (see usePatternLibrary's
-        saveFailed) — there's nothing to dismiss, since the edit really isn't saved yet.
-      -->
-      <p v-if="saveFailed" class="app-shell__save-error" role="alert" data-testid="save-failed-message">
-        {{ t.storage.saveFailedMessage }}
-      </p>
+      <template v-if="activePattern">
+        <p class="app-header__editing" data-testid="pattern-info">
+          <span class="app-header__label">{{ t.patterns.currentLabel }}</span>
+          <span class="app-header__summary" data-testid="current-pattern-summary" :title="summarizePattern(activePattern)">
+            {{ summarizePattern(activePattern) }}
+          </span>
+          <span class="app-header__pill" data-testid="current-pattern-bead">{{ activeBeadLabel }}</span>
+        </p>
+        <AppSelect
+          variant="primary"
+          data-testid="replace-bead-select"
+          :aria-label="t.replaceBead.selectLabel"
+          :value="''"
+          @change="onPickReplaceBead($event.target as HTMLSelectElement)"
+        >
+          <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
+          <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+            {{ beadLabel(bead) }}
+          </option>
+        </AppSelect>
+      </template>
+
+      <span class="app-header__gap" />
+
+      <!-- Imported Patterns go straight into the library, which decides what to open and persists them. -->
+      <div class="app-header__imports" data-testid="pattern-actions">
+        <PatternImport :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
+      </div>
+      <AppButton
+        variant="primary"
+        icon="plus"
+        data-testid="new-pattern-button"
+        :disabled="patterns.length === 0"
+        @click="onNewPattern"
+      >
+        {{ t.patterns.newPatternButton }}
+      </AppButton>
+      <LanguageSwitcher />
+      <ThemeToggle />
+      <IconButton
+        icon="keyboard"
+        shape="round"
+        :label="t.shortcutsHelp.title"
+        data-testid="shortcuts-button"
+        @click="shortcutsHelpOpen = true"
+      />
     </header>
+
+    <!--
+      The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
+      space while there is nothing to say. A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
+      about the whole Pattern library, not the open Pattern, and has to be visible whether or not one is open.
+      It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
+      (see usePatternLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
+    -->
+    <div v-if="saveFailed" class="app-shell__notices" data-testid="app-notices">
+      <AppMessage tone="danger" placement="notice" :closable="false">
+        <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
+        <template #actions>
+          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportPatternFile">
+            {{ t.saveBox.exportPatternFile }}
+          </AppButton>
+        </template>
+      </AppMessage>
+    </div>
 
     <div class="app-shell__body">
       <!--
-        The left column (ticket 114): the New Pattern form or the Toolbox, taking turns — the form with no Pattern open
-        or while a Convert image framing step is up (ticket 58: the frame is sized by these very fields and follows them
-        as they're edited, so taking them away mid-framing would freeze the frame at whatever it last read), the
-        Toolbox otherwise. The same either/or the panel always had, so there is no state of its own to keep.
+        The left column (ticket 141, ADR 0021): one column that scrolls on its own, holding separate boxes in a fixed
+        order — the Toolbox (or the New Pattern form in its place), the save box (ticket 148), Beads needed, Saved
+        Patterns. The first box is the form with no Pattern open or while a Convert image framing step is up (ticket
+        58: the frame is sized by these very fields and follows them as they're edited, so taking them away mid-framing
+        would freeze the frame at whatever it last read), the Toolbox otherwise.
       -->
-      <aside
-        class="app-shell__main"
-        :class="{ 'app-shell__main--rail': activePattern && !framing }"
-        data-testid="app-main-panel"
-      >
-        <template v-if="!activePattern || framing">
-          <h2>{{ t.patterns.newPatternButton }}</h2>
+      <aside class="app-shell__column" :aria-label="t.a11y.toolsLandmark" data-testid="app-main-panel">
+        <section v-if="!activePattern || framing" class="app-shell__new-pattern" data-testid="new-pattern-box">
+          <h2 class="app-shell__box-title">{{ t.patterns.newPatternButton }}</h2>
           <NewPatternForm
             @submit="onCreatePattern"
             @draft="onNewPatternDraft"
             @convert-image="startConvertImage"
           />
-        </template>
+        </section>
         <!--
           Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools, and a
           Pattern nobody can see is not one to offer Undo, Rotate, Mirror or Delete all against. Cancel brings both the
@@ -1435,7 +1707,6 @@ function onMoveRow(delta: number) {
         <Toolbox
           v-else-if="activePattern"
           ref="toolboxRef"
-          class="app-shell__rail"
           :pattern="activePattern"
           :active-tool="activeTool"
           :selected-color-id="selectedColorId"
@@ -1447,9 +1718,6 @@ function onMoveRow(delta: number) {
           :can-remove-selected-line="canRemoveSelectedLine"
           :mirror-axis-counts="mirrorAxisCounts"
           :mirror-copy-mode="mirrorCopyMode"
-          :saved="saved"
-          :qr-too-large="qrExport.tooLarge.value"
-          :exporting="exporting"
           @select-tool="onSelectTool"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
@@ -1458,147 +1726,144 @@ function onMoveRow(delta: number) {
           @redo="onRedo"
           @toggle-rotate="onToggleRotate"
           @copy="onCopy"
-          @save="onSave"
-          @export-qr="qrExport.open"
-          @export-png="onExportPng"
-          @export-pdf="onExportPdf"
           @set-mirror-axis-count="onSetMirrorAxisCount"
           @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
           @mirror-current="onMirrorCurrent"
           @mirror-current-hover="onMirrorCurrentHover"
-          @toggle-row-progress="onToggleRowProgress"
-          @toggle-row-direction="onToggleRowDirection"
           @delete-all="onRequestDeleteAll"
           @resize="onResize"
           @change-size="onRequestChangeSize"
           @remove-selected-line="onRemoveSelectedLine"
         />
+        <!-- The save box (ticket 148): the library's save state, Save Pattern and Export ▾, beside the open Pattern's tools. -->
+        <SaveBox
+          v-if="activePattern && !framing"
+          :save-failed="saveFailed"
+          :qr-too-large="qrExport.tooLarge.value"
+          :exporting="exporting"
+          :pattern-name="activePattern.name"
+          :maker-name="makerName"
+          @edit-maker-name="nameOnExportsOpen = true"
+          @save="onSave"
+          @export-pattern="onExportPatternFile"
+          @export-qr="qrExport.open"
+          @export-png="onExportPng"
+          @export-pdf="onExportPdf"
+        />
+        <BeadQuantities :pattern="settledPattern" />
+        <PatternList
+          :patterns="patterns"
+          :active-pattern-id="activePatternId"
+          @select="onSelectPattern"
+          @remove="removePattern"
+        />
       </aside>
 
       <!--
-        The canvas panel alone: the Toolbox is no longer above it (ticket 114), so it takes the full width to the right of
-        the left column. Its own grid cell, in the same row as that column, is what bounds the rail's stickiness — see
-        .app-shell__main and .app-shell__rail below.
+        The canvas box (ticket 141): all the width right of the left column and the full height of the main area. The
+        page never scrolls; the Pattern scrolls inside the box.
       -->
-      <div class="app-shell__canvas-column">
+      <main class="app-shell__canvas-column">
         <div
-          ref="canvasAreaEl"
           class="app-shell__canvas"
           :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
           data-testid="app-canvas"
         >
           <!--
-            Pinned to the canvas panel's top-right corner (ticket 57), in its own row ahead of the scroll wrapper
-            below — a sibling of it, not a descendant, so it never scrolls, zooms or rotates along with the Pattern
-            (see PatternCanvas.vue's rotateStyle/scaled transforms, which stay scoped to the box alone). It takes
-            up real space in the panel, so the Pattern starts below it and is never covered by it.
+            The canvas box's header strip (ticket 143): what is on the board and its zoom. While a picture is being
+            framed (ticket 58) its zoom is the framing step's own, over its own 100–800% range (domain/imageFraming),
+            since that zoom moves the picture under a fixed frame rather than scaling the Pattern on screen. The strip
+            never scrolls, zooms or rotates with the Pattern below it.
           -->
-          <ZoomControls
-            v-if="activePattern && !framing"
-            class="app-shell__zoom-controls"
-            :zoom-percent="zoomPercent"
-            @zoom-in="zoomIn"
-            @zoom-out="zoomOut"
-            @reset="resetZoom"
+          <CanvasStrip
+            :size="stripSize"
+            :zoom-percent="stripZoomPercent"
+            :hint="keyboardOnPattern ? t.a11y.keyboardHint : undefined"
+            :title="framing ? t.convertImage.heading : undefined"
+            @zoom-in="framing ? convertZoomIn() : zoomIn()"
+            @zoom-out="framing ? convertZoomOut() : zoomOut()"
+            @reset="framing ? convertResetZoom() : resetZoom()"
           />
 
-          <!--
-            The framing step's own zoom (ticket 58): a second instance of the same cluster in the same panel corner,
-            over its own 100–800% range (see domain/imageFraming), because this zoom moves the picture under a fixed
-            frame rather than scaling the Pattern on screen. Only one of the two is ever mounted.
-          -->
-          <ZoomControls
-            v-if="framing"
-            class="app-shell__zoom-controls"
-            :zoom-percent="convertZoomPercent"
-            @zoom-in="convertZoomIn"
-            @zoom-out="convertZoomOut"
-            @reset="convertResetZoom"
+          <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Pattern). -->
+          <div ref="canvasAreaEl" class="app-shell__drawing" data-testid="app-drawing-area">
+            <CanvasBackdrop v-if="activePattern && !framing" :word="techniqueWord(activePattern.technique)" />
+
+            <div class="app-shell__canvas-row">
+              <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
+                <!--
+                  Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
+                  open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
+                  entered with one open. Cancel hands the panel straight back.
+                -->
+                <ConvertImageFrame
+                  v-if="framing"
+                  :image="framing.image"
+                  :technique="framing.technique"
+                  :bead="framing.bead"
+                  :dimensions="framing.dimensions"
+                  :zoom="convertZoom"
+                  :pan="convertPan"
+                  :max-colors="convertMaxColors"
+                  :available-width="canvasAreaWidth"
+                  :controls-to="framingControlsEl"
+                  @pan="setConvertPan"
+                  @set-max-colors="setConvertMaxColors"
+                  @create="onConvertImageCreate"
+                  @cancel="cancelConvertImage"
+                />
+                <PatternCanvas
+                  v-else-if="activePattern"
+                  :pattern="activePattern"
+                  :zoom="zoom"
+                  :preview-cells="previewCells"
+                  :preview-color="previewColor"
+                  :selection="selection"
+                  :mirror-axis-counts="previewedMirrorAxisCounts"
+                  :dimmed-cells="mirrorCurrentDimmedCells"
+                  :cursor="keyboardOnPattern ? beadCursor : undefined"
+                  :label="patternLabel"
+                  @cursor-key="onPatternKey"
+                  @keyup="onPatternKeyUp"
+                  @keyboard-focus="onPatternKeyboardFocus"
+                  @cell-primary-down="onCellPrimaryDown"
+                  @cell-primary-move="onCellPrimaryMove"
+                  @cell-secondary-down="onCellSecondaryDown"
+                  @cell-secondary-move="onCellSecondaryMove"
+                  @cell-hover="onCellHover"
+                  @hover-end="onHoverEnd"
+                  @select-line="onSelectLine"
+                />
+                <EmptyCanvas v-else />
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Short-lived results (ticket 76): bottom-right of the canvas box, above the Progress bar. -->
+          <ToastRegion
+            :class="{ 'app-shell__toasts--above-progress': activePattern && !framing }"
+            :toasts="toasts"
+            @dismiss="dismissToast"
           />
 
+          <!-- The framing step's controls, in the Progress bar's place (ticket 150; ConvertImage card). -->
+          <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
+
           <!--
-            Progress bar (ticket 124, ADR 0005's 2026-09-22 amendment), horizontal case: its own row, stacked below
-            the zoom cluster's row above (not merged with it) rather than beside the grid — see the vertical case
-            below, next to .app-shell__canvas-scroll. Only one of the two is ever mounted, chosen by Pattern shape;
-            neither is while Row progress is off or framing has the panel.
+            Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Pattern is open (not
+            while a picture is being framed), since its first control is the switch that turns Row progress on.
           -->
           <ProgressBar
-            v-if="activePattern && progressBarVisible && progressBarShape === 'horizontal'"
-            class="app-shell__progress-bar app-shell__progress-bar--horizontal"
+            v-if="activePattern && !framing"
             :pattern="activePattern"
-            orientation="horizontal"
             @move-row="onMoveRow"
-          />
-
-          <div class="app-shell__canvas-row">
-            <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
-              <!--
-                Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
-                open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
-                entered with one open. Cancel hands the panel straight back.
-              -->
-              <ConvertImageFrame
-                v-if="framing"
-                :image="framing.image"
-                :technique="framing.technique"
-                :bead="framing.bead"
-                :dimensions="framing.dimensions"
-                :zoom="convertZoom"
-                :pan="convertPan"
-                :max-colors="convertMaxColors"
-                :available-width="canvasAreaWidth"
-                @pan="setConvertPan"
-                @set-max-colors="setConvertMaxColors"
-                @create="onConvertImageCreate"
-                @cancel="cancelConvertImage"
-              />
-              <PatternCanvas
-                v-else-if="activePattern"
-                :pattern="activePattern"
-                :zoom="zoom"
-                :preview-cells="previewCells"
-                :preview-color="previewColor"
-                :selection="selection"
-                :mirror-axis-counts="previewedMirrorAxisCounts"
-                :dimmed-cells="mirrorCurrentDimmedCells"
-                @cell-primary-down="onCellPrimaryDown"
-                @cell-primary-move="onCellPrimaryMove"
-                @cell-secondary-down="onCellSecondaryDown"
-                @cell-secondary-move="onCellSecondaryMove"
-                @cell-hover="onCellHover"
-                @hover-end="onHoverEnd"
-                @select-line="onSelectLine"
-              />
-              <p v-else class="app-shell__placeholder" data-testid="app-canvas-placeholder">
-                {{ t.shell.canvasPlaceholder }}
-              </p>
-            </div>
-
-            <!-- Progress bar, vertical case: its own column next to the grid, on the canvas panel's right edge. -->
-            <ProgressBar
-              v-if="activePattern && progressBarVisible && progressBarShape === 'vertical'"
-              class="app-shell__progress-bar app-shell__progress-bar--vertical"
-              :pattern="activePattern"
-              orientation="vertical"
-              @move-row="onMoveRow"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="app-shell__below">
-        <hr class="app-shell__below-canvas-divider" data-testid="app-below-canvas-divider" />
-
-        <div class="app-shell__below-canvas" data-testid="app-below-canvas">
-          <BeadQuantities :pattern="settledPattern" />
-          <PatternList
-            :patterns="patterns"
-            :active-pattern-id="activePatternId"
-            @select="onSelectPattern"
-            @remove="removePattern"
+            @toggle-row-progress="onToggleRowProgress"
+            @toggle-row-direction="onToggleRowDirection"
           />
         </div>
-      </div>
+      </main>
+
     </div>
 
     <ConfirmModal
@@ -1651,365 +1916,322 @@ function onMoveRow(delta: number) {
       @cancel="onKeepCurrentAfterImport"
       @extra="onSaveBeforeImportSwitch"
     >
-      <p v-if="saveFailed && importSaveRefused" role="alert" data-testid="import-switch-save-failed">
+      <p v-if="saveFailed && importSaveRefused" class="app-shell__modal-error" role="alert" data-testid="import-switch-save-failed">
         {{ t.storage.saveFailedMessage }}
       </p>
     </ConfirmModal>
 
-    <QrExportPanel v-if="qrExport.panelOpen.value" :matrix="qrExport.matrix.value!" @close="qrExport.close" />
+    <QrExportPanel
+      v-if="qrExport.panelOpen.value && activePattern"
+      :matrix="qrExport.matrix.value!"
+      :summary="summarizePattern(activePattern)"
+      @close="qrExport.close"
+    />
 
     <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
+
+    <NameOnExportsModal
+      v-if="nameOnExportsOpen"
+      :name="makerName"
+      @save="onSaveMakerName"
+      @cancel="nameOnExportsOpen = false"
+    />
   </div>
 </template>
 
 <style scoped>
-.app-shell {
-  padding: 24px;
-}
-
-/* Two distinct boxes (ticket 20) rather than one bar: a dark title box and an aqua-island status box. Wraps so the
-   "couldn't save" notice (ticket 55) takes a full line of its own below them instead of narrowing them. */
-.app-shell__topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.app-shell__topbar-title,
-.app-shell__topbar-summary {
-  display: flex;
-  align-items: center;
-  padding: 16px 24px;
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-
-.app-shell__topbar-title {
-  /* A fixed square, not stretched to the summary box's height like the flex row would otherwise do: that box grows
-     taller once a Pattern is open, and a stretched title box would turn into a tall rectangle. */
-  flex: none;
-  align-self: flex-start;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 110px;
-  height: 110px;
-  padding: 16px;
-  background: var(--color-paper);
-}
-
-.app-shell__topbar-title h1 {
-  margin: 0;
-  color: var(--color-paper);
-}
-
-/* The favicon stands in for the app name, on the same paper as the page so its red beads stay visible. The negative
-   margin lets it draw larger than the 72px it takes up in the box, so the box doesn't grow with it. */
-.app-shell__logo {
-  display: flex;
-  line-height: 0;
-}
-
-.app-shell__logo-image {
-  width: 96px;
-  height: 96px;
-  margin: -12px;
-}
-
-.app-shell__topbar-summary {
-  /* Shares the row with the title box: a basis to start from (it only drops to its own line once it can't have that), and min-width: 0 so its clusters wrap inside it rather than making it as wide as they'd like to be. */
-  flex: 1 1 320px;
-  min-width: 0;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--color-aqua-island);
-}
-
 /*
- * The summary group (tickets 37, 117): two clusters side by side — Pattern info, then the actions — that wrap onto
- * their own lines when the box runs short of room rather than squeezing each other. It grows to fill whatever the
- * language switcher doesn't need, so the switcher stays pinned to the box's end however long the summary text is;
- * min-width: 0 lets it shrink below its content so a long summary wraps instead of pushing the switcher out.
+ * The app shell (ticket 141, ADR 0021): header, notice row, then the body, filling the screen exactly. The page itself
+ * never scrolls: the left column scrolls on its own, and the Pattern scrolls inside the canvas box, so the header, the
+ * Toolbox's top and the canvas box's own top and bottom stay in view on a Pattern of any size.
  */
-.app-shell__summary-group {
+.app-shell {
   display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 32px;
-  min-width: 0;
-}
-
-/* The current Pattern's summary, Bead and Replace Bead, stacked as one block. */
-.app-shell__pattern-info {
-  display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-width: 0;
-}
-
-/* New Pattern and the two Imports as one row of like buttons; their results (PatternImport.vue) take a line beneath. */
-.app-shell__actions {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-}
-
-.app-shell__summary {
-  margin: 0;
-  color: var(--color-aqua-island-ink);
-}
-
-/* Carries the same card frame as the shell's other boxes, in the alarm color the import error already uses
-   (PatternImport.vue), so it reads as part of this app rather than a browser dialog. flex-basis: 100% puts it on
-   its own line within the wrapping top bar, full width under the title and summary boxes. */
-.app-shell__save-error {
-  flex: 1 1 100%;
-  margin: 0;
-  padding: 12px 24px;
-  color: var(--color-amaranth-ink);
-  font-weight: var(--font-weight-bold);
-  background: var(--color-amaranth);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  background: var(--canvas);
 }
 
 /*
- * A two-column grid of two rows (ticket 114): the left column (the New Pattern form or the Toolbox rail) and the canvas
- * panel share the first row, and the below-canvas section sits under the canvas in the second, so that row is what
- * bounds the rail's stickiness — the rail un-pins when the canvas has scrolled past, and doesn't trail down beside
- * Beads needed and Saved Patterns. minmax(0, 1fr) lets the canvas column shrink below its content instead of pushing
- * the page wider (a zoomed-in Pattern scrolls sideways inside its own frame).
+ * The header (ticket 142; Header card): 64px on `canvas`, a `line-soft` rule under it, items 10px apart, none
+ * shrinking but the Pattern's name.
+ */
+.app-header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-10);
+  box-sizing: border-box;
+  height: var(--header-height);
+  padding: 0 var(--space-32);
+  overflow: hidden;
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.app-header > * {
+  flex: none;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0 var(--space-10) 0 0;
+}
+
+.app-header__mark {
+  color: var(--accent);
+}
+
+.app-header__name {
+  font: var(--type-brand);
+  letter-spacing: var(--tracking-brand);
+  color: var(--ink);
+}
+
+/* "currently editing", the Pattern's summary and its Bead pill. */
+.app-header__editing {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  margin: 0;
+}
+
+/*
+ * Only once the imports have dropped their labels may the Pattern's name give way, cut with an ellipsis (the second
+ * fitting step); "currently editing" and the Bead pill keep their size.
+ */
+.app-header--compact > .app-header__editing {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-header__label {
+  flex: none;
+  white-space: nowrap;
+  font: var(--type-label);
+  color: var(--muted);
+  text-transform: lowercase;
+}
+
+.app-header__summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-control);
+  color: var(--ink);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The Bead pill (BeadPill card): read-only. */
+.app-header__pill {
+  flex: none;
+  padding: var(--space-4) var(--space-12);
+  font: var(--type-pill);
+  color: var(--ink);
+  white-space: nowrap;
+  background: var(--pill);
+  border-radius: var(--radius-full);
+}
+
+.app-header > .app-header__gap {
+  flex: 1 1 0;
+}
+
+.app-header__imports {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.app-shell__skip {
+  position: absolute;
+  top: var(--space-8);
+  left: var(--space-8);
+  z-index: var(--z-tooltip);
+  padding: var(--space-8) var(--space-12);
+  font: var(--type-control);
+  color: var(--ink);
+  background: var(--canvas);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  transform: translateY(-200%);
+}
+
+.app-shell__skip:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+  transform: none;
+}
+
+/* Heard, not seen. */
+.app-shell__announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The notice row under the header, full width; it only exists while there is something to say. */
+.app-shell__notices {
+  flex: none;
+  padding: var(--space-16) var(--space-32) 0;
+}
+
+/* An error inside a confirmation, in the danger color (forms-and-states.md). */
+.app-shell__modal-error {
+  margin: 0 0 var(--space-8);
+  color: var(--danger);
+}
+
+/* Toasts sit 16px above the Progress bar while it shows. */
+.app-shell__toasts--above-progress {
+  --toast-bottom: calc(var(--progress-height) + var(--space-16));
+}
+
+/*
+ * The body: the 326px left column (312px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
+ * takes all the remaining width and the full height (ticket 141; `responsive.md`, MacBook Air tier). minmax(0, 1fr)
+ * lets the canvas box shrink below its content instead of pushing the page wider.
  */
 .app-shell__body {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 16px;
+  flex: 1 1 auto;
+  grid-template-columns: var(--column-width) minmax(0, 1fr);
+  gap: var(--space-14);
+  min-height: 0;
+  padding: var(--space-24) var(--space-32);
 }
 
-/* Stretched to the row, unlike the grid's other cells, so the rail's sticky containing block is as tall as the canvas panel. */
-.app-shell__main {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: stretch;
+/* The left column scrolls on its own, and never scrolls the canvas. */
+.app-shell__column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
   box-sizing: border-box;
-  width: 280px;
-  padding: 16px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
-}
-
-.app-shell__main h2 {
-  margin-top: 0;
-}
-
-/*
- * With a Pattern open this column holds the Toolbox rail instead of the form (ticket 114), which brings its own box and
- * fixed width (Toolbox.vue), so this one drops its frame, padding and width and is just the rail's track — as tall as
- * the canvas panel beside it, which is what the rail sticks within.
- */
-.app-shell__main--rail {
-  width: auto;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 0;
-}
-
-/*
- * The Toolbox rail stays pinned near the top of the viewport while the canvas is in view (ticket 114; it was the strip
- * above the canvas before, ADR 0005): a tall Pattern grows the canvas panel past the viewport (see .app-shell__canvas —
- * vertical overflow is never trapped, so the page itself scrolls), and without this the rail would scroll away with it,
- * leaving no way to reach Paint/Fill/Undo/Mirror while working on the lower rows. position: sticky rather than fixed
- * keeps it reachable without a scroll-tracking script, and bounds it by its parent — .app-shell__main, which spans just
- * the canvas panel's row — so it un-pins once the canvas has scrolled past. top: 24px echoes .app-shell's own edge padding.
- *
- * max-height with overflow-y: auto is for a window shorter than the rail's groups add up to: a sticky box taller than
- * the viewport could never show its bottom groups until the canvas ended, so the rail scrolls within itself instead and
- * every group stays reachable. Nothing in it should ever be wider than the rail (see Toolbox.vue), so no horizontal scroll.
- *
- * z-index lifts it above .app-shell__canvas: both are positioned (this one sticky, that one relative for the zoom
- * cluster, ADR 0005) with no stacking context of their own, so without one the canvas panel — later in the DOM — would
- * paint over the stuck rail as it scrolls underneath.
- */
-.app-shell__rail {
-  position: sticky;
-  top: 24px;
-  z-index: 2;
-  max-height: calc(100vh - 48px);
+  min-height: 0;
+  padding-right: var(--space-14);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
-/* With the frame moved onto the canvas box, the empty-canvas message carries its own so the panel still reads as a box. */
-.app-shell__placeholder {
-  width: fit-content;
-  margin: 0 auto;
-  padding: 16px 24px;
-  color: var(--color-ink);
-  opacity: 0.5;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
+/* Each box keeps its content height and fills the column's width. */
+.app-shell__column > * {
+  flex: none;
+  width: auto;
+}
+
+/* The New Pattern form's box (ticket 149; NewPatternForm card): the Toolbox's panel, its title in the `title` role. */
+.app-shell__new-pattern {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-20);
+  box-sizing: border-box;
+  padding: var(--space-24);
+  background: var(--panel);
+  border: 1px solid var(--panel-line);
   border-radius: var(--radius-lg);
 }
 
-/* The canvas panel's own cell of the grid: column two, row one, beside the left column. */
-.app-shell__canvas-column {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* The below-canvas section: the divider, then the boxes, under the canvas column. */
-.app-shell__below {
-  grid-column: 2;
-  grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/*
- * Opens the bottom section (ADR 0004 amendment, ticket 39): a faint divider, muted the same way the Toolbox's
- * dot-grid texture is (color-mix off --color-ink rather than a new token) so it separates the section without
- * competing with the boxes' own borders below it. It sits in .app-shell__below, in the grid's second column, so it
- * naturally spans just the canvas column's width, not the page (the left column sits outside it, to the left).
- */
-.app-shell__below-canvas-divider {
-  width: 100%;
-  height: 0;
+.app-shell__box-title {
   margin: 0;
-  border: none;
-  /* Deliberately thinner than --border-width (3px, the boxes' own frame) so it reads as a faint separator, not another box edge. */
-  border-top: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
+  font: var(--type-title);
+  color: var(--ink);
 }
 
-/*
- * Pattern-level views (ADR 0004): Beads needed and Saved Patterns (ticket 118 retired the third box), each carrying the
- * same card frame the rest of the shell uses. They share a row rather than stacking full-width down the page.
- */
-.app-shell__below-canvas {
+/* The canvas box's cell: the rest of the width, the full height. */
+.app-shell__canvas-column {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.app-shell__below-canvas > * {
-  flex: 1 1 320px;
+  flex-direction: column;
   min-width: 0;
-  padding: 16px;
-  background: var(--color-paper-solid);
-  border: var(--border-width) solid var(--color-ink);
-  border-radius: var(--radius-lg);
+  min-height: 0;
 }
 
 /*
- * A full-width frame around the canvas box, on the same dot-grid notepad texture as the Toolbox (ADR 0005), so
- * the canvas region reads as its own big panel rather than a small bordered box adrift on the page background. The
- * Pattern's own box (PatternCanvas) still sizes itself to the open Pattern's shape rather than stretching to fill
- * this — a bead grid is a fixed physical layout, not something that grows to fill leftover space — so it centers
- * here via margin:auto on the box itself (see PatternCanvas.vue / .app-shell__placeholder below), not this
- * container's own alignment.
+ * The canvas box (ticket 141): all the width right of the left column and the full height of the body, on the same
+ * dot-grid notepad texture as the Toolbox until ticket 143 restyles it. Its rows stack top to bottom (the zoom cluster,
+ * a horizontal Progress bar, then the Pattern), and the Pattern's own row takes the rest of the height.
  *
- * This is deliberately block layout, not flex, even though it's centering a child (ticket 28): a flex container
- * with justify-content:center and overflow:auto/scroll has a long-standing browser bug where an overflowing
- * child's start edge falls outside the scrollable range entirely — you can scroll to the excess on one side but
- * never reach it on the other. margin:auto centering on a block child doesn't have that failure mode.
+ * The Pattern scrolls inside .app-shell__canvas-scroll, both ways: the page never does. The Pattern's own box
+ * (PatternCanvas) sizes itself to the open Pattern's shape rather than stretching, and centers itself with margin:
+ * auto — block layout, not flex, inside the scroller (ticket 28): a flex container with justify-content: center and
+ * overflow: auto has a long-standing browser bug where an overflowing child's start edge can't be scrolled to.
  *
- * overflow-x is the only scroll this frame ever does: a manual zoom-in past the available width scrolls sideways
- * here instead of in a nested box (ticket 28 moved that up from PatternCanvas). Vertical overflow is never trapped
- * anywhere in this shell — this frame, like everything above it up to the page, has no height cap of its own, so a
- * tall Pattern just grows this frame, and the page, taller, and the browser's own scrollbar reaches the rest of it.
- * Don't give this (or an ancestor) a fixed/max height — that's what would make vertical scrolling possible again.
- *
- * The scrolling itself lives one level down, on .app-shell__canvas-scroll, so the zoom cluster — a sibling of that
- * scroller, not a descendant, sitting in its own row above it at this frame's top-right — never scrolls, zooms or
- * rotates along with the Pattern below it.
+ * The zoom cluster is a sibling of the scroller, not a descendant, so it never scrolls, zooms or rotates along with the
+ * Pattern below it.
  */
 .app-shell__canvas {
   position: relative;
+  display: flex;
   flex: 1 1 auto;
-  padding: 24px;
-  background-color: var(--color-paper-solid);
-  background-image: radial-gradient(color-mix(in srgb, var(--color-ink) 15%, transparent) 1.5px, transparent 1.5px);
-  background-size: 16px 16px;
-  border: var(--border-width) solid var(--color-ink);
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--box);
+  border: 1px solid var(--box-line);
   border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
 }
 
-/* Space+drag panning (ticket 95): a grab cursor while Space is held, switching to grabbing once the drag actually starts. */
-.app-shell__canvas--pan {
+/*
+ * The drawing area (ticket 143): the rest of the canvas box under the strip. Its size is measured for the fit zoom,
+ * so it takes a share of the box (flex-basis 0), never the Pattern's size. The background highlight fills it behind
+ * everything; what follows it is positioned too, so it paints over the highlight.
+ */
+.app-shell__drawing {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-shell__drawing > :not(.canvas-backdrop) {
+  position: relative;
+}
+
+/*
+ * Space+drag panning (ticket 95): a grab cursor while Space is held, switching to grabbing once the drag actually starts
+ * (BeadHover card). It wins over the board's own crosshair.
+ */
+.app-shell__canvas--pan,
+.app-shell__canvas--pan :deep(*) {
   cursor: grab;
 }
 
-.app-shell__canvas--panning {
+.app-shell__canvas--panning,
+.app-shell__canvas--panning :deep(*) {
   cursor: grabbing;
 }
 
 /*
- * Wraps the scroll box together with a vertical Progress bar (ticket 124) as flex siblings, so the column sits
- * right next to the grid rather than stretching away to the panel's actual right edge — justify-content: center
- * keeps the pair snug and centers them as a unit (the scroll box no longer grows to fill the leftover width; see
- * .app-shell__canvas-scroll below), the same centering .pattern-canvas's own margin: 0 auto used to do alone.
- * align-items: flex-start keeps the column its own content size while this row (as tall as the grid) is what its
- * sticky positioning below pins within. With no Progress bar mounted (Row progress off, or a horizontal Pattern
- * which mounts its own instead — see .app-shell__progress-bar--horizontal), the scroll box is this row's only
- * child and the wrapper is invisible in effect.
+ * Centers the Pattern's scroll box in the drawing area both ways while it is smaller than the area; once it is bigger,
+ * the scroll box is capped at the area's size (max-height below; min-width: 0 across) and scrolls instead.
  */
 .app-shell__canvas-row {
   display: flex;
+  flex: 1 1 auto;
   justify-content: center;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  min-height: 0;
 }
 
-/*
- * flex-shrink (the flex default already gives 1) still lets it shrink for its own overflow-x scroll when a zoomed-in
- * Pattern (plus the Progress bar column and the row's gap) outgrows the panel; min-width: 0 makes that shrinking
- * reach all the way down rather than stopping at the content's own min-content width. Deliberately no flex-grow
- * (ticket 124 dropped this box's earlier `flex: 1 1 auto`): growing to fill the row's leftover width is what used
- * to strand Progress bar out at the panel's actual right edge, far past the grid it's meant to sit next to.
- */
 .app-shell__canvas-scroll {
+  box-sizing: border-box;
   min-width: 0;
-  overflow-x: auto;
+  max-height: 100%;
+  overflow: auto;
 }
-
-/* Its own row at the canvas panel's top-right corner, above the scroll wrapper so the Pattern starts below it rather than running underneath (ticket 57; previously floated over the panel's corner, and before that anchored to the Pattern's own box under ticket 51). Doesn't scale with zoom or move as the panel scrolls. */
-.app-shell__zoom-controls {
-  width: fit-content;
-  margin: 0 0 12px auto;
-}
-
-/*
- * Progress bar (ticket 124, ADR 0005's 2026-09-22 amendment): sticky like the Toolbox rail (.app-shell__rail),
- * top: 24px echoing the same shell edge padding, and for the same reason — a tall Pattern grows the canvas panel
- * past the viewport, and without this Progress bar would scroll out of reach while working the lower rows. Each
- * orientation's own containing block (below) is exactly as tall as the Pattern, so it un-pins once that's scrolled
- * past, the same way the rail un-pins once the canvas has.
- */
-.app-shell__progress-bar {
-  position: sticky;
-  top: 24px;
-}
-
-/* Its containing block is .app-shell__canvas-row (flex, above), which is exactly as tall as the grid beside it; flex: none keeps it its own content width rather than sharing the row's leftover space with the scroll box. */
-.app-shell__progress-bar--vertical {
-  flex: none;
-}
-
-/* Its own row, centered the way the grid itself is (PatternCanvas.vue's margin: 0 auto), stacked below the zoom cluster rather than merged with it. Its containing block is .app-shell__canvas itself, exactly as tall as the zoom row, this row and the grid together. */
-.app-shell__progress-bar--horizontal {
-  margin: 0 auto 12px;
-}
-
 </style>

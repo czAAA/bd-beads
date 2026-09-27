@@ -19,6 +19,8 @@ const props = defineProps<{
   /** Which side of the grid this gutter sits on — left/top, or right/bottom. */
   edge: 'start' | 'end'
   zoom: number
+  /** The bead cursor's row or column on this ruler's axis (ticket 159): always numbered, and marked. */
+  cursorIndex?: number
 }>()
 
 const emit = defineEmits<{
@@ -78,16 +80,30 @@ interface RulerLabel {
   index: number
   number: number
   alongPx: number
+  /** The row (or column) being woven now, while Row progress is on: always numbered, in bold `marker` (BeadBoard card). */
+  current: boolean
+  /** The bead cursor's row or column (BeadCursor card): `ink`, bold, with a `focus-ring` line under it. */
+  cursor: boolean
 }
+
+/** The line Row progress is on along this ruler's axis, or -1 when there is none to mark. */
+const currentIndex = computed(() => {
+  const progress = props.pattern.rowProgress
+  if (!progress.enabled) return -1
+  if (isRowRuler.value) return progress.direction === 'rows' ? progress.currentRow : -1
+  return progress.direction === 'columns' ? progress.currentColumn : -1
+})
 
 const labels = computed<RulerLabel[]>(() =>
   Array.from({ length: count.value }, (_unused, index) => index)
-    .filter((index) => (index + 1) % step.value === 0)
+    .filter((index) => (index + 1) % step.value === 0 || index === currentIndex.value || index === props.cursorIndex)
     .map((index) => ({
       index,
       number: index + 1,
-      // The grid's outline sits between the gutter and the first bead, so every label starts past it.
+      // The board's padding sits between the gutter and the first bead, so every label starts past it.
       alongPx: GRID_BORDER_PX + index * spacingPx.value,
+      current: index === currentIndex.value,
+      cursor: index === props.cursorIndex,
     })),
 )
 
@@ -147,7 +163,8 @@ function onLabelClick(label: RulerLabel) {
       v-for="label in labels"
       :key="label.index"
       type="button"
-      class="pattern-ruler__label"
+      class="ui-control pattern-ruler__label"
+      :class="{ 'pattern-ruler__label--current': label.current, 'pattern-ruler__label--cursor': label.cursor }"
       data-testid="ruler-label"
       :aria-label="labelAriaLabel(label)"
       :style="labelStyle(label)"
@@ -159,12 +176,26 @@ function onLabelClick(label: RulerLabel) {
 </template>
 
 <style scoped>
+/* The ruler role (DESIGN.md §3 → tokens.json type): DM Mono 11 in `ruler`; its size is set, unscaled, by gutterStyle. */
 .pattern-ruler {
   position: relative;
   flex: none;
-  color: var(--color-ink);
-  font-weight: var(--font-weight-bold);
+  font-family: var(--font-mono);
+  font-weight: 400;
   line-height: 1;
+  color: var(--ruler);
+}
+
+.pattern-ruler__label--current {
+  font-weight: 700;
+  color: var(--marker);
+}
+
+.pattern-ruler__label--cursor {
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline 2px var(--focus-ring);
+  text-underline-offset: 2px;
 }
 
 .pattern-ruler__label {
@@ -180,14 +211,21 @@ function onLabelClick(label: RulerLabel) {
   color: inherit;
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   padding: 0;
   cursor: pointer;
 }
 
-.pattern-ruler__label:hover,
+@media (hover: hover) {
+  .pattern-ruler__label:hover {
+    color: var(--ink);
+    background: var(--hover-fill);
+  }
+}
+
 .pattern-ruler__label:focus-visible {
-  background: color-mix(in srgb, var(--color-ink) 15%, transparent);
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 0;
 }
 
 .pattern-ruler--row.pattern-ruler--start .pattern-ruler__label {

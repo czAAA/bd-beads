@@ -76,9 +76,9 @@ describe('beadAt on peyote', () => {
 
   it('reaches to the edge of the rounding: a point just inside the corner arc is on the bead', () => {
     const wide = pattern('peyote', 1, 1)
-    // The arc's centre is (6, 6) with radius 6: (1.8, 1.8) is 4.2 from each axis, 5.94 from the centre.
-    expect(beadAt(wide, { x: 1.8, y: 1.8 }, 1)).toEqual({ row: 0, column: 0 })
-    expect(beadAt(wide, { x: 1.7, y: 1.7 }, 1)).toBeUndefined()
+    // The arc's centre is (4.4, 4.4) with radius 4.4 (22% of the bead): (1.3, 1.3) is 4.38 from the centre, (1.2, 1.2) 4.53.
+    expect(beadAt(wide, { x: 1.3, y: 1.3 }, 1)).toEqual({ row: 0, column: 0 })
+    expect(beadAt(wide, { x: 1.2, y: 1.2 }, 1)).toBeUndefined()
   })
 })
 

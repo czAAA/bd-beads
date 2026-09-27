@@ -12,10 +12,19 @@ import {
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
-import { gridFromSize } from '../domain/patternSize'
+import { estimatedSizeMm, formatSizeMm, gridFromSize } from '../domain/patternSize'
 import { useI18n } from '../i18n/useI18n'
+import AppButton from './AppButton.vue'
+import AppIcon from './AppIcon.vue'
+import FieldSelect from './form/FieldSelect.vue'
+import FileButton from './form/FileButton.vue'
+import FormField from './form/FormField.vue'
+import LoadingState from './LoadingState.vue'
+import NumberField from './form/NumberField.vue'
+import SegmentedControl from './form/SegmentedControl.vue'
+import TextField from './form/TextField.vue'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -82,6 +91,43 @@ const dimensions = computed(() =>
 )
 
 const isValid = computed(() => isSizeStated.value)
+
+const techniqueOptions = computed(() => [
+  { value: 'loom' as const, label: t.value.form.techniqueLoom },
+  { value: 'peyote' as const, label: t.value.form.techniquePeyote },
+  { value: 'brick' as const, label: t.value.form.techniqueBrick },
+])
+
+const unitOptions = computed(() => [
+  { value: 'beads' as const, label: t.value.form.unitBeads },
+  { value: 'mm' as const, label: t.value.form.unitMm },
+  { value: 'cm' as const, label: t.value.form.unitCm },
+])
+
+/** Beside Unit: the stated size in the other unit (NewPatternForm card), "≈ 64 × 48 mm" or "≈ 40×30 beads". */
+const estimate = computed(() => {
+  const grid = dimensions.value
+  const bead = selectedBead.value
+  if (!grid || !bead) return undefined
+  if (unit.value === 'beads') {
+    return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}`
+  }
+  return t.value.form.estimateBeads.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
+})
+
+/** Which size fields have been left once, so their errors wait until then rather than greeting an empty form. */
+const touched = ref({ width: false, height: false })
+
+/** A size field's error, saying what to enter (`writing.md`, Field error); none until the field has been left. */
+function sizeError(text: string, value: number, field: 'width' | 'height'): string | undefined {
+  if (!touched.value[field]) return undefined
+  if (text.trim() === '' || !(value > 0)) return field === 'width' ? t.value.form.enterWidth : t.value.form.enterHeight
+  if (unit.value === 'beads' && !Number.isInteger(value)) return t.value.form.enterWholeBeads
+  return undefined
+}
+
+const widthError = computed(() => sizeError(String(widthText.value), width.value, 'width'))
+const heightError = computed(() => sizeError(String(heightText.value), height.value, 'height'))
 
 const techniqueLabel = computed<Record<Technique, string>>(() => ({
   loom: t.value.form.techniqueLoom,
@@ -151,113 +197,132 @@ async function onConvertImage(event: Event): Promise<void> {
     return
   }
 
-  convertRejection.value = validateImageFile(file)
-
   try {
-    if (!convertRejection.value) {
-      emit('convert-image', await (props.decodeImage ?? decodeImageFile)(file))
-    }
-  } catch (error) {
-    convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
+    await convertFile(file)
   } finally {
     // Clear the input so re-picking the same file still counts as a change (the same reason PatternImport does).
     input.value = ''
   }
 }
+
+/** A picked or dropped picture: validated, decoded, and handed over for framing, or turned away with the reason. */
+async function convertFile(file: File): Promise<void> {
+  convertRejection.value = validateImageFile(file)
+
+  try {
+    if (!convertRejection.value) {
+      reading.value = true
+      emit('convert-image', await (props.decodeImage ?? decodeImageFile)(file))
+    }
+  } catch (error) {
+    convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
+  } finally {
+    reading.value = false
+  }
+}
+
+/** Whether a chosen picture is being read: a big one takes a moment, and says so once it does (ticket 158). */
+const reading = ref(false)
+
+/** A picture dropped on Convert image: only once a size is stated, the same as picking one. */
+function onDropImage(file: File) {
+  if (isValid.value) void convertFile(file)
+}
 </script>
 
 <template>
-  <form class="new-pattern-form" @submit.prevent="onSubmit">
-    <div class="field">
-      <label for="name-input">{{ t.form.nameLabel }}</label>
-      <input
-        id="name-input"
-        v-model="name"
-        data-testid="name-input"
-        type="text"
-        :placeholder="namePlaceholder"
-      />
-    </div>
+  <!--
+    The New Pattern form (ticket 149; NewPatternForm card), in the left column's first box: Name (optional), Bead,
+    Technique, Width and Height in their Unit with the size in the other unit beside it, Create Pattern, then "or" and
+    Convert image. Create and Convert both wait for a size; its reason is written at the field.
+  -->
+  <form class="new-pattern-form" novalidate @submit.prevent="onSubmit">
+    <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
+      <TextField id="name-input" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
+    </FormField>
 
-    <div class="field">
-      <label for="bead-select">{{ t.form.beadLabel }}</label>
-      <select id="bead-select" v-model="beadId" data-testid="bead-select">
+    <FormField :label="t.form.beadLabel" label-for="bead-select">
+      <FieldSelect id="bead-select" v-model="beadId" data-testid="bead-select">
         <option v-for="bead in beads" :key="bead.id" :value="bead.id">
           {{ bead.brand }} {{ bead.name }} {{ bead.size }}
         </option>
-      </select>
-    </div>
+      </FieldSelect>
+    </FormField>
 
-    <div class="field">
-      <label for="technique-select">{{ t.form.techniqueLabel }}</label>
-      <select id="technique-select" v-model="technique" data-testid="technique-select">
-        <option value="loom">{{ t.form.techniqueLoom }}</option>
-        <option value="peyote">{{ t.form.techniquePeyote }}</option>
-        <option value="brick">{{ t.form.techniqueBrick }}</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="width-input">{{ t.form.widthLabel }}</label>
-      <input
-        id="width-input"
-        v-model="widthText"
-        data-testid="width-input"
-        type="number"
-        :min="unit === 'beads' ? 1 : 0"
-        :step="unit === 'beads' ? 1 : 'any'"
+    <FormField :label="t.form.techniqueLabel" label-id="technique-label">
+      <SegmentedControl
+        v-model="technique"
+        :options="techniqueOptions"
+        labelledby="technique-label"
+        data-testid="technique-select"
       />
+    </FormField>
+
+    <div class="new-pattern-form__pair">
+      <FormField :label="t.form.widthLabel" label-for="width-input" :error="widthError" error-testid="width-error">
+        <NumberField
+          id="width-input"
+          v-model="widthText"
+          data-testid="width-input"
+          :unit="unitOptions.find((option) => option.value === unit)?.label"
+          :whole="unit === 'beads'"
+          :invalid="!!widthError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          @blur="touched.width = true"
+        />
+      </FormField>
+      <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
+        <NumberField
+          id="height-input"
+          v-model="heightText"
+          data-testid="height-input"
+          :unit="unitOptions.find((option) => option.value === unit)?.label"
+          :whole="unit === 'beads'"
+          :invalid="!!heightError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          @blur="touched.height = true"
+        />
+      </FormField>
     </div>
 
-    <div class="field">
-      <label for="height-input">{{ t.form.heightLabel }}</label>
-      <input
-        id="height-input"
-        v-model="heightText"
-        data-testid="height-input"
-        type="number"
-        :min="unit === 'beads' ? 1 : 0"
-        :step="unit === 'beads' ? 1 : 'any'"
-      />
-    </div>
+    <FormField :label="t.form.unitLabel" label-id="unit-label" :aside="estimate">
+      <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="unit-label" data-testid="unit-select" />
+    </FormField>
 
-    <div class="field">
-      <label for="unit-select">{{ t.form.unitLabel }}</label>
-      <select id="unit-select" v-model="unit" data-testid="unit-select">
-        <option value="beads">{{ t.form.unitBeads }}</option>
-        <option value="mm">{{ t.form.unitMm }}</option>
-        <option value="cm">{{ t.form.unitCm }}</option>
-      </select>
-    </div>
-
-    <button type="submit" :disabled="!isValid">{{ t.form.submit }}</button>
+    <AppButton class="new-pattern-form__submit" type="submit" variant="primary" icon="plus" :disabled="!isValid">
+      {{ t.form.submit }}
+    </AppButton>
 
     <!--
       Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty grid, at the
       size stated above. It needs that size before there is a frame to fit a picture into, so it waits for one the same
-      way the submit button does.
+      way Create does, and says so under it. The limits are always written under it too.
     -->
-    <!--
-      The limits are on this box as well as on the input itself: a browser shows no tooltip for a disabled control, and
-      the input is disabled until a size is stated, so this is what carries the `title` until then.
-    -->
-    <div class="field new-pattern-form__convert" :title="limitsHint" data-testid="convert-image-field">
-      <label for="convert-image-input">{{ t.convertImage.fileLabel }}</label>
-      <input
+    <p class="new-pattern-form__or" aria-hidden="true">{{ t.form.or }}</p>
+    <div class="new-pattern-form__convert" :title="limitsHint" data-testid="convert-image-field">
+      <FileButton
         id="convert-image-input"
-        type="file"
+        :label="t.convertImage.fileLabel"
+        icon="image"
         data-testid="convert-image-input"
         :accept="imageInputAccept()"
         :title="limitsHint"
         :disabled="!isValid"
+        :disabled-reason="t.form.enterSizeFirst"
         @change="onConvertImage"
+        @drop-file="onDropImage"
       />
       <p class="new-pattern-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
-      <p v-if="slowFramingWarning" class="new-pattern-form__hint" data-testid="convert-image-slow-framing-warning">
-        {{ slowFramingWarning }}
+      <LoadingState v-if="reading" compact :text="t.convertImage.readingPicture" />
+      <p v-if="slowFramingWarning" class="new-pattern-form__warning" data-testid="convert-image-slow-framing-warning">
+        <AppIcon name="warning" :size="14" />
+        <span>{{ slowFramingWarning }}</span>
       </p>
       <p v-if="convertError" class="new-pattern-form__error" role="alert" data-testid="convert-image-error">
-        {{ convertError }}
+        <AppIcon name="warning" :size="14" />
+        <span>{{ convertError }}</span>
       </p>
     </div>
   </form>
@@ -267,30 +332,70 @@ async function onConvertImage(event: Event): Promise<void> {
 .new-pattern-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-16);
 }
 
-.field {
+.new-pattern-form__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-10);
+}
+
+.new-pattern-form__submit {
+  width: 100%;
+  height: var(--field-height);
+}
+
+/* "or", between two rules. */
+.new-pattern-form__or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  margin: 0;
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
+
+.new-pattern-form__or::before,
+.new-pattern-form__or::after {
+  flex: 1;
+  height: 1px;
+  content: '';
+  background: var(--panel-rule);
+}
+
+.new-pattern-form__convert {
   display: flex;
   flex-direction: column;
+  gap: var(--space-6);
 }
 
-/* Kept apart from the fields above it, since it is a second way out of the form rather than another thing to fill in. */
-.new-pattern-form__convert {
-  gap: 6px;
-  padding-top: 16px;
-  border-top: 1px solid color-mix(in srgb, var(--color-ink) 20%, transparent);
-}
-
-.new-pattern-form__hint {
+.new-pattern-form__hint,
+.new-pattern-form__warning,
+.new-pattern-form__error {
+  display: flex;
+  gap: var(--space-6);
+  align-items: flex-start;
   margin: 0;
-  font-size: 14px;
-  opacity: 0.7;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.new-pattern-form__warning {
+  color: var(--body);
+}
+
+.new-pattern-form__warning > .icon {
+  margin-top: var(--space-2);
+  color: var(--warning);
 }
 
 .new-pattern-form__error {
-  margin: 0;
-  color: var(--color-amaranth);
-  font-weight: var(--font-weight-bold);
+  color: var(--danger);
+}
+
+.new-pattern-form__error > .icon {
+  margin-top: var(--space-2);
 }
 </style>

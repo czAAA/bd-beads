@@ -4,14 +4,18 @@ The first visual design (ticket 02: flat navy/peppermint color-blocking, thick o
 layout change since has been its own ADR amendment (0004 and 0005 carry eleven between them). For the MVP's "real
 design system" ([ADR 0014](0014-mvp-stays-local-only-hosted-phase-deferred.md)) we rendered 72 editor prototypes, one
 per published design system (tickets 125–134). The user picked five and combined parts of them into one design
-(ticket 135), approving it as two screenshots. **[DESIGN.md](../../DESIGN.md) at the repo root is now the single
-reference for tokens, layout and components**, and `docs/design/light.png` and `dark.png` are the approved pictures.
-UI work follows it. A need it doesn't cover is added to DESIGN.md first, not invented in a component.
+(ticket 135), approving it as two screenshots. That design became the **bd-beads design system** (edited on
+claude.ai, copied into `docs/design/system/`, version 13 at the time of writing), and it is now the single reference
+for tokens, layout, components, copy and artwork. **[DESIGN.md](../../DESIGN.md)** at the repo root is its entry
+point: it says which source wins, maps each topic to its design system file, and holds the app-specific notes the
+design system doesn't carry (the canvas `PatternTheme`, light-only exports, bundled fonts). `docs/design/light.png`
+and `dark.png` stay as the approved reference pictures. UI work follows the design system. A need it doesn't cover is
+added to the design system on claude.ai first and copied in, not invented in a component.
 
 The decisions a later reader might not expect:
 
-- **A dark theme as well as light.** It follows the device's setting until the user picks one with the header toggle.
-  Both themes are complete token sets with the same layout. PNG and PDF exports always use the light theme.
+- **Dark and high contrast themes as well as light.** The app follows the device's setting until the user picks one
+  with the header's theme control. All three are complete token sets with the same layout. PNG and PDF exports always use the light theme.
 - **One left column, scrolling on its own**, holding four separate boxes in a fixed order: Toolbox, save box, Beads
   needed, Saved Patterns. The below-canvas panel is gone. The canvas box takes all the remaining width and full
   height, and the page itself no longer scrolls: the Pattern scrolls inside the canvas box.
@@ -52,5 +56,8 @@ The decisions a later reader might not expect:
   instead of greying). [ADR 0018](0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md)'s "the look does
   not change" was about the move to the renderer. The renderer's reference images are regenerated for the new look
   once, deliberately, and are held to the new look from then on.
-- Parts of DESIGN.md marked "Derived" (messages, modals, menus, hover and focus states, Row progress off) were not in
-  the approved screenshots. They can be revised without a new ADR, as long as DESIGN.md is updated with them.
+- Parts of the design that were not in the approved screenshots (messages, modals, menus, states, Row progress off,
+  the responsive tiers) can be revised in the design system without a new ADR, as long as the copy in the repo is
+  refreshed with them.
+- **Amended (ticket 156):** DESIGN.md no longer restates token values or component specs, so it and the design
+  system can't drift. It keeps only the source rule, the topic map and the app-specific notes.

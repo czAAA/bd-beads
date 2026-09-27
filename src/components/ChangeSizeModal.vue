@@ -6,6 +6,9 @@ import type { ResizeRequest } from '../domain/resize'
 import { planSizeChange, type SizeChangeProblem } from '../domain/sizeChange'
 import { useI18n } from '../i18n/useI18n'
 import ConfirmModal from './ConfirmModal.vue'
+import FormField from './form/FormField.vue'
+import NumberField from './form/NumberField.vue'
+import SegmentedControl from './form/SegmentedControl.vue'
 
 /**
  * Change size (ticket 153, CONTEXT.md's Resize, ADR 0017): sets the open Pattern's grid from a size stated in beads,
@@ -43,6 +46,12 @@ const problemMessages = computed<Record<SizeChangeProblem, string>>(() => ({
   'not-whole': t.value.changeSize.problemNotWhole,
   'no-bead': t.value.changeSize.problemNoBead,
 }))
+
+const unitOptions = computed(() => [
+  { value: 'beads' as const, label: t.value.form.unitBeads },
+  { value: 'mm' as const, label: t.value.form.unitMm },
+  { value: 'cm' as const, label: t.value.form.unitCm },
+])
 
 const unitLabels = computed<Record<SizeUnit, string>>(() => ({
   beads: t.value.form.unitBeads,
@@ -93,35 +102,40 @@ function onConfirm() {
     @cancel="emit('cancel')"
   >
     <div class="change-size__fields">
-      <div class="field">
-        <label for="change-size-unit">{{ t.form.unitLabel }}</label>
-        <select id="change-size-unit" v-model="unit" data-testid="change-size-unit">
-          <option value="beads">{{ t.form.unitBeads }}</option>
-          <option value="mm">{{ t.form.unitMm }}</option>
-          <option value="cm">{{ t.form.unitCm }}</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="change-size-width">{{ t.changeSize.columnsLabel }}</label>
-        <input
-          id="change-size-width"
-          v-model="widthText"
-          data-testid="change-size-width"
-          type="number"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
+      <FormField :label="t.form.unitLabel" label-id="change-size-unit-label">
+        <SegmentedControl
+          v-model="unit"
+          :options="unitOptions"
+          mono
+          labelledby="change-size-unit-label"
+          data-testid="change-size-unit"
         />
-      </div>
-      <div class="field">
-        <label for="change-size-height">{{ t.changeSize.rowsLabel }}</label>
-        <input
-          id="change-size-height"
-          v-model="heightText"
-          data-testid="change-size-height"
-          type="number"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
-        />
+      </FormField>
+      <div class="change-size__pair">
+        <FormField :label="t.changeSize.columnsLabel" label-for="change-size-width">
+          <NumberField
+            id="change-size-width"
+            v-model="widthText"
+            data-testid="change-size-width"
+            :unit="unitLabels[unit]"
+            :whole="unit === 'beads'"
+            :invalid="!plan.ok"
+            :min="unit === 'beads' ? 1 : 0"
+            :step="unit === 'beads' ? 1 : 'any'"
+          />
+        </FormField>
+        <FormField :label="t.changeSize.rowsLabel" label-for="change-size-height">
+          <NumberField
+            id="change-size-height"
+            v-model="heightText"
+            data-testid="change-size-height"
+            :unit="unitLabels[unit]"
+            :whole="unit === 'beads'"
+            :invalid="!plan.ok"
+            :min="unit === 'beads' ? 1 : 0"
+            :step="unit === 'beads' ? 1 : 'any'"
+          />
+        </FormField>
       </div>
     </div>
   </ConfirmModal>
@@ -131,12 +145,13 @@ function onConfirm() {
 .change-size__fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-12);
+  margin-bottom: var(--space-16);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
+.change-size__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-10);
 }
 </style>

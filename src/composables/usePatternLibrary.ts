@@ -1,5 +1,5 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import { mostRecentlyUpdated, type Pattern } from '../domain/pattern'
+import { inSavedOrder, markSaved, mostRecentlyUpdated, type Pattern } from '../domain/pattern'
 import { loadPatterns, savePatterns } from '../domain/patternStorage'
 
 /** How a change to a Pattern should reach storage (see replacePattern). */
@@ -13,7 +13,7 @@ export interface ReplaceOptions {
 }
 
 export interface PatternLibrary {
-  /** Every Pattern on this device (CONTEXT.md's Pattern library) — the source of truth persistence follows. */
+  /** Every Pattern on this device (CONTEXT.md's Pattern library), most recently saved first — the source of truth persistence follows. */
   patterns: Ref<Pattern[]>
   /** Which Pattern is open, or none (the New Pattern form). Writable: opening a Pattern is just setting this. */
   activePatternId: Ref<string | undefined>
@@ -41,9 +41,12 @@ export interface PatternLibrary {
  * A save writes the whole library from memory (see savePatterns), which is both cheaper than the old read-modify-write
  * per Pattern and self-healing: any later save also persists whatever an earlier deferred or failed one left pending,
  * so a missed flush can cost at most the newest un-flushed stroke, never an older edit.
+ *
+ * The library is kept in last-saved order (ticket 145): each mutator that saves a Pattern stamps it (markSaved) and
+ * moves it to the front, and the order is written with the library, so it survives a reload as it stood.
  */
 export function usePatternLibrary(): PatternLibrary {
-  const patterns = ref<Pattern[]>(loadPatterns())
+  const patterns = ref<Pattern[]>(inSavedOrder(loadPatterns()))
   const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.value)?.id)
   const activePattern = computed(() =>
     patterns.value.find((pattern) => pattern.id === activePatternId.value),
@@ -66,6 +69,12 @@ export function usePatternLibrary(): PatternLibrary {
     }
   }
 
+  /** Puts a just-saved Pattern at the front of the library, in place of its old copy. */
+  function toFront(pattern: Pattern): void {
+    const saved = markSaved(pattern)
+    patterns.value = [saved, ...patterns.value.filter((existing) => existing.id !== pattern.id)]
+  }
+
   function commit(options?: ReplaceOptions): void {
     savePending = true
     if (!options?.deferSave) {
@@ -81,26 +90,25 @@ export function usePatternLibrary(): PatternLibrary {
 
     /** Adds a newly created Pattern and opens it. */
     addPattern(pattern: Pattern) {
-      patterns.value = [...patterns.value, pattern]
+      toFront(pattern)
       activePatternId.value = pattern.id
       commit()
     },
 
     /**
      * Adds imported Patterns (ticket 15's Pattern file). Opening one of them would interrupt whatever is already
-     * open, so it only steps in when nothing is.
+     * open, so it only steps in when nothing is. They are saved on this device now, so they go to the front.
      */
     addPatterns(imported: Pattern[]) {
-      patterns.value = [...patterns.value, ...imported]
+      const now = Date.now()
+      patterns.value = [...inSavedOrder(imported.map((pattern) => markSaved(pattern, now))), ...patterns.value]
       activePatternId.value ??= mostRecentlyUpdated(imported)?.id
       commit()
     },
 
     /** The single commit point for a change to an existing Pattern: every edit in the editor lands here. */
     replacePattern(pattern: Pattern, options?: ReplaceOptions) {
-      patterns.value = patterns.value.map((existing) =>
-        existing.id === pattern.id ? pattern : existing,
-      )
+      toFront(pattern)
       commit(options)
     },
 
@@ -122,10 +130,14 @@ export function usePatternLibrary(): PatternLibrary {
 
     /**
      * The Save tool's write (ticket 115): unlike flushPendingSave it doesn't trust the pending flag, since what Save
-     * reports back — "Saved" — has to be true whatever state that flag is in. Returns whether the write got through;
+     * reports back — "Saved" — has to be true whatever state that flag is in. It saves the open Pattern, so that one
+     * moves to the front of the library even with nothing changed. Returns whether the write got through;
      * a refusal also raises saveFailed, like any other.
      */
     saveNow(): boolean {
+      if (activePattern.value) {
+        toFront(activePattern.value)
+      }
       save()
       return !saveFailed.value
     },

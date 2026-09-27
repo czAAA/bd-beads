@@ -1,0 +1,120 @@
+/*
+ * High contrast (ticket 160; HighContrastTheme card, accessibility.md): every line 2px in its full line color, every
+ * surface white, no elevation. The controls thicken their own edges; this sheet covers the boxes and the rules between
+ * things, by the class each component gives them. `:root[data-theme]` outweighs a component's scoped rule.
+ */
+:root[data-theme='contrast'] :is(
+    .toolbox,
+    .save-box,
+    .expandable-panel,
+    .app-shell__new-pattern,
+    .app-shell__canvas,
+    .theme-toggle
+  ) {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+:root[data-theme='contrast'] .app-header {
+  border-bottom-width: 2px;
+}
+
+/* The rules between things: full strength, 2px. */
+:root[data-theme='contrast'] :is(.canvas-strip, .disclosure-row) {
+  border-bottom: 2px solid var(--line);
+}
+
+:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls, .toolbox__rows, .expandable-panel__footer) {
+  border-top: 2px solid var(--line);
+}
+
+:root[data-theme='contrast'] :is(.bead-quantities__row > td, .shortcuts-help__row) {
+  border-top-width: 2px;
+}
+
+:root[data-theme='contrast'] .tool-tabs {
+  border-bottom-width: 2px;
+}
+
+/* The Bead pill is white on white here: it keeps its shape with an edge. */
+:root[data-theme='contrast'] .app-header__pill {
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+/*
+ * Windows high contrast (forced-colors): system colors win; edges, focus and selected states stay visible. Bead colors
+ * are the Pattern itself, so everything that shows one keeps its own colors; the background word and curve are
+ * decoration and step aside. `html:root` outweighs a component's scoped rule.
+ */
+@media (forced-colors: active) {
+  html:root :is(
+      .pattern-canvas,
+      .palette-picker__swatch,
+      .image-colors-picker__swatch,
+      .custom-color-picker__swatch,
+      .bead-quantities__swatch,
+      .convert-image-frame__swatch,
+      .convert-image-frame__box,
+      .pattern-thumbnail,
+      .qr-code,
+      .empty-canvas__board,
+      .loading__bead
+    ) {
+    forced-color-adjust: none;
+  }
+
+  html:root .canvas-backdrop {
+    display: none;
+  }
+
+  html:root :where(button, select, input, [role='switch'], [role='radio'], a):focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  html:root :is(
+      .app-button,
+      .icon-btn,
+      .expand-btn,
+      .segmented,
+      .text-field,
+      .field-select__control,
+      .stepper,
+      .file-button__target,
+      .custom-color-picker,
+      .image-colors-button__button,
+      .app-switch,
+      .pattern-list__remove
+    ) {
+    border: 1px solid ButtonText;
+  }
+
+  html:root :is(.app-switch[aria-checked='true'], .segmented__option[aria-checked='true'], .app-button--selected, .icon-btn--selected) {
+    forced-color-adjust: none;
+    color: HighlightText;
+    background: Highlight;
+  }
+
+  html:root .app-switch[aria-checked='true'] .app-switch__knob {
+    forced-color-adjust: none;
+    background: HighlightText;
+  }
+
+  html:root .app-switch__knob {
+    forced-color-adjust: none;
+    background: ButtonText;
+  }
+
+  html:root .tool-tab--active {
+    border-bottom: 3px solid Highlight;
+  }
+
+  html:root :is(.palette-picker__swatch, .image-colors-picker__swatch)[aria-pressed='true'],
+  html:root .custom-color-picker--selected {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  html:root :is(.toolbox, .save-box, .expandable-panel, .app-shell__new-pattern, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
+    border: 1px solid CanvasText;
+  }
+}

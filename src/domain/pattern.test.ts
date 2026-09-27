@@ -14,7 +14,6 @@ import {
   normalizePattern,
   paintCells,
   keepFinishedRows,
-  patternShape,
   replaceBead,
   resolvePatternBead,
   restoreGrid,
@@ -195,33 +194,6 @@ describe('summarizePattern', () => {
   })
 })
 
-describe('patternShape', () => {
-  it('calls a wider-than-tall loom Pattern horizontal', () => {
-    expect(patternShape({ technique: 'loom', columns: 20, rows: 10, rotated: false })).toBe('horizontal')
-  })
-
-  it('calls a taller-than-wide loom Pattern vertical', () => {
-    expect(patternShape({ technique: 'loom', columns: 10, rows: 20, rotated: false })).toBe('vertical')
-  })
-
-  it('calls a square Pattern horizontal (width === height counts as horizontal)', () => {
-    expect(patternShape({ technique: 'loom', columns: 12, rows: 12, rotated: false })).toBe('horizontal')
-  })
-
-  it("reads a Technique's own row packing rather than raw column/row counts", () => {
-    // 5 columns x 6 rows: more rows than columns, but peyote packs rows at 0.75 of a cell and adds a half-cell of
-    // width for the offset stagger, so the rendered box (110 x 95 px at CELL_SIZE_PX=20) is actually wider than tall.
-    expect(patternShape({ technique: 'peyote', columns: 5, rows: 6, rotated: false })).toBe('horizontal')
-    // The same raw counts on loom, which packs rows at a full cell with no offset, come out taller than wide.
-    expect(patternShape({ technique: 'loom', columns: 5, rows: 6, rotated: false })).toBe('vertical')
-  })
-
-  it('swaps to match the view-only rotated flag, independent of Row direction', () => {
-    const wide = { technique: 'loom' as const, columns: 20, rows: 10, rotated: false }
-    expect(patternShape(wide)).toBe('horizontal')
-    expect(patternShape({ ...wide, rotated: true })).toBe('vertical')
-  })
-})
 
 describe('restoreGrid', () => {
   it('swaps in the given grid and bumps updatedAt, without mutating the original pattern', () => {
