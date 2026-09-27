@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 import { decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import type { Pattern } from '../domain/pattern'
 import { importPatterns, parsePatternsFile } from '../domain/patternFile'
@@ -20,19 +20,36 @@ const props = withDefaults(
     decodeImage?: DecodeImage
     /**
      * Icons only, each name kept as its tooltip and accessible name: the header's first step when it runs out of room
-     * (ticket 142; `writing.md`, Fitting longer text).
+     * (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini tier's More menu
+     * (ticket 168), where `toastResults` also applies.
      */
     compact?: boolean
+    /**
+     * The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the buttons in
+     * there, so it's emitted as `import-result` instead of drawn inline -- the app shell turns it into a toast above
+     * the bottom toolbar. The header's own instance leaves this off and keeps the inline result it always had.
+     */
+    toastResults?: boolean
+    /** A second, simultaneously-mounted instance (the More menu's, alongside the header's own) needs its own testids. */
+    testidPrefix?: string
   }>(),
   {
     decodeImage: undefined,
+    compact: false,
+    toastResults: false,
+    testidPrefix: '',
   },
 )
 
 const emit = defineEmits<{
   /** The Patterns a file turned out to hold, ready to be saved locally, already given fresh ids where they collided. */
   import: [patterns: Pattern[]]
+  /** `toastResults` only: a toast id, its text and tone, ready for the app shell's own `useToasts`. */
+  'import-result': [id: string, text: string, tone: 'success' | 'danger']
 }>()
+
+const fileInputId = useId()
+const qrInputId = useId()
 
 const { t } = useI18n()
 
@@ -54,8 +71,10 @@ async function onImportFile(event: Event): Promise<void> {
     const added = importPatterns(contents.patterns, props.patterns)
     importedCount.value = added.length
     emit('import', added)
+    if (props.toastResults) emit('import-result', 'import-file', `${t.value.transfer.importedLabel}: ${added.length}`, 'success')
   } catch {
     importFailed.value = true
+    if (props.toastResults) emit('import-result', 'import-file', t.value.transfer.importErrorLabel, 'danger')
   } finally {
     // Clear the input so re-picking the same file still counts as a change.
     input.value = ''
@@ -81,8 +100,10 @@ async function onImportQrImage(event: Event): Promise<void> {
     const [added] = importPatterns([parsePatternFromQrImage(pixels)], props.patterns)
     qrImportedCount.value = 1
     emit('import', [added!])
+    if (props.toastResults) emit('import-result', 'import-qr', t.value.transfer.qrImportedLabel, 'success')
   } catch {
     qrImportFailed.value = true
+    if (props.toastResults) emit('import-result', 'import-qr', t.value.transfer.qrImportErrorLabel, 'danger')
   } finally {
     // Clear the input so re-picking the same file still counts as a change.
     input.value = ''
@@ -100,15 +121,15 @@ async function onImportQrImage(event: Event): Promise<void> {
   <label
     class="pattern-import__button"
     :class="{ 'pattern-import__button--compact': compact }"
-    for="import-file"
+    :for="fileInputId"
     :title="compact ? t.transfer.importLabel : undefined"
   >
     <input
-      id="import-file"
+      :id="fileInputId"
       type="file"
       class="pattern-import__input"
       accept="application/json,.json"
-      data-testid="import-file"
+      :data-testid="`${testidPrefix}import-file`"
       :aria-label="compact ? t.transfer.importLabel : undefined"
       @change="onImportFile"
     />
@@ -119,15 +140,15 @@ async function onImportQrImage(event: Event): Promise<void> {
   <label
     class="pattern-import__button"
     :class="{ 'pattern-import__button--compact': compact }"
-    for="import-qr"
+    :for="qrInputId"
     :title="compact ? t.transfer.importQrLabel : undefined"
   >
     <input
-      id="import-qr"
+      :id="qrInputId"
       type="file"
       class="pattern-import__input"
       accept="image/*"
-      data-testid="import-qr"
+      :data-testid="`${testidPrefix}import-qr`"
       :aria-label="compact ? t.transfer.importQrLabel : undefined"
       @change="onImportQrImage"
     />
@@ -137,19 +158,21 @@ async function onImportQrImage(event: Event): Promise<void> {
 
   <!--
     One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
-    announced as it appears, since the file picker has already closed by then.
+    announced as it appears, since the file picker has already closed by then. The iPad mini tier's More menu
+    (`toastResults`) emits the same words as a toast instead (ticket 168): there is no room beside these buttons in
+    a menu, and results arrive above the bottom toolbar there.
   -->
-  <p v-if="importedCount !== null" class="pattern-import__result" role="status" data-testid="import-result">
+  <p v-if="!toastResults && importedCount !== null" class="pattern-import__result" role="status" data-testid="import-result">
     {{ t.transfer.importedLabel }}: {{ importedCount }}
   </p>
-  <p v-if="importFailed" class="pattern-import__error" role="alert" data-testid="import-error">
+  <p v-if="!toastResults && importFailed" class="pattern-import__error" role="alert" data-testid="import-error">
     <AppIcon name="warning" :size="16" />{{ t.transfer.importErrorLabel }}
   </p>
 
-  <p v-if="qrImportedCount !== null" class="pattern-import__result" role="status" data-testid="qr-import-result">
+  <p v-if="!toastResults && qrImportedCount !== null" class="pattern-import__result" role="status" data-testid="qr-import-result">
     {{ t.transfer.qrImportedLabel }}
   </p>
-  <p v-if="qrImportFailed" class="pattern-import__error" role="alert" data-testid="qr-import-error">
+  <p v-if="!toastResults && qrImportFailed" class="pattern-import__error" role="alert" data-testid="qr-import-error">
     <AppIcon name="warning" :size="16" />{{ t.transfer.qrImportErrorLabel }}
   </p>
 </template>

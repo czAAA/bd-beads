@@ -95,6 +95,18 @@ export const ru: Translations = {
     saveFailedMessage:
       'Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или экспортируйте схему в файл, чтобы её сохранить.',
   },
+  header: {
+    toolsButton: 'Инструменты',
+    moreButton: 'Ещё',
+    patternSheetLabel: 'Схема',
+    newPatternSheetTitle: 'Новая схема',
+  },
+  contextBar: {
+    label: 'Действия с выделением',
+    clearButton: 'Снять выделение',
+    pasteHint: 'Нажмите, куда вставить',
+    cancelButton: 'Отмена',
+  },
   palette: {
     pickerLabel: 'Цвета палитры',
     colorLabel: 'Цвет',

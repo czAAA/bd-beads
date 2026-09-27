@@ -304,7 +304,8 @@ describe('App', () => {
 
     const column = wrapper.find('[data-testid="app-main-panel"]').element
     expect(column.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
-    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(column.parentElement)
+    // The column sits in the Drawer (ticket 168), itself a direct child of the body alongside the canvas box.
+    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(column.parentElement!.parentElement)
   })
 
   it('paints a cell with the selected palette color', async () => {
@@ -1095,27 +1096,34 @@ describe('App', () => {
       )
 
     expect(order()).toEqual([
+      'app-header__tools',
       'app-header__brand',
       'app-header__gap',
       'pattern-actions',
-      'new-pattern-button',
-      'language-switcher',
-      'theme-toggle',
-      'shortcuts-button',
+      'app-header__phone-hide', // New Pattern's wrapper (ticket 79: hidden at the phone tier)
+      'app-header__wide-only',
+      'app-header__wide-only',
+      'app-header__shortcuts',
+      'app-header__more',
     ])
 
     await createPatternViaForm(wrapper, '15', '30')
 
     expect(order()).toEqual([
+      'app-header__tools',
       'app-header__brand',
+      'phone-pattern-info', // ticket 79: the phone header's own Pattern name/size/save state
       'pattern-info',
-      'replace-bead-select',
+      'app-header__phone-hide', // Replace bead's wrapper
       'app-header__gap',
       'pattern-actions',
-      'new-pattern-button',
-      'language-switcher',
-      'theme-toggle',
-      'shortcuts-button',
+      'app-header__phone-hide', // New Pattern's wrapper
+      'app-header__phone-only', // phone Undo
+      'app-header__phone-only', // phone Redo
+      'app-header__wide-only',
+      'app-header__wide-only',
+      'app-header__shortcuts',
+      'app-header__more',
     ])
     const header = wrapper.find('[data-testid="app-topbar"]')
     expect(header.find('h1').text()).toBe('bd-beads')

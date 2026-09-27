@@ -1,20 +1,33 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import AppButton from './components/AppButton.vue'
+import AppIcon from './components/AppIcon.vue'
+import AppLink from './components/AppLink.vue'
 import AppLogo from './components/AppLogo.vue'
+import AppMenu from './components/AppMenu.vue'
+import AppMenuItem from './components/AppMenuItem.vue'
 import AppMessage from './components/AppMessage.vue'
 import AppSelect from './components/AppSelect.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
+import BottomSheet from './components/BottomSheet.vue'
+import BottomToolbar from './components/BottomToolbar.vue'
 import ChangeSizeModal from './components/ChangeSizeModal.vue'
 import ConfirmModal from './components/ConfirmModal.vue'
 import CanvasBackdrop from './components/CanvasBackdrop.vue'
 import CanvasStrip from './components/CanvasStrip.vue'
+import ContextBar from './components/ContextBar.vue'
 import ConvertImageFrame from './components/ConvertImageFrame.vue'
+import CustomColorPicker from './components/CustomColorPicker.vue'
+import AppDrawer from './components/AppDrawer.vue'
+import AppDock, { type PhoneSheet } from './components/AppDock.vue'
 import EmptyCanvas from './components/EmptyCanvas.vue'
 import IconButton from './components/IconButton.vue'
+import ImageColorsButton from './components/ImageColorsButton.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
+import MirrorControls from './components/MirrorControls.vue'
 import NameOnExportsModal from './components/NameOnExportsModal.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
+import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternImport from './components/PatternImport.vue'
 import PatternList from './components/PatternList.vue'
@@ -22,13 +35,17 @@ import ProgressBar from './components/ProgressBar.vue'
 import SaveBox from './components/SaveBox.vue'
 import QrExportPanel from './components/QrExportPanel.vue'
 import ShortcutsHelp from './components/ShortcutsHelp.vue'
+import SizeControls from './components/SizeControls.vue'
 import ThemeToggle from './components/ThemeToggle.vue'
 import ToastRegion from './components/ToastRegion.vue'
 import Toolbox from './components/Toolbox.vue'
+import { TOOL_ICONS, TOOL_ORDER } from './components/toolIcons'
+import ZoomPill from './components/ZoomPill.vue'
 import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
 import { hasOpenLayer } from './composables/useEscapeLayer'
 import { useFitByPriority } from './composables/useFitByPriority'
+import type { MessageTone } from './composables/useToasts'
 import { plural } from './i18n/plural'
 import { patternExtentPx, rowShiftPx, rowTopPx } from './rendering/patternRenderer'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
@@ -402,6 +419,7 @@ const {
   selectLine: onSelectLine,
   pastePreviewCells,
   clearSelection: resetSelection,
+  pasteProjectionActive,
 } = useSelectionGesture(
   () => activePattern.value,
   commitGridChange,
@@ -417,6 +435,31 @@ const toolboxRef = ref<InstanceType<typeof Toolbox> | null>(null)
 
 /** Whether the `?` shortcuts help overlay (ticket 96) is open. */
 const shortcutsHelpOpen = ref(false)
+
+/** Whether the Drawer (ticket 168; the iPad mini tier's left column) is open. Only the Tools button (744-1023px) ever sets it true. */
+const drawerOpen = ref(false)
+
+/** A toast for the More menu's own PatternImport (ticket 168): there is no room beside its buttons in there, so a result arrives above the bottom toolbar instead (ImportResult card). */
+function onImportToast(id: string, text: string, tone: MessageTone) {
+  showToast(id, text, tone)
+}
+
+/** The phone Tool sheet's four tiles (ToolSheet card), same order and icons as everywhere else the four tools list themselves. */
+const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id) })))
+
+function toolLabel(tool: Tool): string {
+  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel }[tool]
+}
+
+/** Which of the phone tier's six ToolSheets is open (ticket 79; Dock card), or none. Tapping the Dock button of the open sheet closes it, same as pressing it again. */
+const openPhoneSheet = ref<PhoneSheet | null>(null)
+
+function onSelectPhoneSheet(sheet: PhoneSheet) {
+  openPhoneSheet.value = openPhoneSheet.value === sheet ? null : sheet
+}
+
+/** New Pattern on the phone tier (PhoneForms card): its own full-height modal sheet, opened from the Pattern sheet. */
+const phoneNewPatternOpen = ref(false)
 
 /**
  * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
@@ -1611,57 +1654,128 @@ function onMoveRow(delta: number) {
       priority (`writing.md`, Fitting longer text): the imports drop their labels first (compactImports).
     -->
     <header ref="headerEl" class="app-header" :class="{ 'app-header--compact': compactImports }" data-testid="app-topbar">
+      <!--
+        Tools opens the Drawer (ticket 168; Drawer card): the iPad mini tier's own way into the left column, shown
+        only 744-1023px -- at 1024px and up the column is docked and this button has nothing to do.
+      -->
+      <span class="app-header__tools">
+        <IconButton
+          icon="sidebar"
+          :label="t.header.toolsButton"
+          :selected="drawerOpen"
+          data-testid="drawer-open-button"
+          @click="drawerOpen = !drawerOpen"
+        />
+      </span>
       <h1 class="app-header__brand">
         <AppLogo class="app-header__mark" :size="22" />
-        <span class="app-header__name">{{ t.app.title }}</span>
+        <span class="app-header__name app-header__phone-hide">{{ t.app.title }}</span>
       </h1>
 
+      <!--
+        The phone header (ticket 79; responsive.md, 0-743px): the Pattern name with its size and save state, in place
+        of "currently editing"/the Bead pill/Replace bead -- Replace bead moves into the Pattern sheet's Bead pill row.
+      -->
+      <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
+        <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
+          {{ summarizePattern(activePattern) }}
+        </span>
+        <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
+      </p>
+
       <template v-if="activePattern">
-        <p class="app-header__editing" data-testid="pattern-info">
+        <p class="app-header__editing app-header__phone-hide" data-testid="pattern-info">
           <span class="app-header__label">{{ t.patterns.currentLabel }}</span>
           <span class="app-header__summary" data-testid="current-pattern-summary" :title="summarizePattern(activePattern)">
             {{ summarizePattern(activePattern) }}
           </span>
           <span class="app-header__pill" data-testid="current-pattern-bead">{{ activeBeadLabel }}</span>
         </p>
-        <AppSelect
-          variant="primary"
-          data-testid="replace-bead-select"
-          :aria-label="t.replaceBead.selectLabel"
-          :value="''"
-          @change="onPickReplaceBead($event.target as HTMLSelectElement)"
-        >
-          <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
-          <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
-            {{ beadLabel(bead) }}
-          </option>
-        </AppSelect>
+        <span class="app-header__phone-hide">
+          <AppSelect
+            variant="primary"
+            data-testid="replace-bead-select"
+            :aria-label="t.replaceBead.selectLabel"
+            :value="''"
+            @change="onPickReplaceBead($event.target as HTMLSelectElement)"
+          >
+            <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
+            <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+              {{ beadLabel(bead) }}
+            </option>
+          </AppSelect>
+        </span>
       </template>
 
       <span class="app-header__gap" />
 
-      <!-- Imported Patterns go straight into the library, which decides what to open and persists them. -->
-      <div class="app-header__imports" data-testid="pattern-actions">
+      <!-- Imported Patterns go straight into the library, which decides what to open and persists them. Moves into the More menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Pattern sheet. -->
+      <div class="app-header__imports app-header__phone-hide" data-testid="pattern-actions">
         <PatternImport :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
       </div>
-      <AppButton
-        variant="primary"
-        icon="plus"
-        data-testid="new-pattern-button"
-        :disabled="patterns.length === 0"
-        @click="onNewPattern"
-      >
-        {{ t.patterns.newPatternButton }}
-      </AppButton>
-      <LanguageSwitcher />
-      <ThemeToggle />
-      <IconButton
-        icon="keyboard"
-        shape="round"
-        :label="t.shortcutsHelp.title"
-        data-testid="shortcuts-button"
-        @click="shortcutsHelpOpen = true"
-      />
+      <span class="app-header__phone-hide">
+        <AppButton
+          variant="primary"
+          icon="plus"
+          data-testid="new-pattern-button"
+          :disabled="patterns.length === 0"
+          @click="onNewPattern"
+        >
+          {{ t.patterns.newPatternButton }}
+        </AppButton>
+      </span>
+      <!-- Undo/Redo (ticket 79): the phone header's own, alongside the Dock's four tools/colour -- the same history as every other Undo/Redo in the app. -->
+      <template v-if="activePattern">
+        <span class="app-header__phone-only">
+          <IconButton icon="undo" shape="round" :label="t.palette.undoButton" data-testid="phone-undo-button" :disabled="!canUndo(history)" @click="onUndo" />
+        </span>
+        <span class="app-header__phone-only">
+          <IconButton icon="redo" shape="round" :label="t.palette.redoButton" data-testid="phone-redo-button" :disabled="!canRedo(history)" @click="onRedo" />
+        </span>
+      </template>
+      <span class="app-header__wide-only"><LanguageSwitcher /></span>
+      <span class="app-header__wide-only"><ThemeToggle /></span>
+      <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"); at the phone tier it moves into the More menu instead of its own button. -->
+      <span class="app-header__shortcuts app-header__phone-hide">
+        <IconButton
+          icon="keyboard"
+          shape="round"
+          :label="t.shortcutsHelp.title"
+          data-testid="shortcuts-button"
+          @click="shortcutsHelpOpen = true"
+        />
+      </span>
+      <!--
+        The More menu (ticket 168, 79; OverflowMenu card): 744-1023px, Import a file/QR code, Language, Theme and Name
+        on exports; below 744px the same menu drops Import (the Pattern sheet's job there) and adds Keyboard shortcuts
+        (any-pointer: fine only, .app-header__more-shortcuts).
+      -->
+      <span class="app-header__more">
+        <AppMenu :label="t.header.moreButton" icon="more" align="end" data-testid="header-more-menu">
+          <div class="app-header__more-imports">
+            <PatternImport :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
+          </div>
+          <div class="app-header__more-row">
+            <span class="app-header__more-label">{{ t.languageSwitcher.ariaLabel }}</span>
+            <LanguageSwitcher />
+          </div>
+          <div class="app-header__more-row app-header__more-row--wrap">
+            <span class="app-header__more-label">{{ t.theme.groupLabel }}</span>
+            <ThemeToggle />
+          </div>
+          <AppMenuItem class="app-header__more-shortcuts" icon="keyboard" data-testid="more-shortcuts" @select="shortcutsHelpOpen = true">
+            {{ t.shortcutsHelp.title }}
+          </AppMenuItem>
+          <template #footer>
+            <div class="app-header__more-row" data-testid="more-name-on-exports">
+              <span class="app-header__more-label">{{ t.saveBox.nameOnExports }}</span>
+              <AppMenuItem data-testid="more-name-on-exports-change" @select="nameOnExportsOpen = true">
+                {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
+              </AppMenuItem>
+            </div>
+          </template>
+        </AppMenu>
+      </span>
     </header>
 
     <!--
@@ -1690,6 +1804,7 @@ function onMoveRow(delta: number) {
         58: the frame is sized by these very fields and follows them as they're edited, so taking them away mid-framing
         would freeze the frame at whatever it last read), the Toolbox otherwise.
       -->
+      <AppDrawer :open="drawerOpen" :label="t.header.toolsButton" @close="drawerOpen = false">
       <aside class="app-shell__column" :aria-label="t.a11y.toolsLandmark" data-testid="app-main-panel">
         <section v-if="!activePattern || framing" class="app-shell__new-pattern" data-testid="new-pattern-box">
           <h2 class="app-shell__box-title">{{ t.patterns.newPatternButton }}</h2>
@@ -1758,6 +1873,7 @@ function onMoveRow(delta: number) {
           @remove="removePattern"
         />
       </aside>
+      </AppDrawer>
 
       <!--
         The canvas box (ticket 141): all the width right of the left column and the full height of the main area. The
@@ -1776,6 +1892,7 @@ function onMoveRow(delta: number) {
             never scrolls, zooms or rotates with the Pattern below it.
           -->
           <CanvasStrip
+            class="app-shell__canvas-strip"
             :size="stripSize"
             :zoom-percent="stripZoomPercent"
             :hint="keyboardOnPattern ? t.a11y.keyboardHint : undefined"
@@ -1788,6 +1905,16 @@ function onMoveRow(delta: number) {
           <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Pattern). -->
           <div ref="canvasAreaEl" class="app-shell__drawing" data-testid="app-drawing-area">
             <CanvasBackdrop v-if="activePattern && !framing" :word="techniqueWord(activePattern.technique)" />
+
+            <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Pattern's bottom-right corner instead. -->
+            <ZoomPill
+              v-if="activePattern && !framing"
+              class="app-shell__zoom-pill"
+              :zoom-percent="zoomPercent"
+              @zoom-in="zoomIn"
+              @zoom-out="zoomOut"
+              @reset="resetZoom"
+            />
 
             <div class="app-shell__canvas-row">
               <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
@@ -1851,6 +1978,23 @@ function onMoveRow(delta: number) {
           <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
 
           <!--
+            The Selection context bar (ticket 168; ContextBar card): floats above the Progress bar on phone and iPad
+            mini, offering what a Selection can do without needing the Drawer or a right-click. Absent at 1024px and
+            up, where the Toolbox's own Remove line/Copy already cover this.
+          -->
+          <ContextBar
+            v-if="activePattern && !framing"
+            class="app-shell__context-bar"
+            :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
+            :paste-armed="pasteProjectionActive"
+            :can-remove-line="canRemoveSelectedLine"
+            @copy="onCopy"
+            @rotate="onToggleRotate"
+            @remove-line="onRemoveSelectedLine"
+            @dismiss="backOutOfSelect"
+          />
+
+          <!--
             Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Pattern is open (not
             while a picture is being framed), since its first control is the switch that turns Row progress on.
           -->
@@ -1865,6 +2009,166 @@ function onMoveRow(delta: number) {
       </main>
 
     </div>
+
+    <!--
+      The iPad mini tier's own toolbar (ticket 168; BottomToolbar card): the four tools, the colour, Undo and Redo,
+      under the thumb, so drawing never needs the Drawer. A flex sibling of the body, not nested in the canvas box, so
+      it takes its own height off the bottom of the screen rather than sitting inside the canvas box's own padding
+      (ADR 0018: the canvas resizes once, when this shows or hides with the tier, not per frame).
+    -->
+    <BottomToolbar
+      v-if="activePattern && !framing"
+      class="app-shell__bottom-toolbar"
+      :active-tool="activeTool"
+      :selected-color-id="selectedColorId"
+      :can-undo="canUndo(history)"
+      :can-redo="canRedo(history)"
+      @select-tool="onSelectTool"
+      @select-color="onSelectColor"
+      @undo="onUndo"
+      @redo="onRedo"
+    />
+
+    <!--
+      The phone tier's Dock (ticket 79; Dock card): one button per kind of tool, each opening its own ToolSheet below.
+      Shown even with no Pattern open, since Pattern (New Pattern, Import) is how one gets started; the other five
+      sheets need an open Pattern (Mirror/Size's own controls take one as a required prop) and are reached only then.
+    -->
+    <AppDock
+      v-if="!framing"
+      class="app-shell__dock"
+      :active-tool="activeTool"
+      :selected-color-id="selectedColorId"
+      :open-sheet="openPhoneSheet"
+      @select-sheet="onSelectPhoneSheet"
+    />
+
+    <BottomSheet v-if="openPhoneSheet === 'tool' && activePattern" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
+      <div class="phone-sheet__tiles">
+        <button
+          v-for="tool in phoneTools"
+          :key="tool.id"
+          type="button"
+          class="ui-control phone-sheet__tile"
+          :class="{ 'phone-sheet__tile--active': activeTool === tool.id }"
+          :data-testid="`sheet-tool-${tool.id}`"
+          :aria-pressed="activeTool === tool.id"
+          @click="onSelectTool(tool.id)"
+        >
+          <AppIcon :name="tool.icon" :size="22" />
+          <span>{{ tool.label }}</span>
+        </button>
+      </div>
+      <div class="phone-sheet__links">
+        <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
+          {{ t.tools.removeLineShort }}
+        </AppLink>
+        <AppLink icon="delete" danger data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
+          {{ t.deleteAll.button }}
+        </AppLink>
+      </div>
+    </BottomSheet>
+
+    <BottomSheet v-if="openPhoneSheet === 'color' && activePattern" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
+      <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
+      <div class="phone-sheet__color-buttons">
+        <CustomColorPicker
+          :color="customColor"
+          :selected="!selectedColorId && !selectedImageColor && !!customColor"
+          @select="onSelectCustomColor"
+        />
+        <ImageColorsButton :colors="activePattern.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
+      </div>
+    </BottomSheet>
+
+    <BottomSheet v-if="openPhoneSheet === 'edit' && activePattern" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
+      <div class="phone-sheet__edit">
+        <IconButton icon="undo" variant="toolbox" size="lg" :label="t.palette.undoButton" :disabled="!canUndo(history)" @click="onUndo" />
+        <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo(history)" @click="onRedo" />
+        <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotated" @click="onToggleRotate" />
+        <IconButton icon="copy" variant="toolbox" size="lg" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
+        <IconButton
+          icon="import"
+          variant="toolbox"
+          size="lg"
+          :label="t.tools.pasteLabel"
+          :disabled="!pasteProjectionActive"
+          data-testid="sheet-paste"
+          @click="openPhoneSheet = null"
+        />
+      </div>
+    </BottomSheet>
+
+    <BottomSheet v-if="openPhoneSheet === 'mirror' && activePattern" :title="t.toolbox.groups.mirror" @close="openPhoneSheet = null">
+      <MirrorControls
+        :pattern="activePattern"
+        :mirror-axis-counts="mirrorAxisCounts"
+        :mirror-copy-mode="mirrorCopyMode"
+        @set-mirror-axis-count="onSetMirrorAxisCount"
+        @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
+        @mirror-current="onMirrorCurrent"
+        @mirror-current-hover="onMirrorCurrentHover"
+      />
+    </BottomSheet>
+
+    <BottomSheet v-if="openPhoneSheet === 'size' && activePattern" :title="t.toolbox.groups.size" @close="openPhoneSheet = null">
+      <SizeControls :pattern="activePattern" @resize="onResize" @change-size="onRequestChangeSize" />
+    </BottomSheet>
+
+    <!--
+      The Pattern sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
+      shouldn't lose the way back to New Pattern or Import, unlike the five light sheets above.
+    -->
+    <BottomSheet v-if="openPhoneSheet === 'pattern'" modal :title="t.header.patternSheetLabel" @close="openPhoneSheet = null">
+      <template v-if="activePattern">
+        <p class="phone-sheet__bead-row">
+          <span class="app-header__pill" data-testid="phone-sheet-bead">{{ activeBeadLabel }}</span>
+          <AppSelect
+            variant="primary"
+            data-testid="phone-replace-bead-select"
+            :aria-label="t.replaceBead.selectLabel"
+            :value="''"
+            @change="onPickReplaceBead($event.target as HTMLSelectElement)"
+          >
+            <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
+            <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+              {{ beadLabel(bead) }}
+            </option>
+          </AppSelect>
+        </p>
+        <SaveBox
+          :save-failed="saveFailed"
+          :qr-too-large="qrExport.tooLarge.value"
+          :exporting="exporting"
+          :pattern-name="activePattern.name"
+          :maker-name="makerName"
+          @edit-maker-name="nameOnExportsOpen = true"
+          @save="onSave"
+          @export-pattern="onExportPatternFile"
+          @export-qr="qrExport.open"
+          @export-png="onExportPng"
+          @export-pdf="onExportPdf"
+        />
+        <BeadQuantities :pattern="settledPattern" />
+        <PatternList :patterns="patterns" :active-pattern-id="activePatternId" @select="onSelectPattern" @remove="removePattern" />
+      </template>
+      <div class="phone-sheet__pattern-actions">
+        <!-- Unlike the wider tiers' header button, never disabled: with no Patterns yet, this is the only way to reach the form at all -- the wider tiers instead show it by default in the left column's own place. -->
+        <AppButton variant="primary" icon="plus" data-testid="phone-new-pattern-button" @click="phoneNewPatternOpen = true">
+          {{ t.patterns.newPatternButton }}
+        </AppButton>
+        <PatternImport :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
+      </div>
+    </BottomSheet>
+
+    <!-- New Pattern (PhoneForms card): its own full-height modal sheet from the Pattern sheet, the same form the wider tiers show inline. -->
+    <BottomSheet v-if="phoneNewPatternOpen" modal :title="t.patterns.newPatternButton" @close="phoneNewPatternOpen = false">
+      <NewPatternForm
+        @submit="(payload) => { onCreatePattern(payload); phoneNewPatternOpen = false; openPhoneSheet = null }"
+        @draft="onNewPatternDraft"
+        @convert-image="(draft) => { startConvertImage(draft); phoneNewPatternOpen = false; openPhoneSheet = null }"
+      />
+    </BottomSheet>
 
     <ConfirmModal
       v-if="deleteAllConfirmOpen"
@@ -1965,15 +2269,137 @@ function onMoveRow(delta: number) {
   align-items: center;
   gap: var(--space-10);
   box-sizing: border-box;
-  height: var(--header-height);
-  padding: 0 var(--space-32);
+  min-height: var(--header-height);
+  /* Screen edges (ticket 166; responsive.md): grows past 64px for a notch/dynamic island, `env()` falling back to 0. */
+  padding: env(safe-area-inset-top) var(--space-32) 0;
   overflow: hidden;
   background: var(--canvas);
   border-bottom: 1px solid var(--line-soft);
 }
 
+/* The phone tier (ticket 79): 52px, tighter side padding; a phone on its side (responsive.md, bp-phone-landscape) drops to 44px. */
+@media (max-width: 743px) {
+  .app-header {
+    min-height: var(--header-height-phone);
+    padding-right: var(--space-16);
+    padding-left: var(--space-16);
+  }
+}
+
+@media (max-width: 743px) and (max-height: 499px) {
+  .app-header {
+    min-height: var(--header-height-phone-landscape);
+  }
+}
+
 .app-header > * {
   flex: none;
+}
+
+.app-header__shortcuts {
+  display: none;
+}
+
+@media (any-pointer: fine) {
+  .app-header__shortcuts {
+    display: inline-flex;
+  }
+}
+
+/*
+ * The iPad mini tier (ticket 168; responsive.md, 744-1023px): Tools opens the Drawer, and Import/Language/Theme move
+ * into the More menu -- everything a wider tier keeps inline in the header. The More menu carries on below 744px
+ * (the phone tier, ticket 79) too, since it holds the same Theme/Language/Name on exports there; only the Tools
+ * button and the More menu's own Import row are specific to 744-1023px (below that the phone header has no Drawer to
+ * open, and imports move into the Pattern sheet instead -- see .app-header__more-imports and .app-header__phone-*).
+ */
+.app-header__tools,
+.app-header__more,
+.app-header__phone-only {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .app-header__wide-only,
+  .app-header__phone-hide {
+    display: none;
+  }
+
+  .app-header__more {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 744px) and (max-width: 1023px) {
+  .app-header__tools {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 743px) {
+  .app-header__phone-only {
+    display: inline-flex;
+  }
+
+  .app-header__more-imports {
+    display: none;
+  }
+}
+
+.app-header__more-imports {
+  padding: var(--space-4);
+}
+
+.app-header__more-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-4) var(--space-8);
+}
+
+.app-header__more-row--wrap {
+  flex-wrap: wrap;
+}
+
+.app-header__more-label {
+  font: var(--type-body);
+  color: var(--body);
+}
+
+/* The phone header's combined Pattern name/size + save state (ticket 79), in "currently editing"'s place. */
+.app-header__phone-pattern {
+  display: none;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+  margin: 0;
+}
+
+.app-header__phone-save {
+  flex: none;
+  color: var(--accent-strong);
+}
+
+.app-header__phone-save--failed {
+  color: var(--danger);
+}
+
+@media (max-width: 743px) {
+  .app-header__phone-pattern {
+    display: flex;
+  }
+}
+
+/* Keyboard shortcuts inside the phone's More menu only helps a fine pointer or keyboard, same rule as ticket 166's standalone header button. */
+.app-header__more-shortcuts {
+  display: none;
+}
+
+@media (max-width: 743px) and (any-pointer: fine) {
+  .app-header__more-shortcuts {
+    display: flex;
+  }
 }
 
 .app-header__brand {
@@ -2050,6 +2476,12 @@ function onMoveRow(delta: number) {
   gap: var(--space-10);
 }
 
+@media (max-width: 1023px) {
+  .app-header__imports {
+    display: none;
+  }
+}
+
 .app-shell__skip {
   position: absolute;
   top: var(--space-8);
@@ -2099,6 +2531,136 @@ function onMoveRow(delta: number) {
 }
 
 /*
+ * The Selection context bar (ticket 168; ContextBar card): floats 10px from the canvas box's own edges, just above
+ * the Progress bar, on phone and iPad mini only -- the Toolbox's own Remove line/Copy links cover this at 1024px and
+ * up, where there's no need for it to float over the Pattern.
+ */
+.app-shell__context-bar {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .app-shell__context-bar {
+    position: absolute;
+    right: var(--space-10);
+    bottom: calc(var(--progress-height) + var(--space-10));
+    left: var(--space-10);
+    z-index: var(--z-context-bar);
+    display: flex;
+  }
+}
+
+/* The iPad mini tier's own toolbar (ticket 168; BottomToolbar card): a flex sibling of the body, shown only there. */
+.app-shell__bottom-toolbar {
+  display: none;
+}
+
+@media (min-width: 744px) and (max-width: 1023px) {
+  .app-shell__bottom-toolbar {
+    display: flex;
+    flex: none;
+  }
+}
+
+/* The phone tier's Dock (ticket 79): a flex sibling of the body, the same reason BottomToolbar is one. */
+.app-shell__dock {
+  display: none;
+}
+
+@media (max-width: 743px) {
+  .app-shell__dock {
+    display: flex;
+    flex: none;
+  }
+
+  /* No canvas strip on phone (responsive.md): ZoomPill floats over the Pattern instead. */
+  .app-shell__canvas-strip {
+    display: none;
+  }
+}
+
+.app-shell__zoom-pill {
+  display: none;
+}
+
+@media (max-width: 743px) {
+  .app-shell__zoom-pill {
+    position: absolute;
+    right: var(--space-16);
+    bottom: var(--space-16);
+    z-index: var(--z-canvas-overlay);
+    display: inline-flex;
+  }
+}
+
+/* The phone ToolSheets' own content (ticket 79; ToolSheet card). */
+.phone-sheet__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-8);
+}
+
+.phone-sheet__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  height: 4.5rem;
+  color: var(--body);
+  background: var(--elevated);
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.phone-sheet__tile--active {
+  color: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.phone-sheet__tile:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.phone-sheet__links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-16);
+}
+
+.phone-sheet__color-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+  margin-top: var(--space-12);
+}
+
+.phone-sheet__edit {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-8);
+}
+
+.phone-sheet__bead-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  margin: 0 0 var(--space-16);
+}
+
+.phone-sheet__pattern-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-12);
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--line-soft);
+}
+
+/*
  * The body: the 326px left column (312px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
  * takes all the remaining width and the full height (ticket 141; `responsive.md`, MacBook Air tier). minmax(0, 1fr)
  * lets the canvas box shrink below its content instead of pushing the page wider.
@@ -2112,10 +2674,51 @@ function onMoveRow(delta: number) {
   padding: var(--space-24) var(--space-32);
 }
 
-/* The left column scrolls on its own, and never scrolls the canvas. */
+/*
+ * iPad 13" tier (ticket 167; responsive.md, `bp-tablet-lg` 1024px to just under `bp-laptop`): the column docks again
+ * at 300px (286px boxes, the same 14px scrollbar gutter as the reference tier), page padding drops to 16px all
+ * round, and the boxes sit 12px apart instead of 16px. Every other tier below this is built from here down, as a
+ * further override at its own literal breakpoint (responsive.md can't be read from a custom property).
+ */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-shell__body {
+    grid-template-columns: var(--column-width-tablet-lg) minmax(0, 1fr);
+    padding: var(--space-16);
+  }
+}
+
+/*
+ * iPad mini and phone tiers (ticket 168, 79; responsive.md, under `bp-tablet-lg` 1024px): the column leaves the grid
+ * track entirely. 744-1023px, the Drawer wrapping it switches to `position: fixed` (AppDrawer.vue's own media query)
+ * and floats over the canvas box instead; under 744px AppDrawer hides it altogether -- the phone tier's Dock and
+ * ToolSheets reach the same controls through their own, separate markup instead (Toolbox/SaveBox/Beads
+ * needed/Saved Patterns stay mounted inside the hidden Drawer, just not visibly). Either way the canvas box takes
+ * the whole row on its own.
+ */
+@media (max-width: 1023px) {
+  .app-shell__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The phone tier (ticket 79): tighter page padding; a phone on its side leaves room for the Dock's own left rail (AppDock.vue's matching media query -- position: fixed, so it needs this padding rather than a flex/grid track). */
+@media (max-width: 743px) {
+  .app-shell__body {
+    padding: var(--space-16);
+  }
+}
+
+@media (max-width: 743px) and (max-height: 499px) {
+  .app-shell__body {
+    padding-left: calc(4rem + env(safe-area-inset-left));
+  }
+}
+
+/* The left column scrolls on its own, and never scrolls the canvas. height: 100% matters once the Drawer wrapping it switches to position: fixed (744-1023px): a percentage height needs a definite one to resolve against, and there it's the Drawer's own fixed box; in the grid it was already this tall via the row's default stretch. */
 .app-shell__column {
   display: flex;
   flex-direction: column;
+  height: 100%;
   gap: var(--space-16);
   box-sizing: border-box;
   min-height: 0;
@@ -2124,6 +2727,12 @@ function onMoveRow(delta: number) {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .app-shell__column {
+    gap: var(--space-12);
+  }
 }
 
 /* Each box keeps its content height and fills the column's width. */

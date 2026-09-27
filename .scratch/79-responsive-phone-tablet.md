@@ -4,14 +4,30 @@
 
 **Blocked by:** 168 (Responsive: iPad mini tier)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 **Note (performance plan, ADR 0018):** phone and tablet are where speed matters most. Ticket 103's performance check (throttled to stand in for a midrange Android tablet) is the pass/fail measure for drawing, hover and painting at the sizes this ticket targets; layout changes here must not slow the Drawing surface or make it redraw more often (sheets slide with `transform`, the surface resizes only once the layout settles).
 
-- [ ] Matches the Dock, ToolSheet, ZoomPill, ContextBar, OverflowMenu, PhoneForms and ScreenSizes cards at 390, 402, 420 and 440px wide, portrait and landscape
-- [ ] Every desktop feature is reachable from the dock, its sheets or More
-- [ ] Tool, Color, Edit, Mirror and Size sheets have no scrim and are only as tall as their content; the Pattern sheet is modal; tapping the Pattern or the dock button again closes a light sheet
-- [ ] New Pattern and other forms use 48px buttons and fields as the PhoneForms card shows
-- [ ] Nothing below 12px; long Pattern names truncate with an ellipsis
-- [ ] No horizontal scrolling or clipped controls at any target size, in English and Russian
-- [ ] Correct in the light, dark and high contrast themes
+- [ ] Matches the Dock, ToolSheet, ZoomPill, ContextBar, OverflowMenu, PhoneForms and ScreenSizes cards at 390, 402, 420 and 440px wide, portrait and landscape — **not checked in a real browser this pass**, structural only
+- [x] Every desktop feature is reachable from the dock, its sheets or More — with one deliberate, flagged exception (multi-touch pan/zoom, below)
+- [x] Tool, Color, Edit, Mirror and Size sheets have no scrim and are only as tall as their content; the Pattern sheet is modal; tapping the Pattern or the dock button again closes a light sheet
+- [ ] New Pattern and other forms use 48px buttons and fields as the PhoneForms card shows — **not done**: NewPatternForm/ConvertImageFrame are reused as-is (ticket 166's 44px `pointer: coarse` hit area covers reachability, not the card's own 48px visual size); Convert image framing is not redesigned full-screen for phone, still the desktop panel; the Progress bar is not given the phone tier's own sizing either (56px, Row done as a wide primary button) -- untouched this pass
+- [ ] Nothing below 12px; long Pattern names truncate with an ellipsis — not audited this pass
+- [ ] No horizontal scrolling or clipped controls at any target size, in English and Russian — not checked in a real browser
+- [ ] Correct in the light, dark and high contrast themes — every new rule uses tokens, but not looked at in a real browser
+
+**Done (ticket 79), with real gaps flagged above and below — set to ready-for-human, not done:**
+
+The Dock (`AppDock.vue`, renamed from `Dock.vue` for the multi-word component name lint rule), six ToolSheets and a new `BottomSheet.vue` (the AppModal-like chrome: grab handle, title, close, Escape, focus trap, light-vs-modal variants) are built around three components pulled out to be reusable rather than duplicated: `MirrorControls.vue` (out of Toolbox.vue, which now uses it too), plus `PalettePicker`/`ImageColorsButton`/`CustomColorPicker`/`SizeControls`, which were already standalone. Nothing in a sheet auto-closes on a selection (the ToolSheet card's "the active one outlined in accent" only makes sense if the sheet stays open to show it) except Remove line/Delete all/Paste, which are one-shot commands. `ZoomPill.vue` floats over the Pattern (no canvas strip on phone, reusing `usePatternZoom` unchanged); the phone header (52px: the mark, a combined Pattern-name/size/save-state readout, Undo, Redo, the More menu) gets a 44px landscape variant with the Dock as a `position: fixed` left rail. `toolIcons.ts` is a new small shared file (just the tool-to-icon map) so Toolbox/BottomToolbar/AppDock/the phone Tool sheet don't each hand-roll their own copy.
+
+The left column's boxes (Toolbox, SaveBox, BeadQuantities, PatternList) stay mounted inside the now-fully-hidden `AppDrawer` at this tier (`display: none` under 744px, a new media query stacked on ticket 168's) rather than being unified into a third AppDrawer visual mode -- the Pattern sheet and the five ToolSheets are separate, freshly-composed instances of the same underlying components/handlers instead. Deliberate: lower risk to the already-shipped 744-1023px behavior, at the cost of some inactive (`display: none`, non-interactive) duplicate component state most of the time. Fixed one real bug found building this along the way: the New Pattern button inside the Pattern sheet must never be `disabled` at `patterns.length === 0` the way the header's own copy is -- unlike the wider tiers, which show the form inline by default with none, it is the *only* way to reach New Pattern on phone at all.
+
+**Real, not-cosmetic gap: multi-touch pan and zoom is not implemented.** `touch-action: none` stays on the drawing surface (ticket 166, ticket 60) so a one-finger drag keeps meaning paint, but "pinch zooms and two fingers pan" (responsive.md) needs its own gesture recognizer -- tracking multiple simultaneous pointers, telling a two-finger gesture apart from a one-finger paint stroke, computing scale and pan deltas -- built to interact carefully with the existing paint-stroke state machine (PatternSurface's pointer handlers, the undo-stroke lifecycle) rather than bolted on. That's real, scoped work of its own, not something to rush alongside everything else in this pass. What still works without it: the ZoomPill's discrete in/out/fit buttons, and ordinary browser scrolling of `.app-shell__canvas-scroll` for a Pattern too big to fit (its interaction with `touch-action: none` on the surface inside it is untested this pass -- worth checking first in any follow-up).
+
+**Also not done this pass**, each needing a human or its own dedicated follow-up:
+- PhoneForms' 48px sizing, Convert image's full-screen phone redesign, and the Progress bar's own phone sizing (see the checklist item above)
+- A real-browser/device check against every card at the four target widths, portrait and landscape, in both languages and all three themes
+- Ticket 103's performance check (by-hand-only, see ticket 166's note)
+- The More menu's arrow-key roving still doesn't reach the embedded PatternImport/LanguageSwitcher/ThemeToggle rows (ticket 168's own note, unchanged)
+
+New tests: `MirrorControls.test.ts`, `BottomSheet.test.ts`, `AppDock.test.ts`, `ZoomPill.test.ts`, `App.phone.test.ts` (the Dock/sheets/header wired together end to end: opening each sheet, picking a tool/color and painting with it, Undo/Redo, creating a Pattern through the phone New Pattern sheet). `npm run typecheck`, `vitest run` (1903 tests) and `npm run lint` are clean.

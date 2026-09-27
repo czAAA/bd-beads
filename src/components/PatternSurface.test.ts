@@ -426,6 +426,19 @@ describe('PatternSurface', () => {
       expect(events(wrapper)['cell-primary-move']).toEqual([[0, 1], [0, 2], [0, 1], [0, 2]])
     })
 
+    it('never hovers for a finger touch (ticket 166: no hover paint preview on a coarse pointer), but still hovers for a Pencil', async () => {
+      const pattern = patternOf(20, 10)
+      const { wrapper } = await mountSurface(pattern)
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+      await surface.trigger('pointerdown', { ...centreOf(pattern, 0, 0), pointerType: 'touch', pointerId: 1, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { ...centreOf(pattern, 0, 1), pointerType: 'touch', pointerId: 1, buttons: 1 })
+      expect(events(wrapper)['cell-hover']).toBeUndefined()
+
+      await surface.trigger('pointerdown', { ...centreOf(pattern, 1, 0), pointerType: 'pen', pointerId: 2, button: 0, buttons: 1 })
+      expect(events(wrapper)['cell-hover']).toEqual([[1, 0]])
+    })
+
     it('says nothing for a move in a gap, and hovers the bead again on coming back to it', async () => {
       const pattern = patternOf(20, 10, {}, 'peyote')
       const { wrapper } = await mountSurface(pattern)

@@ -249,5 +249,7 @@ export function useSelectionGesture(
     selectLine,
     pastePreviewCells,
     clearSelection,
+    /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the Selection's own controls once this is true). */
+    pasteProjectionActive,
   }
 }

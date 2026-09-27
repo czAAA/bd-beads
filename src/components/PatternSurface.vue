@@ -417,6 +417,15 @@ function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): b
   return a?.row === b?.row && a?.column === b?.column
 }
 
+/**
+ * A finger has no true hover, so its every "hover" arrives glued to a press or a drag -- one bead flashed a preview
+ * of what a same-instant paint already shows. Suppressing it there is `responsive.md`'s "no hover paint preview" for
+ * a coarse pointer; a Pencil keeps its real hover, and a mouse or trackpad was never touch to begin with.
+ */
+function hoversFor(event: PointerEvent): boolean {
+  return event.pointerType !== 'touch'
+}
+
 function onPointerDown(event: PointerEvent): void {
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
@@ -428,7 +437,7 @@ function onPointerDown(event: PointerEvent): void {
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.
   if (!isSameBead(bead, lastBead)) {
     lastBead = bead
-    emit('cell-hover', bead.row, bead.column)
+    if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
   }
 
   if (event.button === 0) {
@@ -454,7 +463,7 @@ function onPointerMove(event: PointerEvent): void {
     return
   }
 
-  emit('cell-hover', bead.row, bead.column)
+  if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
   if (event.buttons & 1) {
     emit('cell-primary-move', bead.row, bead.column)
   }

@@ -41,3 +41,20 @@ beforeEach(() => {
     installSurfaceLayout()
   }
 })
+
+/**
+ * jsdom has no matchMedia at all (ticket 168's useMediaQuery, currently only Drawer.vue): every query answers false
+ * and never changes, so a component that reads one carries on rather than throwing. A test that cares installs
+ * testUtils/fakeMatchMedia.ts over it instead, with vi.stubGlobal('matchMedia', ...) and its own vi.unstubAllGlobals()
+ * in afterEach -- the same pattern useElementSize.test.ts's FakeResizeObserver uses for ResizeObserver.
+ */
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) =>
+    ({
+      matches: false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList) as typeof window.matchMedia
+}

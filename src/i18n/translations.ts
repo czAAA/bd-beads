@@ -101,6 +101,21 @@ export interface Translations {
   storage: {
     saveFailedMessage: string
   }
+  /** The header's own additions at the iPad mini tier (ticket 168): the Tools button that opens the Drawer, and the More button (OverflowMenu card). */
+  header: {
+    toolsButton: string
+    moreButton: string
+    /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Patterns, New Pattern, Import. */
+    patternSheetLabel: string
+    newPatternSheetTitle: string
+  }
+  /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
+  contextBar: {
+    label: string
+    clearButton: string
+    pasteHint: string
+    cancelButton: string
+  }
   palette: {
     pickerLabel: string
     colorLabel: string

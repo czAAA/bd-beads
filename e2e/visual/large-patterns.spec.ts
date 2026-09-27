@@ -68,7 +68,9 @@ for (const { columns, rows } of SIZES) {
       expect([reloaded.columns, reloaded.rows]).toEqual([columns, rows])
       expect(reloaded.grid[2]![3]!.color).toBe(RED)
 
-      // The whole Pattern goes out in a Pattern file, and reads back the same.
+      // The whole Pattern goes out in a Pattern file, and reads back the same. Export Pattern is in Saved Patterns'
+      // footer (ticket 147; ExpandablePanel), which only renders once expanded.
+      await page.getByTestId('pattern-list').getByTestId('panel-expand').click()
       const download = page.waitForEvent('download')
       await page.getByTestId('export-pattern').click()
       const file = readFileSync((await (await download).path())!, 'utf8')

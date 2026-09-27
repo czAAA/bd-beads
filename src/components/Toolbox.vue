@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
 import AppLink from './AppLink.vue'
 import CustomColorPicker from './CustomColorPicker.vue'
@@ -8,13 +7,14 @@ import DisclosureRow from './DisclosureRow.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 import ImageColorsButton from './ImageColorsButton.vue'
+import MirrorControls from './MirrorControls.vue'
 import PalettePicker from './PalettePicker.vue'
 import SizeControls from './SizeControls.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import { useRovingFocus } from '../composables/useRovingFocus'
 import type { Tool } from '../domain/tool'
-import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
+import type { MirrorAxisCounts } from '../domain/mirror'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import type { ResizeRequest } from '../domain/resize'
@@ -123,15 +123,9 @@ const sizeSummary = computed(() => {
 const leftRightAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'rows' : 'columns'))
 const topBottomAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'columns' : 'rows'))
 
+/** Just for the DisclosureRow's own summary ("↔ 1 · ↕ 0"); MirrorControls works these out again for its own controls. */
 const leftRightCount = computed(() => props.mirrorAxisCounts[leftRightAxis.value])
 const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value])
-
-const leftRightMax = computed(() =>
-  maxAxisCount(props.pattern.rotated ? props.pattern.rows : props.pattern.columns),
-)
-const topBottomMax = computed(() =>
-  maxAxisCount(props.pattern.rotated ? props.pattern.columns : props.pattern.rows),
-)
 </script>
 
 <template>
@@ -232,95 +226,15 @@ const topBottomMax = computed(() =>
         :summary="`↔ ${leftRightCount} · ↕ ${topBottomCount}`"
         data-testid="tool-group-mirror"
       >
-        <p class="toolbox__line mirror-axis-counter" data-testid="mirror-left-right">
-          <span class="toolbox__line-label" data-testid="mirror-left-right-value">
-            {{ t.mirror.leftRightLabel }}: {{ leftRightCount }}
-          </span>
-          <AppButton
-            variant="toolbox"
-            size="sm"
-            data-testid="mirror-left-right-decrease"
-            :title="`${t.mirror.decreaseLeftRightButton} (-)`"
-            :aria-label="t.mirror.decreaseLeftRightButton"
-            :disabled="leftRightCount === 0"
-            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount - 1)"
-          >
-            −
-          </AppButton>
-          <AppButton
-            variant="toolbox"
-            size="sm"
-            data-testid="mirror-left-right-increase"
-            :title="`${t.mirror.increaseLeftRightButton} (=)`"
-            :aria-label="t.mirror.increaseLeftRightButton"
-            :disabled="leftRightCount === leftRightMax"
-            @click="emit('set-mirror-axis-count', leftRightAxis, leftRightCount + 1)"
-          >
-            +
-          </AppButton>
-        </p>
-        <p class="toolbox__line mirror-axis-counter" data-testid="mirror-top-bottom">
-          <span class="toolbox__line-label" data-testid="mirror-top-bottom-value">
-            {{ t.mirror.topBottomLabel }}: {{ topBottomCount }}
-          </span>
-          <AppButton
-            variant="toolbox"
-            size="sm"
-            data-testid="mirror-top-bottom-decrease"
-            :title="`${t.mirror.decreaseTopBottomButton} ([)`"
-            :aria-label="t.mirror.decreaseTopBottomButton"
-            :disabled="topBottomCount === 0"
-            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount - 1)"
-          >
-            −
-          </AppButton>
-          <AppButton
-            variant="toolbox"
-            size="sm"
-            data-testid="mirror-top-bottom-increase"
-            :title="`${t.mirror.increaseTopBottomButton} (])`"
-            :aria-label="t.mirror.increaseTopBottomButton"
-            :disabled="topBottomCount === topBottomMax"
-            @click="emit('set-mirror-axis-count', topBottomAxis, topBottomCount + 1)"
-          >
-            +
-          </AppButton>
-        </p>
-        <p class="toolbox__line">
-          <span class="toolbox__line-label">{{ t.mirror.copyModeLabel }}</span>
-          <IconButton
-            icon="mirror-copy-mode"
-            variant="toolbox"
-            :label="t.mirror.copyModeLabel"
-            :title="`${t.mirror.copyModeLabel} (M)`"
-            :selected="mirrorCopyMode"
-            data-testid="mirror-copy-mode"
-            @click="emit('toggle-mirror-copy-mode')"
-          />
-        </p>
-        <p class="toolbox__line">
-          <span class="toolbox__line-label">{{ t.mirror.mirrorCurrentLabel }}</span>
-          <IconButton
-            icon="mirror-horizontal"
-            variant="toolbox"
-            :label="t.mirror.mirrorCurrentHorizontalButton"
-            :title="`${t.mirror.mirrorCurrentHorizontalButton} (H)`"
-            data-testid="mirror-current-horizontal"
-            @click="emit('mirror-current', 'horizontal')"
-            @mouseenter="emit('mirror-current-hover', 'horizontal')"
-            @mouseleave="emit('mirror-current-hover', null)"
-          />
-          <IconButton
-            icon="mirror-vertical"
-            variant="toolbox"
-            :label="t.mirror.mirrorCurrentVerticalButton"
-            :title="`${t.mirror.mirrorCurrentVerticalButton} (V)`"
-            data-testid="mirror-current-vertical"
-            @click="emit('mirror-current', 'vertical')"
-            @mouseenter="emit('mirror-current-hover', 'vertical')"
-            @mouseleave="emit('mirror-current-hover', null)"
-          />
-        </p>
+        <MirrorControls
+          :pattern="pattern"
+          :mirror-axis-counts="mirrorAxisCounts"
+          :mirror-copy-mode="mirrorCopyMode"
+          @set-mirror-axis-count="(axis, count) => emit('set-mirror-axis-count', axis, count)"
+          @toggle-mirror-copy-mode="emit('toggle-mirror-copy-mode')"
+          @mirror-current="(axis) => emit('mirror-current', axis)"
+          @mirror-current-hover="(axis) => emit('mirror-current-hover', axis)"
+        />
       </DisclosureRow>
 
       <!-- Estimated size and Resize (CONTEXT.md, ADR 0017). -->
@@ -404,6 +318,22 @@ const topBottomMax = computed(() =>
   border-bottom-width: 3px;
 }
 
+/*
+ * Touch input (ticket 166): a tab grows to a real 48px minimum instead of controls.css's usual invisible 44px hit
+ * area, one of the two documented exceptions alongside palette swatches.
+ */
+@media (pointer: coarse) {
+  .tool-tab {
+    box-sizing: border-box;
+    min-height: 3rem;
+    justify-content: center;
+  }
+
+  .tool-tab::before {
+    content: none;
+  }
+}
+
 .toolbox__links {
   display: flex;
   justify-content: space-between;
@@ -433,20 +363,6 @@ const topBottomMax = computed(() =>
 /* Mirror and Size as disclosure rows, with a rule above the first. */
 .toolbox__rows {
   border-top: 1px solid var(--panel-rule);
-}
-
-/* One control per line inside an opened row: its name, then its controls at the right. */
-.toolbox__line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  margin: 0;
-}
-
-.toolbox__line-label {
-  margin-right: auto;
-  font: var(--type-body);
-  color: var(--body);
 }
 
 @media (prefers-reduced-motion: reduce) {

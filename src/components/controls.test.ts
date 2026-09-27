@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
 import AppLink from './AppLink.vue'
 import AppSelect from './AppSelect.vue'
@@ -89,6 +89,44 @@ describe('AppTooltip', () => {
     const wrapper = tooltip()
     await wrapper.trigger('pointerenter', { pointerType: 'touch' })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
+
+  it('shows on a long touch or pen press and hides on release (ticket 166: tooltips become long-press)', async () => {
+    vi.useFakeTimers()
+    try {
+      for (const pointerType of ['touch', 'pen'] as const) {
+        const wrapper = tooltip()
+        await wrapper.trigger('pointerdown', { pointerType })
+        expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+
+        vi.advanceTimersByTime(500)
+        await wrapper.vm.$nextTick()
+        expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+
+        await wrapper.trigger('pointerup', { pointerType })
+        expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+      }
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not open from a long-press timer whose press already lifted', async () => {
+    vi.useFakeTimers()
+    try {
+      const wrapper = tooltip()
+      await wrapper.trigger('pointerdown', { pointerType: 'touch' })
+      await wrapper.trigger('pointerup', { pointerType: 'touch' })
+      vi.advanceTimersByTime(500)
+      await wrapper.vm.$nextTick()
+      expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('shows on keyboard focus, hides on Escape, and describes its trigger', async () => {

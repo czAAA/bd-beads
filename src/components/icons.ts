@@ -51,8 +51,8 @@ export const ICON_NAMES = [
 
 export type IconName = (typeof ICON_NAMES)[number]
 
-/** The sizes the design system uses (README, Iconography): 14 expand and saved check, 15 buttons, 16 links, rows, zoom and messages, 17 the Edit row, 18 tool tabs. */
-export type IconSize = 14 | 15 | 16 | 17 | 18
+/** The sizes the design system uses (README, Iconography): 14 expand and saved check, 15 buttons, 16 links, rows, zoom and messages, 17 the Edit row, 18 tool tabs, 22 the BottomToolbar and Dock (ticket 168, 79). */
+export type IconSize = 14 | 15 | 16 | 17 | 18 | 22
 
 const files = import.meta.glob<string>('../../docs/design/system/assets/Icons/*.svg', {
   query: '?raw',

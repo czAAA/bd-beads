@@ -93,6 +93,18 @@ export const en: Translations = {
     saveFailedMessage:
       "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or export the Pattern to a file to keep it.",
   },
+  header: {
+    toolsButton: 'Tools',
+    moreButton: 'More',
+    patternSheetLabel: 'Pattern',
+    newPatternSheetTitle: 'New Pattern',
+  },
+  contextBar: {
+    label: 'Selection actions',
+    clearButton: 'Clear selection',
+    pasteHint: 'Tap where to paste',
+    cancelButton: 'Cancel',
+  },
   palette: {
     pickerLabel: 'Palette colors',
     colorLabel: 'Color',

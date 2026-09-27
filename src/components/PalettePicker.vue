@@ -80,4 +80,24 @@ function isStop(colorId: string, index: number): boolean {
     transform: none;
   }
 }
+
+/*
+ * Touch input (ticket 166): a swatch grows to a real 36px minimum instead of controls.css's usual invisible 44px hit
+ * area, which packed this tight (6px apart) would overlap its neighbours.
+ */
+@media (pointer: coarse) {
+  /* The 8-column grid would overflow a narrow column at a real 36px minimum, so columns give way to more rows. */
+  .palette-picker {
+    grid-template-columns: repeat(auto-fill, minmax(var(--swatch-touch-min), 1fr));
+  }
+
+  .palette-picker__swatch {
+    min-width: var(--swatch-touch-min);
+    min-height: var(--swatch-touch-min);
+  }
+
+  .palette-picker__swatch::before {
+    content: none;
+  }
+}
 </style>

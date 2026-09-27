@@ -60,4 +60,34 @@
   --image-color-size: 1.75rem;
   /* InteractionStates card: the pressed shrink */
   --press-scale: 0.98;
+  /* responsive.md "Input, not width": a swatch's real minimum size on a coarse pointer */
+  --swatch-touch-min: 2.25rem;
+  /* ContextBar card: its own radius, not one of tokens.json's radius steps */
+  --context-bar-radius: 0.875rem;
+  /* ZoomPill card: its own 36px buttons, bigger than the reference tier's zoom cluster */
+  --zoom-pill-button: 2.25rem;
+  /* responsive.md's phone-landscape header (44px); header-height-phone (52px) is portrait-only */
+  --header-height-phone-landscape: 2.75rem;
+}
+
+/*
+ * Touch input (ticket 166; responsive.md "Input, not width"): every .ui-control keeps its drawn size on a coarse
+ * pointer but gets a `touch-target` (44px) hit area, an invisible square centered on it that can run past its own
+ * box without moving anything else. Palette swatches and tool tabs are the two documented exceptions -- close enough
+ * together that an invisible 44px zone on each would overlap its neighbours, so they grow their own real size
+ * instead (their own rules opt back out of this one with `::before { content: none }`).
+ */
+@media (pointer: coarse) {
+  .ui-control {
+    position: relative;
+  }
+
+  .ui-control::before {
+    content: '';
+    position: absolute;
+    inset: 50%;
+    width: max(100%, var(--touch-target));
+    height: max(100%, var(--touch-target));
+    transform: translate(-50%, -50%);
+  }
 }

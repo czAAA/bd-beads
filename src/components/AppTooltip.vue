@@ -3,28 +3,46 @@ import { onBeforeUnmount, ref, useId } from 'vue'
 
 /**
  * The design system's Tooltip (ticket 157; Modal card): a short `ink` label that shows while its trigger is hovered
- * with a mouse or focused from the keyboard, and hides on leave, blur or Escape. The trigger gets the tooltip's id
- * through the `describedby` slot prop; an icon-only button whose own name already says the same passes `announce:
- * false`, so screen readers don't hear it twice.
+ * with a mouse or focused from the keyboard, and hides on leave, blur or Escape. On a coarse pointer there is no
+ * hover, so a touch or pen press held for LONG_PRESS_MS opens it instead, closing again on release (ticket 166;
+ * responsive.md "Input, not width": "tooltips become long-press"). The trigger gets the tooltip's id through the
+ * `describedby` slot prop; an icon-only button whose own name already says the same passes `announce: false`, so
+ * screen readers don't hear it twice.
  */
 withDefaults(defineProps<{ text: string; placement?: 'top' | 'bottom'; announce?: boolean }>(), {
   placement: 'bottom',
   announce: true,
 })
 
+const LONG_PRESS_MS = 500
+
 const id = useId()
 const open = ref(false)
 
 /** Set by a press inside the trigger, so the focus that press gives it doesn't pop a tooltip over what was pressed. */
 let pressing = false
+let longPressTimer: ReturnType<typeof setTimeout> | undefined
+
+function clearLongPress() {
+  if (longPressTimer === undefined) return
+  clearTimeout(longPressTimer)
+  longPressTimer = undefined
+}
 
 function onPointerEnter(event: PointerEvent) {
   // A mouse or trackpad only: a finger or pen has no hover, and a tooltip would cover what it touches.
   if (event.pointerType !== 'touch' && event.pointerType !== 'pen') open.value = true
 }
 
-function onPointerDown() {
+function onPointerDown(event: PointerEvent) {
   pressing = true
+  if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+    clearLongPress()
+    longPressTimer = setTimeout(() => {
+      longPressTimer = undefined
+      open.value = true
+    }, LONG_PRESS_MS)
+  }
 }
 
 function onFocusIn() {
@@ -32,6 +50,7 @@ function onFocusIn() {
 }
 
 function hide() {
+  clearLongPress()
   open.value = false
 }
 
@@ -55,6 +74,8 @@ onBeforeUnmount(hide)
     @pointerleave="hide"
     @focusin="onFocusIn"
     @pointerdown="onPointerDown"
+    @pointerup="hide"
+    @pointercancel="hide"
     @focusout="onFocusOut"
     @keydown="onKeydown"
   >
