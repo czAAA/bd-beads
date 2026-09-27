@@ -1796,6 +1796,24 @@ function onMoveRow(delta: number) {
       </AppMessage>
     </div>
 
+    <!--
+      The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
+      space while there is nothing to say. A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
+      about the whole Pattern library, not the open Pattern, and has to be visible whether or not one is open.
+      It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
+      (see usePatternLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
+    -->
+    <div v-if="saveFailed" class="app-shell__notices" data-testid="app-notices">
+      <AppMessage tone="danger" placement="notice" :closable="false">
+        <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
+        <template #actions>
+          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportPatternFile">
+            {{ t.saveBox.exportPatternFile }}
+          </AppButton>
+        </template>
+      </AppMessage>
+    </div>
+
     <div class="app-shell__body">
       <!--
         The left column (ticket 141, ADR 0021): one column that scrolls on its own, holding separate boxes in a fixed

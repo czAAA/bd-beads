@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="modal" class="bottom-sheet-scrim" data-testid="sheet-scrim" @click="emit('close')" />
+  <div v-if="modal" class="bottom-sheet-scrim" data-testid="sheet-scrim" />
   <div
     ref="sheetEl"
     class="bottom-sheet"
@@ -120,6 +120,7 @@ onBeforeUnmount(() => {
   z-index: calc(var(--z-sheet) - 1);
   background: var(--scrim);
   animation: bottom-sheet-fade var(--duration-base) var(--ease-out);
+  pointer-events: none;
 }
 
 .bottom-sheet {

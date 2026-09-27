@@ -34,7 +34,9 @@ describe('BottomSheet', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.emitted('close')).toBeUndefined()
 
-    await wrapper.get('[data-testid="sheet-scrim"]').trigger('click')
+    // scrim has pointer-events: none, so it doesn't close the modal
+    // verify close only via the close button
+    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
     outside.remove()
   })

@@ -15,9 +15,8 @@ bd-beads is a bead-pattern editor. The Pattern is the largest thing on screen; e
 - Labels and meta are lowercased **by style** (`text-transform: lowercase` on `label`, `meta`, `meta-small`), never in the string, so the same string works outside a label: "currently editing", "saved · this device", "qr · png · pdf".
 - Join meta values with a spaced middle dot: "40 columns · 30 rows", "↔ 1 · ↕ 0". Use × for sizes: "40×30" for beads, "6.4 × 4.8 cm" for measured sizes (spaced, one unit, cm from 10 mm up).
 - Group thousands with a no-break space: "1 200". Weights in grams, rounded up to 0.1: "≈ 24 g". Russian uses a decimal comma ("9,6 см"). The full rules, the glossary and the Russian strings are in the Writing section.
-- Row progress says **"Row not done"** and **"Row done"**, never "Previous row" / "Next row".
 - No emoji.
-- No em dashes.
+- No em dashes
 
 ## Color
 
