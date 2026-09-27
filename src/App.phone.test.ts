@@ -111,7 +111,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(drawnPattern(wrapper).grid[0]![0]!.color).not.toBeNull()
   })
 
-  it('shows the Pattern sheet\'s Save box and Saved Patterns for the open Pattern', async () => {
+  it('shows the Pattern sheet\'s Save box for the open Pattern', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
@@ -119,5 +119,56 @@ describe('App at the phone tier (ticket 79)', () => {
     const sheet = wrapper.find('[data-testid="bottom-sheet"]')
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(true)
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
+  })
+
+  it('disables the Saved Patterns icon when there are no saved patterns', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="phone-saved-patterns-button"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('enables the Saved Patterns icon and opens a drawer when patterns exist', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
+
+    const btn = wrapper.find('[data-testid="phone-saved-patterns-button"]')
+    expect(btn.attributes('disabled')).toBeUndefined()
+
+    await btn.trigger('click')
+    // A second bottom sheet opens with the pattern list.
+    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
+    expect(sheets.length).toBeGreaterThan(1)
+    expect(sheets[sheets.length - 1]!.find('[data-testid="pattern-list"]').exists()).toBe(true)
+  })
+
+  it('closes both the Saved Patterns drawer and Pattern sheet on pattern select', async () => {
+    const wrapper = mount(App)
+    // Create two patterns so a second one can be selected.
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
+    await wrapper.find('[data-testid="phone-new-pattern-button"]').trigger('click')
+    await createPatternViaPhoneSheet(wrapper, '10', '10')
+    // Now two patterns saved; open the pattern sheet and the saved-patterns drawer.
+    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
+    await wrapper.find('[data-testid="phone-saved-patterns-button"]').trigger('click')
+
+    // The saved-patterns sheet is the last bottom-sheet rendered; scope the click to it so
+    // we avoid the always-mounted (but hidden) AppDrawer PatternList in the DOM.
+    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
+    const savedPatternsSheet = sheets[sheets.length - 1]!
+    await savedPatternsSheet.findAll('[data-testid^="select-pattern-"]')[0]!.trigger('click')
+
+    // Both sheets should be gone.
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+  })
+
+  it('shows the compact import control in the Pattern sheet actions', async () => {
+    const wrapper = mount(App)
+    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
+
+    // The compact import file input should be present in the pattern sheet.
+    expect(wrapper.find('[data-testid="bottom-sheet"] [data-testid="pattern-sheet-import-file"]').exists()).toBe(true)
   })
 })

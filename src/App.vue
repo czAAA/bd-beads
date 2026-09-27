@@ -460,6 +460,14 @@ function onSelectPhoneSheet(sheet: PhoneSheet) {
 
 /** New Pattern on the phone tier (PhoneForms card): its own full-height modal sheet, opened from the Pattern sheet. */
 const phoneNewPatternOpen = ref(false)
+/** Saved Patterns on the phone tier: a separate non-modal sheet, opened from the Pattern sheet's Saved Patterns icon. */
+const phoneSavedPatternsOpen = ref(false)
+
+function onSelectPatternFromPhoneDrawer(id: string) {
+  onSelectPattern(id)
+  phoneSavedPatternsOpen.value = false
+  openPhoneSheet.value = null
+}
 
 /**
  * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
@@ -1796,24 +1804,6 @@ function onMoveRow(delta: number) {
       </AppMessage>
     </div>
 
-    <!--
-      The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
-      space while there is nothing to say. A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
-      about the whole Pattern library, not the open Pattern, and has to be visible whether or not one is open.
-      It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
-      (see usePatternLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
-    -->
-    <div v-if="saveFailed" class="app-shell__notices" data-testid="app-notices">
-      <AppMessage tone="danger" placement="notice" :closable="false">
-        <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
-        <template #actions>
-          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportPatternFile">
-            {{ t.saveBox.exportPatternFile }}
-          </AppButton>
-        </template>
-      </AppMessage>
-    </div>
-
     <div class="app-shell__body">
       <!--
         The left column (ticket 141, ADR 0021): one column that scrolls on its own, holding separate boxes in a fixed
@@ -2137,7 +2127,7 @@ function onMoveRow(delta: number) {
       The Pattern sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
       shouldn't lose the way back to New Pattern or Import, unlike the five light sheets above.
     -->
-    <BottomSheet v-if="openPhoneSheet === 'pattern'" modal :title="t.header.patternSheetLabel" @close="openPhoneSheet = null">
+    <BottomSheet v-if="openPhoneSheet === 'pattern'" modal :title="t.header.patternSheetLabel" @close="openPhoneSheet = null; phoneSavedPatternsOpen = false">
       <template v-if="activePattern">
         <p class="phone-sheet__bead-row">
           <span class="app-header__pill" data-testid="phone-sheet-bead">{{ activeBeadLabel }}</span>
@@ -2168,14 +2158,20 @@ function onMoveRow(delta: number) {
           @export-pdf="onExportPdf"
         />
         <BeadQuantities :pattern="settledPattern" />
-        <PatternList :patterns="patterns" :active-pattern-id="activePatternId" @select="onSelectPattern" @remove="removePattern" />
       </template>
       <div class="phone-sheet__pattern-actions">
-        <!-- Unlike the wider tiers' header button, never disabled: with no Patterns yet, this is the only way to reach the form at all -- the wider tiers instead show it by default in the left column's own place. -->
+        <!-- New Pattern: never disabled -- with no Patterns yet this is the only way to reach the form (the wider tiers show it inline by default). -->
         <AppButton variant="primary" icon="plus" data-testid="phone-new-pattern-button" @click="phoneNewPatternOpen = true">
           {{ t.patterns.newPatternButton }}
         </AppButton>
-        <PatternImport :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
+        <PatternImport compact :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
+        <IconButton
+          icon="save"
+          :label="t.patterns.heading"
+          :disabled="patterns.length === 0"
+          data-testid="phone-saved-patterns-button"
+          @click="phoneSavedPatternsOpen = true"
+        />
       </div>
     </BottomSheet>
 
@@ -2185,6 +2181,16 @@ function onMoveRow(delta: number) {
         @submit="(payload) => { onCreatePattern(payload); phoneNewPatternOpen = false; openPhoneSheet = null }"
         @draft="onNewPatternDraft"
         @convert-image="(draft) => { startConvertImage(draft); phoneNewPatternOpen = false; openPhoneSheet = null }"
+      />
+    </BottomSheet>
+
+    <!-- Saved Patterns: a non-modal sheet opened from the Pattern sheet's Saved Patterns icon. Selecting a pattern closes both this and the Pattern sheet. -->
+    <BottomSheet v-if="phoneSavedPatternsOpen" :title="t.patterns.heading" @close="phoneSavedPatternsOpen = false">
+      <PatternList
+        :patterns="patterns"
+        :active-pattern-id="activePatternId"
+        @select="onSelectPatternFromPhoneDrawer"
+        @remove="removePattern"
       />
     </BottomSheet>
 
@@ -2670,12 +2676,16 @@ function onMoveRow(delta: number) {
 
 .phone-sheet__pattern-actions {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: var(--space-12);
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-8);
   margin-top: var(--space-16);
   padding-top: var(--space-16);
   border-top: 1px solid var(--line-soft);
+}
+
+.phone-sheet__pattern-actions .app-button {
+  flex: 1 1 0;
 }
 
 /*
