@@ -10,29 +10,43 @@ const { t } = useI18n()
 
 <template>
   <div class="empty-canvas" data-testid="app-canvas-placeholder">
+    <!-- Board fills the entire container; dots are behind the message. -->
     <span class="empty-canvas__board" aria-hidden="true" />
-    <p class="empty-canvas__title">{{ t.shell.canvasPlaceholder }}</p>
-    <p class="empty-canvas__hint">{{ t.shell.canvasPlaceholderHint }}</p>
+    <div class="empty-canvas__message">
+      <p class="empty-canvas__title">{{ t.shell.canvasPlaceholder }}</p>
+      <p class="empty-canvas__hint">{{ t.shell.canvasPlaceholderHint }}</p>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* Fill the entire canvas box so the dot board stretches edge to edge. */
 .empty-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+}
+
+/* Dot board: covers the whole container. */
+.empty-canvas__board {
+  position: absolute;
+  inset: 0;
+  background: var(--board) radial-gradient(circle, var(--bead-empty) 0 36%, transparent 40%) var(--space-6) var(--space-6) /
+    var(--space-12) var(--space-12);
+}
+
+/* Message floats in the centre; a translucent pad keeps the text readable over the dots. */
+.empty-canvas__message {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-10);
   padding: var(--space-24) var(--space-16);
   text-align: center;
-}
-
-/* A small empty board: bead-empty beads in a 12px lattice on the board color. */
-.empty-canvas__board {
-  width: calc(var(--space-12) * 10);
-  height: calc(var(--space-12) * 7.5);
-  background: var(--board) radial-gradient(circle, var(--bead-empty) 0 36%, transparent 40%) var(--space-6) var(--space-6) /
-    var(--space-12) var(--space-12);
-  border-radius: var(--radius-lg);
 }
 
 .empty-canvas__title {

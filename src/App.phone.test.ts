@@ -33,24 +33,24 @@ async function createPatternViaPhoneSheet(wrapper: ReturnType<typeof mount>, wid
 }
 
 describe('App at the phone tier (ticket 79)', () => {
-  it('shows the Dock even with no Pattern open, and its Pattern button reaches New Pattern', async () => {
+  it('shows the pattern-management bar (not the Dock) when no Pattern is open', async () => {
     const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
-
-    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="phone-new-pattern-button"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="phone-pattern-bar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="dock"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="phone-bar-new-pattern"]').exists()).toBe(true)
   })
 
-  it('creates a Pattern through the phone New Pattern sheet, from the Pattern sheet', async () => {
+  it('creates a Pattern from the phone pattern-management bar', async () => {
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
-    await wrapper.find('[data-testid="phone-new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="phone-bar-new-pattern"]').trigger('click')
 
     await createPatternViaPhoneSheet(wrapper, '15', '30')
 
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false) // both sheets closed
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
     expect(drawnPattern(wrapper).columns).toBe(10)
+    // After creation the Dock replaces the pattern-management bar.
+    expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="phone-pattern-bar"]').exists()).toBe(false)
   })
 
   it('toggles each ToolSheet from the Dock, closing on a second press of the same button', async () => {
@@ -121,11 +121,10 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
-  it('disables the Saved Patterns icon when there are no saved patterns', async () => {
+  it('shows import buttons in the pattern-management bar when no Pattern is open', async () => {
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="phone-saved-patterns-button"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="phone-bar-import-file"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="phone-bar-import-qr"]').exists()).toBe(true)
   })
 
   it('enables the Saved Patterns icon and opens a drawer when patterns exist', async () => {
@@ -166,6 +165,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('shows the compact import control in the Pattern sheet actions', async () => {
     const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
 
     // The compact import file input should be present in the pattern sheet.

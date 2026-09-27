@@ -1925,7 +1925,7 @@ function onMoveRow(delta: number) {
             />
 
             <div class="app-shell__canvas-row">
-              <div ref="canvasScrollEl" class="app-shell__canvas-scroll">
+              <div ref="canvasScrollEl" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activePattern && !framing }">
                 <!--
                   Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
                   open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
@@ -2038,12 +2038,18 @@ function onMoveRow(delta: number) {
     />
 
     <!--
-      The phone tier's Dock (ticket 79; Dock card): one button per kind of tool, each opening its own ToolSheet below.
-      Shown even with no Pattern open, since Pattern (New Pattern, Import) is how one gets started; the other five
-      sheets need an open Pattern (Mirror/Size's own controls take one as a required prop) and are reached only then.
+      Phone tier bottom: two states. With no Pattern open, a focused pattern-management bar (New Pattern + Import +
+      Import QR) replaces the Dock so the first action is immediately obvious. Once a Pattern is open the Dock appears
+      with the drawing tools. The BottomToolbar (iPad mini) is always rendered independently.
     -->
+    <div v-if="!framing && !activePattern" class="app-shell__phone-pattern-bar" data-testid="phone-pattern-bar">
+      <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-pattern" @click="phoneNewPatternOpen = true">
+        {{ t.patterns.newPatternButton }}
+      </AppButton>
+      <PatternImport compact toast-results :patterns="patterns" testid-prefix="phone-bar-" @import="onImportPatterns" @import-result="onImportToast" />
+    </div>
     <AppDock
-      v-if="!framing"
+      v-else-if="!framing && !!activePattern"
       class="app-shell__dock"
       :active-tool="activeTool"
       :selected-color-id="selectedColorId"
@@ -2591,10 +2597,32 @@ function onMoveRow(delta: number) {
   display: none;
 }
 
+/* Phone pattern-management bar: shown instead of the Dock when no Pattern is open. */
+.app-shell__phone-pattern-bar {
+  display: none;
+}
+
 @media (max-width: 743px) {
   .app-shell__dock {
     display: flex;
     flex: none;
+  }
+
+  .app-shell__phone-pattern-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--space-8);
+    height: var(--dock-height);
+    padding: 0 var(--space-16);
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--canvas);
+    border-top: 1px solid var(--line-soft);
+  }
+
+  /* New Pattern grows to take the remaining width; the two import icons sit at a fixed square size beside it. */
+  .app-shell__phone-pattern-bar :deep(.app-button) {
+    flex: 1 1 0;
   }
 
   /* No canvas strip on phone (responsive.md): ZoomPill floats over the Pattern instead. */
@@ -2870,5 +2898,12 @@ function onMoveRow(delta: number) {
   min-width: 0;
   max-height: 100%;
   overflow: auto;
+}
+
+/* When no Pattern is open the scroll panel stretches to fill the whole row so the dot board covers it edge to edge. */
+.app-shell__canvas-scroll--empty {
+  align-self: stretch;
+  width: 100%;
+  overflow: hidden;
 }
 </style>
