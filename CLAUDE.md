@@ -25,3 +25,4 @@ All UI work follows the bd-beads design system (version 14), copied into `docs/d
 - Don't re-read files already in context unless they changed.
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
 - Never cat lock files, generated files, minified bundles, or large logs.
+- Screenshots and visual-test artifacts (`test-results/`, `e2e/visual/__screenshots__/`) are images: each one read into context stays there for the rest of the session. Trust Playwright's text reporter (pass/fail, pixel-diff count) first; only `Read` an image when a diff genuinely needs visual judgment. Crop to the region under review before reading rather than reading a full-page screenshot. When a visual test fails, read the `diff.png` before reaching for `actual.png`/`expected.png` too.
