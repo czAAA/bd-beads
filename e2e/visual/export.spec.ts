@@ -108,7 +108,7 @@ test('PNG export of a 250 × 250 peyote Pattern is one picture within the pixel 
   // The chart itself, drawn at the zoom the budget allows: the last bands are drawn, not left blank (some of the
   // beads in its bottom-right corner are not white — the Palette has a white of its own, so not every one).
   const zoom = pngZoom(pattern)
-  const chart = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotated)
+  const chart = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
   const chartRight = Math.ceil(chart.width) + PNG_MARGIN_PX
   const chartBottom = Math.ceil(chart.height) + PNG_MARGIN_PX
   const corner = new Set<string>()

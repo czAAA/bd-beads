@@ -1,5 +1,5 @@
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { CELL_SIZE_PX } from '../domain/grid'
+import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { PRINT_THEME } from './beadLook'
 import { displayedExtentPx, renderPattern } from './patternRenderer'
@@ -186,6 +186,32 @@ export interface Span {
   last: number
 }
 
+type RulerShape = Pick<Pattern, 'columns' | 'rows' | 'rotation'>
+
+/**
+ * Each quarter turn reverses one axis and swaps which of columns/rows is which (composing gridToRegion's own per-turn
+ * mapping): the across axis reads reversed at 90°/180°, the down axis at 180°/270°.
+ */
+function acrossReversed(rotation: Rotation): boolean {
+  return rotation === 90 || rotation === 180
+}
+
+function downReversed(rotation: Rotation): boolean {
+  return rotation === 180 || rotation === 270
+}
+
+/** The Pattern's own number for a bead at this across-axis index (a turned Pattern's rows may run across), counted from its far end when the turn reverses this axis. */
+function acrossNumber(pattern: RulerShape, index: number): number {
+  const dimension = rotationSwapsAxes(pattern.rotation) ? pattern.rows : pattern.columns
+  return acrossReversed(pattern.rotation) ? dimension - index : index + 1
+}
+
+/** The down-axis equivalent of acrossNumber. */
+function downNumber(pattern: RulerShape, index: number): number {
+  const dimension = rotationSwapsAxes(pattern.rotation) ? pattern.columns : pattern.rows
+  return downReversed(pattern.rotation) ? dimension - index : index + 1
+}
+
 /**
  * The rulers on all four sides, in the Pattern's own numbers (a turned Pattern's rows run across, counted from its
  * far end), and a hairline every 10 beads across the board. `every` is 10 on page 1; the chart pages label every 5th
@@ -194,8 +220,6 @@ export interface Span {
 export function drawRulers(context: CanvasRenderingContext2D, pattern: Pattern, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
   const grid = displayedGrid(pattern)
   const bead = CELL_SIZE_PX * zoom
-  const acrossNumber = (index: number) => (pattern.rotated ? pattern.rows - index : index + 1)
-  const downNumber = (index: number) => index + 1
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
 
   context.save()
@@ -210,13 +234,13 @@ export function drawRulers(context: CanvasRenderingContext2D, pattern: Pattern, 
   }
   for (let index = across.first; index <= across.last; index += 1) {
     const x = at.x + (index - across.first) * grid.stepAcross * zoom + bead / 2
-    label(acrossNumber(index), x, at.y - gap)
-    label(acrossNumber(index), x, at.y + at.height + gap)
+    label(acrossNumber(pattern, index), x, at.y - gap)
+    label(acrossNumber(pattern, index), x, at.y + at.height + gap)
   }
   for (let index = down.first; index <= down.last; index += 1) {
     const y = at.y + (index - down.first) * grid.stepDown * zoom + bead / 2
-    label(downNumber(index), at.x - gap, y)
-    label(downNumber(index), at.x + at.width + gap, y)
+    label(downNumber(pattern, index), at.x - gap, y)
+    label(downNumber(pattern, index), at.x + at.width + gap, y)
   }
 
   // A hairline every 10 beads, in the gap between the 10th and the 11th.
@@ -257,8 +281,8 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
 // ---- Page 1 -------------------------------------------------------------------------------------------------------
 
 /** How the whole Pattern sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed column. */
-export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotated'>, page: PageSize) {
-  const wide = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotated)
+export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>, page: PageSize) {
+  const wide = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
   const columnBelow = wide.width > wide.height
   const top = PRINT_MARGIN + mm(30)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
@@ -379,7 +403,7 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
   }
 
   // The whole Pattern, on its board, with rulers every 10, the 10-bead lines and the parts dashed and numbered.
-  const whole = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, layout.zoom, pattern.rotated)
+  const whole = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, layout.zoom, pattern.rotation)
   drawBoard(context, pattern, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board)
   const grid = displayedGrid(pattern)
   drawRulers(context, pattern, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)
@@ -499,11 +523,11 @@ function drawSinglePartPage(pattern: Pattern, words: PrintText, plan: PrintPlan,
 
 // ---- Stacked strips (PrintStrips) ----------------------------------------------------------------------------------
 
-/** "Part 2 · columns 39–76": the raw axis being split (columns when not turned, rows when turned), lowest number first. */
+/** "Part 2 · columns 39–76": the raw axis being split (columns when not turned a quarter, rows when it is), lowest number first. */
 function stripLabel(pattern: Pattern, labels: PrintText['labels'], part: PrintPart): string {
-  const a = pattern.rotated ? pattern.rows - part.firstAcross : part.firstAcross + 1
-  const b = pattern.rotated ? pattern.rows - part.lastAcross : part.lastAcross + 1
-  const template = pattern.rotated ? labels.partRows : labels.partColumns
+  const a = acrossNumber(pattern, part.firstAcross)
+  const b = acrossNumber(pattern, part.lastAcross)
+  const template = rotationSwapsAxes(pattern.rotation) ? labels.partRows : labels.partColumns
   return template.replace('{part}', String(part.across + 1)).replace('{from}', String(Math.min(a, b))).replace('{to}', String(Math.max(a, b)))
 }
 

@@ -14,6 +14,27 @@ export function isOffsetTechnique(technique: Technique): boolean {
   return technique !== 'loom'
 }
 
+/**
+ * A view-only quarter-turn (ticket 171, extending ticket 28's 0°/90° to all four): clockwise, in degrees. Purely
+ * cosmetic, like Pattern.rotation itself — the grid never turns, only its on-screen (and printed/exported)
+ * presentation.
+ */
+export type Rotation = 0 | 90 | 180 | 270
+
+/** The next quarter-turn clockwise, wrapping from 270° back to 0° (Rotate: ticket 171). */
+export function nextRotation(rotation: Rotation): Rotation {
+  return ((rotation + 90) % 360) as Rotation
+}
+
+/**
+ * Whether this rotation swaps which grid axis (columns or rows) runs across the screen versus down it: true a quarter
+ * turn either way (90°/270°), false upright or upside down (0°/180°) — the rule every "which axis is which on screen"
+ * mapping in the app shares (Estimated size, Row direction, Mirror's left-right/top-bottom, Size's resize counters).
+ */
+export function rotationSwapsAxes(rotation: Rotation): boolean {
+  return rotation === 90 || rotation === 270
+}
+
 export interface PhysicalSizeMm {
   widthMm: number
   heightMm: number

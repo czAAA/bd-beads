@@ -11,7 +11,8 @@ defineProps<{
   label: string
   labelFor?: string
   labelId?: string
-  /** Shown right of the label: "optional", or a note like the size in the other unit. */
+  /** Shown right of the label: "optional", or a note like the size in the other unit. The `aside` slot overrides this
+   * with richer content (ticket 170: the size estimate's own info tooltip) while keeping the same placement. */
   aside?: string
   hint?: string
   error?: string
@@ -24,7 +25,9 @@ defineProps<{
     <div class="form-field__label-row">
       <label v-if="labelFor" :id="labelId" class="form-field__label" :for="labelFor">{{ label }}</label>
       <span v-else :id="labelId" class="form-field__label">{{ label }}</span>
-      <span v-if="aside" class="form-field__aside">{{ aside }}</span>
+      <span v-if="aside || $slots.aside" class="form-field__aside">
+        <slot name="aside">{{ aside }}</slot>
+      </span>
     </div>
     <slot />
     <p v-if="hint" class="form-field__hint">{{ hint }}</p>

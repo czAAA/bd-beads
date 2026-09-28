@@ -95,7 +95,7 @@ const sizeSummary = computed(() => {
   const bead = resolvePatternBead(props.pattern)
   if (!bead) return undefined
   return formatSizeMm(
-    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotated: props.pattern.rotated }, bead),
+    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotation: props.pattern.rotation }, bead),
     { mm: t.value.form.unitMm, cm: t.value.form.unitCm },
     locale.value,
   )
@@ -175,7 +175,7 @@ const sizeSummary = computed(() => {
           :icon-size="17"
           :label="t.palette.rotateButton"
           :title="`${t.palette.rotateButton} (R)`"
-          :selected="pattern.rotated"
+          :selected="pattern.rotation !== 0"
           data-testid="rotate-button"
           @click="emit('toggle-rotate')"
         />

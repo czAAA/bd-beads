@@ -58,7 +58,7 @@ import { useSpaceDragPan } from './composables/useSpaceDragPan'
 import { useToasts } from './composables/useToasts'
 import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
-import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
+import { CELL_SIZE_PX, GRID_BORDER_PX, rotationSwapsAxes, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
 import {
   canRedo,
@@ -611,9 +611,22 @@ function keepCursorInView() {
   if (!pattern || !scroller || !surface) return
   const { row, column } = beadCursor.value
   const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-  let x = rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX
-  let y = rowTopPx(pattern.technique, row)
-  if (pattern.rotated) [x, y] = [extent.height - y - CELL_SIZE_PX, x]
+  const gridX = rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX
+  const gridY = rowTopPx(pattern.technique, row)
+  // Each quarter turn clockwise carries a bead's own top-left (x, y) to the turned picture's own top-left corner for
+  // it, the same forward mapping patternRenderer's gridToRegion uses (composing it with itself for 180°/270°, ticket 171).
+  const [x, y] = (() => {
+    switch (pattern.rotation) {
+      case 90:
+        return [extent.height - gridY - CELL_SIZE_PX, gridX]
+      case 180:
+        return [extent.width - gridX - CELL_SIZE_PX, extent.height - gridY - CELL_SIZE_PX]
+      case 270:
+        return [gridY, extent.width - gridX - CELL_SIZE_PX]
+      default:
+        return [gridX, gridY]
+    }
+  })()
   const bead = CELL_SIZE_PX * zoom.value
   const margin = bead * 2
   const box = scroller.getBoundingClientRect()
@@ -670,8 +683,20 @@ function onPatternKey(event: KeyboardEvent) {
   const { row, column } = beadCursor.value
   const pattern = activePattern.value
   if (!pattern) return
-  // Rotated, the picture is turned a quarter clockwise: on-screen arrows move along the other grid axis.
-  const turn = (dRow: number, dColumn: number): [number, number] => (pattern.rotated ? [-dColumn, dRow] : [dRow, dColumn])
+  // Rotated, the picture is turned clockwise: on-screen arrows move along whichever grid axis now points that way
+  // (ticket 171) -- undoing the same turn gridToRegion's forward mapping applies to the picture itself.
+  const turn = (dRow: number, dColumn: number): [number, number] => {
+    switch (pattern.rotation) {
+      case 90:
+        return [-dColumn, dRow]
+      case 180:
+        return [-dRow, -dColumn]
+      case 270:
+        return [dColumn, -dRow]
+      default:
+        return [dRow, dColumn]
+    }
+  }
   const steps: Record<string, [number, number]> = {
     ArrowUp: turn(-1, 0),
     ArrowDown: turn(1, 0),
@@ -711,7 +736,7 @@ const patternLabel = computed(() => {
   const pattern = activePattern.value
   if (!pattern) return undefined
   const colors = new Set(pattern.grid.flat().map((cell) => cell.color).filter(Boolean)).size
-  const [columns, rows] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  const [columns, rows] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   const parts = [
     t.value.a11y.patternLabel
       .replace('{name}', pattern.name)
@@ -760,10 +785,18 @@ function onNewPattern() {
   activePatternId.value = undefined
 }
 
+/** Picking a color while any other tool is active switches to Paint (ticket 171): the point of picking a color is to paint with it. */
+function switchToPaintOnColorPick() {
+  if (activeTool.value !== 'paint') {
+    onSelectTool('paint')
+  }
+}
+
 /** Choosing a Palette swatch deselects Custom color and any Image color (CONTEXT.md); the Custom slot keeps showing its last hex, just unselected. */
 function onSelectColor(colorId: string) {
   selectedColorId.value = colorId
   selectedImageColor.value = undefined
+  switchToPaintOnColorPick()
 }
 
 /** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch or Image color was active, vice versa. */
@@ -771,12 +804,14 @@ function onSelectCustomColor(hex: string) {
   customColor.value = hex
   selectedColorId.value = undefined
   selectedImageColor.value = undefined
+  switchToPaintOnColorPick()
 }
 
 /** Choosing one of the open Pattern's Image colors (ticket 58) paints with it, the same way a Palette swatch does; the Custom slot keeps its own last hex, unselected. */
 function onSelectImageColor(hex: string) {
   selectedImageColor.value = hex
   selectedColorId.value = undefined
+  switchToPaintOnColorPick()
 }
 
 function onSelectTool(tool: Tool) {
@@ -1545,8 +1580,9 @@ function onRemoveSelectedLine() {
 }
 
 /**
- * Flips the Pattern's rotated view flag — a purely visual 90° turn (see Pattern.rotated), not a grid edit, so it
- * doesn't go through commitGridChange/undo. Still refits the zoom since the on-screen footprint just swapped.
+ * Steps the Pattern's rotation one quarter turn clockwise (see Pattern.rotation, ticket 171) — a purely visual turn,
+ * not a grid edit, so it doesn't go through commitGridChange/undo. Still refits the zoom, since the on-screen
+ * footprint swaps at 90°/270° (it's unchanged at 180°, but refitting either way is harmless).
  */
 function onToggleRotate() {
   const pattern = activePattern.value
@@ -1597,10 +1633,11 @@ function onMoveRow(delta: number) {
     <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
 
     <!--
-      The header (ticket 142; Header card): 64px, in order — the brand; what is being edited (only while a Pattern is
-      open) and Replace bead; a flexible gap; the two imports with their one-line results; New Pattern; EN / RU; the
-      theme control; Keyboard shortcuts. Nothing shrinks but the Pattern's name. When it still doesn't fit, it fits by
-      priority (`writing.md`, Fitting longer text): the imports drop their labels first (compactImports).
+      The header (ticket 142; Header card): 64px, in order — the brand; the open Pattern's summary and Bead pill (only
+      while a Pattern is open) and Replace bead; a flexible gap; the two imports with their one-line results; New
+      Pattern; EN / RU; the theme control; Keyboard shortcuts. Nothing shrinks but the Pattern's name. When it still
+      doesn't fit, it fits by priority (`writing.md`, Fitting longer text): the imports drop their labels first
+      (compactImports).
     -->
     <header ref="headerEl" class="app-header" :class="{ 'app-header--compact': compactImports }" data-testid="app-topbar">
       <!--
@@ -1623,7 +1660,7 @@ function onMoveRow(delta: number) {
 
       <!--
         The phone header (ticket 79; responsive.md, 0-743px): the Pattern name with its size and save state, in place
-        of "currently editing"/the Bead pill/Replace bead -- Replace bead moves into the Pattern sheet's Bead pill row.
+        of the Pattern summary/Bead pill/Replace bead -- Replace bead moves into the Pattern sheet's Bead pill row.
       -->
       <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
         <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
@@ -1634,7 +1671,6 @@ function onMoveRow(delta: number) {
 
       <template v-if="activePattern">
         <p class="app-header__editing app-header__phone-hide" data-testid="pattern-info">
-          <span class="app-header__label">{{ t.patterns.currentLabel }}</span>
           <span class="app-header__summary" data-testid="current-pattern-summary" :title="summarizePattern(activePattern)">
             {{ summarizePattern(activePattern) }}
           </span>
@@ -2033,7 +2069,7 @@ function onMoveRow(delta: number) {
       <div class="phone-sheet__edit">
         <IconButton icon="undo" variant="toolbox" size="lg" :label="t.palette.undoButton" :disabled="!canUndo(history)" @click="onUndo" />
         <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo(history)" @click="onRedo" />
-        <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotated" @click="onToggleRotate" />
+        <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotation !== 0" @click="onToggleRotate" />
         <IconButton icon="copy" variant="toolbox" size="lg" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
         <IconButton
           icon="import"
@@ -2224,7 +2260,6 @@ function onMoveRow(delta: number) {
   min-height: var(--header-height);
   /* Screen edges (ticket 166; responsive.md): grows past 64px for a notch/dynamic island, `env()` falling back to 0. */
   padding: env(safe-area-inset-top) var(--space-32) 0;
-  overflow: hidden;
   background: var(--canvas);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -2319,7 +2354,7 @@ function onMoveRow(delta: number) {
   color: var(--body);
 }
 
-/* The phone header's combined Pattern name/size + save state (ticket 79), in "currently editing"'s place. */
+/* The phone header's combined Pattern name/size + save state (ticket 79), in the wide header's Pattern summary's place. */
 .app-header__phone-pattern {
   display: none;
   align-items: center;
@@ -2371,7 +2406,7 @@ function onMoveRow(delta: number) {
   color: var(--ink);
 }
 
-/* "currently editing", the Pattern's summary and its Bead pill. */
+/* The Pattern's summary and its Bead pill. */
 .app-header__editing {
   display: flex;
   align-items: center;
@@ -2381,20 +2416,12 @@ function onMoveRow(delta: number) {
 
 /*
  * Only once the imports have dropped their labels may the Pattern's name give way, cut with an ellipsis (the second
- * fitting step); "currently editing" and the Bead pill keep their size.
+ * fitting step); the Bead pill keeps its size.
  */
 .app-header--compact > .app-header__editing {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-}
-
-.app-header__label {
-  flex: none;
-  white-space: nowrap;
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
 }
 
 .app-header__summary {

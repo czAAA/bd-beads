@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Beads-needed weight tooltip rewritten: same facts, shorter, plain wording
 - [ ] Size-estimate tooltip (shown from the Size tool and New Pattern form) rewritten: same facts, shorter, plain wording

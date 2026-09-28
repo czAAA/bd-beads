@@ -212,7 +212,7 @@ describe('restoreGrid', () => {
   })
 })
 
-describe('toggleRotated', () => {
+describe('toggleRotated (ticket 171: all four quarter turns)', () => {
   function makePattern() {
     return createPattern({
       technique: 'peyote',
@@ -221,22 +221,25 @@ describe('toggleRotated', () => {
     })
   }
 
-  it('flips the rotated flag without touching anything else — grid, dimensions, and technique all stay exactly as they were', () => {
+  it('steps the rotation one quarter turn clockwise without touching anything else — grid, dimensions, and technique all stay exactly as they were', () => {
     const pattern = paintCells(makePattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
 
     const rotated = toggleRotated(pattern)
 
-    expect(rotated.rotated).toBe(true)
+    expect(rotated.rotation).toBe(90)
     expect(rotated.grid).toBe(pattern.grid)
     expect(rotated.columns).toBe(pattern.columns)
     expect(rotated.rows).toBe(pattern.rows)
     expect(rotated.technique).toBe(pattern.technique)
   })
 
-  it('toggles back off on a second call', () => {
+  it('cycles through all four positions and wraps back to upright', () => {
     const pattern = makePattern()
 
-    expect(toggleRotated(toggleRotated(pattern)).rotated).toBe(false)
+    expect(toggleRotated(pattern).rotation).toBe(90)
+    expect(toggleRotated(toggleRotated(pattern)).rotation).toBe(180)
+    expect(toggleRotated(toggleRotated(toggleRotated(pattern))).rotation).toBe(270)
+    expect(toggleRotated(toggleRotated(toggleRotated(toggleRotated(pattern)))).rotation).toBe(0)
   })
 
   it('does not mutate the original pattern', () => {
@@ -244,7 +247,7 @@ describe('toggleRotated', () => {
 
     toggleRotated(pattern)
 
-    expect(pattern.rotated).toBe(false)
+    expect(pattern.rotation).toBe(0)
   })
 })
 
@@ -985,7 +988,7 @@ describe('deleteAll', () => {
     expect(cleared.beadId).toBe(before.beadId)
     expect(cleared.columns).toBe(before.columns)
     expect(cleared.rows).toBe(before.rows)
-    expect(cleared.rotated).toBe(before.rotated)
+    expect(cleared.rotation).toBe(before.rotation)
   })
 
   it('ignores the Row progress lock: clears a finished row along with the rest', () => {
@@ -1064,7 +1067,7 @@ describe('replaceBead', () => {
 
     expect(replaced.name).toBe(before.name)
     expect(replaced.technique).toBe(before.technique)
-    expect(replaced.rotated).toBe(before.rotated)
+    expect(replaced.rotation).toBe(before.rotation)
   })
 
   it('works on a Pattern that was created in mm too, since nothing of the mm size is kept', () => {
@@ -1143,8 +1146,8 @@ describe('restoreSnapshot', () => {
 })
 
 describe('normalizePattern', () => {
-  it('backfills row progress and the rotated view flag on a Pattern saved before they existed', () => {
-    const { rowProgress: _rowProgress, rotated: _rotated, ...legacy } = createPattern({
+  it('backfills row progress and the rotation on a Pattern saved before they existed', () => {
+    const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
@@ -1158,7 +1161,18 @@ describe('normalizePattern', () => {
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(normalized.rotated).toBe(false)
+    expect(normalized.rotation).toBe(0)
+  })
+
+  it('reads ticket 28\'s two-position `rotated` boolean as its nearest quarter turn (ticket 171)', () => {
+    const { rotation: _rotation, ...legacy } = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 15, height: 15, unit: 'mm' },
+    })
+
+    expect(normalizePattern({ ...legacy, rotated: false } as unknown as Pattern).rotation).toBe(0)
+    expect(normalizePattern({ ...legacy, rotated: true } as unknown as Pattern).rotation).toBe(90)
   })
 
   it('drops the color-to-bead override field a Pattern saved before ticket 36 may still carry (ADR 0007)', () => {

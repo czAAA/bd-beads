@@ -76,7 +76,6 @@ export interface Translations {
     heading: string
     newPatternButton: string
     removeButton: string
-    currentLabel: string
     unknownBeadLabel: string
     noSavedPatternsMessage: string
     /** Saved Patterns' meta: how many of the library the box shows ("5 of 12"). */

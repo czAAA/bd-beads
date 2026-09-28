@@ -1,5 +1,5 @@
 import { CELL_SIZE_PX, GRID_BORDER_PX } from '../../src/domain/grid'
-import type { Technique } from '../../src/domain/grid'
+import type { Rotation, Technique } from '../../src/domain/grid'
 import { PALETTE } from '../../src/domain/palette'
 import type { Cell, Pattern, RowProgress } from '../../src/domain/pattern'
 import { encodePattern } from '../../src/domain/patternEncoding'
@@ -13,7 +13,7 @@ export interface FixtureOptions {
   technique: Technique
   columns?: number
   rows?: number
-  rotated?: boolean
+  rotation?: Rotation
   rowProgress?: Partial<RowProgress>
   /** Leave every bead empty rather than painting the busy fixture picture. */
   blank?: boolean
@@ -30,7 +30,7 @@ export function fixturePattern({
   technique,
   columns = 16,
   rows = 10,
-  rotated = false,
+  rotation = 0,
   rowProgress,
   blank = false,
   override = [],
@@ -54,7 +54,7 @@ export function fixturePattern({
     rows,
     grid,
     rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress },
-    rotated,
+    rotation,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
   }
@@ -69,11 +69,12 @@ export { STORAGE_KEY }
 
 /**
  * Where a bead's centre is on screen, given the surface's bounding box. Worked out from the Technique's geometry (the
- * renderer's, brick stitch's seam pixel included) and the zoom, and for the turned view: rotating 90° carries the
- * unrotated point (x, y) to (height − y, x).
+ * renderer's, brick stitch's seam pixel included) and the zoom, and for the turned view: each quarter turn clockwise
+ * carries the unrotated point (x, y) to (height − y, x) -- composing that with itself for 180°/270° (ticket 171).
+ * `box` is already sized to the displayed (rotated) extent, so its width/height stand in for the unrotated one's own.
  */
 export function beadCentre(
-  pattern: Pick<Pattern, 'technique' | 'rotated'>,
+  pattern: Pick<Pattern, 'technique' | 'rotation'>,
   box: { x: number; y: number; width: number; height: number },
   zoom: number,
   { row, column }: { row: number; column: number },
@@ -81,7 +82,19 @@ export function beadCentre(
   const x = (GRID_BORDER_PX + rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2) * zoom
   const y = (GRID_BORDER_PX + rowTopPx(pattern.technique, row) + CELL_SIZE_PX / 2) * zoom
 
-  return pattern.rotated ? { x: box.x + (box.width - y), y: box.y + x } : { x: box.x + x, y: box.y + y }
+  const [dx, dy] = ((): [number, number] => {
+    switch (pattern.rotation) {
+      case 90:
+        return [box.width - y, x]
+      case 180:
+        return [box.width - x, box.height - y]
+      case 270:
+        return [y, box.height - x]
+      default:
+        return [x, y]
+    }
+  })()
+  return { x: box.x + dx, y: box.y + dy }
 }
 
 /** The grid element's unrotated, unscaled size in px, outline included — for tests that want to check a bounding box. */

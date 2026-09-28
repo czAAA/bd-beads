@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, useId } from 'vue'
+import { nextTick, onBeforeUnmount, ref, useId } from 'vue'
 
 /**
  * The design system's Tooltip (ticket 157; Modal card): a short `ink` label that shows while its trigger is hovered
@@ -14,10 +14,27 @@ withDefaults(defineProps<{ text: string; placement?: 'top' | 'bottom'; announce?
   announce: true,
 })
 
+/** Keeps the bubble's centered position but nudged clear of the viewport's edges (ticket 169): a trigger near the
+ * screen's side, like the header's last icon, would otherwise center a wide bubble half off-screen. */
+const VIEWPORT_MARGIN_PX = 8
+
 const LONG_PRESS_MS = 500
 
 const id = useId()
 const open = ref(false)
+const bubbleEl = ref<HTMLElement>()
+const shiftPx = ref(0)
+
+async function clampToViewport() {
+  shiftPx.value = 0
+  await nextTick()
+  const rect = bubbleEl.value?.getBoundingClientRect()
+  if (!rect) return
+  const overflowRight = rect.right - (window.innerWidth - VIEWPORT_MARGIN_PX)
+  const overflowLeft = VIEWPORT_MARGIN_PX - rect.left
+  if (overflowRight > 0) shiftPx.value = -overflowRight
+  else if (overflowLeft > 0) shiftPx.value = overflowLeft
+}
 
 /** Set by a press inside the trigger, so the focus that press gives it doesn't pop a tooltip over what was pressed. */
 let pressing = false
@@ -29,9 +46,14 @@ function clearLongPress() {
   longPressTimer = undefined
 }
 
+function show() {
+  open.value = true
+  void clampToViewport()
+}
+
 function onPointerEnter(event: PointerEvent) {
   // A mouse or trackpad only: a finger or pen has no hover, and a tooltip would cover what it touches.
-  if (event.pointerType !== 'touch' && event.pointerType !== 'pen') open.value = true
+  if (event.pointerType !== 'touch' && event.pointerType !== 'pen') show()
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -40,13 +62,13 @@ function onPointerDown(event: PointerEvent) {
     clearLongPress()
     longPressTimer = setTimeout(() => {
       longPressTimer = undefined
-      open.value = true
+      show()
     }, LONG_PRESS_MS)
   }
 }
 
 function onFocusIn() {
-  if (!pressing) open.value = true
+  if (!pressing) show()
 }
 
 function hide() {
@@ -84,8 +106,10 @@ onBeforeUnmount(hide)
       <span
         v-show="open"
         :id="id"
+        ref="bubbleEl"
         class="app-tooltip__bubble"
         :class="`app-tooltip__bubble--${placement}`"
+        :style="{ transform: `translateX(calc(-50% + ${shiftPx}px))` }"
         role="tooltip"
         :aria-hidden="announce ? undefined : 'true'"
         data-testid="tooltip"
@@ -123,7 +147,6 @@ onBeforeUnmount(hide)
   pointer-events: none;
   background: var(--ink);
   border-radius: var(--radius-sm);
-  transform: translateX(-50%);
 }
 
 .app-tooltip__bubble--bottom {

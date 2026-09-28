@@ -307,7 +307,7 @@ describe('PatternSurface', () => {
   })
 
   it('takes the turned shape of a rotated Pattern: as tall as the Pattern is wide', async () => {
-    const { wrapper } = await mountSurface(patternOf(20, 10, { rotated: true }), 1)
+    const { wrapper } = await mountSurface(patternOf(20, 10, { rotation: 90 }), 1)
 
     const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
     expect(style).toContain('width: 228px')
@@ -346,7 +346,7 @@ describe('PatternSurface', () => {
       const x = shiftX + column * 20 + 10
       const y = row * pitch + 10
       const border = GRID_BORDER_PX * zoom
-      return pattern.rotated
+      return pattern.rotation === 90
         ? { clientX: border + (Math.round((pattern.technique === 'loom' ? pattern.rows * 20 : pattern.rows * pitch + (20 - pitch)) - y) * zoom), clientY: border + x * zoom }
         : { clientX: border + x * zoom, clientY: border + y * zoom }
     }
@@ -488,7 +488,7 @@ describe('PatternSurface', () => {
     })
 
     it('works out the bead of a rotated Pattern', async () => {
-      const pattern = patternOf(20, 10, { rotated: true })
+      const pattern = patternOf(20, 10, { rotation: 90 })
       const { wrapper } = await mountSurface(pattern)
 
       await wrapper.find('[data-testid="pattern-surface"]').trigger('pointerdown', { ...centreOf(pattern, 2, 15), button: 0, buttons: 1 })

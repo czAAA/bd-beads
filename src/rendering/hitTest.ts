@@ -27,16 +27,28 @@ import {
  * Pattern is rotated) measured from its first bead's top-left, which is where a surface's own coordinates start.
  */
 export function beadAt(
-  pattern: Pick<DrawnPattern, 'technique' | 'columns' | 'rows' | 'rotated'>,
+  pattern: Pick<DrawnPattern, 'technique' | 'columns' | 'rows' | 'rotation'>,
   point: { x: number; y: number },
   zoom: number,
 ): GridPosition | undefined {
   const { technique, columns, rows } = pattern
   const extent = patternExtentPx(technique, columns, rows)
 
-  // Back into the Pattern's own space: a quarter turn carried (x, y) to (height − y, x), so undo that.
-  const gridX = pattern.rotated ? point.y / zoom : point.x / zoom
-  const gridY = pattern.rotated ? extent.height - point.x / zoom : point.y / zoom
+  // Back into the Pattern's own space: undo whichever quarter turn is on (see gridToRegion's own forward version).
+  const [gridX, gridY] = ((): [number, number] => {
+    const x = point.x / zoom
+    const y = point.y / zoom
+    switch (pattern.rotation) {
+      case 90:
+        return [y, extent.height - x]
+      case 180:
+        return [extent.width - x, extent.height - y]
+      case 270:
+        return [extent.width - y, x]
+      default:
+        return [x, y]
+    }
+  })()
   if (gridX < 0 || gridY < 0 || gridY >= extent.height) {
     return undefined
   }

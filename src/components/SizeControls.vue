@@ -27,7 +27,7 @@ const estimate = computed(() => {
     return undefined
   }
   return formatSizeMm(
-    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotated: props.pattern.rotated }, bead.value),
+    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotation: props.pattern.rotation }, bead.value),
     unitLabels.value,
     locale.value,
   )

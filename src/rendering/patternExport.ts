@@ -50,9 +50,9 @@ const STRIP_PIXELS = 1_000_000
 const PNG_STORY_RESERVE_PIXELS = 2_500_000
 
 /** How far to enlarge the Pattern for a PNG: to a legible bead size, and no further than the pixel budget (less the story's own room) allows. */
-export function pngZoom(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotated'>): number {
+export function pngZoom(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>): number {
   const wanted = PNG_BEAD_PX / CELL_SIZE_PX
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotated)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
   if (width === 0 || height === 0) {
     return wanted
   }
@@ -75,7 +75,7 @@ export function pngZoom(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' 
 export async function exportPatternPng(source: Pattern, words: PrintText): Promise<Blob> {
   const pattern = forExport(source)
   const zoom = pngZoom(pattern)
-  const displayed = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotated)
+  const displayed = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
   const chart = { width: Math.ceil(displayed.width) + PNG_MARGIN_PX * 2, height: Math.ceil(displayed.height) + PNG_MARGIN_PX * 2 }
   // Loaded when a PNG is asked for: the story's words and the mark it reads from the design system aren't needed before.
   const { clipToPngBoard, drawPngBackground, drawPngStory, pngLayout } = await import('./pngPage')

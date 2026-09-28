@@ -1,3 +1,4 @@
+import { rotationSwapsAxes } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
 export interface ThumbnailImage {
@@ -21,7 +22,9 @@ function rgb(hex: string): [number, number, number] | undefined {
  * it, so a Pattern of any size costs at most size × size lookups (ADR 0019: no size limit).
  */
 export function thumbnailPixels(pattern: Pattern, size: number): ThumbnailImage {
-  const [across, down] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  const { columns, rows } = pattern
+  const swapped = rotationSwapsAxes(pattern.rotation)
+  const [across, down] = swapped ? [rows, columns] : [columns, rows]
   const scale = size / Math.max(across, down)
   const width = Math.max(1, Math.round(across * scale))
   const height = Math.max(1, Math.round(down * scale))
@@ -32,8 +35,19 @@ export function thumbnailPixels(pattern: Pattern, size: number): ThumbnailImage 
     const shownRow = Math.min(down - 1, Math.floor(y / scale))
     for (let x = 0; x < width; x += 1) {
       const shownColumn = Math.min(across - 1, Math.floor(x / scale))
-      // Rotated a quarter clockwise: what shows at (row, column) is grid row (rows - 1 - column), column row.
-      const [row, column] = pattern.rotated ? [pattern.rows - 1 - shownColumn, shownRow] : [shownRow, shownColumn]
+      // Undo the quarter turn on: what shows at (shownRow, shownColumn) is grid (row, column) per gridToRegion's own forward mapping.
+      const [row, column] = ((): [number, number] => {
+        switch (pattern.rotation) {
+          case 90:
+            return [rows - 1 - shownColumn, shownRow]
+          case 180:
+            return [rows - 1 - shownRow, columns - 1 - shownColumn]
+          case 270:
+            return [shownColumn, columns - 1 - shownRow]
+          default:
+            return [shownRow, shownColumn]
+        }
+      })()
       const hex = pattern.grid[row]?.[column]?.color
       if (!hex) continue
       if (!colors.has(hex)) colors.set(hex, rgb(hex))

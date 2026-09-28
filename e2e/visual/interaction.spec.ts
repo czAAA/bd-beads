@@ -29,7 +29,7 @@ async function savedPattern(page: Page) {
 
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
 async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomPercent: number, row: number, column: number) {
-  return beadCentre({ technique, rotated }, await gridBox(page), zoomPercent / 100, { row, column })
+  return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
 const colorAt = (pattern: Awaited<ReturnType<typeof savedPattern>>, row: number, column: number) => pattern.grid[row]![column]!.color
@@ -47,7 +47,7 @@ test.describe('the hover preview', () => {
       const orientation = rotated ? 'rotated' : 'upright'
 
       test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-        const pattern = fixturePattern({ technique: scenario.technique, rotated })
+        const pattern = fixturePattern({ technique: scenario.technique, rotation: rotated ? 90 : 0 })
         await openApp(page, [pattern])
         if (scenario.tool) {
           await page.getByTestId(scenario.tool).click()
@@ -80,7 +80,7 @@ test.describe('the hover preview', () => {
 
 test.describe('the pointer tools', () => {
   async function openBlank(page: Page, technique: Technique = 'loom', rotated = false, extra: Parameters<typeof fixturePattern>[0] = { technique }) {
-    const pattern = fixturePattern({ ...extra, technique, rotated, blank: true })
+    const pattern = fixturePattern({ ...extra, technique, rotation: rotated ? 90 : 0, blank: true })
     await openApp(page, [pattern])
     await setZoom(page, 100)
     return pattern

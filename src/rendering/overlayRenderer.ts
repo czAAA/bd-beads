@@ -381,7 +381,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
 
   const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-  setGridTransform(context, extent, region, zoom, pattern.rotated, pixelRatio)
+  setGridTransform(context, extent, region, zoom, pattern.rotation, pixelRatio)
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 

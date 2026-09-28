@@ -14,7 +14,7 @@
         "currentRow": 0,
         "currentColumn": 0
       },
-      "rotated": false,
+      "rotation": 0,
       "createdAt": 1710000000000,
       "updatedAt": 1710000001000,
       "cells": {
@@ -39,7 +39,7 @@
         "currentRow": 2,
         "currentColumn": 1
       },
-      "rotated": true,
+      "rotation": 90,
       "imageColors": [
         "#c81e3c",
         "#1e64c8"

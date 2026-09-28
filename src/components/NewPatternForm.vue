@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel, type Bead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
 import type { SizeUnit, Technique } from '../domain/grid'
@@ -114,6 +114,10 @@ const estimate = computed(() => {
   }
   return t.value.form.estimateBeads.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
 })
+
+/** Ticket 170: the same "this is an estimate, not a measurement" explanation Size gives, on hover/focus of an info button beside it. */
+const estimateTooltipId = useId()
+const estimateTipOpen = ref(false)
 
 /** Which size fields have been left once, so their errors wait until then rather than greeting an empty form. */
 const touched = ref({ width: false, height: false })
@@ -287,7 +291,37 @@ function onDropImage(file: File) {
       </FormField>
     </div>
 
-    <FormField :label="t.form.unitLabel" label-id="unit-label" :aside="estimate">
+    <FormField :label="t.form.unitLabel" label-id="unit-label">
+      <template v-if="estimate" #aside>
+        <span class="new-pattern-form__estimate">
+          <span data-testid="new-pattern-estimate-text">{{ estimate }}</span>
+          <span class="new-pattern-form__estimate-info-wrap">
+            <button
+              type="button"
+              class="new-pattern-form__estimate-info"
+              data-testid="new-pattern-estimate-info"
+              :aria-label="t.size.estimateInfoButton"
+              :aria-describedby="estimateTooltipId"
+              @mouseenter="estimateTipOpen = true"
+              @mouseleave="estimateTipOpen = false"
+              @focus="estimateTipOpen = true"
+              @blur="estimateTipOpen = false"
+              @keydown.escape="estimateTipOpen = false"
+            >
+              <AppIcon name="info" :size="14" />
+            </button>
+            <span
+              v-show="estimateTipOpen"
+              :id="estimateTooltipId"
+              role="tooltip"
+              class="new-pattern-form__estimate-tooltip"
+              data-testid="new-pattern-estimate-tooltip"
+            >
+              {{ t.size.estimateWarning }}
+            </span>
+          </span>
+        </span>
+      </template>
       <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="unit-label" data-testid="unit-select" />
     </FormField>
 
@@ -397,5 +431,60 @@ function onDropImage(file: File) {
 
 .new-pattern-form__error > .icon {
   margin-top: var(--space-2);
+}
+
+/* The Unit field's aside (ticket 170): the size in the other unit, plus Size's own "estimate, not a measurement" info tooltip. */
+.new-pattern-form__estimate {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.new-pattern-form__estimate-info-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.new-pattern-form__estimate-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--expand-size);
+  height: var(--expand-size);
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: help;
+}
+
+@media (hover: hover) {
+  .new-pattern-form__estimate-info:hover {
+    color: var(--ink);
+    background: var(--hover-fill);
+  }
+}
+
+.new-pattern-form__estimate-info:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.new-pattern-form__estimate-tooltip {
+  position: absolute;
+  top: calc(100% + var(--space-6));
+  right: 0;
+  z-index: var(--z-tooltip);
+  box-sizing: border-box;
+  width: var(--tooltip-wide);
+  padding: var(--space-6) var(--space-8);
+  font: var(--type-small);
+  line-height: 1rem;
+  color: var(--canvas);
+  text-transform: none;
+  white-space: normal;
+  background: var(--ink);
+  border-radius: var(--radius-sm);
 }
 </style>

@@ -35,7 +35,7 @@ for (const scenario of scenarios) {
     const orientation = rotated ? 'rotated' : 'upright'
 
     test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-      const pattern = fixturePattern({ technique: scenario.technique, rotated, rowProgress: scenario.rowProgress })
+      const pattern = fixturePattern({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
       await openApp(page, [pattern])
       await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
 

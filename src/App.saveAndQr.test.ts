@@ -241,7 +241,7 @@ describe('App QR export (ticket 116)', () => {
 
     await pressKey({ key: 'r' })
 
-    expect(loadPatterns()[0]!.rotated).toBe(false)
+    expect(loadPatterns()[0]!.rotation).toBe(0)
   })
 
   it('turns the menu item off for a Pattern too large for a QR code, with the reason under it', async () => {

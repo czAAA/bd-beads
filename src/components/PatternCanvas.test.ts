@@ -28,7 +28,7 @@ function boxSize(wrapper: ReturnType<typeof mount>) {
 describe('PatternCanvas', () => {
   it('turns the rotated/scaled element 90° as a plain view transform, without touching its own box size (ticket 28)', () => {
     const wrapper = mount(PatternCanvas, {
-      props: { pattern: { ...pattern(30, 7.5), rotated: true }, zoom: 1 },
+      props: { pattern: { ...pattern(30, 7.5), rotation: 90 }, zoom: 1 },
     })
 
     expect(wrapper.find('.pattern-canvas__rotate').attributes('style')).toContain('rotate(90deg)')
@@ -160,7 +160,7 @@ describe('PatternCanvas drawing the Pattern on a Drawing surface (ticket 105)', 
   })
 
   it('puts the surface one ruler gutter in from the box\'s corner, outside the transform that zooms and turns the rulers', () => {
-    const wrapper = mount(PatternCanvas, { props: { pattern: { ...pattern(30, 7.5), rotated: true }, zoom: 1 } })
+    const wrapper = mount(PatternCanvas, { props: { pattern: { ...pattern(30, 7.5), rotation: 90 }, zoom: 1 } })
 
     const layer = wrapper.find('.pattern-canvas__surface-layer')
     expect(layer.attributes('style')).toContain(`left: ${RULER_GUTTER_PX}px`)

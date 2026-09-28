@@ -139,7 +139,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     await info.trigger('mouseenter')
     expect(shown()).toBe(true)
     expect(tooltip.text()).toBe(
-      'Estimated weight: bead count × about 0.0091 g per bead. That average is preliminary, taken from seller listings and not yet confirmed. Real beads vary by color and finish, so buy a little extra.',
+      'This is bead count × about 0.0091 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
     )
     await info.trigger('mouseleave')
     expect(shown()).toBe(false)

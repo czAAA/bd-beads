@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
-import { isOffsetTechnique } from '../domain/grid'
+import { isOffsetTechnique, rotationSwapsAxes } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { thumbnailPixels } from '../rendering/patternThumbnail'
 import { useI18n } from '../i18n/useI18n'
@@ -54,11 +54,14 @@ watch(
   },
 )
 
+/** Whether the current rotation swaps which grid axis (columns/rows) is view space's across/down, the same quarter-turn rule every other axis mapping in the app follows (ticket 171: unaffected at 180°, swapped at 90°/270°). */
+const swapped = computed(() => rotationSwapsAxes(props.pattern.rotation))
+
 /** View space (as drawn): across/down swap with grid columns/rows under rotation, the same way thumbnailPixels itself does. */
-const viewAcross = computed(() => (props.pattern.rotated ? props.pattern.rows : props.pattern.columns))
-const viewDown = computed(() => (props.pattern.rotated ? props.pattern.columns : props.pattern.rows))
-const targetAcross = computed(() => (props.pattern.rotated ? props.targetRows : props.targetColumns))
-const targetDown = computed(() => (props.pattern.rotated ? props.targetColumns : props.targetRows))
+const viewAcross = computed(() => (swapped.value ? props.pattern.rows : props.pattern.columns))
+const viewDown = computed(() => (swapped.value ? props.pattern.columns : props.pattern.rows))
+const targetAcross = computed(() => (swapped.value ? props.targetRows : props.targetColumns))
+const targetDown = computed(() => (swapped.value ? props.targetColumns : props.targetRows))
 
 /** The frame's own CSS pixel size — the same "fit the longer side" scaling thumbnailPixels uses for its canvas, worked out here too so a pointer position can be read against it without measuring the rendered element. */
 const scale = computed(() => PREVIEW_SIZE / Math.max(viewAcross.value, viewDown.value))
@@ -97,13 +100,13 @@ function onPointer(event: PointerEvent) {
   // The pointer's cell position, centered on the target window it would land -- so the window follows the pointer rather than always starting at it.
   const acrossCell = ((event.clientX - rect.left) / displayWidth.value) * viewAcross.value - targetAcross.value / 2
   const downCell = ((event.clientY - rect.top) / displayHeight.value) * viewDown.value - targetDown.value / 2
-  const [columns, rows] = props.pattern.rotated ? [downCell, acrossCell] : [acrossCell, downCell]
+  const [columns, rows] = swapped.value ? [downCell, acrossCell] : [acrossCell, downCell]
 
   offset.value = { columns: clamp(Math.round(columns), maxColumnsOffset.value), rows: snapRowsOffset(rows) }
 }
 
-const acrossOffset = computed(() => (props.pattern.rotated ? offset.value.rows : offset.value.columns))
-const downOffset = computed(() => (props.pattern.rotated ? offset.value.columns : offset.value.rows))
+const acrossOffset = computed(() => (swapped.value ? offset.value.rows : offset.value.columns))
+const downOffset = computed(() => (swapped.value ? offset.value.columns : offset.value.rows))
 
 const keptStyle = computed(() => ({
   left: `${(acrossOffset.value / viewAcross.value) * 100}%`,

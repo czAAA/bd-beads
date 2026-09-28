@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import PatternSurface from '../components/PatternSurface.vue'
-import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell } from '../domain/grid'
+import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Selection } from '../domain/selection'
 import { patternExtentPx, rowShiftPx, rowTopPx } from '../rendering/patternRenderer'
 
@@ -50,17 +50,29 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   const technique = root.attributes('data-technique') as 'loom' | 'peyote' | 'brick'
   const columns = Number(root.attributes('data-columns'))
   const rows = Number(root.attributes('data-rows'))
-  const rotated = root.attributes('data-rotated') === 'true'
+  const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
   const { row, column } = positionOf(wrapper, at)
 
   const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2
   const y = rowTopPx(technique, row) + CELL_SIZE_PX / 2
   const border = GRID_BORDER_PX * zoom
-  // A quarter turn clockwise carries the Pattern's own (x, y) to (height − y, x).
-  return rotated
-    ? { clientX: border + (patternExtentPx(technique, columns, rows).height - y) * zoom, clientY: border + x * zoom }
-    : { clientX: border + x * zoom, clientY: border + y * zoom }
+  const extent = patternExtentPx(technique, columns, rows)
+  // Each quarter turn clockwise carries the Pattern's own (x, y) to (height − y, x); composing that with itself
+  // gives 180° and 270° (ticket 171), the same forward mapping patternRenderer's gridToRegion uses.
+  const [dx, dy] = ((): [number, number] => {
+    switch (rotation) {
+      case 90:
+        return [extent.height - y, x]
+      case 180:
+        return [extent.width - x, extent.height - y]
+      case 270:
+        return [y, extent.width - x]
+      default:
+        return [x, y]
+    }
+  })()
+  return { clientX: border + dx * zoom, clientY: border + dy * zoom }
 }
 
 /** Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the test, as it is up to a hand. */

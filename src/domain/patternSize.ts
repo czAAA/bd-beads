@@ -1,5 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
-import { computeGridDimensions, toMillimeters, type GridDimensions, type SizeUnit } from './grid'
+import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
 import type { Locale } from '../i18n/translations'
 
 /** A size as the New Pattern form states it: a number of beads across and down, or a real-world size in mm/cm. */
@@ -36,12 +36,12 @@ export interface EstimatedSizeMm {
  * other than about 30mm. Deliberately not Technique-aware: it ignores peyote's tighter row packing, thread slack and
  * tension, which is why it is only ever shown as an estimate.
  *
- * Width and height follow the rotated view, the way summarizePattern's do: rotating swaps them.
+ * Width and height follow the rotated view, the way summarizePattern's do: a quarter turn either way swaps them.
  */
-export function estimatedSizeMm(pattern: GridDimensions & { rotated?: boolean }, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(pattern: GridDimensions & { rotation?: Rotation }, bead: Bead): EstimatedSizeMm {
   const widthMm = pattern.columns * beadPitchMm(bead)
   const heightMm = pattern.rows * bead.heightMm
-  return pattern.rotated ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
+  return pattern.rotation !== undefined && rotationSwapsAxes(pattern.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 
 export interface SizeUnitLabels {

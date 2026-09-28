@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom } from '../domain/grid'
+import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom, rotationSwapsAxes } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { patternExtentPx } from '../rendering/patternRenderer'
 
@@ -46,8 +46,9 @@ export function usePatternZoom(
     // The drawn extent (the Pattern renderer's), not the layout maths': brick stitch's rows are a seam further apart.
     // columns/rows/technique stay the Pattern's real (unrotated) geometry; a rotated Pattern's height is drawn across.
     const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-    const across = pattern.rotated ? extent.height : extent.width
-    const down = pattern.rotated ? extent.width : extent.height
+    const swapped = rotationSwapsAxes(pattern.rotation)
+    const across = swapped ? extent.height : extent.width
+    const down = swapped ? extent.width : extent.height
 
     const byWidth = fitAlong(availableWidth.value || CANVAS_MAX_PX, FIT_SPARE_X_PX, across)
     const byHeight = availableHeight.value > 0 ? fitAlong(availableHeight.value, FIT_SPARE_Y_PX, down) : Infinity

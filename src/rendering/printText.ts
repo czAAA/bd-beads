@@ -1,5 +1,6 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
+import { rotationSwapsAxes } from '../domain/grid'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
@@ -45,7 +46,7 @@ export function headerMaker(maker: string): string {
 
 export function printText(pattern: Pattern, t: Translations, locale: Locale, maker: string, at: Date): PrintText {
   const bead = resolvePatternBead(pattern)
-  const [across, down] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  const [across, down] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(pattern, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead) : t.patterns.unknownBeadLabel

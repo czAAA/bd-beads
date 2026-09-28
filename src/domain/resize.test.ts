@@ -74,7 +74,7 @@ describe('resizePattern from the end', () => {
     expect(resized.name).toBe(before.name)
     expect(resized.technique).toBe(before.technique)
     expect(resized.beadId).toBe(before.beadId)
-    expect(resized.rotated).toBe(true)
+    expect(resized.rotation).toBe(90)
     expect(resized.imageColors).toEqual(['#ff0000'])
     expect(resized.updatedAt).toBeGreaterThan(0)
   })
@@ -297,7 +297,7 @@ describe('removeSelectedLine (ticket 123)', () => {
 
     expect(removed.id).toBe(before.id)
     expect(removed.technique).toBe(before.technique)
-    expect(removed.rotated).toBe(true)
+    expect(removed.rotation).toBe(90)
     expect(removed.imageColors).toEqual(['#ff0000'])
     expect(removed.updatedAt).toBeGreaterThan(0)
   })

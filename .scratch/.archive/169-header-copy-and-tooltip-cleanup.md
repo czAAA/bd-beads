@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] "Currently editing" label no longer renders anywhere in the header
 - [ ] Empty-canvas placeholder reads "Make one with New Pattern, open a Saved Pattern, or import a file."

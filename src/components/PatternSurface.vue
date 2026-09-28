@@ -90,7 +90,7 @@ const MARGIN_PX = 160
 const WHOLE_PATTERN_MAX_DEVICE_PX = 10_000_000
 
 const displayed = computed(() =>
-  displayedExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows, props.zoom, props.pattern.rotated),
+  displayedExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows, props.zoom, props.pattern.rotation),
 )
 
 /** The board's padding round the beads is in the Pattern's own px, so it scales with the zoom like the beads do. */
@@ -236,7 +236,7 @@ function sameLayout(a: Pattern, b: Pattern): boolean {
     a.technique === b.technique &&
     a.columns === b.columns &&
     a.rows === b.rows &&
-    a.rotated === b.rotated &&
+    a.rotation === b.rotation &&
     progress(a).enabled === progress(b).enabled &&
     progress(a).direction === progress(b).direction &&
     progress(a).currentRow === progress(b).currentRow &&
@@ -501,7 +501,7 @@ defineExpose({ update })
     :data-technique="pattern.technique"
     :data-columns="pattern.columns"
     :data-rows="pattern.rows"
-    :data-rotated="pattern.rotated"
+    :data-rotation="pattern.rotation"
     :data-zoom="zoom"
     :class="{ 'pattern-surface--over-bead': overBead }"
     :style="rootStyle"

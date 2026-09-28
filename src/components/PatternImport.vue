@@ -6,6 +6,7 @@ import { importPatterns, parsePatternsFile } from '../domain/patternFile'
 import { parsePatternFromQrImage } from '../domain/qrExport'
 import { useI18n } from '../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -113,47 +114,64 @@ async function onImportQrImage(event: Event): Promise<void> {
 
 <template>
   <!--
-    Both Import controls and their outcome (tickets 117, 142): from a Pattern file, and from a QR-code picture. Each is a
-    text button (Button card) that is a label around a visually hidden file input, so the browser's own file picker
-    opens from it, and keyboard focus on the input shows on the label. A fragment, so the controls and their one-line
-    result sit in the header's own row.
+    Both Import controls and their outcome (tickets 117, 142, 169): from a Pattern file, and from a QR-code picture.
+    Each is a text button (Button card) that is a label around a visually hidden file input, so the browser's own
+    file picker opens from it, and keyboard focus on the input shows on the label. Icon-only (`compact`) wraps the
+    same label in the design system's own Tooltip instead of a native `title`, so its background matches every other
+    icon control's. A fragment, so the controls and their one-line result sit in the header's own row.
   -->
-  <label
-    class="pattern-import__button"
-    :class="{ 'pattern-import__button--compact': compact }"
-    :for="fileInputId"
-    :title="compact ? t.transfer.importLabel : undefined"
-  >
+  <AppTooltip v-if="compact" :text="t.transfer.importLabel" :announce="false">
+    <label class="pattern-import__button pattern-import__button--compact" :for="fileInputId">
+      <input
+        :id="fileInputId"
+        type="file"
+        class="pattern-import__input"
+        accept="application/json,.json"
+        :data-testid="`${testidPrefix}import-file`"
+        :aria-label="t.transfer.importLabel"
+        @change="onImportFile"
+      />
+      <AppIcon name="import" :size="15" />
+    </label>
+  </AppTooltip>
+  <label v-else class="pattern-import__button" :for="fileInputId">
     <input
       :id="fileInputId"
       type="file"
       class="pattern-import__input"
       accept="application/json,.json"
       :data-testid="`${testidPrefix}import-file`"
-      :aria-label="compact ? t.transfer.importLabel : undefined"
       @change="onImportFile"
     />
     <AppIcon name="import" :size="15" />
-    <span v-if="!compact">{{ t.transfer.importLabel }}</span>
+    <span>{{ t.transfer.importLabel }}</span>
   </label>
 
-  <label
-    class="pattern-import__button"
-    :class="{ 'pattern-import__button--compact': compact }"
-    :for="qrInputId"
-    :title="compact ? t.transfer.importQrLabel : undefined"
-  >
+  <AppTooltip v-if="compact" :text="t.transfer.importQrLabel" :announce="false">
+    <label class="pattern-import__button pattern-import__button--compact" :for="qrInputId">
+      <input
+        :id="qrInputId"
+        type="file"
+        class="pattern-import__input"
+        accept="image/*"
+        :data-testid="`${testidPrefix}import-qr`"
+        :aria-label="t.transfer.importQrLabel"
+        @change="onImportQrImage"
+      />
+      <AppIcon name="scan" :size="15" />
+    </label>
+  </AppTooltip>
+  <label v-else class="pattern-import__button" :for="qrInputId">
     <input
       :id="qrInputId"
       type="file"
       class="pattern-import__input"
       accept="image/*"
       :data-testid="`${testidPrefix}import-qr`"
-      :aria-label="compact ? t.transfer.importQrLabel : undefined"
       @change="onImportQrImage"
     />
     <AppIcon name="scan" :size="15" />
-    <span v-if="!compact">{{ t.transfer.importQrLabel }}</span>
+    <span>{{ t.transfer.importQrLabel }}</span>
   </label>
 
   <!--

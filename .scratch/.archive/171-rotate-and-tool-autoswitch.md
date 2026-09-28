@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Rotate button cycles 0° → 90° → 180° → 270° → 0°
 - [ ] Estimated real-world size swaps width/height correctly at each quarter turn

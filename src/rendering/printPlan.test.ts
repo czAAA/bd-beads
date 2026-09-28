@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { CELL_SIZE_PX } from '../domain/grid'
-import type { Technique } from '../domain/grid'
+import { CELL_SIZE_PX, rotationSwapsAxes } from '../domain/grid'
+import type { Rotation, Technique } from '../domain/grid'
 import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM } from './printPlan'
 import { displayedExtentPx } from './patternRenderer'
 
-const shape = (technique: Technique, columns: number, rows: number, rotated = false) => ({ technique, columns, rows, rotated })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
 const beadMm = (zoom: number) => (CELL_SIZE_PX * zoom) / mm(1)
 
 describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
@@ -32,7 +32,7 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
 
     expect(beadMm(plan.zoom)).toBeGreaterThan(PRINT_BEAD_BASE_MM)
     expect(beadMm(plan.zoom)).toBeLessThanOrEqual(PRINT_BEAD_MAX_MM)
-    const part = displayedExtentPx('loom', 30, 40, plan.zoom, false)
+    const part = displayedExtentPx('loom', 30, 40, plan.zoom, 0)
     expect(part.width).toBeLessThanOrEqual(area.width + 1e-6)
     expect(part.height).toBeLessThanOrEqual(area.height + 1e-6)
     // It fills the page one way or the other.
@@ -46,14 +46,16 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_BEAD_MAX_MM, 6)
   })
 
-  it.each<[Technique, number, number, boolean]>([
-    ['peyote', 250, 250, false],
-    ['brick', 120, 120, false],
-    ['loom', 100, 20, true],
-  ])('covers every bead of a %s %s×%s Pattern (turned: %s) with parts that each fit a page', (technique, columns, rows, rotated) => {
-    const plan = planPrint(shape(technique, columns, rows, rotated))
+  it.each<[Technique, number, number, Rotation]>([
+    ['peyote', 250, 250, 0],
+    ['brick', 120, 120, 0],
+    ['loom', 100, 20, 90],
+    ['loom', 100, 20, 180],
+    ['loom', 100, 20, 270],
+  ])('covers every bead of a %s %s×%s Pattern (rotation: %s°) with parts that each fit a page', (technique, columns, rows, rotation) => {
+    const plan = planPrint(shape(technique, columns, rows, rotation))
     const area = chartArea(plan.page)
-    const [across, down] = rotated ? [rows, columns] : [columns, rows]
+    const [across, down] = rotationSwapsAxes(rotation) ? [rows, columns] : [columns, rows]
 
     expect(plan.parts).toHaveLength(plan.partsAcross * plan.partsDown)
     expect(plan.parts.at(-1)!.lastAcross).toBe(across - 1)

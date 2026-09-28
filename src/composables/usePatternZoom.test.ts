@@ -180,7 +180,7 @@ describe('usePatternZoom', () => {
 describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
   it('fits a rotated one by the height that is drawn, seams included', () => {
     const brick = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 150, unit: 'mm' } })
-    brick.rotated = true
+    brick.rotation = 90
     const available = 900
     const { zoom } = usePatternZoom(() => brick, ref(available))
 

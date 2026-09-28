@@ -1,9 +1,12 @@
 import { beadLabel, findBead, type Bead } from './beads'
 import {
   neighborsOf,
+  nextRotation as nextRotationOf,
   positionKey,
+  rotationSwapsAxes,
   type GridDimensions,
   type GridPosition,
+  type Rotation,
   type Technique,
 } from './grid'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -11,7 +14,7 @@ import { gridFromSize, type StatedSize } from './patternSize'
 
 export type { MirrorAxisCounts } from './mirror'
 
-export type { Technique } from './grid'
+export type { Rotation, Technique } from './grid'
 
 export interface Cell {
   color: string | null
@@ -21,8 +24,8 @@ export type Grid = Cell[][]
 
 /**
  * Which way the weaver's rows run across the grid (ticket 32): along the grid's rows, or down its columns. Separate
- * from Pattern.rotated, which only turns the picture: after rotating, the grid's columns are what run across the
- * screen, so the weaver flips this too, but neither setting ever changes the other.
+ * from Pattern.rotation, which only turns the picture: rotating changes which grid axis runs across the screen, so
+ * the weaver flips this too, but neither setting ever changes the other.
  */
 export type RowDirection = 'rows' | 'columns'
 
@@ -50,13 +53,13 @@ export interface Pattern {
   grid: Grid
   rowProgress: RowProgress
   /**
-   * A view-only orientation flip (ticket 28): true shows the Pattern turned 90°, like a rotated photo. Purely
-   * cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only the on-screen (and
-   * printed/exported) presentation turns. Deliberately not a data transform: for Peyote/Brick, the offset stagger is
-   * tied to weave direction, so actually transposing the grid would change which cells are adjacent — a different,
-   * unweavable schema, not the same picture turned sideways.
+   * A view-only orientation turn (tickets 28, 171): shows the Pattern turned this many degrees clockwise, like a
+   * rotated photo. Purely cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only
+   * the on-screen (and printed/exported) presentation turns. Deliberately not a data transform: for Peyote/Brick, the
+   * offset stagger is tied to weave direction, so actually transposing the grid would change which cells are
+   * adjacent — a different, unweavable schema, not the same picture turned sideways.
    */
-  rotated: boolean
+  rotation: Rotation
   /**
    * The colors one Convert image found (CONTEXT.md's Image colors, ADR 0011), offered in the Colors group alongside
    * the Palette while this Pattern is open. Absent on a Pattern created any other way — which is most of them, hence
@@ -136,7 +139,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     rows,
     grid: createEmptyGrid(columns, rows),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
-    rotated: false,
+    rotation: 0,
     createdAt: now,
     updatedAt: now,
   }
@@ -185,9 +188,25 @@ function clampRow(row: number, rows: number): number {
 
 /**
  * A Pattern as an older version of the app may have saved it: still carrying the color-to-bead override field ADR
- * 0007/ticket 36 dropped, and the stored real-world size (`widthMm`/`heightMm`) ADR 0017 dropped.
+ * 0007/ticket 36 dropped, the stored real-world size (`widthMm`/`heightMm`) ADR 0017 dropped, and rotation as
+ * ticket 28's two-position `rotated` boolean rather than ticket 171's four-position `rotation`.
  */
-type PatternWithLegacyFields = Pattern & { colorBeadOverrides?: unknown; widthMm?: unknown; heightMm?: unknown }
+type PatternWithLegacyFields = Pattern & {
+  colorBeadOverrides?: unknown
+  widthMm?: unknown
+  heightMm?: unknown
+  rotated?: unknown
+}
+
+const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270]
+
+/** `rotation` as ticket 171 shipped it, or ticket 28's `rotated` boolean read as its nearest quarter turn, or upright for a Pattern from before either existed. */
+function normalizeRotation(pattern: PatternWithLegacyFields): Rotation {
+  if (typeof pattern.rotation === 'number' && (ROTATIONS as readonly number[]).includes(pattern.rotation)) {
+    return pattern.rotation
+  }
+  return pattern.rotated ? 90 : 0
+}
 
 /**
  * Fills in fields added after a Pattern was first saved, re-clamps the row pointer, and drops the fields nothing
@@ -197,12 +216,14 @@ type PatternWithLegacyFields = Pattern & { colorBeadOverrides?: unknown; widthMm
  */
 export function normalizePattern(pattern: Pattern): Pattern {
   const rowProgress = pattern.rowProgress ?? { enabled: false, currentRow: 0 }
+  const legacy = pattern as PatternWithLegacyFields
   const {
     colorBeadOverrides: _legacyOverrides,
     widthMm: _legacyWidthMm,
     heightMm: _legacyHeightMm,
+    rotated: _legacyRotated,
     ...rest
-  } = pattern as PatternWithLegacyFields
+  } = legacy
 
   return {
     ...rest,
@@ -212,7 +233,7 @@ export function normalizePattern(pattern: Pattern): Pattern {
       currentRow: clampRow(rowProgress.currentRow, pattern.rows),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, pattern.columns),
     },
-    rotated: pattern.rotated ?? false,
+    rotation: normalizeRotation(legacy),
   }
 }
 
@@ -221,9 +242,9 @@ export function setRowProgressEnabled(pattern: Pattern, enabled: boolean): Patte
   return touch(pattern, { rowProgress: { ...pattern.rowProgress, enabled } })
 }
 
-/** Flips the view-only rotated flag (see Pattern.rotated) — turns the Pattern's on-screen presentation 90°, like rotating a photo, without touching the grid itself. */
+/** Steps the view-only rotation (see Pattern.rotation) one quarter turn clockwise, wrapping 270° back to 0° (ticket 171) — like rotating a photo, without touching the grid itself. */
 export function toggleRotated(pattern: Pattern): Pattern {
-  return touch(pattern, { rotated: !pattern.rotated })
+  return touch(pattern, { rotation: nextRotationOf(pattern.rotation) })
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
@@ -593,7 +614,7 @@ export function changedCells(before: Grid, after: Grid): GridPosition[] {
 
 /** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated); reflects the rotated view's swapped dimensions, since that's how the Pattern currently looks. */
 export function summarizePattern(pattern: Pattern): string {
-  const [width, height] = pattern.rotated ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  const [width, height] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   return `${pattern.name} · ${width}×${height}`
 }
 

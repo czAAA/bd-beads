@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { rotationSwapsAxes } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { summarizePattern } from '../domain/pattern'
 import { downloadFile } from '../domain/fileDownload'
@@ -44,7 +45,7 @@ const activePattern = computed(() => props.patterns.find((pattern) => pattern.id
 
 /** A thumbnail's size line, as the Pattern shows on screen. */
 function sizeOf(pattern: Pattern): string {
-  return pattern.rotated ? `${pattern.rows}×${pattern.columns}` : `${pattern.columns}×${pattern.rows}`
+  return rotationSwapsAxes(pattern.rotation) ? `${pattern.rows}×${pattern.columns}` : `${pattern.columns}×${pattern.rows}`
 }
 
 /** Export pattern (ticket 118): the open Pattern as a Pattern file. */

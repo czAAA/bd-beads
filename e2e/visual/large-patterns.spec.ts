@@ -33,7 +33,7 @@ async function createPattern(page: Page, columns: number, rows: number): Promise
 async function firstBeadPoint(page: Page, row: number, column: number) {
   const zoom = Number.parseInt((await page.getByTestId('zoom-level').textContent())!, 10) / 100
   const box = (await page.getByTestId('pattern-surface').boundingBox())!
-  return beadCentre({ technique: 'loom', rotated: false }, box, zoom, { row, column })
+  return beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
 }
 
 async function savedPattern(page: Page) {

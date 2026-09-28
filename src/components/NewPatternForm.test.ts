@@ -547,12 +547,34 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
     await wrapper.find('[data-testid="width-input"]').setValue('40')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
 
-    expect(wrapper.find('.form-field__aside:not(:empty)').exists()).toBe(true)
-    const asides = wrapper.findAll('.form-field__aside').map((aside) => aside.text())
-    expect(asides.some((text) => text.startsWith('≈') && /cm|mm/.test(text))).toBe(true)
+    const estimateText = () => wrapper.find('[data-testid="new-pattern-estimate-text"]').text()
+    expect(estimateText()).toMatch(/^≈.*(cm|mm)/)
 
     await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-    expect(wrapper.findAll('.form-field__aside').map((aside) => aside.text())).toContain('≈ 27×20 beads')
+    expect(estimateText()).toBe('≈ 27×20 beads')
+  })
+
+  it('explains the estimate in a tooltip on hover and keyboard focus (ticket 170)', async () => {
+    const { en } = await import('../i18n/en')
+    const wrapper = mount(NewPatternForm)
+    await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+    await wrapper.find('[data-testid="width-input"]').setValue('40')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+
+    const info = wrapper.find('[data-testid="new-pattern-estimate-info"]')
+    const tooltip = wrapper.find('[data-testid="new-pattern-estimate-tooltip"]')
+    const shown = () => (tooltip.element as HTMLElement).style.display !== 'none'
+
+    expect(shown()).toBe(false)
+    await info.trigger('mouseenter')
+    expect(shown()).toBe(true)
+    expect(tooltip.text()).toBe(en.size.estimateWarning)
+    await info.trigger('mouseleave')
+    expect(shown()).toBe(false)
+    await info.trigger('focus')
+    expect(shown()).toBe(true)
+    await info.trigger('keydown', { key: 'Escape' })
+    expect(shown()).toBe(false)
   })
 
   it('says Convert image waits for a size, and takes a dropped picture once there is one', async () => {

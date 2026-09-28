@@ -72,7 +72,6 @@ export const en: Translations = {
     heading: 'Saved Patterns',
     newPatternButton: 'New Pattern',
     removeButton: 'Remove',
-    currentLabel: 'Currently editing',
     unknownBeadLabel: 'Unknown bead',
     noSavedPatternsMessage: 'No Patterns saved yet',
     shownOf: '{shown} of {total}',
@@ -86,7 +85,7 @@ export const en: Translations = {
     rowsCount: { one: '{count} row', other: '{count} rows' },
   },
   shell: {
-    canvasPlaceholderHint: 'Make one with New Pattern on the left, open a Saved Pattern, or import a file.',
+    canvasPlaceholderHint: 'Make one with New Pattern, open a Saved Pattern, or import a file.',
     canvasPlaceholder: 'No Pattern open yet',
   },
   storage: {
@@ -151,7 +150,7 @@ export const en: Translations = {
     totalLabel: 'Total',
     weightInfoButton: 'About the estimated weight',
     weightInfo:
-      'Estimated weight: bead count × about {grams} g per bead. That average is preliminary, taken from seller listings and not yet confirmed. Real beads vary by color and finish, so buy a little extra.',
+      'This is bead count × about {grams} g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
@@ -241,7 +240,7 @@ export const en: Translations = {
     estimateLabel: 'Estimated size',
     estimateInfoButton: 'About this estimate',
     estimateWarning:
-      'These sizes are an estimate. We work them out from the size of one bead multiplied by how many beads you have across and down. A real piece often comes out a little different: thread, tension and small differences between beads all add up. Treat it as a guide, not a measurement.',
+      'This is an estimate: bead size × how many beads across and down. Thread, tension and small differences between beads mean a real piece often comes out a little different. Treat it as a guide, not a measurement.',
     lockedReason: 'Turn off Row progress to change the size',
   },
   changeSize: {

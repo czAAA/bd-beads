@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../i18n/useI18n'
+import { rotationSwapsAxes } from '../domain/grid'
 import { maxAxisCount, type MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import AppButton from './AppButton.vue'
@@ -29,17 +30,19 @@ const { t } = useI18n()
 
 /**
  * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
- * Pattern's current view-only rotation (see Pattern.rotated / PatternCanvas.vue): rotating swaps the two, the same
- * relabeling PatternCanvas already does for width/height, never a transform of the counts or grid data themselves.
+ * Pattern's current view-only rotation (see Pattern.rotation / PatternCanvas.vue): a quarter turn either way swaps
+ * the two (180° leaves them as they are), the same relabeling PatternCanvas already does for width/height, never a
+ * transform of the counts or grid data themselves.
  */
-const leftRightAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'rows' : 'columns'))
-const topBottomAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'columns' : 'rows'))
+const swapped = computed(() => rotationSwapsAxes(props.pattern.rotation))
+const leftRightAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'rows' : 'columns'))
+const topBottomAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'columns' : 'rows'))
 
 const leftRightCount = computed(() => props.mirrorAxisCounts[leftRightAxis.value])
 const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value])
 
-const leftRightMax = computed(() => maxAxisCount(props.pattern.rotated ? props.pattern.rows : props.pattern.columns))
-const topBottomMax = computed(() => maxAxisCount(props.pattern.rotated ? props.pattern.columns : props.pattern.rows))
+const leftRightMax = computed(() => maxAxisCount(swapped.value ? props.pattern.rows : props.pattern.columns))
+const topBottomMax = computed(() => maxAxisCount(swapped.value ? props.pattern.columns : props.pattern.rows))
 </script>
 
 <template>

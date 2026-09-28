@@ -29,7 +29,7 @@ function patternOf(technique: Technique, columns: number, rows: number, extra: P
 }
 
 const whole = (pattern: Pattern, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotated)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
   return { x: 0, y: 0, width, height }
 }
 
@@ -55,9 +55,14 @@ describe('Technique geometry', () => {
     expect(patternExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 62 })
   })
 
-  it('swaps the displayed width and height when rotated, and scales them by the zoom', () => {
-    expect(displayedExtentPx('loom', 4, 3, 2, false)).toEqual({ width: 160, height: 120 })
-    expect(displayedExtentPx('loom', 4, 3, 2, true)).toEqual({ width: 120, height: 160 })
+  it('swaps the displayed width and height at a quarter turn either way, and scales them by the zoom', () => {
+    expect(displayedExtentPx('loom', 4, 3, 2, 0)).toEqual({ width: 160, height: 120 })
+    expect(displayedExtentPx('loom', 4, 3, 2, 90)).toEqual({ width: 120, height: 160 })
+    expect(displayedExtentPx('loom', 4, 3, 2, 270)).toEqual({ width: 120, height: 160 })
+  })
+
+  it('leaves the displayed width and height as they are upside down (180°, ticket 171)', () => {
+    expect(displayedExtentPx('loom', 4, 3, 2, 180)).toEqual({ width: 160, height: 120 })
   })
 })
 
@@ -195,10 +200,10 @@ describe('renderPattern', () => {
     expect(named('setTransform').at(-1)!.args).toEqual([2, 0, 0, 2, -0, -0])
   })
 
-  describe('rotated', () => {
+  describe('rotated a quarter clockwise (90°)', () => {
     // 3 columns × 2 rows loom, turned on its side: displayed 40 wide × 60 tall.
     const pattern = patternOf('loom', 3, 2, {
-      rotated: true,
+      rotation: 90,
       grid: [
         [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
         [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
@@ -228,7 +233,71 @@ describe('renderPattern', () => {
     })
 
     it('draws all the same beads as the unrotated Pattern', () => {
-      const upright = { ...pattern, rotated: false }
+      const upright = { ...pattern, rotation: 0 as const }
+
+      expect(beadsDrawn(pattern, whole(pattern))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
+    })
+  })
+
+  describe('upside down (180°, ticket 171)', () => {
+    // 3 columns × 2 rows loom, turned upside down: displayed 60 wide × 40 tall, same as unrotated.
+    const pattern = patternOf('loom', 3, 2, {
+      rotation: 180,
+      grid: [
+        [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
+        [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
+      ],
+    })
+
+    it('reverses both axes without swapping them', () => {
+      const { context, named } = recordingContext()
+
+      renderPattern(context, { pattern, region: whole(pattern), zoom: 1 })
+
+      // Grid (x, y) → (width − x, height − y): the grid's top-left bead ends up at the displayed bottom-right.
+      expect(named('setTransform').at(-1)!.args).toEqual([-1, 0, 0, -1, 60, 40])
+    })
+
+    it('shows the grid\'s top-left corner at the displayed bottom-right', () => {
+      const beads = beadsDrawn(pattern, { x: 43, y: 23, width: 14, height: 14 })
+
+      expect(beads.map(({ color }) => color)).toEqual(['#111111'])
+    })
+
+    it('draws all the same beads as the unrotated Pattern', () => {
+      const upright = { ...pattern, rotation: 0 as const }
+
+      expect(beadsDrawn(pattern, whole(pattern))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
+    })
+  })
+
+  describe('rotated a quarter counterclockwise (270°, ticket 171)', () => {
+    // 3 columns × 2 rows loom, turned the other way on its side: displayed 40 wide × 60 tall.
+    const pattern = patternOf('loom', 3, 2, {
+      rotation: 270,
+      grid: [
+        [{ color: '#111111' }, { color: '#222222' }, { color: '#333333' }],
+        [{ color: '#444444' }, { color: '#555555' }, { color: '#666666' }],
+      ],
+    })
+
+    it('turns the Pattern a quarter counterclockwise', () => {
+      const { context, named } = recordingContext()
+
+      renderPattern(context, { pattern, region: whole(pattern), zoom: 1 })
+
+      // Grid (x, y) → (y, width − x): the grid's top-left bead ends up at the displayed bottom-left.
+      expect(named('setTransform').at(-1)!.args).toEqual([0, -1, 1, 0, -0, 60])
+    })
+
+    it('shows the grid\'s top-left corner at the displayed bottom-left', () => {
+      const beads = beadsDrawn(pattern, { x: 0, y: 43, width: 14, height: 14 })
+
+      expect(beads.map(({ color }) => color)).toEqual(['#111111'])
+    })
+
+    it('draws all the same beads as the unrotated Pattern', () => {
+      const upright = { ...pattern, rotation: 0 as const }
 
       expect(beadsDrawn(pattern, whole(pattern))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -359,7 +428,7 @@ describe('drawing only some rows again', () => {
   })
 
   it('turns the band with the Pattern: rows are columns of the surface when it is rotated', () => {
-    const pattern = patternOf('loom', 4, 10, { rotated: true })
+    const pattern = patternOf('loom', 4, 10, { rotation: 90 })
     const { context, named } = recordingContext()
 
     renderPattern(context, { pattern, region: whole(pattern), zoom: 1, rows: { first: 3, last: 4 } })

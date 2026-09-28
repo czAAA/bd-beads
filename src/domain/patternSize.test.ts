@@ -46,8 +46,13 @@ describe('estimatedSizeMm', () => {
     expect(size.heightMm).toBeCloseTo(160.6)
   })
 
-  it('swaps width and height for a rotated Pattern, like the grid summary does', () => {
-    expect(estimatedSizeMm({ columns: 10, rows: 20, rotated: true }, cube)).toEqual({ widthMm: 30, heightMm: 15 })
+  it('swaps width and height for a Pattern rotated a quarter turn either way, like the grid summary does', () => {
+    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 90 }, cube)).toEqual({ widthMm: 30, heightMm: 15 })
+    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 270 }, cube)).toEqual({ widthMm: 30, heightMm: 15 })
+  })
+
+  it('leaves width and height as they are for a Pattern upside down (180°, ticket 171)', () => {
+    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 180 }, cube)).toEqual({ widthMm: 15, heightMm: 30 })
   })
 
   it('is the inverse of the mm conversion, so a stated size estimates back to about itself', () => {

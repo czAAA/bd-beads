@@ -201,7 +201,7 @@ describe('Toolbox', () => {
 
   it('reflects the rotated state from the pattern prop', () => {
     const pattern = makePattern()
-    pattern.rotated = true
+    pattern.rotation = 90
 
     const wrapper = mountToolbox({ pattern })
 

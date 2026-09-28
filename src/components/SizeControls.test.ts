@@ -143,7 +143,7 @@ describe('SizeControls warning tooltip (ticket 98)', () => {
   it('says it is an estimate, in both languages', () => {
     const wrapper = mountControls(pattern(10, 20))
     expect(tooltip(wrapper).text()).toBe(en.size.estimateWarning)
-    expect(en.size.estimateWarning).toContain('These sizes are an estimate.')
+    expect(en.size.estimateWarning).toContain('This is an estimate:')
 
     localStorage.setItem('bd-beads:locale', 'ru')
     expect(tooltip(mountControls(pattern(10, 20))).text()).toBe(ru.size.estimateWarning)

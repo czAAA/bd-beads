@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { thumbnailPixels } from './patternThumbnail'
+import type { Rotation } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 
-function pattern(grid: (string | null)[][], rotated = false): Pattern {
+function pattern(grid: (string | null)[][], rotation: Rotation = 0): Pattern {
   return {
     id: 'p',
     name: 'P',
@@ -12,7 +13,7 @@ function pattern(grid: (string | null)[][], rotated = false): Pattern {
     rows: grid.length,
     grid: grid.map((row) => row.map((color) => ({ color }))),
     rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
-    rotated,
+    rotation,
     createdAt: 0,
     updatedAt: 0,
   }
@@ -55,10 +56,28 @@ describe('thumbnailPixels', () => {
 
   it('turns a rotated Pattern the way it shows on screen, a quarter clockwise', () => {
     // Grid rows: [R, B]. Turned clockwise, it stands as R over B.
-    const image = thumbnailPixels(pattern([['#ff0000', '#0000ff']], true), 2)
+    const image = thumbnailPixels(pattern([['#ff0000', '#0000ff']], 90), 2)
 
     expect([image.width, image.height]).toEqual([1, 2])
     expect(pixel(image, 0, 0)).toEqual(RED)
     expect(pixel(image, 0, 1)).toEqual(BLUE)
+  })
+
+  it('turns a rotated Pattern upside down (180°, ticket 171)', () => {
+    // Grid rows: [R, B]. Upside down, it reads B then R, still one row.
+    const image = thumbnailPixels(pattern([['#ff0000', '#0000ff']], 180), 2)
+
+    expect([image.width, image.height]).toEqual([2, 1])
+    expect(pixel(image, 0, 0)).toEqual(BLUE)
+    expect(pixel(image, 1, 0)).toEqual(RED)
+  })
+
+  it('turns a rotated Pattern a quarter counterclockwise (270°, ticket 171)', () => {
+    // Grid rows: [R, B]. Turned the other way, it stands as B over R -- the mirror of the 90° case.
+    const image = thumbnailPixels(pattern([['#ff0000', '#0000ff']], 270), 2)
+
+    expect([image.width, image.height]).toEqual([1, 2])
+    expect(pixel(image, 0, 0)).toEqual(BLUE)
+    expect(pixel(image, 0, 1)).toEqual(RED)
   })
 })

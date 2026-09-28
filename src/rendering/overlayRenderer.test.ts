@@ -1,17 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Rotation } from '../domain/grid'
 import { createPattern, type Pattern, type RowProgress, type Technique } from '../domain/pattern'
 import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { displayedExtentPx } from './patternRenderer'
 
-function patternOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotated = false): Pattern {
+function patternOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Pattern {
   const pattern = createPattern({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  return { ...pattern, rotated, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  return { ...pattern, rotation, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
 }
 
 function whole(pattern: Pattern, zoom = 1) {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotated)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
   return { x: 0, y: 0, width, height }
 }
 
@@ -121,7 +122,7 @@ describe('renderOverlay', () => {
   })
 
   it('draws through the same transform as the cells: zoom and a quarter turn', () => {
-    const pattern = patternOf('loom', 3, 2, { currentRow: 0 }, true)
+    const pattern = patternOf('loom', 3, 2, { currentRow: 0 }, 90)
     const { context, named } = recordingContext()
 
     renderOverlay(context, { pattern, region: whole(pattern, 2), zoom: 2 })

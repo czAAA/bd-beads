@@ -1,4 +1,4 @@
-import { CELL_SIZE_PX, type Technique } from '../domain/grid'
+import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { displayedExtentPx, rowPitchPx, type Region } from './patternRenderer'
 
@@ -82,7 +82,7 @@ export interface PrintPlan {
 
 /** Wider than tall, as displayed (a turned Pattern's rows run across). */
 export function isPatternWide(pattern: Shape): boolean {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotated)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
   return width > height
 }
 
@@ -91,20 +91,20 @@ export function orientedPage(pattern: Shape): PageSize {
   return isPatternWide(pattern) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
-type Shape = Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotated'>
+type Shape = Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>
 
-/** Beads across and down as the Pattern shows (turned, its rows run across), and one bead's step each way at zoom 1. */
-export function displayedGrid({ technique, columns, rows, rotated }: Shape) {
+/** Beads across and down as the Pattern shows (turned, its rows run across at a quarter turn), and one bead's step each way at zoom 1. */
+export function displayedGrid({ technique, columns, rows, rotation }: Shape) {
   const pitch = rowPitchPx(technique)
-  return rotated
+  return rotationSwapsAxes(rotation)
     ? { across: rows, down: columns, stepAcross: pitch, stepDown: CELL_SIZE_PX }
     : { across: columns, down: rows, stepAcross: CELL_SIZE_PX, stepDown: pitch }
 }
 
 /** The displayed size of a block of beads `across` × `down`, at zoom 1. */
-function blockExtent(technique: Technique, rotated: boolean, across: number, down: number): PageSize {
-  const [columns, rows] = rotated ? [down, across] : [across, down]
-  return displayedExtentPx(technique, columns, rows, 1, rotated)
+function blockExtent(technique: Technique, rotation: Rotation, across: number, down: number): PageSize {
+  const [columns, rows] = rotationSwapsAxes(rotation) ? [down, across] : [across, down]
+  return displayedExtentPx(technique, columns, rows, 1, rotation)
 }
 
 export function planPrint(pattern: Shape, page: PageSize = orientedPage(pattern)): PrintPlan {
@@ -119,8 +119,8 @@ export function planPrint(pattern: Shape, page: PageSize = orientedPage(pattern)
     while (count > 1 && extent(count) * baseZoom > length) count -= 1
     return count
   }
-  const fitAcross = fits(area.width, grid.stepAcross, (count) => blockExtent(pattern.technique, pattern.rotated, count, 1).width)
-  const fitDown = fits(area.height, grid.stepDown, (count) => blockExtent(pattern.technique, pattern.rotated, 1, count).height)
+  const fitAcross = fits(area.width, grid.stepAcross, (count) => blockExtent(pattern.technique, pattern.rotation, count, 1).width)
+  const fitDown = fits(area.height, grid.stepDown, (count) => blockExtent(pattern.technique, pattern.rotation, 1, count).height)
   const partsAcross = Math.ceil(grid.across / fitAcross)
   const partsDown = Math.ceil(grid.down / fitDown)
   const partAcross = Math.ceil(grid.across / partsAcross)
@@ -132,7 +132,7 @@ export function planPrint(pattern: Shape, page: PageSize = orientedPage(pattern)
   if (strip) return strip
 
   // Equal parts, then the largest bead at which one fills the page.
-  const part = blockExtent(pattern.technique, pattern.rotated, partAcross, partDown)
+  const part = blockExtent(pattern.technique, pattern.rotation, partAcross, partDown)
   const zoom = Math.min(maxZoom, area.width / part.width, area.height / part.height)
 
   const parts: PrintPart[] = []
@@ -142,7 +142,7 @@ export function planPrint(pattern: Shape, page: PageSize = orientedPage(pattern)
       const firstDown = down * partDown
       const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
       const lastDown = Math.min(grid.down, firstDown + partDown) - 1
-      const extent = blockExtent(pattern.technique, pattern.rotated, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
+      const extent = blockExtent(pattern.technique, pattern.rotation, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
       parts.push({
         page: parts.length + 2,
         across,
@@ -169,7 +169,7 @@ type Grid = ReturnType<typeof displayedGrid>
 /** Stacks equal across-only parts several to a sheet, at the base bead size, when doing one page each would waste paper. */
 function planStrips(pattern: Shape, page: PageSize, area: PageSize, grid: Grid, baseZoom: number, partAcross: number): PrintPlan | undefined {
   const partsAcross = Math.ceil(grid.across / partAcross)
-  const downExtent = blockExtent(pattern.technique, pattern.rotated, partAcross, grid.down).height * baseZoom
+  const downExtent = blockExtent(pattern.technique, pattern.rotation, partAcross, grid.down).height * baseZoom
   if (downExtent >= area.height / 2) return undefined
 
   const stripHeight = PRINT_STRIP_LABEL + (PRINT_RULER + PRINT_BOARD_PAD) * 2 + downExtent
@@ -180,7 +180,7 @@ function planStrips(pattern: Shape, page: PageSize, area: PageSize, grid: Grid, 
   for (let across = 0; across < partsAcross; across += 1) {
     const firstAcross = across * partAcross
     const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
-    const extent = blockExtent(pattern.technique, pattern.rotated, lastAcross - firstAcross + 1, grid.down)
+    const extent = blockExtent(pattern.technique, pattern.rotation, lastAcross - firstAcross + 1, grid.down)
     parts.push({
       page: 2 + Math.floor(across / perSheet),
       across,

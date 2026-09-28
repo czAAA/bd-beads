@@ -177,7 +177,7 @@ const drawnPattern = computed(() => {
     rows,
     grid,
     rowProgress: { enabled: false, direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
-    rotated: false,
+    rotation: 0 as const,
   }
 })
 

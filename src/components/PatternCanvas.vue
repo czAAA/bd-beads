@@ -4,6 +4,7 @@ import {
   GRID_BORDER_PX,
   RULER_GUTTER_PX,
   canvasContentWidthPx,
+  rotationSwapsAxes,
   type GridPosition,
   type PreviewCell,
 } from '../domain/grid'
@@ -57,9 +58,9 @@ const gridSlotStyle = computed(() => {
 const surfaceLayerStyle = { left: `${RULER_GUTTER_PX}px`, top: `${RULER_GUTTER_PX}px` }
 
 /**
- * The Pattern's own footprint (columns × rows, per its technique), before the view-only rotated flag turns it on
- * screen (see Pattern.rotated) — this never itself swaps, since the grid/technique geometry is unaffected by that
- * flag (ticket 28).
+ * The Pattern's own footprint (columns × rows, per its technique), before the view-only rotation turns it on
+ * screen (see Pattern.rotation) — this never itself swaps, since the grid/technique geometry is unaffected by that
+ * setting (tickets 28, 171).
  */
 const unrotatedContentWidth = computed(() =>
   canvasContentWidthPx(props.pattern.technique, props.pattern.columns, props.zoom),
@@ -74,15 +75,16 @@ const unrotatedContentHeight = computed(() => {
  * The box hugs the Pattern: it's exactly as big as the zoomed Pattern and its rulers (ticket 18), with no cap of its
  * own (ticket 27) — the zoom passed in is already fit to the real canvas area upstream (see usePatternZoom), so at
  * the fit level this is already within the available space. Manually zooming in past that can still outgrow the
- * canvas area; the scrollbar for that lives one level up, on the canvas area itself (ticket 28), not here. When
- * rotated, the box's reserved footprint swaps to match the turned picture (ticket 28); the actual grid keeps its
- * own unrotated width/height (see pattern-canvas__rotate below) and is turned to fit inside it.
+ * canvas area; the scrollbar for that lives one level up, on the canvas area itself (ticket 28), not here. At a
+ * quarter turn either way, the box's reserved footprint swaps to match the turned picture (tickets 28, 171); the
+ * actual grid keeps its own unrotated width/height (see pattern-canvas__rotate below) and is turned to fit inside
+ * it. Upside down (180°) the footprint is unchanged.
  */
 const contentWidth = computed(() =>
-  props.pattern.rotated ? unrotatedContentHeight.value : unrotatedContentWidth.value,
+  rotationSwapsAxes(props.pattern.rotation) ? unrotatedContentHeight.value : unrotatedContentWidth.value,
 )
 const contentHeight = computed(() =>
-  props.pattern.rotated ? unrotatedContentWidth.value : unrotatedContentHeight.value,
+  rotationSwapsAxes(props.pattern.rotation) ? unrotatedContentWidth.value : unrotatedContentHeight.value,
 )
 
 /** The scaled content has no layout size of its own (transforms don't reflow), so the box states it explicitly — both for its own size and so an ancestor that scrolls can tell it's grown past the available space. */
@@ -92,15 +94,15 @@ const contentStyle = computed(() => ({
 }))
 
 /**
- * Centers the Pattern at its own natural (unrotated) size inside the box above, then turns it 90° about that center
- * when Pattern.rotated is on — a plain view rotation, like turning a photo, that never touches the grid or its
- * technique geometry (ticket 28). Centering (rather than anchoring a corner) is what makes a rotated box's bounding
+ * Centers the Pattern at its own natural (unrotated) size inside the box above, then turns it about that center by
+ * Pattern.rotation (tickets 28, 171) — a plain view rotation, like turning a photo, that never touches the grid or
+ * its technique geometry. Centering (rather than anchoring a corner) is what makes a rotated box's bounding
  * footprint land exactly on the swapped contentWidth/contentHeight above with no manual offset math.
  */
 const rotateStyle = computed(() => ({
   width: `${unrotatedContentWidth.value}px`,
   height: `${unrotatedContentHeight.value}px`,
-  transform: `translate(-50%, -50%) rotate(${props.pattern.rotated ? 90 : 0}deg)`,
+  transform: `translate(-50%, -50%) rotate(${props.pattern.rotation}deg)`,
 }))
 </script>
 
