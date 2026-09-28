@@ -68,4 +68,17 @@ describe('BottomSheet', () => {
     expect(document.activeElement).toBe(opener)
     opener.remove()
   })
+
+  it('skips a data-skip-autofocus control when picking where to land opening focus (ticket 188)', async () => {
+    const wrapper = mount(BottomSheet, {
+      attachTo: document.body,
+      props: { title: 'Size' },
+      slots: { default: '<button type="button" data-skip-autofocus>Info</button><button type="button">Columns</button>' },
+    })
+    await wrapper.vm.$nextTick()
+
+    expect(document.activeElement?.textContent).toBe('Columns')
+    // Still reachable normally -- only the sheet's own opening focus skips it.
+    expect(wrapper.find('[data-skip-autofocus]').exists()).toBe(true)
+  })
 })

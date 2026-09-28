@@ -34,6 +34,13 @@ function focusables(): HTMLElement[] {
   return [...(sheetEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
 }
 
+/** Same, but for where opening focus lands: `data-skip-autofocus` (ticket 188) opts a control with a focus side
+ * effect (SizeControls' info button opens its tooltip on focus) out of being that landing spot, while Tab still
+ * reaches it normally through `focusables()`. */
+function initialFocusable(within: HTMLElement | undefined = sheetEl.value): HTMLElement | undefined {
+  return [...(within?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].find((el) => !el.hasAttribute('data-skip-autofocus'))
+}
+
 function onKeydown(event: KeyboardEvent) {
   if (event.key !== 'Tab') return
   const list = focusables()
@@ -56,7 +63,7 @@ function onKeydown(event: KeyboardEvent) {
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
   if (sheetEl.value && target && !sheetEl.value.contains(target)) {
-    ;(focusables()[0] ?? sheetEl.value)?.focus()
+    ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
   }
 }
 
@@ -70,7 +77,7 @@ onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
   // The close button sits before the body in DOM order (so it can stay pinned top-right); focus starts on the
   // sheet's own content instead, the same way AppModal's own initial focus skips past its header.
-  void nextTick(() => (bodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) ?? focusables()[0] ?? sheetEl.value)?.focus())
+  void nextTick(() => (initialFocusable(bodyEl.value) ?? initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus())
   document.addEventListener('focusin', onFocusIn)
   document.addEventListener('pointerdown', onPointerDownOutside)
 })

@@ -1030,6 +1030,8 @@ describe('App', () => {
     expect(order()).toEqual([
       'app-header__tools',
       'app-header__brand',
+      'app-header__phone-only', // phone brand icon (ticket 188): the bead icon, apart from the <h1> wordmark
+      'app-header__phone-only', // phone theme icon: shown whether or not a Pattern is open
       'app-header__gap',
       'pattern-actions',
       'app-header__phone-hide', // New Pattern's wrapper (ticket 79: hidden at the phone tier)
@@ -1044,7 +1046,9 @@ describe('App', () => {
     expect(order()).toEqual([
       'app-header__tools',
       'app-header__brand',
-      'phone-pattern-info', // ticket 79: the phone header's own Pattern name/size/save state
+      'app-header__phone-only', // phone brand icon
+      'app-header__phone-only', // phone bead/technique icon (ticket 188), opens the Pattern sheet's Bead pill row
+      'app-header__phone-only', // phone theme icon
       'pattern-info',
       'app-header__phone-hide', // Replace bead's wrapper
       'app-header__gap',

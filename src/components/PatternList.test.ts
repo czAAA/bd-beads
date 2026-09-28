@@ -26,6 +26,12 @@ describe('PatternList', () => {
     expect(wrapper.find('[data-testid="pattern-item"]').exists()).toBe(false)
   })
 
+  it('marks its own box with the library icon (ticket 188)', () => {
+    const wrapper = mount(PatternList, { props: { patterns: [] } })
+
+    expect(wrapper.find('[data-testid="pattern-list"] .expandable-panel__icon').attributes('data-icon')).toBe('library')
+  })
+
   it('renders one entry per saved pattern with its name and size, named by its summary', () => {
     const first = makePattern()
     const second = makePattern()

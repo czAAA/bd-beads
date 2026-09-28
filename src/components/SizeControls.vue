@@ -49,10 +49,14 @@ const tipOpen = ref(false)
       >
         ≈ {{ estimate }}
       </span>
+      <!-- data-skip-autofocus (ticket 188): the first focusable thing here, so a sheet/drawer that opens on top of
+        this row would otherwise land its opening focus here and pop the tooltip uninvited (its own @focus handler
+        is correct -- Tab still reaches and opens it -- BottomSheet/AppDrawer's initial focus is what needs to skip it). -->
       <button
         type="button"
         class="size-controls__info"
         data-testid="size-estimate-info"
+        data-skip-autofocus
         :aria-label="t.size.estimateInfoButton"
         :aria-describedby="tooltipId"
         @mouseenter="tipOpen = true"

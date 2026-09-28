@@ -8,6 +8,7 @@ import AppMenu from './components/AppMenu.vue'
 import AppMenuItem from './components/AppMenuItem.vue'
 import AppMessage from './components/AppMessage.vue'
 import AppSelect from './components/AppSelect.vue'
+import AppTooltip from './components/AppTooltip.vue'
 import BeadQuantities from './components/BeadQuantities.vue'
 import BottomSheet from './components/BottomSheet.vue'
 import BottomToolbar from './components/BottomToolbar.vue'
@@ -39,7 +40,9 @@ import ThemeToggle from './components/ThemeToggle.vue'
 import ToastRegion from './components/ToastRegion.vue'
 import Toolbox from './components/Toolbox.vue'
 import { TOOL_ICONS, TOOL_ORDER } from './components/toolIcons'
+import type { IconName } from './components/icons'
 import ZoomPill from './components/ZoomPill.vue'
+import { useThemePick } from './theme/useThemePick'
 import { useConvertImage } from './composables/useConvertImage'
 import { useElementSize } from './composables/useElementSize'
 import { hasOpenLayer } from './composables/useEscapeLayer'
@@ -453,6 +456,12 @@ const openPhoneSheet = ref<PhoneSheet | null>(null)
 function onSelectPhoneSheet(sheet: PhoneSheet) {
   openPhoneSheet.value = openPhoneSheet.value === sheet ? null : sheet
 }
+
+/** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the More menu. */
+const THEME_ICONS: Record<string, IconName> = { device: 'device', light: 'sun', dark: 'moon', contrast: 'contrast' }
+const { pick: themePick } = useThemePick()
+const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
+const themeSheetOpen = ref(false)
 
 /** New Pattern on the phone tier (PhoneForms card): its own full-height modal sheet, opened from the Pattern sheet. */
 const phoneNewPatternOpen = ref(false)
@@ -1673,20 +1682,26 @@ function onMoveRow(delta: number) {
         />
       </span>
       <h1 class="app-header__brand">
-        <AppLogo class="app-header__mark" :size="22" />
+        <AppLogo class="app-header__mark app-header__phone-hide" :size="22" />
         <span class="app-header__name app-header__phone-hide">{{ t.app.title }}</span>
       </h1>
+      <!-- The phone brand (ticket 188): the bead's own icon, apart from the wordmark <h1> so the two never both render its text; the wordmark is its hover/focus label. -->
+      <AppTooltip class="app-header__phone-only" :text="t.app.title" :announce="false">
+        <AppIcon name="bead" :size="18" />
+      </AppTooltip>
 
       <!--
-        The phone header (ticket 79; responsive.md, 0-743px): the Pattern name with its size and save state, in place
-        of the Pattern summary/Bead pill/Replace bead -- Replace bead moves into the Pattern sheet's Bead pill row.
+        Technique/schema and theme (ticket 188; responsive.md, 0-743px): each its own icon, the current bead or
+        theme, with a hover/focus label and a tap that opens its picker (the Pattern sheet's Bead pill row, or a
+        small four-way theme sheet) -- reclaiming the width the name/size readout (now under the More menu) used to
+        take, so nothing after it (Undo, Redo, More) is pushed out of viewport.
       -->
-      <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
-        <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
-          {{ summarizePattern(activePattern) }}
-        </span>
-        <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
-      </p>
+      <span v-if="activePattern" class="app-header__phone-only">
+        <IconButton icon="size" shape="round" :label="activeBeadLabel ?? ''" data-testid="phone-bead-button" @click="openPhoneSheet = 'pattern'" />
+      </span>
+      <span class="app-header__phone-only">
+        <IconButton :icon="themeIcon" shape="round" :label="t.theme.groupLabel" data-testid="phone-theme-button" @click="themeSheetOpen = true" />
+      </span>
 
       <template v-if="activePattern">
         <p class="app-header__editing app-header__phone-hide" data-testid="pattern-info">
@@ -1756,6 +1771,16 @@ function onMoveRow(delta: number) {
       -->
       <span class="app-header__more">
         <AppMenu :label="t.header.moreButton" icon="more" align="end" data-testid="header-more-menu">
+          <!--
+            The Pattern name, its size and save state (ticket 188): moved here from the header's own row, which the
+            name and size used to dominate the width of at the phone tier -- see app-header__phone-pattern's own note.
+          -->
+          <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
+            <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
+              {{ summarizePattern(activePattern) }}
+            </span>
+            <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
+          </p>
           <div class="app-header__more-imports">
             <PatternImport :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
           </div>
@@ -2091,7 +2116,7 @@ function onMoveRow(delta: number) {
         <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotation !== 0" @click="onToggleRotate" />
         <IconButton icon="copy" variant="toolbox" size="lg" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
         <IconButton
-          icon="import"
+          icon="paste"
           variant="toolbox"
           size="lg"
           :label="t.tools.pasteLabel"
@@ -2149,7 +2174,7 @@ function onMoveRow(delta: number) {
         </AppButton>
         <PatternImport compact :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
         <IconButton
-          icon="save"
+          icon="library"
           :label="t.patterns.heading"
           :disabled="patterns.length === 0"
           data-testid="phone-saved-patterns-button"
@@ -2175,6 +2200,11 @@ function onMoveRow(delta: number) {
         @select="onSelectPatternFromPhoneDrawer"
         @remove="removePattern"
       />
+    </BottomSheet>
+
+    <!-- Theme: the phone header's own quick-access icon opens the same four-way choice the More menu's ThemeToggle offers. -->
+    <BottomSheet v-if="themeSheetOpen" :title="t.theme.groupLabel" @close="themeSheetOpen = false">
+      <ThemeToggle />
     </BottomSheet>
 
     <ConfirmModal
@@ -2287,6 +2317,9 @@ function onMoveRow(delta: number) {
 @media (max-width: 743px) {
   .app-header {
     min-height: var(--header-height-phone);
+    /* Tighter than the reference tier's 10px (ticket 188): several small icon controls now share this row, and
+       every px the gaps between them save is a px Undo, Redo and More stay clear of the edge. */
+    gap: var(--space-4);
     padding-right: var(--space-16);
     padding-left: var(--space-16);
   }
@@ -2326,9 +2359,15 @@ function onMoveRow(delta: number) {
 }
 
 @media (max-width: 1023px) {
+  /*
+   * !important (ticket 188): a utility hide class has to win over whatever else sets `display` on the same element
+   * -- several header rows (.app-header__editing among them) set their own `display: flex` later in this file, at
+   * equal specificity, and were quietly winning the cascade over this rule, leaking a few invisible-but-still-laid-
+   * out px into the phone header's overflow.
+   */
   .app-header__wide-only,
   .app-header__phone-hide {
-    display: none;
+    display: none !important;
   }
 
   .app-header__more {
@@ -2373,13 +2412,15 @@ function onMoveRow(delta: number) {
   color: var(--body);
 }
 
-/* The phone header's combined Pattern name/size + save state (ticket 79), in the wide header's Pattern summary's place. */
+/* The phone header's combined Pattern name/size + save state (ticket 79), now a row in the More menu (ticket 188). */
 .app-header__phone-pattern {
   display: none;
   align-items: center;
   gap: var(--space-6);
+  width: 100%;
   min-width: 0;
   margin: 0;
+  padding: var(--space-4) var(--space-8);
 }
 
 .app-header__phone-save {
@@ -2831,7 +2872,12 @@ function onMoveRow(delta: number) {
   overflow: hidden;
 }
 
-.app-shell__drawing > :not(.canvas-backdrop) {
+/*
+ * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Pattern
+ * (below), and this broader rule's `relative` used to outrank that in specificity -- `.app-shell__drawing > :not(x)`
+ * beats a plain `.app-shell__zoom-pill`, stretching the pill across the top of the canvas box instead of floating it.
+ */
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill) {
   position: relative;
 }
 

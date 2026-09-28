@@ -29,6 +29,13 @@ describe('ExpandablePanel', () => {
     expect(wrapper.find('[data-testid="body"]').exists()).toBe(true)
   })
 
+  it('shows no icon by default, and the given one when passed (ticket 188: Saved Patterns\' library icon)', () => {
+    expect(mountPanel().find('.expandable-panel__icon').exists()).toBe(false)
+
+    const withIcon = mountPanel({ icon: 'library' })
+    expect(withIcon.find('.expandable-panel__icon').attributes('data-icon')).toBe('library')
+  })
+
   it('starts collapsed, with a named expand button that reports its state', () => {
     const wrapper = mountPanel()
 

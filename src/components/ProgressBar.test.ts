@@ -56,6 +56,35 @@ describe('ProgressBar', () => {
     expect(next.attributes('title')).toContain('(Enter, Space)')
   })
 
+  it('shows a compact "current/total" counter and icon-only Previous/Next with the same hover label and hotkeys (ticket 188)', async () => {
+    const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4) } })
+
+    expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('5/20')
+
+    const previous = wrapper.find('[data-testid="progress-bar-previous-compact"]')
+    const next = wrapper.find('[data-testid="progress-bar-next-compact"]')
+    expect(previous.attributes('aria-label')).toBe(ru.rowProgress.previousButton)
+    expect(next.attributes('aria-label')).toBe(ru.rowProgress.nextButton)
+    // No visible text of their own -- an icon-only button, unlike the reference tier's Previous/Next.
+    expect(previous.find('svg').exists()).toBe(true)
+
+    await next.trigger('click')
+    await previous.trigger('click')
+    expect(wrapper.emitted('move-row')).toEqual([[1], [-1]])
+  })
+
+  it('disables the compact Previous/Next the same as the reference tier\'s', () => {
+    const pattern = makePattern()
+
+    const atStart = mount(ProgressBar, { props: { pattern } })
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(true)
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(false)
+
+    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.rows - 1) } })
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(false)
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(true)
+  })
+
   it('says which way the rows run after the total', () => {
     const rows = mount(ProgressBar, { props: { pattern: makePattern() } })
     expect(rows.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.topToBottom)

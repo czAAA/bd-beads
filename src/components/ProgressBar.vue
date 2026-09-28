@@ -44,12 +44,18 @@ const directionLabel = computed(() =>
     <AppSwitch v-model="enabled" :label="t.rowProgress.enabledLabel" data-testid="progress-bar-switch" />
 
     <template v-if="enabled">
-      <p class="progress-bar__position" data-testid="progress-bar-position">
+      <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
         <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ position.current + 1 }}</span>
         {{ ' ' }}
         <span class="progress-bar__of">{{
           t.rowProgress.ofTotal.replace('{total}', String(position.total)).replace('{direction}', directionLabel)
         }}</span>
+      </p>
+      <!-- The phone tier's compact mode (ticket 188): "1/222" in place of the spelled-out row count, and Row not
+        done/Row done as icon-only buttons with a hover/focus label instead of the reference tier's wide text ones --
+        the bar is the widest control on the phone screen already (responsive.md), so it can't also spell everything out. -->
+      <p class="progress-bar__compact-position progress-bar__phone-only" data-testid="progress-bar-compact-position">
+        {{ position.current + 1 }}/{{ position.total }}
       </p>
       <div
         class="progress-bar__track"
@@ -71,6 +77,7 @@ const directionLabel = computed(() =>
         @click="emit('toggle-row-direction')"
       />
       <AppButton
+        class="progress-bar__phone-hide"
         variant="box"
         icon="chevron-left"
         data-testid="progress-bar-previous"
@@ -80,7 +87,17 @@ const directionLabel = computed(() =>
       >
         {{ t.rowProgress.previousButton }}
       </AppButton>
+      <IconButton
+        class="progress-bar__phone-only"
+        variant="box"
+        icon="chevron-left"
+        :label="t.rowProgress.previousButton"
+        data-testid="progress-bar-previous-compact"
+        :disabled="position.current === 0"
+        @click="emit('move-row', -1)"
+      />
       <AppButton
+        class="progress-bar__phone-hide"
         variant="primary"
         icon="check"
         data-testid="progress-bar-next"
@@ -90,6 +107,15 @@ const directionLabel = computed(() =>
       >
         {{ t.rowProgress.nextButton }}
       </AppButton>
+      <IconButton
+        class="progress-bar__phone-only"
+        variant="box"
+        icon="check"
+        :label="t.rowProgress.nextButton"
+        data-testid="progress-bar-next-compact"
+        :disabled="position.current === position.total - 1"
+        @click="emit('move-row', 1)"
+      />
     </template>
     <span v-else class="progress-bar__off-label">{{ t.toolbox.groups.rowProgress }}</span>
   </div>
@@ -124,6 +150,29 @@ const directionLabel = computed(() =>
   font: var(--type-meta);
   color: var(--box-muted);
   text-transform: lowercase;
+}
+
+.progress-bar__compact-position {
+  margin: 0 0 0 var(--space-2);
+  font: var(--type-control);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* The phone tier's compact mode (ticket 188): swaps the spelled-out row count and text row buttons for a short
+   counter and icon-only ones, same rule as the header's own app-header__phone-only/-hide. */
+.progress-bar__phone-only {
+  display: none;
+}
+
+@media (max-width: 743px) {
+  .progress-bar__phone-hide {
+    display: none;
+  }
+
+  .progress-bar__phone-only {
+    display: inline-flex;
+  }
 }
 
 .progress-bar__track {

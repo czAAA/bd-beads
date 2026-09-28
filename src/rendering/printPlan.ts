@@ -4,9 +4,9 @@ import { displayedExtentPx, rowPitchPx, type Region } from './patternRenderer'
 
 /**
  * How the PDF for printing is laid out (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards, the
- * `print-*` tokens). Page 1 shows the whole Pattern; the chart pages then split it into equal parts. The page count
- * comes from the 4.6 mm base bead, and the bead then grows until a part fills its page, the same on every page and
- * never above 7 mm. Everything here is in page px at 150 dpi; nothing draws.
+ * `print-*` tokens). Page 1 shows the whole Pattern; the chart pages then split it into fixed 100 × 100-bead blocks
+ * (ticket 185), an edge block simply however many beads remain. Each block's bead then grows until it fills its
+ * page, the same on every page and never above 7 mm. Everything here is in page px at 150 dpi; nothing draws.
  */
 
 export const PRINT_DPI = 150
@@ -107,31 +107,28 @@ function blockExtent(technique: Technique, rotation: Rotation, across: number, d
   return displayedExtentPx(technique, columns, rows, 1, rotation)
 }
 
+/** A chart page's block, fixed (ticket 185): 100 beads a side, an edge block simply however many remain. */
+export const PRINT_BLOCK_BEADS = 100
+
 export function planPrint(pattern: Shape, page: PageSize = orientedPage(pattern)): PrintPlan {
   const area = chartArea(page)
   const grid = displayedGrid(pattern)
   const baseZoom = mm(PRINT_BEAD_BASE_MM) / CELL_SIZE_PX
   const maxZoom = mm(PRINT_BEAD_MAX_MM) / CELL_SIZE_PX
 
-  // How many beads a page holds each way at the base size: that sets how many parts there are.
-  const fits = (length: number, step: number, extent: (count: number) => number) => {
-    let count = Math.max(1, Math.floor(length / (step * baseZoom)))
-    while (count > 1 && extent(count) * baseZoom > length) count -= 1
-    return count
-  }
-  const fitAcross = fits(area.width, grid.stepAcross, (count) => blockExtent(pattern.technique, pattern.rotation, count, 1).width)
-  const fitDown = fits(area.height, grid.stepDown, (count) => blockExtent(pattern.technique, pattern.rotation, 1, count).height)
-  const partsAcross = Math.ceil(grid.across / fitAcross)
-  const partsDown = Math.ceil(grid.down / fitDown)
-  const partAcross = Math.ceil(grid.across / partsAcross)
-  const partDown = Math.ceil(grid.down / partsDown)
+  // Fixed 100 × 100-bead blocks, not sized to what fits the page: a Pattern within a block's reach needs no split at
+  // all, and a huge one splits into a predictable grid instead of parts computed from the base bead's legibility.
+  const partAcross = Math.min(PRINT_BLOCK_BEADS, grid.across)
+  const partDown = Math.min(PRINT_BLOCK_BEADS, grid.down)
+  const partsAcross = Math.ceil(grid.across / partAcross)
+  const partsDown = Math.ceil(grid.down / partDown)
 
   // A bracelet splits only one way (here, across): the other axis (down) then stays the same, short, size on every
   // part. When that leaves a part filling less than half its page, several share a sheet instead (PrintStrips).
   const strip = partsDown === 1 && partsAcross > 1 ? planStrips(pattern, page, area, grid, baseZoom, partAcross) : undefined
   if (strip) return strip
 
-  // Equal parts, then the largest bead at which one fills the page.
+  // The block, then the largest bead at which one fills the page; an edge block simply draws smaller, at the same zoom.
   const part = blockExtent(pattern.technique, pattern.rotation, partAcross, partDown)
   const zoom = Math.min(maxZoom, area.width / part.width, area.height / part.height)
 

@@ -280,24 +280,40 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
 
 // ---- Page 1 -------------------------------------------------------------------------------------------------------
 
-/** How the whole Pattern sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed column. */
+/**
+ * How the whole Pattern sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed
+ * column. Tried both ways and the one that draws the Pattern larger wins — a Pattern only a little wider than tall
+ * (peyote and brick's rows sit closer than their columns, so even a square bead count comes out that way) fits the
+ * side column's room far better than the fixed band left under a truly wide one, and picking by shape alone once
+ * left it tiny with the rest of the sheet empty.
+ */
 export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>, page: PageSize) {
   const wide = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
-  const columnBelow = wide.width > wide.height
   const top = PRINT_MARGIN + mm(30)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
-  const room = {
-    x: PRINT_MARGIN + inset,
-    y: top + inset,
-    width: page.width - PRINT_MARGIN * 2 - inset * 2 - (columnBelow ? 0 : PRINT_LEGEND_WIDTH + mm(6)),
-    height: page.height - top - PRINT_MARGIN - PRINT_NAME_BAND - mm(4) - inset * 2 - (columnBelow ? mm(78) : 0),
+  const maxZoom = mm(7) / CELL_SIZE_PX
+  const layoutFor = (columnBelow: boolean) => {
+    const room = {
+      x: PRINT_MARGIN + inset,
+      y: top + inset,
+      width: page.width - PRINT_MARGIN * 2 - inset * 2 - (columnBelow ? 0 : PRINT_LEGEND_WIDTH + mm(6)),
+      height: page.height - top - PRINT_MARGIN - PRINT_NAME_BAND - mm(4) - inset * 2 - (columnBelow ? mm(78) : 0),
+    }
+    const zoom = Math.min(maxZoom, room.width / wide.width, room.height / wide.height)
+    return { columnBelow, room, zoom, extent: { width: wide.width * zoom, height: wide.height * zoom } }
   }
-  const zoom = Math.min(mm(7) / CELL_SIZE_PX, room.width / wide.width, room.height / wide.height)
-  return { columnBelow, room, zoom, extent: { width: wide.width * zoom, height: wide.height * zoom } }
+  const beside = layoutFor(false)
+  const below = layoutFor(true)
+  return beside.zoom >= below.zoom ? beside : below
 }
 
-/** Beads needed, the grams note and the facts, in a column `width` wide from (x, y); returns the column's bottom. */
-function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number, bottom: number): number {
+/**
+ * Beads needed and the grams note, in a column `width` wide from (x, y); returns the column's bottom. A narrow
+ * rectangle on purpose (ticket 186): it used to stretch its row height to whatever room the page had left below it,
+ * which read as a wide, sparse block; the facts that used to run on underneath it are `drawFacts`'s own column now,
+ * so the two can sit side by side in the room that stretching used to waste.
+ */
+function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
   const { labels } = words
   text(context, labels.beadsNeeded, x, y, font('700', 10, SANS), PRINT_COLORS.ink)
   y += mm(5)
@@ -312,9 +328,8 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
 
   text(context, labels.beadsGrams, x + width, y, font('400', 6.5, MONO), PRINT_COLORS.muted, 'right')
   y += mm(2)
-  // Rows share what room there is, down to a floor that still reads; past that the column simply runs on.
-  const factsHeight = mm(42)
-  const rowHeight = Math.max(mm(4.2), Math.min(mm(6), (bottom - y - factsHeight - mm(20)) / (words.colors.length + 1)))
+  // A row reads best around 5.5 mm; only a very long color list pushes it down to the 4.2 mm floor.
+  const rowHeight = words.colors.length > 20 ? mm(4.2) : mm(5.5)
   const beadSize = Math.min(mm(3.4), rowHeight * 0.7)
   const gramsX = x + width
   const beadsX = x + width - (words.totalGrams ? mm(12) : 0)
@@ -352,8 +367,12 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
       text(context, line, x, y, font('400', 6.5, SANS), PRINT_COLORS.muted)
     }
   }
+  return y
+}
 
-  y += mm(6)
+/** The maker, technique, bead, size and estimated-size facts, in their own narrow column beside Beads needed (ticket 186). */
+function drawFacts(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
+  const { labels } = words
   const facts: [string, string][] = [
     ...(words.maker ? ([[labels.madeBy, words.maker]] as [string, string][]) : []),
     [labels.technique, words.techniqueWord],
@@ -409,11 +428,19 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
   drawRulers(context, pattern, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)
   if (plan.parts.length > 1) drawParts(context, pattern, plan, layout.zoom, board)
 
-  // Beads needed and the facts: beside the board, or under it for a Pattern wider than tall.
-  const column = layout.columnBelow
-    ? { x: PRINT_MARGIN, y: boardBottom + PRINT_RULER + PRINT_NAME_BAND + mm(6), width: mm(80) }
-    : { x: page.width - PRINT_MARGIN - PRINT_LEGEND_WIDTH, y: layout.room.y - PRINT_RULER, width: PRINT_LEGEND_WIDTH }
-  drawBeadsNeeded(context, words, column.x, column.y + pt(10), column.width, page.height - PRINT_MARGIN)
+  // Beads needed and the facts, each its own narrow column (ticket 186): beside the board, stacked one under the
+  // other; under it for a Pattern wider than tall, where there is width to spare, side by side instead.
+  if (layout.columnBelow) {
+    const y1 = boardBottom + PRINT_RULER + PRINT_NAME_BAND + mm(6) + pt(10)
+    const beadsColumn = { x: PRINT_MARGIN, width: PRINT_LEGEND_WIDTH }
+    const factsColumn = { x: beadsColumn.x + PRINT_LEGEND_WIDTH + mm(10), width: PRINT_LEGEND_WIDTH }
+    drawBeadsNeeded(context, words, beadsColumn.x, y1, beadsColumn.width)
+    drawFacts(context, words, factsColumn.x, y1, factsColumn.width)
+  } else {
+    const column = { x: page.width - PRINT_MARGIN - PRINT_LEGEND_WIDTH, y: layout.room.y - PRINT_RULER, width: PRINT_LEGEND_WIDTH }
+    const factsY = drawBeadsNeeded(context, words, column.x, column.y + pt(10), column.width) + mm(6)
+    drawFacts(context, words, column.x, factsY, column.width)
+  }
 
   text(context, words.labels.page.replace('{page}', '1').replace('{pages}', String(plan.pageCount)), page.width - PRINT_MARGIN, page.height - PRINT_MARGIN + mm(4), font('400', 7, MONO), PRINT_COLORS.muted, 'right')
   return canvas
@@ -444,24 +471,50 @@ function drawParts(context: CanvasRenderingContext2D, pattern: Pattern, plan: Pr
 
 // ---- Chart pages --------------------------------------------------------------------------------------------------
 
-/** A small map of the parts, the one on this page filled. */
+/** Past this many blocks, the locator lays out as a horizontal strip instead of the block grid's own shape (ticket 187). */
+export const MINI_MAP_GRID_LIMIT = 16
+
+export interface MiniMapCell {
+  across: number
+  down: number
+  /** Whether this cell is the page being drawn. */
+  here: boolean
+}
+
+/**
+ * The locator's own layout (ticket 187): the block grid's own row/column shape up to `MINI_MAP_GRID_LIMIT` blocks,
+ * or a single horizontal row past that, so a Pattern that splits tall doesn't add a tall locator under the header
+ * and push the chart down or off the page. Pure, so it can be checked without a canvas; `drawMiniMap` draws it.
+ */
+export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number; width: number; cells: MiniMapCell[] } {
+  const total = plan.partsAcross * plan.partsDown
+  const horizontal = total > MINI_MAP_GRID_LIMIT
+  const columns = horizontal ? total : plan.partsAcross
+  const cell = horizontal ? Math.min(mm(2), mm(40) / total) : Math.min(mm(3), mm(24) / Math.max(plan.partsAcross, plan.partsDown))
+  const current = part.down * plan.partsAcross + part.across
+  const at = (index: number): [number, number] => (horizontal ? [index, 0] : [index % plan.partsAcross, Math.floor(index / plan.partsAcross)])
+  const cells = Array.from({ length: total }, (_, index) => {
+    const [across, down] = at(index)
+    return { across, down, here: index === current }
+  })
+  return { cell, width: cell * columns, cells }
+}
+
+/** A small map of the Pattern's blocks, drawn from `miniMapLayout`, the one on this page filled. */
 function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: PrintPart, right: number, top: number): number {
-  const cell = Math.min(mm(3), mm(24) / Math.max(plan.partsAcross, plan.partsDown))
-  const width = cell * plan.partsAcross
-  const x = right - width
+  const layout = miniMapLayout(plan, part)
+  const x = right - layout.width
+
   context.save()
   context.lineWidth = pt(0.5)
   context.strokeStyle = PRINT_COLORS.muted
-  for (let down = 0; down < plan.partsDown; down += 1) {
-    for (let across = 0; across < plan.partsAcross; across += 1) {
-      const here = across === part.across && down === part.down
-      context.fillStyle = here ? PRINT_COLORS.ink : PRINT_COLORS.paper
-      context.fillRect(x + across * cell, top + down * cell, cell - pt(1), cell - pt(1))
-      context.strokeRect(x + across * cell, top + down * cell, cell - pt(1), cell - pt(1))
-    }
+  for (const at of layout.cells) {
+    context.fillStyle = at.here ? PRINT_COLORS.ink : PRINT_COLORS.paper
+    context.fillRect(x + at.across * layout.cell, top + at.down * layout.cell, layout.cell - pt(1), layout.cell - pt(1))
+    context.strokeRect(x + at.across * layout.cell, top + at.down * layout.cell, layout.cell - pt(1), layout.cell - pt(1))
   }
   context.restore()
-  return width
+  return layout.width
 }
 
 /** A chart page: one full-size part normally, or (PrintStrips) several small ones stacked on the same sheet. */

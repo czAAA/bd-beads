@@ -65,7 +65,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | One card per component (63, plus the `Cover`): a short guideline and a static preview | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
-| Icons v2 (43 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
+| Icons v2 (46 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
 ### 3.1 Old section numbers
@@ -234,4 +234,5 @@ files without an account.
 
 **Version in the repo:** design system **v14** (synced from DESIGN.md @ e16e9c5, plus the X1 logo, Icons v2 and
 Phases A–E; v14 corrects the font weights and type roles in the README; EmptyCanvas's ghost board is now full-bleed,
-filling the whole drawing area instead of a small centred box — ticket 180).
+filling the whole drawing area instead of a small centred box — ticket 180), plus two Icons v2 additions for ticket
+188 (`bead`, `library`, `paste`).

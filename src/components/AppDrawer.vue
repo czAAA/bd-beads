@@ -34,12 +34,18 @@ function focusables(): HTMLElement[] {
   return [...(drawerEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
 }
 
+/** Same, but for where opening focus lands: `data-skip-autofocus` (ticket 188) opts a control with a focus side
+ * effect (SizeControls' info button opens its tooltip on focus) out of being that landing spot. */
+function initialFocusable(): HTMLElement | undefined {
+  return focusables().find((el) => !el.hasAttribute('data-skip-autofocus'))
+}
+
 watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
       opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-      void nextTick(() => (focusables()[0] ?? drawerEl.value)?.focus())
+      void nextTick(() => (initialFocusable() ?? focusables()[0] ?? drawerEl.value)?.focus())
     } else if (opener?.isConnected) {
       opener.focus()
     }
@@ -69,7 +75,7 @@ function onFocusIn(event: FocusEvent) {
   if (!trapActive.value) return
   const target = event.target as Node | null
   if (drawerEl.value && target && !drawerEl.value.contains(target)) {
-    ;(focusables()[0] ?? drawerEl.value)?.focus()
+    ;(initialFocusable() ?? focusables()[0] ?? drawerEl.value)?.focus()
   }
 }
 

@@ -84,6 +84,14 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
   })
 
+  it('draws the Edit sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="dock-edit"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="sheet-paste"] svg').attributes('data-icon')).toBe('paste')
+  })
+
   it('picks a Palette color from the Colour sheet and paints with it', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -133,6 +141,8 @@ describe('App at the phone tier (ticket 79)', () => {
 
     const btn = wrapper.find('[data-testid="phone-saved-patterns-button"]')
     expect(btn.attributes('disabled')).toBeUndefined()
+    // Its own library icon (ticket 188), not the unrelated Save Pattern icon it used to reuse.
+    expect(btn.find('svg').attributes('data-icon')).toBe('library')
 
     await btn.trigger('click')
     // A second bottom sheet opens with the pattern list.

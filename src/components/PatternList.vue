@@ -66,6 +66,7 @@ function onExportLibrary(): void {
     v-model:expanded="expanded"
     class="pattern-list"
     :title="t.patterns.heading"
+    icon="library"
     :expandable="patterns.length > 0"
     :empty="patterns.length === 0"
     :clip-overflow="false"
