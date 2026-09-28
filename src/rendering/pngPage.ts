@@ -149,8 +149,8 @@ function drawStory(context: CanvasRenderingContext2D, words: PrintText, x: numbe
   return Math.max(afterBrand, afterColors)
 }
 
-/** The maker's name large and pale under the board, and the accent line's curve behind it — background, drawn before the chart and the story. `bandTop` is the top of the band being streamed, in the whole picture. */
-export function drawPngBackground(context: CanvasRenderingContext2D, page: PageSize, maker: string, board: { x: number; top: number; bottom: number; right: number }, bandTop: number): void {
-  drawBackgroundName(context, maker, board.x, board.bottom - bandTop, 'left')
+/** The background name large and pale under the board, and the accent line's curve behind it, drawn before the chart and the story. `bandTop` is the top of the band being streamed, in the whole picture. */
+export function drawPngBackground(context: CanvasRenderingContext2D, page: PageSize, background: string, board: { x: number; top: number; bottom: number; right: number }, bandTop: number): void {
+  drawBackgroundName(context, background, board.x, board.bottom - bandTop, 'left')
   drawAccentLine(context, page, { x: 0, y: page.height - mm(6) - bandTop }, { right: board.right, top: board.top - bandTop, bottom: board.bottom - bandTop })
 }

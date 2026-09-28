@@ -4,7 +4,7 @@ import { PNG } from 'pngjs'
 import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { PALETTE } from '../../src/domain/palette'
 import { MAKER_NAME_KEY } from '../../src/domain/makerName'
-import { PNG_BEAD_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/patternExport'
+import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/patternExport'
 import { displayedExtentPx } from '../../src/rendering/patternRenderer'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp } from '../support/app'
@@ -33,6 +33,23 @@ function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: numbe
   for (let row = y; row < Math.min(y + height, png.height); row += 3) {
     for (let column = x; column < Math.min(x + width, png.width); column += 3) {
       if (hex(png, column, row) !== '#ffffff') return true
+    }
+  }
+  return false
+}
+
+/**
+ * Whether any pixel in the box has the background name's pale warm tint (the accent color at 14% over the plain board
+ * color, PRINT_OPACITY.name) — distinct from the board itself, which fills this whole area regardless (ticket 183).
+ */
+function warmerThanBoardIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
+  for (let row = y; row < Math.min(y + height, png.height); row += 2) {
+    for (let column = x; column < Math.min(x + width, png.width); column += 2) {
+      const at = (row * png.width + column) * 4
+      const r = png.data[at]!
+      const g = png.data[at + 1]!
+      const b = png.data[at + 2]!
+      if (r > 247 && g < 240 && r - b > 8) return true
     }
   }
   return false
@@ -83,7 +100,7 @@ test('a Pattern with no maker name leaves it out of the PNG (printed-output.md, 
   expect(png.width).toBeGreaterThan(0)
 })
 
-test('a Pattern with a maker name prints it in the PNG, large and pale under the board', async ({ page }) => {
+test('a Pattern with a maker name prints it in the PNG, large and pale under the board, never cut off (tickets 182, 183)', async ({ page }) => {
   await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [MAKER_NAME_KEY, 'Ada'])
   const pattern = fixturePattern({ technique: 'loom', columns: 10, rows: 10 })
   await openApp(page, [pattern])
@@ -91,9 +108,28 @@ test('a Pattern with a maker name prints it in the PNG, large and pale under the
   const { bytes } = await downloadOf(page, 'export-png')
   const png = PNG.sync.read(bytes)
   const chartWidth = 10 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
-  const chartHeight = chartWidth
-  // Directly under the chart's board is otherwise blank (the story sits beside it, not under it, for a Pattern this shape).
-  expect(nonWhiteIn(png, 0, chartHeight + 20, chartWidth, 60)).toBe(true)
+  // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183): room for the background name.
+  const chartHeight = 10 * PNG_BEAD_PX + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
+  // Somewhere in the board's own bottom margin, under the beads.
+  expect(warmerThanBoardIn(png, 0, chartHeight - PNG_BOTTOM_MARGIN_PX + 30, chartWidth, PNG_BOTTOM_MARGIN_PX - 40)).toBe(true)
+  // Never cut off (ticket 183 regression): the picture is tall enough to hold the whole bottom margin, not just the beads.
+  expect(png.height).toBeGreaterThanOrEqual(chartHeight)
+})
+
+test('a wide Pattern with a maker name shows the watermark under its board too, not painted over by the chart (ticket 183)', async ({ page }) => {
+  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [MAKER_NAME_KEY, 'Ada'])
+  const pattern = fixturePattern({ technique: 'loom', columns: 60, rows: 12 })
+  await openApp(page, [pattern])
+
+  const { bytes } = await downloadOf(page, 'export-png')
+  const png = PNG.sync.read(bytes)
+  const zoom = pngZoom(pattern)
+  const chart = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const chartWidth = Math.ceil(chart.width) + PNG_MARGIN_PX * 2
+  const chartHeight = Math.ceil(chart.height) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
+  // Under the board, before the story starts beneath it: the regression this guards against painted over it here,
+  // since renderPattern repaints this whole picture-wide region and used to run after the background was drawn.
+  expect(warmerThanBoardIn(png, 0, chartHeight - PNG_BOTTOM_MARGIN_PX + 30, chartWidth, PNG_BOTTOM_MARGIN_PX - 40)).toBe(true)
 })
 
 test('PNG export of a 250 × 250 peyote Pattern is one picture within the pixel budget', async ({ page }) => {

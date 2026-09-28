@@ -9,6 +9,7 @@ import {
   type Rotation,
   type Technique,
 } from './grid'
+import { normalizeMakerName } from './makerName'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
 import { gridFromSize, type StatedSize } from './patternSize'
 
@@ -71,6 +72,12 @@ export interface Pattern {
    * differ the moment a color is erased and both are then correct.
    */
   imageColors?: string[]
+  /**
+   * This Pattern's own maker's name (ticket 182), overriding the device-wide one (domain/makerName.ts) on its exports
+   * and its background watermark. Absent by default: a Pattern set no override keeps whatever the device says, even
+   * as that changes later, the same way an imported Pattern with no override picks up the importing device's name.
+   */
+  makerName?: string
   createdAt: number
   updatedAt: number
   /**
@@ -87,6 +94,8 @@ export interface CreatePatternInput {
   beadId: string
   /** How big the Pattern is, in beads or in mm/cm — the latter converted once to a grid and not remembered (ADR 0017). */
   size: StatedSize
+  /** This Pattern's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
+  makerName?: string
 }
 
 function createEmptyGrid(columns: number, rows: number): Grid {
@@ -129,6 +138,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
   const { bead, columns, rows } = geometry
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
+  const makerName = normalizeMakerName(input.makerName ?? '')
 
   return {
     id: crypto.randomUUID(),
@@ -140,6 +150,7 @@ export function createPattern(input: CreatePatternInput): Pattern {
     grid: createEmptyGrid(columns, rows),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotation: 0,
+    ...(makerName ? { makerName } : {}),
     createdAt: now,
     updatedAt: now,
   }

@@ -25,6 +25,12 @@ export interface PrintText {
   name: string
   techniqueWord: string
   maker: string
+  /**
+   * What the background watermark reads (ticket 182): the maker's name alone, same as `maker` — unless this Pattern
+   * overrides the device-wide maker's name, in which case its own name joins it, since a name set just for this
+   * Pattern is worth telling apart from the rest of the maker's exports.
+   */
+  background: string
   /** "Sep 26, 2026 · 14:32" */
   exportedAt: string
   metaLine: string
@@ -44,8 +50,14 @@ export function headerMaker(maker: string): string {
   return maker.length > 32 ? `${maker.slice(0, 31).trimEnd()}…` : maker
 }
 
-export function printText(pattern: Pattern, t: Translations, locale: Locale, maker: string, at: Date): PrintText {
+/**
+ * `deviceMaker` is the name kept on this device (domain/makerName.ts); a Pattern with its own maker's name (ticket
+ * 182) overrides it here, so every caller downstream reads one already-resolved `maker` and need not know which one
+ * applied.
+ */
+export function printText(pattern: Pattern, t: Translations, locale: Locale, deviceMaker: string, at: Date): PrintText {
   const bead = resolvePatternBead(pattern)
+  const maker = (pattern.makerName || deviceMaker).trim()
   const [across, down] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(pattern, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
@@ -66,7 +78,8 @@ export function printText(pattern: Pattern, t: Translations, locale: Locale, mak
     locale,
     name: pattern.name,
     techniqueWord: technique,
-    maker: maker.trim(),
+    maker,
+    background: pattern.makerName ? `${pattern.name} · ${maker}` : maker,
     exportedAt: `${date} · ${time}`,
     metaLine: t.print.metaLine
       .replace('{size}', size)

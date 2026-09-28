@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch, type Ref } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel, type Bead } from '../domain/beads'
 import type { CreatePatternInput } from '../domain/pattern'
 import type { SizeUnit, Technique } from '../domain/grid'
@@ -12,6 +12,7 @@ import {
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
+import { MAX_MAKER_NAME } from '../domain/makerName'
 import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../domain/patternSize'
 import { useI18n } from '../i18n/useI18n'
 import AppButton from './AppButton.vue'
@@ -66,31 +67,23 @@ const beadId = ref(props.beads[0]!.id)
 const technique = ref<Technique>('loom')
 const widthText = ref('')
 const heightText = ref('')
+/** This Pattern's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
+const makerName = ref('')
 /** Beads by default (ADR 0017): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
 const unit = ref<SizeUnit>('beads')
 
+/** The form's own root, so the Name input can be found and focused without a global id lookup (ticket 181). */
+const formEl = ref<HTMLFormElement>()
+
+/** Focused and its text selected as soon as the form opens (ticket 181), to encourage naming — scoped to this form's own root, since a phone and a wider tier can both have one mounted at once (one hidden by CSS). */
+onMounted(() => {
+  const input = formEl.value?.querySelector<HTMLInputElement>('#name-input')
+  input?.focus()
+  input?.select()
+})
+
 const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
-
-/**
- * Width and Height as a click, not just a typed number (redesign-feedback.md): a whole beads count steps by 1; mm/cm
- * step by 1 too, its smallest meaningful unit. Blank or unparseable starts from the field's own minimum, the same
- * floor Create/Convert already enforce, rather than from 0 or NaN.
- */
-function stepSize(text: Ref<string>, delta: 1 | -1) {
-  const min = unit.value === 'beads' ? 1 : 0
-  const current = Number(text.value)
-  text.value =
-    text.value.trim() === '' || Number.isNaN(current) ? String(min) : String(Math.max(min, current + delta))
-}
-
-function stepWidth(delta: 1 | -1) {
-  stepSize(widthText, delta)
-}
-
-function stepHeight(delta: 1 | -1) {
-  stepSize(heightText, delta)
-}
 const selectedBead = computed(() => props.beads.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
@@ -194,10 +187,11 @@ function currentInput(): CreatePatternInput {
     technique: technique.value,
     beadId: beadId.value,
     size: { width: width.value, height: height.value, unit: unit.value },
+    makerName: makerName.value.trim(),
   }
 }
 
-watch([name, beadId, technique, widthText, heightText, unit], () => emit('draft', currentInput()), {
+watch([name, beadId, technique, widthText, heightText, unit, makerName], () => emit('draft', currentInput()), {
   immediate: true,
 })
 
@@ -268,14 +262,27 @@ function onDropImage(file: File) {
 
 <template>
   <!--
-    The New Pattern form (ticket 149; NewPatternForm card), in the left column's first box: Name (optional), Bead,
-    Technique, Width and Height in their Unit with the size in the other unit beside it, a computed bead-to-real-world
-    conversion row for both axes (ticket 179), Create Pattern, then "or" and Convert image. Create and Convert both
-    wait for a size; its reason is written at the field.
+    The New Pattern form (ticket 149; NewPatternForm card), in the left column's first box: Name (optional), Maker's
+    name (ticket 182, also optional and blank by default), Bead, Technique, Width and Height in their Unit with the
+    size in the other unit beside it, a computed bead-to-real-world conversion row for both axes (ticket 179), Create
+    Pattern, then "or" and Convert image. Create and Convert both wait for a size; its reason is written at the field.
   -->
-  <form class="new-pattern-form" novalidate @submit.prevent="onSubmit">
+  <form ref="formEl" class="new-pattern-form" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
       <TextField id="name-input" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
+    </FormField>
+
+    <!-- This Pattern's own maker's name (ticket 182): blank by default, overriding the device-wide one only if set. -->
+    <FormField :label="t.form.makerNameLabel" label-for="maker-name-input" :aside="t.form.optional">
+      <TextField
+        id="maker-name-input"
+        v-model="makerName"
+        data-testid="maker-name-input"
+        type="text"
+        autocomplete="name"
+        :maxlength="MAX_MAKER_NAME"
+        :placeholder="t.form.makerNamePlaceholder"
+      />
     </FormField>
 
     <FormField :label="t.form.beadLabel" label-for="bead-select">
@@ -297,51 +304,38 @@ function onDropImage(file: File) {
 
     <div class="new-pattern-form__pair">
       <FormField :label="t.form.widthLabel" label-for="width-input" :error="widthError" error-testid="width-error">
-        <span class="new-pattern-form__number">
-          <NumberField
-            id="width-input"
-            v-model="widthText"
-            data-testid="width-input"
-            :unit="unitOptions.find((option) => option.value === unit)?.label"
-            :whole="unit === 'beads'"
-            :invalid="!!widthError"
-            :min="unit === 'beads' ? 1 : 0"
-            :step="unit === 'beads' ? 1 : 'any'"
-            @blur="touched.width = true"
-          />
-          <!-- A click, not just the on-screen keyboard, for Width and Height (redesign-feedback.md). -->
-          <span class="new-pattern-form__spin">
-            <button type="button" class="ui-control new-pattern-form__spin-button" :aria-label="t.form.increaseWidth" data-testid="width-increase" @click="stepWidth(1)">
-              <AppIcon name="chevron-up" :size="14" />
-            </button>
-            <button type="button" class="ui-control new-pattern-form__spin-button" :aria-label="t.form.decreaseWidth" data-testid="width-decrease" @click="stepWidth(-1)">
-              <AppIcon name="chevron-down" :size="14" />
-            </button>
-          </span>
-        </span>
+        <NumberField
+          id="width-input"
+          v-model="widthText"
+          data-testid="width-input"
+          testid-prefix="width-input"
+          :unit="unitOptions.find((option) => option.value === unit)?.label"
+          :whole="unit === 'beads'"
+          :invalid="!!widthError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          stepper
+          :decrease-label="t.form.decreaseWidthButton"
+          :increase-label="t.form.increaseWidthButton"
+          @blur="touched.width = true"
+        />
       </FormField>
       <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
-        <span class="new-pattern-form__number">
-          <NumberField
-            id="height-input"
-            v-model="heightText"
-            data-testid="height-input"
-            :unit="unitOptions.find((option) => option.value === unit)?.label"
-            :whole="unit === 'beads'"
-            :invalid="!!heightError"
-            :min="unit === 'beads' ? 1 : 0"
-            :step="unit === 'beads' ? 1 : 'any'"
-            @blur="touched.height = true"
-          />
-          <span class="new-pattern-form__spin">
-            <button type="button" class="ui-control new-pattern-form__spin-button" :aria-label="t.form.increaseHeight" data-testid="height-increase" @click="stepHeight(1)">
-              <AppIcon name="chevron-up" :size="14" />
-            </button>
-            <button type="button" class="ui-control new-pattern-form__spin-button" :aria-label="t.form.decreaseHeight" data-testid="height-decrease" @click="stepHeight(-1)">
-              <AppIcon name="chevron-down" :size="14" />
-            </button>
-          </span>
-        </span>
+        <NumberField
+          id="height-input"
+          v-model="heightText"
+          data-testid="height-input"
+          testid-prefix="height-input"
+          :unit="unitOptions.find((option) => option.value === unit)?.label"
+          :whole="unit === 'beads'"
+          :invalid="!!heightError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          stepper
+          :decrease-label="t.form.decreaseHeightButton"
+          :increase-label="t.form.increaseHeightButton"
+          @blur="touched.height = true"
+        />
       </FormField>
     </div>
 
@@ -444,71 +438,6 @@ function onDropImage(file: File) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-10);
-}
-
-/* Width and Height as a click, not just the on-screen keyboard (redesign-feedback.md): the field shrinks to make room for a stacked up/down pair beside it. */
-.new-pattern-form__number {
-  display: flex;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.new-pattern-form__number :deep(.text-field) {
-  flex: 1 1 auto;
-  min-width: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.new-pattern-form__spin {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  width: var(--space-24);
-}
-
-.new-pattern-form__spin-button {
-  display: flex;
-  flex: 1 1 0;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--muted);
-  background: var(--elevated);
-  border: 1px solid var(--field-line);
-  border-left: 0;
-  cursor: pointer;
-}
-
-.new-pattern-form__spin-button:first-child {
-  border-top-right-radius: var(--radius-md);
-}
-
-.new-pattern-form__spin-button:last-child {
-  margin-top: -1px;
-  border-bottom-right-radius: var(--radius-md);
-}
-
-@media (hover: hover) {
-  .new-pattern-form__spin-button:hover {
-    color: var(--ink);
-    background: var(--hover-fill);
-  }
-}
-
-.new-pattern-form__spin-button:active {
-  background: var(--press-fill);
-}
-
-.new-pattern-form__spin-button:focus-visible {
-  position: relative;
-  z-index: 1;
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: -2px;
-}
-
-:root[data-theme='contrast'] .new-pattern-form__spin-button {
-  border-width: 2px;
 }
 
 .new-pattern-form__submit {

@@ -55,6 +55,17 @@ describe('NewPatternForm', () => {
     expect(options[0]!.text()).toContain('TOHO')
   })
 
+  it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {
+    const wrapper = mount(NewPatternForm, { attachTo: document.body })
+    const input = wrapper.find('[data-testid="name-input"]').element as HTMLInputElement
+
+    expect(document.activeElement).toBe(input)
+    expect(input.selectionStart).toBe(0)
+    expect(input.selectionEnd).toBe(input.value.length)
+
+    wrapper.unmount()
+  })
+
   it('emits submit with the chosen bead, technique, and size on valid input', async () => {
     const wrapper = mount(NewPatternForm)
 
@@ -72,6 +83,7 @@ describe('NewPatternForm', () => {
         technique: 'loom',
         beadId: BEAD_CATALOG[1]!.id,
         size: { width: 10, height: 15, unit: 'cm' },
+        makerName: '',
       },
     ])
   })
@@ -133,6 +145,50 @@ describe('NewPatternForm', () => {
     const events = wrapper.emitted('submit')
     expect(events![0]![0]).toMatchObject({ technique: 'peyote' })
   })
+
+  it('sets Width and Height entirely by clicking their stepper buttons (ticket 181)', async () => {
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="width-input-increase"]').trigger('click')
+    await wrapper.find('[data-testid="width-input-increase"]').trigger('click')
+    await wrapper.find('[data-testid="width-input-decrease"]').trigger('click')
+    await wrapper.find('[data-testid="height-input-increase"]').trigger('click')
+    await wrapper.find('form').trigger('submit')
+
+    const events = wrapper.emitted('submit')
+    expect(events![0]![0]).toMatchObject({ size: { width: 1, height: 1, unit: 'beads' } })
+  })
+
+  it("turns Width's decrease button away at its minimum of 1 bead", async () => {
+    const wrapper = mount(NewPatternForm)
+
+    // Empty reads as 0: a step down would land below the 1-bead minimum, so decrease starts turned away.
+    expect(wrapper.find('[data-testid="width-input-decrease"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="width-input-increase"]').trigger('click')
+    expect(wrapper.find('[data-testid="width-input-decrease"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="width-input-increase"]').trigger('click')
+    expect(wrapper.find('[data-testid="width-input-decrease"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="maker-name-input"]').setValue('  Bead Master  ')
+    await wrapper.find('[data-testid="width-input"]').setValue('20')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    await wrapper.find('form').trigger('submit')
+
+    const events = wrapper.emitted('submit')
+    expect(events![0]![0]).toMatchObject({ makerName: 'Bead Master' })
+  })
+
+  it("leaves the maker's name blank by default", () => {
+    const wrapper = mount(NewPatternForm)
+
+    expect((wrapper.find('[data-testid="maker-name-input"]').element as HTMLInputElement).value).toBe('')
+  })
 })
 
 describe('NewPatternForm draft (ticket 58)', () => {
@@ -144,6 +200,7 @@ describe('NewPatternForm draft (ticket 58)', () => {
       technique: 'loom',
       beadId: BEAD_CATALOG[0]!.id,
       size: { width: 0, height: 0, unit: 'beads' },
+      makerName: '',
     })
   })
 
@@ -162,6 +219,7 @@ describe('NewPatternForm draft (ticket 58)', () => {
       technique: 'brick',
       beadId: BEAD_CATALOG[2]!.id,
       size: { width: 15, height: 30, unit: 'cm' },
+      makerName: '',
     })
   })
 })

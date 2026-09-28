@@ -155,6 +155,38 @@ describe('createPattern', () => {
 
     expect(pattern.name).toBe('My Bracelet')
   })
+
+  it('has no maker name override when none is given (ticket 182)', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+    })
+
+    expect(pattern.makerName).toBeUndefined()
+  })
+
+  it('trims and keeps a given maker name override (ticket 182)', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      makerName: '  Bead Master  ',
+    })
+
+    expect(pattern.makerName).toBe('Bead Master')
+  })
+
+  it('has no maker name override when given a blank one (ticket 182)', () => {
+    const pattern = createPattern({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 3, height: 3, unit: 'mm' },
+      makerName: '   ',
+    })
+
+    expect(pattern.makerName).toBeUndefined()
+  })
 })
 
 describe('summarizePattern', () => {

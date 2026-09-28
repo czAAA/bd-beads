@@ -56,4 +56,19 @@ describe('printText (tickets 162, 164)', () => {
     expect(headerMaker('x'.repeat(40))).toHaveLength(32)
     expect(headerMaker('x'.repeat(40)).endsWith('…')).toBe(true)
   })
+
+  it("keeps the device-wide maker's name, and the background is just that name, when the Pattern has no override (ticket 182)", () => {
+    const text = printText(delicaPattern(10), en, 'en', 'Maria Kovaleva', at)
+
+    expect(text.maker).toBe('Maria Kovaleva')
+    expect(text.background).toBe('Maria Kovaleva')
+  })
+
+  it("overrides the device-wide maker's name with the Pattern's own, and joins it with the Pattern's name in the background (ticket 182)", () => {
+    const pattern = { ...delicaPattern(10), makerName: 'Bead Master' }
+    const text = printText(pattern, en, 'en', 'Maria Kovaleva', at)
+
+    expect(text.maker).toBe('Bead Master')
+    expect(text.background).toBe('Logo panel · Bead Master')
+  })
 })

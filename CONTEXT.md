@@ -37,7 +37,7 @@ Every Pattern saved on this device, taken together — what the Saved Patterns b
 _Avoid_: collection, gallery, saved list, workspace
 
 **Maker's name**:
-Who made the Patterns on this device: an optional name, at most 40 characters, printed on every PDF and PNG export. It belongs to the person, not to a Pattern, so it is kept on the device like the theme and never sent anywhere (ADR 0001); it is set from the Export menu's last row, "Name on exports", and the exports leave it out while it is empty (ticket 161).
+Who made the Patterns on this device: an optional name, at most 40 characters, printed on every PDF and PNG export. It belongs to the person, not to a Pattern, so it is kept on the device like the theme and never sent anywhere (ADR 0001); it is set from the Export menu's last row, "Name on exports", and the exports leave it out while it is empty (ticket 161). A Pattern can override it with its own maker's name, set from the New Pattern form and blank by default regardless of the device-wide value; set, it replaces the device-wide name on that Pattern's exports and background watermark, alongside the Pattern's own name, and it travels with the Pattern (export, import, another device) rather than staying behind on this one (ticket 182).
 _Avoid_: author, owner, signature, user name
 
 **Palette**:

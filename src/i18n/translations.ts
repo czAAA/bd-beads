@@ -15,15 +15,19 @@ export interface Translations {
     techniqueBrick: string
     widthLabel: string
     heightLabel: string
-    increaseWidth: string
-    decreaseWidth: string
-    increaseHeight: string
-    decreaseHeight: string
+    /** Stepper buttons beside Width and Height (ticket 181), each named for screen readers like Stepper's own. */
+    decreaseWidthButton: string
+    increaseWidthButton: string
+    decreaseHeightButton: string
+    increaseHeightButton: string
     unitLabel: string
     /** The unit a Pattern's size can be stated in when it is a count of beads (ADR 0017) — the default. */
     unitBeads: string
     unitMm: string
     unitCm: string
+    /** This Pattern's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
+    makerNameLabel: string
+    makerNamePlaceholder: string
     submit: string
     /** Right of an optional field's label (TextField card). */
     optional: string

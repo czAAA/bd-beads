@@ -148,12 +148,15 @@ export function drawAccentLine(context: CanvasRenderingContext2D, page: PageSize
   context.restore()
 }
 
-/** The maker's name large and pale under the board, its top tucked behind the board's lower edge; never cut. */
-export function drawBackgroundName(context: CanvasRenderingContext2D, maker: string, x: number, boardBottom: number, align: CanvasTextAlign): void {
-  if (!maker) return
+/**
+ * Large and pale under the board, its top tucked behind the board's lower edge; never cut. The maker's name, or, for
+ * a Pattern with its own maker's name (ticket 182), that name alongside the Pattern's own (see PrintText.background).
+ */
+export function drawBackgroundName(context: CanvasRenderingContext2D, background: string, x: number, boardBottom: number, align: CanvasTextAlign): void {
+  if (!background) return
   context.save()
   context.globalAlpha = PRINT_OPACITY.name
-  text(context, maker, x, boardBottom + pt(26), font('italic 400', 40, SERIF), PRINT_COLORS.accent, align)
+  text(context, background, x, boardBottom + pt(26), font('italic 400', 40, SERIF), PRINT_COLORS.accent, align)
   context.restore()
 }
 
@@ -406,7 +409,7 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
   drawMark(context, page.width - mm(58), page.height * 0.42, mm(70), PRINT_COLORS.accent, PRINT_OPACITY.mark)
   drawMark(context, page.width - PRINT_MARGIN - mm(26), page.height - PRINT_MARGIN - mm(26), mm(26), PRINT_COLORS.accent, PRINT_OPACITY.mark)
   drawMark(context, page.width * 0.46, PRINT_MARGIN + mm(12), mm(12), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawBackgroundName(context, words.maker, board.x, boardBottom, 'left')
+  drawBackgroundName(context, words.background, board.x, boardBottom, 'left')
   drawAccentLine(context, page, { x: 0, y: page.height - mm(24) }, { right: boardRight, top: board.y - PRINT_BOARD_PAD, bottom: boardBottom })
 
   // The top: brand, maker, date; the technique word and name; one meta line; how to read the parts.
@@ -540,7 +543,7 @@ function drawSinglePartPage(pattern: Pattern, words: PrintText, plan: PrintPlan,
   // Behind: two marks, the maker's name tucked under the board, the accent line's run to the right.
   drawMark(context, page.width - mm(44), page.height * 0.5, mm(52), PRINT_COLORS.accent, PRINT_OPACITY.mark)
   drawMark(context, PRINT_MARGIN - mm(4), page.height - PRINT_MARGIN - mm(34), mm(20), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawBackgroundName(context, words.maker, page.width / 2, boardBottom, 'center')
+  drawBackgroundName(context, words.background, page.width / 2, boardBottom, 'center')
   drawAccentLine(context, page, { x: 0, y: boardBottom + mm(8) }, { right: board.x + board.width + PRINT_BOARD_PAD, top: board.y - PRINT_BOARD_PAD, bottom: boardBottom })
 
   // The 16 mm header: technique word and name, the part, maker, date and time, the page and a mini map.
@@ -616,7 +619,7 @@ function drawStripSheet(pattern: Pattern, words: PrintText, plan: PrintPlan, par
 
   if (lastBoard) {
     const boardBottom = lastBoard.y + lastBoard.height + PRINT_BOARD_PAD
-    drawBackgroundName(context, words.maker, page.width / 2, boardBottom, 'center')
+    drawBackgroundName(context, words.background, page.width / 2, boardBottom, 'center')
     drawAccentLine(context, page, { x: 0, y: boardBottom + mm(4) }, { right: lastBoard.x + lastBoard.width + PRINT_BOARD_PAD, top: lastBoard.y - PRINT_BOARD_PAD, bottom: boardBottom })
   }
 
