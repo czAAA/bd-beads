@@ -15,6 +15,10 @@ export interface Translations {
     techniqueBrick: string
     widthLabel: string
     heightLabel: string
+    increaseWidth: string
+    decreaseWidth: string
+    increaseHeight: string
+    decreaseHeight: string
     unitLabel: string
     /** The unit a Pattern's size can be stated in when it is a count of beads (ADR 0017) — the default. */
     unitBeads: string

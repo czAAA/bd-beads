@@ -31,6 +31,7 @@ import PalettePicker from './components/PalettePicker.vue'
 import PatternCanvas from './components/PatternCanvas.vue'
 import PatternImport from './components/PatternImport.vue'
 import PatternList from './components/PatternList.vue'
+import PhoneThemeButton from './components/PhoneThemeButton.vue'
 import ProgressBar from './components/ProgressBar.vue'
 import SaveBox from './components/SaveBox.vue'
 import QrExportPanel from './components/QrExportPanel.vue'
@@ -1788,7 +1789,8 @@ function onMoveRow(delta: number) {
             <span class="app-header__more-label">{{ t.languageSwitcher.ariaLabel }}</span>
             <LanguageSwitcher />
           </div>
-          <div class="app-header__more-row app-header__more-row--wrap">
+          <!-- Redundant on phone once PhoneThemeButton sits in the header itself; stays for the iPad mini tier, which has no room for a standalone icon. -->
+          <div class="app-header__more-row app-header__more-row--wrap app-header__more-theme">
             <span class="app-header__more-label">{{ t.theme.groupLabel }}</span>
             <ThemeToggle />
           </div>
@@ -1806,6 +1808,34 @@ function onMoveRow(delta: number) {
         </AppMenu>
       </span>
     </header>
+
+    <!--
+      The phone header's second row (redesign-feedback.md): Replace bead, New Pattern and Theme, each its own icon
+      with the full label on hover/long-press. Full header width to itself, below the name row, rather than sharing
+      it as a nested column -- the icons plus a truncating Bead pill left no room to also fit Undo/Redo/More on some
+      very narrow phones once inside the same shrinking box.
+    -->
+    <p v-if="activePattern" class="app-header__phone-only app-header__phone-tools" data-testid="phone-header-tools">
+      <AppTooltip :text="t.replaceBead.selectLabel" :announce="false">
+        <button
+          type="button"
+          class="ui-control app-header__phone-bead"
+          :aria-label="`${t.replaceBead.selectLabel}: ${activeBeadLabel}`"
+          data-testid="phone-header-bead"
+          @click="openPhoneSheet = 'pattern'"
+        >
+          {{ activeBeadLabel }}
+        </button>
+      </AppTooltip>
+      <IconButton
+        icon="plus"
+        shape="round"
+        :label="t.patterns.newPatternButton"
+        data-testid="phone-header-new-pattern"
+        @click="phoneNewPatternOpen = true"
+      />
+      <PhoneThemeButton />
+    </p>
 
     <!--
       The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
@@ -2414,7 +2444,8 @@ function onMoveRow(delta: number) {
 
 /* The phone header's combined Pattern name/size + save state (ticket 79), now a row in the More menu (ticket 188). */
 .app-header__phone-pattern {
-  display: none;
+  display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--space-6);
   width: 100%;
@@ -2432,10 +2463,49 @@ function onMoveRow(delta: number) {
   color: var(--danger);
 }
 
+/*
+ * The phone header's second row (redesign-feedback.md): Replace bead, New Pattern and Theme. A sibling of <header>,
+ * not nested inside it -- see the template comment above app-header__phone-tools -- so it gets the full header width
+ * to itself instead of negotiating space with Undo/Redo/More.
+ */
+.app-header__phone-tools {
+  display: none;
+  align-items: center;
+  gap: var(--space-8);
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--space-8) var(--space-16);
+  background: var(--canvas);
+  border-bottom: 1px solid var(--line-soft);
+}
+
 @media (max-width: 743px) {
-  .app-header__phone-pattern {
+  .app-header__phone-tools {
     display: flex;
   }
+}
+
+/* The only text in the row: a compact pill, same look as the wide tier's read-only Bead pill, but a real button here (it opens the Pattern sheet). */
+.app-header__phone-bead {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  padding: var(--space-4) var(--space-12);
+  font: var(--type-pill);
+  color: var(--ink);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--pill);
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+}
+
+.app-header__phone-bead:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* Keyboard shortcuts inside the phone's More menu only helps a fine pointer or keyboard, same rule as ticket 166's standalone header button. */
@@ -2449,11 +2519,25 @@ function onMoveRow(delta: number) {
   }
 }
 
+/* Theme has its own icon in the phone header now (PhoneThemeButton); the More menu's copy only earns its keep at the iPad mini tier, which has no room for a standalone icon. */
+@media (max-width: 743px) {
+  .app-header__more-theme {
+    display: none;
+  }
+}
+
 .app-header__brand {
   display: flex;
   align-items: center;
   gap: var(--space-8);
   margin: 0 var(--space-10) 0 0;
+}
+
+/* bd-beads doesn't earn its keep at 52px next to the Pattern name and the header's own controls (redesign-feedback.md). */
+@media (max-width: 743px) {
+  .app-header__brand {
+    display: none;
+  }
 }
 
 .app-header__mark {
@@ -2648,7 +2732,8 @@ function onMoveRow(delta: number) {
   .app-shell__zoom-pill {
     position: absolute;
     right: var(--space-16);
-    bottom: var(--space-16);
+    /* Clears the home indicator / gesture bar (responsive.md "Screen edges"), the same as the Dock and BottomToolbar. */
+    bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
     z-index: var(--z-canvas-overlay);
     display: inline-flex;
   }
