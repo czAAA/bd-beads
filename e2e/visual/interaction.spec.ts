@@ -6,14 +6,14 @@ import type { Technique } from '../../src/domain/grid'
 import { decodePattern } from '../../src/domain/patternEncoding'
 import type { EncodedPattern } from '../../src/domain/patternEncoding'
 import { PALETTE } from '../../src/domain/palette'
-import { gridBox, openApp, openToolboxRow, setZoom, settle } from '../support/app'
+import { gridBox, openApp, setZoom, settle } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
 import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 
 /**
  * The pointer tools on the Drawing surface, in a real browser: the hover preview looks as the references have it, and
- * painting, erasing, Fill, the Row progress lock, Mirror, Undo, Space-drag pan and a touch stroke paint the beads they
- * should and no others.
+ * painting, erasing, Fill, the Row progress lock, Undo, Space-drag pan and a touch stroke paint the beads they should
+ * and no others (ticket 174 hid Mirror's own UI pending its own redesign).
  */
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const ZOOMS = [25, 100, 300]
@@ -176,19 +176,6 @@ test.describe('the pointer tools', () => {
     expect(colorAt(saved, 1, 3)).toBeNull()
     expect(colorAt(saved, 4, 3)).toBe(DEFAULT_COLOR)
     expect(pattern.grid[1]![3]!.color).toBeNull()
-  })
-
-  test('Mirror paints the counterpart as well', async ({ page }) => {
-    await openBlank(page)
-    await openToolboxRow(page, 'tool-group-mirror')
-    await page.getByTestId('mirror-left-right-increase').click()
-
-    const at = await pointOn(page, 'loom', false, 100, 4, 2)
-    await page.mouse.click(at.x, at.y)
-
-    const saved = await savedPattern(page)
-    // 16 columns split by one axis: column 2 mirrors to column 13.
-    expect([colorAt(saved, 4, 2), colorAt(saved, 4, 13)]).toEqual([DEFAULT_COLOR, DEFAULT_COLOR])
   })
 
   test('holding Space and dragging pans instead of painting', async ({ page }) => {

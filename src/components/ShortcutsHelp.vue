@@ -5,12 +5,13 @@ import AppModal from './AppModal.vue'
 import IconButton from './IconButton.vue'
 
 /**
- * The `?` shortcuts help overlay (ticket 96): every keyboard shortcut from tickets 87, 88, 90, 91, 92, 93, 94, 95,
- * grouped under the same five Tool group names the Toolbox itself uses (CONTEXT.md's Tool group entry) -- Del
- * (ticket 90) and Space+drag (ticket 95) are canvas-wide rather than tied to a single button, and are grouped
- * under Tools as the closest fit; Paste (ticket 92) has no Toolbox button of its own, and sits under Edit next to
- * Copy. Key labels (digits, letters, "Ctrl/Cmd+C") are locale-neutral and written out directly here rather than
- * translated, matching the shortcut hints already appended to Toolbox tooltips.
+ * The `?` shortcuts help overlay (ticket 96): every keyboard shortcut from tickets 87, 88, 90, 91, 92, 94, 95, grouped
+ * under the same Tool group names the Toolbox itself uses (CONTEXT.md's Tool group entry) -- Del (ticket 90) and
+ * Space+drag (ticket 95) are canvas-wide rather than tied to a single button, and are grouped under Tools as the
+ * closest fit; Paste (ticket 92) has no Toolbox button of its own, and sits under Edit next to Copy. Mirror's own
+ * shortcuts (ticket 93) left with its UI in ticket 174. Key labels (digits, letters, "Ctrl/Cmd+C") are locale-neutral
+ * and written out directly here rather than translated, matching the shortcut hints already appended to Toolbox
+ * tooltips.
  *
  * The Modal template (ticket 151; ShortcutsHelp card): two columns of groups in the Toolbox's order, each a `label`
  * heading, each row the action and its keys as Kbd chips.
@@ -43,18 +44,6 @@ const groups = computed(() => [
       { keys: 'Ctrl/Cmd+C', label: t.value.tools.copyButton },
       { keys: 'Ctrl/Cmd+V', label: t.value.tools.pasteLabel },
       { keys: 'Ctrl/Cmd+S', label: t.value.tools.saveButton },
-    ],
-  },
-  {
-    title: t.value.toolbox.groups.mirror,
-    shortcuts: [
-      { keys: '−', label: t.value.mirror.decreaseLeftRightButton },
-      { keys: '=', label: t.value.mirror.increaseLeftRightButton },
-      { keys: '[', label: t.value.mirror.decreaseTopBottomButton },
-      { keys: ']', label: t.value.mirror.increaseTopBottomButton },
-      { keys: 'M', label: t.value.mirror.copyModeLabel },
-      { keys: 'H', label: t.value.mirror.mirrorCurrentHorizontalButton },
-      { keys: 'V', label: t.value.mirror.mirrorCurrentVerticalButton },
     ],
   },
   {

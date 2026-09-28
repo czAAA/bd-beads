@@ -24,7 +24,6 @@ import EmptyCanvas from './components/EmptyCanvas.vue'
 import IconButton from './components/IconButton.vue'
 import ImageColorsButton from './components/ImageColorsButton.vue'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
-import MirrorControls from './components/MirrorControls.vue'
 import NameOnExportsModal from './components/NameOnExportsModal.vue'
 import NewPatternForm from './components/NewPatternForm.vue'
 import PalettePicker from './components/PalettePicker.vue'
@@ -352,23 +351,21 @@ const selectedImageColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 
 /**
- * Mirror's own session state (ticket 62): axis counts, copy mode, hover state, both preview computations, and
- * "Mirror current" itself, all behind one small interface -- see composables/useMirrorState.ts. Destructured under
- * their original names (rather than kept as one `mirror` object) so refs and computeds stay top-level setup
- * bindings, which is what lets the template auto-unwrap them -- the same convention usePatternZoom's zoom/zoomIn/
- * etc. already follow below. commitGridChange is a hoisted function declaration further down this file, so passing
- * it here (before its own definition) is safe: by the time useMirrorState calls it, the module has finished
- * initializing.
+ * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations, all behind one small
+ * interface -- see composables/useMirrorState.ts. Ticket 174 hid Mirror's UI pending its own redesign, so only the
+ * bookkeeping a Resize and a Pattern switch still need is pulled out here; the axis counts stay forever at their
+ * NO_MIRROR_AXES default with no UI left to move them off it, which is exactly what leaves paint/fill/erase's own
+ * live-mirror calls (mirrorAxisCounts.value below) inert without deleting them. Destructured under their original
+ * names (rather than kept as one `mirror` object) so refs and computeds stay top-level setup bindings, which is what
+ * lets the template auto-unwrap them -- the same convention usePatternZoom's zoom/zoomIn/etc. already follow below.
+ * commitGridChange is a hoisted function declaration further down this file, so passing it here (before its own
+ * definition) is safe: by the time useMirrorState calls it, the module has finished initializing.
  */
 const {
   axisCounts: mirrorAxisCounts,
   copyMode: mirrorCopyMode,
   previewedAxisCounts: previewedMirrorAxisCounts,
   currentDimmedCells: mirrorCurrentDimmedCells,
-  onHoverCurrent: onMirrorCurrentHover,
-  setAxisCount: onSetMirrorAxisCount,
-  toggleCopyMode: onToggleMirrorCopyMode,
-  mirrorCurrent: onMirrorCurrent,
   restoreAxisCounts: restoreMirrorAxisCounts,
   clearAxisCounts: clearMirrorAxisCounts,
   reset: resetMirrorState,
@@ -943,26 +940,6 @@ function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
   )
 }
 
-/** Which grid-space axis the on-screen Left–right Mirror counter drives right now (ticket 93) -- same rotation-aware mapping Toolbox.vue's leftRightAxis uses, since rotating the Pattern swaps the two. Undefined with no Pattern open. */
-function leftRightAxis(): 'columns' | 'rows' | undefined {
-  const pattern = activePattern.value
-  return pattern ? (pattern.rotated ? 'rows' : 'columns') : undefined
-}
-
-/** The Top–bottom counter's grid-space axis (ticket 93) -- the other of the two leftRightAxis doesn't pick. */
-function topBottomAxis(): 'columns' | 'rows' | undefined {
-  const pattern = activePattern.value
-  return pattern ? (pattern.rotated ? 'columns' : 'rows') : undefined
-}
-
-/** -/=/[/] (ticket 93): steps one Mirror axis count by delta, clamped exactly as the +/- buttons are (mirror.setAxisCount already clamps). */
-function adjustMirrorAxisCount(axis: 'columns' | 'rows' | undefined, delta: number) {
-  if (!axis) {
-    return
-  }
-  onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
-}
-
 /**
  * The table (ticket 86) driving useKeyboardShortcuts below: Undo, Redo and Escape from ticket 86 itself, plus every
  * Toolbox shortcut tickets 87-96 added, grouped the same way the Toolbox's own Tool groups are, without touching
@@ -1073,42 +1050,6 @@ const keyboardShortcuts: KeyboardShortcut[] = [
       event.preventDefault()
       onSave()
     },
-  },
-  // Mirror group (ticket 93): -/= step Left-right, [/] step Top-bottom, M toggles copy mode, H/V trigger Mirror current.
-  {
-    matches: (event) => event.key === '-' && isPlainKey(event),
-    guard: noModalOpen,
-    action: () => adjustMirrorAxisCount(leftRightAxis(), -1),
-  },
-  {
-    matches: (event) => event.key === '=' && isPlainKey(event),
-    guard: noModalOpen,
-    action: () => adjustMirrorAxisCount(leftRightAxis(), 1),
-  },
-  {
-    matches: (event) => event.key === '[' && isPlainKey(event),
-    guard: noModalOpen,
-    action: () => adjustMirrorAxisCount(topBottomAxis(), -1),
-  },
-  {
-    matches: (event) => event.key === ']' && isPlainKey(event),
-    guard: noModalOpen,
-    action: () => adjustMirrorAxisCount(topBottomAxis(), 1),
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, 'm'),
-    guard: noModalOpen,
-    action: () => onToggleMirrorCopyMode(),
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, 'h'),
-    guard: noModalOpen,
-    action: () => onMirrorCurrent('horizontal'),
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, 'v'),
-    guard: noModalOpen,
-    action: () => onMirrorCurrent('vertical'),
   },
   // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter move the pointer.
   {
@@ -1824,7 +1765,7 @@ function onMoveRow(delta: number) {
         </section>
         <!--
           Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools, and a
-          Pattern nobody can see is not one to offer Undo, Rotate, Mirror or Delete all against. Cancel brings both the
+          Pattern nobody can see is not one to offer Undo, Rotate or Delete all against. Cancel brings both the
           Pattern and its Toolbox straight back.
         -->
         <Toolbox
@@ -1839,8 +1780,6 @@ function onMoveRow(delta: number) {
           :can-redo="canRedo(history)"
           :can-copy="!!selection"
           :can-remove-selected-line="canRemoveSelectedLine"
-          :mirror-axis-counts="mirrorAxisCounts"
-          :mirror-copy-mode="mirrorCopyMode"
           @select-tool="onSelectTool"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
@@ -1849,12 +1788,7 @@ function onMoveRow(delta: number) {
           @redo="onRedo"
           @toggle-rotate="onToggleRotate"
           @copy="onCopy"
-          @set-mirror-axis-count="onSetMirrorAxisCount"
-          @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
-          @mirror-current="onMirrorCurrent"
-          @mirror-current-hover="onMirrorCurrentHover"
           @delete-all="onRequestDeleteAll"
-          @resize="onResize"
           @change-size="onRequestChangeSize"
           @remove-selected-line="onRemoveSelectedLine"
         />
@@ -2113,20 +2047,8 @@ function onMoveRow(delta: number) {
       </div>
     </BottomSheet>
 
-    <BottomSheet v-if="openPhoneSheet === 'mirror' && activePattern" :title="t.toolbox.groups.mirror" @close="openPhoneSheet = null">
-      <MirrorControls
-        :pattern="activePattern"
-        :mirror-axis-counts="mirrorAxisCounts"
-        :mirror-copy-mode="mirrorCopyMode"
-        @set-mirror-axis-count="onSetMirrorAxisCount"
-        @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
-        @mirror-current="onMirrorCurrent"
-        @mirror-current-hover="onMirrorCurrentHover"
-      />
-    </BottomSheet>
-
     <BottomSheet v-if="openPhoneSheet === 'size' && activePattern" :title="t.toolbox.groups.size" @close="openPhoneSheet = null">
-      <SizeControls :pattern="activePattern" @resize="onResize" @change-size="onRequestChangeSize" />
+      <SizeControls :pattern="activePattern" @change-size="onRequestChangeSize" />
     </BottomSheet>
 
     <!--

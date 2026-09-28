@@ -7,17 +7,14 @@ import DisclosureRow from './DisclosureRow.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 import ImageColorsButton from './ImageColorsButton.vue'
-import MirrorControls from './MirrorControls.vue'
 import PalettePicker from './PalettePicker.vue'
 import SizeControls from './SizeControls.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../i18n/useI18n'
 import { useRovingFocus } from '../composables/useRovingFocus'
 import type { Tool } from '../domain/tool'
-import type { MirrorAxisCounts } from '../domain/mirror'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
-import type { ResizeRequest } from '../domain/resize'
 
 const props = defineProps<{
   pattern: Pattern
@@ -32,9 +29,6 @@ const props = defineProps<{
   canCopy: boolean
   /** Whether "remove selected row/column" (ticket 123) would apply right now: the Selection is exactly one whole row or column, and Row progress isn't locking it. */
   canRemoveSelectedLine: boolean
-  mirrorAxisCounts: MirrorAxisCounts
-  /** Mirror's copy-mode switch (ticket 45). */
-  mirrorCopyMode: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,15 +40,9 @@ const emit = defineEmits<{
   redo: []
   'toggle-rotate': []
   copy: []
-  'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
-  'toggle-mirror-copy-mode': []
-  'mirror-current': [axis: 'horizontal' | 'vertical']
-  'mirror-current-hover': [axis: 'horizontal' | 'vertical' | null]
   'delete-all': []
   /** "Remove selected row/column" (ticket 123): the Selection names which one, so it takes no payload of its own. */
   'remove-selected-line': []
-  /** A Resize (CONTEXT.md, ADR 0017) from the Size group, in grid space. */
-  resize: [request: ResizeRequest]
   'change-size': []
 }>()
 
@@ -82,8 +70,7 @@ const toolsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const colorsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 
-/** Which disclosure row is open (DisclosureRow card): closed until pressed, one or both at a time. */
-const mirrorOpen = ref(false)
+/** Which disclosure row is open (DisclosureRow card): closed until pressed. */
 const sizeOpen = ref(false)
 
 /**
@@ -92,8 +79,7 @@ const sizeOpen = ref(false)
  * used up or should fall through to its usual Select precedence.
  */
 function collapseExpandedGroup(): boolean {
-  if (mirrorOpen.value || sizeOpen.value) {
-    mirrorOpen.value = false
+  if (sizeOpen.value) {
     sizeOpen.value = false
     return true
   }
@@ -114,24 +100,13 @@ const sizeSummary = computed(() => {
     locale.value,
   )
 })
-
-/**
- * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
- * Pattern's current view-only rotation (see Pattern.rotated / PatternCanvas.vue): rotating swaps the two, the same
- * relabeling PatternCanvas already does for width/height, never a transform of the counts or grid data themselves.
- */
-const leftRightAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'rows' : 'columns'))
-const topBottomAxis = computed<'columns' | 'rows'>(() => (props.pattern.rotated ? 'columns' : 'rows'))
-
-/** Just for the DisclosureRow's own summary ("↔ 1 · ↕ 0"); MirrorControls works these out again for its own controls. */
-const leftRightCount = computed(() => props.mirrorAxisCounts[leftRightAxis.value])
-const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value])
 </script>
 
 <template>
   <!--
     The Toolbox (ticket 75; Toolbox card): the left column's first box. Tools as tabs, Colors and Edit are always open;
-    Mirror and Size are disclosure rows that open in place. Every control keeps its hotkey in its tooltip.
+    Size is a disclosure row that opens in place (ticket 174 hid Mirror's pending its own redesign, keeping the domain
+    logic behind it, ADR 0006, in the codebase). Every control keeps its hotkey in its tooltip.
   -->
   <div class="toolbox" data-testid="toolbox">
     <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
@@ -219,24 +194,6 @@ const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value
     </ToolGroup>
 
     <div class="toolbox__rows">
-      <DisclosureRow
-        v-model:open="mirrorOpen"
-        icon="mirror-horizontal"
-        :label="t.toolbox.groups.mirror"
-        :summary="`↔ ${leftRightCount} · ↕ ${topBottomCount}`"
-        data-testid="tool-group-mirror"
-      >
-        <MirrorControls
-          :pattern="pattern"
-          :mirror-axis-counts="mirrorAxisCounts"
-          :mirror-copy-mode="mirrorCopyMode"
-          @set-mirror-axis-count="(axis, count) => emit('set-mirror-axis-count', axis, count)"
-          @toggle-mirror-copy-mode="emit('toggle-mirror-copy-mode')"
-          @mirror-current="(axis) => emit('mirror-current', axis)"
-          @mirror-current-hover="(axis) => emit('mirror-current-hover', axis)"
-        />
-      </DisclosureRow>
-
       <!-- Estimated size and Resize (CONTEXT.md, ADR 0017). -->
       <DisclosureRow
         v-model:open="sizeOpen"
@@ -245,7 +202,7 @@ const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value
         :summary="sizeSummary"
         data-testid="tool-group-size"
       >
-        <SizeControls :pattern="pattern" @resize="(request) => emit('resize', request)" @change-size="emit('change-size')" />
+        <SizeControls :pattern="pattern" @change-size="emit('change-size')" />
       </DisclosureRow>
     </div>
   </div>
@@ -360,7 +317,7 @@ const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value
   width: 100%;
 }
 
-/* Mirror and Size as disclosure rows, with a rule above the first. */
+/* Size as a disclosure row, with a rule above it. */
 .toolbox__rows {
   border-top: 1px solid var(--panel-rule);
 }

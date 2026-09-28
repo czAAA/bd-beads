@@ -18,8 +18,15 @@ const props = withDefaults(
     /** Nothing to list: the body is just its one line. */
     empty?: boolean
     collapsedHeight?: string
+    /**
+     * Whether the collapsed body clips content past `collapsedHeight` (ticket 175). BeadsNeeded needs this: it draws
+     * every row and relies on the clip to show only the summary ones. Saved Patterns already slices down to its own
+     * summary count before this ever sees it, so it turns the clip off instead — the clip was cutting off a
+     * truncated name's hover tooltip, which sits below the row that names it.
+     */
+    clipOverflow?: boolean
   }>(),
-  { expandable: false, empty: false, collapsedHeight: 'var(--panel-body-height)' },
+  { expandable: false, empty: false, collapsedHeight: 'var(--panel-body-height)', clipOverflow: true },
 )
 
 const expanded = defineModel<boolean>('expanded', { default: false })
@@ -59,7 +66,10 @@ function onKeydown(event: KeyboardEvent) {
     </div>
     <div
       class="expandable-panel__body"
-      :class="{ 'expandable-panel__body--fixed': !empty && !(expanded && expandable) }"
+      :class="{
+        'expandable-panel__body--fixed': !empty && !(expanded && expandable),
+        'expandable-panel__body--no-clip': !clipOverflow,
+      }"
       :style="{ '--collapsed-height': collapsedHeight }"
     >
       <slot />
@@ -123,6 +133,10 @@ function onKeydown(event: KeyboardEvent) {
 .expandable-panel__body--fixed {
   height: var(--collapsed-height);
   overflow: hidden;
+}
+
+.expandable-panel__body--no-clip {
+  overflow: visible;
 }
 
 .expandable-panel__body:not(.expandable-panel__body--fixed) {

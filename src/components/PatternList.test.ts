@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import PatternList from './PatternList.vue'
+import ExpandablePanel from './ExpandablePanel.vue'
 import { createPattern, summarizePattern, type Pattern } from '../domain/pattern'
 import { serializeLibrary, serializePattern } from '../domain/patternFile'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -116,6 +117,14 @@ describe('PatternList recent thumbnails (ticket 147)', () => {
     expect(open.classes()).toContain('pattern-list__item--active')
     await open.find('[data-testid="select-pattern-p1"]').trigger('focusin')
     expect(open.find('[data-testid="tooltip"]').text()).toBe('A very long Pattern name indeed')
+  })
+})
+
+describe('PatternList name tooltip (ticket 175)', () => {
+  it('turns off the panel’s own overflow clip, so a hovered name’s tooltip is never cut off by the collapsed body', () => {
+    const wrapper = mount(PatternList, { props: { patterns: [makePattern(), makePattern()] } })
+
+    expect(wrapper.findComponent(ExpandablePanel).props('clipOverflow')).toBe(false)
   })
 })
 

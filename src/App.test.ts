@@ -268,7 +268,7 @@ describe('App', () => {
       'tool-fill',
       'palette-picker',
       'undo-button',
-      'mirror-left-right',
+      'tool-group-size',
     ]) {
       expect(toolbox.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
@@ -462,48 +462,6 @@ describe('App', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
-  it('undoes and redoes a live-mirrored paint as a single action', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
-  })
-
-  it('leaves Fill unaffected by mirror state, both while painting and in its hover preview', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-
-    // Mirror off while painting (0,0), so (0,1) starts out unpainted.
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-
-    await hoverBead(wrapper, 0) // (0,0)
-    expect(previewedBeads(wrapper)).toHaveLength(1) // no mirrored counterpart previewed
-
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await pressBead(wrapper, 0) // fill (0,0), mirror on
-
-    const grid = loadPatterns()[0]!.grid
-    expect(grid[0]![0]!.color).toBe('#2f6fed')
-    // If Fill mirrored like Paint does, (0,1) — (0,0)'s left-right counterpart — would also have flipped to blue.
-    expect(grid[0]![1]!.color).toBeNull()
-  })
-
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -653,23 +611,6 @@ describe('App', () => {
     ).toBe(true)
   })
 
-  it('drags a live-mirrored stroke, mirroring each dragged cell along the way', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    await pressBead(wrapper, 0) // (0,0) -> mirrors to (0,1)
-    await hoverBead(wrapper, 2, { buttons: 1 }) // (1,0) -> mirrors to (1,1)
-    await wrapper.trigger('mouseup')
-
-    const grid = loadPatterns()[0]!.grid
-    expect(grid[0]![0]!.color).toBe('#e63746')
-    expect(grid[0]![1]!.color).toBe('#e63746')
-    expect(grid[1]![0]!.color).toBe('#e63746')
-    expect(grid[1]![1]!.color).toBe('#e63746')
-  })
-
   it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
@@ -735,24 +676,6 @@ describe('App', () => {
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
-  })
-
-  it('right-click erase under Paint also erases the mirrored counterpart cell(s), same as painting', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0) // paints (0,0) and (0,1)
-    await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
-
-    await pressBead(wrapper, 0, { button: 2 })
-    await wrapper.trigger('mouseup')
-
-    const grid = loadPatterns()[0]!.grid
-    expect(grid[0]![0]!.color).toBeNull()
-    expect(grid[0]![1]!.color).toBeNull()
   })
 
   it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
@@ -1203,19 +1126,6 @@ describe('App Toolbox controls (ticket 75)', () => {
     { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton, icon: 'redo' },
     { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton, icon: 'rotate', titleSuffix: ' (R)' },
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, icon: 'copy', titleSuffix: ' (Ctrl/Cmd+C)' },
-    { testId: 'mirror-copy-mode', label: (t: typeof en) => t.mirror.copyModeLabel, icon: 'mirror-copy-mode', titleSuffix: ' (M)' },
-    {
-      testId: 'mirror-current-horizontal',
-      label: (t: typeof en) => t.mirror.mirrorCurrentHorizontalButton,
-      icon: 'mirror-horizontal',
-      titleSuffix: ' (H)',
-    },
-    {
-      testId: 'mirror-current-vertical',
-      label: (t: typeof en) => t.mirror.mirrorCurrentVerticalButton,
-      icon: 'mirror-vertical',
-      titleSuffix: ' (V)',
-    },
   ]
 
   it.each(tabs)('draws $testId as a tab with its icon and its name, in both languages', async ({ testId, label, icon, titleSuffix }) => {
@@ -1262,7 +1172,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(deleteAll.classes()).toContain('app-link--danger')
   })
 
-  it('gives the three always-open groups a label and makes Mirror and Size disclosure rows, in that order', async () => {
+  it('gives the three always-open groups a label and makes Size a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -1272,10 +1182,7 @@ describe('App Toolbox controls (ticket 75)', () => {
       en.toolbox.groups.colors,
       en.toolbox.groups.edit,
     ])
-    expect(wrapper.findAll('.disclosure-row__label').map((label) => label.text())).toEqual([
-      en.toolbox.groups.mirror,
-      en.toolbox.groups.size,
-    ])
+    expect(wrapper.findAll('.disclosure-row__label').map((label) => label.text())).toEqual([en.toolbox.groups.size])
   })
 
   it('shows which tool is active', async () => {
@@ -1587,19 +1494,6 @@ describe('App Erase tool (ticket 89)', () => {
     expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
-  it('erases the mirrored counterpart cells too, while a Mirror axis is active', async () => {
-    const wrapper = mountAppForCleanup()
-    await paintedSmallPattern(wrapper)
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
-
-    await click(wrapper, 0) // (0,0) mirrors (0,1) in a 2-column grid
-
-    const grid = loadPatterns()[0]!.grid
-    expect(grid[0]![0]!.color).toBeNull()
-    expect(grid[0]![1]!.color).toBeNull()
-  })
-
   it('respects the Row progress lock: a finished row is left alone', async () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6') // 4x4
@@ -1752,64 +1646,20 @@ describe('App Edit group hotkeys — Rotate (R) and Copy (Ctrl/Cmd+C) (ticket 91
   })
 })
 
-describe('App Mirror group hotkeys (ticket 93)', () => {
-  it('-/= step the Left-right axis count, clamped the same as the buttons', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
-
-    await pressKey({ key: '=' })
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
-
-    await pressKey({ key: '-' })
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
-  })
-
-  it('[/] step the Top-bottom axis count, clamped the same as the buttons', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
-
-    await pressKey({ key: ']' })
-    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('1')
-
-    await pressKey({ key: '[' })
-    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('0')
-  })
-
-  it('M toggles copy mode', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
-
-    await pressKey({ key: 'm' })
-
-    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
-  })
-
-  it('H and V trigger Mirror current horizontal/vertical', async () => {
+describe('App Mirror group hotkeys removed (ticket 174, pending its own redesign)', () => {
+  it('-, =, [, ], M, H and V no longer do anything: no UI is left for them to reach', async () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '6', '6') // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
+    const before = loadPatterns()[0]!.grid
 
-    await pressKey({ key: 'h' })
-
-    // Mirror current horizontal syncs the fullest column-strip onto the rest; with 0 axes that's a straight mirror.
-    expect(loadPatterns()[0]!.grid[0]![3]!.color).toBe('#e63746')
-  })
-
-  it('has no effect while typing in a form field', async () => {
-    const field = document.createElement('input')
-    document.body.appendChild(field)
-    try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
-
-      await pressKey({ key: '=' }, field)
-
-      expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
-    } finally {
-      field.remove()
+    for (const key of ['-', '=', '[', ']', 'm', 'h', 'v']) {
+      await pressKey({ key })
     }
+
+    expect(loadPatterns()[0]!.grid).toEqual(before)
   })
 })
 
@@ -2005,16 +1855,6 @@ describe('App hover preview', () => {
   // overlayRenderer.test.ts; since ticket 27 made red App's default selection, nothing is never actually selected
   // while a Pattern is open here, so there's no reachable App-level scenario left to exercise it through.
 
-  it('also previews the mirrored counterpart cells when a mirror axis is on', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2 grid
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-
-    await hoverBead(wrapper, 0) // (0,0)
-
-    expect(previewedBeads(wrapper)).toHaveLength(2)
-  })
 })
 
 describe('App row progress', () => {
@@ -2308,18 +2148,6 @@ describe('App finished rows', () => {
     expect(colorAt(2, 0)).toBe('#e63746')
   })
 
-  it('leaves a live-mirrored counterpart alone when it lands in a finished row', async () => {
-    const wrapper = mount(App)
-    await withTwoRowsWoven(wrapper)
-    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
-
-    await pressBead(wrapper, 183) // (18,3), whose counterpart across the middle is (1,3)
-    await wrapper.trigger('mouseup')
-
-    expect(colorAt(18, 3)).toBe('#e63746')
-    expect(colorAt(1, 3)).toBeNull()
-  })
-
   it('locks the finished columns instead once rows run down them', async () => {
     const wrapper = mount(App)
     await withTwoRowsWoven(wrapper)
@@ -2346,16 +2174,12 @@ describe('App finished rows', () => {
     expect(colorAt(1, 4)).toBe('#e63746')
   })
 
-  it('previews no paint on a finished bead, and only the unfinished half of a mirrored pair', async () => {
+  it('previews no paint on a finished bead', async () => {
     const wrapper = mount(App)
     await withTwoRowsWoven(wrapper)
 
     await hoverBead(wrapper, 14) // (1,4)
     expect(previewedBeads(wrapper)).toHaveLength(0)
-
-    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
-    await hoverBead(wrapper, 183) // (18,3), mirrored onto finished (1,3)
-    expect(previewedBeads(wrapper)).toHaveLength(1)
   })
 
   it('still undoes in full, even a change to a row marked done since', async () => {
@@ -2505,19 +2329,6 @@ describe('App delete all', () => {
     expect(loadedPattern().grid[0]![4]!.color).toBeNull()
   })
 
-  it('is not affected by Mirror: confirming still empties every cell with mirror axes on', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await click(wrapper, 0)
-
-    await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
-    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-
-    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
-  })
 
   it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
     const wrapper = mount(App)

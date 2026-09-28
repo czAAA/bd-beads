@@ -25,15 +25,13 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
       canRedo: false,
       canCopy: false,
       canRemoveSelectedLine: false,
-      mirrorAxisCounts: { columns: 0, rows: 0 },
-      mirrorCopyMode: false,
       ...overrides,
     },
   })
 }
 
 describe('Toolbox', () => {
-  it('renders Tools, Colors and Edit as groups, then Mirror and Size as disclosure rows (tickets 75, 144)', () => {
+  it('renders Tools, Colors and Edit as groups, then Size as a disclosure row (tickets 75, 144, 174)', () => {
     const wrapper = mountToolbox()
 
     const groups = wrapper.findAll('.tool-group')
@@ -42,10 +40,17 @@ describe('Toolbox', () => {
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
     ])
-    // Mirror and Size are disclosure rows (ticket 75), closed until pressed.
+    // Size is a disclosure row (ticket 75), closed until pressed; ticket 174 hid Mirror's pending its own redesign.
     const rows = wrapper.findAll('.disclosure-row')
-    expect(rows.map((row) => row.find('.disclosure-row__label').text())).toEqual([ru.toolbox.groups.mirror, ru.toolbox.groups.size])
-    expect(rows.map((row) => row.find('button').attributes('aria-expanded'))).toEqual(['false', 'false'])
+    expect(rows.map((row) => row.find('.disclosure-row__label').text())).toEqual([ru.toolbox.groups.size])
+    expect(rows.map((row) => row.find('button').attributes('aria-expanded'))).toEqual(['false'])
+  })
+
+  it('has no Mirror group left in the UI (ticket 174, pending its own redesign)', () => {
+    const wrapper = mountToolbox()
+
+    expect(wrapper.find('[data-testid="tool-group-mirror"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain(ru.toolbox.groups.mirror)
   })
 
   it('puts Paint, Fill, Select, Erase, remove-line and Delete all inside the Tools group', () => {
@@ -133,27 +138,6 @@ describe('Toolbox', () => {
     expect(wrapper.find('[data-testid="copy-button"]').attributes('title')).toContain('Ctrl/Cmd+C')
   })
 
-  it('puts the mirror axis counters and mirror-current controls inside the Mirror group', () => {
-    const wrapper = mountToolbox()
-
-    const mirrorGroup = wrapper.find('[data-testid="tool-group-mirror"]')
-    for (const testId of ['mirror-left-right', 'mirror-top-bottom', 'mirror-current-horizontal', 'mirror-current-vertical']) {
-      expect(mirrorGroup.find(`[data-testid="${testId}"]`).exists()).toBe(true)
-    }
-  })
-
-  it("shows every Mirror control's shortcut in its tooltip (ticket 93)", () => {
-    const wrapper = mountToolbox()
-
-    expect(wrapper.find('[data-testid="mirror-left-right-decrease"]').attributes('title')).toContain('(-)')
-    expect(wrapper.find('[data-testid="mirror-left-right-increase"]').attributes('title')).toContain('(=)')
-    expect(wrapper.find('[data-testid="mirror-top-bottom-decrease"]').attributes('title')).toContain('([)')
-    expect(wrapper.find('[data-testid="mirror-top-bottom-increase"]').attributes('title')).toContain('(])')
-    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('title')).toContain('(M)')
-    expect(wrapper.find('[data-testid="mirror-current-horizontal"]').attributes('title')).toContain('(H)')
-    expect(wrapper.find('[data-testid="mirror-current-vertical"]').attributes('title')).toContain('(V)')
-  })
-
   it('emits select-tool when a tool button is clicked', async () => {
     const wrapper = mountToolbox()
 
@@ -215,24 +199,6 @@ describe('Toolbox', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
 
-  it('emits mirror-current with the axis that was clicked', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('click')
-
-    expect(wrapper.emitted('mirror-current')).toEqual([['horizontal']])
-  })
-
-  it('emits mirror-current-hover with the axis on mouseenter and null on mouseleave (ticket 47)', async () => {
-    const wrapper = mountToolbox()
-
-    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseenter')
-    await wrapper.find('[data-testid="mirror-current-horizontal"]').trigger('mouseleave')
-    await wrapper.find('[data-testid="mirror-current-vertical"]').trigger('mouseenter')
-
-    expect(wrapper.emitted('mirror-current-hover')).toEqual([['horizontal'], [null], ['vertical']])
-  })
-
   it('reflects the rotated state from the pattern prop', () => {
     const pattern = makePattern()
     pattern.rotated = true
@@ -277,74 +243,6 @@ describe('Toolbox', () => {
     expect(wrapper.vm.collapseExpandedGroup()).toBe(false)
   })
 
-  it('shows the copy-mode switch, its on/off state, and emits toggle-mirror-copy-mode when clicked (ticket 45)', async () => {
-    const wrapper = mountToolbox({ mirrorCopyMode: false })
-
-    const button = wrapper.find('[data-testid="mirror-copy-mode"]')
-    expect(button.exists()).toBe(true)
-    expect(button.attributes('aria-pressed')).toBe('false')
-
-    await button.trigger('click')
-
-    expect(wrapper.emitted('toggle-mirror-copy-mode')).toHaveLength(1)
-  })
-
-  it('reflects an on copy-mode state from its prop', () => {
-    const wrapper = mountToolbox({ mirrorCopyMode: true })
-
-    expect(wrapper.find('[data-testid="mirror-copy-mode"]').attributes('aria-pressed')).toBe('true')
-  })
-
-  it('shows each counter its current value', () => {
-    const wrapper = mountToolbox({
-      mirrorAxisCounts: { columns: 2, rows: 1 },
-    })
-
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('2')
-    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('1')
-  })
-
-  it('not rotated: Left–right drives columns, Top–bottom drives rows', async () => {
-    const wrapper = mountToolbox({ mirrorAxisCounts: { columns: 1, rows: 0 } })
-
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    await wrapper.find('[data-testid="mirror-top-bottom-increase"]').trigger('click')
-
-    expect(wrapper.emitted('set-mirror-axis-count')).toEqual([
-      ['columns', 2],
-      ['rows', 1],
-    ])
-  })
-
-  it('rotated: swaps which grid axis Left–right/Top–bottom each drive, view-only (never a data transpose)', async () => {
-    const pattern = makePattern()
-    pattern.rotated = true
-    const wrapper = mountToolbox({ pattern, mirrorAxisCounts: { columns: 3, rows: 1 } })
-
-    // Left–right now reads/writes rows; Top–bottom now reads/writes columns.
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
-    expect(wrapper.find('[data-testid="mirror-top-bottom-value"]').text()).toContain('3')
-
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    expect(wrapper.emitted('set-mirror-axis-count')).toEqual([['rows', 2]])
-  })
-
-  it('disables decrease at 0 and increase at cells - 1', () => {
-    const pattern = makePattern() // 15mm/1.5mm cube -> 10 columns, 30mm/1.5mm -> 20 rows
-    expect(pattern.columns).toBe(10)
-
-    const wrapper = mountToolbox({
-      pattern,
-      mirrorAxisCounts: { columns: 0, rows: pattern.rows - 1 },
-    })
-
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="mirror-left-right-decrease"]').element.disabled,
-    ).toBe(true)
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="mirror-top-bottom-increase"]').element.disabled,
-    ).toBe(true)
-  })
 })
 
 describe('Toolbox Image colors (ticket 58)', () => {
@@ -433,11 +331,10 @@ describe('Toolbox rail (ticket 114)', () => {
 })
 
 describe('Toolbox disclosure rows (ticket 75)', () => {
-  it('opens Mirror in place below its row, the chevron turning up, and sums it up as ↔ · ↕', async () => {
-    const wrapper = mountToolbox({ mirrorAxisCounts: { columns: 1, rows: 0 } })
-    const row = wrapper.find('[data-testid="tool-group-mirror"]')
+  it('opens Size in place below its row, the chevron turning up', async () => {
+    const wrapper = mountToolbox()
+    const row = wrapper.find('[data-testid="tool-group-size"]')
 
-    expect(row.find('.disclosure-row__summary').text()).toBe('↔ 1 · ↕ 0')
     expect(row.find('.disclosure-row__panel').isVisible()).toBe(false)
 
     await row.find('button').trigger('click')

@@ -912,6 +912,16 @@ describe('keepFinishedRows', () => {
 
     expect(keepFinishedRows(before, edited).grid[0]![0]!.color).toBe('#e63746')
   })
+
+  it('keeps the current-row half of a live-mirrored pair, dropping the half that lands on a finished row (ADR 0006)', () => {
+    const before = onRowThree() // 20 rows, rows 0-2 finished; a top-bottom axis of 1 mirrors row r <-> row 19-r
+    const edited = paintCells(before, [{ row: 17, column: 5 }], '#e63746', { columns: 0, rows: 1 })
+
+    const kept = keepFinishedRows(before, edited)
+
+    expect(kept.grid[17]![5]!.color).toBe('#e63746')
+    expect(kept.grid[2]![5]!.color).toBeNull()
+  })
 })
 
 describe('resolvePatternBead', () => {

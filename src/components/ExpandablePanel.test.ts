@@ -88,4 +88,11 @@ describe('ExpandablePanel', () => {
     expect(mountPanel().find('.expandable-panel__body').classes()).toContain('expandable-panel__body--fixed')
     expect(mountPanel({ empty: true }).find('.expandable-panel__body').classes()).not.toContain('expandable-panel__body--fixed')
   })
+
+  it('clips the collapsed body by default, letting a caller with its own summary count (Saved Patterns, ticket 175) turn it off so a hover tooltip below a row is never cut off', () => {
+    expect(mountPanel().find('.expandable-panel__body').classes()).not.toContain('expandable-panel__body--no-clip')
+    expect(mountPanel({ clipOverflow: false }).find('.expandable-panel__body').classes()).toContain(
+      'expandable-panel__body--no-clip',
+    )
+  })
 })

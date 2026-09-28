@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Fewer/more columns/rows stepper controls removed from the Size tool group
 - [ ] Size-change action has a new, ellipsis-free label describing "change size and unit"

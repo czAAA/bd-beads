@@ -52,14 +52,3 @@ export async function gridBox(page: Page): Promise<{ x: number; y: number; width
   }
   return box
 }
-
-/**
- * Opens one of the Toolbox's disclosure rows (ticket 75: Mirror, Size), if it isn't open already, so its controls can
- * be pressed as a hand would: they sit hidden in the row until it is opened.
- */
-export async function openToolboxRow(page: Page, testId: 'tool-group-mirror' | 'tool-group-size'): Promise<void> {
-  const head = page.getByTestId(testId).locator('.disclosure-row__head')
-  if ((await head.getAttribute('aria-expanded')) !== 'true') {
-    await head.click()
-  }
-}

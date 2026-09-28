@@ -13,6 +13,13 @@ export interface ResizeRequest {
   columnsFrom?: ResizeAnchor
   /** Defaults to 'end'. */
   rowsFrom?: ResizeAnchor
+  /**
+   * How many of the old grid's leading columns/rows a shrink drops, overriding the `...From` anchor's implied one
+   * (ticket 173's crop picker: an arbitrary kept region, rather than only the two ends `columnsFrom`/`rowsFrom`
+   * reach). Meaningless while growing, since there is nothing to crop; the picker never sets it then.
+   */
+  columnsOffset?: number
+  rowsOffset?: number
 }
 
 /** Why a Resize was turned away. */
@@ -51,17 +58,25 @@ export function resizeRefusal(pattern: Pattern, request: ResizeRequest): ResizeR
     return 'locked'
   }
 
-  const step = resizeRowStep(pattern.technique, request.rowsFrom ?? 'end')
-  if ((request.rows - pattern.rows) % step !== 0) {
+  const rowOffset = resolvedOffset(request.rowsOffset, request.rowsFrom ?? 'end', pattern.rows, request.rows)
+  if (isOffsetTechnique(pattern.technique) && rowOffset % 2 !== 0) {
     return 'odd-start-rows'
   }
 
   return undefined
 }
 
-/** Where a cell of the resized grid comes from in the old one along one direction: the same index from the end, shifted by the size change from the start. */
-function sourceIndex(index: number, from: ResizeAnchor, oldCount: number, newCount: number): number | undefined {
-  const source = index - (from === 'start' ? newCount - oldCount : 0)
+/** The old grid's start offset a direction's change reads from: `columnsOffset`/`rowsOffset` (ticket 173's crop picker) when given, else whatever `columnsFrom`/`rowsFrom` implies — 0 from the end, or the whole size change from the start. */
+function resolvedOffset(explicit: number | undefined, from: ResizeAnchor, oldCount: number, newCount: number): number {
+  if (explicit === undefined) {
+    return from === 'start' ? oldCount - newCount : 0
+  }
+  return Math.max(0, Math.min(explicit, Math.max(0, oldCount - newCount)))
+}
+
+/** Where a cell of the resized grid comes from in the old one along one direction, `offset` old cells in from that direction's start. */
+function sourceIndex(index: number, offset: number, oldCount: number): number | undefined {
+  const source = index + offset
   return source >= 0 && source < oldCount ? source : undefined
 }
 
@@ -76,11 +91,13 @@ function clampRowProgress(rowProgress: RowProgress, rows: number, columns: numbe
 
 function resizeGrid(pattern: Pattern, request: ResizeRequest): Grid {
   const { columnsFrom = 'end', rowsFrom = 'end' } = request
+  const rowOffset = resolvedOffset(request.rowsOffset, rowsFrom, pattern.rows, request.rows)
+  const columnOffset = resolvedOffset(request.columnsOffset, columnsFrom, pattern.columns, request.columns)
 
   return Array.from({ length: request.rows }, (_row, row) => {
-    const sourceRow = sourceIndex(row, rowsFrom, pattern.rows, request.rows)
+    const sourceRow = sourceIndex(row, rowOffset, pattern.rows)
     return Array.from({ length: request.columns }, (_column, column): Cell => {
-      const sourceColumn = sourceIndex(column, columnsFrom, pattern.columns, request.columns)
+      const sourceColumn = sourceIndex(column, columnOffset, pattern.columns)
       const source = sourceRow === undefined || sourceColumn === undefined ? undefined : pattern.grid[sourceRow]?.[sourceColumn]
       return source ?? { color: null }
     })

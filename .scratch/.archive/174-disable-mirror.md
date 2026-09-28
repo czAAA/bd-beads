@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Mirror tool group no longer appears in the Toolbox
 - [ ] No remaining UI entry point can enable Mirror

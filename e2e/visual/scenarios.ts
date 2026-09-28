@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { Technique } from '../../src/domain/grid'
 import type { Pattern, RowProgress } from '../../src/domain/pattern'
-import { gridBox, openToolboxRow, settle } from '../support/app'
+import { gridBox, settle } from '../support/app'
 import { beadCentre } from '../support/patterns'
 
 /** What a scenario's steps are working on: the Pattern as seeded, and the zoom the page is at right now, in percent. */
@@ -61,16 +61,6 @@ async function dragSelection(page: Page, context: Context, from: [number, number
   await settle(page)
 }
 
-async function addMirrorAxes(page: Page, leftRight: number, topBottom: number): Promise<void> {
-  await openToolboxRow(page, 'tool-group-mirror')
-  for (let count = 0; count < leftRight; count += 1) {
-    await page.getByTestId('mirror-left-right-increase').click()
-  }
-  for (let count = 0; count < topBottom; count += 1) {
-    await page.getByTestId('mirror-top-bottom-increase').click()
-  }
-}
-
 function perTechnique(make: (technique: Technique) => Omit<Scenario, 'technique'>): Scenario[] {
   return TECHNIQUES.map((technique) => ({ technique, ...make(technique) }))
 }
@@ -110,44 +100,11 @@ export const SCENARIOS: Scenario[] = [
     overlaid: [...beadsIn(1, 1, 3, 4), ...beadsIn(5, 8, 3, 4)],
   })),
 
-  // Mirror's axis lines, one and two directions, in the grid's own (unrotated) space.
-  ...(['loom', 'peyote'] as const).map(
-    (technique): Scenario => ({
-      technique,
-      name: `${technique}-mirror-axes`,
-      // On peyote a line a third of the way across (110px of 330) runs through the centre of the beads there: column 5 of
-      // the even rows, and, two thirds across (220px), column 10 of the odd ones.
-      overlaid: technique === 'peyote' ? [0, 2, 4, 6, 8].map((row) => `(${row}, 5)`).concat([1, 3, 5, 7, 9].map((row) => `(${row}, 10)`)) : undefined,
-      prepare: (page) => addMirrorAxes(page, 2, 1),
-      place: pointerAway,
-    }),
-  ),
-
-  // Hovering "Mirror current" dims the beads that clicking it would overwrite.
-  {
-    technique: 'loom',
-    name: 'loom-mirror-current-hover',
-    overlaid: 'all',
-    prepare: (page) => addMirrorAxes(page, 1, 0),
-    place: async (page) => {
-      await page.getByTestId('mirror-current-horizontal').hover()
-      await settle(page)
-    },
-  },
-
-  // The paint preview on the hovered bead, and its live-mirror counterpart.
+  // The paint preview on the hovered bead (ticket 174 hid Mirror's own UI, and with it its live-mirror preview scenarios, pending its own redesign).
   ...perTechnique((technique) => ({
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   })),
-  {
-    technique: 'loom',
-    name: 'loom-hover-paint-mirrored',
-    // The hovered bead and its counterparts across the two axes.
-    overlaid: ['(3, 5)', '(3, 10)', '(6, 5)', '(6, 10)'],
-    prepare: (page) => addMirrorAxes(page, 1, 1),
-    place: (page, context) => pointerOnBead(page, context, 3, 5),
-  },
   // The Erase tool has no color to preview: a neutral outline on the hovered bead.
   {
     technique: 'peyote',

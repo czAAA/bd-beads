@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Hovering a truncated Saved Pattern name shows the full name, never clipped by the panel edge
 - [ ] Visible spacing separates each Saved Patterns list item

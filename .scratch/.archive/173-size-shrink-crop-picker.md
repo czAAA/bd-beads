@@ -4,7 +4,7 @@
 
 **Blocked by:** 172 (Size tool cleanup — this builds on the consolidated confirmation modal)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Shrinking the grid shows a hover-preview over the current pattern indicating what will be kept
 - [ ] The user can confirm a chosen crop region before applying the resize

@@ -7,14 +7,14 @@ import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
 import { TOOL_ICONS } from './toolIcons'
 
-/** Which of the Dock's six ToolSheets is open, or none (App.vue's own routing state -- not a domain concept). */
-export type PhoneSheet = 'tool' | 'color' | 'edit' | 'mirror' | 'size' | 'pattern'
+/** Which of the Dock's five ToolSheets is open, or none (App.vue's own routing state -- not a domain concept). */
+export type PhoneSheet = 'tool' | 'color' | 'edit' | 'size' | 'pattern'
 
 /**
- * The design system's Dock (ticket 79; Dock card): the phone's six buttons, one per kind of tool, each opening its
- * own ToolSheet. 64px plus the bottom safe-area inset in portrait; a 64px left rail, safe-area by the side insets,
- * once the screen is short (landscape, `bp-phone-landscape` 499px -- BottomToolbar's own media query, since the
- * two share this exact breakpoint and anatomy).
+ * The design system's Dock (ticket 79; Dock card): the phone's five buttons, one per kind of tool, each opening its
+ * own ToolSheet (ticket 174 dropped Mirror's, pending its own redesign). 64px plus the bottom safe-area inset in
+ * portrait; a 64px left rail, safe-area by the side insets, once the screen is short (landscape, `bp-phone-landscape`
+ * 499px -- BottomToolbar's own media query, since the two share this exact breakpoint and anatomy).
  */
 const props = defineProps<{
   activeTool: Tool
@@ -37,7 +37,6 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool' },
   { id: 'color', icon: 'paint', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
-  { id: 'mirror', icon: 'mirror-horizontal', label: t.value.toolbox.groups.mirror, testid: 'dock-mirror' },
   { id: 'size', icon: 'size', label: t.value.toolbox.groups.size, testid: 'dock-size' },
   { id: 'pattern', icon: 'save', label: t.value.header.patternSheetLabel, testid: 'dock-pattern' },
 ])

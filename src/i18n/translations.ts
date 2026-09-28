@@ -287,9 +287,8 @@ export interface Translations {
     }
   }
   /**
-   * The Size Tool group (CONTEXT.md's Estimated size and Resize, ADR 0017): the open Pattern's estimate, and the rows
-   * and columns inputs that change it. "Columns" and "Rows" are as seen on screen, so rotating the Pattern swaps which
-   * of the grid's two directions each one drives.
+   * The Size Tool group (CONTEXT.md's Estimated size and Resize, ADR 0017): the open Pattern's estimate, and the
+   * button that opens Change size (ticket 172 removed the old stepper controls).
    */
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -298,21 +297,8 @@ export interface Translations {
     estimateInfoButton: string
     /** The warning tooltip on the Estimated size: it is a guide, not a measurement. */
     estimateWarning: string
-    columnsLabel: string
-    rowsLabel: string
-    /** The −/+ buttons either side of each count (ticket 123, matching Mirror's axis-counter look): one row/column at a time, from whichever end "change from" points at. */
-    decreaseColumnsButton: string
-    increaseColumnsButton: string
-    decreaseRowsButton: string
-    increaseRowsButton: string
-    /** Prefix of the "change from: end | start" choice, one per direction. */
-    changeFromLabel: string
-    fromEnd: string
-    fromStart: string
-    /** Hover text on the counters while Row progress is on and they are disabled. */
+    /** Hover/focus text on the Change size button while Row progress is on and it is disabled. */
     lockedReason: string
-    /** Stated near the rows input while it moves in steps of 2 (peyote and brick stitch, from the start). */
-    pairsHint: string
   }
   /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
   /** Change size (ticket 153): the Size group's button and the modal that sets the grid in beads, mm or cm. */
@@ -326,6 +312,10 @@ export interface Translations {
     /** A mm/cm change; `{from}` and `{to}` are in beads, `{size}` is "width × height" and `{unit}` the chosen unit. */
     messagePhysical: string
     shrinkWarning: string
+    /** Above the crop picker (ticket 173), shown only once the typed size shrinks the grid. */
+    cropHint: string
+    /** The crop picker's own accessible name (ticket 173): a pointer-hover preview of which region a shrink keeps, with no keyboard equivalent. */
+    cropPickerLabel: string
     problemEmpty: string
     problemNotANumber: string
     problemNotPositive: string

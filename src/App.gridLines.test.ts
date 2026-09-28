@@ -159,16 +159,14 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     ])
   })
 
-  it('clears the Selection and Mirror axis counts once it lands, same as Resize', async () => {
+  it('clears the Selection once it lands, same as Resize', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
     await rulerLabels(wrapper, 'row')[0]!.trigger('click')
 
     await removeLineButton(wrapper).trigger('click')
 
     expect(selectedBeadCount(wrapper)).toBe(0)
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
   })
 
   it('is refused while Row progress is on, same as Resize', async () => {

@@ -12,7 +12,7 @@ describe('ShortcutsHelp', () => {
     document.body.innerHTML = ''
   })
 
-  it('lists shortcuts grouped under the five Tool group names', () => {
+  it('lists shortcuts grouped under the four Tool group names', () => {
     const wrapper = mountHelp()
 
     const groupTitles = wrapper.findAll('[data-testid="shortcuts-help-group"]').map((group) =>
@@ -22,16 +22,15 @@ describe('ShortcutsHelp', () => {
       ru.toolbox.groups.tools,
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
-      ru.toolbox.groups.mirror,
       ru.toolbox.groups.rowProgress,
     ])
   })
 
-  it('names every shortcut from tickets 87, 88, 90, 91, 92, 93, 94, 95', () => {
+  it('names every shortcut from tickets 87, 88, 90, 91, 92, 94, 95', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'R', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'M', 'H', 'V', 'P', 'D']) {
+    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'R', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)

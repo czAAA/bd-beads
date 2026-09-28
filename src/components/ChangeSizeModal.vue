@@ -9,6 +9,7 @@ import ConfirmModal from './ConfirmModal.vue'
 import FormField from './form/FormField.vue'
 import NumberField from './form/NumberField.vue'
 import SegmentedControl from './form/SegmentedControl.vue'
+import ShrinkCropPicker from './ShrinkCropPicker.vue'
 
 /**
  * Change size (ticket 153, CONTEXT.md's Resize, ADR 0017): sets the open Pattern's grid from a size stated in beads,
@@ -28,6 +29,9 @@ const { t } = useI18n()
 const widthText = ref<string | number>(props.pattern.columns)
 const heightText = ref<string | number>(props.pattern.rows)
 const unit = ref<SizeUnit>('beads')
+
+/** Which region a shrink keeps (ticket 173): grid-space offsets, defaulting to the top-left Resize itself falls back to until the crop picker is hovered. */
+const cropOffset = ref<{ columns: number; rows: number }>({ columns: 0, rows: 0 })
 
 const bead = computed(() => resolvePatternBead(props.pattern))
 const plan = computed(() =>
@@ -79,12 +83,21 @@ const message = computed(() => {
   return change.shrinks ? `${text} ${t.value.changeSize.shrinkWarning}` : text
 })
 
+/** The crop picker's own target size (ticket 173), or undefined while there is nothing to crop -- what the picker's `v-if` reads, so its own two size props never need the discriminated `plan` narrowed a second time in the template. */
+const shrinkTarget = computed(() => (plan.value.ok && plan.value.shrinks ? plan.value.target : undefined))
+
 function onConfirm() {
   const change = plan.value
-  if (change.ok) {
-    // Anchored at the end of both directions: growing adds empty rows/columns and shrinking keeps the top-left.
-    emit('confirm', { ...change.target, columnsFrom: 'end', rowsFrom: 'end' })
+  if (!change.ok) {
+    return
   }
+  // Growing is always anchored at the end: it only adds empty rows/columns, so there is nothing to choose (ticket 173).
+  const request: ResizeRequest = { ...change.target, columnsFrom: 'end', rowsFrom: 'end' }
+  if (change.shrinks) {
+    request.columnsOffset = cropOffset.value.columns
+    request.rowsOffset = cropOffset.value.rows
+  }
+  emit('confirm', request)
 }
 </script>
 
@@ -137,6 +150,13 @@ function onConfirm() {
           />
         </FormField>
       </div>
+      <ShrinkCropPicker
+        v-if="shrinkTarget"
+        v-model:offset="cropOffset"
+        :pattern="pattern"
+        :target-columns="shrinkTarget.columns"
+        :target-rows="shrinkTarget.rows"
+      />
     </div>
   </ConfirmModal>
 </template>

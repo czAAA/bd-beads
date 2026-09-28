@@ -143,19 +143,6 @@ describe('App Change size (ticket 153)', () => {
     expect(message(wrapper)).not.toContain('removed')
   })
 
-  it('resets Mirror axis counts, as after a Resize', async () => {
-    const wrapper = mount(App)
-    await create(wrapper, 'toho-cube-1.5mm', 6, 6)
-    await wrapper.find('[data-testid="mirror-left-right-increase"]').trigger('click')
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('1')
-
-    await openModal(wrapper)
-    await type(wrapper, '8', '6')
-    await confirmButton(wrapper).trigger('click')
-
-    expect(wrapper.find('[data-testid="mirror-left-right-value"]').text()).toContain('0')
-  })
-
   it('Cancel and Escape close the modal and leave the Pattern alone', async () => {
     const wrapper = mount(App)
     await create(wrapper, 'toho-cube-1.5mm', 4, 4)
@@ -241,5 +228,45 @@ describe('App Change size (ticket 153)', () => {
 
     expect(modal(wrapper).text()).toContain('Изменить размер')
     expect(message(wrapper)).toBe('4 × 4 → 4 × 4 бисеринок')
+  })
+})
+
+describe('App Change size crop picker (ticket 173)', () => {
+  const picker = (wrapper: Wrapper) => wrapper.find('[data-testid="crop-picker"]')
+
+  it('shows no crop picker while growing: there is nothing to crop', async () => {
+    const wrapper = mount(App)
+    await create(wrapper, 'toho-cube-1.5mm', 3, 3)
+    await openModal(wrapper)
+    await type(wrapper, '5', '4')
+
+    expect(picker(wrapper).exists()).toBe(false)
+  })
+
+  it('shows the crop picker once the typed size shrinks the grid', async () => {
+    const wrapper = mount(App)
+    await create(wrapper, 'toho-cube-1.5mm', 4, 4)
+    await openModal(wrapper)
+    await type(wrapper, '2', '4')
+
+    expect(picker(wrapper).exists()).toBe(true)
+    expect(wrapper.text()).toContain(en.changeSize.cropHint)
+  })
+
+  it('lets hovering a different region change which cells a shrink keeps, instead of the implicit top-left crop', async () => {
+    const wrapper = mount(App)
+    await create(wrapper, 'toho-cube-1.5mm', 4, 4)
+    await paint(wrapper, 0) // top-left
+    await paint(wrapper, 15) // bottom-right
+    await openModal(wrapper)
+    await type(wrapper, '2', '2')
+
+    // The 4x4 preview draws at 240x240; hovering its bottom-right corner previews keeping the bottom-right 2x2.
+    await picker(wrapper).trigger('pointermove', { clientX: 240, clientY: 240 })
+    await confirmButton(wrapper).trigger('click')
+
+    expect(stored()).toMatchObject({ columns: 2, rows: 2 })
+    expect(stored().grid[1]![1]!.color).not.toBeNull()
+    expect(stored().grid.flat().filter((cell) => cell.color !== null)).toHaveLength(1)
   })
 })

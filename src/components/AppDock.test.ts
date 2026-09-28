@@ -13,15 +13,21 @@ describe('AppDock', () => {
     expect(wrapper.get('[data-testid="dock-tool"]').text()).toBe('Fill')
   })
 
-  it('marks whichever sheet is open, and emits select-sheet for each of the six', async () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'mirror' } })
-    expect(wrapper.get('[data-testid="dock-mirror"]').attributes('aria-pressed')).toBe('true')
+  it('marks whichever sheet is open, and emits select-sheet for each of the five', async () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'size' } })
+    expect(wrapper.get('[data-testid="dock-size"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
 
-    for (const id of ['tool', 'color', 'edit', 'mirror', 'size', 'pattern']) {
+    for (const id of ['tool', 'color', 'edit', 'size', 'pattern']) {
       await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['mirror'], ['size'], ['pattern']])
+    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['size'], ['pattern']])
+  })
+
+  it('has no Mirror sheet button left (ticket 174, pending its own redesign)', () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
+
+    expect(wrapper.find('[data-testid="dock-mirror"]').exists()).toBe(false)
   })
 
   it('shows the selected Palette color as the Colour button\'s swatch', () => {

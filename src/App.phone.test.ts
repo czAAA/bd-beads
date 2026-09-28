@@ -61,8 +61,7 @@ describe('App at the phone tier (ticket 79)', () => {
       ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
       ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
       ['dock-edit', () => wrapper.find('[data-testid="sheet-paste"]').exists()],
-      ['dock-mirror', () => wrapper.find('[data-testid="mirror-left-right"]').exists()],
-      ['dock-size', () => wrapper.find('[data-testid="size-columns-value"]').exists()],
+      ['dock-size', () => wrapper.find('[data-testid="size-change-size"]').exists()],
     ] as const) {
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(expectFound()).toBe(true)

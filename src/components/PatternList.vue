@@ -67,6 +67,7 @@ function onExportLibrary(): void {
     :title="t.patterns.heading"
     :expandable="patterns.length > 0"
     :empty="patterns.length === 0"
+    :clip-overflow="false"
     collapsed-height="var(--saved-body-height)"
     data-testid="pattern-list"
   >
@@ -132,11 +133,11 @@ function onExportLibrary(): void {
   color: var(--muted);
 }
 
-/* Five columns, rows 12 apart, columns 4 apart. */
+/* Five columns, rows 12 apart, columns 8 apart (ticket 175: 4px read as no gap at all between names). */
 .pattern-list__grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-12) var(--space-4);
+  gap: var(--space-12) var(--space-8);
   margin: 0;
   padding: var(--space-4) 0 0;
   list-style: none;
