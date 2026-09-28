@@ -1,6 +1,6 @@
 import type { Translations } from './translations'
 
-// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor, Delete all)
+// Terms marked with a glossary entry in CONTEXT.md (Pattern, Bead, Technique, Palette, Form factor, Clear pattern)
 // reuse that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
@@ -27,6 +27,9 @@ export const ru: Translations = {
     enterSizeFirst: 'Сначала укажите размер.',
     or: 'или',
     estimateBeads: '≈ {columns}×{rows} бисерин',
+    sizeConversionInfoButton: 'Об этом пересчёте',
+    sizeConversionInfo:
+      'Математическая оценка по размеру бисеринки и тому, сколько их помещается. Не учитывает натяжение нити, зазоры между бисеринками и технику плетения, поэтому настоящий результат может немного отличаться.',
   },
   a11y: {
     skipToPattern: 'Перейти к схеме',
@@ -277,10 +280,10 @@ export const ru: Translations = {
     saveButton: 'Сохранить текущую',
   },
   deleteAll: {
-    button: 'Очистить всё',
-    confirmTitle: 'Очистить всё?',
+    button: 'Очистить схему',
+    confirmTitle: 'Очистить схему?',
     confirmMessage: 'Все ячейки станут пустыми, а прогресс по рядам выключится. Это действие можно отменить.',
-    confirmButton: 'Очистить всё',
+    confirmButton: 'Очистить схему',
     cancelButton: 'Отмена',
   },
   convertImage: {

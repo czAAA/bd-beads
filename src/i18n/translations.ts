@@ -33,6 +33,10 @@ export interface Translations {
     or: string
     /** Beside Unit: the stated size in the other unit, "≈ 40×30 beads". */
     estimateBeads: string
+    /** The Unit picker's conversion row info tooltip trigger's accessible name (ticket 179). */
+    sizeConversionInfoButton: string
+    /** The conversion row's tooltip: it is a mathematical estimate, and a real result may differ (ticket 179). */
+    sizeConversionInfo: string
   }
   /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -137,7 +141,7 @@ export interface Translations {
     savedConfirmation: string
     /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names it. */
     pasteLabel: string
-    /** The Tools-group button next to Erase (ticket 123): removes the selected whole row/column, enabled only while the Selection is exactly one. */
+    /** The Tools-group button next to Eraser (ticket 123): removes the selected whole row/column, enabled only while the Selection is exactly one. */
     removeLineButton: string
     /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
     removeLineShort: string
@@ -410,7 +414,7 @@ export interface Translations {
   shortcutsHelp: {
     title: string
     closeButton: string
-    /** Ticket 90: Del either activates Erase or clears the active Selection, depending on context. */
+    /** Ticket 90: Del either activates Eraser or clears the active Selection, depending on context. */
     eraseOrClearSelection: string
     /** Ticket 95: Space+drag. */
     panCanvas: string

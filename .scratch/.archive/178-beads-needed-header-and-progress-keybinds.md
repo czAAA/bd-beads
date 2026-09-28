@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Beads-needed header renders "15×{count}~0.16g (i)" with the tooltip icon immediately next to "g"
 - [ ] Space marks the current row done (same effect as clicking Row done)

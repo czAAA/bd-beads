@@ -390,8 +390,8 @@ export function replaceBead(pattern: Pattern, bead: Bead): Pattern {
 
 /**
  * Every cell reachable from `start` through same-colored neighbors, per the Pattern's grid adjacency (see
- * neighborsOf) -- the flood region a click at `start` would act on, shared by Fill (fillArea) and Erase
- * (floodErase, ticket 89) so both tools flood exactly the same way.
+ * neighborsOf) -- the flood region a click at `start` would act on. Used by Fill (fillArea), including right-click
+ * erase under Fill (ticket 25), which calls fillArea with a null color.
  */
 function floodRegionKeys(pattern: Pick<Pattern, 'grid' | 'technique' | 'columns' | 'rows'>, start: GridPosition): Set<string> {
   const targetColor = pattern.grid[start.row]?.[start.column]?.color
@@ -431,35 +431,6 @@ export function fillArea(pattern: Pattern, row: number, column: number, color: s
   const region = floodRegionKeys(pattern, { row, column })
   const grid = pattern.grid.map((gridRow, rowIndex) =>
     gridRow.map((cell, columnIndex) => (region.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell)),
-  )
-
-  return restoreGrid(pattern, grid)
-}
-
-/**
- * The Erase tool (ticket 89): flood-erases every position's own connected same-color region -- reusing Fill's
- * flood algorithm (see floodRegionKeys) -- as a single Pattern edit, so clicking one cell plus its live-mirrored
- * counterpart(s) (see mirroredCells, called by App.vue before this) erase all their regions together in one undo
- * step. A position that's already empty contributes nothing (there's no region to erase). Returns the same Pattern
- * instance, unchanged, if nothing painted was reachable from any position.
- */
-export function floodErase(pattern: Pattern, positions: GridPosition[]): Pattern {
-  const region = new Set<string>()
-  for (const position of positions) {
-    if (pattern.grid[position.row]?.[position.column]?.color === null) {
-      continue
-    }
-    for (const key of floodRegionKeys(pattern, position)) {
-      region.add(key)
-    }
-  }
-
-  if (region.size === 0) {
-    return pattern
-  }
-
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) => (region.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color: null } : cell)),
   )
 
   return restoreGrid(pattern, grid)

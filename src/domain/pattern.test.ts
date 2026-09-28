@@ -6,7 +6,6 @@ import {
   createPatternFromImage,
   deleteAll,
   fillArea,
-  floodErase,
   mirrorCurrent,
   mirroredCells,
   mostRecentlyUpdated,
@@ -320,76 +319,6 @@ describe('fillArea', () => {
     expect(loomFilled.grid[1]![0]!.color).toBe('red')
     // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
     expect(peyoteFilled.grid[1]![0]!.color).toBe('green')
-  })
-})
-
-describe('floodErase (Erase tool, ticket 89)', () => {
-  function makeGridPattern(technique: Technique, grid: Cell[][]): Pattern {
-    const base = createPattern({
-      technique,
-      beadId: cubeBead.id,
-      size: { width: grid[0]!.length * 1.5, height: grid.length * 1.5, unit: 'mm' },
-    })
-    return { ...base, grid }
-  }
-
-  it('clears every cell of the clicked region reachable through same-colored neighbors, reusing the flood algorithm', () => {
-    const pattern = makeGridPattern('loom', [
-      [{ color: 'red' }, { color: 'red' }, { color: 'blue' }],
-      [{ color: 'red' }, { color: 'red' }, { color: 'blue' }],
-    ])
-
-    const erased = floodErase(pattern, [{ row: 0, column: 0 }])
-
-    expect(erased.grid[0]!.map((c) => c.color)).toEqual([null, null, 'blue'])
-    expect(erased.grid[1]!.map((c) => c.color)).toEqual([null, null, 'blue'])
-  })
-
-  it('does not spill across a differently-colored boundary', () => {
-    const pattern = makeGridPattern('loom', [
-      [{ color: 'red' }, { color: 'blue' }],
-      [{ color: 'red' }, { color: 'blue' }],
-    ])
-
-    const erased = floodErase(pattern, [{ row: 0, column: 0 }])
-
-    expect(erased.grid[0]![1]!.color).toBe('blue')
-    expect(erased.grid[1]![1]!.color).toBe('blue')
-  })
-
-  it('erases every position given, in one edit -- how App.vue combines a click with its live-mirrored counterpart(s)', () => {
-    const pattern = makeGridPattern('loom', [
-      [{ color: 'red' }, { color: 'green' }],
-      [{ color: 'blue' }, { color: 'blue' }],
-    ])
-
-    const erased = floodErase(pattern, [
-      { row: 0, column: 0 },
-      { row: 0, column: 1 },
-    ])
-
-    expect(erased.grid[0]!.map((c) => c.color)).toEqual([null, null])
-    expect(erased.grid[1]!.map((c) => c.color)).toEqual(['blue', 'blue'])
-  })
-
-  it('treats an already-empty position as contributing nothing', () => {
-    const pattern = makeGridPattern('loom', [[{ color: null }, { color: 'red' }]])
-
-    expect(floodErase(pattern, [{ row: 0, column: 0 }])).toBe(pattern)
-  })
-
-  it('returns the same pattern instance, unchanged, when nothing painted is reachable from any position', () => {
-    const pattern = makeGridPattern('loom', [[{ color: null }, { color: null }]])
-
-    expect(floodErase(pattern, [{ row: 0, column: 0 }, { row: 0, column: 1 }])).toBe(pattern)
-  })
-
-  it('does not mutate the original pattern', () => {
-    const pattern = makeGridPattern('loom', [[{ color: 'red' }, { color: 'red' }]])
-
-    floodErase(pattern, [{ row: 0, column: 0 }])
-
-    expect(pattern.grid[0]![0]!.color).toBe('red')
   })
 })
 

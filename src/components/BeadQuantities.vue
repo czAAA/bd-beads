@@ -2,15 +2,17 @@
 import { computed, ref, toRaw, useId } from 'vue'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../domain/beadQuantities'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
-import { groupThousands } from '../i18n/formatNumber'
+import { decimalSign, groupThousands } from '../i18n/formatNumber'
 import { useI18n } from '../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
 
 /**
- * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 · ≈ 6 g". Collapsed it
- * shows the three most-needed colors (swatch, name, count, weight); expanded, every color. The rows stay a table, with
- * its column headings for screen readers only.
+ * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g (i)"
+ * (ticket 178: the count × the Bead's average weight ≈ the total, with the estimate tooltip trigger right after the
+ * final "g" rather than off at the panel header's far right) -- omitted, along with the multiplication and total,
+ * when the Bead has no known weight. Collapsed it shows the three most-needed colors (swatch, name, count, weight);
+ * expanded, every color. The rows stay a table, with its column headings for screen readers only.
  */
 const props = defineProps<{
   /** The Pattern whose bead counts are shown; without one the box just asks for a Pattern to be opened. */
@@ -37,6 +39,17 @@ function weightOf(count: number): string | undefined {
   return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
 }
 
+/**
+ * The Bead's average weight of one bead (ticket 178's header), in the language's own decimal sign (writing.md).
+ * Shown at full precision, not rounded like formatGrams's total: the catalog's per-bead weights already sit close
+ * together (0.0108g, 0.0091g, 0.005g), and rounding them to formatGrams's one or two decimals would collapse them
+ * to the same value, breaking the header's own count × average = total arithmetic.
+ */
+const avgWeightLabel = computed(() => {
+  const grams = gramsPerBead.value
+  return grams === undefined ? undefined : `${String(grams).replace('.', decimalSign(locale.value))}${t.value.quantities.gramsUnit}`
+})
+
 const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
 
 /** A color's name: the Palette's word for it, or its hex for a color from outside the Palette. */
@@ -59,36 +72,38 @@ const tipOpen = ref(false)
     data-testid="bead-quantities"
   >
     <template v-if="quantities.length > 0" #suffix>
-      <span class="bead-quantities__part">· <span data-testid="quantity-total-count">{{ groupThousands(totalCount) }}</span></span>
+      <span class="bead-quantities__part"
+        >· <span data-testid="quantity-total-count">{{ groupThousands(totalCount) }}</span
+        ><template v-if="gramsPerBead !== undefined"
+          >×<span data-testid="quantity-avg-weight">{{ avgWeightLabel }}</span
+          >≈<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span></template
+        ></span
+      >
       <span v-if="gramsPerBead !== undefined" class="bead-quantities__part">
-        · ≈&nbsp;<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span>
-      </span>
-    </template>
-
-    <template v-if="quantities.length > 0 && gramsPerBead !== undefined" #meta>
-      <span class="bead-quantities__info-wrap">
-        <button
-          type="button"
-          class="ui-control bead-quantities__info"
-          data-testid="quantities-weight-info"
-          :aria-label="t.quantities.weightInfoButton"
-          :aria-describedby="tooltipId"
-          @mouseenter="tipOpen = true"
-          @mouseleave="tipOpen = false"
-          @focus="tipOpen = true"
-          @blur="tipOpen = false"
-          @keydown.escape.stop="tipOpen = false"
-        >
-          <AppIcon name="info" :size="16" />
-        </button>
-        <span
-          v-show="tipOpen"
-          :id="tooltipId"
-          class="bead-quantities__tooltip"
-          role="tooltip"
-          data-testid="quantities-weight-tooltip"
-        >
-          {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
+        <span class="bead-quantities__info-wrap">
+          <button
+            type="button"
+            class="ui-control bead-quantities__info"
+            data-testid="quantities-weight-info"
+            :aria-label="t.quantities.weightInfoButton"
+            :aria-describedby="tooltipId"
+            @mouseenter="tipOpen = true"
+            @mouseleave="tipOpen = false"
+            @focus="tipOpen = true"
+            @blur="tipOpen = false"
+            @keydown.escape.stop="tipOpen = false"
+          >
+            <AppIcon name="info" :size="16" />
+          </button>
+          <span
+            v-show="tipOpen"
+            :id="tooltipId"
+            class="bead-quantities__tooltip"
+            role="tooltip"
+            data-testid="quantities-weight-tooltip"
+          >
+            {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
+          </span>
         </span>
       </span>
     </template>

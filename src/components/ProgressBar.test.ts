@@ -45,15 +45,15 @@ describe('ProgressBar', () => {
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(true)
   })
 
-  it("names Row not done and Row done in words and keeps their hotkeys in the tooltip (ticket 94's shortcuts unchanged)", () => {
+  it('names Row not done and Row done in words and keeps their hotkeys in the tooltip (ticket 94, plus Space/Shift+Space from ticket 178)', () => {
     const wrapper = mount(ProgressBar, { props: { pattern: moveToRow(makePattern(), 4) } })
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
     expect(previous.text()).toBe(ru.rowProgress.previousButton)
-    expect(previous.attributes('title')).toContain('Shift+Enter')
+    expect(previous.attributes('title')).toContain('Shift+Enter, Shift+Space')
     expect(next.text()).toBe(ru.rowProgress.nextButton)
-    expect(next.attributes('title')).toContain('(Enter)')
+    expect(next.attributes('title')).toContain('(Enter, Space)')
   })
 
   it('says which way the rows run after the total', () => {

@@ -11,8 +11,8 @@ import IconButton from './IconButton.vue'
  * box's bottom edge, always shown whatever the Pattern's shape. The switch that turns Row progress on comes first, so
  * the bar has to be there while it is off: then only the switch and its label show, and the bar keeps its height so the
  * canvas doesn't jump. On, it reads out the current row, shows the finished share, and holds Turn row direction, Row
- * not done and Row done, which move the current-row pointer exactly as the hotkeys do (D, Shift+Enter, Enter; P
- * toggles the switch).
+ * not done and Row done, which move the current-row pointer exactly as the hotkeys do (D, Shift+Enter/Shift+Space,
+ * Enter/Space (ticket 178); P toggles the switch).
  */
 const props = defineProps<{ pattern: Pattern }>()
 
@@ -74,7 +74,7 @@ const directionLabel = computed(() =>
         variant="box"
         icon="chevron-left"
         data-testid="progress-bar-previous"
-        :title="`${t.rowProgress.previousButton} (Shift+Enter)`"
+        :title="`${t.rowProgress.previousButton} (Shift+Enter, Shift+Space)`"
         :disabled="position.current === 0"
         @click="emit('move-row', -1)"
       >
@@ -84,7 +84,7 @@ const directionLabel = computed(() =>
         variant="primary"
         icon="check"
         data-testid="progress-bar-next"
-        :title="`${t.rowProgress.nextButton} (Enter)`"
+        :title="`${t.rowProgress.nextButton} (Enter, Space)`"
         :disabled="position.current === position.total - 1"
         @click="emit('move-row', 1)"
       >

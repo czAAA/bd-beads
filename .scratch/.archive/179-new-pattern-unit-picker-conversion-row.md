@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Unit picker header shows the bead-count × real-world-size conversion for both width and height
 - [ ] "(i)" tooltip explains, in plain language, that this is an estimate and real results may vary

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Tool labeled "Eraser" (was "Erase") in UI and i18n (EN/RU)
 - [ ] Primary press/tap with Eraser erases a single bead under the pointer, not a flood region

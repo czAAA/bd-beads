@@ -194,8 +194,12 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
  * controls in view — two rows of seven (CONTEXT.md's Tool group). A higher ceiling would let one conversion fill that
  * group past what the layout is built for, and a Pattern needing more than fourteen colors is not one this feature is
  * for: it is the photograph case the ticket deliberately declines to build machinery for.
+ *
+ * The floor is 1, down from 2 (ticket 177, amending ADR 0011): now that every resolved color is quantized onto the
+ * Palette regardless of count, reducing all the way to a single Palette-matched silhouette color is no less
+ * meaningful a result than reducing to two -- there was nothing special about 2 once quantization is unconditional.
  */
-export const MIN_IMAGE_COLORS = 2
+export const MIN_IMAGE_COLORS = 1
 export const MAX_IMAGE_COLORS = 14
 export const DEFAULT_MAX_IMAGE_COLORS = 12
 

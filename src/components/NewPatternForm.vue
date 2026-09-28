@@ -12,10 +12,11 @@ import {
 } from '../domain/imageConversion'
 import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
-import { estimatedSizeMm, formatSizeMm, gridFromSize } from '../domain/patternSize'
+import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../domain/patternSize'
 import { useI18n } from '../i18n/useI18n'
 import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
 import FieldSelect from './form/FieldSelect.vue'
 import FileButton from './form/FileButton.vue'
 import FormField from './form/FormField.vue'
@@ -113,6 +114,17 @@ const estimate = computed(() => {
     return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}`
   }
   return t.value.form.estimateBeads.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
+})
+
+/**
+ * The Unit picker's conversion row (ticket 179): both axes' bead-to-real-world conversion, live off the same
+ * `dimensions`/`selectedBead` the rest of the form reads, so it never disagrees with `estimate` above.
+ */
+const sizeConversion = computed(() => {
+  const grid = dimensions.value
+  const bead = selectedBead.value
+  if (!grid || !bead) return undefined
+  return formatSizeConversion(grid, bead, { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
 })
 
 /** Ticket 170: the same "this is an estimate, not a measurement" explanation Size gives, on hover/focus of an info button beside it. */
@@ -237,8 +249,9 @@ function onDropImage(file: File) {
 <template>
   <!--
     The New Pattern form (ticket 149; NewPatternForm card), in the left column's first box: Name (optional), Bead,
-    Technique, Width and Height in their Unit with the size in the other unit beside it, Create Pattern, then "or" and
-    Convert image. Create and Convert both wait for a size; its reason is written at the field.
+    Technique, Width and Height in their Unit with the size in the other unit beside it, a computed bead-to-real-world
+    conversion row for both axes (ticket 179), Create Pattern, then "or" and Convert image. Create and Convert both
+    wait for a size; its reason is written at the field.
   -->
   <form class="new-pattern-form" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
@@ -325,6 +338,23 @@ function onDropImage(file: File) {
       <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="unit-label" data-testid="unit-select" />
     </FormField>
 
+    <p v-if="sizeConversion" class="new-pattern-form__conversion" data-testid="size-conversion">
+      <span>{{ sizeConversion }}</span>
+      <AppTooltip :text="t.form.sizeConversionInfo" placement="top">
+        <template #default="{ describedby }">
+          <button
+            type="button"
+            class="ui-control new-pattern-form__conversion-info"
+            data-testid="size-conversion-info"
+            :aria-label="t.form.sizeConversionInfoButton"
+            :aria-describedby="describedby"
+          >
+            <AppIcon name="info" :size="14" />
+          </button>
+        </template>
+      </AppTooltip>
+    </p>
+
     <AppButton class="new-pattern-form__submit" type="submit" variant="primary" icon="plus" :disabled="!isValid">
       {{ t.form.submit }}
     </AppButton>
@@ -378,6 +408,43 @@ function onDropImage(file: File) {
 .new-pattern-form__submit {
   width: 100%;
   height: var(--field-height);
+}
+
+/* The Unit picker's conversion row (ticket 179): the same muted meta line as the hint/warning/error rows below Convert image, plus an inline info tooltip trigger right after the text. */
+.new-pattern-form__conversion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: calc(-1 * var(--space-8)) 0 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.new-pattern-form__conversion-info {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--expand-size);
+  height: var(--expand-size);
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-full);
+  cursor: help;
+}
+
+@media (hover: hover) {
+  .new-pattern-form__conversion-info:hover {
+    color: var(--ink);
+    background: var(--hover-fill);
+  }
+}
+
+.new-pattern-form__conversion-info:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /* "or", between two rules. */

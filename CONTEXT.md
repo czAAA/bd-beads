@@ -57,7 +57,7 @@ The weaving method used (loom, peyote, brick stitch, etc.), which determines the
 _Avoid_: stitch, weave type
 
 **Row progress**:
-An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Delete all is the exception: it clears Row progress along with the grid. Not changeable by Resize while on. Saved together with the pattern. Every control for it — the switch that turns it on, Row direction, the pointer readout and the buttons that move the pointer — lives in the Progress bar along the canvas box's bottom edge (ticket 144).
+An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Clear pattern is the exception: it clears Row progress along with the grid. Not changeable by Resize while on. Saved together with the pattern. Every control for it — the switch that turns it on, Row direction, the pointer readout and the buttons that move the pointer — lives in the Progress bar along the canvas box's bottom edge (ticket 144).
 _Avoid_: progress bar (as a name for this overlay/mechanic — it isn't a fill/percentage visualization, which is exactly what "Progress bar" is reserved for instead, see Progress bar), completion state
 
 **Row direction**:
@@ -69,7 +69,7 @@ The bar along the canvas box's bottom edge that holds every Row progress control
 _Avoid_: progress control, row control
 
 **Mirror**:
-A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Axis counts and copy mode are an editing-session setting, reset when switching Patterns or when a Resize changes grid dimensions. Fill and Delete all are not affected by Mirror; Paste now is — see Paste.
+A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Axis counts and copy mode are an editing-session setting, reset when switching Patterns or when a Resize changes grid dimensions. Fill and Clear pattern are not affected by Mirror; Paste now is — see Paste.
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Toolbox**:
@@ -77,16 +77,16 @@ The fixed-width rail of editing controls down the left of the app shell while a 
 _Avoid_: tool strip, toolbar, above-canvas panel
 
 **Tool group**:
-One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Erase), Colors, Edit (including Save, QR export and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Eraser), Colors, Edit (including Save, QR export and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
-**Erase**:
-A 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: clicking a painted cell flood-erases its connected same-color region, reusing Fill's own flood algorithm but writing empty instead of a color. Behaves like every other drawing command — one undo step, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Separate from the existing right-click erase available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill), which this tool doesn't change.
-_Avoid_: eraser mode, clear tool
+**Eraser**:
+A 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press.
+_Avoid_: erase mode, clear tool
 
-**Delete all**:
+**Clear pattern**:
 Resets the open Pattern to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Pattern's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
-_Avoid_: clear, reset, wipe
+_Avoid_: delete all, reset, wipe
 
 **Pattern size**:
 How big a Pattern is: its columns × rows, counted in beads. A size given in mm/cm is converted to whole beads when the Pattern is created, or when it is applied to an open Pattern with Resize's Change size, and is not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
@@ -107,7 +107,7 @@ Change size is the other way to Resize: a modal from the Size group that sets th
 _Avoid_: crop, stretch, scale, change grid
 
 **Remove row/column**:
-A Tools-group tool, next to Erase, that removes the specific row or column the Selection marks out — any index, not just an end the way Resize is limited to — shifting the rest of the grid to close the gap, as one undo step. Enabled only when the Selection is exactly one whole row or column (see Selection); refused while Row progress is on, the same lock Resize itself respects.
+A Tools-group tool, next to Eraser, that removes the specific row or column the Selection marks out — any index, not just an end the way Resize is limited to — shifting the rest of the grid to close the gap, as one undo step. Enabled only when the Selection is exactly one whole row or column (see Selection); refused while Row progress is on, the same lock Resize itself respects.
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:

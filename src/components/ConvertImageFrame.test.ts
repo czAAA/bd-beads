@@ -142,9 +142,9 @@ describe('ConvertImageFrame', () => {
     const converted = created[0]![0] as { grid: { color: string | null }[][]; imageColors: string[] }
     expect(converted.grid).toHaveLength(4)
     expect(converted.grid[0]).toHaveLength(4)
-    expect(new Set(converted.imageColors)).toEqual(new Set(['#ff0000', '#0000ff']))
+    expect(new Set(converted.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
     // The left half of the picture is red, the right half blue, and the frame covers all of it.
-    expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#ff0000', '#ff0000', '#0000ff', '#0000ff'])
+    expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
   })
 
   it('shows what is inside the frame, so the beads on screen are the Pattern that Create makes', async () => {
@@ -154,8 +154,8 @@ describe('ConvertImageFrame', () => {
     const converted = wrapper.emitted('create')![0]![0] as { grid: { color: string | null }[][] }
 
     // The frame is the whole 4 × 4 lattice here: the first row of beads on screen is the first row of the Pattern.
-    expect(canvas.latest().slice(0, 4).map(({ color }) => color)).toEqual(['#ff0000', '#ff0000', '#0000ff', '#0000ff'])
-    expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#ff0000', '#ff0000', '#0000ff', '#0000ff'])
+    expect(canvas.latest().slice(0, 4).map(({ color }) => color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
+    expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
   })
 
   it('emits cancel without creating anything', async () => {
@@ -271,13 +271,13 @@ describe('ConvertImageFrame', () => {
 
     it('shows the colors it had when the drag began, whatever the picture moves onto', async () => {
       const wrapper = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
-      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      expect(colorsOnScreen()).toEqual(['#e63746'])
 
       await startDragAt(wrapper)
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
 
       // Blue is under the frame now, but the beads keep to the red they began with, and so does the count.
-      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      expect(colorsOnScreen()).toEqual(['#e63746'])
       expect(foundColors(wrapper)).toContain('1')
       window.dispatchEvent(new MouseEvent('mouseup'))
     })
@@ -299,7 +299,7 @@ describe('ConvertImageFrame', () => {
       await nextTick()
 
       expect(canvas.renders()).toBe(beadsBefore + 1)
-      expect(colorsOnScreen()).toEqual(['#0000ff'])
+      expect(colorsOnScreen()).toEqual(['#2f6fed'])
     })
 
     it('draws beads all through a drag of a block that is not too big', async () => {
@@ -320,7 +320,7 @@ describe('ConvertImageFrame', () => {
       window.dispatchEvent(new MouseEvent('mouseup'))
       await nextTick()
 
-      expect(colorsOnScreen()).toEqual(['#0000ff'])
+      expect(colorsOnScreen()).toEqual(['#2f6fed'])
     })
 
     it('works out the exact colors when the pointer pauses, and holds those from then on', async () => {
@@ -329,13 +329,13 @@ describe('ConvertImageFrame', () => {
       await startDragAt(wrapper)
 
       await wrapper.setProps({ pan: { x: 0.5, y: 0.5 } })
-      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      expect(colorsOnScreen()).toEqual(['#e63746'])
       await vi.advanceTimersByTimeAsync(200)
-      expect(colorsOnScreen()).toEqual(['#00ff00'])
+      expect(colorsOnScreen()).toEqual(['#27ae60'])
 
       // Still dragging: the beads now hold the green the pause settled on.
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
-      expect(colorsOnScreen()).toEqual(['#00ff00'])
+      expect(colorsOnScreen()).toEqual(['#27ae60'])
 
       window.dispatchEvent(new MouseEvent('mouseup'))
     })
@@ -350,7 +350,7 @@ describe('ConvertImageFrame', () => {
         await vi.advanceTimersByTimeAsync(100)
       }
 
-      expect(colorsOnScreen()).toEqual(['#ff0000'])
+      expect(colorsOnScreen()).toEqual(['#e63746'])
       window.dispatchEvent(new MouseEvent('mouseup'))
     })
 
@@ -374,7 +374,7 @@ describe('ConvertImageFrame', () => {
 
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
 
-      expect(colorsOnScreen()).toEqual(['#0000ff'])
+      expect(colorsOnScreen()).toEqual(['#2f6fed'])
     })
   })
 

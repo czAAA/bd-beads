@@ -577,6 +577,53 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
     expect(shown()).toBe(false)
   })
 
+  it("shows the Unit picker's conversion row with both axes' bead-to-real-world conversion (ticket 179)", async () => {
+    const wrapper = mount(NewPatternForm)
+    await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+    await wrapper.find('[data-testid="width-input"]').setValue('40')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+
+    expect(wrapper.find('[data-testid="size-conversion"]').text()).toContain('40×1.5 × 30×1.5 ≈ 6.0 × 4.5 cm')
+  })
+
+  it("updates the conversion row live as width, height, unit or Bead changes", async () => {
+    const wrapper = mount(NewPatternForm)
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    await wrapper.find('[data-testid="height-input"]').setValue('20')
+    expect(wrapper.find('[data-testid="size-conversion"]').text()).toContain('10×1.5 × 20×1.5')
+
+    await wrapper.find('[data-testid="width-input"]').setValue('12')
+    expect(wrapper.find('[data-testid="size-conversion"]').text()).toContain('12×1.5 × 20×1.5')
+
+    await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
+    expect(wrapper.find('[data-testid="size-conversion"]').text()).toContain('12×1.6 × 20×1.3')
+
+    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
+    await wrapper.find('[data-testid="width-input"]').setValue('15')
+    await wrapper.find('[data-testid="height-input"]').setValue('30')
+    // At 1.6/1.3mm pitch, 15mm/30mm rounds to 9 columns and 23 rows.
+    expect(wrapper.find('[data-testid="size-conversion"]').text()).toContain('9×1.6 × 23×1.3')
+  })
+
+  it('explains the conversion row is a mathematical estimate, in a tooltip on the info trigger', async () => {
+    const { en } = await import('../i18n/en')
+    const wrapper = mount(NewPatternForm)
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    await wrapper.find('[data-testid="height-input"]').setValue('20')
+
+    const info = wrapper.find('[data-testid="size-conversion-info"]')
+    expect(info.attributes('aria-label')).toBe(en.form.sizeConversionInfoButton)
+
+    await info.trigger('focusin')
+    expect(wrapper.find('[data-testid="tooltip"]').text()).toBe(en.form.sizeConversionInfo)
+  })
+
+  it('shows no conversion row before a size is stated', () => {
+    const wrapper = mount(NewPatternForm)
+
+    expect(wrapper.find('[data-testid="size-conversion"]').exists()).toBe(false)
+  })
+
   it('says Convert image waits for a size, and takes a dropped picture once there is one', async () => {
     const { en } = await import('../i18n/en')
     const decodeImage = vi.fn().mockResolvedValue(onePixel)

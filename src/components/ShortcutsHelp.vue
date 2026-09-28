@@ -51,8 +51,8 @@ const groups = computed(() => [
     shortcuts: [
       { keys: 'P', label: t.value.rowProgress.enabledLabel },
       { keys: 'D', label: t.value.rowProgress.directionButton },
-      { keys: 'Enter', label: t.value.rowProgress.nextButton },
-      { keys: 'Shift+Enter', label: t.value.rowProgress.previousButton },
+      { keys: 'Enter, Space', label: t.value.rowProgress.nextButton },
+      { keys: 'Shift+Enter, Shift+Space', label: t.value.rowProgress.previousButton },
     ],
   },
 ])

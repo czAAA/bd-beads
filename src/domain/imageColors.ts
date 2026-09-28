@@ -2,10 +2,11 @@ import { PALETTE } from './palette'
 
 /**
  * The colors a Convert image (ticket 58) takes out of a picture: how they are reduced to a count a weaver can
- * actually buy, and the one case where an extracted color is replaced by a Palette color instead of kept exactly.
+ * actually buy, and how each reduced color is then quantized onto the Palette.
  *
- * Deliberately no dithering (ticket 58 decision) and deliberately no wholesale snapping to the Palette (ADR 0011):
- * the Palette is a painting convenience, not a procurement list, so a picture's own colors are what the Pattern gets.
+ * Deliberately no dithering (ticket 58 decision). Every resolved color is snapped to its nearest Palette color
+ * (ticket 177, amending ADR 0011): a converted Pattern's Image colors are always a subset of the same twelve
+ * Palette colors every other Pattern paints with, rather than a closed set of picture-only hexes.
  */
 
 export interface Rgb {
@@ -37,19 +38,6 @@ export function colorDistance(a: Rgb, b: Rgb): number {
   return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2)
 }
 
-/**
- * How close an extracted color has to be to a Palette color to become it (ADR 0011's near-exact snapping). 10 in
- * RGB is under 6 units per channel if the difference is spread evenly — two flat patches that far apart are
- * indistinguishable side by side, and a picture's "pure" red landing a unit or two off the Palette's red would
- * otherwise behave as a stranger everywhere in the app (its own Bead quantities row, its own swatch).
- *
- * The distance alone is not what keeps snapping from merging two colors a picture kept apart, though: two extracted
- * colors can both sit inside one Palette color's radius (say #ffffff and #fbfbfb, 7 apart, both within 10 of the
- * Palette's white). Collapsing those would be exactly the wholesale quantization ADR 0011 rejects, so
- * resolveImageColors refuses to snap either of them — see snapCompetition below.
- */
-export const PALETTE_SNAP_DISTANCE = 10
-
 /** The closest of `colors` to `hex`, or undefined when there are none to choose from. */
 export function nearestColor(colors: readonly string[], hex: string): string | undefined {
   const target = fromHex(hex)
@@ -67,23 +55,16 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
   return best
 }
 
-/**
- * The Palette color `hex` is imperceptibly close to (see PALETTE_SNAP_DISTANCE), or undefined when it is near none.
- * The *nearest* one, not merely the first in range, so the answer doesn't depend on the Palette's own order.
- */
-export function nearPaletteColor(hex: string): string | undefined {
-  const nearest = nearestColor(
-    PALETTE.map((color) => color.hex),
-    hex,
-  )
-  return nearest && colorDistance(fromHex(hex), fromHex(nearest)) <= PALETTE_SNAP_DISTANCE
-    ? nearest
-    : undefined
-}
+const PALETTE_HEXES: readonly string[] = PALETTE.map((color) => color.hex)
 
-/** A Palette color when `hex` is imperceptibly close to one, otherwise `hex` untouched. */
+/**
+ * The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional quantization, not a distance
+ * threshold, so every resolved Image color lands on one of the Palette's twelve. The *nearest* one, not merely the
+ * first in range, so the answer doesn't depend on the Palette's own order.
+ */
 export function snapToPalette(hex: string): string {
-  return nearPaletteColor(hex) ?? hex
+  // PALETTE is never empty, so nearestColor always finds a match.
+  return nearestColor(PALETTE_HEXES, hex)!
 }
 
 /** One color of a picture and how many cells sampled it, the unit median cut works in. */
@@ -184,36 +165,21 @@ export interface ResolvedImageColors {
   colors: string[]
 }
 
-/** The color a box of the reduction stands for, before the Palette is offered a chance to claim it. */
+/** The color a box of the reduction stands for, before it is quantized onto the Palette. */
 function boxColor(box: readonly WeightedColor[]): string {
-  // A box of one is that color itself, untouched — this is what makes an already-small picture lossless.
+  // A box of one is that color itself, untouched — this only matters up to floating-point precision, since
+  // snapToPalette quantizes it away regardless.
   return box.length === 1 ? box[0]!.hex : toHex(representative(box))
 }
 
 /**
- * Which Palette colors more than one of these colors would snap to. Those snaps are refused: snapping both would
- * merge two colors the picture kept apart, which is the wholesale quantization ADR 0011 rejects, and snapping one of
- * them would be a coin toss between two equally near-exact matches. Both keep their own exact color instead.
- */
-function snapCompetition(colors: readonly string[]): Set<string> {
-  const claimants = new Map<string, number>()
-  for (const hex of colors) {
-    const near = nearPaletteColor(hex)
-    if (near !== undefined) {
-      claimants.set(near, (claimants.get(near) ?? 0) + 1)
-    }
-  }
-
-  return new Set([...claimants].filter(([, count]) => count > 1).map(([hex]) => hex))
-}
-
-/**
- * The Image colors (CONTEXT.md, ADR 0011) for a picture's sampled cell colors, and what each sampled color became.
+ * The Image colors (CONTEXT.md, ADR 0011 as amended by ticket 177) for a picture's sampled cell colors, and what
+ * each sampled color became.
  *
- * A picture already holding at most `maxColors` distinct colors is used exactly: no quantization at all, which is the
- * near-lossless case the flat artwork this feature targets falls into. A busier one is reduced by median cut. Either
- * way each resulting color is then offered to the Palette for near-exact snapping, except where two of them are near
- * the same Palette color (see snapCompetition) — snapping can never be what merges two colors.
+ * A picture already holding at most `maxColors` distinct colors skips median cut and uses each one as its own box;
+ * a busier one is reduced by median cut down to `maxColors` boxes. Either way each box's representative color is
+ * then quantized onto its nearest Palette color, so two boxes can resolve to the same Image color -- `colors` can
+ * come out shorter than `maxColors`, down to the twelve Palette colors themselves as the hard floor.
  *
  * Ordered by how much of the picture each color covers, so the Colors group leads with the ones worth reaching for.
  */
@@ -229,14 +195,11 @@ export function resolveImageColors(
   const boxes =
     sampled.length <= maxColors ? sampled.map((color) => [color]) : medianCut(sampled, maxColors)
 
-  const contested = snapCompetition(boxes.map(boxColor))
   const mapping = new Map<string, string>()
   const coverage = new Map<string, number>()
 
   for (const box of boxes) {
-    const own = boxColor(box)
-    const near = nearPaletteColor(own)
-    const resolved = near !== undefined && !contested.has(near) ? near : own
+    const resolved = snapToPalette(boxColor(box))
     for (const color of box) {
       mapping.set(color.hex, resolved)
       coverage.set(resolved, (coverage.get(resolved) ?? 0) + color.count)

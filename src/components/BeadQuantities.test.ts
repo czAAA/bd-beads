@@ -103,6 +103,27 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.62 g')
   })
 
+  it('shows the header as count × average weight per bead ≈ the total, with the info trigger right after it (ticket 178)', () => {
+    const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
+
+    expect(wrapper.find('[data-testid="quantity-total-count"]').text()).toBe('100')
+    expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0.0108g')
+    expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.08 g')
+
+    // The info tooltip trigger sits right after the total weight's "g", inside the same suffix, not off at the
+    // panel header's far right (ticket 178).
+    const suffix = wrapper.find('.expandable-panel__suffix')
+    expect(suffix.find('[data-testid="quantities-weight-info"]').exists()).toBe(true)
+    expect(wrapper.find('.expandable-panel__meta [data-testid="quantities-weight-info"]').exists()).toBe(false)
+  })
+
+  it('shows the average weight per bead with the Russian decimal comma too (ticket 178)', () => {
+    localStorage.setItem('bd-beads:locale', 'ru')
+    const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
+
+    expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0,0108г')
+  })
+
   it('rounds to one decimal from 10 g up and says "< 0.01 g" for a color too small to weigh', () => {
     // 1000 beads x 0.0108 g = 10.8 g
     const heavy = mountQuantities(wide('toho-cube-1.5mm', 1000))

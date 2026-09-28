@@ -233,4 +233,5 @@ files without an account.
    renderer.
 
 **Version in the repo:** design system **v14** (synced from DESIGN.md @ e16e9c5, plus the X1 logo, Icons v2 and
-Phases A–E; v14 corrects the font weights and type roles in the README).
+Phases A–E; v14 corrects the font weights and type roles in the README; EmptyCanvas's ghost board is now full-bleed,
+filling the whole drawing area instead of a small centred box — ticket 180).

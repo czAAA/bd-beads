@@ -25,6 +25,9 @@ export const en: Translations = {
     enterSizeFirst: 'Enter a size first.',
     or: 'or',
     estimateBeads: '≈ {columns}×{rows} beads',
+    sizeConversionInfoButton: 'About this conversion',
+    sizeConversionInfo:
+      'A mathematical estimate from the Bead’s own size and how many beads fit. Thread slack, tension and the Technique aren’t accounted for, so a real result may come out a little different.',
   },
   a11y: {
     skipToPattern: 'Skip to Pattern',
@@ -116,7 +119,7 @@ export const en: Translations = {
     paintLabel: 'Paint',
     fillLabel: 'Fill',
     selectLabel: 'Select',
-    eraseLabel: 'Erase',
+    eraseLabel: 'Eraser',
     copyButton: 'Copy',
     saveButton: 'Save',
     savedConfirmation: 'Saved',
@@ -275,10 +278,10 @@ export const en: Translations = {
     saveButton: 'Save current',
   },
   deleteAll: {
-    button: 'Delete all',
-    confirmTitle: 'Delete all?',
+    button: 'Clear pattern',
+    confirmTitle: 'Clear pattern?',
     confirmMessage: 'Every cell will be emptied and Row progress turned off. This can be undone.',
-    confirmButton: 'Delete all',
+    confirmButton: 'Clear pattern',
     cancelButton: 'Cancel',
   },
   convertImage: {
@@ -316,7 +319,7 @@ export const en: Translations = {
   shortcutsHelp: {
     title: 'Keyboard shortcuts',
     closeButton: 'Close',
-    eraseOrClearSelection: 'Erase tool, or clear the Selection',
+    eraseOrClearSelection: 'Eraser tool, or clear the Selection',
     panCanvas: 'Pan the canvas',
     paletteColors: 'Select a Palette color, in Palette order',
   },

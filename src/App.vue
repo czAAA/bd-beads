@@ -76,7 +76,6 @@ import {
   createPatternFromImage,
   deleteAll,
   fillArea,
-  floodErase,
   isInFinishedRow,
   keepFinishedRows,
   mirroredCells,
@@ -1032,7 +1031,7 @@ const keyboardShortcuts: KeyboardShortcut[] = [
     guard: noModalOpen,
     action: () => onSelectTool('select'),
   },
-  // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Erase.
+  // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Eraser.
   {
     matches: (event) => event.key === 'Delete',
     guard: noModalOpen,
@@ -1086,7 +1085,8 @@ const keyboardShortcuts: KeyboardShortcut[] = [
       onSave()
     },
   },
-  // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter move the pointer.
+  // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter (and Space/
+  // Shift+Space, ticket 178) move the pointer.
   {
     matches: (event) => isPlainLetterKey(event, 'p'),
     guard: noModalOpen,
@@ -1113,6 +1113,27 @@ const keyboardShortcuts: KeyboardShortcut[] = [
   },
   {
     matches: (event) => event.key === 'Enter' && event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
+    action: () => {
+      if (activePattern.value?.rowProgress.enabled) {
+        onMoveRow(-1)
+      }
+    },
+  },
+  // ticket 178: Space/Shift+Space mirror Enter/Shift+Enter above, marking the current row done/not done -- the same
+  // guard against a focused Toolbox/Progress bar button, since Space activates one natively (Enter already needed
+  // this for Tab+Enter; Space needs it even more, being every button's own native activation key).
+  {
+    matches: (event) => event.key === ' ' && !event.shiftKey && !isFocusedOnToolboxButton(event),
+    guard: noModalOpen,
+    action: () => {
+      if (activePattern.value?.rowProgress.enabled) {
+        onMoveRow(1)
+      }
+    },
+  },
+  {
+    matches: (event) => event.key === ' ' && event.shiftKey && !isFocusedOnToolboxButton(event),
     guard: noModalOpen,
     action: () => {
       if (activePattern.value?.rowProgress.enabled) {
@@ -1250,17 +1271,6 @@ function pasteAtPointer(event: KeyboardEvent) {
   }
 }
 
-/** The Erase tool (ticket 89): flood-erases the clicked cell's connected same-color region, and each of its live-mirror counterparts' own regions too, as one undo step (see floodErase). */
-function onEraseCell(row: number, column: number) {
-  const pattern = activePattern.value
-  if (!pattern) {
-    return
-  }
-
-  const positions = mirroredCells(pattern, { row, column }, mirrorAxisCounts.value, mirrorCopyMode.value)
-  commitGridChange(pattern, floodErase(pattern, positions))
-}
-
 function onCellPrimaryDown(row: number, column: number) {
   if (spaceHeld.value) {
     // Space+drag pans the canvas (ticket 95): never a paint/fill/erase/select, regardless of the active tool.
@@ -1277,8 +1287,12 @@ function onCellPrimaryDown(row: number, column: number) {
     return
   }
 
+  // Eraser (ticket 176): single-bead erase by default, the same stroke path right-click erase already used --
+  // so it works on touch/phone without needing a right-click. Right-click stays as-is (see onCellSecondaryDown);
+  // it's now simply redundant with the primary press while Eraser is the active tool, and still the only way to
+  // erase without leaving Paint, or to flood-erase without leaving Fill.
   if (activeTool.value === 'erase') {
-    onEraseCell(row, column)
+    beginOrCommitPress('erase', null, row, column)
     return
   }
 
@@ -1300,6 +1314,11 @@ function onCellPrimaryMove(row: number, column: number) {
     return
   }
 
+  if (strokeMode.value === 'erase') {
+    paintStrokeCell(row, column, null)
+    return
+  }
+
   if (strokeMode.value !== 'paint') {
     return
   }
@@ -1312,7 +1331,7 @@ function onCellPrimaryMove(row: number, column: number) {
   paintStrokeCell(row, column, color)
 }
 
-/** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint and Erase. */
+/** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
 function onCellSecondaryDown(row: number, column: number) {
   if (spaceHeld.value) {
     return

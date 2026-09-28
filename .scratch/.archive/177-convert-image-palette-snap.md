@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] ADR 0011 updated to document the new palette-snap behavior and why it supersedes the earlier decision
 - [ ] Convert image quantizes to the nearest current-Palette color

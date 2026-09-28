@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Design system updated on claude.ai with the new full-bleed empty-canvas-board spec, then copied into `docs/design/system/`
 - [ ] `empty-canvas__board` fills the full canvas box at every breakpoint

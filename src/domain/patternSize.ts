@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
+import { decimalSign } from '../i18n/formatNumber'
 import type { Locale } from '../i18n/translations'
 
 /** A size as the New Pattern form states it: a number of beads across and down, or a real-world size in mm/cm. */
@@ -65,10 +66,30 @@ function inCentimetres(mm: number, decimal: string): string {
  * doesn't flip on a value the reader can't see the difference of. `locale` picks the decimal sign (writing.md).
  */
 export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: SizeUnitLabels, locale: Locale = 'en'): string {
-  const decimal = locale === 'ru' ? ',' : '.'
+  const decimal = decimalSign(locale)
   const smallest = Math.round(Math.min(widthMm, heightMm) * 10) / 10
   if (smallest < 10) {
     return `${trimmedOneDecimal(widthMm, decimal)} × ${trimmedOneDecimal(heightMm, decimal)} ${labels.mm}`
   }
   return `${inCentimetres(widthMm, decimal)} × ${inCentimetres(heightMm, decimal)} ${labels.cm}`
+}
+
+/** At most two decimals, with any trailing zeros dropped -- a Bead's own pitch (e.g. 1.65mm from a width correction) shown exactly rather than rounded to one. */
+function trimmedMm(value: number, decimal: string): string {
+  return String(Number(value.toFixed(2))).replace('.', decimal)
+}
+
+/**
+ * The New Pattern form's Unit picker conversion row (ticket 179): each axis' bead count times that Bead's own
+ * millimetre pitch (see beadPitchMm, bead.heightMm), ending in the same combined Estimated size formatSizeMm already
+ * renders elsewhere in the form -- "100×1.5 × 100×2.2 ≈ 15.0 × 15.0 cm". The same mathematical-only caveat as
+ * estimatedSizeMm (CONTEXT.md's Estimated size) applies: no Technique packing, thread slack or tension, so this is
+ * always shown next to a tooltip saying a real result may differ.
+ */
+export function formatSizeConversion(grid: GridDimensions, bead: Bead, labels: SizeUnitLabels, locale: Locale = 'en'): string {
+  const decimal = decimalSign(locale)
+  const beadWidth = trimmedMm(beadPitchMm(bead), decimal)
+  const beadHeight = trimmedMm(bead.heightMm, decimal)
+  const total = formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)
+  return `${grid.columns}×${beadWidth} × ${grid.rows}×${beadHeight} ≈ ${total}`
 }

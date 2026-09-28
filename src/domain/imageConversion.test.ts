@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { cellCenter, computeGridDimensions, rowHeightPx, type Technique } from './grid'
 import { fromHex } from './imageColors'
-import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, sourcePixelAt } from './imageFraming'
+import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, sourcePixelAt, type PreviewLattice } from './imageFraming'
 import {
   ACCEPTED_IMAGE_FORMATS,
   DEFAULT_MAX_IMAGE_COLORS,
@@ -88,6 +88,24 @@ function convert(
   const frame = frameSizeMm(technique, dimensions, bead)
   const view = framingView(image, frame, 1, CENTERED_PAN)
   return { dimensions, ...convertImage({ image, view, technique, bead, dimensions, maxColors }) }
+}
+
+/**
+ * The grid's raw sampled colors, before Convert image quantizes them onto the Palette (ticket 177) -- for tests that
+ * check which source pixel each cell's geometry picked, which unconditional Palette quantization would otherwise
+ * obscure (nearby coordinateImage markers can snap onto the same Palette color).
+ */
+function convertRawGrid(
+  image: PixelData,
+  technique: Technique,
+  size: { widthMm: number; heightMm: number },
+  bead: Bead = cubeBead,
+): (string | undefined)[][] {
+  const dimensions = computeGridDimensions(size, bead)
+  const frame = frameSizeMm(technique, dimensions, bead)
+  const view = framingView(image, frame, 1, CENTERED_PAN)
+  const lattice: PreviewLattice = { columns: dimensions.columns, rows: dimensions.rows, frameColumn: 0, frameRow: 0 }
+  return sampleLattice({ image, view, technique, bead, lattice })
 }
 
 describe('pixelColorAt', () => {
@@ -300,7 +318,7 @@ describe('clampMaxImageColors', () => {
 })
 
 describe('convertImage', () => {
-  it('gives every cell of the grid the color of the picture under it', () => {
+  it('gives every cell of the grid the Palette color nearest the picture under it (ticket 177)', () => {
     // A 2 x 2 picture into a 2 x 2 grid: each cell covers exactly one pixel.
     const image = pixels(2, 2, [
       [255, 0, 0, 255],
@@ -312,8 +330,8 @@ describe('convertImage', () => {
     const { grid } = convert(image, 'loom', { widthMm: 3, heightMm: 3 })
 
     expect(grid.map((row) => row.map((cell) => cell.color))).toEqual([
-      ['#ff0000', '#00ff00'],
-      ['#0000ff', '#ffffff'],
+      ['#e63746', '#27ae60'], // Palette red, green
+      ['#2f6fed', '#ffffff'], // Palette blue, white
     ])
   })
 
@@ -325,7 +343,7 @@ describe('convertImage', () => {
     expect(grid[0]).toHaveLength(10)
   })
 
-  it('converts a picture already inside the color limit losslessly', () => {
+  it('keeps a picture already inside the color limit as distinct Palette colors, one per pixel', () => {
     const image = pixels(2, 2, [
       [255, 0, 0, 255],
       [0, 255, 0, 255],
@@ -335,7 +353,7 @@ describe('convertImage', () => {
 
     const { imageColors } = convert(image, 'loom', { widthMm: 3, heightMm: 3 }, cubeBead, 8)
 
-    expect(new Set(imageColors)).toEqual(new Set(['#ff0000', '#00ff00', '#0000ff', '#111111']))
+    expect(new Set(imageColors)).toEqual(new Set(['#e63746', '#27ae60', '#2f6fed', '#1a1a1a']))
   })
 
   it('reduces a busier picture to the color count asked for', () => {
@@ -358,8 +376,8 @@ describe('convertImage', () => {
   it('saves only the colors the conversion actually put on the grid', () => {
     const { imageColors, grid } = convert(flat(4, 4, [10, 20, 30]), 'loom', { widthMm: 6, heightMm: 6 })
 
-    expect(imageColors).toEqual(['#0a141e'])
-    expect(grid.flat().every((cell) => cell.color === '#0a141e')).toBe(true)
+    expect(imageColors).toEqual(['#1a1a1a']) // nearest Palette color to #0a141e is black
+    expect(grid.flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
   })
 
   it('leaves a fully transparent picture with no cells painted and no Image colors', () => {
@@ -386,7 +404,7 @@ describe('convertImage', () => {
     const { grid } = convert(dot, 'loom', { widthMm: 3, heightMm: 3 })
 
     expect(grid.map((row) => row.map((cell) => cell.color))).toEqual([
-      [null, '#ff0000'],
+      [null, '#e63746'], // Palette red
       [null, null],
     ])
   })
@@ -394,9 +412,9 @@ describe('convertImage', () => {
   it('upscales a picture smaller than the grid rather than leaving the frame unfilled', () => {
     const { grid, imageColors } = convert(flat(1, 1, [1, 2, 3]), 'loom', { widthMm: 15, heightMm: 15 })
 
-    expect(imageColors).toEqual(['#010203'])
+    expect(imageColors).toEqual(['#1a1a1a']) // nearest Palette color to #010203 is black
     expect(grid.flat()).toHaveLength(100)
-    expect(grid.flat().every((cell) => cell.color === '#010203')).toBe(true)
+    expect(grid.flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
   })
 
   it('converts a single-pixel picture', () => {
@@ -408,19 +426,21 @@ describe('convertImage', () => {
   it('samples a loom row straight across, with no stagger', () => {
     // 9 pixels across a 4-cell frame puts about one pixel on every half cell, so a half-cell stagger shows as a
     // one-pixel shift. The picture is deliberately tall enough that its width is what the cover scale follows.
-    const { grid } = convert(coordinateImage(9, 20), 'loom', { widthMm: 6, heightMm: 6 })
+    const grid = convertRawGrid(coordinateImage(9, 20), 'loom', { widthMm: 6, heightMm: 6 })
 
-    const firstColumn = grid.map((row) => sampledPixel(row[0]!.color!).x)
+    const firstColumn = grid.map((row) => sampledPixel(row[0]!).x)
     expect(new Set(firstColumn).size).toBe(1)
   })
 
   it('reproduces the peyote and brick stitch half-cell stagger on odd rows', () => {
+    // Sampled below Convert image's Palette quantization (ticket 177): the raw marker colors coordinateImage relies
+    // on to decode which pixel a cell sampled would otherwise collapse onto the same nearest Palette color.
     for (const technique of ['peyote', 'brick'] as const) {
-      const { grid } = convert(coordinateImage(9, 20), technique, { widthMm: 6, heightMm: 6 })
+      const grid = convertRawGrid(coordinateImage(9, 20), technique, { widthMm: 6, heightMm: 6 })
 
-      const evenRow = sampledPixel(grid[0]![0]!.color!).x
-      const oddRow = sampledPixel(grid[1]![0]!.color!).x
-      const nextEvenRow = sampledPixel(grid[2]![0]!.color!).x
+      const evenRow = sampledPixel(grid[0]![0]!).x
+      const oddRow = sampledPixel(grid[1]![0]!).x
+      const nextEvenRow = sampledPixel(grid[2]![0]!).x
 
       expect(oddRow).toBeGreaterThan(evenRow)
       expect(nextEvenRow).toBe(evenRow)
@@ -428,15 +448,16 @@ describe('convertImage', () => {
   })
 
   it('packs peyote rows tighter than brick stitch, so its rows walk down the picture more slowly', () => {
-    // Same frame, same picture: peyote's rows are 0.75 of a cell apart, brick's a full cell.
+    // Same frame, same picture: peyote's rows are 0.75 of a cell apart, brick's a full cell. Sampled below Convert
+    // image's Palette quantization (ticket 177) for the same reason as the stagger test above.
     const image = coordinateImage(40, 40)
     const size = { widthMm: 15, heightMm: 15 }
 
-    const peyote = convert(image, 'peyote', size)
-    const brick = convert(image, 'brick', size)
+    const peyote = convertRawGrid(image, 'peyote', size)
+    const brick = convertRawGrid(image, 'brick', size)
 
-    const lastPeyoteRow = sampledPixel(peyote.grid.at(-1)![0]!.color!).y
-    const lastBrickRow = sampledPixel(brick.grid.at(-1)![0]!.color!).y
+    const lastPeyoteRow = sampledPixel(peyote.at(-1)![0]!).y
+    const lastBrickRow = sampledPixel(brick.at(-1)![0]!).y
 
     expect(lastPeyoteRow).toBeLessThan(lastBrickRow)
   })

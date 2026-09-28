@@ -1475,13 +1475,13 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
   })
 })
 
-describe('App Erase tool (ticket 89)', () => {
+describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () => {
   async function click(wrapper: ReturnType<typeof mount>, index: number) {
     await pressBead(wrapper, index)
     await wrapper.trigger('mouseup')
   }
 
-  /** A 2x2 Pattern (from a 3mm x 3mm cube-bead Pattern), fully painted red, for a flood-erase to act on. */
+  /** A 2x2 Pattern (from a 3mm x 3mm cube-bead Pattern), fully painted red. */
   async function paintedSmallPattern(wrapper: ReturnType<typeof mount>) {
     await createPatternViaForm(wrapper, '3', '3')
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -1490,18 +1490,50 @@ describe('App Erase tool (ticket 89)', () => {
     }
   }
 
-  it('flood-erases the clicked region, reusing the Fill algorithm, as one undo step', async () => {
+  it('erases just the clicked bead, not its connected same-color region, as one undo step', async () => {
     const wrapper = mountAppForCleanup()
     await paintedSmallPattern(wrapper)
     await wrapper.find('[data-testid="tool-erase"]').trigger('click')
 
     await click(wrapper, 0)
 
-    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    const grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[1]![0]!.color).toBe('#e63746')
+    expect(grid[1]![1]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
+
+  it('erases every cell dragged over, as one undo step, on the primary press -- no right-click needed', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
+    await wrapper.trigger('mouseup')
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await hoverBead(wrapper, 2, { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    let grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBeNull()
+    expect(grid[0]![2]!.color).toBeNull()
+
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    grid = loadPatterns()[0]!.grid
+    expect(grid[0]![0]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![2]!.color).toBe('#e63746')
+  })
+
 
   it('respects the Row progress lock: a finished row is left alone', async () => {
     const wrapper = mountAppForCleanup()
@@ -1519,7 +1551,7 @@ describe('App Erase tool (ticket 89)', () => {
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
   })
 
-  it('leaves right-click erase under Paint and Fill unaffected by the new tool', async () => {
+  it('leaves right-click erase under Paint and Fill unaffected by the new default behavior', async () => {
     const wrapper = mountAppForCleanup()
     await paintedSmallPattern(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
@@ -1809,6 +1841,64 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b1\D+20\b/)
+  })
+
+  it('Space/Shift+Space also move to the next/previous row (ticket 178)', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+
+    await pressKey({ key: ' ' })
+    await pressKey({ key: ' ' })
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b3\D+20\b/)
+
+    await pressKey({ key: ' ', shiftKey: true })
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b2\D+20\b/)
+  })
+
+  it('is a no-op for Space/Shift+Space too while Row progress is off', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await pressKey({ key: ' ' })
+    await pressKey({ key: ' ', shiftKey: true })
+
+    expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+  })
+
+  it('suppresses Space/Shift+Space when a Toolbox or Progress bar button has focus, so it activates the button rather than double-moving the row', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+
+    const toolboxButton = wrapper.find('[data-testid="undo-button"]').element as HTMLButtonElement
+    toolboxButton.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b1\D+20\b/)
+
+    const progressButton = wrapper.find('[data-testid="progress-bar-next"]').element as HTMLButtonElement
+    progressButton.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b1\D+20\b/)
+  })
+
+  it('does not fire Space/Shift+Space while typing in a text input', async () => {
+    const field = document.createElement('input')
+    field.type = 'text'
+    document.body.appendChild(field)
+
+    try {
+      const wrapper = mountAppForCleanup()
+      await createPatternViaForm(wrapper, '15', '30')
+      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+
+      await pressKey({ key: ' ' }, field)
+      await pressKey({ key: ' ', shiftKey: true }, field)
+
+      expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+    } finally {
+      field.remove()
+    }
   })
 })
 

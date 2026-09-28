@@ -214,8 +214,8 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
     expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
     // The left half of the picture is red, the right half blue.
-    expect(beadColor(wrapper, 0)).toBe('#ff0000')
-    expect(beadColor(wrapper, 9)).toBe('#0000ff')
+    expect(beadColor(wrapper, 0)).toBe('#e63746')
+    expect(beadColor(wrapper, 9)).toBe('#2f6fed')
   })
 
   it('saves it with its Image colors, so it survives a reload', async () => {
@@ -226,7 +226,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(1)
-    expect(new Set(saved[0]!.imageColors)).toEqual(new Set(['#ff0000', '#0000ff']))
+    expect(new Set(saved[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
     expect(saved[0]!.columns).toBe(10)
     expect(saved[0]!.rows).toBe(20)
   })
@@ -257,13 +257,13 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await startFraming(wrapper)
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
-    await wrapper.find('[data-color-hex="#0000ff"]').trigger('click')
+    await wrapper.find('[data-color-hex="#2f6fed"]').trigger('click')
     await pressBead(wrapper, 0)
     // A stroke saves when the button is released (ticket 55), so end it before reading storage back.
     await wrapper.find('.app-shell').trigger('mouseup')
 
-    expect(beadColor(wrapper, 0)).toBe('#0000ff')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#0000ff')
+    expect(beadColor(wrapper, 0)).toBe('#2f6fed')
+    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
   })
 
   it('leaves Image colors alone when the converted Pattern is painted on afterwards', async () => {
@@ -277,7 +277,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await pressBead(wrapper, 1, { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
 
-    expect(new Set(loadPatterns()[0]!.imageColors)).toEqual(new Set(['#ff0000', '#0000ff']))
+    expect(new Set(loadPatterns()[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
   })
 
   it('leaves a Pattern created the ordinary way without Image colors', async () => {
@@ -379,8 +379,8 @@ describe('App Convert image edge cases (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     const saved = loadPatterns()[0]!
-    expect(saved.imageColors).toEqual(['#010203'])
-    expect(saved.grid.flat().every((cell) => cell.color === '#010203')).toBe(true)
+    expect(saved.imageColors).toEqual(['#1a1a1a'])
+    expect(saved.grid.flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
   })
 
   it('converts a fully transparent picture to a Pattern with nothing painted and no Image colors', async () => {
