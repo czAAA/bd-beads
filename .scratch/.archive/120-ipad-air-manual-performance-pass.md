@@ -6,7 +6,7 @@
 
 **Blocked by:** None (108 is done)
 
-**Status:** ready-for-human
+**Status:** done
 
 - [ ] Hover, paint and pan/zoom at 250×250 on an iPad Air 13″ feel like 60 fps, or the shortfall is written down here
 - [ ] A Pencil or finger stroke paints beads and does not scroll the page
