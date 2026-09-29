@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, moveToRow, setRowProgressEnabled, toggleRowDirection, type Pattern } from '../domain/pattern'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 

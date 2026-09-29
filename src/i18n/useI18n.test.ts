@@ -18,10 +18,10 @@ describe('provideI18n', () => {
         },
       }),
     )
-    expect(document.documentElement.lang).toBe('ru')
-
-    i18n!.setLocale('en')
-    await nextTick()
     expect(document.documentElement.lang).toBe('en')
+
+    i18n!.setLocale('ru')
+    await nextTick()
+    expect(document.documentElement.lang).toBe('ru')
   })
 })

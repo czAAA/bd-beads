@@ -72,6 +72,7 @@ async function startFraming(wrapper: ReturnType<typeof mount>, width = '15', hei
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
   decodeState.image = twoBlocks()
   decodeState.error = undefined
 })

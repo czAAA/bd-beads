@@ -33,6 +33,7 @@ async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: st
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 describe('App opened from a scanned QR link', () => {

@@ -6,8 +6,8 @@ beforeEach(() => {
 })
 
 describe('localeStorage', () => {
-  it('defaults to ru when nothing has been saved yet', () => {
-    expect(loadLocale()).toBe('ru')
+  it('defaults to en when nothing has been saved yet', () => {
+    expect(loadLocale()).toBe('en')
   })
 
   it('round-trips a saved locale', () => {
@@ -16,9 +16,9 @@ describe('localeStorage', () => {
     expect(loadLocale()).toBe('en')
   })
 
-  it('ignores corrupted data in storage and falls back to ru', () => {
+  it('ignores corrupted data in storage and falls back to en', () => {
     localStorage.setItem('bd-beads:locale', 'fr')
 
-    expect(loadLocale()).toBe('ru')
+    expect(loadLocale()).toBe('en')
   })
 })

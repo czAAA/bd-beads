@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PatternList from './PatternList.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
@@ -6,6 +6,10 @@ import { createPattern, summarizePattern, type Pattern } from '../domain/pattern
 import { BEAD_CATALOG } from '../domain/beads'
 import { ru } from '../i18n/ru'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 

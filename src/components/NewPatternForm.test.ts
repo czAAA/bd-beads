@@ -15,6 +15,7 @@ import { ru } from '../i18n/ru'
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 /** A one-pixel decoded picture, standing in for whatever a browser would have decoded (jsdom decodes nothing). */

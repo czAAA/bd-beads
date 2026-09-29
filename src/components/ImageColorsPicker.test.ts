@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ImageColorsPicker from './ImageColorsPicker.vue'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 const colors = ['#ff0000', '#00ff00', '#0000ff']
 

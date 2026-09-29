@@ -1,10 +1,14 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Toolbox from './Toolbox.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, type Pattern } from '../domain/pattern'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -226,7 +230,7 @@ describe('Toolbox', () => {
   })
 
   it('reads group titles from the shared i18n dictionary, distinct per locale', () => {
-    // Mounted standalone (no provideI18n ancestor) it falls back to the default locale, Russian.
+    // Mounted standalone (no provideI18n ancestor) it reads the device's saved locale, which this file sets to Russian.
     const wrapper = mountToolbox()
 
     expect(en.toolbox.groups.tools).not.toBe(ru.toolbox.groups.tools)

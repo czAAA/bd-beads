@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
 import { PALETTE } from '../domain/palette'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 describe('PalettePicker', () => {
   it('renders one swatch per palette color', () => {

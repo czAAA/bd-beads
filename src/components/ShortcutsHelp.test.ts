@@ -1,7 +1,11 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 function mountHelp() {
   return mount(ShortcutsHelp, { attachTo: document.body })

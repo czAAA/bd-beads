@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** not a feature of its own; the Overview (ticket 77) starts in the same language as the app.
 
-- [ ] A device with no saved language opens the app in English, with `lang="en"` on `<html>`
-- [ ] A device that already saved a language keeps it, English or Russian
-- [ ] Picking a language still saves it on this device, as today
+- [x] A device with no saved language opens the app in English, with `lang="en"` on `<html>`
+- [x] A device that already saved a language keeps it, English or Russian
+- [x] Picking a language still saves it on this device, as today

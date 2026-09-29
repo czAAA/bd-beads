@@ -1,7 +1,7 @@
 import type { Locale } from '../i18n/translations'
 
 const STORAGE_KEY = 'bd-beads:locale'
-const DEFAULT_LOCALE: Locale = 'ru'
+const DEFAULT_LOCALE: Locale = 'en'
 
 /** Where the app's language is kept on this device (ADR 0020). */
 export interface LocaleStore {

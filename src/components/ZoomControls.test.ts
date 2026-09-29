@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ZoomControls from './ZoomControls.vue'
 import { ru } from '../i18n/ru'
+
+beforeEach(() => {
+  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+})
 
 describe('ZoomControls', () => {
   it('shows the zoom level it is given', () => {
@@ -24,7 +28,7 @@ describe('ZoomControls', () => {
   })
 
   it('names each control for screen readers, since the glyphs alone say nothing', () => {
-    // Mounted on its own it falls back to the default locale, which is Russian.
+    // Mounted on its own it reads the locale saved on the device, which this file sets to Russian.
     const wrapper = mount(ZoomControls, { props: { zoomPercent: 100 } })
 
     expect(wrapper.find('[data-testid="zoom-in"]').attributes('aria-label')).toBe(
