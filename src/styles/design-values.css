@@ -1,0 +1,62 @@
+/*
+ * Values DESIGN.md defines that aren't plain tokens (§4.6): copied from the top of components/bundle.css and
+ * interaction-and-motion.md. Kept apart from tokens.css, which src/styles/tokens.test.ts holds equal to tokens.json.
+ */
+
+:root,
+:root[data-theme="light"] {
+  --track-fill: linear-gradient(90deg, #fa520f, #ffa110);
+  --scrim: rgba(0, 0, 0, .32);
+  --overlay-fill: var(--canvas);
+  --overlay-line: var(--panel-line);
+  --overlay-hover: var(--surface);
+  --secondary-hover: var(--surface);
+  --in-box-line: var(--line-strong);
+  --hover-fill: var(--surface);
+  --press-fill: var(--line);
+  --focus-width: 2px;
+}
+
+:root[data-theme="dark"] {
+  --track-fill: #faff69;
+  --scrim: rgba(0, 0, 0, .6);
+  --overlay-fill: var(--panel);
+  --overlay-line: var(--line-strong);
+  --overlay-hover: var(--elevated);
+  --secondary-hover: var(--elevated);
+  --in-box-line: var(--elevated);
+  --hover-fill: var(--elevated);
+  --press-fill: var(--line-strong);
+  --focus-width: 2px;
+}
+
+:root[data-theme="contrast"] {
+  --track-fill: var(--accent);
+  --scrim: rgba(0, 0, 0, .6);
+  --overlay-fill: var(--canvas);
+  --overlay-line: var(--line-strong);
+  --overlay-hover: var(--surface);
+  --secondary-hover: var(--surface);
+  --in-box-line: var(--line-strong);
+  --hover-fill: #f0f0f0;
+  --press-fill: #d4d4d4;
+  --focus-width: 3px;
+}
+
+:root {
+  /* Motion (interaction-and-motion.md) */
+  --duration-instant: 80ms;
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 280ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --ease-standard: cubic-bezier(.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-base: 120ms;
+    --duration-slow: 120ms;
+  }
+}

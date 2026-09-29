@@ -1,8 +1,8 @@
 /*
- * Design system v13 tokens (docs/design/system/tokens.json), with the few values that aren't plain tokens from
- * components/bundle.css. Light is the default; data-theme="dark" or "contrast" on <html> selects the others
- * (src/theme). Sizes are in rem so the browser's text size scales the chrome. src/styles/tokens.test.ts keeps this
- * file equal to tokens.json: refresh both together (DESIGN.md §6).
+ * Design system tokens (docs/design/system/tokens.json). Light is the default; data-theme="dark" or "contrast" on
+ * <html> selects the others (src/theme). Sizes are in rem so the browser's text size scales the chrome.
+ * src/styles/tokens.test.ts keeps this file equal to tokens.json: refresh both together (DESIGN.md §6). The values that
+ * aren't tokens (motion, fills, scrims) are in design-values.css.
  */
 
 :root,
@@ -58,17 +58,6 @@
   --elevation-1: 0 4px 12px rgba(0,0,0,.04);
   --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08);
   --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12);
-  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
-  --track-fill: linear-gradient(90deg, #fa520f, #ffa110);
-  --scrim: rgba(0, 0, 0, .32);
-  --overlay-fill: var(--canvas);
-  --overlay-line: var(--panel-line);
-  --overlay-hover: var(--surface);
-  --secondary-hover: var(--surface);
-  --in-box-line: var(--line-strong);
-  --hover-fill: var(--surface);
-  --press-fill: var(--line);
-  --focus-width: 2px;
 }
 
 :root[data-theme="dark"] {
@@ -123,17 +112,6 @@
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
-  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
-  --track-fill: #faff69;
-  --scrim: rgba(0, 0, 0, .6);
-  --overlay-fill: var(--panel);
-  --overlay-line: var(--line-strong);
-  --overlay-hover: var(--elevated);
-  --secondary-hover: var(--elevated);
-  --in-box-line: var(--elevated);
-  --hover-fill: var(--elevated);
-  --press-fill: var(--line-strong);
-  --focus-width: 2px;
 }
 
 :root[data-theme="contrast"] {
@@ -188,17 +166,6 @@
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
-  /* Not plain tokens: components/bundle.css and interaction-and-motion.md */
-  --track-fill: var(--accent);
-  --scrim: rgba(0, 0, 0, .6);
-  --overlay-fill: var(--canvas);
-  --overlay-line: var(--line-strong);
-  --overlay-hover: var(--surface);
-  --secondary-hover: var(--surface);
-  --in-box-line: var(--line-strong);
-  --hover-fill: #f0f0f0;
-  --press-fill: #d4d4d4;
-  --focus-width: 3px;
 }
 
 :root {
@@ -265,14 +232,6 @@
   --z-toast: 70;
   --z-modal: 80;
   --z-tooltip: 90;
-  /* Motion (interaction-and-motion.md) */
-  --duration-instant: 80ms;
-  --duration-fast: 120ms;
-  --duration-base: 200ms;
-  --duration-slow: 280ms;
-  --ease-out: cubic-bezier(.2, .8, .2, 1);
-  --ease-in: cubic-bezier(.4, 0, 1, 1);
-  --ease-standard: cubic-bezier(.2, 0, 0, 1);
   --print-page-width: 210mm;
   --print-page-height: 297mm;
   --print-dpi: 150;
@@ -288,11 +247,4 @@
   --print-mark-opacity: 0.07;
   --print-name-opacity: 0.14;
   --print-png-bead: 30px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --duration-base: 120ms;
-    --duration-slow: 120ms;
-  }
 }

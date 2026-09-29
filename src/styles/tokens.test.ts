@@ -71,9 +71,10 @@ describe('tokens.css', () => {
     }
   })
 
-  it('has the motion tokens', () => {
+  it('has the motion tokens, in design-values.css', () => {
+    const values = read('src/styles/design-values.css')
     for (const name of ['--duration-instant', '--duration-fast', '--duration-base', '--duration-slow', '--ease-out', '--ease-in', '--ease-standard']) {
-      expect(css).toContain(`${name}:`)
+      expect(values).toContain(`${name}:`)
     }
   })
 })

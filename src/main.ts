@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import './styles/fonts.css'
 import './styles/tokens.css'
+import './styles/design-values.css'
 import './styles/controls.css'
 import './styles/contrast.css'
 import './style.css'
