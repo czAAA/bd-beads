@@ -4,9 +4,17 @@
 
 **Blocked by:** 189 (useUndoHistory), 190 (usePaintStroke) — its table entries call into their handlers
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `useAppShortcutTable` builds the shortcut table (predicates + entries) and is the only thing that calls the generic `useKeyboardShortcuts`
-- [ ] App.vue no longer builds the shortcut table or declares the guard predicates directly
-- [ ] Every existing keyboard shortcut still works exactly as before (covered by existing keyboard tests, moved to target the new composable)
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useAppShortcutTable` builds the shortcut table (predicates + entries) and is the only thing that calls the generic `useKeyboardShortcuts`
+- [x] App.vue no longer builds the shortcut table or declares the guard predicates directly
+- [x] Every existing keyboard shortcut still works exactly as before (covered by existing keyboard tests, moved to target the new composable)
+- [x] App.vue still boots and all other existing tests pass
+
+## Resolution
+
+**What changed:** The shortcut guard predicates (undo/redo chords, plain keys, modal-open, focused-toolbox-button) and the shortcut table moved from App.vue into the new `useAppShortcutTable`, the only caller of `useKeyboardShortcuts`. App.vue passes it lazy state accessors and handlers.
+
+**Files:** `src/composables/useAppShortcutTable.ts` (new), `src/composables/useAppShortcutTable.test.ts` (new), `src/App.vue`.
+
+**Decisions:** Open dialogs collapse into one `anyDialogOpen` dep; `hasOpenLayer` is passed in. `App.keyboard.test.ts` stays as the end-to-end check.

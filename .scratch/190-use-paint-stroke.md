@@ -4,9 +4,19 @@
 
 **Blocked by:** 189 (useUndoHistory)
 
-**Status:** needs-triage
+**Status:** done
 
 - [ ] `usePaintStroke` owns stroke state and `beginStroke`/`endStroke`/`paintStrokeCell`/`beginOrCommitPress`, committing via `useUndoHistory`
 - [ ] App.vue no longer declares any of the above directly
 - [ ] A single paint stroke (mouse down, drag, mouse up) still produces exactly one undo step, same as today
 - [ ] App.vue still boots and all other existing tests pass
+
+## Resolution
+
+**What changed:** The stroke lifecycle (`strokeMode`, `beginStroke`, `endStroke`, `paintStrokeCell`, `beginOrCommitPress`) moved from App.vue into the new `usePaintStroke` composable. App.vue destructures `strokeMode`, `endStroke`, `paintStrokeCell`, `beginOrCommitPress` and no longer declares them. A drag is still one undo step (recorded via `useUndoHistory`) and one save.
+
+**Files:** `src/composables/usePaintStroke.ts` (new), `src/composables/usePaintStroke.test.ts` (new), `src/App.vue`, plus `docs/agents/pull-requests.md` and `CLAUDE.md` for the PR headline format.
+
+**Decisions:** Deps are lazy accessors, like `useUndoHistory`. `endSelectPress` and `flushPendingSave` are passed in, because `endStroke` also ends a Select press and writes the deferred save.
+
+**Left out:** `beginStroke` is returned but only used internally.

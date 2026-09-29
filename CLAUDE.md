@@ -12,6 +12,10 @@ Issues are tracked as markdown files under `.scratch/`. See `docs/agents/issue-t
 
 Default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, `done`. See `docs/agents/triage-labels.md`.
 
+### Pull requests
+
+Headline format `type:[ticketNumber] Description`, with type `feat`, `fix` or `ref`. See `docs/agents/pull-requests.md`.
+
 ### Domain docs
 
 Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for architecture decision records. See `docs/agents/domain.md`.

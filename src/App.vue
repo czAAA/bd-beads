@@ -51,8 +51,9 @@ import { useFitByPriority } from './composables/useFitByPriority'
 import type { MessageTone } from './composables/useToasts'
 import { plural } from './i18n/plural'
 import { patternExtentPx, rowShiftPx, rowTopPx } from './rendering/patternRenderer'
-import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
+import { useAppShortcutTable } from './composables/useAppShortcutTable'
 import { useMirrorState } from './composables/useMirrorState'
+import { usePaintStroke } from './composables/usePaintStroke'
 import { useUndoHistory } from './composables/useUndoHistory'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
@@ -65,18 +66,15 @@ import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
 import { CELL_SIZE_PX, GRID_BORDER_PX, rotationSwapsAxes, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
-import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
+import { findPaletteColor, PALETTE } from './domain/palette'
 import {
   createPattern,
   createPatternFromImage,
   deleteAll,
-  fillArea,
   isInFinishedRow,
-  keepFinishedRows,
   mirroredCells,
   mostRecentlyUpdated,
   moveToRow,
-  paintCells,
   patternGeometry,
   replaceBead,
   resolvePatternBead,
@@ -86,7 +84,6 @@ import {
   toggleRotated,
   toggleRowDirection,
   type CreatePatternInput,
-  type Grid,
   type Pattern,
 } from './domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
@@ -845,11 +842,20 @@ function onSelectTool(tool: Tool) {
 }
 
 /**
- * A Paint-tool drag (ticket 24): 'paint'/'erase' while a stroke is in progress, else null. The grid this started
- * from is captured once, in strokeBaseline, and pushed to the undo stack as a single step when the stroke ends
- * (see endStroke) — every cell touched in between just updates the live Pattern directly.
+ * A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190, ADR 0023) -- see
+ * composables/usePaintStroke.ts. strokeMode is 'paint'/'erase' while a stroke is in progress, else null.
  */
-const strokeMode = ref<'paint' | 'erase' | null>(null)
+const { strokeMode, endStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
+  currentPattern: () => activePattern.value,
+  replacePattern,
+  mirrorAxisCounts: () => mirrorAxisCounts.value,
+  mirrorCopyMode: () => mirrorCopyMode.value,
+  activeTool: () => activeTool.value,
+  commitGridChange,
+  recordHistory,
+  endSelectPress,
+  flushPendingSave,
+})
 
 /** The open Pattern for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
 const settledPattern = useSettledPattern(
@@ -863,299 +869,37 @@ const shareablePattern = useSettledPattern(
   () => strokeMode.value !== null,
   Number.POSITIVE_INFINITY,
 )
-const strokeBaseline = ref<Grid | null>(null)
 
-function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
-  strokeMode.value = mode
-  strokeBaseline.value = pattern.grid
-}
-
-/**
- * Ends an in-progress stroke or Select press, bound to mouseup/pointerup on the whole app shell (ticket 24): a
- * drag can end with the button/finger/pen released anywhere, not just back over the cell it started on. Also bound
- * to pointercancel (ticket 60) so a touch/pen stroke the OS interrupts mid-drag doesn't leave strokeMode stuck.
- */
-function endStroke() {
-  endSelectPress()
-
-  const pattern = activePattern.value
-  if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    recordHistory({ grid: strokeBaseline.value })
-  }
-  strokeMode.value = null
-  strokeBaseline.value = null
-
-  // The stroke's one write: every cell it painted deferred its save (see paintStrokeCell), so the whole stroke
-  // reaches storage here, once. A no-op when the mouseup wasn't ending a stroke at all.
-  flushPendingSave()
-}
-
-/**
- * Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per mirrorAxisCounts,
- * leaving rows already woven alone (ticket 33).
- *
- * This is the one caller that defers its save (ticket 55): a stroke can touch hundreds of cells in a second, and
- * saving each one wrote the whole Pattern library per mousemove. The cell lands in the library immediately — it's on
- * screen and undoable either way — and endStroke turns the whole stroke into a single write.
- */
-function paintStrokeCell(row: number, column: number, color: string | null) {
-  // Worked on as the Pattern itself, not through the library's reactive wrapper: a stroke step reads a bead or two, but
-  // comparing what it left for finished rows reads them all, and each read through a proxy is many times the cost.
-  const pattern = activePattern.value && toRaw(activePattern.value)
-  if (!pattern) {
-    return
-  }
-
-  const painted = paintCells(pattern, [{ row, column }], color, mirrorAxisCounts.value, mirrorCopyMode.value)
-
-  const updated = keepFinishedRows(pattern, painted)
-  if (updated !== pattern) {
-    replacePattern(updated, { deferSave: true })
-  }
-}
-
-/** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke, live-mirrored per cell. */
-function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number) {
-  const pattern = activePattern.value
-  if (!pattern) {
-    return
-  }
-
-  if (activeTool.value === 'fill') {
-    commitGridChange(pattern, fillArea(pattern, row, column, color))
-    return
-  }
-
-  beginStroke(mode, pattern)
-  paintStrokeCell(row, column, color)
-}
-
-function isUndoShortcut(event: KeyboardEvent): boolean {
-  return (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'z'
-}
-
-/** Ctrl/Cmd+Shift+Z, the mirror of the undo chord, or Ctrl+Y, the older Windows convention. */
-function isRedoShortcut(event: KeyboardEvent): boolean {
-  const shiftZ = (event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'z'
-  const ctrlY = event.ctrlKey && event.key.toLowerCase() === 'y'
-  return shiftZ || ctrlY
-}
-
-/** A plain, unmodified key press: guards the new single-letter/digit shortcuts (tickets 87/91/93/94) against colliding with an OS/browser chord that happens to share the same key. */
-function isPlainKey(event: KeyboardEvent): boolean {
-  return !event.ctrlKey && !event.metaKey && !event.altKey
-}
-
-/** `event.key` is exactly `key` (case-insensitively), with no modifier held at all -- the shape every plain-letter/digit shortcut below (1/2/3, R, M, H, V, P, D) shares, so each just names its own key instead of repeating the guard. */
-function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
-  return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
-}
-
-/** Withholds a shortcut while the Delete all, Replace bead, Change size or import confirmation, the QR panel, the shortcuts help overlay or a menu is open — same precedence Escape already gives those modals (see the Escape entry below). */
-function noModalOpen(): boolean {
-  return (
-    !hasOpenLayer() &&
-    !deleteAllConfirmOpen.value &&
-    !replaceBeadPendingBead.value &&
-    !changeSizeOpen.value &&
-    !pendingImport.value &&
-    !qrExport.panelOpen.value &&
-    !shortcutsHelpOpen.value
-  )
-}
-
-/**
- * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox or Progress bar button has
- * focus — otherwise Tab+Enter would both click that button and move the row. Progress bar (ticket 124) moved
- * Previous/Next onto the canvas, outside the Toolbox, so this checks both containers.
- */
-function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
-  const target = event.target
-  return (
-    target instanceof HTMLElement &&
-    target.tagName === 'BUTTON' &&
-    target.closest('[data-testid="toolbox"], [data-testid="progress-bar"]') !== null
-  )
-}
-
-/**
- * The table (ticket 86) driving useKeyboardShortcuts below: Undo, Redo and Escape from ticket 86 itself, plus every
- * Toolbox shortcut tickets 87-96 added, grouped the same way the Toolbox's own Tool groups are, without touching
- * the dispatcher itself.
- */
-const keyboardShortcuts: KeyboardShortcut[] = [
-  {
-    /*
-     * Escape reaches backOutOfSelect from anywhere, since the canvas takes no keyboard focus of its own and the
-     * cursor may have left it (ticket 24). While the Delete all or Replace bead confirmation modal, or the
-     * shortcuts help overlay, is open, its own Escape handling owns the key instead — withheld here so Escape can't
-     * also unexpectedly drop a copied block or collapse a Tool group behind it.
-     */
-    matches: (event) => event.key === 'Escape',
-    guard: noModalOpen,
-    allowWhileTyping: true,
-    action: () => {
-      /*
-       * ticket 41: an expanded Tool group takes precedence — the first Escape only collapses it, and backOutOfSelect
-       * (cancel Paste, then clear Selection) only runs once none is expanded, exactly as if that Escape never happened.
-       */
-      if (toolboxRef.value?.collapseExpandedGroup()) {
-        return
-      }
-      backOutOfSelect()
-    },
+useAppShortcutTable({
+  activePattern: () => activePattern.value,
+  activeTool: () => activeTool.value,
+  hasSelection: () => !!selection.value,
+  hasOpenLayer,
+  anyDialogOpen: () =>
+    deleteAllConfirmOpen.value ||
+    !!replaceBeadPendingBead.value ||
+    changeSizeOpen.value ||
+    !!pendingImport.value ||
+    qrExport.panelOpen.value ||
+    shortcutsHelpOpen.value,
+  collapseExpandedToolGroup: () => toolboxRef.value?.collapseExpandedGroup() ?? false,
+  backOutOfSelect,
+  onUndo,
+  onRedo,
+  onSelectTool,
+  onSelectColor,
+  onDeleteSelection,
+  onToggleRotate,
+  onCopy,
+  pasteAtPointer,
+  onSave,
+  onToggleRowProgress,
+  onToggleRowDirection,
+  onMoveRow,
+  openShortcutsHelp: () => {
+    shortcutsHelpOpen.value = true
   },
-  {
-    matches: isRedoShortcut,
-    action: (event) => {
-      event.preventDefault()
-      onRedo()
-    },
-  },
-  {
-    matches: isUndoShortcut,
-    action: (event) => {
-      event.preventDefault()
-      onUndo()
-    },
-  },
-  // Tools group (ticket 87): 1/2/3 select Paint/Fill/Select, the same as clicking that button.
-  {
-    matches: (event) => isPlainLetterKey(event, '1'),
-    guard: noModalOpen,
-    action: () => onSelectTool('paint'),
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, '2'),
-    guard: noModalOpen,
-    action: () => onSelectTool('fill'),
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, '3'),
-    guard: noModalOpen,
-    action: () => onSelectTool('select'),
-  },
-  // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Eraser.
-  {
-    matches: (event) => event.key === 'Delete',
-    guard: noModalOpen,
-    action: () => {
-      if (activeTool.value === 'select' && selection.value) {
-        onDeleteSelection()
-      } else {
-        onSelectTool('erase')
-      }
-    },
-  },
-  // Colors group (ticket 88): Shift+1..9, Shift+0, Q, W paint with the corresponding Palette swatch, in order.
-  {
-    matches: (event) => event.shiftKey && isPlainKey(event) && PALETTE_SHORTCUTS.some((s) => s.code === event.code),
-    guard: noModalOpen,
-    action: (event) => {
-      const index = PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)
-      const color = PALETTE[index]
-      if (color) {
-        onSelectColor(color.id)
-      }
-    },
-  },
-  // Edit group (ticket 91): R toggles Rotate, Ctrl/Cmd+C copies the active Selection.
-  {
-    matches: (event) => isPlainLetterKey(event, 'r'),
-    guard: noModalOpen,
-    action: () => onToggleRotate(),
-  },
-  {
-    matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'c',
-    guard: noModalOpen,
-    action: (event) => {
-      event.preventDefault()
-      onCopy()
-    },
-  },
-  // ticket 92: Ctrl/Cmd+V pastes at the cell under the pointer, regardless of the active tool.
-  {
-    matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'v',
-    guard: noModalOpen,
-    action: pasteAtPointer,
-  },
-  // ticket 115: Ctrl/Cmd+S saves. Claimed from the browser only while a Pattern is open to save — with none, the browser's own dialog is left alone rather than swallowed for nothing.
-  {
-    matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 's',
-    guard: () => noModalOpen() && !!activePattern.value,
-    allowWhileTyping: true,
-    action: (event) => {
-      event.preventDefault()
-      onSave()
-    },
-  },
-  // Row progress group (ticket 94): P toggles it on/off, D toggles direction, Enter/Shift+Enter (and Space/
-  // Shift+Space, ticket 178) move the pointer.
-  {
-    matches: (event) => isPlainLetterKey(event, 'p'),
-    guard: noModalOpen,
-    action: () => {
-      const pattern = activePattern.value
-      if (pattern) {
-        onToggleRowProgress(!pattern.rowProgress.enabled)
-      }
-    },
-  },
-  {
-    matches: (event) => isPlainLetterKey(event, 'd'),
-    guard: noModalOpen,
-    action: () => onToggleRowDirection(),
-  },
-  {
-    matches: (event) => event.key === 'Enter' && !event.shiftKey && !isFocusedOnToolboxButton(event),
-    guard: noModalOpen,
-    action: () => {
-      if (activePattern.value?.rowProgress.enabled) {
-        onMoveRow(1)
-      }
-    },
-  },
-  {
-    matches: (event) => event.key === 'Enter' && event.shiftKey && !isFocusedOnToolboxButton(event),
-    guard: noModalOpen,
-    action: () => {
-      if (activePattern.value?.rowProgress.enabled) {
-        onMoveRow(-1)
-      }
-    },
-  },
-  // ticket 178: Space/Shift+Space mirror Enter/Shift+Enter above, marking the current row done/not done -- the same
-  // guard against a focused Toolbox/Progress bar button, since Space activates one natively (Enter already needed
-  // this for Tab+Enter; Space needs it even more, being every button's own native activation key).
-  {
-    matches: (event) => event.key === ' ' && !event.shiftKey && !isFocusedOnToolboxButton(event),
-    guard: noModalOpen,
-    action: () => {
-      if (activePattern.value?.rowProgress.enabled) {
-        onMoveRow(1)
-      }
-    },
-  },
-  {
-    matches: (event) => event.key === ' ' && event.shiftKey && !isFocusedOnToolboxButton(event),
-    guard: noModalOpen,
-    action: () => {
-      if (activePattern.value?.rowProgress.enabled) {
-        onMoveRow(-1)
-      }
-    },
-  },
-  // ticket 96: ? opens the shortcuts help overlay.
-  {
-    matches: (event) => event.key === '?',
-    guard: noModalOpen,
-    action: () => {
-      shortcutsHelpOpen.value = true
-    },
-  },
-]
-
-useKeyboardShortcuts(keyboardShortcuts)
+})
 
 /**
  * The safety net for a stroke's deferred save (ticket 55): endStroke normally writes it, on the mouseup the app shell
