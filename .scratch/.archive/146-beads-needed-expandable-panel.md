@@ -4,7 +4,7 @@
 
 **Blocked by:** 141, 157
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Design system v13:** The component card(s) in `docs/design/system/components/` are the spec: BeadsNeeded. At 24″ and wider it shows 5 rows before expanding (ticket 83).
 
