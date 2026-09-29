@@ -24,4 +24,47 @@ export default tseslint.config(
       'vue/multi-word-component-names': ['error', { ignores: ['Toolbox'] }],
     },
   },
+  // Module boundaries (ADR 0020): only services/ reaches outside the page's own memory, and only composables and the
+  // app shell wire services in. Tests are exempt: they set up the browser state a service reads.
+  {
+    files: ['src/domain/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['vue', '**/services', '**/services/*', '**/composables/*', '**/components/*'], message: 'domain/ is pure: no Vue, services or UI (ADR 0020).' },
+          ],
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        ...['window', 'navigator', 'localStorage', 'fetch', 'document'].map((name) => ({
+          name,
+          message: 'domain/ is pure: browser access belongs in services/ (ADR 0020).',
+        })),
+      ],
+    },
+  },
+  {
+    files: ['src/rendering/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['vue', '**/services', '**/services/*'], message: 'rendering/ is free of Vue and services (ADR 0018, 0020).' }] },
+      ],
+    },
+  },
+  {
+    files: ['src/components/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['**/services', '**/services/*'], message: 'Components emit events or take what they need from props or the app shell (ADR 0020).' }] },
+      ],
+    },
+  },
 )

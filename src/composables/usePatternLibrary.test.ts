@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, paintCells, type Pattern } from '../domain/pattern'
 import { NO_MIRROR_AXES } from '../domain/mirror'
-import { loadPatterns } from '../domain/patternStorage'
+import { loadPatterns } from '../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../testUtils/storageWrites'
 import { usePatternLibrary } from './usePatternLibrary'
 

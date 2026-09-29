@@ -57,6 +57,7 @@ const {
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportPatterns,
+  decodeImage,
   qrExport,
   makerName,
   nameOnExportsOpen,
@@ -182,7 +183,7 @@ function toolLabel(tool: Tool): string {
       <AppButton variant="primary" icon="plus" data-testid="phone-new-pattern-button" @click="phoneNewPatternOpen = true">
         {{ t.patterns.newPatternButton }}
       </AppButton>
-      <PatternImport compact :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
+      <PatternImport compact :decode-image="decodeImage" :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
       <IconButton
         icon="library"
         :label="t.patterns.heading"
@@ -196,6 +197,7 @@ function toolLabel(tool: Tool): string {
   <!-- New Pattern (PhoneForms card): its own full-height modal sheet from the Pattern sheet, the same form the wider tiers show inline. -->
   <BottomSheet v-if="phoneNewPatternOpen" modal :title="t.patterns.newPatternButton" @close="phoneNewPatternOpen = false">
     <NewPatternForm
+      :decode-image="decodeImage"
       @submit="(payload) => { onCreatePattern(payload); phoneNewPatternOpen = false; openPhoneSheet = null }"
       @draft="onNewPatternDraft"
       @convert-image="(draft) => { startConvertImage(draft); phoneNewPatternOpen = false; openPhoneSheet = null }"

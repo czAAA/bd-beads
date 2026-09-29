@@ -5,7 +5,7 @@ import type { Cell, Pattern, RowProgress } from '../../src/domain/pattern'
 import { encodePattern } from '../../src/domain/patternEncoding'
 import { patternExtentPx, rowShiftPx, rowTopPx } from '../../src/rendering/patternRenderer'
 
-/** The localStorage key and stored version the app writes (domain/patternStorage.ts): the checks seed a library by writing it directly. */
+/** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by writing it directly. */
 const STORAGE_KEY = 'bd-beads:patterns'
 const STORED_VERSION = 2
 

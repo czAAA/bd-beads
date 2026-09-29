@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from './App.vue'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 
 /*

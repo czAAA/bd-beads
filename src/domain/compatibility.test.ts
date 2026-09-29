@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Grid, Pattern, RowProgress } from './pattern'
 import { parsePatternsFile } from './patternFile'
-import { loadPatterns, savePatterns } from './patternStorage'
+import { loadPatterns, savePatterns } from '../services/libraryStore'
 import libraryFile from './fixtures/library-file.json?raw'
 import libraryV1 from './fixtures/library-v1.json?raw'
 import libraryV2 from './fixtures/library-v2.json?raw'

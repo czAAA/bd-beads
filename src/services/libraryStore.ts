@@ -1,6 +1,6 @@
-import { beadLabel, findBead } from './beads'
-import { normalizePattern, type Pattern } from './pattern'
-import { decodePattern, encodePattern, type EncodedPattern } from './patternEncoding'
+import { beadLabel, findBead } from '../domain/beads'
+import { normalizePattern, type Pattern } from '../domain/pattern'
+import { decodePattern, encodePattern, type EncodedPattern } from '../domain/patternEncoding'
 
 const STORAGE_KEY = 'bd-beads:patterns'
 
@@ -114,3 +114,17 @@ export function savePatterns(patterns: Pattern[]): void {
   const stored: StoredLibrary = { version: STORED_VERSION, patterns: patterns.map(encodePattern) }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
 }
+
+/**
+ * Where the Pattern library is kept (ADR 0020). usePatternLibrary persists through this, so its tests hand it a fake
+ * and the backend phase can add a store that syncs beside this one.
+ */
+export interface LibraryStore {
+  /** Every stored Pattern; see loadPatterns for what an unreadable value gives. */
+  load: () => Pattern[]
+  /** Replaces the stored library; throws when the device refuses the write (see savePatterns). */
+  save: (patterns: Pattern[]) => void
+}
+
+/** The library in this browser's localStorage (ADR 0001). */
+export const browserLibraryStore: LibraryStore = { load: loadPatterns, save: savePatterns }

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPattern, createPatternFromImage, type Grid, type Pattern, type Technique } from './pattern'
-import { loadPatterns, savePatterns } from './patternStorage'
-import { parsePatternsFile, serializeLibrary } from './patternFile'
-import { BEAD_CATALOG } from './beads'
+import { createPattern, createPatternFromImage, type Grid, type Pattern, type Technique } from '../domain/pattern'
+import { loadPatterns, savePatterns } from './libraryStore'
+import { parsePatternsFile, serializeLibrary } from '../domain/patternFile'
+import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 
 const STORAGE_KEY = 'bd-beads:patterns'

@@ -1,27 +1,13 @@
-import { validateImagePixelCount, type ImageRejection, type PixelData } from './imageConversion'
+import { ImageConversionError, validateImagePixelCount, type DecodeImage } from '../domain/imageConversion'
 
 /**
  * The one part of Convert image that is the browser's job rather than this app's: turning a chosen file's PNG/JPEG/
- * GIF/WebP bytes into pixels. Kept apart from imageConversion.ts on purpose — everything there is a pure function over
+ * GIF/WebP bytes into pixels. Kept apart from domain/imageConversion.ts on purpose — everything there is a pure function over
  * already-decoded pixel data and is unit-tested as such, while this is a thin adapter over browser APIs that only a
  * real browser implements (jsdom decodes no image bytes and paints no canvas).
  *
- * Callers take it as a `DecodeImage`, so a test can hand over synthetic pixel data instead.
+ * Callers take it as a `DecodeImage` (declared in domain/imageConversion.ts), so a test can hand over synthetic pixel data instead.
  */
-
-/** How a picture is turned into pixels. The real one is decodeImageFile; a test supplies its own. */
-export type DecodeImage = (file: Blob) => Promise<PixelData>
-
-/** A file that can't be converted, carrying which of the localised reasons to show (see ImageRejection). */
-export class ImageConversionError extends Error {
-  readonly reason: ImageRejection
-
-  constructor(reason: ImageRejection) {
-    super(`Image cannot be converted: ${reason}`)
-    this.name = 'ImageConversionError'
-    this.reason = reason
-  }
-}
 
 /** What both decode paths hand back: something drawable, with the size it decoded to. */
 interface DecodedSource {

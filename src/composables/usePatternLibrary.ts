@@ -1,6 +1,6 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { inSavedOrder, markSaved, mostRecentlyUpdated, type Pattern } from '../domain/pattern'
-import { loadPatterns, savePatterns } from '../domain/patternStorage'
+import { browserLibraryStore, type LibraryStore } from '../services/libraryStore'
 
 /** How a change to a Pattern should reach storage (see replacePattern). */
 export interface ReplaceOptions {
@@ -38,15 +38,15 @@ export interface PatternLibrary {
  * save as pending; nothing watches the Patterns for changes, because a watch would also fire on each individual
  * stroke cell and make the deferral load-bearing for correctness rather than just for speed.
  *
- * A save writes the whole library from memory (see savePatterns), which is both cheaper than the old read-modify-write
+ * A save writes the whole library from memory (see LibraryStore.save), which is both cheaper than the old read-modify-write
  * per Pattern and self-healing: any later save also persists whatever an earlier deferred or failed one left pending,
  * so a missed flush can cost at most the newest un-flushed stroke, never an older edit.
  *
  * The library is kept in last-saved order (ticket 145): each mutator that saves a Pattern stamps it (markSaved) and
  * moves it to the front, and the order is written with the library, so it survives a reload as it stood.
  */
-export function usePatternLibrary(): PatternLibrary {
-  const patterns = ref<Pattern[]>(inSavedOrder(loadPatterns()))
+export function usePatternLibrary(store: LibraryStore = browserLibraryStore): PatternLibrary {
+  const patterns = ref<Pattern[]>(inSavedOrder(store.load()))
   const activePatternId = ref<string | undefined>(mostRecentlyUpdated(patterns.value)?.id)
   const activePattern = computed(() =>
     patterns.value.find((pattern) => pattern.id === activePatternId.value),
@@ -58,7 +58,7 @@ export function usePatternLibrary(): PatternLibrary {
 
   function save(): void {
     try {
-      savePatterns(patterns.value)
+      store.save(patterns.value)
       savePending = false
       saveFailed.value = false
     } catch {

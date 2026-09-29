@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
-import { decodeImageFile, type DecodeImage } from '../domain/imageDecode'
+import type { DecodeImage } from '../domain/imageConversion'
 import type { Pattern } from '../domain/pattern'
 import { importPatterns, parsePatternsFile } from '../domain/patternFile'
 import { parsePatternFromQrImage } from '../domain/qrExport'
@@ -13,12 +13,11 @@ const props = withDefaults(
     /** Every Pattern saved on this device, for spotting import collisions. */
     patterns: Pattern[]
     /**
-     * How a picked QR-code picture is turned into pixels (ticket 68). Defaults to the browser's own decoding, the
-     * same adapter Convert image uses; a test hands over synthetic pixel data instead, since jsdom decodes no image
-     * bytes. Resolved where it is called rather than through withDefaults, where a function default would be taken
-     * as the value itself.
+     * How a picked QR-code picture is turned into pixels (ticket 68). The app shell hands over the browser's own
+     * decoding, the same adapter Convert image uses (ADR 0020); a test hands over synthetic pixel data instead, since
+     * jsdom decodes no image bytes.
      */
-    decodeImage?: DecodeImage
+    decodeImage: DecodeImage
     /**
      * Icons only, each name kept as its tooltip and accessible name: the header's first step when it runs out of room
      * (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini tier's More menu
@@ -35,7 +34,6 @@ const props = withDefaults(
     testidPrefix?: string
   }>(),
   {
-    decodeImage: undefined,
     compact: false,
     toastResults: false,
     testidPrefix: '',
@@ -97,7 +95,7 @@ async function onImportQrImage(event: Event): Promise<void> {
   qrImportFailed.value = false
 
   try {
-    const pixels = await (props.decodeImage ?? decodeImageFile)(file)
+    const pixels = await props.decodeImage(file)
     const [added] = importPatterns([parsePatternFromQrImage(pixels)], props.patterns)
     qrImportedCount.value = 1
     emit('import', [added!])

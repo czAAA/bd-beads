@@ -21,6 +21,9 @@ function makePattern(name: string): Pattern {
   })
 }
 
+/** For a test that picks no picture: the decoder is not reached. */
+const noDecoder = vi.fn()
+
 async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
   const input = wrapper.find<HTMLInputElement>('[data-testid="import-file"]')
   Object.defineProperty(input.element, 'files', {
@@ -47,7 +50,7 @@ async function pickQrPicture(wrapper: ReturnType<typeof mount>, pixels: PixelDat
 describe('PatternImport import', () => {
   it('hands back the Patterns in a single-Pattern file', async () => {
     const pattern = makePattern('Fox')
-    const wrapper = mount(PatternImport, { props: { patterns: [] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [] } })
 
     await pickFile(wrapper, serializePattern(pattern))
 
@@ -57,7 +60,7 @@ describe('PatternImport import', () => {
 
   it('hands back a whole library at once', async () => {
     const library = [makePattern('Fox'), makePattern('Owl')]
-    const wrapper = mount(PatternImport, { props: { patterns: [] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [] } })
 
     await pickFile(wrapper, serializeLibrary(library))
 
@@ -67,7 +70,7 @@ describe('PatternImport import', () => {
   it('brings in a Pattern that clashes with a local one under a new identity, keeping both', async () => {
     const local = makePattern('Fox')
     const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-    const wrapper = mount(PatternImport, { props: { patterns: [local] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [local] } })
 
     await pickFile(wrapper, serializePattern(incoming))
 
@@ -78,7 +81,7 @@ describe('PatternImport import', () => {
   })
 
   it('says so and imports nothing when the file is not a bd-beads file', async () => {
-    const wrapper = mount(PatternImport, { props: { patterns: [] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [] } })
 
     await pickFile(wrapper, 'this is not a pattern')
 
@@ -91,7 +94,7 @@ describe('PatternImport QR import (ticket 68)', () => {
   it('scanning/importing a Pattern exported as a QR code reproduces it exactly', async () => {
     const original = makePattern('Fox')
     const matrix = patternQrMatrix(original, APP_URL)!
-    const wrapper = mount(PatternImport, { props: { patterns: [] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [] } })
 
     await pickQrPicture(wrapper, rasterizeQrMatrix(matrix))
 
@@ -103,7 +106,7 @@ describe('PatternImport QR import (ticket 68)', () => {
     const local = makePattern('Fox')
     const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     const matrix = patternQrMatrix(incoming, APP_URL)!
-    const wrapper = mount(PatternImport, { props: { patterns: [local] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [local] } })
 
     await pickQrPicture(wrapper, rasterizeQrMatrix(matrix))
 
@@ -115,7 +118,7 @@ describe('PatternImport QR import (ticket 68)', () => {
 
   it('says so and imports nothing when the picture holds no QR code', async () => {
     const blank: PixelData = { width: 40, height: 40, data: new Uint8ClampedArray(40 * 40 * 4).fill(255) }
-    const wrapper = mount(PatternImport, { props: { patterns: [] } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [] } })
 
     await pickQrPicture(wrapper, blank)
 
@@ -130,7 +133,7 @@ describe('PatternImport toastResults and testidPrefix (ticket 168: the iPad mini
   })
 
   it('emits import-result instead of drawing the inline result, and prefixes its testids', async () => {
-    const wrapper = mount(PatternImport, { props: { patterns: [], toastResults: true, testidPrefix: 'menu-' } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [], toastResults: true, testidPrefix: 'menu-' } })
     const input = wrapper.find<HTMLInputElement>('[data-testid="menu-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
@@ -144,7 +147,7 @@ describe('PatternImport toastResults and testidPrefix (ticket 168: the iPad mini
   })
 
   it('emits a danger import-result for a failed file, and for a failed QR picture', async () => {
-    const wrapper = mount(PatternImport, { props: { patterns: [], toastResults: true } })
+    const wrapper = mount(PatternImport, { props: { decodeImage: noDecoder, patterns: [], toastResults: true } })
 
     await pickFile(wrapper, 'not json')
     expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(false)

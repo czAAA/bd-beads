@@ -3,8 +3,6 @@ import { computed, ref } from 'vue'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { summarizePattern } from '../domain/pattern'
-import { downloadFile } from '../domain/fileDownload'
-import { libraryFileName, patternFileName, serializeLibrary, serializePattern } from '../domain/patternFile'
 import { useI18n } from '../i18n/useI18n'
 import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
@@ -26,6 +24,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   select: [id: string]
   remove: [id: string]
+  /** Export pattern (ticket 118): the open Pattern as a Pattern file. */
+  exportPattern: []
+  /** Export library: every saved Pattern in one file. */
+  exportLibrary: []
 }>()
 
 const { t } = useI18n()
@@ -46,18 +48,6 @@ const activePattern = computed(() => props.patterns.find((pattern) => pattern.id
 /** A thumbnail's size line, as the Pattern shows on screen. */
 function sizeOf(pattern: Pattern): string {
   return rotationSwapsAxes(pattern.rotation) ? `${pattern.rows}×${pattern.columns}` : `${pattern.columns}×${pattern.rows}`
-}
-
-/** Export pattern (ticket 118): the open Pattern as a Pattern file. */
-function onExportPattern(): void {
-  if (activePattern.value) {
-    downloadFile(patternFileName(activePattern.value), serializePattern(activePattern.value))
-  }
-}
-
-/** Export library: every saved Pattern in one file. */
-function onExportLibrary(): void {
-  downloadFile(libraryFileName(), serializeLibrary(props.patterns))
 }
 </script>
 
@@ -117,10 +107,10 @@ function onExportLibrary(): void {
     </ul>
 
     <template #footer>
-      <AppButton variant="in-box" size="sm" data-testid="export-pattern" :disabled="!activePattern" @click="onExportPattern">
+      <AppButton variant="in-box" size="sm" data-testid="export-pattern" :disabled="!activePattern" @click="emit('exportPattern')">
         {{ t.transfer.exportPatternButton }}
       </AppButton>
-      <AppButton variant="in-box" size="sm" data-testid="export-library" :disabled="patterns.length === 0" @click="onExportLibrary">
+      <AppButton variant="in-box" size="sm" data-testid="export-library" :disabled="patterns.length === 0" @click="emit('exportLibrary')">
         {{ t.transfer.exportLibraryButton }}
       </AppButton>
     </template>

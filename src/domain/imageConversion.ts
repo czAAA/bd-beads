@@ -404,3 +404,17 @@ export function previewColorOutsideFrame(
 ): string | undefined {
   return hex === undefined ? undefined : nearestColor(imageColors, hex)
 }
+
+/** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its own. */
+export type DecodeImage = (file: Blob) => Promise<PixelData>
+
+/** A file that can't be converted, carrying which of the localised reasons to show (see ImageRejection). */
+export class ImageConversionError extends Error {
+  readonly reason: ImageRejection
+
+  constructor(reason: ImageRejection) {
+    super(`Image cannot be converted: ${reason}`)
+    this.name = 'ImageConversionError'
+    this.reason = reason
+  }
+}

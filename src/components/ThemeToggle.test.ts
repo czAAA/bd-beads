@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { en } from '../i18n/en'
-import { THEME_STORAGE_KEY } from '../theme/theme'
+import { THEME_STORAGE_KEY } from '../services/themeStore'
 import { useThemePick } from '../theme/useThemePick'
 import ThemeToggle from './ThemeToggle.vue'
 

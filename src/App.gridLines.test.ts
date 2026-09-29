@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { beadColors, drawnPattern, pressBead, selectedBeadCount } from './testUtils/beads'
 import type { Technique } from './domain/pattern'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns } from './services/libraryStore'
 
 /**
  * The ruler-click Selection and "remove selected row/column" Tool (ticket 123): clicking a ruler number selects

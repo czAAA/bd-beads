@@ -5,8 +5,8 @@ import { beadColor, drawnPattern, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { gridWidthPx } from './domain/grid'
 import type { PixelData } from './domain/imageConversion'
-import { ImageConversionError } from './domain/imageDecode'
-import { loadPatterns } from './domain/patternStorage'
+import { ImageConversionError } from './domain/imageConversion'
+import { loadPatterns } from './services/libraryStore'
 import { ru } from './i18n/ru'
 
 /**
@@ -21,8 +21,8 @@ const decodeState = vi.hoisted(() => ({
   error: undefined as Error | undefined,
 }))
 
-vi.mock('./domain/imageDecode', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./domain/imageDecode')>()
+vi.mock('./services/imageDecode', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./services/imageDecode')>()
   return {
     ...actual,
     decodeImageFile: async () => {

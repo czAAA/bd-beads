@@ -1,11 +1,11 @@
 import { ref, toRaw } from 'vue'
-import { downloadFile } from '../domain/fileDownload'
-import { loadMakerName, saveMakerName } from '../domain/makerName'
 import type { Pattern } from '../domain/pattern'
 import { libraryFileName, patternExportFileName, patternFileName, serializeLibrary, serializePattern } from '../domain/patternFile'
 import type { Locale, Translations } from '../i18n/translations'
 import { exportPatternPdf, exportPatternPng } from '../rendering/patternExport'
 import { printText } from '../rendering/printText'
+import { downloadFile as browserDownloadFile, type DownloadFile } from '../services/fileDownload'
+import { browserMakerNameStore, type MakerNameStore } from '../services/makerNameStore'
 import { useQrExport } from './useQrExport'
 
 /** What exporting needs from the app shell: the open Pattern and the library, the code's settled Pattern, and the app's language. */
@@ -16,6 +16,9 @@ export interface ExportFlowDeps {
   shareablePattern: () => Pattern | undefined
   messages: () => Translations
   locale: () => Locale
+  /** How a file is handed over, and where the maker's name is kept (ADR 0020); the browser's by default. */
+  downloadFile?: DownloadFile
+  makerNameStore?: MakerNameStore
 }
 
 /**
@@ -23,6 +26,9 @@ export interface ExportFlowDeps {
  * the maker's name the PNG and PDF print. QR is useQrExport's own; this composable builds on it. Deps are read lazily.
  */
 export function useExportFlow(deps: ExportFlowDeps) {
+  const downloadFile = deps.downloadFile ?? browserDownloadFile
+  const makerNameStore = deps.makerNameStore ?? browserMakerNameStore
+
   /**
    * QR export (ticket 68, 116): the Toolbox's Edit group opens the panel and App shows it, so its state lives outside
    * either. The code reads every bead of the Pattern, so it waits for a stroke to end rather than being worked out on
@@ -34,11 +40,11 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * The maker's name for the PDF and PNG exports (ticket 161; CONTEXT.md): kept on this device like the theme, set from
    * the Export menu's last row through its modal.
    */
-  const makerName = ref(loadMakerName())
+  const makerName = ref(makerNameStore.load())
   const nameOnExportsOpen = ref(false)
 
   function onSaveMakerName(name: string) {
-    makerName.value = saveMakerName(name)
+    makerName.value = makerNameStore.save(name)
     nameOnExportsOpen.value = false
   }
 
@@ -72,6 +78,11 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
   }
 
+  /** Export library: every saved Pattern in one file. */
+  function onExportLibraryFile() {
+    downloadFile(libraryFileName(), serializeLibrary(deps.patterns()))
+  }
+
   function onExportPng() {
     // The words the picture prints (ticket 164), in the app's language, with the maker's name (ticket 161).
     return runExport(
@@ -90,5 +101,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { qrExport, makerName, nameOnExportsOpen, onSaveMakerName, exporting, onExportPatternFile, onExportPng, onExportPdf }
+  return { qrExport, makerName, nameOnExportsOpen, onSaveMakerName, exporting, onExportPatternFile, onExportLibraryFile, onExportPng, onExportPdf }
 }

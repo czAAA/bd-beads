@@ -1,5 +1,7 @@
 import { inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { provideI18n } from '../i18n/useI18n'
+import { useThemePick } from '../theme/useThemePick'
+import { browserServices, type Services } from '../services'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { useA11yAnnouncer } from './useA11yAnnouncer'
 import { useCanvasFraming } from './useCanvasFraming'
@@ -35,8 +37,10 @@ import { useUndoHistory } from './useUndoHistory'
  * whose deps are lazy arrows so two of them can reference each other (Undo history and Mirror, say). Call it once,
  * from the root component's setup (see provideAppShell).
  */
-function wireAppShell() {
-  const { t, locale } = provideI18n()
+function wireAppShell(services: Services) {
+  const { t, locale } = provideI18n(services.localeStore)
+  // The theme pick is shared by the header's controls; this is where it is first read, from this device's store.
+  useThemePick(services.themePickStore)
 
   /**
    * The Pattern library, which one is open, and persistence (ticket 55, ADR 0012) — every Pattern change goes through
@@ -55,7 +59,7 @@ function wireAppShell() {
     removePattern,
     flushPendingSave,
     saveNow,
-  } = usePatternLibrary()
+  } = usePatternLibrary(services.libraryStore)
 
   const currentPattern = () => activePattern.value
   const messages = () => t.value
@@ -67,7 +71,14 @@ function wireAppShell() {
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
   /** Save and its "Saved" confirmation (tickets 115, 119, 195). */
-  const { onSave, clearSavedConfirmation } = useSaveFlow({ currentPattern, saveNow, messages, showToast, dismissToast })
+  const { onSave, clearSavedConfirmation } = useSaveFlow({
+    currentPattern,
+    saveNow,
+    messages,
+    showToast,
+    dismissToast,
+    downloadFile: services.downloadFile,
+  })
 
   /**
    * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
@@ -303,6 +314,8 @@ function wireAppShell() {
     shareablePattern: () => shareablePattern.value,
     messages,
     locale: currentLocale,
+    downloadFile: services.downloadFile,
+    makerNameStore: services.makerNameStore,
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
@@ -476,6 +489,8 @@ function wireAppShell() {
     onSave,
     ...overlays,
     shortcutsHelpOpen,
+    // The decoder Convert image reads a picked picture with, for the components that take a file
+    decodeImage: services.decodeImage,
   }
 }
 
@@ -485,8 +500,8 @@ export type AppShellContext = ReturnType<typeof wireAppShell>
 const appShellKey: InjectionKey<AppShellContext> = Symbol('appShell')
 
 /** Wires the app and shares it with every component below the caller; call once, from the root component's setup. */
-export function provideAppShell(): AppShellContext {
-  const context = wireAppShell()
+export function provideAppShell(services: Services = browserServices): AppShellContext {
+  const context = wireAppShell(services)
   provide(appShellKey, context)
   return context
 }

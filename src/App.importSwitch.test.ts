@@ -4,7 +4,7 @@ import App from './App.vue'
 import { pressBead } from './testUtils/beads'
 import { createPattern, type Pattern } from './domain/pattern'
 import { serializeLibrary, serializePattern } from './domain/patternFile'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
 

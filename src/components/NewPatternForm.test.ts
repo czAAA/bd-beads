@@ -10,7 +10,7 @@ import {
   imageInputAccept,
   type PixelData,
 } from '../domain/imageConversion'
-import { ImageConversionError } from '../domain/imageDecode'
+import { ImageConversionError } from '../domain/imageConversion'
 import { ru } from '../i18n/ru'
 
 beforeEach(() => {
@@ -39,7 +39,7 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, file: File) {
 
 /** A form with a size already stated, since Convert image needs one before there is a frame to fit a picture into. */
 async function mountSizedForm(props: Record<string, unknown> = {}) {
-  const wrapper = mount(NewPatternForm, { props })
+  const wrapper = mount(NewPatternForm, { props: { decodeImage: vi.fn(), ...props } })
   await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
   await wrapper.find('[data-testid="width-input"]').setValue('15')
   await wrapper.find('[data-testid="height-input"]').setValue('30')
@@ -376,7 +376,7 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
 
   /** A form sized so the default TOHO Cube 1.5mm bead yields exactly 100 columns by `rows` rows. */
   async function mountFormWithRows(rows: number, extraProps: Record<string, unknown> = {}) {
-    const wrapper = mount(NewPatternForm, { props: { slowFramingCellThresholds: reachable, ...extraProps } })
+    const wrapper = mount(NewPatternForm, { props: { decodeImage: vi.fn(), slowFramingCellThresholds: reachable, ...extraProps } })
     await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('150') // 100 columns at 1.5mm
     await wrapper.find('[data-testid="height-input"]').setValue(String(rows * 1.5))

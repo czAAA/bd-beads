@@ -9,8 +9,9 @@ import {
   validateImageFile,
   type ImageRejection,
   type PixelData,
+  ImageConversionError,
+  type DecodeImage,
 } from '../domain/imageConversion'
-import { ImageConversionError, decodeImageFile, type DecodeImage } from '../domain/imageDecode'
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
 import { MAX_MAKER_NAME } from '../domain/makerName'
 import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../domain/patternSize'
@@ -32,11 +33,10 @@ const props = withDefaults(
   defineProps<{
     beads?: readonly Bead[]
     /**
-     * How a chosen picture is turned into pixels (ticket 58). Defaults to the browser's own decoding; a test hands
-     * over synthetic pixel data instead, since jsdom decodes no image bytes. Resolved where it is called rather than
-     * through withDefaults, where a function default would be taken as the value itself.
+     * How a chosen picture is turned into pixels (ticket 58). The app shell hands over the browser's own decoding
+     * (ADR 0020); a test hands over synthetic pixel data instead, since jsdom decodes no image bytes.
      */
-    decodeImage?: DecodeImage
+    decodeImage: DecodeImage
     /**
      * The per-Technique cell-count thresholds the slow-framing hint (ticket 61) compares the current grid against.
      * Defaults to the real thresholds; a test overrides them to exercise the per-Technique lookup without the three
@@ -46,7 +46,6 @@ const props = withDefaults(
   }>(),
   {
     beads: () => BEAD_CATALOG,
-    decodeImage: undefined,
     slowFramingCellThresholds: () => SLOW_FRAMING_CELLS,
   },
 )
@@ -242,7 +241,7 @@ async function convertFile(file: File): Promise<void> {
   try {
     if (!convertRejection.value) {
       reading.value = true
-      emit('convert-image', await (props.decodeImage ?? decodeImageFile)(file))
+      emit('convert-image', await props.decodeImage(file))
     }
   } catch (error) {
     convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'

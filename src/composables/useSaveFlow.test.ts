@@ -4,8 +4,8 @@ import { patternFileName } from '../domain/patternFile'
 import { en } from '../i18n/en'
 import { useSaveFlow } from './useSaveFlow'
 
-vi.mock('../domain/fileDownload', () => ({ downloadFile: vi.fn() }))
-import { downloadFile } from '../domain/fileDownload'
+/** A fake for the file hand-over, so nothing here touches the DOM. */
+const downloadFile = vi.fn()
 
 const pattern = createPattern({
   technique: 'loom',
@@ -21,12 +21,13 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
     messages: () => en,
     showToast: vi.fn(),
     dismissToast: vi.fn(),
+    downloadFile,
   }
   return { deps, ...useSaveFlow(deps) }
 }
 
 describe('useSaveFlow', () => {
-  beforeEach(() => vi.mocked(downloadFile).mockClear())
+  beforeEach(() => downloadFile.mockClear())
 
   it('writes, hands over the Pattern file and confirms once the write landed', () => {
     const { deps, onSave } = setup()

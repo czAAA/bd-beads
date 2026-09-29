@@ -29,8 +29,11 @@ function downloadViaLink(fileName: string, contents: BlobPart, type: string): vo
   setTimeout(() => URL.revokeObjectURL(url))
 }
 
+/** How a file is handed over (ADR 0020); downloadFile is the browser's, and a test supplies its own. */
+export type DownloadFile = (fileName: string, contents: BlobPart, type?: string) => void
+
 /** Hands over a file: a Pattern file by default, or a picture or document built in the page (ticket 73, 74) when the type says so. */
-export function downloadFile(fileName: string, contents: BlobPart, type = JSON_TYPE): void {
+export const downloadFile: DownloadFile = (fileName, contents, type = JSON_TYPE) => {
   if (isIosFamily() && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
     const file = new File([contents], fileName, { type })
     if (navigator.canShare({ files: [file] })) {

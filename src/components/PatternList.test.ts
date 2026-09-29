@@ -1,9 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils'
 import PatternList from './PatternList.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
 import { createPattern, summarizePattern, type Pattern } from '../domain/pattern'
-import { serializeLibrary, serializePattern } from '../domain/patternFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { ru } from '../i18n/ru'
 
@@ -151,52 +150,13 @@ describe('PatternList exports (ticket 118)', () => {
     })
   }
 
-  /** What the browser was handed to save: the file name and its contents. */
-  interface DownloadedFile {
-    name: string
-    contents: string
-  }
-
-  let downloads: DownloadedFile[]
-
-  beforeEach(() => {
-    downloads = []
-    const blobs = new Map<string, Blob>()
-
-    vi.stubGlobal('URL', {
-      ...URL,
-      createObjectURL: (blob: Blob) => {
-        const url = `blob:${blobs.size}`
-        blobs.set(url, blob)
-        return url
-      },
-      revokeObjectURL: () => {},
-    })
-
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      const blob = blobs.get(this.href)!
-      downloads.push({ name: this.download, contents: '' })
-      void blob.text().then((contents) => {
-        downloads[downloads.length - 1]!.contents = contents
-      })
-    })
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-    vi.restoreAllMocks()
-  })
-
-  it('writes the open Pattern out to a file named after it', async () => {
+  it('asks for the open Pattern to be exported', async () => {
     const pattern = named('Fox')
     const wrapper = await mountExpanded({ patterns: [pattern], activePatternId: pattern.id })
 
     await wrapper.find('[data-testid="export-pattern"]').trigger('click')
-    await flushPromises()
 
-    expect(downloads).toHaveLength(1)
-    expect(downloads[0]!.name).toBe('bd-beads-fox.json')
-    expect(downloads[0]!.contents).toBe(serializePattern(pattern))
+    expect(wrapper.emitted('exportPattern')).toHaveLength(1)
   })
 
   it('has no Pattern to export while none is open, even with some saved', async () => {
@@ -205,15 +165,13 @@ describe('PatternList exports (ticket 118)', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled).toBe(true)
   })
 
-  it('writes every saved Pattern out to one file, not just the open one', async () => {
+  it('asks for the whole library to be exported', async () => {
     const library = [named('Fox'), named('Owl')]
     const wrapper = await mountExpanded({ patterns: library, activePatternId: library[0]!.id })
 
     await wrapper.find('[data-testid="export-library"]').trigger('click')
-    await flushPromises()
 
-    expect(downloads[0]!.name).toBe('bd-beads-library.json')
-    expect(downloads[0]!.contents).toBe(serializeLibrary(library))
+    expect(wrapper.emitted('exportLibrary')).toHaveLength(1)
   })
 
   it('has nothing to export while nothing is saved: the empty box has no expand button and no footer', () => {

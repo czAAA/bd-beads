@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ImageConversionError, decodeImageFile } from './imageDecode'
+import { ImageConversionError } from '../domain/imageConversion'
+import { decodeImageFile } from './imageDecode'
 
 /** A stand-in for what createImageBitmap hands back: jsdom decodes no real image bytes (see imageDecode.ts). */
 function fakeBitmap(width: number, height: number) {

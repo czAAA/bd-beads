@@ -9,8 +9,6 @@ export type ResolvedTheme = 'light' | 'dark' | 'contrast'
 /** The user's pick from the header's theme control; 'device' is Match device. */
 export type ThemePick = 'device' | ResolvedTheme
 
-export const THEME_STORAGE_KEY = 'bd-beads:theme'
-
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 const CONTRAST_QUERY = '(prefers-contrast: more)'
 
@@ -23,16 +21,6 @@ export function resolveTheme(pick: ThemePick, device: DeviceTheme): ResolvedThem
   if (pick !== 'device') return pick
   if (device.moreContrast) return 'contrast'
   return device.dark ? 'dark' : 'light'
-}
-
-export function loadThemePick(storage: Pick<Storage, 'getItem'> = localStorage): ThemePick {
-  let raw: string | null = null
-  try {
-    raw = storage.getItem(THEME_STORAGE_KEY)
-  } catch {
-    // Storage can be blocked (private mode, site data off): fall back to the device.
-  }
-  return raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : 'device'
 }
 
 export function applyTheme(root: HTMLElement, theme: ResolvedTheme): void {

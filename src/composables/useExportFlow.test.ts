@@ -4,18 +4,19 @@ import { libraryFileName, patternExportFileName, patternFileName } from '../doma
 import { en } from '../i18n/en'
 import { useExportFlow } from './useExportFlow'
 
-vi.mock('../domain/fileDownload', () => ({ downloadFile: vi.fn() }))
 vi.mock('../rendering/patternExport', () => ({
   exportPatternPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportPatternPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
 }))
-import { downloadFile } from '../domain/fileDownload'
 import { exportPatternPdf, exportPatternPng } from '../rendering/patternExport'
 
 const pattern = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
+/** A fake for the file hand-over, so nothing here touches the DOM. */
+const downloadFile = vi.fn()
+
 beforeEach(() => {
-  vi.mocked(downloadFile).mockClear()
+  downloadFile.mockClear()
   vi.mocked(exportPatternPng).mockClear()
   vi.mocked(exportPatternPdf).mockClear()
   localStorage.clear()
@@ -28,12 +29,18 @@ function setup(options: { open?: boolean } = {}) {
     shareablePattern: () => (options.open === false ? undefined : pattern),
     messages: () => en,
     locale: () => 'en' as const,
+    downloadFile,
   }
   return useExportFlow(deps)
 }
 
 describe('useExportFlow', () => {
   describe('Pattern file', () => {
+    it('hands over the whole library as one file', () => {
+      setup().onExportLibraryFile()
+      expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(String))
+    })
+
     it('hands over the open Pattern as a Pattern file', () => {
       setup().onExportPatternFile()
       expect(downloadFile).toHaveBeenCalledWith(patternFileName(pattern), expect.any(String))

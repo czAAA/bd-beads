@@ -2,15 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
-import { downloadFile } from './domain/fileDownload'
+import { downloadFile } from './services/fileDownload'
 import { createPattern } from './domain/pattern'
 import { patternExportFileName } from './domain/patternFile'
-import { savePatterns } from './domain/patternStorage'
+import { savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 import { exportPatternPdf, exportPatternPng } from './rendering/patternExport'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
-vi.mock('./domain/fileDownload', () => ({ downloadFile: vi.fn() }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 vi.mock('./rendering/patternExport', () => ({
   exportPatternPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportPatternPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),

@@ -3,16 +3,16 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { downloadFile } from './domain/fileDownload'
+import { downloadFile } from './services/fileDownload'
 import { createPattern } from './domain/pattern'
 import { parsePatternsFile, patternFileName } from './domain/patternFile'
-import { loadPatterns, savePatterns } from './domain/patternStorage'
+import { loadPatterns, savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 import { denselyColoredGrid } from './testUtils/denselyColoredGrid'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
-vi.mock('./domain/fileDownload', () => ({ downloadFile: vi.fn() }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const PATTERNS_KEY = 'bd-beads:patterns'

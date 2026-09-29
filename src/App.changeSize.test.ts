@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead } from './testUtils/beads'
-import { loadPatterns } from './domain/patternStorage'
+import { loadPatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 
 beforeEach(() => {

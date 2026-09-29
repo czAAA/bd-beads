@@ -35,6 +35,7 @@ const {
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportPatterns,
+  decodeImage,
   onImportToast,
   makerName,
   nameOnExportsOpen,
@@ -126,7 +127,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
     <!-- Imported Patterns go straight into the library, which decides what to open and persists them. Moves into the More menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Pattern sheet. -->
     <div class="app-header__imports app-header__phone-hide" data-testid="pattern-actions">
-      <PatternImport :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
+      <PatternImport :decode-image="decodeImage" :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
     </div>
     <span class="app-header__phone-hide">
       <AppButton
@@ -178,7 +179,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
           <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
         </p>
         <div class="app-header__more-imports">
-          <PatternImport :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
+          <PatternImport :decode-image="decodeImage" :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
         </div>
         <div class="app-header__more-row">
           <span class="app-header__more-label">{{ t.languageSwitcher.ariaLabel }}</span>

@@ -45,6 +45,8 @@ const {
   nameOnExportsOpen,
   exporting,
   onExportPatternFile,
+  onExportLibraryFile,
+  decodeImage,
   onExportPng,
   onExportPdf,
   onSave,
@@ -65,6 +67,7 @@ const {
     <section v-if="!activePattern || framing" class="app-shell__new-pattern" data-testid="new-pattern-box">
       <h2 class="app-shell__box-title">{{ t.patterns.newPatternButton }}</h2>
       <NewPatternForm
+        :decode-image="decodeImage"
         @submit="onCreatePattern"
         @draft="onNewPatternDraft"
         @convert-image="startConvertImage"
@@ -120,6 +123,8 @@ const {
       :active-pattern-id="activePatternId"
       @select="onSelectPattern"
       @remove="removePattern"
+      @export-pattern="onExportPatternFile"
+      @export-library="onExportLibraryFile"
     />
   </aside>
   </AppDrawer>

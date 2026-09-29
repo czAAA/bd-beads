@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { loadLocale, saveLocale } from './localeStorage'
+import { loadLocale, saveLocale } from './localeStore'
 
 beforeEach(() => {
   localStorage.clear()

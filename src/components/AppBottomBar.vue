@@ -19,6 +19,7 @@ const {
   onSelectTool,
   onSelectColor,
   onImportPatterns,
+  decodeImage,
   onImportToast,
   openPhoneSheet,
   onSelectPhoneSheet,
@@ -55,7 +56,7 @@ const {
     <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-pattern" @click="phoneNewPatternOpen = true">
       {{ t.patterns.newPatternButton }}
     </AppButton>
-    <PatternImport compact toast-results :patterns="patterns" testid-prefix="phone-bar-" @import="onImportPatterns" @import-result="onImportToast" />
+    <PatternImport :decode-image="decodeImage" compact toast-results :patterns="patterns" testid-prefix="phone-bar-" @import="onImportPatterns" @import-result="onImportToast" />
   </div>
   <AppDock
     v-else-if="!framing && !!activePattern"

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applyTheme, followDeviceTheme, loadThemePick, resolveTheme, THEME_STORAGE_KEY, type ThemePick } from './theme'
+import { applyTheme, followDeviceTheme, resolveTheme, type ThemePick } from './theme'
 
 /** A stand-in for window.matchMedia whose answers a test can change, firing 'change' like a device setting would. */
 function fakeDevice(initial: { dark: boolean; moreContrast: boolean }) {
@@ -48,19 +48,6 @@ describe('resolveTheme', () => {
   it('keeps a picked theme whatever the device says', () => {
     const picks: ThemePick[] = ['light', 'dark', 'contrast']
     for (const pick of picks) expect(resolveTheme(pick, { dark: true, moreContrast: true })).toBe(pick)
-  })
-})
-
-describe('loadThemePick', () => {
-  it('is Match device when nothing is saved or the saved value is unknown', () => {
-    expect(loadThemePick()).toBe('device')
-    localStorage.setItem(THEME_STORAGE_KEY, 'sepia')
-    expect(loadThemePick()).toBe('device')
-  })
-
-  it('reads a saved pick', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'dark')
-    expect(loadThemePick()).toBe('dark')
   })
 })
 
@@ -137,7 +124,7 @@ describe("index.html's pre-paint script", () => {
   })
 
   it('agrees with resolveTheme on a saved pick and sets the language', () => {
-    localStorage.setItem(THEME_STORAGE_KEY, 'light')
+    localStorage.setItem('bd-beads:theme', 'light')
     localStorage.setItem('bd-beads:locale', 'en')
     runWith({ dark: true, moreContrast: true })
     expect(root.dataset.theme).toBe('light')
