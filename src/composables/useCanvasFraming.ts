@@ -20,7 +20,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
 
-  const { zoom, zoomIn, zoomOut, resetZoom } = usePatternZoom(deps.currentPattern, width, height)
+  const { zoom, zoomIn, zoomOut, setZoom, resetZoom } = usePatternZoom(deps.currentPattern, width, height)
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
@@ -42,5 +42,5 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     canvasAreaEl.value = el instanceof HTMLElement ? el : null
   }
 
-  return { bindCanvasArea, canvasAreaWidth: width, zoom, zoomIn, zoomOut, resetZoom, zoomPercent, stripSize, stripZoomPercent }
+  return { bindCanvasArea, canvasAreaWidth: width, zoom, zoomIn, zoomOut, setZoom, resetZoom, zoomPercent, stripSize, stripZoomPercent }
 }

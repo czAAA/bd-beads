@@ -93,6 +93,11 @@ export function usePatternZoom(
       zoom.value = clampZoom(zoom.value - ZOOM_STEP)
       isAtFit.value = false
     },
+    /** A zoom the fingers chose (pinch): any level in the usable range rather than a step, and a choice a resize leaves alone. */
+    setZoom: (value: number) => {
+      zoom.value = clampZoom(value)
+      isAtFit.value = false
+    },
     resetZoom: () => {
       zoom.value = fitZoom()
       isAtFit.value = true

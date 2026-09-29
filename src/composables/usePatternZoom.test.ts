@@ -208,4 +208,16 @@ describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () =>
     const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 60, unit: 'beads' } })
     expect(usePatternZoom(() => tall, ref(1400), ref(0)).zoomPercent.value).toBe(100)
   })
+
+  it('setZoom takes any level in the range and keeps a resize from undoing it', async () => {
+    const width = fixedAvailableWidth(900)
+    const { zoom, setZoom } = usePatternZoom(() => largePattern(), width)
+    setZoom(1.37)
+    expect(zoom.value).toBe(1.37)
+    width.value = 700
+    await nextTick()
+    expect(zoom.value).toBe(1.37)
+    setZoom(1000)
+    expect(zoom.value).toBeLessThan(1000)
+  })
 })

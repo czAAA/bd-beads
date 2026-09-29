@@ -17,6 +17,7 @@ import { useMirrorState } from './useMirrorState'
 import { useNewPatternFlow } from './useNewPatternFlow'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { usePaintStroke } from './usePaintStroke'
+import { usePinchPan } from './usePinchPan'
 import { usePatternLabels } from './usePatternLabels'
 import { usePatternLibrary } from './usePatternLibrary'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
@@ -109,7 +110,7 @@ function wireAppShell(services: Services) {
   })
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, zoomIn, zoomOut, resetZoom, zoomPercent, stripSize, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, zoomIn, zoomOut, setZoom, resetZoom, zoomPercent, stripSize, stripZoomPercent } =
     useCanvasFraming({
       currentPattern,
       framing: () => framing.value,
@@ -217,6 +218,9 @@ function wireAppShell(services: Services) {
   function bindCanvasScroll(el: unknown) {
     canvasScrollEl.value = el instanceof HTMLElement ? el : null
   }
+
+  /** Two fingers on the Pattern pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress ends when the second lands. */
+  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, endStroke: () => endStroke() })
 
   /** Mouse, touch and pen input on the Pattern (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
