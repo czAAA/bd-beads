@@ -4,9 +4,9 @@
 
 **Blocked by:** 192 (useA11yAnnouncer), 193 (useToolAtCursor)
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `useKeyboardCursor` owns the cursor position, focus/scroll-into-view handling, and the keydown/keyup handlers for grid navigation, calling into `useA11yAnnouncer` and `useToolAtCursor`
-- [ ] App.vue no longer declares any of this directly
-- [ ] All existing keyboard-navigation tests pass against the new composable (moved, not proxied through App.vue)
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useKeyboardCursor` owns the cursor position, focus/scroll-into-view handling, and the keydown/keyup handlers for grid navigation, calling into `useA11yAnnouncer` and `useToolAtCursor`
+- [x] App.vue no longer declares any of this directly
+- [x] All existing keyboard-navigation tests pass against the new composable (moved, not proxied through App.vue)
+- [x] App.vue still boots and all other existing tests pass

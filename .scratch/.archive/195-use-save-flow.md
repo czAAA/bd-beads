@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useSaveFlow` owns the save action and the saved-confirmation state/timeout
-- [ ] App.vue no longer declares any of this directly
-- [ ] Save behavior, including the confirmation, is unchanged
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useSaveFlow` owns the save action and the saved-confirmation state/timeout
+- [x] App.vue no longer declares any of this directly
+- [x] Save behavior, including the confirmation, is unchanged
+- [x] App.vue still boots and all other existing tests pass

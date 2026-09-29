@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] `useA11yAnnouncer` owns the announcement state and `announce`/`announceCursor`/`colorWords`
 - [x] App.vue no longer declares any of the above directly
