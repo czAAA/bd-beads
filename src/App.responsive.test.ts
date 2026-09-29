@@ -5,10 +5,13 @@ import { describe, expect, it } from 'vitest'
 /**
  * The breakpoint setup ticket 167 lays down for every later responsive tier (168, 79): media queries can't read a
  * custom property, so `responsive.md`'s breakpoints are written into the CSS as literal numbers -- these tests read
- * them back out of `tokens.json` so a token change can't silently drift out of sync with what App.vue actually says.
+ * them back out of `tokens.json` so a token change can't silently drift out of sync with what the shell actually says.
  */
 const repo = resolve(__dirname, '..')
-const appSource = readFileSync(resolve(__dirname, 'App.vue'), 'utf8')
+/** The app shell's layout CSS lives in its shell components (ticket 206): AppShell owns the body grid, AppSidebar the column. */
+const appSource = ['AppShell', 'AppSidebar']
+  .map((name) => readFileSync(resolve(__dirname, 'components', `${name}.vue`), 'utf8'))
+  .join('\n')
 const tokens = JSON.parse(readFileSync(resolve(repo, 'docs/design/system/tokens.json'), 'utf8')) as {
   layout: { tokens: { name: string; value: string }[] }
 }

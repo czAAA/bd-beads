@@ -4,9 +4,9 @@
 
 **Blocked by:** 189 (useUndoHistory)
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `useChangeSizeFlow` owns the Change size modal's open state, Resize, "remove selected row/column", and their shared undo-committing logic, committing via `useUndoHistory`
-- [ ] App.vue no longer declares any of this directly
-- [ ] Resize, Change size, and Remove-selected-line still each land as one undo step, the Row progress lock still refuses them the same way, and Mirror axis counts/Selection still reset the same way on a size change
-- [ ] App.vue still boots and all other existing tests pass (including existing Change size tests, moved to target the new composable)
+- [x] `useChangeSizeFlow` owns the Change size modal's open state, Resize, "remove selected row/column", and their shared undo-committing logic, committing via `useUndoHistory`
+- [x] App.vue no longer declares any of this directly
+- [x] Resize, Change size, and Remove-selected-line still each land as one undo step, the Row progress lock still refuses them the same way, and Mirror axis counts/Selection still reset the same way on a size change
+- [x] App.vue still boots and all other existing tests pass (including existing Change size tests, moved to target the new composable)

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useSharedPatternLink` owns loading a Pattern from a shared URL and the mount/unmount/page-hide lifecycle around it
-- [ ] App.vue no longer declares any of this directly
-- [ ] Opening a shared-Pattern link still behaves exactly as today
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useSharedPatternLink` owns loading a Pattern from a shared URL and the mount/unmount/page-hide lifecycle around it
+- [x] App.vue no longer declares any of this directly
+- [x] Opening a shared-Pattern link still behaves exactly as today
+- [x] App.vue still boots and all other existing tests pass

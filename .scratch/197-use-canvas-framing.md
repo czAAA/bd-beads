@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useCanvasFraming` owns the zoom/framing glue currently inline in App.vue, calling the existing `usePatternZoom`/`useElementSize` composables (which do not change)
-- [ ] App.vue no longer declares this glue directly
-- [ ] Canvas framing and zoom percentage display behave exactly as before, across desktop and phone layouts
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useCanvasFraming` owns the zoom/framing glue currently inline in App.vue, calling the existing `usePatternZoom`/`useElementSize` composables (which do not change)
+- [x] App.vue no longer declares this glue directly
+- [x] Canvas framing and zoom percentage display behave exactly as before, across desktop and phone layouts
+- [x] App.vue still boots and all other existing tests pass

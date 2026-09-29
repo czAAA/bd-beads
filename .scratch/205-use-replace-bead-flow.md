@@ -4,9 +4,9 @@
 
 **Blocked by:** 189 (useUndoHistory)
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `useReplaceBeadFlow` owns the pending pick, the confirm/cancel handlers, and the select-reset workaround (ticket 113), committing via `useUndoHistory`
-- [ ] App.vue no longer declares any of this directly
-- [ ] Replace Bead still lands as a single undo step that leaves the grid, Row progress, and Mirror untouched
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useReplaceBeadFlow` owns the pending pick, the confirm/cancel handlers, and the select-reset workaround (ticket 113), committing via `useUndoHistory`
+- [x] App.vue no longer declares any of this directly
+- [x] Replace Bead still lands as a single undo step that leaves the grid, Row progress, and Mirror untouched
+- [x] App.vue still boots and all other existing tests pass

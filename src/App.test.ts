@@ -3589,13 +3589,14 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
   /*
    * No real Tool group exceeds 14 controls yet (ToolGroup.test.ts covers the expand/collapse mechanics itself with
    * a synthetic one that does), so this stands in for "some Tool group is currently hover-expanded" by making the
-   * mounted Toolbox's own exposed collapseExpandedGroup — the exact function App.vue's onKeyDown calls — report
+   * mounted Toolbox's own exposed collapseExpandedGroup — the exact function the app's shortcut table calls — report
    * one was, for exactly one call. It's proving the wiring: Escape asks Toolbox first, and only backs out of Select
    * once that reports nothing was expanded.
    */
   function stubOneExpandedGroup(wrapper: ReturnType<typeof mount>) {
-    const app = wrapper.vm as unknown as { toolboxRef: { collapseExpandedGroup: () => boolean } }
-    vi.spyOn(app.toolboxRef, 'collapseExpandedGroup').mockReturnValueOnce(true)
+    // The exposed object itself, which is what the app holds on to: a spy on the test wrapper's own proxy would not reach it.
+    const exposed = wrapper.findComponent({ name: 'Toolbox' }).vm.$.exposed as { collapseExpandedGroup: () => boolean }
+    vi.spyOn(exposed, 'collapseExpandedGroup').mockReturnValueOnce(true)
   }
 
   it('lets an expanded Tool group swallow the first Escape, leaving the Selection untouched', async () => {

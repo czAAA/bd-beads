@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useRowOps` owns Rotate, Row progress toggle, Row direction toggle, and Move row
-- [ ] App.vue no longer declares any of this directly
-- [ ] None of these become undo steps (unchanged from today) and Rotate still refits the zoom afterward
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useRowOps` owns Rotate, Row progress toggle, Row direction toggle, and Move row
+- [x] App.vue no longer declares any of this directly
+- [x] None of these become undo steps (unchanged from today) and Rotate still refits the zoom afterward
+- [x] App.vue still boots and all other existing tests pass

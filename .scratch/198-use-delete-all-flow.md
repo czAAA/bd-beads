@@ -4,9 +4,9 @@
 
 **Blocked by:** 189 (useUndoHistory)
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `useDeleteAllFlow` owns the confirm-open state and the confirm/cancel handlers, committing via `useUndoHistory`
-- [ ] App.vue no longer declares any of this directly
-- [ ] Delete all still ignores the Row progress lock and lands as a single undo step, exactly as today
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useDeleteAllFlow` owns the confirm-open state and the confirm/cancel handlers, committing via `useUndoHistory`
+- [x] App.vue no longer declares any of this directly
+- [x] Delete all still ignores the Row progress lock and lands as a single undo step, exactly as today
+- [x] App.vue still boots and all other existing tests pass

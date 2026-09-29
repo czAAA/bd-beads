@@ -116,8 +116,8 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 /*
  * Landscape (responsive.md, height up to bp-phone-landscape): a 64px rail on the left edge, below the header (its
  * own media query drops to 44px there) rather than under the Pattern -- position: fixed takes it out of the
- * app shell's flex column entirely, since App.vue only knows how to stack it below the body, not beside it.
- * App.vue's own .app-shell__body padding leaves it room (its own matching media query).
+ * app shell's flex column entirely, since AppShell.vue only knows how to stack it below the body, not beside it.
+ * AppShell.vue's own .app-shell__body padding leaves it room (its own matching media query).
  */
 @media (max-width: 743px) and (max-height: 499px) {
   .dock {

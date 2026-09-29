@@ -34,3 +34,9 @@ Two boundary calls worth recording because the obvious alternative was rejected:
 
 - One ticket per cohesive slice (component + composable + tests bundled) instead of one ticket per extracted unit — rejected: bigger tickets cost more tokens per implementation session, against the stated token-efficiency goal.
 - Reorganizing `composables/`/`components/` into domain subfolders as part of this pass — rejected: it's a separate, debatable decision on its own merits and isn't needed to shrink `App.vue`.
+
+## Outcome (ticket 206)
+
+`App.vue` ended at about 15 lines rather than 100-150, because the wiring moved out of it too. The composition root is `composables/useAppShell.ts`: it instantiates every composable above and hands them over as one flat, typed context (`provideAppShell` / `useAppShell`). `App.vue` calls `provideAppShell()` and renders `AppShell.vue`, which composes `AppHeader`, `AppSidebar`, `CanvasPanel`, `AppBottomBar`, `PhoneSheets` and `AppDialogs`. Each of those draws on the context and carries the scoped CSS of the markup it owns; `AppShell.vue` keeps the page layout and the CSS with no single owner. The context type is the wiring's own return type, so a component can't ask for something the wiring doesn't provide.
+
+Three more composables came out of what was left inline: `useToolAndColor`, `useCanvasPointer` and `usePatternLabels`. `useOverlayVisibility` also owns the phone tier's Tool-sheet routing (`openPhoneSheet`), which the phone-sheet handlers share with the Saved Patterns sheet.

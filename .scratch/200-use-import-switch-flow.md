@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useImportSwitchFlow` owns importing Patterns, the keep-current/save-and-switch/switch decision, and the import toast
-- [ ] App.vue no longer declares any of this directly
-- [ ] All existing import-switch tests pass against the new composable (moved, not proxied through App.vue)
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useImportSwitchFlow` owns importing Patterns, the keep-current/save-and-switch/switch decision, and the import toast
+- [x] App.vue no longer declares any of this directly
+- [x] All existing import-switch tests pass against the new composable (moved, not proxied through App.vue)
+- [x] App.vue still boots and all other existing tests pass

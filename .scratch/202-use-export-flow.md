@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useExportFlow` owns the maker's-name step and running each export (file, PNG, PDF), calling the existing `useQrExport` for QR
-- [ ] App.vue no longer declares any of this directly
-- [ ] All existing export tests pass against the new composable (moved, not proxied through App.vue)
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useExportFlow` owns the maker's-name step and running each export (file, PNG, PDF), calling the existing `useQrExport` for QR
+- [x] App.vue no longer declares any of this directly
+- [x] All existing export tests pass against the new composable (moved, not proxied through App.vue)
+- [x] App.vue still boots and all other existing tests pass

@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useOverlayVisibility` owns drawer/theme-sheet/phone-new-Pattern-sheet/phone-saved-Patterns-sheet open state and their handlers
-- [ ] App.vue no longer declares any of this directly (except the Shortcuts-help boolean, left as-is)
-- [ ] Every overlay still opens/closes exactly as today, on both desktop and phone layouts
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useOverlayVisibility` owns drawer/theme-sheet/phone-new-Pattern-sheet/phone-saved-Patterns-sheet open state and their handlers
+- [x] App.vue no longer declares any of this directly (except the Shortcuts-help boolean, left as-is)
+- [x] Every overlay still opens/closes exactly as today, on both desktop and phone layouts
+- [x] App.vue still boots and all other existing tests pass
