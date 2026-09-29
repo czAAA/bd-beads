@@ -29,3 +29,7 @@ playwright-report
 
 # Design exploration (tickets 125–134): prototypes and screenshots are local-only
 design-exploration/
+
+# Local overnight ticket runner and its logs
+docs/scripts/
+.overnight-logs/
