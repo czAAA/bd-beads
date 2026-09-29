@@ -55,6 +55,7 @@ import { useMirrorState } from './composables/useMirrorState'
 import { useA11yAnnouncer } from './composables/useA11yAnnouncer'
 import { usePaintStroke } from './composables/usePaintStroke'
 import { useKeyboardCursor } from './composables/useKeyboardCursor'
+import { useSaveFlow } from './composables/useSaveFlow'
 import { useToolAtCursor } from './composables/useToolAtCursor'
 import { useUndoHistory } from './composables/useUndoHistory'
 import { usePatternLibrary } from './composables/usePatternLibrary'
@@ -186,39 +187,14 @@ const qrExport = useQrExport(() => shareablePattern.value)
 /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
 const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
-/**
- * The "Saved" toast (tickets 115, 76; SaveStates card). Only ever raised by a write that landed; a refused one raises
- * saveFailed instead.
- */
-const SAVED_TOAST = 'save-confirmation'
-
-function clearSavedConfirmation() {
-  dismissToast(SAVED_TOAST)
-}
-
-/**
- * Save (ticket 115): edits already reach this device as they land (ADR 0012), so the write to this device is
- * reassurance rather than a new kind of storage — it writes whatever is pending now and says so. "Saved" is only
- * claimed once the write got through; if the device refuses it the library's own "couldn't save" notice shows instead
- * (saveFailed). A second press starts the confirmation's clock over.
- *
- * Save also hands over the open Pattern as a Pattern file (ticket 119), so it can be opened on another device. The
- * file goes out even when the device refuses the write: it is then the only copy that survives.
- */
-function onSave() {
-  clearSavedConfirmation()
-  if (!activePattern.value) {
-    return
-  }
-
-  const saveSucceeded = saveNow()
-  downloadFile(patternFileName(activePattern.value), serializePattern(activePattern.value))
-  if (!saveSucceeded) {
-    return
-  }
-
-  showToast(SAVED_TOAST, t.value.tools.savedConfirmation)
-}
+/** Save and its "Saved" confirmation (tickets 115, 119, 195; ADR 0023). */
+const { onSave, clearSavedConfirmation } = useSaveFlow({
+  currentPattern: () => activePattern.value,
+  saveNow,
+  messages: () => t.value,
+  showToast,
+  dismissToast,
+})
 
 /** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
 const headerEl = ref<HTMLElement>()
