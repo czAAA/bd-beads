@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useNewPatternFlow` owns creating a blank Pattern and creating one from Convert image
-- [ ] App.vue no longer declares any of this directly
-- [ ] Both new-Pattern paths (blank, convert-image) behave exactly as before, including existing Convert-image tests
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useNewPatternFlow` owns creating a blank Pattern and creating one from Convert image
+- [x] App.vue no longer declares any of this directly
+- [x] Both new-Pattern paths (blank, convert-image) behave exactly as before, including existing Convert-image tests
+- [x] App.vue still boots and all other existing tests pass
