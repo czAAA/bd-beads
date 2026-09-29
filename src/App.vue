@@ -53,6 +53,7 @@ import { plural } from './i18n/plural'
 import { patternExtentPx, rowShiftPx, rowTopPx } from './rendering/patternRenderer'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './composables/useKeyboardShortcuts'
 import { useMirrorState } from './composables/useMirrorState'
+import { useUndoHistory } from './composables/useUndoHistory'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
 import { useQrExport } from './composables/useQrExport'
@@ -64,16 +65,6 @@ import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
 import { CELL_SIZE_PX, GRID_BORDER_PX, rotationSwapsAxes, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
-import {
-  canRedo,
-  canUndo,
-  emptyHistory,
-  pushHistory,
-  redoStep,
-  undoStep,
-  type History,
-  type HistoryStep,
-} from './domain/history'
 import { findPaletteColor, PALETTE, PALETTE_SHORTCUTS } from './domain/palette'
 import {
   createPattern,
@@ -89,7 +80,6 @@ import {
   patternGeometry,
   replaceBead,
   resolvePatternBead,
-  restoreSnapshot,
   rowProgressPosition,
   setRowProgressEnabled,
   summarizePattern,
@@ -98,7 +88,6 @@ import {
   type CreatePatternInput,
   type Grid,
   type Pattern,
-  type UndoEntry,
 } from './domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from './domain/patternSize'
 import { downloadFile } from './domain/fileDownload'
@@ -354,6 +343,29 @@ const selectedImageColor = ref<string | undefined>(undefined)
 const activeTool = ref<Tool>('paint')
 
 /**
+ * Undo/redo history and the commit/step logic around it (ticket 189, ADR 0023) -- see composables/useUndoHistory.ts.
+ * Its deps reach for Mirror and Selection state declared further down, through lazy arrows only called at runtime.
+ */
+const {
+  canUndo,
+  canRedo,
+  record: recordHistory,
+  reset: resetHistory,
+  commitGridChange,
+  onUndo,
+  onRedo,
+} = useUndoHistory({
+  currentPattern: () => activePattern.value,
+  replacePattern,
+  mirrorAxisCounts: () => mirrorAxisCounts.value,
+  restoreMirrorAxisCounts: (counts) => restoreMirrorAxisCounts(counts),
+  clearSelectionAndHover: () => {
+    resetSelection()
+    hoveredCell.value = undefined
+  },
+})
+
+/**
  * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations, all behind one small
  * interface -- see composables/useMirrorState.ts. Ticket 174 hid Mirror's UI pending its own redesign, so only the
  * bookkeeping a Resize and a Pattern switch still need is pulled out here; the axis counts stay forever at their
@@ -361,8 +373,7 @@ const activeTool = ref<Tool>('paint')
  * live-mirror calls (mirrorAxisCounts.value below) inert without deleting them. Destructured under their original
  * names (rather than kept as one `mirror` object) so refs and computeds stay top-level setup bindings, which is what
  * lets the template auto-unwrap them -- the same convention usePatternZoom's zoom/zoomIn/etc. already follow below.
- * commitGridChange is a hoisted function declaration further down this file, so passing it here (before its own
- * definition) is safe: by the time useMirrorState calls it, the module has finished initializing.
+ * useUndoHistory (just above) takes Mirror's counts through lazy accessors, so the two can reference each other.
  */
 const {
   axisCounts: mirrorAxisCounts,
@@ -373,9 +384,6 @@ const {
   clearAxisCounts: clearMirrorAxisCounts,
   reset: resetMirrorState,
 } = useMirrorState(() => activePattern.value, commitGridChange)
-
-/** Undo/redo stacks of snapshots (see domain/history.ts); reset whenever the open Pattern changes since it's an editing-session aid, not part of the saved Pattern. Each entry carries a grid, plus whatever else the command also changed: Row progress (Delete all, ticket 42, and Resize), the Bead (Replace Bead, ticket 48) and the grid size with Mirror's axis counts (Resize, ADR 0017) — see UndoEntry. */
-const history = ref<History<UndoEntry>>(emptyHistory())
 
 /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler (onKeyDown) defers to the modal's own while this is true, rather than also backing out of Select. */
 const deleteAllConfirmOpen = ref(false)
@@ -487,7 +495,7 @@ const framingControlsEl = ref<HTMLElement>()
 const { spaceHeld, panning: spacePanning } = useSpaceDragPan(canvasScrollEl)
 
 watch(activePatternId, () => {
-  history.value = emptyHistory()
+  resetHistory()
   // Selection resets here through the module's reset(); the clipboard deliberately survives a Pattern switch
   // (ticket 92, ADR 0016), unlike Undo/Redo history and Selection.
   resetSelection()
@@ -837,20 +845,6 @@ function onSelectTool(tool: Tool) {
 }
 
 /**
- * Commits the result of a grid-changing command (fill/mirror/paste) as one undo step, minus anything it did to rows
- * already woven (ticket 33), unless that leaves the Pattern unchanged.
- */
-function commitGridChange(pattern: Pattern, updated: Pattern) {
-  const kept = keepFinishedRows(pattern, updated)
-  if (kept === pattern) {
-    return
-  }
-
-  history.value = pushHistory(history.value, { grid: pattern.grid })
-  replacePattern(kept)
-}
-
-/**
  * A Paint-tool drag (ticket 24): 'paint'/'erase' while a stroke is in progress, else null. The grid this started
  * from is captured once, in strokeBaseline, and pushed to the undo stack as a single step when the stroke ends
  * (see endStroke) — every cell touched in between just updates the live Pattern directly.
@@ -886,7 +880,7 @@ function endStroke() {
 
   const pattern = activePattern.value
   if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-    history.value = pushHistory(history.value, { grid: strokeBaseline.value })
+    recordHistory({ grid: strokeBaseline.value })
   }
   strokeMode.value = null
   strokeBaseline.value = null
@@ -1368,66 +1362,6 @@ function onCellSecondaryMove(row: number, column: number) {
   paintStrokeCell(row, column, null)
 }
 
-/**
- * Everything Undo/Redo can step through right now, fully populated (ticket 48): the grid, Row progress, the Bead, and
- * the grid size with Mirror's axis counts. Every other command's own pushHistory call only carries what it actually
- * changed (see e.g. commitGridChange, onConfirmDeleteAll), but the snapshot recorded here — of the *current* state, as
- * the opposite stack's new top — has to be complete so a later Redo/Undo through it round-trips exactly, even for
- * fields this particular step left untouched.
- */
-function currentUndoEntry(pattern: Pattern): UndoEntry {
-  return {
-    grid: pattern.grid,
-    rowProgress: pattern.rowProgress,
-    beadId: pattern.beadId,
-    size: {
-      columns: pattern.columns,
-      rows: pattern.rows,
-      mirrorAxisCounts: mirrorAxisCounts.value,
-    },
-  }
-}
-
-/**
- * Applies one Undo/Redo step, shared by both directions: the grid/Row progress/Bead/size the snapshot carries (via
- * restoreSnapshot), plus what isn't a Pattern field and so can't ride along in it — Mirror's axis counts, and clearing
- * a Selection (or hover) that no longer fits when the step changed the grid's size.
- */
-function applyHistoryStep(pattern: Pattern, step: HistoryStep<UndoEntry>) {
-  history.value = step.history
-  replacePattern(restoreSnapshot(pattern, step.snapshot))
-
-  const { size } = step.snapshot
-  if (size) {
-    restoreMirrorAxisCounts(size.mirrorAxisCounts)
-    if (size.columns !== pattern.columns || size.rows !== pattern.rows) {
-      resetSelection()
-      hoveredCell.value = undefined
-    }
-  }
-}
-
-function onUndo() {
-  const pattern = activePattern.value
-  const step = pattern && undoStep(history.value, currentUndoEntry(pattern))
-  if (!step) {
-    return
-  }
-
-  applyHistoryStep(pattern, step)
-}
-
-/** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
-function onRedo() {
-  const pattern = activePattern.value
-  const step = pattern && redoStep(history.value, currentUndoEntry(pattern))
-  if (!step) {
-    return
-  }
-
-  applyHistoryStep(pattern, step)
-}
-
 /** Opens the Delete all confirmation modal (ticket 42); does nothing with no Pattern open. */
 function onRequestDeleteAll() {
   if (activePattern.value) {
@@ -1457,7 +1391,7 @@ function onConfirmDeleteAll() {
     return
   }
 
-  history.value = pushHistory(history.value, { grid: pattern.grid, rowProgress: pattern.rowProgress })
+  recordHistory({ grid: pattern.grid, rowProgress: pattern.rowProgress })
   replacePattern(updated)
 }
 
@@ -1498,7 +1432,7 @@ function onConfirmReplaceBead() {
     return
   }
 
-  history.value = pushHistory(history.value, { grid: pattern.grid, beadId: pattern.beadId })
+  recordHistory({ grid: pattern.grid, beadId: pattern.beadId })
   replacePattern(replaceBead(pattern, bead))
 }
 
@@ -1519,7 +1453,7 @@ function commitSizeChange(pattern: Pattern, updated: Pattern) {
     return
   }
 
-  history.value = pushHistory(history.value, {
+  recordHistory({
     grid: pattern.grid,
     rowProgress: pattern.rowProgress,
     size: { columns: pattern.columns, rows: pattern.rows, mirrorAxisCounts: mirrorAxisCounts.value },
@@ -1747,10 +1681,10 @@ function onMoveRow(delta: number) {
       <!-- Undo/Redo (ticket 79): the phone header's own, alongside the Dock's four tools/colour -- the same history as every other Undo/Redo in the app. -->
       <template v-if="activePattern">
         <span class="app-header__phone-only">
-          <IconButton icon="undo" shape="round" :label="t.palette.undoButton" data-testid="phone-undo-button" :disabled="!canUndo(history)" @click="onUndo" />
+          <IconButton icon="undo" shape="round" :label="t.palette.undoButton" data-testid="phone-undo-button" :disabled="!canUndo" @click="onUndo" />
         </span>
         <span class="app-header__phone-only">
-          <IconButton icon="redo" shape="round" :label="t.palette.redoButton" data-testid="phone-redo-button" :disabled="!canRedo(history)" @click="onRedo" />
+          <IconButton icon="redo" shape="round" :label="t.palette.redoButton" data-testid="phone-redo-button" :disabled="!canRedo" @click="onRedo" />
         </span>
       </template>
       <span class="app-header__wide-only"><LanguageSwitcher /></span>
@@ -1886,8 +1820,8 @@ function onMoveRow(delta: number) {
           :selected-color-id="selectedColorId"
           :custom-color="customColor"
           :selected-image-color="selectedImageColor"
-          :can-undo="canUndo(history)"
-          :can-redo="canRedo(history)"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
           :can-copy="!!selection"
           :can-remove-selected-line="canRemoveSelectedLine"
           @select-tool="onSelectTool"
@@ -2073,8 +2007,8 @@ function onMoveRow(delta: number) {
       class="app-shell__bottom-toolbar"
       :active-tool="activeTool"
       :selected-color-id="selectedColorId"
-      :can-undo="canUndo(history)"
-      :can-redo="canRedo(history)"
+      :can-undo="canUndo"
+      :can-redo="canRedo"
       @select-tool="onSelectTool"
       @select-color="onSelectColor"
       @undo="onUndo"
@@ -2141,8 +2075,8 @@ function onMoveRow(delta: number) {
 
     <BottomSheet v-if="openPhoneSheet === 'edit' && activePattern" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
       <div class="phone-sheet__edit">
-        <IconButton icon="undo" variant="toolbox" size="lg" :label="t.palette.undoButton" :disabled="!canUndo(history)" @click="onUndo" />
-        <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo(history)" @click="onRedo" />
+        <IconButton icon="undo" variant="toolbox" size="lg" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
+        <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
         <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotation !== 0" @click="onToggleRotate" />
         <IconButton icon="copy" variant="toolbox" size="lg" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
         <IconButton
