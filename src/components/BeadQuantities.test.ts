@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createPattern, paintCells, type Pattern } from '../domain/pattern'
+import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
 
@@ -169,5 +170,31 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     await info.trigger('keydown', { key: 'Escape' })
     expect(shown()).toBe(false)
     expect(info.attributes('aria-describedby')).toBe(tooltip.attributes('id'))
+  })
+
+  describe('at the 24″ and larger tier (ticket 83; responsive.md, bp-desktop)', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    function withColors(count: number): Pattern {
+      const hexes = ['#e63746', '#2f6fed', '#22aa55', '#f5c518', '#8e44ad', '#ff8800', '#00bcd4']
+      return hexes
+        .slice(0, count)
+        .reduce((p, hex, column) => paintCells(p, [{ row: 0, column }], hex, { columns: 0, rows: 0 }), pattern())
+    }
+
+    it('holds five color rows before it needs expanding: four colors are not expandable, six are', () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': true }).matchMedia)
+
+      expect(mountQuantities(withColors(4)).find('[data-testid="panel-expand"]').exists()).toBe(false)
+      expect(mountQuantities(withColors(5)).find('[data-testid="panel-expand"]').exists()).toBe(false)
+      expect(mountQuantities(withColors(6)).find('[data-testid="panel-expand"]').exists()).toBe(true)
+    })
+
+    it('holds three rows below that tier: four colors already expand', () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': false }).matchMedia)
+
+      expect(mountQuantities(withColors(3)).find('[data-testid="panel-expand"]').exists()).toBe(false)
+      expect(mountQuantities(withColors(4)).find('[data-testid="panel-expand"]').exists()).toBe(true)
+    })
   })
 })

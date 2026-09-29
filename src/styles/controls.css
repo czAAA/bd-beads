@@ -40,6 +40,9 @@
   --panel-row-height: 2rem;
   --panel-body-height: 6rem;
   --saved-body-height: 6.5rem;
+  /* The 24" and larger tier (ticket 83): five Beads needed rows, and two rows of Saved Patterns thumbnails */
+  --panel-body-height-desktop: 10rem;
+  --saved-body-height-desktop: 12.5rem;
   --swatch-dot: 0.75rem;
   --swatch-dot-radius: 3px;
   --grams-width: 3.5rem;

@@ -252,6 +252,14 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   border-bottom: 1px solid var(--line-soft);
 }
 
+/* The 24" and larger tier (ticket 83; responsive.md, bp-desktop): header padding 0 40 (no 40px spacing token: 2.5rem). */
+@media (min-width: 1920px) {
+  .app-header {
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+  }
+}
+
 /* The phone tier (ticket 79): 52px, tighter side padding; a phone on its side (responsive.md, bp-phone-landscape) drops to 44px. */
 @media (max-width: 743px) {
   .app-header {

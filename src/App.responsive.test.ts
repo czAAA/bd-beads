@@ -47,3 +47,35 @@ describe('the iPad 13" tier breakpoint (ticket 167; responsive.md, 1024-1279px)'
     }
   })
 })
+
+describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', () => {
+  const headerSource = readFileSync(resolve(__dirname, 'components', 'AppHeader.vue'), 'utf8')
+  const min = layoutPx('bp-desktop')
+
+  it('is written as the literal bp-desktop breakpoint', () => {
+    expect(min).toBe(1920)
+    expect(appSource).toContain(`@media (min-width: ${min}px)`)
+  })
+
+  it('grows the column to column-width-desktop (360px) and the page padding to 32 / 40', () => {
+    expect(layoutPx('column-width-desktop')).toBe(360)
+    expect(appSource).toMatch(
+      /@media \(min-width: 1920px\) \{\s*\.app-shell__body \{\s*grid-template-columns: var\(--column-width-desktop\) minmax\(0, 1fr\);\s*padding: var\(--space-32\) 2\.5rem;/,
+    )
+  })
+
+  it('pads the header 0 40', () => {
+    expect(headerSource).toMatch(/@media \(min-width: 1920px\) \{\s*\.app-header \{\s*padding-right: 2\.5rem;\s*padding-left: 2\.5rem;/)
+  })
+
+  it('leaves type and control sizes alone', () => {
+    const blocks = [...appSource.matchAll(/@media \(min-width: 1920px\) \{([\s\S]*?)\n\}\n/g)]
+    expect(blocks.length).toBeGreaterThan(0)
+    for (const [, body] of blocks) expect(body).not.toMatch(/font:|font-size|height:|[^-]width:\s*(?!minmax)/)
+  })
+
+  it('leaves the MacBook Air tier (1280-1919px) on the reference column', () => {
+    expect(appSource).toContain('grid-template-columns: var(--column-width) minmax(0, 1fr);')
+    expect(layoutPx('column-width')).toBe(326)
+  })
+})

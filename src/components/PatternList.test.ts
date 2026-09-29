@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PatternList from './PatternList.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
 import { createPattern, summarizePattern, type Pattern } from '../domain/pattern'
 import { BEAD_CATALOG } from '../domain/beads'
 import { ru } from '../i18n/ru'
+import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -180,5 +181,25 @@ describe('PatternList exports (ticket 118)', () => {
     expect(wrapper.find('[data-testid="panel-expand"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="export-pattern"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="export-library"]').exists()).toBe(false)
+  })
+
+  describe('at the 24″ and larger tier (ticket 83; responsive.md, bp-desktop)', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('shows ten thumbnails before expanding, instead of five', () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': true }).matchMedia)
+      const patterns = Array.from({ length: 12 }, makePattern)
+      const wrapper = mount(PatternList, { props: { patterns } })
+
+      expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(10)
+    })
+
+    it('keeps five below that tier', () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': false }).matchMedia)
+      const patterns = Array.from({ length: 12 }, makePattern)
+      const wrapper = mount(PatternList, { props: { patterns } })
+
+      expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(5)
+    })
   })
 })

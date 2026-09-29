@@ -8,6 +8,7 @@ import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
+import { useMediaQuery } from '../composables/useMediaQuery'
 import PatternThumbnail from './PatternThumbnail.vue'
 
 /**
@@ -32,11 +33,15 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** How many thumbnails the collapsed box holds: one row of five. */
-const RECENT = 5
+/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for two rows before expanding. */
+const isDesktop = useMediaQuery('(min-width: 1920px)')
+
+/** How many thumbnails the collapsed box holds: one row of five, or two rows (ten) at the 24" tier. */
+const recent = computed(() => (isDesktop.value ? 10 : 5))
+const collapsedHeight = computed(() => (isDesktop.value ? 'var(--saved-body-height-desktop)' : 'var(--saved-body-height)'))
 
 const expanded = ref(false)
-const shown = computed(() => (expanded.value ? props.patterns : props.patterns.slice(0, RECENT)))
+const shown = computed(() => (expanded.value ? props.patterns : props.patterns.slice(0, recent.value)))
 
 const meta = computed(() =>
   t.value.patterns.shownOf.replace('{shown}', String(shown.value.length)).replace('{total}', String(props.patterns.length)),
@@ -60,7 +65,7 @@ function sizeOf(pattern: Pattern): string {
     :expandable="patterns.length > 0"
     :empty="patterns.length === 0"
     :clip-overflow="false"
-    collapsed-height="var(--saved-body-height)"
+    :collapsed-height="collapsedHeight"
     data-testid="pattern-list"
   >
     <template v-if="patterns.length > 0" #meta>

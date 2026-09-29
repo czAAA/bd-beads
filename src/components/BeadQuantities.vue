@@ -6,6 +6,7 @@ import { decimalSign, groupThousands } from '../i18n/formatNumber'
 import { useI18n } from '../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import ExpandablePanel from './ExpandablePanel.vue'
+import { useMediaQuery } from '../composables/useMediaQuery'
 
 /**
  * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g (i)"
@@ -25,8 +26,12 @@ const { t, locale } = useI18n()
 // its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is slow.
 const quantities = computed(() => (props.pattern ? computeColorQuantities(toRaw(props.pattern)) : []))
 
-/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body). */
-const SUMMARY_ROWS = 3
+/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before expanding. */
+const isDesktop = useMediaQuery('(min-width: 1920px)')
+
+/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body; 5 rows, 160px, at the 24" tier). */
+const summaryRows = computed(() => (isDesktop.value ? 5 : 3))
+const collapsedHeight = computed(() => (isDesktop.value ? 'var(--panel-body-height-desktop)' : 'var(--panel-body-height)'))
 
 /**
  * Estimated weight (ticket 155, CONTEXT.md): count × the Bead's average weight of one bead, worked out here and never
@@ -67,7 +72,8 @@ const tipOpen = ref(false)
     v-model:expanded="expanded"
     class="bead-quantities"
     :title="t.quantities.heading"
-    :expandable="quantities.length > SUMMARY_ROWS"
+    :expandable="quantities.length > summaryRows"
+    :collapsed-height="collapsedHeight"
     :empty="quantities.length === 0"
     data-testid="bead-quantities"
   >

@@ -143,6 +143,23 @@ const {
 }
 
 /*
+ * 24" and larger tier (ticket 83; responsive.md, `bp-desktop` 1920px and up): the column grows to 360px (344px boxes,
+ * the same 14px scrollbar gutter) and the page padding to 32 / 40 (there is no 40px spacing token: 2.5rem). Type and
+ * controls keep their size -- the extra width goes to the canvas box, never to bigger chrome.
+ */
+@media (min-width: 1920px) {
+  .app-shell__body {
+    grid-template-columns: var(--column-width-desktop) minmax(0, 1fr);
+    padding: var(--space-32) 2.5rem;
+  }
+
+  .app-shell__notices {
+    padding-right: 2.5rem;
+    padding-left: 2.5rem;
+  }
+}
+
+/*
  * iPad mini and phone tiers (ticket 168, 79; responsive.md, under `bp-tablet-lg` 1024px): the column leaves the grid
  * track entirely. 744-1023px, the Drawer wrapping it switches to `position: fixed` (AppDrawer.vue's own media query)
  * and floats over the canvas box instead; under 744px AppDrawer hides it altogether -- the phone tier's Dock and
