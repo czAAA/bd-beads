@@ -55,6 +55,7 @@ import { useAppShortcutTable } from './composables/useAppShortcutTable'
 import { useMirrorState } from './composables/useMirrorState'
 import { useA11yAnnouncer } from './composables/useA11yAnnouncer'
 import { usePaintStroke } from './composables/usePaintStroke'
+import { useToolAtCursor } from './composables/useToolAtCursor'
 import { useUndoHistory } from './composables/useUndoHistory'
 import { usePatternLibrary } from './composables/usePatternLibrary'
 import { usePatternZoom } from './composables/usePatternZoom'
@@ -564,8 +565,6 @@ function onHoverEnd() {
  */
 const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
 const keyboardOnPattern = ref(false)
-/** Whether Shift + arrows is stretching a Selection, begun at the bead the cursor was on. */
-let keyboardSelecting = false
 const { announcement, announce, announceCursor, colorWords } = useA11yAnnouncer({
   messages: () => t.value,
   currentPattern: () => activePattern.value,
@@ -588,12 +587,18 @@ function onPatternKeyboardFocus(focused: boolean) {
   }
 }
 
-function finishKeyboardSelection() {
-  if (keyboardSelecting) {
-    keyboardSelecting = false
-    endStroke()
-  }
-}
+const { invokeToolAt, extendSelectionTo, finishExtending: finishKeyboardSelection } = useToolAtCursor({
+  messages: () => t.value,
+  currentPattern: () => activePattern.value,
+  activeTool: () => activeTool.value,
+  selectedColorHex,
+  pressCell: (row, column) => onCellPrimaryDown(row, column),
+  endStroke: () => endStroke(),
+  beginSelectPress: (row, column) => beginSelectPress(row, column),
+  extendSelection: (row, column) => extendSelection(row, column),
+  announce,
+  colorWords,
+})
 
 /** Keeps the cursor two beads from any edge of the visible part of the canvas box. */
 function keepCursorInView() {
@@ -639,11 +644,7 @@ function moveCursor(row: number, column: number, extend: boolean) {
     column: Math.max(0, Math.min(pattern.columns - 1, column)),
   }
   if (extend) {
-    if (!keyboardSelecting) {
-      keyboardSelecting = true
-      beginSelectPress(beadCursor.value.row, beadCursor.value.column)
-    }
-    extendSelection(next.row, next.column)
+    extendSelectionTo(beadCursor.value, next)
   } else {
     finishKeyboardSelection()
   }
@@ -651,24 +652,6 @@ function moveCursor(row: number, column: number, extend: boolean) {
   onCellHover(next.row, next.column)
   keepCursorInView()
   announceCursor()
-}
-
-/** Space or Enter: the current tool on the bead under the cursor, as one pointer press and release. */
-function useToolAtCursor() {
-  const pattern = activePattern.value
-  if (!pattern) return
-  const { row, column } = beadCursor.value
-  const before = pattern.grid
-  const color = selectedColorHex()
-  onCellPrimaryDown(row, column)
-  endStroke()
-  if (activePattern.value?.grid === before) return
-  const tool = activeTool.value
-  announce(
-    tool === 'erase'
-      ? t.value.a11y.erased
-      : (tool === 'fill' ? t.value.a11y.filled : t.value.a11y.painted).replace('{color}', colorWords(color)),
-  )
 }
 
 function onPatternKey(event: KeyboardEvent) {
@@ -707,7 +690,7 @@ function onPatternKey(event: KeyboardEvent) {
   } else if (event.key === 'PageDown') {
     moveCursor(row + 10, column, false)
   } else if (event.key === ' ' || event.key === 'Enter') {
-    useToolAtCursor()
+    invokeToolAt(beadCursor.value)
   } else if (event.key === 'Escape' && !selection.value) {
     // Leaves the Pattern; with a Selection up, Escape clears that first (the app's own Escape order).
     ;(event.target as HTMLElement).blur()
