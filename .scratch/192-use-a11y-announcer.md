@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] `useA11yAnnouncer` owns the announcement state and `announce`/`announceCursor`/`colorWords`
-- [ ] App.vue no longer declares any of the above directly
-- [ ] Announcements are unchanged, verified with a screen reader or existing a11y tests
-- [ ] App.vue still boots and all other existing tests pass
+- [x] `useA11yAnnouncer` owns the announcement state and `announce`/`announceCursor`/`colorWords`
+- [x] App.vue no longer declares any of the above directly
+- [x] Announcements are unchanged, verified with a screen reader or existing a11y tests
+- [x] App.vue still boots and all other existing tests pass

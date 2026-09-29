@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import AppButton from './components/AppButton.vue'
 import AppIcon from './components/AppIcon.vue'
 import AppLink from './components/AppLink.vue'
@@ -53,6 +53,7 @@ import { plural } from './i18n/plural'
 import { patternExtentPx, rowShiftPx, rowTopPx } from './rendering/patternRenderer'
 import { useAppShortcutTable } from './composables/useAppShortcutTable'
 import { useMirrorState } from './composables/useMirrorState'
+import { useA11yAnnouncer } from './composables/useA11yAnnouncer'
 import { usePaintStroke } from './composables/usePaintStroke'
 import { useUndoHistory } from './composables/useUndoHistory'
 import { usePatternLibrary } from './composables/usePatternLibrary'
@@ -66,7 +67,7 @@ import { BEAD_CATALOG, beadLabel, findBead } from './domain/beads'
 import type { Bead } from './domain/beads'
 import { CELL_SIZE_PX, GRID_BORDER_PX, rotationSwapsAxes, type GridPosition, type PreviewCell, type Technique } from './domain/grid'
 import type { ConvertedImage } from './domain/imageConversion'
-import { findPaletteColor, PALETTE } from './domain/palette'
+import { findPaletteColor } from './domain/palette'
 import {
   createPattern,
   createPatternFromImage,
@@ -565,34 +566,11 @@ const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
 const keyboardOnPattern = ref(false)
 /** Whether Shift + arrows is stretching a Selection, begun at the bead the cursor was on. */
 let keyboardSelecting = false
-const announcement = ref('')
-
-function announce(text: string) {
-  // Cleared first, so the same words said twice are still heard twice.
-  announcement.value = ''
-  void nextTick(() => {
-    announcement.value = text
-  })
-}
-
-/** A bead color in words: the Palette's name for it, "Custom" for any other color, "empty" for none. */
-function colorWords(hex: string | null | undefined): string {
-  if (!hex) return t.value.a11y.emptyBead
-  const color = PALETTE.find((entry) => entry.hex.toLowerCase() === hex.toLowerCase())
-  return color ? (t.value.colorNames[color.id] ?? hex) : t.value.colorNames.custom!
-}
-
-function announceCursor() {
-  const pattern = activePattern.value
-  if (!pattern) return
-  const { row, column } = beadCursor.value
-  announce(
-    t.value.a11y.cursorPosition
-      .replace('{row}', String(row + 1))
-      .replace('{column}', String(column + 1))
-      .replace('{color}', colorWords(pattern.grid[row]?.[column]?.color)),
-  )
-}
+const { announcement, announce, announceCursor, colorWords } = useA11yAnnouncer({
+  messages: () => t.value,
+  currentPattern: () => activePattern.value,
+  beadCursor: () => beadCursor.value,
+})
 
 function onPatternKeyboardFocus(focused: boolean) {
   keyboardOnPattern.value = focused
