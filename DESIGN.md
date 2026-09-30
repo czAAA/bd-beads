@@ -62,10 +62,10 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Contrast, high contrast, never color alone, text and zoom, keyboard, painting with the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
 | PDF and PNG exports: page 1, chart pages, beads and grams, the maker's name, wide and long Patterns | [`printed-output.md`](docs/design/system/printed-output.md) |
 | Voice, sentence patterns, plurals, glossary, color names, numbers and units, strings to fix, Russian | [`writing.md`](docs/design/system/writing.md) |
-| One card per component (63, plus the `Cover`): a short guideline and a static preview | [`components/<Name>/`](docs/design/system/components) |
+| One card per component (67, plus the `Cover`): a short guideline and a static preview | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
-| Icons v2 (46 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
+| Icons v2 (48 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
 ### 3.1 Old section numbers
@@ -232,7 +232,9 @@ files without an account.
 5. Run the tests: once ticket 140 lands, the `PatternTheme` check (§4.2) fails if a canvas token changed without the
    renderer.
 
-**Version in the repo:** design system **v14** (synced from DESIGN.md @ e16e9c5, plus the X1 logo, Icons v2 and
-Phases A–E; v14 corrects the font weights and type roles in the README; EmptyCanvas's ghost board is now full-bleed,
-filling the whole drawing area instead of a small centred box — ticket 180), plus two Icons v2 additions for ticket
-188 (`bead`, `library`, `paste`).
+**Version in the repo:** design system **v15**, synced from claude.ai on 2026-09-30. v15 adds the Tour (TourStep,
+TourPattern), the Overview page and the HeaderMenu (which replaces the OverflowMenu), the `menu` and `pattern` icons
+(Icons v2 is now 49), the `tour-highlight` and `note-gold` colors, the `z-tour-*` layers and the Overview-only type
+roles (`tagline`, `serif-heading`, `note`). It builds on v14 (synced from DESIGN.md @ e16e9c5, plus the X1 logo,
+Icons v2 and Phases A–E; the `bead`, `library` and `paste` icons of ticket 188; EmptyCanvas's full-bleed ghost board,
+ticket 180).

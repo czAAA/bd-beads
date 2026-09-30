@@ -137,3 +137,65 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Buy about 10% more for spares. | Возьмите примерно на 10 % больше про запас. |
 | Printed on your PDF and PNG exports. Stays on this device. | Печатается на PDF и PNG. Хранится только на этом устройстве. |
 | made by · by {maker} | автор · автор: {maker} |
+
+## Copy added in v15
+
+The Overview, the header menu and the Tour, as signed off. The same rules: plain and short, sentence case, product nouns capitalized, no exclamation marks, emoji, em dashes or "please". The Overview's slogan, its "save. count. export" line and its handwritten notes are the one place with a lighter, drawn voice; the Russian line uses "we" so it reads as "on us".
+
+### Header menu and Overview
+
+| English | Russian |
+| --- | --- |
+| Menu | Меню |
+| Overview · Take the tour (menu links) | Обзор · Пройти обучение |
+| Draw. Joy. Weave. | Рисуйте. Наслаждайтесь. Создавайте. |
+| save. count. export | сохраним. посчитаем. экспортируем |
+| you · on us (notes) | вы · это мы |
+| Make your first Pattern · Open the editor | Сделать первую схему · Открыть редактор |
+| Patterns saved: 3 | Схем сохранено: 3 |
+| eleven small steps (note) | одиннадцать коротких шагов |
+| you'll make this (note) | её вы и сделаете |
+| What's inside | Что внутри |
+| Techniques: Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения: Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
+| Pattern editing: Paint, Fill and Erase, copy and paste, and Undo for every step. | Редактирование схемы: Кисть, заливка и ластик, копирование и вставка, отмена любого шага. |
+| Convert image: Turn a picture into a Pattern in up to 14 colors. | Конвертировать изображение: Превращает картинку в схему, до 14 цветов. |
+| Row progress: Mark rows done as you weave and pick up where you stopped. | Прогресс по рядам: Отмечайте готовые ряды и продолжайте с того места, где остановились. |
+| Beads needed: Every color counted, with Estimated weight in grams. | Нужно бисера: Подсчёт по каждому цвету и примерный вес в граммах. |
+| Exports: PDF for printing, PNG image, QR code and the Pattern file. | Экспорт: PDF для печати, PNG, QR-код и файл схемы. |
+| Saved Patterns: Kept on this device. No account needed. | Сохранённые схемы: Хранятся на этом устройстве. Аккаунт не нужен. |
+| Previous feature · Next feature (arrow labels) | Предыдущая возможность · Следующая возможность |
+| Made by one person | Сделано одним человеком |
+| bd-beads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks. | bd-beads делает один человек, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо. |
+| Buy me a coffee | Угостить кофе |
+| plans · Three ways to use it | тарифы · Три способа работать |
+| Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |
+| you are here (note) | вы здесь |
+| No account · Free · no sign-up · Draw, count and weave on this device. Nothing to sign up for. · Open the editor | Без аккаунта · Бесплатно · без регистрации · Рисуйте, считайте и плетите на этом устройстве. Регистрироваться не нужно. · Открыть редактор |
+| Free account · Free · coming later · The same app, with your Patterns on every device you use. · Create free account | Бесплатный аккаунт · Бесплатно · появится позже · То же приложение, а схемы на всех ваших устройствах. · Создать бесплатный аккаунт |
+| Pro · Price later · coming later · For makers who teach, sell or print a lot. · Coming later | Pro · Цена позже · появится позже · Для тех, кто учит, продаёт или много печатает. · Появится позже |
+| what you get · everything without an account, plus · everything in Free account, plus | что входит · всё без аккаунта, плюс · всё из бесплатного аккаунта, плюс |
+
+Plan contents are placeholders until paid features exist.
+
+### The Tour (11 steps)
+
+| Step | Tool · key | English | Russian |
+| --- | --- | --- | --- |
+| 1 | New Pattern | **Start a Pattern** Every Pattern starts here. Give yours a name, then try a Technique, a Bead and the units: the size updates as you go. Button: Back to loom for your first Pattern. Then: Loom, the default Bead and 10×75 beads, with your name kept. Now press Create Pattern. | **Начните схему** Любая схема начинается здесь. Дайте ей имя, затем попробуйте технику плетения, бисеринку и единицы: размер пересчитывается сразу. Кнопка: Вернуться к ткачеству для первой схемы. Затем: Ткачество, бисеринка по умолчанию и 10×75, имя сохранено. Теперь нажмите «Создать схему». |
+| 2 | Fill · 2 | **Fill the background** Fill colors a whole area of one color at once. Choose Fill and black, then fill the Pattern. | **Залейте фон** Заливка закрашивает всю область одного цвета сразу. Выберите «Заливку» и чёрный, затем залейте схему. |
+| 3 | Paint · 1 | **Paint the outline** Paint places one bead at a time. Choose Paint and yellow, then paint the 22 marked beads: the outline of the first rhombus. | **Нарисуйте контур** Кисть ставит по одной бисеринке. Выберите «Кисть» и жёлтый, затем закрасьте 22 отмеченные бисеринки: контур первого ромба. |
+| 4 | Fill · 2 | **Fill the rhombus** Fill stops at the outline, so only the inside changes. Keep yellow, choose Fill and fill inside the rhombus. | **Залейте ромб** Заливка останавливается на контуре, поэтому меняется только середина. Оставьте жёлтый, выберите «Заливку» и залейте ромб внутри. |
+| 5 | Paint · 1 | **Paint the eye** Choose Paint and black, then paint the 16 marked beads inside: a small ring and its centre. | **Нарисуйте глазок** Выберите «Кисть» и чёрный, затем закрасьте 16 отмеченных бисеринок внутри: маленькое кольцо и его середину. |
+| 6 | Select · 3 | **Copy the rhombus** Select draws a frame around beads you want to reuse. Select the rhombus, press Copy, then paste it into each of the four outlines below. | **Скопируйте ромб** «Выделение» обводит бисеринки, которые нужно повторить. Выделите ромб, нажмите «Копировать» и вставьте его в каждый из четырёх контуров ниже. |
+| 7 | Undo · Ctrl/Cmd+Z | **We'll finish the rest** The small gold beads between the rhombuses and the rounded ends go in as one change, so one Undo would take them all back. Press Next to watch. | **Остальное доделаем мы** Золотые бисеринки между ромбами и скруглённые концы добавятся одним изменением: одна отмена убрала бы их все. Нажмите «Далее» и смотрите. |
+| 8 | Erase · Del | **Erase the stray bead** Erase empties a bead. One bead sits outside the rounded corner: choose Erase and remove it. | **Сотрите лишнюю бисеринку** Ластик убирает бисеринку. Одна осталась за скруглённым углом: выберите «Ластик» и сотрите её. |
+| 9 | Remove line | **Remove a line** Remove line takes out a whole row or column. Remove any one, then press Undo to bring it back. | **Удалите линию** «Удалить линию» убирает целый ряд или столбец. Удалите любой, затем нажмите «Отменить», чтобы вернуть его. |
+| 10 | Size | **Change the size** Size adds or removes rows and columns at the edge. Press − or + next to Columns, look at the Pattern, then press Undo. | **Измените размер** «Размер» добавляет или убирает ряды и столбцы с края. Нажмите − или + у столбцов, посмотрите на схему, затем нажмите «Отменить». |
+| 11 | Row progress · P | **Track your rows** Row progress keeps your place while you weave. Turn it on, press Row done three times, then Row not done once to open row 3 again. | **Отмечайте ряды** Прогресс по рядам запоминает, где вы остановились. Включите его, трижды нажмите «Ряд готов», затем один раз «Ряд не готов», чтобы вернуть ряд 3. |
+| final | Export | **Your first Pattern is ready** Take it to the loom: Export makes a PDF to print, a PNG, a QR code or the Pattern file. To walk through again, open the menu and choose Take the tour. [Keep editing] [Export] | **Ваша первая схема готова** Пора за станок: «Экспорт» сделает PDF для печати, PNG, QR-код или файл схемы. Чтобы пройти шаги снова, откройте меню и выберите «Пройти обучение». [Продолжить] [Экспортировать] |
+| card | | {n} of 11 · Next · Skip tour | {n} из 11 · Далее · Пропустить обучение |
+| fallback | | This control isn't on screen. Next does this step for you. | Этого элемента сейчас нет на экране. «Далее» сделает шаг за вас. |
+| Skip toast | | Tour put aside for now. Pick it up from the menu any time. | Обучение отложено на потом. Вернуться к нему можно из меню в любой момент. |
+| screen reader | | Tour, step {n} of 11: {title} · Next: {control}, in {place}. | Обучение, шаг {n} из 11: {title} · Далее: {control}, в «{place}». |
+
+Tour words: the Tour / обучение (lowercase in Russian, like any noun); rhombus / ромб; eye / глазок; Remove line / «Удалить линию».

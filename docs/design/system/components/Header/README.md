@@ -4,6 +4,7 @@ The 64px app header: brand, what is being edited, Replace bead, imports, New Pat
 
 On `canvas`, 1px `line-soft` bottom border, items 10px apart, none shrinking, padding 0 32. In order:
 1. **Brand:** the X1 Cross-weave logo mark (22px, `accent`, stroke 3.8) and "bd-beads" (`brand`), 8px apart, 10px extra space after. See the Logo section of the brand book.
+1a. **Menu** (v15): a 34px ghost icon button with the `menu` icon, right after the wordmark; it opens the HeaderMenu (Overview, Take the tour). See the HeaderMenu card.
 2. **"currently editing"** (`label`), the Pattern summary (`control`), then the BeadPill. Only while a Pattern is open.
 3. **Replace bead:** a primary select.
 4. A flexible gap.

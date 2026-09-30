@@ -60,9 +60,19 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 | `z-context-bar` | 30 | The Selection ContextBar above the Progress bar. |
 | `z-drawer` | 40 | The iPad mini Drawer and its scrim (scrim one below). |
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
-| `z-popover` | 60 | Menus, the Image colors popover, OverflowMenu. |
+| `z-popover` | 60 | Menus, the Image colors popover, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |
 | `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, QR export, Keyboard shortcuts, New Pattern on phone. |
+| `z-tour-dim` | 84 | The Tour's dim layer and its hole (v15). |
+| `z-tour-connector` | 85 | The Tour's ring of beads around the hole and the connector. |
+| `z-tour-card` | 86 | The Tour's step card. Above modals, so the Tour can guide inside New Pattern on the phone. |
 | `z-tooltip` | 90 | Tooltips: always on top, never interactive. |
 
-- A scrim sits one below its layer (39, 49, 79). One modal at a time. Nothing inside the canvas box goes above `z-canvas-overlay`; the Save-failed notice row is in the page flow, not a layer.
+- A scrim sits one below its layer (39, 49, 79). The Tour's layers sit above modals and below tooltips; the pointed control is seen and used through the hole, whatever its own layer. One modal at a time. Nothing inside the canvas box goes above `z-canvas-overlay`; the Save-failed notice row is in the page flow, not a layer.
+
+## The Tour (v15)
+
+- The step card is a non-modal `role="dialog"` named "Tour, step {n} of 11: {title}" and described by its text; focus moves into it when a step starts. Tab cycles the card's buttons and the lit control only; everything outside the holes is `inert` for the step.
+- Escape skips the Tour; if a menu, sheet or modal is open, the first Escape closes it. A pointer move inside a step is one polite status line ("Next: Yellow, in Colors.").
+- The gold `tour-highlight` ring is not a focus indicator; the 2px `focus-ring` still shows on the focused control. High contrast replaces the ring with 3px `ink` and drops the glow; key caps and the grey pointer keep 3:1 against the dim layer. Full rules: the TourStep card.
+- The Overview's handwritten notes, bead drawings and background marks are `aria-hidden`; its carousel is a `tablist` from 1024. `note-gold` (about 2.5:1 on white) is for the decorative note only.

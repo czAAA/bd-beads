@@ -31,3 +31,16 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - No motion for painting, the theme switch (colours change at once so the canvas redraws once) or zoom steps; pinch follows the fingers directly.
 - Toasts leave after 5s unless hovered or focused; errors stay until closed.
 - **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, the Drawer, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still. Colour and opacity feedback stay.
+
+## The Tour (v15)
+
+| Layer | Arrives | Leaves |
+| --- | --- | --- |
+| Dim layer | opacity, `--duration-base`, `--ease-out` | opacity, 150ms, `--ease-in` |
+| Hole and gold highlight moving to the next control | `transform`, `--duration-base`, `--ease-standard` | |
+| Grey dotted pointer | opacity, `--duration-fast`, after the card lands | at once, with the card |
+| Step card | opacity and an 8px move toward the control, `--duration-base`, `--ease-out`; between steps `--ease-standard`, text cross-fades in `--duration-fast` | opacity, 150ms, `--ease-in` |
+
+- The gold highlight stays on the control until it is pressed, then moves on; it never pulses. Under reduced motion every Tour layer fades in 120ms and the hole jumps.
+- The dim layer blocks presses outside the holes and the card; wheel, trackpad pinch and two-finger touch over the canvas box still scroll and zoom the Pattern.
+- The Overview's steam and carousel scroll animate only with reduced motion off; its drawings never move.

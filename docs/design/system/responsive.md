@@ -82,3 +82,9 @@ Devices (CSS px): 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 256
 - Type sizes do not change between tiers: 14px controls and body everywhere. Only spacing, the column width and which labels show change. On the phone, long Pattern names truncate with an ellipsis.
 - The drawing surface resizes once the layout settles (a debounced ResizeObserver), never on every scroll or animation frame. Sheets and the drawer slide with `transform`, so the canvas does not resize when they open (ADR 0018).
 - Check with ticket 103's performance run at the phone and iPad sizes, and at 2240px on the Core i3 reference (ticket 83).
+
+## Header menu, Overview and the Tour (v15)
+
+- **Header menu:** a `menu` button next to the logo at every tier (after the mark on the phone, after the wordmark from 744). Below 1024 it holds what More held at that size plus Overview and Take the tour; from 1024 only Overview and Take the tour. They are links, with no check on the current page. See the HeaderMenu card.
+- **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
+- **Tour placement:** 1024 and up, the card sits right of the left column for its controls, below header controls and above the Progress bar; iPad mini, above the BottomToolbar and below the header, opening the Drawer first for controls inside it; phone, docked under the header, reaching sheet controls through their Dock button. When a control can't be brought on screen, the card is centred with no pointer. See the TourStep card.

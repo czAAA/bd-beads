@@ -1,0 +1,28 @@
+# 208: Design system v15: Overview, Tour and the header menu
+
+**What to build:** A design session on claude.ai that adds what the Overview (ticket 77), the Tour (ticket 80) and the header menu (ticket 210) need and the design system (v14) doesn't cover yet, then the v15 copy into `docs/design/system/` per `DESIGN.md` §6. Nothing in 77, 80 or 210 is built before this lands; the component cards are their spec.
+
+**Blocked by:** None (can start immediately)
+
+**Status:** done
+
+**Why a session first:** the design system is edited on claude.ai and `docs/design/system/` is only a copy (`CLAUDE.md`, `DESIGN.md` §6). The Overview is a page, which the README's first principle ("An editor, not a page") doesn't allow for yet, so the design system has to say how the Overview relates to it before anyone builds one.
+
+- [x] **Overview card**: the page outside the editor at `/overview`. Header with the X1 logo, the header menu, Language and Theme (no Keyboard shortcuts). A primary "Make your first Pattern" button (starts the Tour) and a secondary "Open the editor"; opened with Patterns already saved, the primary reads "Open the editor". One line per feature, each with an Icons v2 icon and a short description, no screenshots or borrowed imagery, in this order: Techniques (loom, peyote, brick stitch); Pattern editing (Paint, Fill, eraser, copy and paste, Undo); Convert image; Row progress; Beads needed (with Estimated weight); Exports (PDF, PNG, QR, Pattern file); Saved Patterns (stay on this device, no account). Mirror is not listed. All five screen sizes in `responsive.md`, and the light, dark and high contrast themes.
+- [x] **Tour step card**: the card, a dotted connector from the card to the control the step points at, and a dim layer over the rest of the app that blocks everything except that control, the card, and scroll and zoom on the canvas. The card holds the step's title, what the control does and what to do with it, "n of 12", Next and Skip tour. How it sits on each screen size (on the phone it points into the bottom toolbar and sheets), what it does when its control isn't on screen (centred, no connector), keyboard focus, and screen reader announcements. Stacking order and motion tokens for the dim layer and the card.
+- [x] **Tour Pattern artwork**: the finished 30 × 120 loom Pattern (default Bead) the Tour builds, in the Palette's `yellow` (#f2c94c) and `black` only: a gold half and a black half split by a one-row black divider, with gold accents on the black half and black accents on the gold half, the same motif in swapped colors. Simple but striking, inspiring enough that a new user wants to weave it. Delivered as the grid itself, plus which cells each step highlights: the divider row (step 3), the accents the user paints (step 5), the accent to copy and where to paste it (step 6), the accents the Tour finishes itself (step 7) and the one stray bead the Tour leaves for the eraser (step 8).
+- [x] **Header menu card**: the menu button next to the logo that replaces the More menu at every screen size. Narrow headers (where More is today, below 1024px): everything More holds there, plus Overview and Take the tour. Full headers (1024px and up): only Overview and Take the tour, for now. Built on the `Menu` card.
+- [x] **`menu` icon**: a new hamburger icon in the style of Icons v2 (same grid, stroke and corners as `more.svg` and its neighbours), added to `assets/Icons/`.
+- [x] **Copy, English and Russian**, following `writing.md`: the Overview's feature lines and buttons; every Tour step's card (see ticket 80 for the twelve steps); the header menu's items; the Tour's last card ("Your first Pattern is ready" in meaning, plus how to start it again); and the toast after Skip tour, "Tour off. Start it again from the menu." in meaning, but warmer and more crafted, still plain, with no exclamation marks or emoji.
+- [x] v15 copied into `docs/design/system/` in one commit, with `DESIGN.md`'s version line and topic map updated (`DESIGN.md` §6)
+
+## Outcome
+
+v15 was built on claude.ai and copied into `docs/design/system/` (version line, topic map and the app's `tokens.css` and icon names updated). The design system differs from this ticket in two places, and tickets 77, 80 and 210 should follow the design system:
+
+- **The Tour has 11 steps, not 12** ("n of 11"; the Overview says "eleven small steps").
+- **The Tour Pattern is 10 × 75** (gold rhombuses with a black eye on black, like a Belarusian rushnik band), not the 30 × 120 gold/black split. Its grid is in `components/TourPattern/tour-pattern.json`.
+
+Also added beyond the ticket: a `pattern` icon (the Dock's Pattern button), the `tour-highlight` and `note-gold` colors, the `z-tour-*` layers and the Overview-only type roles. The header menu replaces the More menu (OverflowMenu is archived upstream).
+
+**Overview and Tour:** not built here; tickets 77, 80 and 210 build them.

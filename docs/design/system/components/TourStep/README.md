@@ -1,0 +1,19 @@
+# TourStep
+
+The Tour: eleven steps inside the real editor; each step card names the tool it teaches, points at one control with a grey dotted line, lights that control in gold until it is used, and moves on when it is.
+
+- **Card:** 328px (phone: screen width less 12px each side), `overlay-fill`, 1px `overlay-line` (`line-strong` in dark, 2px in high contrast), `radius-lg`, `elevation-3`, padding 14 16 12, gap 8.
+- **Top line:** the tool being taught in a 30px tile (gold tint, ink icon; ink outline in high contrast), its name, and its hotkey as a key cap (22px, DM Mono 12, `elevated`, 1px `line-strong` with a 2px bottom): Paint `1`, Fill `2`, Select `3`, Erase `Del`, Undo `Ctrl/Cmd+Z`, Row progress `P`. No key cap on the phone or for tools without a shortcut. Right: "3 of 11" in `meta-small` over a strand of 11 beads (done `ink`, current gold, rest `bead-empty`).
+- **Then** the title (`title`), what the control does and what to do (`body`), and **Skip tour** (text button) with **Next** (secondary). Step 1 adds **Back to loom for your first Pattern**. Next does the step if it isn't done, so the Pattern always comes out whole.
+- **Highlight:** the control is lit through a hole in the dim layer with a 2.5px `tour-highlight` ring and an 8px glow at 38%, until it is pressed; then the highlight moves to the next control. High contrast: a 3px `ink` ring, no glow. When a step marks beads, the canvas box is a second hole and the beads to paint get a dashed gold outline; paste targets a dashed gold box; the Selection is the bead frame in `accent`.
+- **Pointer:** one grey dotted line (`muted`, 1.25px, dots every 4.5px) curving from the card's nearest edge to the ring, ending in a 2.2px dot.
+- **Dim layer:** rgba(0,0,0,.26) light, .55 dark; blocks everything except the holes and the card; wheel, pinch and two-finger touch over the canvas still scroll and zoom.
+- **Placement:** 1024 and up: to the right of the left column for its controls, below header controls, above the Progress bar. iPad mini: above the BottomToolbar, below the header; controls in the Drawer open it first, or fall back. Phone: docked under the header; controls in sheets are reached through their Dock button. **Fallback:** centred card, no hole, no line, with "This control isn't on screen. Next does this step for you."
+- **Steps:** 1 Start a Pattern (10×75 loom), 2 Fill black, 3 Paint the outline, 4 Fill the rhombus, 5 Paint the eye, 6 Copy the rhombus and paste it four times, 7 the Tour finishes the rest (one Undo), 8 Erase the stray bead, 9 Remove a line then Undo, 10 Change the size then Undo, 11 Track your rows. The Pattern and its cells: TourPattern.
+- **Final card:** "Your first Pattern is ready", pointing at **Export** (the Pattern button on the phone), with **Keep editing** and **Export** (primary). It says how to start the Tour again from the menu.
+- **Skip toast:** the Message card, info tone: "Tour put aside for now. Pick it up from the menu any time."
+- **Keyboard:** focus moves into the card; Tab cycles the card's buttons and the lit control only; Escape skips (an open menu, sheet or modal closes first); focus then returns where it was.
+- **Screen readers:** non-modal `role="dialog"` named "Tour, step {n} of 11: {title}", described by its text; one polite status line when the pointer moves; dim, ring, line and marks `aria-hidden`; everything outside the holes `inert`.
+- **Stacking and motion:** `z-tour-dim` 84, `z-tour-connector` 85, `z-tour-card` 86. Dim fades `--duration-base`; the hole moves by `transform`; ring and line fade in after the card lands; the card arrives with opacity and an 8px move. Reduced motion: fades only. Nothing pulses.
+
+Hand-written from the v15 sign-off; the preview is the signed Tour page (step through it, switch size, theme and language, show the Skip toast).
