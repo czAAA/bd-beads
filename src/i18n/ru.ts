@@ -107,8 +107,28 @@ export const ru: Translations = {
   header: {
     toolsButton: 'Инструменты',
     menuButton: 'Меню',
+    overviewItem: 'Обзор',
     patternSheetLabel: 'Схема',
     newPatternSheetTitle: 'Новая схема',
+  },
+  overview: {
+    pageTitle: 'Обзор',
+    sloganLead: 'Рисуйте. Наслаждайтесь.',
+    sloganLast: 'Создавайте.',
+    tagline: 'сохраним. посчитаем. экспортируем',
+    makeFirstPattern: 'Сделать первую схему',
+    openEditor: 'Открыть редактор',
+    patternsSaved: 'Схем сохранено: {count}',
+    whatsInside: 'Что внутри',
+    features: {
+      techniques: { name: 'Техники плетения', text: 'Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер.' },
+      patternEditing: { name: 'Редактирование схемы', text: 'Кисть, заливка и ластик, копирование и вставка, отмена любого шага.' },
+      convertImage: { name: 'Конвертировать изображение', text: 'Превращает картинку в схему, до 14 цветов.' },
+      rowProgress: { name: 'Прогресс по рядам', text: 'Отмечайте готовые ряды и продолжайте с того места, где остановились.' },
+      beadsNeeded: { name: 'Нужно бисера', text: 'Подсчёт по каждому цвету и примерный вес в граммах.' },
+      exports: { name: 'Экспорт', text: 'PDF для печати, PNG, QR-код и файл схемы.' },
+      savedPatterns: { name: 'Сохранённые схемы', text: 'Хранятся на этом устройстве. Аккаунт не нужен.' },
+    },
   },
   contextBar: {
     label: 'Действия с выделением',

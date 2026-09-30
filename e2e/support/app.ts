@@ -16,6 +16,8 @@ export async function openApp(page: Page, patterns: Pattern[]): Promise<void> {
       { key: STORAGE_KEY, value: stored },
     )
   }
+  // An empty library would otherwise send a new visitor to the Overview (ticket 77); these checks are about the editor.
+  await page.addInitScript(() => sessionStorage.setItem('bd-beads:editor-chosen', '1'))
   await page.goto('./')
   await page.getByTestId('app-topbar').waitFor()
   // The app's line height is 145% of 18px, which puts everything below the first line of text at a fractional pixel

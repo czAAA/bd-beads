@@ -128,6 +128,26 @@ describe('App at the iPad mini tier (ticket 168)', () => {
       expect(wrapper.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(true)
     })
 
+    it('ends with an Overview link to the Overview page', async () => {
+      const wrapper = mount(App)
+
+      await wrapper.find('[data-testid="header-menu"]').trigger('click')
+      const item = wrapper.find('[data-testid="menu-item-overview"]')
+      expect(item.element.tagName).toBe('A')
+      expect(item.attributes('href')).toMatch(/overview\/$/)
+      expect(item.text()).toBe('Overview')
+    })
+
+    it('holds only Overview at 1024px and up', async () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1024px)': true }).matchMedia)
+      const wrapper = mount(App)
+
+      await wrapper.find('[data-testid="header-menu"]').trigger('click')
+      expect(wrapper.find('[data-testid="menu-item-overview"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="menu-import-file"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="menu-item-name-on-exports"]').exists()).toBe(false)
+    })
+
     it('imports through its own PatternImport, which shows the result as a toast rather than inline', async () => {
       const wrapper = mount(App)
       const patterns = [createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Fox' })]

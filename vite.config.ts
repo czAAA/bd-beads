@@ -1,3 +1,4 @@
+import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
@@ -9,6 +10,11 @@ export default defineConfig(({ mode }) => ({
   // server stays at /.
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   plugins: [vue()],
+  build: {
+    // Two pages: the editor and the Overview (ticket 77), which is a folder with its own index.html so a static host
+    // serves /overview/ with no rewrite rules (ADR 0022).
+    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), overview: resolve(import.meta.dirname, 'overview/index.html') } },
+  },
   test: {
     environment: 'jsdom',
     globals: false,

@@ -4,8 +4,16 @@ import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
-/** One item of an AppMenu (Menu card): 34px, an icon and a label; choosing it runs `select` and closes the menu. */
-const props = withDefaults(defineProps<{ icon?: IconName; disabled?: boolean }>(), { icon: undefined, disabled: false })
+/**
+ * One item of an AppMenu (Menu card): 34px, an icon and a label; choosing it runs `select` and closes the menu. With an
+ * `href` it is a link (HeaderMenu card: Overview is navigation, not an action), so the browser follows it itself.
+ */
+const props = withDefaults(defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean }>(), {
+  icon: undefined,
+  disabled: false,
+  href: undefined,
+  current: false,
+})
 const emit = defineEmits<{ select: [] }>()
 const closeMenu = inject(MENU_CLOSE, () => {})
 
@@ -17,7 +25,11 @@ function onClick() {
 </script>
 
 <template>
-  <button class="ui-control app-menu-item" type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="onClick">
+  <a v-if="href" class="ui-control app-menu-item" :href="href" role="menuitem" tabindex="-1" :aria-current="current ? 'page' : undefined" @click="onClick">
+    <AppIcon v-if="icon" :name="icon" :size="16" />
+    <span class="app-menu-item__label"><slot /></span>
+  </a>
+  <button v-else class="ui-control app-menu-item" type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="onClick">
     <AppIcon v-if="icon" :name="icon" :size="16" />
     <span class="app-menu-item__label"><slot /></span>
   </button>
@@ -35,6 +47,7 @@ function onClick() {
   font: var(--type-control);
   color: var(--ink);
   text-align: left;
+  text-decoration: none;
   white-space: nowrap;
   background: none;
   border: 0;

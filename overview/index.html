@@ -7,10 +7,9 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- viewport-fit=cover (ticket 166; responsive.md "Screen edges and height") lets env(safe-area-inset-*) read real insets. -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>bd-beads</title>
-    <!-- Before first paint: the theme (src/theme/theme.ts has the same rules) and the language, so neither flashes. -->
+    <title>Overview · bd-beads</title>
+    <!-- Before first paint: the theme and the language, exactly as the editor's index.html does, so neither flashes. -->
     <script>
       (function () {
         var root = document.documentElement
@@ -36,6 +35,6 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/overview/overview.ts"></script>
   </body>
 </html>

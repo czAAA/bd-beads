@@ -117,11 +117,31 @@ export interface Translations {
   header: {
     toolsButton: string
     menuButton: string
+    overviewItem: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Patterns, New Pattern, Import. */
     patternSheetLabel: string
     newPatternSheetTitle: string
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
+  overview: {
+    pageTitle: string
+    sloganLead: string
+    sloganLast: string
+    tagline: string
+    makeFirstPattern: string
+    openEditor: string
+    patternsSaved: string
+    whatsInside: string
+    features: {
+      techniques: { name: string; text: string }
+      patternEditing: { name: string; text: string }
+      convertImage: { name: string; text: string }
+      rowProgress: { name: string; text: string }
+      beadsNeeded: { name: string; text: string }
+      exports: { name: string; text: string }
+      savedPatterns: { name: string; text: string }
+    }
+  }
   contextBar: {
     label: string
     clearButton: string

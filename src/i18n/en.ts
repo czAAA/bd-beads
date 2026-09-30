@@ -105,8 +105,28 @@ export const en: Translations = {
   header: {
     toolsButton: 'Tools',
     menuButton: 'Menu',
+    overviewItem: 'Overview',
     patternSheetLabel: 'Pattern',
     newPatternSheetTitle: 'New Pattern',
+  },
+  overview: {
+    pageTitle: 'Overview',
+    sloganLead: 'Draw. Joy.',
+    sloganLast: 'Weave.',
+    tagline: 'save. count. export',
+    makeFirstPattern: 'Make your first Pattern',
+    openEditor: 'Open the editor',
+    patternsSaved: 'Patterns saved: {count}',
+    whatsInside: "What's inside",
+    features: {
+      techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
+      patternEditing: { name: 'Pattern editing', text: 'Paint, Fill and Erase, copy and paste, and Undo for every step.' },
+      convertImage: { name: 'Convert image', text: 'Turn a picture into a Pattern in up to 14 colors.' },
+      rowProgress: { name: 'Row progress', text: 'Mark rows done as you weave and pick up where you stopped.' },
+      beadsNeeded: { name: 'Beads needed', text: 'Every color counted, with Estimated weight in grams.' },
+      exports: { name: 'Exports', text: 'PDF for printing, PNG image, QR code and the Pattern file.' },
+      savedPatterns: { name: 'Saved Patterns', text: 'Kept on this device. No account needed.' },
+    },
   },
   contextBar: {
     label: 'Selection actions',

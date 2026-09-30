@@ -15,7 +15,9 @@ import PhoneThemeButton from './PhoneThemeButton.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../composables/useAppShell'
 import { useFitByPriority } from '../composables/useFitByPriority'
+import { useMediaQuery } from '../composables/useMediaQuery'
 import { summarizePattern } from '../domain/pattern'
+import { overviewUrl } from '../overview/overviewRoute'
 import { beadLabel } from '../domain/beads'
 import { useThemePick } from '../theme/useThemePick'
 import type { IconName } from './icons'
@@ -49,6 +51,10 @@ const {
 /** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
 const headerEl = ref<HTMLElement>()
 const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activePattern.value])
+
+/** At 1024px and up the header's own controls stay where they are, so the menu holds only its links (HeaderMenu card). */
+const wide = useMediaQuery('(min-width: 1024px)')
+const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
 /** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the header menu. */
 const THEME_ICONS: Record<string, IconName> = { device: 'device', light: 'sun', dark: 'moon', contrast: 'contrast' }
@@ -91,8 +97,8 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
       The header menu (ticket 210; HeaderMenu card), next to the logo at every size, replacing the header menu (ticket
       168, 79). 744-1023px: Import a file/QR code, Language, Theme and Name on exports; below 744px it drops Import
       (the Pattern sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
-      the theme sheet. At 1024px and up it would hold only Overview and Take the tour (tickets 77, 80), so the button
-      stays hidden there until one of them lands.
+      the theme sheet. Every tier ends with a rule and Overview (ticket 77; Take the tour joins it in ticket 80); at
+      1024px and up those are all it holds.
     -->
     <span class="app-header__menu">
       <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
@@ -106,6 +112,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
           </span>
           <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
         </p>
+        <template v-if="!wide">
         <AppMenuItem class="app-header__menu-theme-item" icon="device" data-testid="menu-item-theme" @select="themeSheetOpen = true">
           {{ t.theme.groupLabel }}
         </AppMenuItem>
@@ -124,14 +131,17 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         <AppMenuItem class="app-header__menu-shortcuts" icon="keyboard" data-testid="menu-item-shortcuts" @select="shortcutsHelpOpen = true">
           {{ t.shortcutsHelp.title }}
         </AppMenuItem>
-        <template #footer>
-          <div class="app-header__menu-row" data-testid="menu-item-name-on-exports">
-            <span class="app-header__menu-label">{{ t.saveBox.nameOnExports }}</span>
-            <AppMenuItem data-testid="menu-item-name-on-exports-change" @select="nameOnExportsOpen = true">
-              {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
-            </AppMenuItem>
-          </div>
+        <div class="app-header__menu-row" data-testid="menu-item-name-on-exports">
+          <span class="app-header__menu-label">{{ t.saveBox.nameOnExports }}</span>
+          <AppMenuItem data-testid="menu-item-name-on-exports-change" @select="nameOnExportsOpen = true">
+            {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
+          </AppMenuItem>
+        </div>
+        <div class="app-header__menu-rule" role="separator" />
         </template>
+        <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
+          {{ t.header.overviewItem }}
+        </AppMenuItem>
       </AppMenu>
     </span>
 
@@ -328,11 +338,16 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   }
 }
 
-/* Nothing to hold at 1024px and up until Overview and Take the tour land (tickets 77, 80). */
+/* At 1024px and up the menu is shown too (ticket 77): it holds Overview (and, from ticket 80, Take the tour). */
 @media (min-width: 1024px) {
   .app-header__menu {
-    display: none;
+    display: inline-flex;
   }
+}
+
+.app-header__menu-rule {
+  margin: var(--space-4) 0;
+  border-top: 1px solid var(--line-soft);
 }
 
 @media (min-width: 744px) and (max-width: 1023px) {
