@@ -81,9 +81,9 @@ export const LIGHT_THEME: PatternTheme = {
 
 /** The dark theme: no rim, finished rows in grey. */
 export const DARK_THEME: PatternTheme = {
-  background: '#1a1a1a',
+  background: '#202020',
   rim: null,
-  emptyBead: '#2a2a2a',
+  emptyBead: '#3c3c3c',
   seam: '#888888',
   marker: '#faff69',
   outline: '#ffffff',
