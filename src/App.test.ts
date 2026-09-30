@@ -1351,6 +1351,18 @@ describe('App keyboard shortcuts', () => {
     },
   )
 
+  it('Escape switches Fill back to Paint, and with Paint already active changes nothing (ticket 214)', async () => {
+    const wrapper = mountAppForCleanup()
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+    await pressKey({ key: 'Escape' })
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-tab--active')
+
+    await pressKey({ key: 'Escape' })
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-tab--active')
+  })
+
   it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
     const wrapper = mount(App)
     await paintFirstCell(wrapper)

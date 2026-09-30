@@ -123,14 +123,17 @@ export function useSelectionGesture(
   /**
    * Right-click or Escape under Select backs out one step at a time (ticket 49): an active paste projection goes
    * first (see dismissPaste); with none active, the Selection itself goes. The app shell calls this last, after its
-   * own Escape precedence against confirmation modals and an expanded Tool group (ticket 63 decision).
+   * own Escape precedence against confirmation modals and an expanded Tool group (ticket 63 decision). Returns
+   * whether there was anything to back out of, so Escape can fall through to selecting Paint (ticket 214).
    */
-  function cancel() {
+  function cancel(): boolean {
     if (pasteProjectionActive.value) {
       dismissPaste()
-    } else {
-      selection.value = undefined
+      return true
     }
+    if (!selection.value) return false
+    selection.value = undefined
+    return true
   }
 
   /**

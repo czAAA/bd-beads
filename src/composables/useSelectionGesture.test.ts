@@ -209,7 +209,8 @@ describe('useSelectionGesture', () => {
       const { gesture, commitGridChange } = setup(pattern)
       copyTopLeft(gesture)
 
-      gesture.cancel()
+      expect(gesture.cancel()).toBe(true)
+      expect(gesture.cancel()).toBe(false)
 
       expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
       expect(gesture.pasteAt({ row: 1, column: 1 })).toBe(true)

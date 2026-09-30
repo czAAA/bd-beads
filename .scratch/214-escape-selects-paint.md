@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** asked; not added to either (small polish change).
 
-- [ ] With Fill, Select or Eraser active and nothing to dismiss, Escape makes Paint active
-- [ ] With something to dismiss (open disclosure, expanded group, Selection, paste preview), Escape dismisses it and leaves the tool alone; a further Escape then switches to Paint
-- [ ] Escape with Paint already active does nothing new
-- [ ] Escape typed into a text field or while a modal is open keeps its current behavior
-- [ ] The keyboard shortcuts list mentions Escape selecting Paint
-- [ ] CONTEXT.md's Selection/Paste wording about Escape stays accurate
+- [x] With Fill, Select or Eraser active and nothing to dismiss, Escape makes Paint active
+- [x] With something to dismiss (open disclosure, expanded group, Selection, paste preview), Escape dismisses it and leaves the tool alone; a further Escape then switches to Paint
+- [x] Escape with Paint already active does nothing new
+- [x] Escape typed into a text field or while a modal is open keeps its current behavior
+- [x] The keyboard shortcuts list mentions Escape selecting Paint
+- [x] CONTEXT.md's Selection/Paste wording about Escape stays accurate

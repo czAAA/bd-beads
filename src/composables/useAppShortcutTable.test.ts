@@ -11,7 +11,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     collapseExpandedToolGroup: () => false,
-    backOutOfSelect: vi.fn(),
+    backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     onSelectTool: vi.fn(),
@@ -84,6 +84,30 @@ describe('useAppShortcutTable', () => {
     press({ key: 'Escape' })
     expect(other.deps.backOutOfSelect).toHaveBeenCalled()
     other.wrapper.unmount()
+  })
+
+  it('Escape with nothing to dismiss selects Paint from any other tool', () => {
+    for (const tool of ['fill', 'select', 'erase'] as const) {
+      const { deps, wrapper } = mountTable({ activeTool: () => tool })
+      press({ key: 'Escape' })
+      expect(deps.onSelectTool).toHaveBeenCalledWith('paint')
+      wrapper.unmount()
+    }
+    const paint = mountTable()
+    press({ key: 'Escape' })
+    expect(paint.deps.onSelectTool).not.toHaveBeenCalled()
+    paint.wrapper.unmount()
+  })
+
+  it('Escape leaves the tool alone when it dismissed something', () => {
+    const backed = mountTable({ activeTool: () => 'select', backOutOfSelect: vi.fn(() => true) })
+    press({ key: 'Escape' })
+    expect(backed.deps.onSelectTool).not.toHaveBeenCalled()
+    backed.wrapper.unmount()
+    const group = mountTable({ activeTool: () => 'fill', collapseExpandedToolGroup: () => true })
+    press({ key: 'Escape' })
+    expect(group.deps.onSelectTool).not.toHaveBeenCalled()
+    group.wrapper.unmount()
   })
 
   it('Ctrl+S saves only while a Pattern is open', () => {

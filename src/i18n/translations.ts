@@ -465,6 +465,7 @@ export interface Translations {
     closeButton: string
     /** Ticket 90: Del either activates Eraser or clears the active Selection, depending on context. */
     eraseOrClearSelection: string
+    escapeSelectsPaint: string
     /** Ticket 95: Space+drag. */
     panCanvas: string
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */

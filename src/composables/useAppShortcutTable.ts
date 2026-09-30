@@ -14,7 +14,8 @@ export interface AppShortcutTableDeps {
   anyDialogOpen: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
   collapseExpandedToolGroup: () => boolean
-  backOutOfSelect: () => void
+  /** Dismisses the paste preview, else clears the Selection; true if either was there. */
+  backOutOfSelect: () => boolean
   onUndo: () => void
   onRedo: () => void
   onSelectTool: (tool: Tool) => void
@@ -99,7 +100,13 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         if (deps.collapseExpandedToolGroup()) {
           return
         }
-        deps.backOutOfSelect()
+        if (deps.backOutOfSelect()) {
+          return
+        }
+        // ticket 214: an Escape with nothing left to dismiss falls through to the default tool.
+        if (deps.activeTool() !== 'paint') {
+          deps.onSelectTool('paint')
+        }
       },
     },
     {

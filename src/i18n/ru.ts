@@ -425,6 +425,7 @@ export const ru: Translations = {
     title: 'Горячие клавиши',
     closeButton: 'Закрыть',
     eraseOrClearSelection: 'Инструмент «Ластик» или очистить выделение',
+    escapeSelectsPaint: 'Вернуться к инструменту «Кисть»',
     panCanvas: 'Перемещать холст',
     paletteColors: 'Выбрать цвет палитры, по порядку палитры',
   },

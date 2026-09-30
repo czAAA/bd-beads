@@ -423,6 +423,7 @@ export const en: Translations = {
     title: 'Keyboard shortcuts',
     closeButton: 'Close',
     eraseOrClearSelection: 'Eraser tool, or clear the Selection',
+    escapeSelectsPaint: 'Back to the Paint tool',
     panCanvas: 'Pan the canvas',
     paletteColors: 'Select a Palette color, in Palette order',
   },
