@@ -79,5 +79,5 @@ export function useNewPatternFlow(deps: NewPatternFlowDeps) {
     deps.cancelConvertImage()
   }
 
-  return { framing, onNewPatternDraft, onCreatePattern, onConvertImageCreate }
+  return { framing, newPatternDraft, onNewPatternDraft, onCreatePattern, onConvertImageCreate }
 }

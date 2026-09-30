@@ -90,6 +90,7 @@ const tipOpen = ref(false)
       type="button"
       class="size-controls__change"
       data-testid="size-change-size"
+      data-tour="change-size"
       :aria-disabled="locked"
       :aria-describedby="locked ? lockedNoteId : undefined"
       :title="locked ? t.size.lockedReason : undefined"

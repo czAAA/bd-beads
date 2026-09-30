@@ -34,6 +34,7 @@ function isStop(colorId: string, index: number): boolean {
       :aria-pressed="color.id === selectedColorId"
       :tabindex="roving.tabIndexFor(isStop(color.id, index))"
       data-testid="palette-swatch"
+      :data-tour="`color-${color.id}`"
       :data-color-id="color.id"
       @click="emit('select', color.id)"
     />

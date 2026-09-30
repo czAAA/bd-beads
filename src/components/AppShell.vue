@@ -7,6 +7,7 @@ import AppHeader from './AppHeader.vue'
 import AppSidebar from './AppSidebar.vue'
 import CanvasPanel from './CanvasPanel.vue'
 import PhoneSheets from './PhoneSheets.vue'
+import TourLayer from './TourLayer.vue'
 import { useAppShell } from '../composables/useAppShell'
 
 const {
@@ -59,6 +60,8 @@ const {
     <PhoneSheets />
 
     <AppDialogs />
+
+    <TourLayer />
   </div>
 </template>
 

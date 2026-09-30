@@ -111,6 +111,7 @@ function onConfirm() {
     :confirm-disabled="!plan.ok"
     :message-error="!plan.ok"
     data-testid="change-size-modal"
+    data-tour="change-size-dialog"
     @confirm="onConfirm"
     @cancel="emit('cancel')"
   >

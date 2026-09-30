@@ -138,6 +138,7 @@ function onLabelClick(label: RulerLabel) {
     class="pattern-ruler"
     :class="[`pattern-ruler--${axis}`, `pattern-ruler--${edge}`]"
     :data-testid="`pattern-ruler-${axis}-${edge}`"
+    data-tour="ruler"
     :style="gutterStyle"
   >
     <button

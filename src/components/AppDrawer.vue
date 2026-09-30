@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { inTourCard } from '../composables/tourDom'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useEscapeLayer } from '../composables/useEscapeLayer'
 import { useMediaQuery } from '../composables/useMediaQuery'
@@ -74,7 +75,7 @@ function onKeydown(event: KeyboardEvent) {
 function onFocusIn(event: FocusEvent) {
   if (!trapActive.value) return
   const target = event.target as Node | null
-  if (drawerEl.value && target && !drawerEl.value.contains(target)) {
+  if (drawerEl.value && target && !drawerEl.value.contains(target) && !inTourCard(target)) {
     ;(initialFocusable() ?? focusables()[0] ?? drawerEl.value)?.focus()
   }
 }

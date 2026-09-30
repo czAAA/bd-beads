@@ -41,7 +41,7 @@ const directionLabel = computed(() =>
 
 <template>
   <div class="progress-bar" :class="{ 'progress-bar--off': !enabled }" data-testid="progress-bar">
-    <AppSwitch v-model="enabled" :label="t.rowProgress.enabledLabel" data-testid="progress-bar-switch" />
+    <AppSwitch v-model="enabled" :label="t.rowProgress.enabledLabel" data-testid="progress-bar-switch" data-tour="progress-switch" />
 
     <template v-if="enabled">
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
@@ -81,6 +81,7 @@ const directionLabel = computed(() =>
         variant="box"
         icon="chevron-left"
         data-testid="progress-bar-previous"
+        data-tour="progress-previous"
         :title="`${t.rowProgress.previousButton} (Shift+Enter, Shift+Space)`"
         :disabled="position.current === 0"
         @click="emit('move-row', -1)"
@@ -93,6 +94,7 @@ const directionLabel = computed(() =>
         icon="chevron-left"
         :label="t.rowProgress.previousButton"
         data-testid="progress-bar-previous-compact"
+        data-tour="progress-previous"
         :disabled="position.current === 0"
         @click="emit('move-row', -1)"
       />
@@ -101,6 +103,7 @@ const directionLabel = computed(() =>
         variant="primary"
         icon="check"
         data-testid="progress-bar-next"
+        data-tour="progress-next"
         :title="`${t.rowProgress.nextButton} (Enter, Space)`"
         :disabled="position.current === position.total - 1"
         @click="emit('move-row', 1)"
@@ -113,6 +116,7 @@ const directionLabel = computed(() =>
         icon="check"
         :label="t.rowProgress.nextButton"
         data-testid="progress-bar-next-compact"
+        data-tour="progress-next"
         :disabled="position.current === position.total - 1"
         @click="emit('move-row', 1)"
       />

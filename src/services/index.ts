@@ -5,6 +5,7 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
 import { browserThemePickStore, type ThemePickStore } from './themeStore'
+import { browserTourStore, type TourStore } from './tourStore'
 
 /**
  * Everything that reaches outside the page's own memory (ADR 0020), as one bundle for the app shell to wire into the
@@ -18,6 +19,7 @@ export interface Services {
   makerNameStore: MakerNameStore
   themePickStore: ThemePickStore
   localeStore: LocaleStore
+  tourStore: TourStore
 }
 
 export const browserServices: Services = {
@@ -27,4 +29,5 @@ export const browserServices: Services = {
   makerNameStore: browserMakerNameStore,
   themePickStore: browserThemePickStore,
   localeStore: browserLocaleStore,
+  tourStore: browserTourStore,
 }

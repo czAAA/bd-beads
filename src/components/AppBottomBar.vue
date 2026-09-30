@@ -53,7 +53,7 @@ const {
     with the drawing tools. The BottomToolbar (iPad mini) is always rendered independently.
   -->
   <div v-if="!framing && !activePattern" class="app-shell__phone-pattern-bar" data-testid="phone-pattern-bar">
-    <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-pattern" @click="phoneNewPatternOpen = true">
+    <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-pattern" data-tour="phone-new-pattern" @click="phoneNewPatternOpen = true">
       {{ t.patterns.newPatternButton }}
     </AppButton>
     <PatternImport :decode-image="decodeImage" compact toast-results :patterns="patterns" testid-prefix="phone-bar-" @import="onImportPatterns" @import-result="onImportToast" />

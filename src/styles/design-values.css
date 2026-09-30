@@ -15,6 +15,10 @@
   --hover-fill: var(--surface);
   --press-fill: var(--line);
   --focus-width: 2px;
+  --tour-dim: rgba(0, 0, 0, .26);
+  --tour-ring-width: 2.5px;
+  --tour-glow: 0 0 8px color-mix(in srgb, var(--tour-highlight) 38%, transparent);
+  --tour-card-line-width: 1px;
 }
 
 :root[data-theme="dark"] {
@@ -28,6 +32,10 @@
   --hover-fill: var(--elevated);
   --press-fill: var(--line-strong);
   --focus-width: 2px;
+  --tour-dim: rgba(0, 0, 0, .55);
+  --tour-ring-width: 2.5px;
+  --tour-glow: 0 0 8px color-mix(in srgb, var(--tour-highlight) 38%, transparent);
+  --tour-card-line-width: 1px;
 }
 
 :root[data-theme="contrast"] {
@@ -41,6 +49,10 @@
   --hover-fill: #f0f0f0;
   --press-fill: #d4d4d4;
   --focus-width: 3px;
+  --tour-dim: rgba(0, 0, 0, .26);
+  --tour-ring-width: 3px;
+  --tour-glow: none;
+  --tour-card-line-width: 2px;
 }
 
 :root {

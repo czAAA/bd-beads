@@ -15,6 +15,8 @@ import {
 import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../domain/imageFraming'
 import { MAX_MAKER_NAME } from '../domain/makerName'
 import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../domain/patternSize'
+import { useTourFormReset } from '../composables/useTour'
+import { TOUR_COLUMNS, TOUR_ROWS } from '../domain/tour'
 import { useI18n } from '../i18n/useI18n'
 import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
@@ -70,6 +72,18 @@ const heightText = ref('')
 const makerName = ref('')
 /** Beads by default (ADR 0017): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
 const unit = ref<SizeUnit>('beads')
+
+/** The Tour's "Back to loom for your first Pattern" (ticket 80): Loom, the default Bead and the Tour Pattern's size, with the Name left as typed. */
+const tourReset = useTourFormReset()
+if (tourReset) {
+  watch(tourReset, () => {
+    technique.value = 'loom'
+    beadId.value = props.beads[0]!.id
+    unit.value = 'beads'
+    widthText.value = String(TOUR_COLUMNS)
+    heightText.value = String(TOUR_ROWS)
+  })
+}
 
 /** The form's own root, so the Name input can be found and focused without a global id lookup (ticket 181). */
 const formEl = ref<HTMLFormElement>()
@@ -266,7 +280,7 @@ function onDropImage(file: File) {
     size in the other unit beside it, a computed bead-to-real-world conversion row for both axes (ticket 179), Create
     Pattern, then "or" and Convert image. Create and Convert both wait for a size; its reason is written at the field.
   -->
-  <form ref="formEl" class="new-pattern-form" novalidate @submit.prevent="onSubmit">
+  <form ref="formEl" class="new-pattern-form" data-tour="new-pattern" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
       <TextField id="name-input" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
     </FormField>

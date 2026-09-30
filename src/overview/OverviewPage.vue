@@ -22,7 +22,7 @@ const props = defineProps<{
   /** This page's own address, for the header menu's Overview item. */
   overviewHref: string
 }>()
-const emit = defineEmits<{ makeFirstPattern: []; openEditor: [] }>()
+const emit = defineEmits<{ makeFirstPattern: []; openEditor: []; takeTour: [] }>()
 
 const { t } = provideI18n()
 watchEffect(() => {
@@ -55,6 +55,9 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
         <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
           <AppMenuItem icon="bead" :href="overviewHref" current data-testid="menu-item-overview">
             {{ t.header.overviewItem }}
+          </AppMenuItem>
+          <AppMenuItem icon="info" data-testid="menu-item-tour" @select="emit('takeTour')">
+            {{ t.header.tourItem }}
           </AppMenuItem>
         </AppMenu>
       </span>

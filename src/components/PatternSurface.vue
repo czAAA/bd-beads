@@ -5,7 +5,7 @@ import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
 import type { Pattern } from '../domain/pattern'
 import { beadAt } from '../rendering/hitTest'
-import { renderOverlay } from '../rendering/overlayRenderer'
+import { renderOverlay, type TourMarks } from '../rendering/overlayRenderer'
 import { PATTERN_THEMES, type PatternTheme } from '../rendering/beadLook'
 import { displayedExtentPx, renderPattern } from '../rendering/patternRenderer'
 import { contains, drawingWindow, type Rect } from '../rendering/surfaceWindow'
@@ -41,6 +41,8 @@ const props = defineProps<{
   dimmedCells?: GridPosition[]
   /** The keyboard's bead cursor (ticket 159), drawn only while the surface has keyboard focus. */
   cursor?: GridPosition
+  /** What the Tour marks on the Pattern (ticket 80), drawn dashed over the beads. */
+  tourMarks?: TourMarks
   /** The Pattern's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
 }>()
@@ -358,6 +360,7 @@ function drawOverlay(): void {
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
+      tourMarks: props.tourMarks,
     })
   }
 }
@@ -389,6 +392,7 @@ watch(
     () => props.mirrorAxisCounts,
     () => props.dimmedCells,
     () => props.cursor,
+    () => props.tourMarks,
     theme,
   ],
   drawOverlay,
@@ -498,6 +502,7 @@ defineExpose({ update })
     ref="rootEl"
     class="pattern-surface"
     data-testid="pattern-surface"
+    data-tour="board"
     :data-technique="pattern.technique"
     :data-columns="pattern.columns"
     :data-rows="pattern.rows"

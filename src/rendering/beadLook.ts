@@ -28,6 +28,11 @@ export type DrawingContext = Pick<
   | 'fill'
   | 'fillStyle'
   | 'globalAlpha'
+  | 'stroke'
+  | 'strokeStyle'
+  | 'lineWidth'
+  | 'lineCap'
+  | 'setLineDash'
 >
 
 /**
@@ -56,6 +61,8 @@ export interface PatternTheme {
   /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
   cursor: string
   cursorWidth: number
+  /** The dashed outline the Tour puts on beads to paint and on frames to select or paste into (`tour-highlight`; black in high contrast). */
+  tourMark: string
 }
 
 /** The light theme (BeadBoard card). */
@@ -69,6 +76,7 @@ export const LIGHT_THEME: PatternTheme = {
   finished: { grey: false, opacity: 0.28 },
   cursor: '#c23604',
   cursorWidth: 2,
+  tourMark: '#f2c94c',
 }
 
 /** The dark theme: no rim, finished rows in grey. */
@@ -82,6 +90,7 @@ export const DARK_THEME: PatternTheme = {
   finished: { grey: true, opacity: 0.45 },
   cursor: '#faff69',
   cursorWidth: 2,
+  tourMark: '#f2c94c',
 }
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
@@ -95,6 +104,7 @@ export const CONTRAST_THEME: PatternTheme = {
   finished: { grey: false, opacity: 0.28 },
   cursor: '#000000',
   cursorWidth: 3,
+  tourMark: '#000000',
 }
 
 /** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */

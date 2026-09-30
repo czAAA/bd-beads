@@ -139,6 +139,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
 | `outline` | `bead-outline` |
+| `tourMark` | `tour-highlight` (the Tour's dashed marks on beads to paint and frames to select or paste into, drawn over a `bead-outline` underlay so they read on a gold bead too) |
 
 Ticket 140 adds a test that keeps each theme's `PatternTheme` equal to `tokens.json`, so a token refresh can't leave
 the canvas behind.

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { inTourCard } from '../composables/tourDom'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useAnchoredPosition } from '../composables/useAnchoredPosition'
 import { useEscapeLayer } from '../composables/useEscapeLayer'
@@ -48,7 +49,7 @@ const popoverEl = ref<HTMLElement>()
 const anchored = useAnchoredPosition(buttonEl, popoverEl, () => 'start')
 
 function onPointerDownOutside(event: PointerEvent) {
-  if (rootEl.value && !rootEl.value.contains(event.target as Node)) close(false)
+  if (rootEl.value && !rootEl.value.contains(event.target as Node) && !inTourCard(event.target)) close(false)
 }
 
 function close(returnFocus = true) {
@@ -89,6 +90,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       class="ui-control bottom-toolbar__item"
       :class="{ 'bottom-toolbar__item--active': activeTool === tool.id }"
       :data-testid="`bottom-toolbar-${tool.id}`"
+      :data-tour="`tool-${tool.id}`"
       :aria-pressed="activeTool === tool.id"
       @click="emit('select-tool', tool.id)"
     >
@@ -101,6 +103,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       type="button"
       class="ui-control bottom-toolbar__item"
       data-testid="bottom-toolbar-color"
+      data-tour="bottom-color"
       aria-haspopup="true"
       :aria-expanded="open"
       :aria-label="t.toolbox.groups.colors"
@@ -114,6 +117,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       type="button"
       class="ui-control bottom-toolbar__item"
       data-testid="bottom-toolbar-undo"
+      data-tour="undo"
       :disabled="!canUndo"
       @click="emit('undo')"
     >

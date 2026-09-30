@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { inTourCard } from '../composables/tourDom'
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useEscapeLayer } from '../composables/useEscapeLayer'
 import { useI18n } from '../i18n/useI18n'
@@ -62,7 +63,7 @@ function onKeydown(event: KeyboardEvent) {
 
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
-  if (sheetEl.value && target && !sheetEl.value.contains(target)) {
+  if (sheetEl.value && target && !sheetEl.value.contains(target) && !inTourCard(target)) {
     ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
   }
 }
@@ -70,7 +71,7 @@ function onFocusIn(event: FocusEvent) {
 /** A light sheet closes on a press anywhere outside it -- "tapping the Pattern" is one case of this, not a special one. */
 function onPointerDownOutside(event: PointerEvent) {
   if (props.modal) return
-  if (sheetEl.value && !sheetEl.value.contains(event.target as Node)) emit('close')
+  if (sheetEl.value && !sheetEl.value.contains(event.target as Node) && !inTourCard(event.target)) emit('close')
 }
 
 onMounted(() => {

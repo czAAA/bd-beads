@@ -118,6 +118,7 @@ const sizeSummary = computed(() => {
           class="ui-control tool-tab"
           :class="{ 'tool-tab--active': activeTool === tool.id }"
           :data-testid="`tool-${tool.id}`"
+          :data-tour="`tool-${tool.id}`"
           :title="tool.hotkey ? `${tool.label} (${tool.hotkey})` : tool.label"
           :aria-pressed="activeTool === tool.id"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id)"
@@ -131,6 +132,7 @@ const sizeSummary = computed(() => {
         <AppLink
           icon="remove-line"
           data-testid="tool-remove-line"
+          data-tour="remove-line"
           :title="t.tools.removeLineButton"
           :disabled="!canRemoveSelectedLine"
           @click="emit('remove-selected-line')"
@@ -166,7 +168,7 @@ const sizeSummary = computed(() => {
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton icon="undo" variant="toolbox" size="lg" :icon-size="17" :label="t.palette.undoButton" data-testid="undo-button" :disabled="!canUndo" @click="emit('undo')" />
+        <IconButton icon="undo" variant="toolbox" size="lg" :icon-size="17" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
         <IconButton icon="redo" variant="toolbox" size="lg" :icon-size="17" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
         <IconButton
           icon="rotate"
@@ -187,6 +189,7 @@ const sizeSummary = computed(() => {
           :label="t.tools.copyButton"
           :title="`${t.tools.copyButton} (Ctrl/Cmd+C)`"
           data-testid="copy-button"
+          data-tour="copy"
           :disabled="!canCopy"
           @click="emit('copy')"
         />
@@ -201,6 +204,7 @@ const sizeSummary = computed(() => {
         :label="t.toolbox.groups.size"
         :summary="sizeSummary"
         data-testid="tool-group-size"
+        data-tour="size-row"
       >
         <SizeControls :pattern="pattern" @change-size="emit('change-size')" />
       </DisclosureRow>

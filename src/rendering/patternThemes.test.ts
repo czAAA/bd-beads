@@ -17,6 +17,7 @@ const FIELDS: Record<Exclude<keyof PatternTheme, 'rim' | 'finished' | 'cursorWid
   marker: 'marker',
   outline: 'bead-outline',
   cursor: 'focus-ring',
+  tourMark: 'tour-highlight',
 }
 
 describe('PatternTheme', () => {

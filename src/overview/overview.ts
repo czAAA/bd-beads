@@ -8,7 +8,7 @@ import '../style.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadPatterns } from '../services/libraryStore'
-import { saveTourStatus } from '../services/tourStore'
+import { saveTourProgress, saveTourStatus } from '../services/tourStore'
 import { markEditorChosen, overviewUrl } from './overviewRoute'
 import OverviewPage from './OverviewPage.vue'
 
@@ -33,5 +33,11 @@ createApp({
         goToEditor()
       },
       onOpenEditor: goToEditor,
+      // The menu's Take the tour starts over from step 1, whatever was done before.
+      onTakeTour: () => {
+        saveTourProgress({ done: [] })
+        saveTourStatus('running')
+        goToEditor()
+      },
     }),
 }).mount('#app')

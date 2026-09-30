@@ -42,6 +42,7 @@ const {
   spaceHeld,
   spacePanning,
   previewColor,
+  tour,
   selection,
   pasteProjectionActive,
   onCopy,
@@ -122,7 +123,7 @@ function techniqueWord(technique: Technique): string {
         />
 
         <div class="app-shell__canvas-row">
-          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activePattern && !framing }">
+          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-tour="canvas" :class="{ 'app-shell__canvas-scroll--empty': !activePattern && !framing }">
             <!--
               Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
               open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
@@ -154,6 +155,7 @@ function techniqueWord(technique: Technique): string {
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
               :cursor="keyboardOnPattern ? beadCursor : undefined"
+              :tour-marks="tour.marks.value"
               :label="patternLabel"
               @cursor-key="onPatternKey"
               @keyup="onPatternKeyUp"

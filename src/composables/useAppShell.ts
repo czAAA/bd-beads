@@ -1,4 +1,5 @@
 import { inject, provide, ref, watch, type InjectionKey } from 'vue'
+import type { CreatePatternInput } from '../domain/pattern'
 import { provideI18n } from '../i18n/useI18n'
 import { useThemePick } from '../theme/useThemePick'
 import { browserServices, type Services } from '../services'
@@ -30,6 +31,7 @@ import { useSpaceDragPan } from './useSpaceDragPan'
 import { useToasts } from './useToasts'
 import { useToolAndColor } from './useToolAndColor'
 import { useToolAtCursor } from './useToolAtCursor'
+import { provideTourFormReset, useTour } from './useTour'
 import { useUndoHistory } from './useUndoHistory'
 
 /**
@@ -103,7 +105,7 @@ function wireAppShell(services: Services) {
   } = useConvertImage()
 
   /** New-Pattern creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
-  const { framing, onNewPatternDraft, onCreatePattern, onConvertImageCreate } = useNewPatternFlow({
+  const { framing, newPatternDraft, onNewPatternDraft, onCreatePattern, onConvertImageCreate } = useNewPatternFlow({
     addPattern,
     convertImage: () => convertImageSource.value,
     cancelConvertImage,
@@ -350,6 +352,41 @@ function wireAppShell(services: Services) {
     toolbox.value = (el as typeof toolbox.value) ?? null
   }
 
+  /**
+   * The Tour (ticket 80): a walk through this same editor, reading the state above and making its edits through the same
+   * commit paths. Its dim layer is drawn by TourLayer; what it needs from the wiring is whether the Pattern is open to
+   * drawing right now, and Create's hand-off in its first step.
+   */
+  const tour = useTour({
+    store: services.tourStore,
+    currentPattern,
+    hasPattern: (id) => patterns.value.some((pattern) => pattern.id === id),
+    openPattern: onSelectPattern,
+    openNewPatternForm: onNewPattern,
+    activeTool: () => activeTool.value,
+    selectedColorId: () => selectedColorId.value,
+    selection: () => selection.value,
+    pasteArmed: () => pasteProjectionActive.value,
+    commitGridChange,
+    replacePattern,
+    undo: onUndo,
+    clearSelection: clearSelectionAndHover,
+    draftName: () => newPatternDraft.value?.name,
+    createPattern: onCreatePattern,
+    showToast,
+    messages,
+  })
+  provideTourFormReset(tour.formResetTick)
+
+  /** While the Tour points somewhere other than the Pattern, the Pattern only scrolls and zooms: nothing on it draws. */
+  function unlessTourLocks<Args extends unknown[]>(handler: (...args: Args) => void) {
+    return (...args: Args) => {
+      if (!tour.canvasLocked.value) {
+        handler(...args)
+      }
+    }
+  }
+
   useAppShortcutTable({
     activePattern: currentPattern,
     activeTool: () => activeTool.value,
@@ -420,10 +457,11 @@ function wireAppShell(services: Services) {
     toasts,
     dismissToast,
     announcement,
+    announce,
     // Creating a Pattern, and framing a picture for one
     framing,
     onNewPatternDraft,
-    onCreatePattern,
+    onCreatePattern: (payload: CreatePatternInput) => onCreatePattern(tour.normalizeCreate(payload)),
     onConvertImageCreate,
     startConvertImage,
     cancelConvertImage,
@@ -472,18 +510,19 @@ function wireAppShell(services: Services) {
     previewedMirrorAxisCounts,
     mirrorCurrentDimmedCells,
     endStroke,
-    onCellPrimaryDown,
-    onCellPrimaryMove,
-    onCellSecondaryDown,
-    onCellSecondaryMove,
+    onCellPrimaryDown: unlessTourLocks(onCellPrimaryDown),
+    onCellPrimaryMove: unlessTourLocks(onCellPrimaryMove),
+    onCellSecondaryDown: unlessTourLocks(onCellSecondaryDown),
+    onCellSecondaryMove: unlessTourLocks(onCellSecondaryMove),
     onCellHover,
     onHoverEnd,
     beadCursor,
     keyboardOnPattern,
     onPatternKeyboardFocus,
-    onPatternKey,
+    onPatternKey: unlessTourLocks(onPatternKey),
     onPatternKeyUp,
     bindToolbox,
+    tour,
     ...rowOps,
     ...deleteAll,
     ...changeSize,

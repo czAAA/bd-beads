@@ -52,6 +52,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       :class="{ 'dock__item--open': openSheet === item.id, 'dock__item--accent': item.id === 'tool' }"
       :aria-pressed="openSheet === item.id"
       :data-testid="item.testid"
+      :data-tour="`dock-${item.id}`"
       @click="emit('select-sheet', item.id)"
     >
       <span v-if="item.id === 'color'" class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />

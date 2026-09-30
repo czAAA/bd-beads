@@ -46,6 +46,7 @@ const {
   themeSheetOpen,
   phoneNewPatternOpen,
   shortcutsHelpOpen,
+  tour,
 } = useAppShell()
 
 /** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
@@ -81,6 +82,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         :label="t.header.toolsButton"
         :selected="drawerOpen"
         data-testid="drawer-open-button"
+        data-tour="header-tools"
         @click="drawerOpen = !drawerOpen"
       />
     </span>
@@ -141,6 +143,9 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         </template>
         <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
           {{ t.header.overviewItem }}
+        </AppMenuItem>
+        <AppMenuItem icon="info" data-testid="menu-item-tour" @select="tour.start()">
+          {{ t.header.tourItem }}
         </AppMenuItem>
       </AppMenu>
     </span>

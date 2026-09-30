@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useEscapeLayer } from '../composables/useEscapeLayer'
+import { inTourCard } from '../composables/tourDom'
 
 /**
  * The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420px for a
@@ -63,7 +64,7 @@ function onKeydown(event: KeyboardEvent) {
 /** Focus that leaves the dialog some other way (a click on the page behind, say) is brought back. */
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
-  if (dialogEl.value && target && !dialogEl.value.contains(target)) {
+  if (dialogEl.value && target && !dialogEl.value.contains(target) && !inTourCard(target)) {
     ;(focusables()[0] ?? dialogEl.value).focus()
   }
 }

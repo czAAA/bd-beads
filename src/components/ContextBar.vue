@@ -49,7 +49,7 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
   >
     <template v-if="!pasteArmed">
       <span class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
-      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-copy" @click="emit('copy')">
+      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')">
         <AppIcon name="copy" :size="16" />
         <span v-if="dropped < 3">{{ t.tools.copyButton }}</span>
       </button>
@@ -61,6 +61,7 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
         type="button"
         class="ui-control context-bar__button"
         data-testid="context-bar-remove-line"
+        data-tour="remove-line"
         :disabled="!canRemoveLine"
         @click="emit('remove-line')"
       >

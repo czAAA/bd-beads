@@ -91,6 +91,7 @@ function toolLabel(tool: Tool): string {
         class="ui-control phone-sheet__tile"
         :class="{ 'phone-sheet__tile--active': activeTool === tool.id }"
         :data-testid="`sheet-tool-${tool.id}`"
+        :data-tour="`tool-${tool.id}`"
         :aria-pressed="activeTool === tool.id"
         @click="onSelectTool(tool.id)"
       >
@@ -99,7 +100,7 @@ function toolLabel(tool: Tool): string {
       </button>
     </div>
     <div class="phone-sheet__links">
-      <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
+      <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
       </AppLink>
       <AppLink icon="delete" danger data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
@@ -122,10 +123,10 @@ function toolLabel(tool: Tool): string {
 
   <BottomSheet v-if="openPhoneSheet === 'edit' && activePattern" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
     <div class="phone-sheet__edit">
-      <IconButton icon="undo" variant="toolbox" size="lg" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
+      <IconButton icon="undo" variant="toolbox" size="lg" data-tour="undo" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
       <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
       <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotation !== 0" @click="onToggleRotate" />
-      <IconButton icon="copy" variant="toolbox" size="lg" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
+      <IconButton icon="copy" variant="toolbox" size="lg" data-tour="copy" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
       <IconButton
         icon="paste"
         variant="toolbox"

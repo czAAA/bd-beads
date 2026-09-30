@@ -57,7 +57,7 @@ const { t } = useI18n()
         {{ t.saveBox.saveButton }}
       </AppButton>
       <div class="save-box__export">
-        <AppMenu :label="t.saveBox.exportButton" icon="export" variant="in-box" size="lg" align="end" data-testid="export-menu-button">
+        <AppMenu :label="t.saveBox.exportButton" icon="export" variant="in-box" size="lg" align="end" data-testid="export-menu-button" data-tour="export">
           <AppMenuItem icon="qr-code" :disabled="qrTooLarge" data-testid="export-qr" @select="emit('export-qr')">
             {{ t.saveBox.menuQr }}
           </AppMenuItem>

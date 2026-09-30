@@ -12,6 +12,7 @@ import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
 import { patternExtentPx } from '../rendering/patternRenderer'
+import type { TourMarks } from '../rendering/overlayRenderer'
 import PatternSurface from './PatternSurface.vue'
 import PatternRuler from './PatternRuler.vue'
 
@@ -29,6 +30,8 @@ const props = defineProps<{
   cursor?: GridPosition
   /** The Pattern's accessible name, for the surface. */
   label?: string
+  /** What the Tour marks on the Pattern (ticket 80). */
+  tourMarks?: TourMarks
 }>()
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -144,6 +147,7 @@ const rotateStyle = computed(() => ({
           :mirror-axis-counts="mirrorAxisCounts"
           :dimmed-cells="dimmedCells"
           :cursor="cursor"
+          :tour-marks="tourMarks"
           :label="label"
           @cursor-key="(event) => emit('cursor-key', event)"
           @keyboard-focus="(focused) => emit('keyboard-focus', focused)"

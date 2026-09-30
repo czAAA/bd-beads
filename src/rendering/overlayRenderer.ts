@@ -60,6 +60,14 @@ export interface OverlayInput {
   dimmedCells?: readonly GridPosition[]
   /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Pattern has keyboard focus. */
   cursor?: GridPosition
+  /** What the Tour marks on the Pattern (ticket 80): beads to paint or erase, and frames to select or paste into. */
+  tourMarks?: TourMarks
+}
+
+/** The Tour's marks on the Pattern, dashed. */
+export interface TourMarks {
+  cells: readonly GridPosition[]
+  boxes: readonly Selection[]
 }
 
 /** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
@@ -349,6 +357,57 @@ function drawCursor(context: DrawingContext, pattern: DrawnPattern, cursor: Grid
   context.fill('evenodd')
 }
 
+/** The Tour's dashed marks (ticket 80): dark under gold, so a mark reads on a gold bead as well as on a black one. */
+const TOUR_DASH_PX = [4, 3]
+const TOUR_MARK_PX = 2
+const TOUR_UNDERLAY_PX = 4.5
+
+function strokeTourMark(context: DrawingContext, theme: PatternTheme, draw: () => void): void {
+  context.lineCap = 'butt'
+  context.setLineDash([])
+  context.strokeStyle = theme.outline
+  context.lineWidth = TOUR_UNDERLAY_PX
+  draw()
+  context.setLineDash(TOUR_DASH_PX)
+  context.strokeStyle = theme.tourMark
+  context.lineWidth = TOUR_MARK_PX
+  draw()
+  context.setLineDash([])
+}
+
+function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, marks: TourMarks, theme: PatternTheme): void {
+  const { technique, columns, rows } = pattern
+  const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
+  const size = CELL_SIZE_PX - 2
+
+  for (const { row, column } of marks.cells) {
+    if (row < 0 || row >= rows || column < 0 || column >= columns) {
+      continue
+    }
+    const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + 1
+    const y = rowTopPx(technique, row) + 1
+    strokeTourMark(context, theme, () => {
+      context.beginPath()
+      roundedRect(context, x, y, size, size, radius)
+      context.stroke()
+    })
+  }
+
+  for (const box of marks.boxes) {
+    const bottom = Math.min(box.top + box.rows, rows) - 1
+    const right = Math.min(box.left + box.columns, columns) - 1
+    const left = rowShiftPx(technique, box.top) + box.left * CELL_SIZE_PX
+    const top = rowTopPx(technique, box.top)
+    const width = (right - box.left + 1) * CELL_SIZE_PX
+    const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - top
+    strokeTourMark(context, theme, () => {
+      context.beginPath()
+      roundedRect(context, left - 1, top - 1, width + 2, height + 2, 4)
+      context.stroke()
+    })
+  }
+}
+
 /** Mirror's axis lines (ticket 44): super-thin but clearly visible, drawn over the whole Pattern whatever the tool. */
 const AXIS_OPACITY = 0.65
 const AXIS_PX = 2
@@ -368,7 +427,7 @@ function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, counts: 
 
 /** Draws the overlay for the part of the Pattern in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor } = input
+  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -376,7 +435,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const { enabled, direction } = pattern.rowProgress
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
-  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor) {
+  const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
+  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks) {
     return
   }
 
@@ -405,6 +465,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (axes) {
     drawMirrorAxes(context, pattern, axes, theme)
+  }
+  if (marks) {
+    drawTourMarks(context, pattern, marks, theme)
   }
   if (cursor) {
     drawCursor(context, pattern, cursor, theme)
