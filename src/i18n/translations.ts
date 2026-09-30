@@ -152,6 +152,8 @@ export interface Translations {
     openEditor: string
     patternsSaved: string
     whatsInside: string
+    /** The hand-written notes of the hero (Overview card); decorative, hidden from screen readers. */
+    notes: { you: string; onUs: string; elevenSteps: string; youllMakeThis: string }
     features: {
       techniques: { name: string; text: string }
       patternEditing: { name: string; text: string }

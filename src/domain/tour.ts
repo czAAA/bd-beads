@@ -327,3 +327,8 @@ export function tourTargets(step: TourStepId, snapshot: TourSnapshot, memo: Tour
     }
   }
 }
+
+/** The finished Tour Pattern, as the Overview shows it lying across its page (ticket 216). */
+export function tourFinishedGrid(): Grid {
+  return FINAL
+}

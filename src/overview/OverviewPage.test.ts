@@ -38,6 +38,44 @@ describe('OverviewPage', () => {
     })
   })
 
+  describe('the hero band and notes', () => {
+    it('shows the Tour Pattern band and the notes to a new visitor, all hidden from screen readers', () => {
+      const wrapper = page()
+      expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="tour-band"]').attributes('aria-hidden')).toBe('true')
+      for (const [id, text] of [
+        ['you', 'you'],
+        ['on-us', 'on us'],
+        ['steps', 'eleven small steps'],
+        ['make-this', "you'll make this"],
+      ]) {
+        const note = wrapper.find(`[data-testid="overview-note-${id}"]`)
+        expect(note.text()).toBe(text)
+        expect(note.attributes('aria-hidden')).toBe('true')
+      }
+    })
+
+    it('puts "you" on the first word of the slogan and leaves the slogan reading as before', () => {
+      const slogan = page().find('[data-testid="overview-slogan"]')
+      expect(slogan.find('[data-testid="overview-note-you"]').exists()).toBe(true)
+      expect(slogan.text().replace('you', '')).toBe('Draw. Joy. Weave.')
+    })
+
+    it('has the Russian notes', async () => {
+      const wrapper = page()
+      await wrapper.find('[data-testid="language-switcher"]').trigger('click')
+      expect(wrapper.find('[data-testid="overview-note-make-this"]').text()).toBe('её вы и сделаете')
+      expect(wrapper.find('[data-testid="overview-note-steps"]').text()).toBe('одиннадцать коротких шагов')
+    })
+
+    it('shows neither the band nor the notes once Patterns are saved', () => {
+      const wrapper = page(2)
+      expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
+      expect(wrapper.findAll('.overview__note')).toHaveLength(0)
+      expect(wrapper.find('[data-testid="overview-slogan"]').text()).toBe('Draw. Joy. Weave.')
+    })
+  })
+
   describe('with Patterns saved', () => {
     it('offers only "Open the editor", as the primary button, and the count', () => {
       const wrapper = page(3)

@@ -197,6 +197,7 @@
   /* Overview only: the slogan, its section headings and handwritten notes. The slogan steps up with the screen (40px phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller). */
   --type-tagline: italic 400 2.5rem/2.5rem var(--font-serif);
   --tracking-tagline: -0.6px;
+  --type-note: italic 400 1.0625rem/1 var(--font-serif);
   --type-serif-heading: italic 400 2.125rem/2.375rem var(--font-serif);
   --tracking-serif-heading: -0.4px;
   --space-2: 0.125rem;

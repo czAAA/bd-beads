@@ -8,6 +8,7 @@ import AppMenuItem from '../components/AppMenuItem.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import ThemeToggle from '../components/ThemeToggle.vue'
 import type { IconName } from '../components/icons'
+import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
 
@@ -40,6 +41,10 @@ const FEATURES: { key: keyof Translations['overview']['features']; icon: IconNam
   { key: 'savedPatterns', icon: 'library' },
 ]
 
+/** The slogan's first word carries the note "you". */
+const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
+const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
+
 const isNew = computed(() => props.patternCount === 0)
 const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{count}', String(props.patternCount)))
 </script>
@@ -69,17 +74,36 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
     <main class="overview__main">
       <section class="overview__hero">
         <p class="overview__slogan" data-testid="overview-slogan">
-          {{ t.overview.sloganLead }} <span class="overview__slogan-last">{{ t.overview.sloganLast }}</span>
+          <span class="overview__slogan-first"
+            >{{ sloganFirst
+            }}<span v-if="isNew" class="overview__note overview__note--you" aria-hidden="true" data-testid="overview-note-you">{{
+              t.overview.notes.you
+            }}</span></span
+          >{{ sloganRest }} <span class="overview__slogan-last">{{ t.overview.sloganLast }}</span>
         </p>
-        <p class="overview__tagline">{{ t.overview.tagline }}</p>
+        <p class="overview__tagline">
+          <span class="overview__tagline-text">{{ t.overview.tagline }}</span>
+          <span v-if="isNew" class="overview__aside overview__aside--us" aria-hidden="true" data-testid="overview-note-on-us">
+            <svg class="overview__arrow" width="18" height="8" viewBox="0 0 18 8"><path d="M17 4 H2 M6 1 L2 4 L6 7" /></svg>
+            <span class="overview__note overview__note--accent">{{ t.overview.notes.onUs }}</span>
+          </span>
+        </p>
         <div class="overview__actions">
           <template v-if="isNew">
-            <AppButton variant="primary" size="lg" data-testid="overview-make-first" @click="emit('makeFirstPattern')">
-              {{ t.overview.makeFirstPattern }}
-            </AppButton>
-            <AppButton size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
-              {{ t.overview.openEditor }}
-            </AppButton>
+            <span class="overview__buttons">
+              <AppButton variant="primary" size="lg" data-testid="overview-make-first" @click="emit('makeFirstPattern')">
+                {{ t.overview.makeFirstPattern }}
+              </AppButton>
+              <AppButton size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
+                {{ t.overview.openEditor }}
+              </AppButton>
+              <span class="overview__aside overview__aside--steps" aria-hidden="true" data-testid="overview-note-steps">
+                <span class="overview__note">{{ t.overview.notes.elevenSteps }}</span>
+                <svg class="overview__arrow" width="64" height="26" viewBox="0 0 64 26">
+                  <path d="M4 10 C 22 2, 42 6, 58 18 M47 20 L59 19 L55 8" />
+                </svg>
+              </span>
+            </span>
           </template>
           <template v-else>
             <AppButton variant="primary" size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
@@ -87,6 +111,12 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
             </AppButton>
             <p class="overview__saved" data-testid="overview-saved">{{ patternsSaved }}</p>
           </template>
+        </div>
+        <div v-if="isNew" class="overview__band">
+          <TourBand />
+          <p class="overview__note overview__note--gold" aria-hidden="true" data-testid="overview-note-make-this">
+            {{ t.overview.notes.youllMakeThis }}
+          </p>
         </div>
       </section>
 
@@ -245,10 +275,92 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
   color: var(--accent-strong);
 }
 
+.overview__slogan-first {
+  position: relative;
+  display: inline-block;
+}
+
 .overview__tagline {
+  position: relative;
   margin: var(--space-16) 0 0;
   font: var(--type-meta);
   color: var(--muted);
+}
+
+.overview__tagline-text {
+  display: inline-block;
+}
+
+/* The hand-written notes (Overview card): decorative, never over text, muted unless they say otherwise. */
+.overview__note {
+  position: absolute;
+  font: var(--type-note);
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.overview__note--accent,
+.overview__note--you {
+  color: var(--accent-strong);
+}
+
+.overview__note--you {
+  top: -0.75rem;
+  left: -0.25rem;
+  font-size: 1.125rem;
+  letter-spacing: 0;
+  transform: rotate(-8deg);
+}
+
+.overview__aside {
+  pointer-events: none;
+}
+
+.overview__arrow {
+  overflow: visible;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* "on us": above the line's right end on a phone, beside it from 744. */
+.overview__aside--us {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: auto;
+}
+
+.overview__aside--us .overview__note {
+  top: -1.125rem;
+  right: -0.25rem;
+  transform: rotate(-6deg);
+}
+
+.overview__aside--us .overview__arrow {
+  display: none;
+}
+
+@media (min-width: 744px) {
+  .overview__aside--us {
+    top: 0.0625rem;
+    left: calc(100% + 0.25rem);
+    right: auto;
+  }
+
+  .overview__aside--us .overview__note {
+    top: 0;
+    right: auto;
+    left: 1.375rem;
+  }
+
+  .overview__aside--us .overview__arrow {
+    display: block;
+    margin-top: 0.4375rem;
+  }
 }
 
 .overview__actions {
@@ -258,6 +370,56 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
   justify-content: center;
   gap: var(--space-12);
   margin-top: var(--space-24);
+}
+
+.overview__buttons {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-12);
+}
+
+/* "eleven small steps": only from 1024, where there is room left of the buttons. */
+.overview__aside--steps {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .overview__aside--steps {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: calc(100% + var(--space-8));
+  }
+
+  .overview__aside--steps .overview__note {
+    top: 0.25rem;
+    right: 4.75rem;
+  }
+
+  .overview__aside--steps .overview__arrow {
+    position: absolute;
+    top: 0.875rem;
+    right: 0;
+  }
+}
+
+.overview__band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 55rem;
+  margin-top: var(--space-24);
+}
+
+.overview__note--gold {
+  position: static;
+  margin: var(--space-8) 0 0;
+  color: var(--note-gold);
+  text-align: center;
 }
 
 .overview__saved {
