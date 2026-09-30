@@ -79,6 +79,10 @@ const value = defineModel<string | number>()
   opacity: 1;
 }
 
+.text-field__input--clear-on-focus:focus::placeholder {
+  color: transparent;
+}
+
 .text-field__input:disabled {
   color: var(--faint);
 }

@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** asked; not added to either (small polish change).
 
-- [ ] Focusing or clicking into the width or height input hides its placeholder; typing keeps it hidden
-- [ ] Leaving an input empty brings its placeholder back on blur
-- [ ] Typing or pasting anything other than digits into either input is rejected (letters, `-`, `+`, `.`, `,`, `e`)
-- [ ] Touch devices show a numeric keypad for both inputs
-- [ ] Existing size validation and Pattern creation still work
-- [ ] Correct in the light, dark and high contrast themes
+- [x] Focusing or clicking into the width or height input hides its placeholder; typing keeps it hidden
+- [x] Leaving an input empty brings its placeholder back on blur
+- [x] Typing or pasting anything other than digits into either input is rejected (letters, `-`, `+`, `.`, `,`, `e`)
+- [x] Touch devices show a numeric keypad for both inputs
+- [x] Existing size validation and Pattern creation still work
+- [x] Correct in the light, dark and high contrast themes

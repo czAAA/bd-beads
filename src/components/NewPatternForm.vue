@@ -314,6 +314,8 @@ function onDropImage(file: File) {
           :min="unit === 'beads' ? 1 : 0"
           :step="unit === 'beads' ? 1 : 'any'"
           stepper
+          digits-only
+          :placeholder="t.form.sizePlaceholder"
           :decrease-label="t.form.decreaseWidthButton"
           :increase-label="t.form.increaseWidthButton"
           @blur="touched.width = true"
@@ -331,6 +333,8 @@ function onDropImage(file: File) {
           :min="unit === 'beads' ? 1 : 0"
           :step="unit === 'beads' ? 1 : 'any'"
           stepper
+          digits-only
+          :placeholder="t.form.sizePlaceholder"
           :decrease-label="t.form.decreaseHeightButton"
           :increase-label="t.form.increaseHeightButton"
           @blur="touched.height = true"

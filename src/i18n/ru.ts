@@ -13,6 +13,7 @@ export const ru: Translations = {
     techniqueLoom: 'Ткачество',
     techniquePeyote: 'Мозаичное плетение',
     techniqueBrick: 'Кирпичное плетение',
+    sizePlaceholder: '20',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
     decreaseWidthButton: 'Уменьшить ширину',

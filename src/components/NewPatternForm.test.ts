@@ -380,7 +380,7 @@ describe('NewPatternForm slow-framing warning (ticket 61)', () => {
     const wrapper = mount(NewPatternForm, { props: { decodeImage: vi.fn(), slowFramingCellThresholds: reachable, ...extraProps } })
     await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('150') // 100 columns at 1.5mm
-    await wrapper.find('[data-testid="height-input"]').setValue(String(rows * 1.5))
+    await wrapper.find('[data-testid="height-input"]').setValue(String(Math.round(rows * 1.5))) // whole mm only; rounds to `rows` rows
     return wrapper
   }
 
@@ -485,7 +485,7 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ size: { width: 24, height: 40, unit: 'beads' } })
   })
 
-  it.each([['2.5', '10'], ['10', '0.5'], ['0', '10'], ['-3', '10']])(
+  it.each([['0', '10'], ['10', '0']])(
     'wants whole numbers of at least 1 in beads: %s x %s is not creatable',
     async (width, height) => {
       const wrapper = mount(NewPatternForm)
@@ -556,7 +556,7 @@ describe('NewPatternForm size in beads (ticket 100)', () => {
     it('still wants a size that means something: whole beads, and at least 1', async () => {
       const wrapper = mount(NewPatternForm)
 
-      await state(wrapper, { width: '250.5', height: '250' })
+      await state(wrapper, { width: '0', height: '250' })
 
       expect(createButton(wrapper).element.disabled).toBe(true)
     })
@@ -588,16 +588,27 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
     expect(wrapper.find('[data-testid="height-error"]').exists()).toBe(false)
   })
 
-  it('asks for a whole number of beads, and not in mm', async () => {
-    const { en } = await import('../i18n/en')
+  it('keeps only digits in the size inputs, typed or pasted, and asks for the numeric keypad', async () => {
     const wrapper = mount(NewPatternForm)
 
-    await wrapper.find('[data-testid="width-input"]').setValue('2.5')
-    await wrapper.find('[data-testid="width-input"]').trigger('blur')
-    expect(wrapper.find('[data-testid="width-error"]').text()).toBe(en.form.enterWholeBeads)
+    for (const testid of ['width-input', 'height-input']) {
+      const input = wrapper.find(`[data-testid="${testid}"]`)
+      expect(input.attributes('inputmode')).toBe('numeric')
+      expect(input.attributes('placeholder')).toBeTruthy()
+      await input.setValue('-1.5e+2,7abc')
+      expect((input.element as HTMLInputElement).value).toBe('1527')
+    }
+  })
 
-    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-    expect(wrapper.find('[data-testid="width-error"]').exists()).toBe(false)
+  it('drops a typed non-digit before it lands', async () => {
+    const wrapper = mount(NewPatternForm)
+    const event = new InputEvent('beforeinput', { data: 'e', cancelable: true, bubbles: true })
+    wrapper.find('[data-testid="width-input"]').element.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+
+    const digit = new InputEvent('beforeinput', { data: '7', cancelable: true, bubbles: true })
+    wrapper.find('[data-testid="width-input"]').element.dispatchEvent(digit)
+    expect(digit.defaultPrevented).toBe(false)
   })
 
   it('shows the size in the other unit beside Unit', async () => {

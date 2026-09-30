@@ -13,6 +13,7 @@ export interface Translations {
     techniqueLoom: string
     techniquePeyote: string
     techniqueBrick: string
+    sizePlaceholder: string
     widthLabel: string
     heightLabel: string
     /** Stepper buttons beside Width and Height (ticket 181), each named for screen readers like Stepper's own. */

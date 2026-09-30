@@ -116,7 +116,7 @@ describe('App Convert image framing (ticket 58)', () => {
     const outline = () => wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')
     expect(outline()).toContain(`width: ${gridWidthPx('loom', 10)}px`)
 
-    await wrapper.find('[data-testid="width-input"]').setValue('7.5')
+    await wrapper.find('[data-testid="width-input"]').setValue('8')
 
     expect(outline()).toContain(`width: ${gridWidthPx('loom', 5)}px`)
   })

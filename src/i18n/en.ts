@@ -11,6 +11,7 @@ export const en: Translations = {
     techniqueLoom: 'Loom',
     techniquePeyote: 'Peyote',
     techniqueBrick: 'Brick stitch',
+    sizePlaceholder: '20',
     widthLabel: 'Width',
     heightLabel: 'Height',
     decreaseWidthButton: 'Decrease width',

@@ -406,7 +406,7 @@ describe('App', () => {
 
   it('rotating is a view-only flip: it turns the picture on screen but never touches the grid, dimensions, or technique', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
+    await createPatternViaForm(wrapper, '5', '3') // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // paint (0,0)
@@ -426,7 +426,7 @@ describe('App', () => {
 
   it('cycles through all four quarter turns and back to upright on a fifth click (ticket 171)', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '4.5', '3')
+    await createPatternViaForm(wrapper, '5', '3')
 
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
     expect(loadPatterns()[0]!.rotation).toBe(90)
@@ -447,7 +447,7 @@ describe('App', () => {
 
   it('is not an undo step: rotating does not touch the undo history', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '4.5', '3')
+    await createPatternViaForm(wrapper, '5', '3')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
 
@@ -458,7 +458,7 @@ describe('App', () => {
 
   it('leaves redo untouched: Rotate is not a grid edit', async () => {
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '4.5', '3')
+    await createPatternViaForm(wrapper, '5', '3')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -2121,7 +2121,7 @@ describe('App row progress', () => {
 
     it('will not step past the last column', async () => {
       const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '4.5', '3') // 3 columns x 2 rows
+      await createPatternViaForm(wrapper, '5', '3') // 3 columns x 2 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 

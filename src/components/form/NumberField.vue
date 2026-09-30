@@ -20,6 +20,11 @@ const props = withDefaults(
     min?: number
     step?: number | 'any'
     stepper?: boolean
+    /**
+     * Digits only (ticket 211): a plain text input with the numeric keypad that drops anything but 0-9, typed or pasted,
+     * and lets its placeholder go while focused (it returns on blur if the field is left empty).
+     */
+    digitsOnly?: boolean
     /** Required together whenever `stepper` is on: each button needs its own name for screen readers (Stepper card). */
     decreaseLabel?: string
     increaseLabel?: string
@@ -32,13 +37,29 @@ const props = withDefaults(
     min: undefined,
     step: undefined,
     stepper: false,
+    digitsOnly: false,
     decreaseLabel: undefined,
     increaseLabel: undefined,
     testidPrefix: undefined,
   },
 )
 const value = defineModel<string | number>()
-const inputmode = computed(() => (props.whole ? 'numeric' : 'decimal'))
+const inputmode = computed(() => (props.whole || props.digitsOnly ? 'numeric' : 'decimal'))
+
+/** Keeps a non-digit from ever landing while typing, so the caret stays where it was. */
+function onBeforeInput(event: InputEvent): void {
+  if (props.digitsOnly && event.data && /\D/.test(event.data)) event.preventDefault()
+}
+
+/** Catches what beforeinput can't see (paste, drop, autofill): strips the field down to its digits. */
+function onInput(event: Event): void {
+  if (!props.digitsOnly) return
+  const input = event.target as HTMLInputElement
+  const digits = input.value.replace(/\D/g, '')
+  if (digits === input.value) return
+  input.value = digits
+  value.value = digits
+}
 
 /** How far one click of the stepper moves the value: the field's own `step`, or 1 when it has none or is 'any'. */
 const stepAmount = computed(() => (typeof props.step === 'number' ? props.step : 1))
@@ -66,14 +87,18 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
   <span class="number-field">
     <TextField
       v-model="value"
-      type="number"
+      :type="digitsOnly ? 'text' : 'number'"
       :inputmode="inputmode"
+      :pattern="digitsOnly ? '[0-9]*' : undefined"
+      :class="{ 'text-field__input--clear-on-focus': digitsOnly }"
       :unit="unit"
       :invalid="invalid"
       :disabled="disabled"
       :min="min"
       :step="step"
       v-bind="$attrs"
+      @beforeinput="onBeforeInput"
+      @input="onInput"
     />
     <span v-if="stepper" class="number-field__stepper">
       <button
