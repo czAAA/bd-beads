@@ -6,6 +6,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import {
   CELL_SIZE_PX,
   GRID_BORDER_PX,
+  RULER_GUTTER_PX,
   gridWidthPx,
   rowOffsetPx,
 } from '../domain/grid'
@@ -30,7 +31,6 @@ function pattern(technique: Technique = 'loom'): Pattern {
 function mountRuler(options: {
   axis: 'row' | 'column'
   edge?: 'start' | 'end'
-  zoom?: number
   technique?: Technique
 }) {
   return mount(PatternRuler, {
@@ -38,7 +38,6 @@ function mountRuler(options: {
       pattern: pattern(options.technique),
       axis: options.axis,
       edge: options.edge ?? 'start',
-      zoom: options.zoom ?? 1,
     },
   })
 }
@@ -99,40 +98,31 @@ describe('PatternRuler', () => {
     expect(rendered.every((label) => label.attributes('style')!.includes('left: 0px'))).toBe(true)
   })
 
-  it('keeps every column number inside the grid it rules, at any zoom', () => {
-    for (const zoom of [0.25, 1, 3]) {
-      for (const technique of ['loom', 'peyote', 'brick'] as const) {
-        const rendered = labels(mountRuler({ axis: 'column', edge: 'end', zoom, technique }))
-        const lastLeft = Number(
-          rendered.at(-1)!.attributes('style')!.match(/left: (-?[\d.]+)px/)![1],
-        )
+  it('keeps every column number inside the grid it rules', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const rendered = labels(mountRuler({ axis: 'column', edge: 'end', technique }))
+      const lastLeft = Number(rendered.at(-1)!.attributes('style')!.match(/left: (-?[\d.]+)px/)![1])
 
-        expect(lastLeft + CELL_SIZE_PX).toBeLessThanOrEqual(
-          gridWidthPx(technique, 10) + GRID_BORDER_PX * 2,
-        )
-      }
+      expect(lastLeft + CELL_SIZE_PX).toBeLessThanOrEqual(gridWidthPx(technique, 10) + GRID_BORDER_PX * 2)
     }
   })
 
-  it('keeps numbers the same size on screen however far the canvas is zoomed', () => {
-    const zoomedOut = mountRuler({ axis: 'row', zoom: 0.5 }).attributes('style')
-    const zoomedIn = mountRuler({ axis: 'row', zoom: 2 }).attributes('style')
+  it('sizes the numbers and gutter at 100% zoom, leaving the canvas transform to scale them with the beads (ticket 212)', () => {
+    const style = mountRuler({ axis: 'row' }).attributes('style')
 
-    // Written at 1/zoom so the canvas scale cancels out: 22px at 50%, 5.5px at 200%.
-    expect(zoomedOut).toContain('font-size: 22px')
-    expect(zoomedIn).toContain('font-size: 5.5px')
+    expect(style).toContain('font-size: 11px')
+    expect(style).toContain(`width: ${RULER_GUTTER_PX}px`)
   })
 
-  it('thins out to every other number when zooming out would crowd them', () => {
-    const numbers = labels(mountRuler({ axis: 'column', zoom: 0.5 })).map((label) => label.text())
+  it('numbers every bead on a Pattern far larger than would fit unthinned on screen', () => {
+    const huge = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 300, height: 600, unit: 'mm' } })
+    const row = mount(PatternRuler, { props: { pattern: huge, axis: 'row', edge: 'start' } })
+    const column = mount(PatternRuler, { props: { pattern: huge, axis: 'column', edge: 'start' } })
 
-    expect(numbers).toEqual(['2', '4', '6', '8', '10'])
-  })
-
-  it('thins out further at the smallest zoom rather than turning into clutter', () => {
-    const numbers = labels(mountRuler({ axis: 'row', zoom: 0.25 })).map((label) => label.text())
-
-    expect(numbers).toEqual(['5', '10', '15', '20'])
+    expect(labels(row).map((label) => label.text())).toEqual(
+      Array.from({ length: huge.rows }, (_unused, index) => String(index + 1)),
+    )
+    expect(labels(column)).toHaveLength(huge.columns)
   })
 })
 
@@ -183,11 +173,12 @@ describe('PatternRuler line selection (ticket 123)', () => {
 
   it("puts a brick stitch row's number level with the row it counts, however far down (ticket 121)", () => {
     const tall = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 135, unit: 'mm' } })
-    const wrapper = mount(PatternRuler, { props: { pattern: tall, axis: 'row', edge: 'start', zoom: 1 } })
+    const wrapper = mount(PatternRuler, { props: { pattern: tall, axis: 'row', edge: 'start' } })
     const tops = wrapper.findAll('[data-testid="ruler-label"]').map((label) => label.attributes('style')!.match(/top: ([\d.]+)px/)![1])
 
     expect(tall.rows).toBeGreaterThan(80)
-    // Row n (1-based) starts at (n - 1) × rowPitchPx below the outline; the numbers shown are 1, 2, 5, 10… steps apart.
+    expect(tops).toHaveLength(tall.rows)
+    // Row n (1-based) starts at (n - 1) × rowPitchPx below the outline.
     const shown = wrapper.findAll('[data-testid="ruler-label"]').map((label) => Number(label.text()))
     shown.forEach((number, position) => {
       expect(Number(tops[position])).toBe(GRID_BORDER_PX + (number - 1) * rowPitchPx('brick'))

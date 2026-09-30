@@ -5,7 +5,6 @@ import {
   GRID_BORDER_PX,
   RULER_GUTTER_PX,
   rowOffsetPx,
-  rulerLabelStep,
 } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { wholeLineSelection, type Selection } from '../domain/selection'
@@ -18,8 +17,7 @@ const props = defineProps<{
   axis: 'row' | 'column'
   /** Which side of the grid this gutter sits on — left/top, or right/bottom. */
   edge: 'start' | 'end'
-  zoom: number
-  /** The bead cursor's row or column on this ruler's axis (ticket 159): always numbered, and marked. */
+  /** The bead cursor's row or column on this ruler's axis (ticket 159): marked. */
   cursorIndex?: number
 }>()
 
@@ -30,12 +28,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** Numbers stay this big on screen whatever the zoom, so the ruler thins out instead of shrinking into illegibility. */
+/** The number's size at 100% zoom. It scales with the zoom (ticket 212) along with the gutter and the beads, so every bead keeps its own number at every level. */
 const FONT_SIZE_PX = 11
 const LABEL_GAP_PX = 4
-/** A row number needs about a line of height to itself; a column number needs its own width. */
-const MIN_ROW_LABEL_PX = 13
-const MIN_COLUMN_LABEL_PX = 20
 
 /*
  * Each number is a button now (ticket 123): clicking it selects that whole row/column, the same Selection a
@@ -43,11 +38,6 @@ const MIN_COLUMN_LABEL_PX = 20
  * (t.rulers.selectRowLabel/selectColumnLabel) rather than being hidden from assistive technology, since they now do
  * something rather than merely label the grid.
  */
-
-/** Undo the canvas scale, so a length written here comes out the same on screen at every zoom level. */
-function unscaled(px: number): string {
-  return `${px / props.zoom}px`
-}
 
 const isRowRuler = computed(() => props.axis === 'row')
 
@@ -57,14 +47,6 @@ const spacingPx = computed(() =>
 )
 
 const count = computed(() => (isRowRuler.value ? props.pattern.rows : props.pattern.columns))
-
-const step = computed(() =>
-  rulerLabelStep(
-    spacingPx.value,
-    props.zoom,
-    isRowRuler.value ? MIN_ROW_LABEL_PX : MIN_COLUMN_LABEL_PX,
-  ),
-)
 
 /**
  * How far a column gutter's numbers shift sideways to sit over the beads they count: it follows the row it runs
@@ -80,7 +62,7 @@ interface RulerLabel {
   index: number
   number: number
   alongPx: number
-  /** The row (or column) being woven now, while Row progress is on: always numbered, in bold `marker` (BeadBoard card). */
+  /** The row (or column) being woven now, while Row progress is on: in bold `marker` (BeadBoard card). */
   current: boolean
   /** The bead cursor's row or column (BeadCursor card): `ink`, bold, with a `focus-ring` line under it. */
   cursor: boolean
@@ -96,7 +78,6 @@ const currentIndex = computed(() => {
 
 const labels = computed<RulerLabel[]>(() =>
   Array.from({ length: count.value }, (_unused, index) => index)
-    .filter((index) => (index + 1) % step.value === 0 || index === currentIndex.value || index === props.cursorIndex)
     .map((index) => ({
       index,
       number: index + 1,
@@ -112,14 +93,14 @@ const extent = computed(() => patternExtentPx(props.pattern.technique, props.pat
 const gutterStyle = computed(() =>
   isRowRuler.value
     ? {
-        width: unscaled(RULER_GUTTER_PX),
+        width: `${RULER_GUTTER_PX}px`,
         height: `${extent.value.height + GRID_BORDER_PX * 2}px`,
-        fontSize: unscaled(FONT_SIZE_PX),
+        fontSize: `${FONT_SIZE_PX}px`,
       }
     : {
         width: `${extent.value.width + GRID_BORDER_PX * 2}px`,
-        height: unscaled(RULER_GUTTER_PX),
-        fontSize: unscaled(FONT_SIZE_PX),
+        height: `${RULER_GUTTER_PX}px`,
+        fontSize: `${FONT_SIZE_PX}px`,
       },
 )
 
@@ -130,7 +111,7 @@ function labelStyle(label: RulerLabel) {
         height: `${CELL_SIZE_PX}px`,
         left: '0',
         right: '0',
-        paddingInline: unscaled(LABEL_GAP_PX),
+        paddingInline: `${LABEL_GAP_PX}px`,
       }
     : {
         left: `${label.alongPx + columnOffsetPx()}px`,
@@ -176,7 +157,7 @@ function onLabelClick(label: RulerLabel) {
 </template>
 
 <style scoped>
-/* The ruler role (DESIGN.md §3 → tokens.json type): DM Mono 11 in `ruler`; its size is set, unscaled, by gutterStyle. */
+/* The ruler role (DESIGN.md §3 → tokens.json type): DM Mono 11 in `ruler`; its size is set by gutterStyle. */
 .pattern-ruler {
   position: relative;
   flex: none;

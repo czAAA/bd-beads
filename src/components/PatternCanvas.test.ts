@@ -65,15 +65,15 @@ describe('PatternCanvas', () => {
     // (Containing that within the actual available screen space is CSS's max-width:100% + overflow:auto, not this.)
     const { width, height } = boxSize(mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom: 5 } }))
 
-    expect(width).toBe(RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
-    expect(height).toBe(RULER_GUTTER_PX * 2 + (gridHeightPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
+    expect(width).toBe((RULER_GUTTER_PX * 2 + gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
+    expect(height).toBe((RULER_GUTTER_PX * 2 + gridHeightPx('loom', 10) + GRID_BORDER_PX * 2) * 5)
   })
 
   it('makes room for the grid outline on all four sides, at every zoom level', () => {
     for (const zoom of [0.25, 1, 3]) {
       const { width } = boxSize(mount(PatternCanvas, { props: { pattern: pattern(15, 15), zoom } }))
 
-      expect(width).toBe(RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * zoom)
+      expect(width).toBe((RULER_GUTTER_PX * 2 + gridWidthPx('loom', 10) + GRID_BORDER_PX * 2) * zoom)
     }
   })
 
@@ -128,7 +128,7 @@ describe('PatternCanvas box around a brick stitch Pattern (ticket 121)', () => {
 
     const { height } = patternExtentPx('brick', brick.columns, brick.rows)
     expect(brick.rows).toBeGreaterThan(80)
-    expect(boxSize(wrapper).height).toBe(RULER_GUTTER_PX * 2 + (height + GRID_BORDER_PX * 2) * zoom)
+    expect(boxSize(wrapper).height).toBe((RULER_GUTTER_PX * 2 + height + GRID_BORDER_PX * 2) * zoom)
   })
 })
 

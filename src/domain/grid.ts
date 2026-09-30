@@ -67,7 +67,7 @@ export const GRID_BORDER_PX = 14
 /** The board's corner radius in unscaled px: `radius-board`. */
 export const BOARD_RADIUS_PX = 32
 
-/** Width of each ruler gutter (ticket 19). Rendered at a fixed screen size, so it does not scale with the zoom. */
+/** Width of each ruler gutter at 100% zoom (tickets 19, 212). It scales with the zoom, like the numbers in it, so every bead keeps its own number. */
 export const RULER_GUTTER_PX = 28
 
 /**
@@ -205,14 +205,14 @@ export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
 }
 
-/** Total width of the canvas box's content: the zoomed grid (outline included) flanked by two fixed-size ruler gutters. */
+/** Total width of the canvas box's content: the grid (outline included) flanked by two ruler gutters, all scaled by the zoom. */
 export function canvasContentWidthPx(
   technique: Technique,
   columns: number,
   zoom: number,
   cellSize = CELL_SIZE_PX,
 ): number {
-  return RULER_GUTTER_PX * 2 + (gridWidthPx(technique, columns, cellSize) + GRID_BORDER_PX * 2) * zoom
+  return (RULER_GUTTER_PX * 2 + gridWidthPx(technique, columns, cellSize) + GRID_BORDER_PX * 2) * zoom
 }
 
 /** Total height of the canvas box's content; see canvasContentWidthPx. */
@@ -222,29 +222,7 @@ export function canvasContentHeightPx(
   zoom: number,
   cellSize = CELL_SIZE_PX,
 ): number {
-  return RULER_GUTTER_PX * 2 + (gridHeightPx(technique, rows, cellSize) + GRID_BORDER_PX * 2) * zoom
-}
-
-/** 1, 2, 5, 10, 20, 50, ... — the 1-2-5 sequence a physical ruler thins out along. */
-function* labelSteps(): Generator<number> {
-  for (let magnitude = 1; ; magnitude *= 10) {
-    yield* [magnitude, magnitude * 2, magnitude * 5]
-  }
-}
-
-/**
- * How many rows (or columns) apart ruler labels have to be so they stay legible instead of colliding: the smallest
- * 1-2-5 step whose on-screen gap clears minLabelPx. Zooming out thins the ruler rather than letting it turn to clutter
- * (ticket 19).
- */
-export function rulerLabelStep(spacingPx: number, zoom: number, minLabelPx: number): number {
-  for (const step of labelSteps()) {
-    if (step * spacingPx * zoom >= minLabelPx) {
-      return step
-    }
-  }
-  /* c8 ignore next -- labelSteps() grows without bound, so the loop always returns. */
-  return 1
+  return (RULER_GUTTER_PX * 2 + gridHeightPx(technique, rows, cellSize) + GRID_BORDER_PX * 2) * zoom
 }
 
 export interface FitZoomInput extends GridDimensions {

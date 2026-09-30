@@ -16,7 +16,6 @@ import {
   neighborsOf,
   rowHeightPx,
   rowOffsetPx,
-  rulerLabelStep,
   toMillimeters,
 } from './grid'
 import type { Bead } from './beads'
@@ -286,29 +285,13 @@ describe('clampZoom', () => {
   })
 })
 
-describe('rulerLabelStep', () => {
-  it('labels every row/column when they are far enough apart on screen', () => {
-    expect(rulerLabelStep(20, 1, 18)).toBe(1)
-  })
-
-  it('thins labels out to every 2nd, 5th, 10th... as the zoom shrinks', () => {
-    expect(rulerLabelStep(20, 0.5, 18)).toBe(2)
-    expect(rulerLabelStep(20, 0.25, 18)).toBe(5)
-    expect(rulerLabelStep(20, 0.1, 18)).toBe(10)
-  })
-
-  it('keeps thinning past 10 rather than giving up and overlapping', () => {
-    expect(rulerLabelStep(20, 0.02, 18)).toBe(50)
-  })
-})
-
 describe('canvasContentPx', () => {
-  it('scales the grid and its bold outline by the zoom, between two unscaled ruler gutters', () => {
+  it('scales the grid and its bold outline by the zoom, with the two ruler gutters', () => {
     expect(canvasContentWidthPx('loom', 10, 0.5, 20)).toBe(
-      RULER_GUTTER_PX * 2 + (gridWidthPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
+      (RULER_GUTTER_PX * 2 + gridWidthPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
     )
     expect(canvasContentHeightPx('loom', 10, 0.5, 20)).toBe(
-      RULER_GUTTER_PX * 2 + (gridHeightPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
+      (RULER_GUTTER_PX * 2 + gridHeightPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
     )
   })
 

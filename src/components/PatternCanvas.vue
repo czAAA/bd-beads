@@ -55,7 +55,10 @@ const gridSlotStyle = computed(() => {
 })
 
 /** Where the surface sits in the box: one ruler gutter in from the corner, whichever way the Pattern is turned (the box and the gutters turn together). */
-const surfaceLayerStyle = { left: `${RULER_GUTTER_PX}px`, top: `${RULER_GUTTER_PX}px` }
+const surfaceLayerStyle = computed(() => ({
+  left: `${RULER_GUTTER_PX * props.zoom}px`,
+  top: `${RULER_GUTTER_PX * props.zoom}px`,
+}))
 
 /**
  * The Pattern's own footprint (columns × rows, per its technique), before the view-only rotation turns it on
@@ -68,7 +71,7 @@ const unrotatedContentWidth = computed(() =>
 // The height is the drawn Pattern's (brick stitch's seams included), not the layout maths' canvasContentHeightPx, so the box shows every row.
 const unrotatedContentHeight = computed(() => {
   const { height } = patternExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows)
-  return RULER_GUTTER_PX * 2 + (height + GRID_BORDER_PX * 2) * props.zoom
+  return (RULER_GUTTER_PX * 2 + height + GRID_BORDER_PX * 2) * props.zoom
 })
 
 /**
@@ -113,15 +116,15 @@ const rotateStyle = computed(() => ({
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
           <div class="pattern-canvas__ruled">
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="start" :zoom="zoom" :cursor-index="cursor?.column" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="start" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
 
-            <PatternRuler :pattern="pattern" axis="row" edge="start" :zoom="zoom" :cursor-index="cursor?.row" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="start" :cursor-index="cursor?.row" @select="onSelectLine" />
             <div class="pattern-canvas__grid-slot" :style="gridSlotStyle" />
-            <PatternRuler :pattern="pattern" axis="row" edge="end" :zoom="zoom" :cursor-index="cursor?.row" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="end" :cursor-index="cursor?.row" @select="onSelectLine" />
 
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="end" :zoom="zoom" :cursor-index="cursor?.column" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="end" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
           </div>
         </div>

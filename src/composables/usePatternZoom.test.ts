@@ -37,8 +37,8 @@ function largePattern(): Pattern {
   })
 }
 
-/** The level largePattern fits a 900px-wide canvas area at: 1200px of grid (plus its 14px board padding each side) into 900px less 36px spare and a 28px ruler each side. Move it if fixedAvailableWidth's default changes. */
-const LARGE_FIT_PERCENT = 62
+/** The level largePattern fits a 900px-wide canvas area at: 1200px of grid (plus its 14px board padding each side) and a 28px ruler each side, scaled with it, into 900px less 36px spare each side. Move it if fixedAvailableWidth's default changes. */
+const LARGE_FIT_PERCENT = 64
 
 describe('usePatternZoom', () => {
   it('opens a Pattern that already fits at 100%', () => {
@@ -184,10 +184,10 @@ describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
     const available = 900
     const { zoom } = usePatternZoom(() => brick, ref(available))
 
-    // Across the screen, the rotated Pattern's drawn height, with its board padding, scaled; the rulers and spare stay put.
+    // Across the screen, the rotated Pattern's drawn height, with its board padding, scaled; the spare stays put and the rulers scale with it.
     const drawnHeight = patternExtentPx('brick', brick.columns, brick.rows).height
-    const room = available - 36 * 2 - 28 * 2
-    const drawn = (zoomLevel: number) => (drawnHeight + 14 * 2) * zoomLevel
+    const room = available - 36 * 2
+    const drawn = (zoomLevel: number) => (drawnHeight + 14 * 2 + 28 * 2) * zoomLevel
     expect(drawn(zoom.value)).toBeLessThanOrEqual(room)
     expect(drawn(zoom.value + 0.01)).toBeGreaterThan(room)
   })
@@ -198,8 +198,8 @@ describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () =>
     const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 40, unit: 'beads' } })
     const { zoom } = usePatternZoom(() => tall, ref(1400), ref(600))
 
-    const room = 600 - 18 * 2 - 28 * 2
-    const drawn = (zoomLevel: number) => (patternExtentPx('loom', tall.columns, tall.rows).height + 14 * 2) * zoomLevel
+    const room = 600 - 18 * 2
+    const drawn = (zoomLevel: number) => (patternExtentPx('loom', tall.columns, tall.rows).height + 14 * 2 + 28 * 2) * zoomLevel
     expect(drawn(zoom.value)).toBeLessThanOrEqual(room)
     expect(drawn(zoom.value + 0.01)).toBeGreaterThan(room)
   })

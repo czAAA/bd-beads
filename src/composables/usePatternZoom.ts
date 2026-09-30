@@ -12,10 +12,10 @@ export const FIT_SPARE_Y_PX = 18
 
 /**
  * The largest zoom at which a Pattern of this drawn extent, with its rulers and board padding, fits an outer size.
- * The rulers keep their size at every zoom; the board's padding scales with the beads.
+ * The rulers and the board's padding scale with the beads.
  */
 function fitAlong(outerPx: number, spare: number, extentPx: number): number {
-  return (outerPx - spare * 2 - RULER_GUTTER_PX * 2) / (extentPx + GRID_BORDER_PX * 2)
+  return (outerPx - spare * 2) / (extentPx + GRID_BORDER_PX * 2 + RULER_GUTTER_PX * 2)
 }
 
 /**

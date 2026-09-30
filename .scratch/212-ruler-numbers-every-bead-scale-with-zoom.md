@@ -4,13 +4,13 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** asked; not added to either (small polish change).
 
-- [ ] Both rulers show every number from 1 to the last bead, at every zoom level, on Patterns of any size
-- [ ] Numbers and their click targets scale with the zoom and stay aligned to their beads
-- [ ] Clicking a ruler number still selects that whole row/column, from any tool
-- [ ] The current-row and bead-cursor markers on the rulers still work
-- [ ] Large Patterns stay smooth to scroll and zoom
-- [ ] Correct in the light, dark and high contrast themes
+- [x] Both rulers show every number from 1 to the last bead, at every zoom level, on Patterns of any size
+- [x] Numbers and their click targets scale with the zoom and stay aligned to their beads
+- [x] Clicking a ruler number still selects that whole row/column, from any tool
+- [x] The current-row and bead-cursor markers on the rulers still work
+- [x] Large Patterns stay smooth to scroll and zoom
+- [x] Correct in the light, dark and high contrast themes
