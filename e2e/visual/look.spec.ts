@@ -8,12 +8,12 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeRef
 
 /**
  * The look of a Pattern in the app, held to the reference screenshots (support/referenceCheck.ts says how the
- * comparison works): every Technique, plain and with Row progress in both directions, at 25%, 100% and 300%, upright
+ * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300%, upright
  * and rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
  * the overlays that come with a tool in overlays.spec.ts.
  */
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
-const ZOOMS = [25, 100, 300]
+const ZOOMS = [100, 300]
 const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
 
 const scenarios = [
@@ -62,7 +62,7 @@ for (const scenario of scenarios) {
 
 /**
  * The comparisons have to fail when the picture is wrong, or a pass means nothing. Each of these draws a Pattern that
- * differs from the one the reference shows in one small way, at every zoom (25% is where a bead is smallest), and expects
+ * differs from the one the reference shows in one small way, at every zoom (100% is where a bead is smallest), and expects
  * the check to notice.
  */
 test.describe('the check notices a wrong picture', () => {

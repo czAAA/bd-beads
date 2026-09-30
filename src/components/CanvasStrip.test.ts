@@ -23,11 +23,11 @@ describe('CanvasStrip', () => {
     expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('21 столбец · 3 ряда')
   })
 
-  it('holds the zoom, in the order zoom out, level, zoom in, fit, and passes each press on', async () => {
+  it('holds the zoom, in the order zoom out, fit, zoom in, and passes each press on', async () => {
     const wrapper = mount(CanvasStrip, { props: { size: { columns: 4, rows: 4 }, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid^="zoom-"]').map((element) => element.attributes('data-testid'))
-    expect(order).toEqual(['zoom-controls', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
+    expect(order).toEqual(['zoom-controls', 'zoom-out', 'zoom-reset', 'zoom-level', 'zoom-in'])
     expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('125%')
 
     await wrapper.get('[data-testid="zoom-in"]').trigger('click')

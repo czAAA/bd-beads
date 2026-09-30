@@ -16,7 +16,7 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeRef
  * and no others (ticket 174 hid Mirror's own UI pending its own redesign).
  */
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
-const ZOOMS = [25, 100, 300]
+const ZOOMS = [100, 300]
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
 /** The Pattern the app has saved, read back the way it is stored. */

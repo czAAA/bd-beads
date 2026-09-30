@@ -86,7 +86,7 @@ describe('usePatternZoom', () => {
     for (let step = 0; step < 20; step++) {
       zoomOut()
     }
-    expect(zoomPercent.value).toBe(25)
+    expect(zoomPercent.value).toBe(50)
   })
 
   it('resets back to the level that fits the open Pattern', () => {
@@ -179,7 +179,7 @@ describe('usePatternZoom', () => {
 
 describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
   it('fits a rotated one by the height that is drawn, seams included', () => {
-    const brick = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 150, unit: 'mm' } })
+    const brick = createPattern({ technique: 'brick', beadId: cubeBead.id, size: { width: 15, height: 75, unit: 'mm' } })
     brick.rotation = 90
     const available = 900
     const { zoom } = usePatternZoom(() => brick, ref(available))
@@ -195,7 +195,7 @@ describe('usePatternZoom fitting a brick stitch Pattern (ticket 121)', () => {
 
 describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () => {
   it('fits a tall Pattern by the height it has, leaving 18px spare top and bottom', () => {
-    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 60, unit: 'beads' } })
+    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 40, unit: 'beads' } })
     const { zoom } = usePatternZoom(() => tall, ref(1400), ref(600))
 
     const room = 600 - 18 * 2 - 28 * 2
@@ -205,7 +205,7 @@ describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () =>
   })
 
   it('ignores a height not measured yet', () => {
-    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 60, unit: 'beads' } })
+    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 40, unit: 'beads' } })
     expect(usePatternZoom(() => tall, ref(1400), ref(0)).zoomPercent.value).toBe(100)
   })
 

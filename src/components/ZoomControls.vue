@@ -25,15 +25,6 @@ const { t } = useI18n()
       data-testid="zoom-out"
       @click="emit('zoom-out')"
     />
-    <span class="zoom-controls__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
-    <IconButton
-      icon="zoom-in"
-      variant="plain"
-      :icon-size="16"
-      :label="t.canvas.zoomInLabel"
-      data-testid="zoom-in"
-      @click="emit('zoom-in')"
-    />
     <IconButton
       icon="fit"
       variant="plain"
@@ -41,6 +32,15 @@ const { t } = useI18n()
       :label="t.canvas.zoomResetLabel"
       data-testid="zoom-reset"
       @click="emit('reset')"
+    />
+    <span class="zoom-controls__level" data-testid="zoom-level" hidden>{{ zoomPercent }}%</span>
+    <IconButton
+      icon="zoom-in"
+      variant="plain"
+      :icon-size="16"
+      :label="t.canvas.zoomInLabel"
+      data-testid="zoom-in"
+      @click="emit('zoom-in')"
     />
   </div>
 </template>

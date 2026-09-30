@@ -25,8 +25,8 @@ import { beadCentre } from './patterns'
  * The share of blocks that may differ from the reference before the look counts as different, measured on the renderer
  * as it is: loom comes out within 2.5% and brick stitch within 3.6% at worst, and peyote, whose rounded corners the two engines
  * anti-alias differently (and whose rotated box lands on half a pixel), within 5.5%. A rim drawn 2 px instead of 1
- * moves loom and brick stitch by 4–8% at 100% and 300% zoom, so those show; it does not show in peyote's, nor at 25%,
- * where a bead is 5 px and a block can't be smaller than 4 — the content check below is what holds there.
+ * moves loom and brick stitch by 4–8% at 100% and 300% zoom, so those show; it does not show in peyote's, nor at 50%,
+ * where a bead is 10 px and a block can't be smaller than 4 — the content check below is what holds there.
  */
 export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06 }
 const BLOCK_TOLERANCE = 48
@@ -57,7 +57,7 @@ function expectedCentre(pattern: Pattern, row: number, column: number): [number,
 
 /**
  * The beads whose centre is not the color it should be, in a screenshot of the grid taken from `origin` (the page
- * position of its top-left pixel). "The centre" is any pixel within one of it: at 25% a bead is 5 px across, and where
+ * position of its top-left pixel). "The centre" is any pixel within one of it: at 50% a bead is 10 px across, and where
  * its centre falls between pixels differs by a pixel between the reference and a canvas.
  */
 export function wrongBeads(
