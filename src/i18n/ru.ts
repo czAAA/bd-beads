@@ -106,7 +106,7 @@ export const ru: Translations = {
   },
   header: {
     toolsButton: 'Инструменты',
-    moreButton: 'Ещё',
+    menuButton: 'Меню',
     patternSheetLabel: 'Схема',
     newPatternSheetTitle: 'Новая схема',
   },

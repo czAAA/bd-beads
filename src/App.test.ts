@@ -1032,6 +1032,7 @@ describe('App', () => {
       'app-header__tools',
       'app-header__brand',
       'app-header__phone-only', // phone brand icon (ticket 188): the bead icon, apart from the <h1> wordmark
+      'app-header__menu', // the header menu (ticket 210), next to the logo
       'app-header__phone-only', // phone theme icon: shown whether or not a Pattern is open
       'app-header__gap',
       'pattern-actions',
@@ -1039,7 +1040,6 @@ describe('App', () => {
       'app-header__wide-only',
       'app-header__wide-only',
       'app-header__shortcuts',
-      'app-header__more',
     ])
 
     await createPatternViaForm(wrapper, '15', '30')
@@ -1048,6 +1048,7 @@ describe('App', () => {
       'app-header__tools',
       'app-header__brand',
       'app-header__phone-only', // phone brand icon
+      'app-header__menu',
       'app-header__phone-only', // phone bead/technique icon (ticket 188), opens the Pattern sheet's Bead pill row
       'app-header__phone-only', // phone theme icon
       'pattern-info',
@@ -1060,7 +1061,6 @@ describe('App', () => {
       'app-header__wide-only',
       'app-header__wide-only',
       'app-header__shortcuts',
-      'app-header__more',
     ])
     const header = wrapper.find('[data-testid="app-topbar"]')
     expect(header.find('h1').text()).toBe('bd-beads')

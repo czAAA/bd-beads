@@ -4,7 +4,7 @@
 
 **Blocked by:** 208 (Design system v15: Overview, Tour and the header menu)
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** the menu is how people reach both: Overview opens ticket 77's page, Take the tour starts ticket 80's Tour from step 1. Tickets 77 and 80 each add their own item; until the first of them lands, the menu has nothing to hold at 1024px and up, so the button shows there only once it has an item.
 

@@ -17,7 +17,7 @@ export function useOverlayVisibility(deps: { selectPattern: (id: string) => void
     openPhoneSheet.value = openPhoneSheet.value === sheet ? null : sheet
   }
 
-  /** The phone header's theme sheet (ticket 188): a small four-way choice, the same one ThemeToggle offers in the More menu. */
+  /** The phone header's theme sheet (ticket 188): a small four-way choice, the same one ThemeToggle offers in the header menu. */
   const themeSheetOpen = ref(false)
 
   /** New Pattern on the phone tier (PhoneForms card): its own full-height modal sheet, opened from the Pattern sheet. */

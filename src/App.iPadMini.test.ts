@@ -116,23 +116,23 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
   })
 
-  describe('the More menu', () => {
+  describe('the header menu', () => {
     it('holds Import a file, Import QR code, Language, Theme and Name on exports', async () => {
       const wrapper = mount(App)
       await createPatternViaForm(wrapper, '15', '30')
 
-      await wrapper.find('[data-testid="header-more-menu"]').trigger('click')
+      await wrapper.find('[data-testid="header-menu"]').trigger('click')
       expect(wrapper.find('[data-testid="menu-import-file"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="menu-import-qr"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="more-name-on-exports-change"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(true)
     })
 
     it('imports through its own PatternImport, which shows the result as a toast rather than inline', async () => {
       const wrapper = mount(App)
       const patterns = [createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Fox' })]
 
-      await wrapper.find('[data-testid="header-more-menu"]').trigger('click')
+      await wrapper.find('[data-testid="header-menu"]').trigger('click')
       const input = wrapper.find<HTMLInputElement>('[data-testid="menu-import-file"]')
       Object.defineProperty(input.element, 'files', {
         configurable: true,

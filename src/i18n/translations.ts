@@ -116,7 +116,7 @@ export interface Translations {
   /** The header's own additions at the iPad mini tier (ticket 168): the Tools button that opens the Drawer, and the More button (OverflowMenu card). */
   header: {
     toolsButton: string
-    moreButton: string
+    menuButton: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Patterns, New Pattern, Import. */
     patternSheetLabel: string
     newPatternSheetTitle: string

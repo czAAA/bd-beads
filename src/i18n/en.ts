@@ -104,7 +104,7 @@ export const en: Translations = {
   },
   header: {
     toolsButton: 'Tools',
-    moreButton: 'More',
+    menuButton: 'Menu',
     patternSheetLabel: 'Pattern',
     newPatternSheetTitle: 'New Pattern',
   },

@@ -50,7 +50,7 @@ const {
 const headerEl = ref<HTMLElement>()
 const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activePattern.value])
 
-/** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the More menu. */
+/** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the header menu. */
 const THEME_ICONS: Record<string, IconName> = { device: 'device', light: 'sun', dark: 'moon', contrast: 'contrast' }
 const { pick: themePick } = useThemePick()
 const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
@@ -88,10 +88,58 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     </AppTooltip>
 
     <!--
+      The header menu (ticket 210; HeaderMenu card), next to the logo at every size, replacing the header menu (ticket
+      168, 79). 744-1023px: Import a file/QR code, Language, Theme and Name on exports; below 744px it drops Import
+      (the Pattern sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
+      the theme sheet. At 1024px and up it would hold only Overview and Take the tour (tickets 77, 80), so the button
+      stays hidden there until one of them lands.
+    -->
+    <span class="app-header__menu">
+      <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
+        <!--
+          The Pattern name, its size and save state (ticket 188): moved here from the header's own row, which the
+          name and size used to dominate the width of at the phone tier -- see app-header__phone-pattern's own note.
+        -->
+        <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
+          <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
+            {{ summarizePattern(activePattern) }}
+          </span>
+          <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
+        </p>
+        <AppMenuItem class="app-header__menu-theme-item" icon="device" data-testid="menu-item-theme" @select="themeSheetOpen = true">
+          {{ t.theme.groupLabel }}
+        </AppMenuItem>
+        <div class="app-header__menu-imports">
+          <PatternImport :decode-image="decodeImage" :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
+        </div>
+        <div class="app-header__menu-row">
+          <span class="app-header__menu-label">{{ t.languageSwitcher.ariaLabel }}</span>
+          <LanguageSwitcher />
+        </div>
+        <!-- Redundant on phone once PhoneThemeButton sits in the header itself; stays for the iPad mini tier, which has no room for a standalone icon. -->
+        <div class="app-header__menu-row app-header__menu-row--wrap app-header__menu-theme">
+          <span class="app-header__menu-label">{{ t.theme.groupLabel }}</span>
+          <ThemeToggle />
+        </div>
+        <AppMenuItem class="app-header__menu-shortcuts" icon="keyboard" data-testid="menu-item-shortcuts" @select="shortcutsHelpOpen = true">
+          {{ t.shortcutsHelp.title }}
+        </AppMenuItem>
+        <template #footer>
+          <div class="app-header__menu-row" data-testid="menu-item-name-on-exports">
+            <span class="app-header__menu-label">{{ t.saveBox.nameOnExports }}</span>
+            <AppMenuItem data-testid="menu-item-name-on-exports-change" @select="nameOnExportsOpen = true">
+              {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
+            </AppMenuItem>
+          </div>
+        </template>
+      </AppMenu>
+    </span>
+
+    <!--
       Technique/schema and theme (ticket 188; responsive.md, 0-743px): each its own icon, the current bead or
       theme, with a hover/focus label and a tap that opens its picker (the Pattern sheet's Bead pill row, or a
-      small four-way theme sheet) -- reclaiming the width the name/size readout (now under the More menu) used to
-      take, so nothing after it (Undo, Redo, More) is pushed out of viewport.
+      small four-way theme sheet) -- reclaiming the width the name/size readout (now under the header menu) used to
+      take, so nothing after it (Undo, Redo) is pushed out of viewport.
     -->
     <span v-if="activePattern" class="app-header__phone-only">
       <IconButton icon="size" shape="round" :label="activeBeadLabel ?? ''" data-testid="phone-bead-button" @click="openPhoneSheet = 'pattern'" />
@@ -125,7 +173,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
     <span class="app-header__gap" />
 
-    <!-- Imported Patterns go straight into the library, which decides what to open and persists them. Moves into the More menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Pattern sheet. -->
+    <!-- Imported Patterns go straight into the library, which decides what to open and persists them. Moves into the header menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Pattern sheet. -->
     <div class="app-header__imports app-header__phone-hide" data-testid="pattern-actions">
       <PatternImport :decode-image="decodeImage" :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
     </div>
@@ -151,7 +199,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     </template>
     <span class="app-header__wide-only"><LanguageSwitcher /></span>
     <span class="app-header__wide-only"><ThemeToggle /></span>
-    <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"); at the phone tier it moves into the More menu instead of its own button. -->
+    <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"); at the phone tier it moves into the header menu instead of its own button. -->
     <span class="app-header__shortcuts app-header__phone-hide">
       <IconButton
         icon="keyboard"
@@ -160,48 +208,6 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         data-testid="shortcuts-button"
         @click="shortcutsHelpOpen = true"
       />
-    </span>
-    <!--
-      The More menu (ticket 168, 79; OverflowMenu card): 744-1023px, Import a file/QR code, Language, Theme and Name
-      on exports; below 744px the same menu drops Import (the Pattern sheet's job there) and adds Keyboard shortcuts
-      (any-pointer: fine only, .app-header__more-shortcuts).
-    -->
-    <span class="app-header__more">
-      <AppMenu :label="t.header.moreButton" icon="more" align="end" data-testid="header-more-menu">
-        <!--
-          The Pattern name, its size and save state (ticket 188): moved here from the header's own row, which the
-          name and size used to dominate the width of at the phone tier -- see app-header__phone-pattern's own note.
-        -->
-        <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
-          <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
-            {{ summarizePattern(activePattern) }}
-          </span>
-          <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
-        </p>
-        <div class="app-header__more-imports">
-          <PatternImport :decode-image="decodeImage" :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
-        </div>
-        <div class="app-header__more-row">
-          <span class="app-header__more-label">{{ t.languageSwitcher.ariaLabel }}</span>
-          <LanguageSwitcher />
-        </div>
-        <!-- Redundant on phone once PhoneThemeButton sits in the header itself; stays for the iPad mini tier, which has no room for a standalone icon. -->
-        <div class="app-header__more-row app-header__more-row--wrap app-header__more-theme">
-          <span class="app-header__more-label">{{ t.theme.groupLabel }}</span>
-          <ThemeToggle />
-        </div>
-        <AppMenuItem class="app-header__more-shortcuts" icon="keyboard" data-testid="more-shortcuts" @select="shortcutsHelpOpen = true">
-          {{ t.shortcutsHelp.title }}
-        </AppMenuItem>
-        <template #footer>
-          <div class="app-header__more-row" data-testid="more-name-on-exports">
-            <span class="app-header__more-label">{{ t.saveBox.nameOnExports }}</span>
-            <AppMenuItem data-testid="more-name-on-exports-change" @select="nameOnExportsOpen = true">
-              {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
-            </AppMenuItem>
-          </div>
-        </template>
-      </AppMenu>
     </span>
   </header>
 
@@ -265,7 +271,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   .app-header {
     min-height: var(--header-height-phone);
     /* Tighter than the reference tier's 10px (ticket 188): several small icon controls now share this row, and
-       every px the gaps between them save is a px Undo, Redo and More stay clear of the edge. */
+       every px the gaps between them save is a px Undo and Redo stay clear of the edge. */
     gap: var(--space-4);
     padding-right: var(--space-16);
     padding-left: var(--space-16);
@@ -294,13 +300,13 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
 /*
  * The iPad mini tier (ticket 168; responsive.md, 744-1023px): Tools opens the Drawer, and Import/Language/Theme move
- * into the More menu -- everything a wider tier keeps inline in the header. The More menu carries on below 744px
+ * into the header menu -- everything a wider tier keeps inline in the header. The header menu carries on below 744px
  * (the phone tier, ticket 79) too, since it holds the same Theme/Language/Name on exports there; only the Tools
- * button and the More menu's own Import row are specific to 744-1023px (below that the phone header has no Drawer to
- * open, and imports move into the Pattern sheet instead -- see .app-header__more-imports and .app-header__phone-*).
+ * button and the header menu's own Import row are specific to 744-1023px (below that the phone header has no Drawer to
+ * open, and imports move into the Pattern sheet instead -- see .app-header__menu-imports and .app-header__phone-*).
  */
 .app-header__tools,
-.app-header__more,
+.app-header__menu,
 .app-header__phone-only {
   display: none;
 }
@@ -317,8 +323,15 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     display: none !important;
   }
 
-  .app-header__more {
+  .app-header__menu {
     display: inline-flex;
+  }
+}
+
+/* Nothing to hold at 1024px and up until Overview and Take the tour land (tickets 77, 80). */
+@media (min-width: 1024px) {
+  .app-header__menu {
+    display: none;
   }
 }
 
@@ -333,16 +346,16 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     display: inline-flex;
   }
 
-  .app-header__more-imports {
+  .app-header__menu-imports {
     display: none;
   }
 }
 
-.app-header__more-imports {
+.app-header__menu-imports {
   padding: var(--space-4);
 }
 
-.app-header__more-row {
+.app-header__menu-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -350,16 +363,16 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   padding: var(--space-4) var(--space-8);
 }
 
-.app-header__more-row--wrap {
+.app-header__menu-row--wrap {
   flex-wrap: wrap;
 }
 
-.app-header__more-label {
+.app-header__menu-label {
   font: var(--type-body);
   color: var(--body);
 }
 
-/* The phone header's combined Pattern name/size + save state (ticket 79), now a row in the More menu (ticket 188). */
+/* The phone header's combined Pattern name/size + save state (ticket 79), now a row in the header menu (ticket 188). */
 .app-header__phone-pattern {
   display: flex;
   flex: 1 1 auto;
@@ -383,7 +396,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 /*
  * The phone header's second row (redesign-feedback.md): Replace bead, New Pattern and Theme. A sibling of <header>,
  * not nested inside it -- see the template comment above app-header__phone-tools -- so it gets the full header width
- * to itself instead of negotiating space with Undo/Redo/More.
+ * to itself instead of negotiating space with Undo/Redo.
  */
 .app-header__phone-tools {
   display: none;
@@ -425,20 +438,31 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   outline-offset: 2px;
 }
 
-/* Keyboard shortcuts inside the phone's More menu only helps a fine pointer or keyboard, same rule as ticket 166's standalone header button. */
-.app-header__more-shortcuts {
+/* Keyboard shortcuts inside the phone's header menu only helps a fine pointer or keyboard, same rule as ticket 166's standalone header button. */
+.app-header__menu-shortcuts {
   display: none;
 }
 
 @media (max-width: 743px) and (any-pointer: fine) {
-  .app-header__more-shortcuts {
+  .app-header__menu-shortcuts {
     display: flex;
   }
 }
 
-/* Theme has its own icon in the phone header now (PhoneThemeButton); the More menu's copy only earns its keep at the iPad mini tier, which has no room for a standalone icon. */
+/* The phone's Theme item opens the four-way sheet (HeaderMenu card); the iPad mini tier has the ThemeToggle row instead. */
+.app-header__menu-theme-item {
+  display: none;
+}
+
 @media (max-width: 743px) {
-  .app-header__more-theme {
+  .app-header__menu-theme-item {
+    display: flex;
+  }
+}
+
+/* Theme has its own icon in the phone header now (PhoneThemeButton); the header menu's copy only earns its keep at the iPad mini tier, which has no room for a standalone icon. */
+@media (max-width: 743px) {
+  .app-header__menu-theme {
     display: none;
   }
 }

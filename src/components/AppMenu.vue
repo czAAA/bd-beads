@@ -3,6 +3,7 @@ import { nextTick, onBeforeUnmount, provide, ref, useId } from 'vue'
 import { useAnchoredPosition } from '../composables/useAnchoredPosition'
 import { useEscapeLayer } from '../composables/useEscapeLayer'
 import AppButton from './AppButton.vue'
+import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
@@ -21,8 +22,10 @@ const props = withDefaults(
     size?: 'md' | 'lg'
     /** Which edge of the button the menu lines up with. */
     align?: 'start' | 'end'
+    /** The header menu's trigger (HeaderMenu card): just the icon in a ghost button, no label or chevron; `label` is its accessible name. */
+    iconOnly?: boolean
   }>(),
-  { icon: undefined, variant: 'secondary', size: 'md', align: 'start' },
+  { icon: undefined, variant: 'secondary', size: 'md', align: 'start', iconOnly: false },
 )
 
 const open = ref(false)
@@ -110,7 +113,23 @@ defineExpose({ close })
 
 <template>
   <div ref="rootEl" class="app-menu">
+    <button
+      v-if="iconOnly"
+      v-bind="$attrs"
+      type="button"
+      class="ui-control app-menu__icon-button"
+      :class="{ 'app-menu__icon-button--open': open }"
+      :aria-label="label"
+      aria-haspopup="menu"
+      :aria-expanded="open"
+      :aria-controls="open ? menuId : undefined"
+      @click="onButtonClick"
+      @keydown="onButtonKeydown"
+    >
+      <AppIcon :name="icon ?? 'menu'" :size="18" />
+    </button>
     <AppButton
+      v-else
       v-bind="$attrs"
       :variant="variant"
       :size="size"
@@ -149,6 +168,50 @@ defineExpose({ close })
 .app-menu {
   position: relative;
   display: inline-flex;
+}
+
+.app-menu__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+/* 40px on the phone, its icon 20px (HeaderMenu card). */
+@media (max-width: 743px) {
+  .app-menu__icon-button {
+      width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .app-menu__icon-button :deep(svg) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.app-menu__icon-button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.app-menu__icon-button--open {
+  background: var(--press-fill);
+}
+
+@media (hover: hover) {
+  .app-menu__icon-button:hover:not(.app-menu__icon-button--open) {
+    background: var(--hover-fill);
+  }
 }
 
 .app-menu__list {
