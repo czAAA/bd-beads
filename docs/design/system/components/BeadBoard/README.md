@@ -2,7 +2,7 @@
 
 How a Pattern is drawn: beads on a rounded board, with rulers, the current-row marker, and the technique word and curve behind.
 
-- **Board:** `board` rounded rectangle (radius-board, 32px) with 14px padding. Rulers sit outside it, top and left (`ruler` role, `ruler` color; every 5th number plus the current row's in `marker`, weight 700).
+- **Board:** `board` rounded rectangle (radius-board, 32px) with 14px padding. Rulers sit outside it, top and left (`ruler` role, `ruler` color; every 5th number bold in `body`, the current row's in `marker`, weight 700; see the Rulers card).
 - **Beads:** 2px gap. Shape comes from the Bead's form factor and Technique; a rounded bead has corners at 22% of its width. Light draws a faint `bead-rim` at 0.75px; dark draws none.
 - **Finished rows:** light fades each bead's own color toward the board (28% color, 72% `board`), not grey; dark draws the bead's grey at 45% over the board.
 - **Current row:** a 2px `marker` outline, 3px outside the row, radius 5.

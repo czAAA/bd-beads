@@ -28,8 +28,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** The number's size at 100% zoom. It scales with the zoom (ticket 212) along with the gutter and the beads, so every bead keeps its own number at every level. */
-const FONT_SIZE_PX = 11
+/** Every 5th number is a landmark, bold in `body`; the rest are regular in `ruler` (Rulers card). */
+const LANDMARK_EVERY = 5
+/** Column numbers from 100 are turned a quarter turn, so three digits take no more width than two. Row numbers stay horizontal. */
+const TURN_FROM = 100
 const LABEL_GAP_PX = 4
 
 /*
@@ -66,6 +68,10 @@ interface RulerLabel {
   current: boolean
   /** The bead cursor's row or column (BeadCursor card): `ink`, bold, with a `focus-ring` line under it. */
   cursor: boolean
+  /** Every 5th number (unless the current or cursor style takes over): bold in `body`. */
+  landmark: boolean
+  /** A column number of 100 or more, turned a quarter turn to read upward. */
+  rotated: boolean
 }
 
 /** The line Row progress is on along this ruler's axis, or -1 when there is none to mark. */
@@ -85,6 +91,8 @@ const labels = computed<RulerLabel[]>(() =>
       alongPx: GRID_BORDER_PX + index * spacingPx.value,
       current: index === currentIndex.value,
       cursor: index === props.cursorIndex,
+      landmark: (index + 1) % LANDMARK_EVERY === 0 && index !== currentIndex.value && index !== props.cursorIndex,
+      rotated: !isRowRuler.value && index + 1 >= TURN_FROM,
     })),
 )
 
@@ -95,12 +103,10 @@ const gutterStyle = computed(() =>
     ? {
         width: `${RULER_GUTTER_PX}px`,
         height: `${extent.value.height + GRID_BORDER_PX * 2}px`,
-        fontSize: `${FONT_SIZE_PX}px`,
       }
     : {
         width: `${extent.value.width + GRID_BORDER_PX * 2}px`,
         height: `${RULER_GUTTER_PX}px`,
-        fontSize: `${FONT_SIZE_PX}px`,
       },
 )
 
@@ -146,7 +152,12 @@ function onLabelClick(label: RulerLabel) {
       :key="label.index"
       type="button"
       class="ui-control pattern-ruler__label"
-      :class="{ 'pattern-ruler__label--current': label.current, 'pattern-ruler__label--cursor': label.cursor }"
+      :class="{
+        'pattern-ruler__label--landmark': label.landmark,
+        'pattern-ruler__label--rotated': label.rotated,
+        'pattern-ruler__label--current': label.current,
+        'pattern-ruler__label--cursor': label.cursor,
+      }"
       data-testid="ruler-label"
       :aria-label="labelAriaLabel(label)"
       :style="labelStyle(label)"
@@ -158,14 +169,25 @@ function onLabelClick(label: RulerLabel) {
 </template>
 
 <style scoped>
-/* The ruler role (DESIGN.md §3 → tokens.json type): DM Mono 11 in `ruler`; its size is set by gutterStyle. */
+/* The ruler role (DESIGN.md §3 → tokens.json type): DM Mono 11 in `ruler`, 12 on a phone (below `bp-tablet`). */
 .pattern-ruler {
   position: relative;
   flex: none;
   font-family: var(--font-mono);
+  font-size: 11px;
   font-weight: 400;
   line-height: 1;
   color: var(--ruler);
+}
+
+.pattern-ruler__label--landmark {
+  font-weight: 700;
+  color: var(--body);
+}
+
+/* Read upward (`sideways-lr`), so a cursor underline stays under the digits in their own direction. */
+.pattern-ruler__label--rotated {
+  writing-mode: sideways-lr;
 }
 
 .pattern-ruler__label--current {
@@ -218,7 +240,38 @@ function onLabelClick(label: RulerLabel) {
   justify-content: flex-start;
 }
 
+/*
+ * Column numbers sit at the bead-side end of their gutter, 3px off the board, whether horizontal or turned. A turned
+ * number's line starts at the bottom, so its bead-side end is flex-start on the top ruler and flex-end on the bottom
+ * one; the 3px padding stays the same physical side.
+ */
 .pattern-ruler--column .pattern-ruler__label {
   justify-content: center;
+}
+
+.pattern-ruler--column.pattern-ruler--start .pattern-ruler__label {
+  align-items: flex-end;
+  padding-bottom: 3px;
+}
+
+.pattern-ruler--column.pattern-ruler--end .pattern-ruler__label {
+  align-items: flex-start;
+  padding-top: 3px;
+}
+
+.pattern-ruler--column.pattern-ruler--start .pattern-ruler__label--rotated {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pattern-ruler--column.pattern-ruler--end .pattern-ruler__label--rotated {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+@media (max-width: 743px) {
+  .pattern-ruler {
+    font-size: 12px;
+  }
 }
 </style>

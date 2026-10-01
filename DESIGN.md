@@ -239,3 +239,5 @@ TourPattern), the Overview page and the HeaderMenu (which replaces the OverflowM
 roles (`tagline`, `serif-heading`, `note`). It builds on v14 (synced from DESIGN.md @ e16e9c5, plus the X1 logo,
 Icons v2 and Phases A–E; the `bead`, `library` and `paste` icons of ticket 188; EmptyCanvas's full-bleed ghost board,
 ticket 180).
+Added by hand from the approved Rulers design on claude.ai (ticket 222), until the next sync replaces them: the Rulers
+card, the five `bead-min-*` tokens and the new `ruler` type usage.

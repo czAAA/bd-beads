@@ -110,7 +110,6 @@ describe('PatternRuler', () => {
   it('sizes the numbers and gutter at 100% zoom, leaving the canvas transform to scale them with the beads (ticket 212)', () => {
     const style = mountRuler({ axis: 'row' }).attributes('style')
 
-    expect(style).toContain('font-size: 11px')
     expect(style).toContain(`width: ${RULER_GUTTER_PX}px`)
   })
 
@@ -123,6 +122,57 @@ describe('PatternRuler', () => {
       Array.from({ length: huge.rows }, (_unused, index) => String(index + 1)),
     )
     expect(labels(column)).toHaveLength(huge.columns)
+  })
+})
+
+describe('PatternRuler number styling (Rulers card, variant A)', () => {
+  it.each([
+    ['row', ['5', '10', '15', '20']],
+    ['column', ['5', '10']],
+  ] as const)('marks every 5th %s number as a landmark', (axis, expected) => {
+    const landmarks = labels(mountRuler({ axis }))
+      .filter((label) => label.classes('pattern-ruler__label--landmark'))
+      .map((label) => label.text())
+
+    expect(landmarks).toEqual(expected)
+  })
+
+  it("leaves the current row's and the cursor's style to win over the 5th-number style", () => {
+    const base = pattern()
+    const wrapper = mount(PatternRuler, {
+      props: {
+        pattern: { ...base, rowProgress: { ...base.rowProgress, enabled: true, direction: 'rows', currentRow: 4 } },
+        axis: 'row',
+        edge: 'start',
+      },
+    })
+    const current = labels(wrapper)[4]!
+
+    expect(current.classes()).toContain('pattern-ruler__label--current')
+    expect(current.classes()).not.toContain('pattern-ruler__label--landmark')
+
+    const cursor = mount(PatternRuler, { props: { pattern: base, axis: 'row', edge: 'start', cursorIndex: 9 } })
+    expect(labels(cursor)[9]!.classes()).toContain('pattern-ruler__label--cursor')
+    expect(labels(cursor)[9]!.classes()).not.toContain('pattern-ruler__label--landmark')
+  })
+
+  it('keeps column numbers up to 99 horizontal and turns them from 100 (a quarter turn, reading upward)', () => {
+    const wide = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 160, height: 30, unit: 'mm' } })
+    const rendered = labels(mount(PatternRuler, { props: { pattern: wide, axis: 'column', edge: 'start' } }))
+
+    expect(wide.columns).toBeGreaterThan(100)
+    expect(rendered[98]!.text()).toBe('99')
+    expect(rendered[98]!.classes()).not.toContain('pattern-ruler__label--rotated')
+    expect(rendered[99]!.text()).toBe('100')
+    expect(rendered[99]!.classes()).toContain('pattern-ruler__label--rotated')
+  })
+
+  it('never turns row numbers', () => {
+    const tall = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 300, unit: 'mm' } })
+    const rendered = labels(mount(PatternRuler, { props: { pattern: tall, axis: 'row', edge: 'start' } }))
+
+    expect(tall.rows).toBeGreaterThan(100)
+    expect(rendered.some((label) => label.classes('pattern-ruler__label--rotated'))).toBe(false)
   })
 })
 

@@ -192,6 +192,11 @@
   --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
   --dock-height: 64px; /* Phone dock and iPad mini bottom toolbar, plus env(safe-area-inset-bottom). */
   --progress-height-phone: 56px; /* Progress bar on a phone, plus its 3px progress line. */
+  --bead-min-phone: 16px; /* Smallest bead at the Phone tier (0–743px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 18px). Set for the phone's 12px ruler numbers (15px would do for 11px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-tablet: 15px; /* Smallest bead at the iPad mini tier tier (744–1023px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-tablet-lg: 15px; /* Smallest bead at the iPad 13″ tier tier (1024–1279px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-laptop: 15px; /* Smallest bead at the MacBook Air tier tier (1280–1919px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-desktop: 15px; /* Smallest bead at the 24″ and larger tier (1920px and up): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
   --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */
   --field-height: 40px; /* Text, number and select fields, Steppers and form buttons: taller than the 34px controls because people type and read in them. */
   --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */
@@ -237,7 +242,7 @@
   --text-meta: 400 13px/18px var(--font-mono); /* Values next to a label: "l–r 1 · t–b 0", "64×48 mm", "40 columns · 30 rows", counts, "100%". Lowercased by style. */
   --text-meta-small: 400 12px/16px var(--font-mono); /* "qr · png · pdf", "5 of 12". Lowercased by style. */
   --text-meta-tiny: 400 11px/15px var(--font-mono); /* Saved Pattern sizes ("40×30"), kbd hints ("esc"). */
-  --text-ruler: 400 11px/1.4 var(--font-mono); /* Canvas rulers: every 5th number plus the current row's, which is weight 700 in marker. */
+  --text-ruler: 400 11px/1.4 var(--font-mono); /* Canvas rulers: every row and column number; every 5th bold in body, the rest regular in ruler, the current row weight 700 in marker; column numbers from 100 turned a quarter turn; 12px on a phone. See the Rulers card. */
   --text-word: italic 400 240px/1 var(--font-serif); /* The background technique word only, italic, in word color, anchored bottom-right behind the board. */
   --text-tagline: italic 400 60px/62px var(--font-serif); /* Overview only: the slogan. 40px on the phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller. The last word in accent-strong. */
   --text-serif-heading: italic 400 34px/38px var(--font-serif); /* Overview only: section headings ("What's inside", "Three ways to use it") and plan names (30px); 42px from 744 below 1024. */
