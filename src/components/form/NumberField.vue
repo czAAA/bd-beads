@@ -4,7 +4,7 @@ import AppIcon from '../AppIcon.vue'
 import TextField from './TextField.vue'
 
 /**
- * A number with its unit inside (ticket 149; NumberField card): a TextField of type number that asks for the numeric
+ * A number with its unit as a label on the border (ticket 149; NumberField card): a TextField of type number that asks for the numeric
  * keyboard on touch, `decimal` for a length in mm or cm and `numeric` for a count of beads. Optionally paired with a
  * compact up/down stepper (ticket 181) — narrow enough for the New Pattern form's own sidebar column, unlike the
  * Stepper card's wide − and + buttons — so a caller that wants the field settable entirely by clicking or tapping can

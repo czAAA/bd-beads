@@ -1,13 +1,17 @@
 <script setup lang="ts">
+import { useId } from 'vue'
+
 /**
  * A single-line input (ticket 149; TextField and NumberField cards): 40px, `elevated` fill, a `field-line` border,
  * 14px text with 12px padding, the placeholder in `muted`. Focus is an `ink` border and the focus ring; `invalid` is a
- * `danger` border; disabled is `surface` with `faint` text. A `unit` sits inside at the right in `meta`. Attributes
+ * `danger` border; disabled is `surface` with `faint` text. A `unit` is a label on the top border, 12px from the right, in `meta-small` on a patch that cuts the border (ticket 224;
+ * NumberField card); it takes the border's color and reaches screen readers once, as the input's description. Attributes
  * (id, type, min, step, inputmode, data-testid) go to the <input> itself.
  */
 defineOptions({ inheritAttrs: false })
 withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean }>(), { unit: undefined })
 const value = defineModel<string | number>()
+const unitId = useId()
 </script>
 
 <template>
@@ -17,17 +21,18 @@ const value = defineModel<string | number>()
       class="ui-control text-field__input"
       :disabled="disabled"
       :aria-invalid="invalid || undefined"
+      :aria-describedby="unit ? unitId : undefined"
       v-bind="$attrs"
     />
-    <span v-if="unit" class="text-field__unit" aria-hidden="true">{{ unit }}</span>
+    <span v-if="unit" :id="unitId" class="text-field__unit" aria-hidden="true">{{ unit }}</span>
   </span>
 </template>
 
 <style scoped>
 .text-field {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-8);
   box-sizing: border-box;
   height: var(--field-height);
   padding: 0 var(--space-12);
@@ -88,13 +93,29 @@ const value = defineModel<string | number>()
 }
 
 .text-field__unit {
-  flex: none;
-  font: var(--type-meta);
+  position: absolute;
+  top: 0;
+  right: var(--space-12);
+  padding: 0 var(--space-4);
+  font: var(--type-meta-small);
   color: var(--muted);
+  white-space: nowrap;
+  background: var(--elevated);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.text-field:focus-within .text-field__unit {
+  color: var(--ink);
+}
+
+.text-field--invalid .text-field__unit {
+  color: var(--danger);
 }
 
 .text-field--disabled .text-field__unit {
   color: var(--faint);
+  background: var(--surface);
 }
 
 :root[data-theme='contrast'] .text-field {

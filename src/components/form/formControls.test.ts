@@ -51,9 +51,13 @@ describe('TextField and NumberField', () => {
     expect(disabled.find('input').element.disabled).toBe(true)
   })
 
-  it('keeps its unit inside and asks for the right keyboard', () => {
+  it('shows its unit as a border label, described once, and asks for the right keyboard', () => {
     const beads = mount(NumberField, { props: { unit: 'beads', whole: true } })
-    expect(beads.find('.text-field__unit').text()).toBe('beads')
+    const unit = beads.find('.text-field__unit')
+    expect(unit.text()).toBe('beads')
+    expect(beads.find('input').attributes('aria-describedby')).toBe(unit.attributes('id'))
+    expect(unit.attributes('aria-hidden')).toBe('true')
+    expect(mount(NumberField).find('input').attributes('aria-describedby')).toBeUndefined()
     expect(beads.find('input').attributes('type')).toBe('number')
     expect(beads.find('input').attributes('inputmode')).toBe('numeric')
 
