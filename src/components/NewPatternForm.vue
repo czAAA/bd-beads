@@ -315,47 +315,6 @@ function onDropImage(file: File) {
       />
     </FormField>
 
-    <div class="new-pattern-form__pair">
-      <FormField :label="t.form.widthLabel" label-for="width-input" :error="widthError" error-testid="width-error">
-        <NumberField
-          id="width-input"
-          v-model="widthText"
-          data-testid="width-input"
-          testid-prefix="width-input"
-          :unit="unitOptions.find((option) => option.value === unit)?.label"
-          :whole="unit === 'beads'"
-          :invalid="!!widthError"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
-          stepper
-          digits-only
-          :placeholder="t.form.sizePlaceholder"
-          :decrease-label="t.form.decreaseWidthButton"
-          :increase-label="t.form.increaseWidthButton"
-          @blur="touched.width = true"
-        />
-      </FormField>
-      <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
-        <NumberField
-          id="height-input"
-          v-model="heightText"
-          data-testid="height-input"
-          testid-prefix="height-input"
-          :unit="unitOptions.find((option) => option.value === unit)?.label"
-          :whole="unit === 'beads'"
-          :invalid="!!heightError"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
-          stepper
-          digits-only
-          :placeholder="t.form.sizePlaceholder"
-          :decrease-label="t.form.decreaseHeightButton"
-          :increase-label="t.form.increaseHeightButton"
-          @blur="touched.height = true"
-        />
-      </FormField>
-    </div>
-
     <FormField :label="t.form.unitLabel" label-id="unit-label">
       <template v-if="estimate" #aside>
         <span class="new-pattern-form__estimate">
@@ -389,6 +348,48 @@ function onDropImage(file: File) {
       </template>
       <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="unit-label" data-testid="unit-select" />
     </FormField>
+
+    <div class="new-pattern-form__pair">
+      <FormField :label="t.form.widthLabel" label-for="width-input" :error="widthError" error-testid="width-error">
+        <NumberField
+          id="width-input"
+          v-model="widthText"
+          data-testid="width-input"
+          testid-prefix="width-input"
+          :whole="unit === 'beads'"
+          :invalid="!!widthError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          stepper
+          digits-only
+          :placeholder="unit"
+          :decrease-label="t.form.decreaseWidthButton"
+          :increase-label="t.form.increaseWidthButton"
+          @blur="touched.width = true"
+        />
+      </FormField>
+      
+      <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
+        <NumberField
+          id="heihgt-input"
+          v-model="heightText"
+          data-testid="height-input"
+          testid-prefix="height-input"
+          :whole="unit === 'beads'"
+          :invalid="!!heightError"
+          :min="unit === 'beads' ? 1 : 0"
+          :step="unit === 'beads' ? 1 : 'any'"
+          stepper
+          digits-only
+          :placeholder="unit"
+          :decrease-label="t.form.decreaseHeightButton"
+          :increase-label="t.form.increaseHeightButton"
+          @blur="touched.height = true"
+        />
+      </FormField>
+    </div>
+
+
 
     <p v-if="sizeConversion" class="new-pattern-form__conversion" data-testid="size-conversion">
       <span>{{ sizeConversion }}</span>

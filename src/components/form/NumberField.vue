@@ -13,7 +13,6 @@ import TextField from './TextField.vue'
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
-    unit?: string
     whole?: boolean
     invalid?: boolean
     disabled?: boolean
