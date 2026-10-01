@@ -4,14 +4,14 @@
 
 **Blocked by:** None (can start immediately). The Rulers card and `bead-min-*` tokens were added to `docs/design/system/` by hand from the approved design; the next sync from claude.ai (`DESIGN.md` §6) replaces them.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every 5th row and column number is bold in `body`; the others are regular in `ruler`
-- [ ] The current row's number and the cursor's number keep their own styles over the 5th-number style
-- [ ] Column numbers from 100 are turned and read upward; up to 99 and every row number stay horizontal
-- [ ] Turned and horizontal numbers sit the same distance from the board on the top and bottom rulers, with every Technique's half-bead shift still applied
-- [ ] The cursor underline sits under the digits, in their own reading direction, for horizontal and turned numbers alike
-- [ ] The numbers are 12px at the phone tier (below 744px) and 11px above it, chosen in CSS, with no per-tier size in script
-- [ ] Verified in a browser, in light, dark and high contrast, with the Pattern turned
-- [ ] Uses the design system tokens and type roles only
-- [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: no, not added to the Overview or the Tour
+- [x] Every 5th row and column number is bold in `body`; the others are regular in `ruler`
+- [x] The current row's number and the cursor's number keep their own styles over the 5th-number style
+- [x] Column numbers from 100 are turned and read upward; up to 99 and every row number stay horizontal
+- [x] Turned and horizontal numbers sit the same distance from the board on the top and bottom rulers, with every Technique's half-bead shift still applied
+- [x] The cursor underline sits under the digits, in their own reading direction, for horizontal and turned numbers alike
+- [x] The numbers are 12px at the phone tier (below 744px) and 11px above it, chosen in CSS, with no per-tier size in script
+- [x] Verified in a browser, in light, dark and high contrast, with the Pattern turned
+- [x] Uses the design system tokens and type roles only
+- [x] Overview and Tour question (CLAUDE.md): asked of the user; answer: no, not added to the Overview or the Tour
