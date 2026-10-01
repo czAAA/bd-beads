@@ -348,7 +348,12 @@ body {
 .f-lab{display:flex;justify-content:space-between;align-items:baseline;font:500 14px/20px var(--font-sans);color:var(--ink)}
 .f-lab i{font:400 12px/16px var(--font-mono);color:var(--muted);font-style:normal;text-transform:lowercase}
 .f-in{height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;border:1px solid var(--field-line);border-radius:8px;background:var(--elevated);font:400 14px/20px var(--font-sans);color:var(--ink);box-sizing:border-box;white-space:nowrap;overflow:hidden}
-.f-in .ph{color:var(--muted)}.f-in .sfx{margin-left:auto;font:400 13px var(--font-mono);color:var(--muted)}
+.f-in .ph{color:var(--muted)}.f-in{position:relative;overflow:visible}
+.f-in .ubl{position:absolute;top:-8px;right:12px;padding:0 4px;background:var(--elevated);font:400 12px/16px var(--font-mono);color:var(--muted)}
+.f-in.focus .ubl{color:var(--ink)}
+.f-in.err .ubl{color:var(--danger)}
+.f-in.dis .ubl{background:var(--surface);color:var(--faint)}
+.f-in .sfx{margin-left:auto;font:400 13px var(--font-mono);color:var(--muted)}
 .f-in .chev{margin-left:auto;color:var(--muted)}
 .f-in.focus{border-color:var(--ink);outline:2px solid var(--focus-ring);outline-offset:2px}
 .f-in.err{border-color:var(--danger)}
