@@ -19,6 +19,8 @@ const props = defineProps<{
   edge: 'start' | 'end'
   /** The bead cursor's row or column on this ruler's axis (ticket 159): marked. */
   cursorIndex?: number
+  /** How far this ruler is carried toward the grid so it stays in view while the Pattern is scrolled (ticket 225), in the ruler's own (unzoomed) px. */
+  stickPx?: number
 }>()
 
 const emit = defineEmits<{
@@ -33,6 +35,8 @@ const LANDMARK_EVERY = 5
 /** Column numbers from 100 are turned a quarter turn, so three digits take no more width than two. Row numbers stay horizontal. */
 const TURN_FROM = 100
 const LABEL_GAP_PX = 4
+/** How far the numbers reach into the board's padding, so they sit close to the beads instead of a whole padding away (ticket 225). */
+const TUCK_PX = 8
 
 /*
  * Each number is a button now (ticket 123): clicking it selects that whole row/column, the same Selection a
@@ -98,8 +102,16 @@ const labels = computed<RulerLabel[]>(() =>
 
 const extent = computed(() => patternExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows))
 
-const gutterStyle = computed(() =>
-  isRowRuler.value
+/** Carried toward the grid by the scrolled-away distance: down from the top, up from the bottom, right from the left, left from the right. */
+const stickTransform = computed(() => {
+  const distance = props.stickPx ?? 0
+  if (distance <= 0) return undefined
+  const sign = props.edge === 'start' ? distance : -distance
+  return isRowRuler.value ? `translateX(${sign}px)` : `translateY(${sign}px)`
+})
+
+const gutterStyle = computed(() => ({
+  ...(isRowRuler.value
     ? {
         width: `${RULER_GUTTER_PX}px`,
         height: `${extent.value.height + GRID_BORDER_PX * 2}px`,
@@ -107,23 +119,25 @@ const gutterStyle = computed(() =>
     : {
         width: `${extent.value.width + GRID_BORDER_PX * 2}px`,
         height: `${RULER_GUTTER_PX}px`,
-      },
-)
+      }),
+  transform: stickTransform.value,
+}))
 
 function labelStyle(label: RulerLabel) {
+  const edge = props.edge
   return isRowRuler.value
     ? {
         top: `${label.alongPx}px`,
         height: `${CELL_SIZE_PX}px`,
-        left: '0',
-        right: '0',
+        left: edge === 'start' ? '0' : `${-TUCK_PX}px`,
+        right: edge === 'start' ? `${-TUCK_PX}px` : '0',
         paddingInline: `${LABEL_GAP_PX}px`,
       }
     : {
         left: `${label.alongPx + columnOffsetPx()}px`,
         width: `${CELL_SIZE_PX}px`,
-        top: '0',
-        bottom: '0',
+        top: edge === 'start' ? '0' : `${-TUCK_PX}px`,
+        bottom: edge === 'start' ? `${-TUCK_PX}px` : '0',
       }
 }
 
@@ -142,7 +156,7 @@ function onLabelClick(label: RulerLabel) {
 <template>
   <div
     class="pattern-ruler"
-    :class="[`pattern-ruler--${axis}`, `pattern-ruler--${edge}`]"
+    :class="[`pattern-ruler--${axis}`, `pattern-ruler--${edge}`, { 'pattern-ruler--stuck': (stickPx ?? 0) > 0 }]"
     :data-testid="`pattern-ruler-${axis}-${edge}`"
     data-tour="ruler"
     :style="gutterStyle"
@@ -178,6 +192,31 @@ function onLabelClick(label: RulerLabel) {
   font-weight: 400;
   line-height: 1;
   color: var(--ruler);
+}
+
+/*
+ * A ruler carried along with the scrolled Pattern (ticket 225) sits over the beads, so it gets the canvas box's fill,
+ * reaching as far as its numbers do into the board's padding, and rises above the surface.
+ */
+.pattern-ruler--stuck {
+  z-index: 1;
+  background: var(--box);
+}
+
+.pattern-ruler--stuck.pattern-ruler--column.pattern-ruler--start {
+  box-shadow: 0 8px 0 var(--box);
+}
+
+.pattern-ruler--stuck.pattern-ruler--column.pattern-ruler--end {
+  box-shadow: 0 -8px 0 var(--box);
+}
+
+.pattern-ruler--stuck.pattern-ruler--row.pattern-ruler--start {
+  box-shadow: 8px 0 0 var(--box);
+}
+
+.pattern-ruler--stuck.pattern-ruler--row.pattern-ruler--end {
+  box-shadow: -8px 0 0 var(--box);
 }
 
 .pattern-ruler__label--landmark {

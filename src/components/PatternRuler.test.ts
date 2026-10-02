@@ -95,7 +95,30 @@ describe('PatternRuler', () => {
     // Every row's number lines up on the same edge; the technique shows through the spacing, not a sideways jitter.
     const rendered = labels(mountRuler({ axis: 'row', edge: 'end', technique: 'peyote' }))
 
-    expect(rendered.every((label) => label.attributes('style')!.includes('left: 0px'))).toBe(true)
+    expect(rendered.every((label) => label.attributes('style')!.includes('left: -8px'))).toBe(true)
+  })
+
+  it('tucks the numbers 8px into the board padding, so they sit close to the beads (ticket 225)', () => {
+    const left = labels(mountRuler({ axis: 'row', edge: 'start' }))[0]!.attributes('style')
+    const top = labels(mountRuler({ axis: 'column', edge: 'start' }))[0]!.attributes('style')
+    const bottom = labels(mountRuler({ axis: 'column', edge: 'end' }))[0]!.attributes('style')
+
+    expect(left).toContain('right: -8px')
+    expect(top).toContain('bottom: -8px')
+    expect(bottom).toContain('top: -8px')
+  })
+
+  it('is carried toward the grid by stickPx, from either edge, and sits still without it (ticket 225)', () => {
+    const stuck = (axis: 'row' | 'column', edge: 'start' | 'end', stickPx?: number) =>
+      mount(PatternRuler, { props: { pattern: pattern(), axis, edge, stickPx } }).get('.pattern-ruler')
+
+    expect(stuck('column', 'start', 40).attributes('style')).toContain('translateY(40px)')
+    expect(stuck('column', 'end', 40).attributes('style')).toContain('translateY(-40px)')
+    expect(stuck('row', 'start', 40).attributes('style')).toContain('translateX(40px)')
+    expect(stuck('row', 'end', 40).attributes('style')).toContain('translateX(-40px)')
+    expect(stuck('row', 'start', 40).classes()).toContain('pattern-ruler--stuck')
+    expect(stuck('row', 'start', 0).attributes('style')).not.toContain('translate')
+    expect(stuck('row', 'start', 0).classes()).not.toContain('pattern-ruler--stuck')
   })
 
   it('keeps every column number inside the grid it rules', () => {

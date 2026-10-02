@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   GRID_BORDER_PX,
   RULER_GUTTER_PX,
@@ -8,6 +8,7 @@ import {
   type GridPosition,
   type PreviewCell,
 } from '../domain/grid'
+import { screenSideOf, stickDistances, type Side, type Stick } from '../domain/rulerStick'
 import type { MirrorAxisCounts } from '../domain/mirror'
 import type { Pattern } from '../domain/pattern'
 import type { Selection } from '../domain/selection'
@@ -49,6 +50,55 @@ const emit = defineEmits<{
 /** Relays a ruler's own `select` (see PatternRuler.vue) as this component's `select-line`, shared by all four rulers below rather than each carrying its own copy of the same lambda. */
 function onSelectLine(selection: Selection) {
   emit('select-line', selection)
+}
+
+/*
+ * Sticky rulers (ticket 225): the rulers live inside the transform that zooms and turns them, which CSS `position:
+ * sticky` cannot see through, so they are carried along by hand. On every scroll the box is measured against the
+ * panel that scrolls it, and each ruler gets the distance its screen edge has scrolled away, converted to its own
+ * unzoomed px, so it stays at that edge — at any zoom and any turn.
+ */
+const boxEl = ref<HTMLElement>()
+const stick = ref<Stick>({ top: 0, right: 0, bottom: 0, left: 0 })
+let scroller: HTMLElement | undefined
+let resizeObserver: ResizeObserver | undefined
+
+function findScroller(from: HTMLElement): HTMLElement | undefined {
+  for (let el = from.parentElement; el && el !== document.documentElement; el = el.parentElement) {
+    const style = getComputedStyle(el)
+    if (style.overflowX !== 'visible' || style.overflowY !== 'visible') return el
+  }
+  return undefined
+}
+
+function measureStick() {
+  if (!boxEl.value || !scroller) return
+  stick.value = stickDistances(boxEl.value.getBoundingClientRect(), scroller.getBoundingClientRect(), RULER_GUTTER_PX * props.zoom)
+}
+
+onMounted(() => {
+  if (!boxEl.value) return
+  scroller = findScroller(boxEl.value)
+  scroller?.addEventListener('scroll', measureStick, { passive: true })
+  window.addEventListener('resize', measureStick)
+  // The scroll panel can change size without the window doing so (a side panel opening, say).
+  if (scroller && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(measureStick)
+    resizeObserver.observe(scroller)
+  }
+  measureStick()
+})
+onBeforeUnmount(() => {
+  scroller?.removeEventListener('scroll', measureStick)
+  window.removeEventListener('resize', measureStick)
+  resizeObserver?.disconnect()
+})
+// A zoom, turn or resize of the box moves its edges without a scroll event.
+watch(() => [props.zoom, props.pattern.rotation, props.pattern.columns, props.pattern.rows, props.pattern.technique], () => void nextTick(measureStick))
+
+/** How far the ruler on this side of the Pattern is carried: the scrolled-away distance of the screen edge it now faces, in its own px. */
+function stickOf(side: Side): number {
+  return stick.value[screenSideOf(side, props.pattern.rotation)] / props.zoom
 }
 
 /** The space the Pattern takes up in the ruled layout: the rulers are laid out around it, and the surface (which is not inside the transform that scales the rulers) is placed over it. */
@@ -113,21 +163,21 @@ const rotateStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="pattern-canvas" data-testid="pattern-canvas-viewport" :style="contentStyle">
+  <div ref="boxEl" class="pattern-canvas" data-testid="pattern-canvas-viewport" :style="contentStyle">
     <div class="pattern-canvas__clip">
       <div class="pattern-canvas__rotate" :style="rotateStyle">
         <div class="pattern-canvas__scaled" :style="{ transform: `scale(${zoom})` }">
           <div class="pattern-canvas__ruled">
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="start" :cursor-index="cursor?.column" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="start" :stick-px="stickOf('top')" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
 
-            <PatternRuler :pattern="pattern" axis="row" edge="start" :cursor-index="cursor?.row" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="start" :stick-px="stickOf('left')" :cursor-index="cursor?.row" @select="onSelectLine" />
             <div class="pattern-canvas__grid-slot" :style="gridSlotStyle" />
-            <PatternRuler :pattern="pattern" axis="row" edge="end" :cursor-index="cursor?.row" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="row" edge="end" :stick-px="stickOf('right')" :cursor-index="cursor?.row" @select="onSelectLine" />
 
             <span />
-            <PatternRuler :pattern="pattern" axis="column" edge="end" :cursor-index="cursor?.column" @select="onSelectLine" />
+            <PatternRuler :pattern="pattern" axis="column" edge="end" :stick-px="stickOf('bottom')" :cursor-index="cursor?.column" @select="onSelectLine" />
             <span />
           </div>
         </div>
@@ -201,6 +251,13 @@ const rotateStyle = computed(() => ({
   position: absolute;
   top: 50%;
   left: 50%;
+  /* Over the surface, so a ruler carried along with the scroll covers the beads that pass under it (ticket 225); only the numbers take the pointer. */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pattern-canvas__rotate :deep(.pattern-ruler) {
+  pointer-events: auto;
 }
 
 .pattern-canvas__scaled {
