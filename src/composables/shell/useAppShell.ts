@@ -29,6 +29,7 @@ import { useSettledPattern } from '../pattern/useSettledPattern'
 import { useSharedPatternLink } from '../pattern/useSharedPatternLink'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
+import { useAddedColors } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
@@ -175,6 +176,9 @@ function wireAppShell(services: Services) {
     hoveredCell.value = undefined
   }
 
+  /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
+  const { palette, addUsed } = useAddedColors(services.addedColorsStore)
+
   /** The active tool and which of the three paint colors is chosen (tickets 58, 171, 206). */
   const {
     activeTool,
@@ -186,9 +190,23 @@ function wireAppShell(services: Services) {
     onSelectTool,
     onSelectColor,
     onSelectCustomColor,
+    onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
-  } = useToolAndColor({ leaveSelectTool })
+  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
+
+  /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it still paints, and the user is told once per color. */
+  let limitToldFor: string | undefined
+  function onPaintColorUsed(hex: string) {
+    if (selectedColorId.value || selectedImageColor.value) return
+    const { outcome, colorId } = addUsed(hex)
+    if (outcome === 'added' && colorId) {
+      onCustomColorAdded(colorId)
+    } else if (outcome === 'full' && limitToldFor !== hex) {
+      limitToldFor = hex
+      showToast('palette-full', t.value.palette.limitReached, 'info')
+    }
+  }
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
   const { strokeMode, endStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
@@ -247,7 +265,10 @@ function wireAppShell(services: Services) {
     beginSelectPress,
     extendSelection,
     backOutOfSelect,
-    beginOrCommitPress,
+    beginOrCommitPress: (mode, color, row, column) => {
+      beginOrCommitPress(mode, color, row, column)
+      if (mode === 'paint' && color) onPaintColorUsed(color)
+    },
     paintStrokeCell,
     pasteAt: pasteAtCell,
   })

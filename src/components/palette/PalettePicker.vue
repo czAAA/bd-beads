@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
+import { usePalette } from '../../composables/tools/usePalette'
+import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 
 const props = defineProps<{ selectedColorId?: string }>()
@@ -9,13 +10,14 @@ const emit = defineEmits<{
   select: [colorId: string]
 }>()
 const { t } = useI18n()
+const palette = usePalette()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
 const roving = useRovingFocus(gridEl)
 
 function isStop(colorId: string, index: number): boolean {
-  const selected = PALETTE.some((color) => color.id === props.selectedColorId)
+  const selected = palette.value.some((color) => color.id === props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
 }
 </script>
@@ -23,13 +25,13 @@ function isStop(colorId: string, index: number): boolean {
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
     <button
-      v-for="(color, index) in PALETTE"
+      v-for="(color, index) in palette"
       :key="color.id"
       type="button"
       class="ui-control palette-picker__swatch"
       :class="{ 'palette-picker__swatch--selected': color.id === selectedColorId }"
       :style="{ backgroundColor: color.hex }"
-      :title="`${t.palette.colorLabel} ${color.hex} (Shift+${PALETTE_SHORTCUTS[index]!.keyLabel})`"
+      :title="PALETTE_SHORTCUTS[index] ? `${t.palette.colorLabel} ${color.hex} (Shift+${PALETTE_SHORTCUTS[index].keyLabel})` : `${t.palette.colorLabel} ${color.hex}`"
       :aria-label="`${t.palette.colorLabel} ${index + 1}, ${t.colorNames[color.id] ?? color.hex}`"
       :aria-pressed="color.id === selectedColorId"
       :tabindex="roving.tabIndexFor(isStop(color.id, index))"

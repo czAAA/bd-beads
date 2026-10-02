@@ -529,7 +529,7 @@ describe('App', () => {
     expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('replaces the previous Custom color when another one is chosen, leaving the Palette itself untouched', async () => {
+  it('replaces the previous Custom color when another one is chosen, and only the one that paints joins the Palette (ticket 227)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
@@ -544,7 +544,7 @@ describe('App', () => {
     await wrapper.trigger('mouseup')
 
     expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#abcdef')
-    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount)
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 1)
   })
 
   it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {

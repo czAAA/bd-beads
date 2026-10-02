@@ -250,6 +250,7 @@ export const ru: Translations = {
     redoButton: 'Повторить',
     rotateButton: 'Повернуть',
     customColorLabel: 'Свой цвет',
+    limitReached: 'Палитра заполнена: цвет нарисован, но в палитру не добавлен.',
   },
   tools: {
     paintLabel: 'Кисть',

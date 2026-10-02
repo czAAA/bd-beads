@@ -248,6 +248,7 @@ export const en: Translations = {
     redoButton: 'Redo',
     rotateButton: 'Rotate',
     customColorLabel: 'Custom color',
+    limitReached: 'The Palette is full: this color painted, but it wasn’t added.',
   },
   tools: {
     paintLabel: 'Paint',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { findPaletteColor } from '../../domain/palette'
+import { usePalette } from '../../composables/tools/usePalette'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -29,7 +29,8 @@ function toolLabel(tool: Tool): string {
 }
 
 const activeToolInfo = computed(() => ({ icon: TOOL_ICONS[props.activeTool], label: toolLabel(props.activeTool) }))
-const colorHex = computed(() => (props.selectedColorId ? findPaletteColor(props.selectedColorId)?.hex : undefined))
+const palette = usePalette()
+const colorHex = computed(() => (props.selectedColorId ? palette.value.find((color) => color.id === props.selectedColorId)?.hex : undefined))
 
 const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string }[]>(() => [
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool' },

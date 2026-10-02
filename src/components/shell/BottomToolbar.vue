@@ -3,7 +3,7 @@ import { inTourCard } from '../../composables/ui/tourDom'
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
-import { findPaletteColor } from '../../domain/palette'
+import { usePalette } from '../../composables/tools/usePalette'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -40,7 +40,8 @@ function toolLabel(tool: Tool): string {
 /** The same four tools Toolbox's own tabs list, in the same order (ToolTabs card). */
 const tools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id) })))
 
-const colorHex = computed(() => (props.selectedColorId ? findPaletteColor(props.selectedColorId)?.hex : undefined))
+const palette = usePalette()
+const colorHex = computed(() => (props.selectedColorId ? palette.value.find((color) => color.id === props.selectedColorId)?.hex : undefined))
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()

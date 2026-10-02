@@ -212,6 +212,7 @@ export interface Translations {
     rotateButton: string
     /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
     customColorLabel: string
+    limitReached: string
   }
   tools: {
     paintLabel: string

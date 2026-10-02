@@ -1,6 +1,7 @@
 import type { DecodeImage } from '../domain/imageConversion'
 import { downloadFile, type DownloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
+import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsStore'
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
@@ -17,6 +18,7 @@ export interface Services {
   downloadFile: DownloadFile
   decodeImage: DecodeImage
   makerNameStore: MakerNameStore
+  addedColorsStore: AddedColorsStore
   themePickStore: ThemePickStore
   localeStore: LocaleStore
   tourStore: TourStore
@@ -27,6 +29,7 @@ export const browserServices: Services = {
   downloadFile,
   decodeImage: decodeImageFile,
   makerNameStore: browserMakerNameStore,
+  addedColorsStore: browserAddedColorsStore,
   themePickStore: browserThemePickStore,
   localeStore: browserLocaleStore,
   tourStore: browserTourStore,

@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { findPaletteColor } from '../../domain/palette'
+import { PALETTE, normalizeHex, type PaletteColor } from '../../domain/palette'
 import type { Tool } from '../../domain/tool'
 
 /** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
@@ -8,6 +8,8 @@ export const DEFAULT_PALETTE_COLOR_ID = 'red'
 /** What choosing a tool needs from the app shell: leaving Select forgets what it was holding. */
 export interface ToolAndColorDeps {
   leaveSelectTool: () => void
+  /** The Palette as it stands, built-in and added swatches; the built-in colors alone when omitted. */
+  palette?: () => readonly PaletteColor[]
 }
 
 /**
@@ -16,6 +18,7 @@ export interface ToolAndColorDeps {
  * Deps are read lazily.
  */
 export function useToolAndColor(deps: ToolAndColorDeps) {
+  const palette = () => deps.palette?.() ?? PALETTE
   const selectedColorId = ref<string | undefined>(DEFAULT_PALETTE_COLOR_ID)
 
   /**
@@ -40,7 +43,7 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   /** The current paint color's hex: the selected Palette color, the selected Image color, or the Custom color — whichever of the three is active; null when none is. */
   function selectedColorHex(): string | null {
     if (selectedColorId.value) {
-      return findPaletteColor(selectedColorId.value)?.hex ?? null
+      return palette().find((color) => color.id === selectedColorId.value)?.hex ?? null
     }
     return selectedImageColor.value ?? customColor.value ?? null
   }
@@ -78,9 +81,20 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   /** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch or Image color was active, vice versa. */
   function onSelectCustomColor(hex: string) {
     customColor.value = hex
+    // A hex the Palette already has (built-in, or added earlier) just selects that swatch (ticket 227).
+    const match = palette().find((color) => color.hex === normalizeHex(hex))
+    if (match) {
+      onSelectColor(match.id)
+      return
+    }
     selectedColorId.value = undefined
     selectedImageColor.value = undefined
     switchToPaintOnColorPick()
+  }
+
+  /** The Custom color just joined the Palette (ticket 227): its new swatch is now the selected one, with no tool switch since it was already painting. */
+  function onCustomColorAdded(colorId: string) {
+    selectedColorId.value = colorId
   }
 
   /** Choosing one of the open Pattern's Image colors (ticket 58) paints with it, the same way a Palette swatch does; the Custom slot keeps its own last hex, unselected. */
@@ -108,6 +122,7 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     onSelectTool,
     onSelectColor,
     onSelectCustomColor,
+    onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
   }

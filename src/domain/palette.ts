@@ -3,7 +3,7 @@ export interface PaletteColor {
   hex: string
 }
 
-/** A free-standing set of paint colors (see CONTEXT.md's Palette entry), independent of the bead catalog. */
+/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that were used join them (ticket 227, ADR 0025). */
 export const PALETTE: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },
@@ -52,4 +52,43 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
 /** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside the Palette. */
 export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.hex === hex)
+}
+
+/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 36 swatches (ticket 227). */
+export const MAX_ADDED_COLORS = 24
+
+/** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for anything else. */
+export function normalizeHex(hex: string): string | undefined {
+  const lower = hex.trim().toLowerCase()
+  return /^#[0-9a-f]{6}$/.test(lower) ? lower : undefined
+}
+
+/** The id an added swatch is known by: its hex, so the same color is the same swatch on every device. */
+export function addedColorId(hex: string): string {
+  return `added-${hex.slice(1)}`
+}
+
+/** The whole Palette: the built-in colors, then each added one in the order it was first used. */
+export function paletteWith(added: readonly string[]): PaletteColor[] {
+  return [...PALETTE, ...added.map((hex) => ({ id: addedColorId(hex), hex }))]
+}
+
+export type AddUsedColorOutcome = 'added' | 'known' | 'full'
+
+/**
+ * A Custom color has just painted a cell: the added colors with it appended on its first use. 'known' when the hex is
+ * already a swatch (built-in or added), 'full' when 24 are added and it can't join; either way `added` is unchanged.
+ */
+export function addUsedColor(
+  added: readonly string[],
+  hex: string,
+): { added: readonly string[]; outcome: AddUsedColorOutcome } {
+  const normalized = normalizeHex(hex)
+  if (!normalized || paletteWith(added).some((color) => color.hex === normalized)) {
+    return { added, outcome: 'known' }
+  }
+  if (added.length >= MAX_ADDED_COLORS) {
+    return { added, outcome: 'full' }
+  }
+  return { added: [...added, normalized], outcome: 'added' }
 }

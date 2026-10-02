@@ -41,8 +41,8 @@ Who made the Patterns on this device: an optional name, at most 40 characters, p
 _Avoid_: author, owner, signature, user name
 
 **Palette**:
-A free-standing set of colors used to paint pattern cells. Independent from the bead catalog — a cell's color is not required to correspond to a real bead.
-_Avoid_: color scheme
+A free-standing set of colors used to paint pattern cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 24, so at most 36 swatches), in the order they were first used. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Pattern; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
+_Avoid_: color scheme, fixed palette
 
 **Bead**:
 A catalog entry for a specific real bead: brand, name, size, form factor, and color (e.g. Miyuki Delica 11/0), plus its physical footprint in mm (used to convert an mm/cm size into a grid when a Pattern is created, and to work out an Estimated size — see ticket 01). Width runs along the thread (the bead's length through its hole) and height across it (its diameter), so TOHO Round 11/0 is 1.5 × 2.2mm, not a 2.2mm ball. A Bead may carry a per-bead width correction (mm added to each column for thread and slack, measured rather than published — currently 0.15mm on TOHO Round 11/0), so a column is `widthMm + widthCorrectionMm` wide. The bead catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), no longer user-editable — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
@@ -115,8 +115,8 @@ Swaps a Pattern's single Bead for a different catalog entry, after a confirmatio
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
-A one-off paint color chosen freely with the color picker in the Colors group, outside the Palette. Not added to the Palette and not remembered: choosing another Custom color replaces it. Cells painted with it keep that color and show up in Bead quantities like any other color.
-_Avoid_: user color, extra palette color
+A paint color chosen freely with the color picker in the Colors group. The first time it paints a cell it joins the Palette as a new swatch (unless its hex is already a swatch, or 24 have been added), and from then on it is an ordinary Palette swatch. Until it is used it is only the picker's current color, and choosing another replaces it. Cells keep the hex, so a Pattern opens with its colors on a device that lacks the swatch.
+_Avoid_: user color, extra palette color, one-off color
 
 **Selection**:
 A rectangular area of a Pattern's cells, marked out by dragging with the Select tool, or by clicking a number on the row or column ruler (which marks out that whole row/column, from any tool), and left highlighted once made. Exactly one is active at a time: a new drag or ruler click replaces the previous one, and leaving the Select tool, switching or creating a Pattern, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it (an Escape with no Selection, paste preview or open disclosure left to dismiss switches to the Paint tool instead). It marks out cells, it does not change them — selecting never paints anything.
