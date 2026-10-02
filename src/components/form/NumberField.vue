@@ -31,7 +31,6 @@ const props = withDefaults(
     testidPrefix?: string
   }>(),
   {
-    unit: undefined,
     whole: false,
     min: undefined,
     step: undefined,
@@ -90,7 +89,6 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
       :inputmode="inputmode"
       :pattern="digitsOnly ? '[0-9]*' : undefined"
       :class="{ 'text-field__input--clear-on-focus': digitsOnly }"
-      :unit="unit"
       :invalid="invalid"
       :disabled="disabled"
       :min="min"
