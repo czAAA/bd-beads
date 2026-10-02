@@ -6,6 +6,7 @@ import AppMenu from '../components/ui/AppMenu.vue'
 import AppMenuItem from '../components/ui/AppMenuItem.vue'
 import LanguageSwitcher from '../components/shell/LanguageSwitcher.vue'
 import ThemeToggle from '../components/shell/ThemeToggle.vue'
+import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
@@ -15,7 +16,7 @@ import { provideI18n } from '../i18n/useI18n'
 /**
  * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
  * header is the editor's own (logo, header menu, Language, Theme; no Keyboard shortcuts), then the slogan, the two
- * ways in and the features carousel (ticket 217) the coffee tile (ticket 219) and the plan tiles (ticket 220). It only reports which way in was chosen: the entry decides where that goes.
+ * ways in and the features carousel (ticket 217) the coffee tile (ticket 219), the plan tiles (ticket 220) and the drawn layer behind each section (ticket 221). It only reports which way in was chosen: the entry decides where that goes.
  */
 const props = defineProps<{
   /** How many Patterns this device has saved; none means a new visitor. */
@@ -62,6 +63,7 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
 
     <main class="overview__main">
       <section class="overview__hero">
+        <DrawnLayer section="hero" />
         <p class="overview__slogan" data-testid="overview-slogan">
           <span class="overview__slogan-first"
             >{{ sloganFirst
@@ -110,11 +112,15 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
       </section>
 
       <section class="overview__inside" aria-labelledby="overview-inside">
+        <DrawnLayer section="inside" />
         <h2 id="overview-inside" class="overview__heading">{{ t.overview.whatsInside }}</h2>
         <FeatureCarousel />
       </section>
 
-      <CoffeeTile class="overview__coffee" />
+      <div class="overview__coffee">
+        <DrawnLayer section="coffee" />
+        <CoffeeTile />
+      </div>
 
       <PlanTiles @open-editor="emit('openEditor')" />
     </main>
@@ -207,6 +213,14 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
     padding-right: 2.5rem;
     padding-left: 2.5rem;
   }
+}
+
+.overview__hero,
+.overview__inside,
+.overview__coffee {
+  /* The drawn layer (ticket 221) sits behind the section's content and never above it. */
+  position: relative;
+  isolation: isolate;
 }
 
 .overview__hero {

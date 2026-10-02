@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppButton from '../components/ui/AppButton.vue'
 import AppIcon from '../components/ui/AppIcon.vue'
+import DrawnLayer from './DrawnLayer.vue'
 import { useI18n } from '../i18n/useI18n'
 
 /**
@@ -17,6 +18,7 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
 
 <template>
   <section class="plans" aria-labelledby="overview-plans" data-testid="overview-plans">
+    <DrawnLayer section="plans" />
     <header class="plans__head">
       <p class="plans__label">{{ t.overview.plans.label }}</p>
       <h2 id="overview-plans" class="plans__heading">{{ t.overview.plans.heading }}</h2>
@@ -68,6 +70,8 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
 
 <style scoped>
 .plans {
+  position: relative;
+  isolation: isolate;
   padding: var(--space-32) 0;
 }
 
