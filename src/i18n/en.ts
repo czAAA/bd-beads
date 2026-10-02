@@ -119,6 +119,8 @@ export const en: Translations = {
     openEditor: 'Open the editor',
     patternsSaved: 'Patterns saved: {count}',
     whatsInside: "What's inside",
+    previousFeature: 'Previous feature',
+    nextFeature: 'Next feature',
     notes: { you: 'you', onUs: 'on us', elevenSteps: 'eleven small steps', youllMakeThis: "you'll make this" },
     features: {
       techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },

@@ -121,6 +121,8 @@ export const ru: Translations = {
     openEditor: 'Открыть редактор',
     patternsSaved: 'Схем сохранено: {count}',
     whatsInside: 'Что внутри',
+    previousFeature: 'Предыдущая возможность',
+    nextFeature: 'Следующая возможность',
     notes: { you: 'вы', onUs: 'это мы', elevenSteps: 'одиннадцать коротких шагов', youllMakeThis: 'её вы и сделаете' },
     features: {
       techniques: { name: 'Техники плетения', text: 'Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер.' },

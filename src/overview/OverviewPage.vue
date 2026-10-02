@@ -1,21 +1,19 @@
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue'
 import AppButton from '../components/AppButton.vue'
-import AppIcon from '../components/AppIcon.vue'
 import AppLogo from '../components/AppLogo.vue'
 import AppMenu from '../components/AppMenu.vue'
 import AppMenuItem from '../components/AppMenuItem.vue'
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import ThemeToggle from '../components/ThemeToggle.vue'
-import type { IconName } from '../components/icons'
+import FeatureCarousel from './FeatureCarousel.vue'
 import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
-import type { Translations } from '../i18n/translations'
 
 /**
  * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
  * header is the editor's own (logo, header menu, Language, Theme; no Keyboard shortcuts), then the slogan, the two
- * ways in and one line per feature. It only reports which way in was chosen: the entry decides where that goes.
+ * ways in and the features carousel (ticket 217). It only reports which way in was chosen: the entry decides where that goes.
  */
 const props = defineProps<{
   /** How many Patterns this device has saved; none means a new visitor. */
@@ -29,17 +27,6 @@ const { t } = provideI18n()
 watchEffect(() => {
   document.title = `${t.value.overview.pageTitle} · ${t.value.app.title}`
 })
-
-/** The features in the order the design system lists them, each with its Icons v2 icon. Mirror is left out while its controls are hidden (ticket 174). */
-const FEATURES: { key: keyof Translations['overview']['features']; icon: IconName }[] = [
-  { key: 'techniques', icon: 'grid' },
-  { key: 'patternEditing', icon: 'paint' },
-  { key: 'convertImage', icon: 'image' },
-  { key: 'rowProgress', icon: 'turn-row-direction' },
-  { key: 'beadsNeeded', icon: 'bead' },
-  { key: 'exports', icon: 'export' },
-  { key: 'savedPatterns', icon: 'library' },
-]
 
 /** The slogan's first word carries the note "you". */
 const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
@@ -122,15 +109,7 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
 
       <section class="overview__inside" aria-labelledby="overview-inside">
         <h2 id="overview-inside" class="overview__heading">{{ t.overview.whatsInside }}</h2>
-        <ul class="overview__features" data-testid="overview-features">
-          <li v-for="feature in FEATURES" :key="feature.key" class="overview__feature" :data-feature="feature.key">
-            <AppIcon :name="feature.icon" :size="22" class="overview__feature-icon" />
-            <p class="overview__feature-text">
-              <strong class="overview__feature-name">{{ t.overview.features[feature.key].name }}</strong>
-              <span class="overview__feature-line">{{ t.overview.features[feature.key].text }}</span>
-            </p>
-          </li>
-        </ul>
+        <FeatureCarousel />
       </section>
     </main>
   </div>
@@ -436,42 +415,6 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
   margin: 0 0 var(--space-16);
   font: var(--type-serif-heading);
   letter-spacing: var(--tracking-serif-heading);
-  color: var(--ink);
-}
-
-.overview__features {
-  display: grid;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.overview__feature {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-14);
-  padding: var(--space-12) var(--space-4);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.overview__feature-icon {
-  flex: none;
-  margin-top: var(--space-2);
-  color: var(--ink);
-}
-
-.overview__feature-text {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 var(--space-8);
-  margin: 0;
-  font: var(--type-body);
-  color: var(--body);
-}
-
-.overview__feature-name {
-  font: var(--type-title);
   color: var(--ink);
 }
 </style>

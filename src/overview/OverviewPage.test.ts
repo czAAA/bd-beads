@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
+import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
 const FEATURES = ['techniques', 'patternEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedPatterns']
 
@@ -8,21 +9,14 @@ function page(patternCount = 0) {
   return mount(OverviewPage, { props: { patternCount, overviewHref: '/bd-beads/overview/' } })
 }
 
+afterEach(() => vi.unstubAllGlobals())
+
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
 })
 
 describe('OverviewPage', () => {
-  it('lists the seven features in order, each with an icon, and no Mirror', () => {
-    const items = page().findAll('[data-testid="overview-features"] > li')
-    expect(items.map((li) => li.attributes('data-feature'))).toEqual(FEATURES)
-    for (const li of items) expect(li.find('svg[data-icon]').exists()).toBe(true)
-    expect(items[0]!.text()).toContain('Loom, peyote and brick stitch')
-    expect(items[6]!.text()).toContain('Kept on this device. No account needed.')
-    expect(page().text()).not.toMatch(/mirror/i)
-  })
-
   describe('for a new visitor', () => {
     it('offers "Make your first Pattern" as the primary button and "Open the editor" beside it', async () => {
       const wrapper = page()
@@ -105,12 +99,82 @@ describe('OverviewPage', () => {
     const wrapper = page()
     await wrapper.find('[data-testid="language-switcher"]').trigger('click')
     expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первую схему')
-    expect(wrapper.find('[data-testid="overview-features"] li').text()).toContain('Техники плетения')
+    expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
     expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
   })
 
   it('starts in English on a device with no saved language', () => {
     localStorage.clear()
     expect(page().find('[data-testid="overview-make-first"]').text()).toBe('Make your first Pattern')
+  })
+})
+
+describe('the features carousel', () => {
+  const wideQuery = '(min-width: 1024px)'
+  const mountWide = () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ [wideQuery]: true }).matchMedia)
+    return mount(OverviewPage, { props: { patternCount: 0, overviewHref: '/' }, attachTo: document.body })
+  }
+
+  it('is a named tablist of the seven features in order, each with an icon, and no Mirror (from 1024)', () => {
+    const wrapper = mountWide()
+    const list = wrapper.find('[role="tablist"]')
+    expect(list.attributes('aria-label')).toBe("What's inside")
+    const tabs = list.findAll('[role="tab"]')
+    expect(tabs.map((tab) => tab.attributes('data-feature'))).toEqual(FEATURES)
+    for (const tab of tabs) expect(tab.find('svg[data-icon]').exists()).toBe(true)
+    expect(tabs[0]!.text()).toContain('Loom, peyote and brick stitch')
+    expect(wrapper.find('[data-testid="feature-carousel"]').text()).not.toMatch(/mirror/i)
+    wrapper.unmount()
+  })
+
+  it('labels each panel by its tab and shows only the selected one', () => {
+    const wrapper = mountWide()
+    const panels = wrapper.findAll('[role="tabpanel"]')
+    expect(panels).toHaveLength(7)
+    panels.forEach((panel, i) => {
+      const tab = wrapper.findAll('[role="tab"]')[i]!
+      expect(panel.attributes('aria-labelledby')).toBe(tab.attributes('id'))
+      expect(tab.attributes('aria-controls')).toBe(panel.attributes('id'))
+    })
+    expect(panels.map((p) => (p.element as HTMLElement).style.display)).toEqual(['', ...Array(6).fill('none')])
+    wrapper.unmount()
+  })
+
+  it('moves with the arrow keys and keeps ‹ › and the count in step', async () => {
+    const wrapper = mountWide()
+    const count = () => wrapper.find('[data-testid="feature-count"]').text()
+    expect(count()).toBe('1 / 7')
+    await wrapper.findAll('[role="tab"]')[0]!.trigger('keydown', { key: 'ArrowDown' })
+    expect(count()).toBe('2 / 7')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('aria-selected')).toBe('true')
+    expect(wrapper.findAll('[role="tab"]')[1]!.attributes('tabindex')).toBe('0')
+    await wrapper.find('[data-testid="feature-next"]').trigger('click')
+    expect(count()).toBe('3 / 7')
+    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
+    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
+    await wrapper.find('[data-testid="feature-prev"]').trigger('click')
+    expect(count()).toBe('7 / 7')
+    expect(wrapper.findAll('[role="tab"]')[6]!.attributes('aria-selected')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('shows swipe cards with dots and no tablist below 1024', async () => {
+    const wrapper = page()
+    expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+    const cards = wrapper.findAll('[data-testid="overview-features-track"] > [data-feature]')
+    expect(cards.map((card) => card.attributes('data-feature'))).toEqual(FEATURES)
+    expect(cards[2]!.text()).toContain('Turn a picture into a Pattern in up to 14 colors.')
+    expect(wrapper.findAll('[data-testid="feature-dots"] i')).toHaveLength(7)
+    await wrapper.find('[data-testid="feature-next"]').trigger('click')
+    expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('2 / 7')
+    expect(wrapper.findAll('[data-testid="feature-dots"] i')[1]!.classes()).toContain('carousel__dot--on')
+  })
+
+  it('has the Russian arrow labels', async () => {
+    const wrapper = page()
+    await wrapper.find('[data-testid="language-switcher"]').trigger('click')
+    expect(wrapper.find('[data-testid="feature-prev"]').attributes('aria-label')).toBe('Предыдущая возможность')
+    expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')
   })
 })
