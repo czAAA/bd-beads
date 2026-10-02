@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Three tiles in the design system's order, with the design system's English and Russian copy
 - [ ] **Open the editor** on No account opens the editor in the same way as the hero's button (ticket 77)

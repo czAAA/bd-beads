@@ -160,6 +160,14 @@ export interface Translations {
     notes: { you: string; onUs: string; elevenSteps: string; youllMakeThis: string }
     /** The coffee tile (ticket 219; Overview card). */
     coffee: { title: string; text: string; button: string }
+    /** The plan tiles (ticket 220; Overview card): placeholders until accounts and payment exist. */
+    plans: {
+      label: string
+      heading: string
+      why: string
+      youAreHere: string
+      tiles: Array<{ name: string; price: string; meta: string; text: string; button: string; includes: string; items: string[] }>
+    }
     features: {
       techniques: { name: string; text: string }
       patternEditing: { name: string; text: string }

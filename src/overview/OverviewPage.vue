@@ -8,13 +8,14 @@ import LanguageSwitcher from '../components/shell/LanguageSwitcher.vue'
 import ThemeToggle from '../components/shell/ThemeToggle.vue'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
+import PlanTiles from './PlanTiles.vue'
 import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
 
 /**
  * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
  * header is the editor's own (logo, header menu, Language, Theme; no Keyboard shortcuts), then the slogan, the two
- * ways in and the features carousel (ticket 217) and the coffee tile (ticket 219). It only reports which way in was chosen: the entry decides where that goes.
+ * ways in and the features carousel (ticket 217) the coffee tile (ticket 219) and the plan tiles (ticket 220). It only reports which way in was chosen: the entry decides where that goes.
  */
 const props = defineProps<{
   /** How many Patterns this device has saved; none means a new visitor. */
@@ -114,6 +115,8 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
       </section>
 
       <CoffeeTile class="overview__coffee" />
+
+      <PlanTiles @open-editor="emit('openEditor')" />
     </main>
   </div>
 </template>

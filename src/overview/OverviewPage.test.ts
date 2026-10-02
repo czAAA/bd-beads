@@ -187,3 +187,15 @@ describe('OverviewPage coffee tile', () => {
     }
   })
 })
+
+describe('OverviewPage plan tiles', () => {
+  it('sit below the coffee tile, and their Open the editor opens the editor like the hero button', async () => {
+    for (const count of [0, 3]) {
+      const wrapper = page(count)
+      const html = wrapper.html()
+      expect(html.indexOf('data-testid="overview-plans"')).toBeGreaterThan(html.indexOf('data-testid="overview-coffee"'))
+      await wrapper.find('[data-testid="plan-no-account"] button').trigger('click')
+      expect(wrapper.emitted('openEditor')).toHaveLength(1)
+    }
+  })
+})

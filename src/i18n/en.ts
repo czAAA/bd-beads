@@ -123,6 +123,17 @@ export const en: Translations = {
     nextFeature: 'Next feature',
     notes: { you: 'you', onUs: 'on us', elevenSteps: 'eleven small steps', youllMakeThis: "you'll make this" },
     coffee: { title: 'Made by one person', text: "bd-beads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
+    plans: {
+      label: 'plans',
+      heading: 'Three ways to use it',
+      why: "Accounts and Pro aren't open yet. Everything works without them.",
+      youAreHere: 'you are here',
+      tiles: [
+        { name: 'No account', price: 'Free', meta: 'no sign-up', text: 'Draw, count and weave on this device. Nothing to sign up for.', button: 'Open the editor', includes: 'what you get', items: ['All three Techniques', 'Every tool, Convert image and Row progress', 'PDF, PNG, QR and Pattern file exports', 'Patterns saved on this device'] },
+        { name: 'Free account', price: 'Free', meta: 'coming later', text: 'The same app, with your Patterns on every device you use.', button: 'Create free account', includes: 'everything without an account, plus', items: ['Patterns on all your devices', 'A backup of every Saved Pattern', 'Share a Pattern by link'] },
+        { name: 'Pro', price: 'Price later', meta: 'coming later', text: 'For makers who teach, sell or print a lot.', button: 'Coming later', includes: 'everything in Free account, plus', items: ['Your own cover page and logo on PDF exports', 'Your own Palettes and Bead catalogs', 'New Techniques first'] },
+      ],
+    },
     features: {
       techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
       patternEditing: { name: 'Pattern editing', text: 'Paint, Fill and Erase, copy and paste, and Undo for every step.' },
