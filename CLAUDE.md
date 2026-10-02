@@ -21,7 +21,8 @@ Headline format `type:[ticketNumber] Description`, with type `feat`, `fix` or `r
 Standing orders for every implementation (incl. `implement` skill); don't ask between steps:
 1. Branch from fresh `origin/main` (`git fetch` first). If the current branch isn't `main`, use a worktree at `./bd-beads-<ticket>/` and work there; otherwise branch in place.
 2. Archive the ticket in the same change.
-3. When done: commit, push, open PR.
+3. When finish: commit, push, open PR.
+4. explicitly say whats left for a human
 
 ### Domain docs
 
