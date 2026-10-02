@@ -440,7 +440,7 @@ const strand = computed(() =>
         </p>
       </div>
 
-      <AppButton v-if="step === 'create'" variant="box" size="sm" data-testid="tour-back-to-loom" @click="tour.backToLoom()">
+      <AppButton v-if="step === 'create'" variant="box" size="sm" data-testid="tour-back-to-loom" :title="t.tour.backToLoomName" :aria-label="t.tour.backToLoomName" @click="tour.backToLoom()">
         {{ t.tour.backToLoom }}
       </AppButton>
 

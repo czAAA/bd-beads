@@ -106,8 +106,8 @@ function onScroll() {
         @keydown="onTabKey"
       >
         <AppIcon :name="feature.icon" :size="22" class="carousel__tab-icon" />
-        <strong class="carousel__tab-name">{{ t.overview.features[feature.key].name }}</strong>
-        <span v-if="i === current" class="carousel__tab-line">{{ t.overview.features[feature.key].text }}</span>
+        <strong class="carousel__tab-name">{{ t.overview.features[feature.key].tabName ?? t.overview.features[feature.key].name }}</strong>
+        <span v-if="i === current" class="carousel__tab-line">{{ t.overview.features[feature.key].tabLine ?? t.overview.features[feature.key].text }}</span>
       </button>
     </div>
 

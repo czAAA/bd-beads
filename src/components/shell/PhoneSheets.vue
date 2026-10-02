@@ -100,10 +100,10 @@ function toolLabel(tool: Tool): string {
       </button>
     </div>
     <div class="phone-sheet__links">
-      <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
+      <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" :aria-label="t.tools.removeLineName" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
       </AppLink>
-      <AppLink icon="delete" danger data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
+      <AppLink icon="delete" danger data-testid="sheet-delete-all" :aria-label="t.deleteAll.confirmButton" @click="onRequestDeleteAll(); openPhoneSheet = null">
         {{ t.deleteAll.button }}
       </AppLink>
     </div>

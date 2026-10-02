@@ -134,12 +134,13 @@ const sizeSummary = computed(() => {
           data-testid="tool-remove-line"
           data-tour="remove-line"
           :title="t.tools.removeLineButton"
+          :aria-label="t.tools.removeLineName"
           :disabled="!canRemoveSelectedLine"
           @click="emit('remove-selected-line')"
         >
           {{ t.tools.removeLineShort }}
         </AppLink>
-        <AppLink icon="delete" danger data-testid="delete-all-button" @click="emit('delete-all')">
+        <AppLink icon="delete" danger data-testid="delete-all-button" :title="t.deleteAll.confirmButton" :aria-label="t.deleteAll.confirmButton" @click="emit('delete-all')">
           {{ t.deleteAll.button }}
         </AppLink>
       </div>

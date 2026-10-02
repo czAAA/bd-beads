@@ -76,11 +76,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
           :aria-expanded="colors?.length ? open : undefined"
           :aria-controls="open ? popoverId : undefined"
           :aria-describedby="describedby"
+          :aria-label="t.convertImage.imageColorsLabel"
           data-testid="image-colors-button"
           @click="toggle"
         >
           <AppIcon name="image" :size="15" />
-          <span class="image-colors-button__label">{{ t.convertImage.imageColorsLabel }}</span>
+          <span class="image-colors-button__label">{{ t.convertImage.imageColorsShort }}</span>
         </button>
       </template>
     </AppTooltip>

@@ -166,6 +166,7 @@ export const en: Translations = {
     next: 'Next',
     skip: 'Skip tour',
     backToLoom: 'Back to loom for your first Pattern',
+    backToLoomName: 'Back to loom for your first Pattern',
     backToLoomNote: 'Then: Loom, the default Bead and 10×75 beads, with your name kept. Now press Create Pattern.',
     selectLineHint: 'Select a row or column by pressing its number on the ruler.',
     offScreen: "This control isn't on screen. Next does this step for you.",
@@ -261,6 +262,7 @@ export const en: Translations = {
     pasteLabel: 'Paste',
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
+    removeLineName: 'Remove line',
   },
   rulers: {
     selectRowLabel: 'Select row {number}',
@@ -422,6 +424,7 @@ export const en: Translations = {
   convertImage: {
     readingPicture: 'Reading the picture',
     fileLabel: 'Convert image',
+    fileName: 'Convert image',
     limitsHint: '{formats}, up to {maxSizeMb} MB and {maxMegapixels} megapixels',
     slowFramingWarning: '{technique} at this size may make framing slow to update while you position a picture.',
     heading: 'Choose what becomes the Pattern',
@@ -433,6 +436,7 @@ export const en: Translations = {
     increaseColorsButton: 'More colors',
     foundColorsLabel: 'Colors found',
     imageColorsLabel: 'Image colors',
+    imageColorsShort: 'Image colors',
     noImageColors: 'No image colors: this Pattern was not converted from a picture.',
     errors: {
       heic: 'Browsers cannot read HEIC pictures. Save it as PNG or JPEG and try again.',

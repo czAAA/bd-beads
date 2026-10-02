@@ -18,7 +18,7 @@ describe('CoffeeTile', () => {
 
   it('says it in Russian too', () => {
     const wrapper = tile('ru')
-    expect(wrapper.find('h3').text()).toBe('Сделано одним человеком')
+    expect(wrapper.find('h3').text()).toBe('Один автор')
     expect(wrapper.find('button').text()).toBe('Угостить кофе')
   })
 

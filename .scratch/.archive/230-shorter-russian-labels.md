@@ -21,7 +21,7 @@ Where the table says "to be tried", the person implementing picks the wording th
 
 **Blocked by:** 229 (the check proves each wording fits)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every row of the table is changed in the Russian strings only (English untouched), using the proposed wording or, for the "to be tried" rows, a wording that passes the check
 - [ ] Where a label is shortened, the full wording stays available as the tooltip and the accessible name, so a screen reader and a mouse user still get the whole meaning
@@ -30,3 +30,7 @@ Where the table says "to be tried", the person implementing picks the wording th
 - [ ] Glossary: CONTEXT.md / the translation notes record "Мозаичное" and "Кирпичное" as the short forms of the technique names, if the RU glossary lists them
 - [ ] Unit tests that pin Russian strings are updated
 - [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: neither the Overview (77) nor the Tour (80)
+
+## Resolution note
+
+The visual check from 229 was not built yet, so there was no pending list to trim and the widths were not re-verified by it. The pending entries for this ticket still need removing when 229 lands. The "to be tried" wordings (Один автор, the shortened Techniques tab line) were picked from the table's first proposals, not measured.

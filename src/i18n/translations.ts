@@ -4,6 +4,14 @@ import type { PluralForms } from './plural'
 
 export type { Locale }
 
+/** One Overview feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't fit. */
+interface FeatureCopy {
+  name: string
+  text: string
+  tabName?: string
+  tabLine?: string
+}
+
 export interface Translations {
   app: {
     title: string
@@ -133,6 +141,7 @@ export interface Translations {
     next: string
     skip: string
     backToLoom: string
+    backToLoomName: string
     backToLoomNote: string
     /** Shown in Remove line's step until a whole row or column is selected. */
     selectLineHint: string
@@ -169,13 +178,13 @@ export interface Translations {
       tiles: Array<{ name: string; price: string; meta: string; text: string; button: string; includes: string; items: string[] }>
     }
     features: {
-      techniques: { name: string; text: string }
-      patternEditing: { name: string; text: string }
-      convertImage: { name: string; text: string }
-      rowProgress: { name: string; text: string }
-      beadsNeeded: { name: string; text: string }
-      exports: { name: string; text: string }
-      savedPatterns: { name: string; text: string }
+      techniques: FeatureCopy
+      patternEditing: FeatureCopy
+      convertImage: FeatureCopy
+      rowProgress: FeatureCopy
+      beadsNeeded: FeatureCopy
+      exports: FeatureCopy
+      savedPatterns: FeatureCopy
     }
     /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen readers with them. */
     examples: {
@@ -231,6 +240,7 @@ export interface Translations {
     removeLineButton: string
     /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
     removeLineShort: string
+    removeLineName: string
   }
   /** The row and column rulers (ticket 123): each number is now a button that selects that whole line, the same Selection a Select-tool drag across it would leave. */
   rulers: {
@@ -447,6 +457,7 @@ export interface Translations {
     readingPicture: string
     /** The file input's own label in the New Pattern form. */
     fileLabel: string
+    fileName: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
     /**
@@ -469,6 +480,7 @@ export interface Translations {
     foundColorsLabel: string
     /** Names the Image colors swatches in the Colors group (CONTEXT.md's Image colors). */
     imageColorsLabel: string
+    imageColorsShort: string
     /** Why Image colors is off: the Pattern wasn't made from a picture (ColorPickers card). */
     noImageColors: string
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */

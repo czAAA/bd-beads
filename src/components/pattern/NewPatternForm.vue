@@ -422,6 +422,7 @@ function onDropImage(file: File) {
       <FileButton
         id="convert-image-input"
         :label="t.convertImage.fileLabel"
+        :aria-label="t.convertImage.fileName"
         icon="image"
         data-testid="convert-image-input"
         :accept="imageInputAccept()"
