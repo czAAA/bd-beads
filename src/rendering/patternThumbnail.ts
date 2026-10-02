@@ -21,7 +21,7 @@ function rgb(hex: string): [number, number, number] | undefined {
  * longer side, square beads, turned as it shows on screen, empty beads left clear. Each pixel samples the bead under
  * it, so a Pattern of any size costs at most size × size lookups (ADR 0019: no size limit).
  */
-export function thumbnailPixels(pattern: Pattern, size: number): ThumbnailImage {
+export function thumbnailPixels(pattern: Pick<Pattern, 'columns' | 'rows' | 'rotation' | 'grid'>, size: number): ThumbnailImage {
   const { columns, rows } = pattern
   const swapped = rotationSwapsAxes(pattern.rotation)
   const [across, down] = swapped ? [rows, columns] : [columns, rows]

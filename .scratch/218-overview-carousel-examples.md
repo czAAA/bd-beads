@@ -12,14 +12,14 @@
 
 **Blocked by:** 217 (Overview feature carousel)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every feature shows its example, in the same Technique geometry and Bead look as the editor where beads are drawn
-- [ ] The Overview page stays light: drawing the examples does not load the editor's code beyond what drawing needs
-- [ ] Examples follow the theme (light, dark, high contrast) and never stretch or overflow at any of the five screen sizes
-- [ ] No screenshots and no borrowed imagery; every example is decorative and `aria-hidden`, with the feature's text carrying the meaning
-- [ ] English and Russian copy from the design system (Writing section, "Copy added in v15"); the page still starts in English on a device with no saved language
-- [ ] Correct at all five screen sizes and in the light, dark and high contrast themes; fully usable with the keyboard alone
-- [ ] Uses the design system tokens and type roles only (no hardcoded colors, fonts, sizes or shadows); loads no third-party fonts or scripts
-- [ ] Matches the Overview card and its preview in the design system
-- [ ] Overview and Tour question (CLAUDE.md): not applicable, this ticket completes the Overview itself
+- [x] Every feature shows its example, in the same Technique geometry and Bead look as the editor where beads are drawn
+- [x] The Overview page stays light: drawing the examples does not load the editor's code beyond what drawing needs
+- [x] Examples follow the theme (light, dark, high contrast) and never stretch or overflow at any of the five screen sizes
+- [x] No screenshots and no borrowed imagery; every example is decorative and `aria-hidden`, with the feature's text carrying the meaning
+- [x] English and Russian copy from the design system (Writing section, "Copy added in v15"); the page still starts in English on a device with no saved language
+- [x] Correct at all five screen sizes and in the light, dark and high contrast themes; fully usable with the keyboard alone
+- [x] Uses the design system tokens and type roles only (no hardcoded colors, fonts, sizes or shadows); loads no third-party fonts or scripts
+- [x] Matches the Overview card and its preview in the design system
+- [x] Overview and Tour question (CLAUDE.md): not applicable, this ticket completes the Overview itself

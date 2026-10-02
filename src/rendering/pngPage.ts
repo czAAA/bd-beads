@@ -1,5 +1,6 @@
 import { mm, type PageSize } from './printPlan'
-import { drawAccentLine, drawBackgroundName, drawMark, font, MONO, PRINT_COLORS, pt, SANS, SERIF, text, wrap } from './printPages'
+import { drawAccentLine, drawBackgroundName, drawMark, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
+import { PRINT_COLORS } from './printColors'
 import type { PrintText } from './printText'
 
 /**

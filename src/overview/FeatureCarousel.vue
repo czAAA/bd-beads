@@ -5,11 +5,12 @@ import type { IconName } from '../components/ui/icons'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { useI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
+import FeatureExample from './examples/FeatureExample.vue'
 
 /**
  * The Overview's "What's inside" carousel (ticket 217; Overview card). From 1024 a `tablist` of the seven features on
  * the left and the selected feature's stage on the right, with ‹ › and "n / 7" top-right; below 1024 swipe cards with
- * dots and ‹ ›. The stages are empty until ticket 218 draws the examples into them.
+ * dots and ‹ ›. Each stage holds the feature's example (ticket 218), scaled to what the stage leaves it.
  */
 const { t } = useI18n()
 
@@ -124,6 +125,7 @@ function onScroll() {
           :data-feature="feature.key"
         >
           <div class="carousel__stage" data-testid="feature-stage">
+            <FeatureExample :feature="feature.key" />
             <p v-if="wide" class="carousel__caption">
               <span class="carousel__number">0{{ i + 1 }}</span>
               <strong class="carousel__title">{{ t.overview.features[feature.key].name }}</strong>
@@ -194,6 +196,8 @@ function onScroll() {
   position: relative;
   box-sizing: border-box;
   aspect-ratio: 4 / 3;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: var(--radius-board);
@@ -363,6 +367,10 @@ function onScroll() {
     /* Keeps the whole carousel above the fold on a MacBook Air. */
     min-height: 26rem;
     aspect-ratio: auto;
+
+    /* The example keeps clear of ‹ › and the count above it and the caption below it. */
+    --example-inset-top: 3.5rem;
+    --example-inset-bottom: 7.5rem;
   }
 
   .carousel__caption {

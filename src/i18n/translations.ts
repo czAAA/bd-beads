@@ -167,6 +167,26 @@ export interface Translations {
       exports: { name: string; text: string }
       savedPatterns: { name: string; text: string }
     }
+    /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen readers with them. */
+    examples: {
+      loom: string
+      peyote: string
+      brick: string
+      picture: string
+      sixColors: string
+      /** "Row 6" and "of 18" on the mini Progress bar. */
+      row: string
+      ofRows: string
+      brickRed: string
+      ivory: string
+      /** The PDF page's own small print. */
+      page: string
+      by: string
+      maker: string
+      patternFile: string
+      /** The Saved Patterns gallery's six names: Gold strip, Poppy, Heart, Hills, Stripes, Checks. */
+      names: [string, string, string, string, string, string]
+    }
   }
   contextBar: {
     label: string

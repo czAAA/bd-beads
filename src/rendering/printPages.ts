@@ -2,6 +2,7 @@ import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw
 import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { PRINT_THEME } from './beadLook'
+import { PRINT_COLORS } from './printColors'
 import { displayedExtentPx, renderPattern } from './patternRenderer'
 import {
   PRINT_BOARD_PAD,
@@ -27,16 +28,6 @@ import { headerMaker, type PrintText } from './printText'
  * technique word at full strength, the background line at 38%, the marks at 7%, the maker's name at 14%. Everything
  * is on paper at 150 dpi; the beads are drawn by the Pattern renderer in the light print theme.
  */
-
-/** The light theme's values the paper uses (tokens.json; kept equal by printPages.test.ts). A canvas can't read CSS. */
-export const PRINT_COLORS = {
-  paper: '#ffffff',
-  ink: '#1f1f1f',
-  muted: '#6a6a6a',
-  line: '#e5e5e5',
-  accent: '#fa520f',
-  board: PRINT_THEME.background,
-}
 
 export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
 

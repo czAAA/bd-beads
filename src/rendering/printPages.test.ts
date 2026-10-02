@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { Rotation, Technique } from '../domain/grid'
-import { MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_COLORS, PRINT_OPACITY } from './printPages'
+import { MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_OPACITY } from './printPages'
+import { PRINT_COLORS } from './printColors'
 import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN, PRINT_NAME_BAND } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
