@@ -4,7 +4,7 @@
 
 **Blocked by:** None for the code: the border label is already written into the local copy of the design system (NumberField card, `forms-and-states`, `bundle.css`). That copy was edited by hand ahead of claude.ai, so the same change must be made on claude.ai and synced (`/design-sync`) before this ships, or the next sync will overwrite it.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Width and Height show the chosen Unit as a label on the border, not inside the field; switching between beads, mm and cm updates both labels immediately
 - [ ] The label stays readable and doesn't overlap the typed value or the Stepper buttons, including a long value, the empty state, and the Russian unit names
