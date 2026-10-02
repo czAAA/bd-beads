@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** done (visual baselines still to refresh from CI; dark tokens changed in the local design-system copy only, same edit needed on claude.ai)
+**Status:** done
 
 **Overview / Tour:** asked; not added to either (small polish change).
 
@@ -13,4 +13,4 @@
 - [x] Painted beads, the overlay layer (hover, Selection, Mirror axes, paste preview, Row progress) and text stay clearly readable on the new background
 - [x] The light and high contrast themes are unchanged
 - [x] Light-only exports (PNG, PDF) are unaffected
-- [ ] Visual baselines for the dark theme are refreshed from CI
+- [x] Visual baselines for the dark theme are refreshed from CI
