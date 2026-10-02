@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest'
 const repo = resolve(__dirname, '..')
 /** The app shell's layout CSS lives in its shell components (ticket 206): AppShell owns the body grid, AppSidebar the column. */
 const appSource = ['AppShell', 'AppSidebar']
-  .map((name) => readFileSync(resolve(__dirname, 'components', `${name}.vue`), 'utf8'))
+  .map((name) => readFileSync(resolve(__dirname, 'components/shell', `${name}.vue`), 'utf8'))
   .join('\n')
 const tokens = JSON.parse(readFileSync(resolve(repo, 'docs/design/system/tokens.json'), 'utf8')) as {
   layout: { tokens: { name: string; value: string }[] }
@@ -49,7 +49,7 @@ describe('the iPad 13" tier breakpoint (ticket 167; responsive.md, 1024-1279px)'
 })
 
 describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', () => {
-  const headerSource = readFileSync(resolve(__dirname, 'components', 'AppHeader.vue'), 'utf8')
+  const headerSource = readFileSync(resolve(__dirname, 'components/shell', 'AppHeader.vue'), 'utf8')
   const min = layoutPx('bp-desktop')
 
   it('is written as the literal bp-desktop breakpoint', () => {

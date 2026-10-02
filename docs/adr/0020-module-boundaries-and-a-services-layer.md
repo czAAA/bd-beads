@@ -1,6 +1,6 @@
 # Modules by role, with a services layer for anything that leaves the device
 
-**Status: accepted (ticket 65).** Written from a walk through the code by the agent, then refreshed after the App.vue split (ADR 0023) and agreed with a person before backend work (tickets 71, 78, 84, 85) builds on it.
+**Status: accepted (ticket 65).** Amended by ADR 0024 (feature subfolders inside `components/` and `composables/`). Written from a walk through the code by the agent, then refreshed after the App.vue split (ADR 0023) and agreed with a person before backend work (tickets 71, 78, 84, 85) builds on it.
 
 ## What the code is today
 

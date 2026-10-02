@@ -1,7 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
-import { decimalSign } from '../i18n/formatNumber'
-import type { Locale } from '../i18n/translations'
+import { decimalSign } from './formatNumber'
+import type { Locale } from './locale'
 
 /** A size as the New Pattern form states it: a number of beads across and down, or a real-world size in mm/cm. */
 export interface StatedSize {

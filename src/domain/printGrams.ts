@@ -1,5 +1,5 @@
 import type { Bead } from './beads'
-import { groupThousands } from '../i18n/formatNumber'
+import { groupThousands } from './formatNumber'
 
 /**
  * Grams on the PDF and PNG (ticket 162; printed-output.md, Beads and grams): beads are bought by the gram, so every

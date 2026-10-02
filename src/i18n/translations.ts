@@ -1,7 +1,8 @@
+import type { Locale } from '../domain/locale'
 import type { TourStepId } from '../domain/tour'
 import type { PluralForms } from './plural'
 
-export type Locale = 'en' | 'ru'
+export type { Locale }
 
 export interface Translations {
   app: {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
-import AppIcon from '../components/AppIcon.vue'
-import type { IconName } from '../components/icons'
-import { useMediaQuery } from '../composables/useMediaQuery'
+import AppIcon from '../components/ui/AppIcon.vue'
+import type { IconName } from '../components/ui/icons'
+import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { useI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
 

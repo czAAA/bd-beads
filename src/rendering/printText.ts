@@ -4,7 +4,7 @@ import { rotationSwapsAxes } from '../domain/grid'
 import { resolvePatternBead, type Pattern } from '../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
-import { groupThousands } from '../i18n/formatNumber'
+import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
 import type { Locale, Translations } from '../i18n/translations'
 

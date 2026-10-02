@@ -1,5 +1,5 @@
 import type { VueWrapper } from '@vue/test-utils'
-import PatternSurface from '../components/PatternSurface.vue'
+import PatternSurface from '../components/canvas/PatternSurface.vue'
 import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Selection } from '../domain/selection'
 import { patternExtentPx, rowShiftPx, rowTopPx } from '../rendering/patternRenderer'

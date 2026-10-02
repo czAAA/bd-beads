@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupThousands } from './formatNumber'
+import { groupThousands } from '../domain/formatNumber'
 import { plural } from './plural'
 
 describe('plural', () => {

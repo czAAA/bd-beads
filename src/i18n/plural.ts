@@ -1,4 +1,4 @@
-import { groupThousands } from './formatNumber'
+import { groupThousands } from '../domain/formatNumber'
 import type { Locale } from './translations'
 
 /** The forms a counted word takes: English uses one and other; Russian one, few and many (`writing.md`, Plurals). */
