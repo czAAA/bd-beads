@@ -16,6 +16,13 @@ Default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-f
 
 Headline format `type:[ticketNumber] Description`, with type `feat`, `fix` or `ref`. See `docs/agents/pull-requests.md`.
 
+### Implementing tickets
+
+Standing orders for every implementation (incl. `implement` skill); don't ask between steps:
+1. Branch from fresh `origin/main` (`git fetch` first). If the current branch isn't `main`, use a worktree at `./bd-beads-<ticket>/` and work there; otherwise branch in place.
+2. Archive the ticket in the same change.
+3. When done: commit, push, open PR.
+
 ### Domain docs
 
 Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for architecture decision records. See `docs/agents/domain.md`.
