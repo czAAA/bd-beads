@@ -158,6 +158,8 @@ export interface Translations {
     nextFeature: string
     /** The hand-written notes of the hero (Overview card); decorative, hidden from screen readers. */
     notes: { you: string; onUs: string; elevenSteps: string; youllMakeThis: string }
+    /** The coffee tile (ticket 219; Overview card). */
+    coffee: { title: string; text: string; button: string }
     features: {
       techniques: { name: string; text: string }
       patternEditing: { name: string; text: string }

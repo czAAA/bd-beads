@@ -6,6 +6,7 @@ import AppMenu from '../components/ui/AppMenu.vue'
 import AppMenuItem from '../components/ui/AppMenuItem.vue'
 import LanguageSwitcher from '../components/shell/LanguageSwitcher.vue'
 import ThemeToggle from '../components/shell/ThemeToggle.vue'
+import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
 import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
@@ -13,7 +14,7 @@ import { provideI18n } from '../i18n/useI18n'
 /**
  * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
  * header is the editor's own (logo, header menu, Language, Theme; no Keyboard shortcuts), then the slogan, the two
- * ways in and the features carousel (ticket 217). It only reports which way in was chosen: the entry decides where that goes.
+ * ways in and the features carousel (ticket 217) and the coffee tile (ticket 219). It only reports which way in was chosen: the entry decides where that goes.
  */
 const props = defineProps<{
   /** How many Patterns this device has saved; none means a new visitor. */
@@ -111,6 +112,8 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
         <h2 id="overview-inside" class="overview__heading">{{ t.overview.whatsInside }}</h2>
         <FeatureCarousel />
       </section>
+
+      <CoffeeTile class="overview__coffee" />
     </main>
   </div>
 </template>
@@ -409,6 +412,10 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
 
 .overview__inside {
   padding: var(--space-16) 0;
+}
+
+.overview__coffee {
+  margin-top: var(--space-16);
 }
 
 .overview__heading {

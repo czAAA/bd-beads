@@ -122,6 +122,7 @@ export const en: Translations = {
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
     notes: { you: 'you', onUs: 'on us', elevenSteps: 'eleven small steps', youllMakeThis: "you'll make this" },
+    coffee: { title: 'Made by one person', text: "bd-beads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
     features: {
       techniques: { name: 'Techniques', text: 'Loom, peyote and brick stitch, each drawn the way its beads sit.' },
       patternEditing: { name: 'Pattern editing', text: 'Paint, Fill and Erase, copy and paste, and Undo for every step.' },

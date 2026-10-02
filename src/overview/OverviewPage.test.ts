@@ -178,3 +178,12 @@ describe('the features carousel', () => {
     expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')
   })
 })
+
+describe('OverviewPage coffee tile', () => {
+  it('sits below the feature carousel, for new and returning visitors alike', () => {
+    for (const count of [0, 3]) {
+      const html = page(count).html()
+      expect(html.indexOf('data-testid="overview-coffee"')).toBeGreaterThan(html.indexOf('feature-carousel'))
+    }
+  })
+})
