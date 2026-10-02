@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately). Ticket 77 is done.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The Tour Pattern's cell data (10 × 75, loom, Yellow and Black only, counts Yellow 294, Black 452, empty 4) is carried in the app, with a test that compares it with the design system's Tour Pattern data so the two can't drift
 - [ ] A new visitor sees the band across its `board` with no ruler and "you'll make this" under it; a visitor with saved Patterns sees neither the band nor the notes
