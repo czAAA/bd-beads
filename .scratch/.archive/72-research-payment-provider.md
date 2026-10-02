@@ -4,8 +4,8 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] At least three providers are compared against bd-beads' specific constraints
-- [ ] A provider is chosen and the reasoning recorded as an ADR
-- [ ] The decision is ready to hand to ticket 81 (account creation)
+- [x] At least three providers are compared against bd-beads' specific constraints
+- [x] A provider is chosen and the reasoning recorded as an ADR
+- [x] The decision is ready to hand to ticket 81 (account creation)
