@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { CANVAS_MAX_PX, GRID_BORDER_PX, RULER_GUTTER_PX, ZOOM_STEP, clampZoom, rotationSwapsAxes } from '../../domain/grid'
+import { CANVAS_MAX_PX, GRID_BORDER_PX, MIN_ZOOM, RULER_GUTTER_PX, ZOOM_STEP, clampZoom, rotationSwapsAxes } from '../../domain/grid'
 import type { Pattern } from '../../domain/pattern'
 import { patternExtentPx } from '../../rendering/patternRenderer'
 
@@ -36,6 +36,8 @@ export function usePatternZoom(
   currentPattern: () => Pattern | undefined,
   availableWidth: Ref<number>,
   availableHeight: Ref<number> = ref(0),
+  /** The zoom-out floor (ticket 223): the smallest bead of the window's tier, as a zoom. Zooming out and Fit stop here; a wider Pattern is panned. */
+  floor: Ref<number> = ref(MIN_ZOOM),
 ) {
   function fitZoom(): number {
     const pattern = currentPattern()
@@ -52,7 +54,7 @@ export function usePatternZoom(
 
     const byWidth = fitAlong(availableWidth.value || CANVAS_MAX_PX, FIT_SPARE_X_PX, across)
     const byHeight = availableHeight.value > 0 ? fitAlong(availableHeight.value, FIT_SPARE_Y_PX, down) : Infinity
-    return clampZoom(Math.floor(Math.min(1, byWidth, byHeight) * 100) / 100)
+    return clampZoom(Math.floor(Math.min(1, byWidth, byHeight) * 100) / 100, floor.value)
   }
 
   const zoom = ref(fitZoom())
@@ -76,9 +78,12 @@ export function usePatternZoom(
     }
   })
 
-  watch([availableWidth, availableHeight], () => {
+  watch([availableWidth, availableHeight, floor], () => {
     if (isAtFit.value) {
       zoom.value = fitZoom()
+    } else {
+      // The tier changed under a chosen zoom (a window resize, a rotated phone): never leave it below the new floor.
+      zoom.value = clampZoom(zoom.value, floor.value)
     }
   })
 
@@ -86,16 +91,16 @@ export function usePatternZoom(
     zoom,
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
     zoomIn: () => {
-      zoom.value = clampZoom(zoom.value + ZOOM_STEP)
+      zoom.value = clampZoom(zoom.value + ZOOM_STEP, floor.value)
       isAtFit.value = false
     },
     zoomOut: () => {
-      zoom.value = clampZoom(zoom.value - ZOOM_STEP)
+      zoom.value = clampZoom(zoom.value - ZOOM_STEP, floor.value)
       isAtFit.value = false
     },
     /** A zoom the fingers chose (pinch): any level in the usable range rather than a step, and a choice a resize leaves alone. */
     setZoom: (value: number) => {
-      zoom.value = clampZoom(value)
+      zoom.value = clampZoom(value, floor.value)
       isAtFit.value = false
     },
     resetZoom: () => {

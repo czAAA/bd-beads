@@ -24,5 +24,7 @@ export default defineConfig(({ mode }) => ({
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
     // finishes in milliseconds either way, so this only ever matters on a bad day.
     testTimeout: 15000,
+    // Two workers: more exhausted a dev machine's memory (8GB, no swap) and got the run killed.
+    maxWorkers: 2,
   },
 }))

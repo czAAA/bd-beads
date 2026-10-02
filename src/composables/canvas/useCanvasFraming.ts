@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Pattern } from '../../domain/pattern'
 import { useElementSize } from '../ui/useElementSize'
 import { usePatternZoom } from './usePatternZoom'
+import { useZoomFloor } from './useZoomFloor'
 
 /** What the canvas strip needs to know about the framing step: whether it is running, and the grid it frames. */
 export interface CanvasFramingDeps {
@@ -20,7 +21,7 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
 
-  const { zoom, zoomIn, zoomOut, setZoom, resetZoom } = usePatternZoom(deps.currentPattern, width, height)
+  const { zoom, zoomIn, zoomOut, setZoom, resetZoom } = usePatternZoom(deps.currentPattern, width, height, useZoomFloor())
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))

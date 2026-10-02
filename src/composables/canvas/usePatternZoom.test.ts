@@ -221,3 +221,28 @@ describe('usePatternZoom fitting the drawing area\'s height (ticket 143)', () =>
     expect(zoom.value).toBeLessThan(1000)
   })
 })
+
+describe('usePatternZoom zoom-out floor (ticket 223)', () => {
+  it('stops Fit at the floor for a Pattern too wide for the area, rather than shrinking further', () => {
+    const wide = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 600, height: 15, unit: 'mm' } })
+    const { zoomPercent } = usePatternZoom(() => wide, ref(900), ref(0), ref(0.8))
+
+    expect(zoomPercent.value).toBe(80)
+  })
+
+  it('stops zooming out at the floor', () => {
+    const { zoomPercent, zoomOut } = usePatternZoom(() => smallPattern(), ref(900), ref(0), ref(0.75))
+    for (let i = 0; i < 5; i++) zoomOut()
+
+    expect(zoomPercent.value).toBe(75)
+  })
+
+  it('lifts a chosen zoom to a floor that rises, such as a phone-sized window', () => {
+    const floor = ref(0.75)
+    const { zoomPercent, setZoom } = usePatternZoom(() => smallPattern(), ref(900), ref(0), floor)
+    setZoom(0.75)
+    floor.value = 0.8
+
+    return nextTick().then(() => expect(zoomPercent.value).toBe(80))
+  })
+})
