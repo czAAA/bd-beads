@@ -6,7 +6,7 @@ import type { PhoneSheet } from './phoneSheet'
  * sheets, its theme sheet, and its New Pattern and Saved Patterns sheets. The Shortcuts-help boolean stays in the app
  * shell: a single boolean with no logic isn't worth extracting.
  */
-export function useOverlayVisibility(deps: { selectPattern: (id: string) => void }) {
+export function useOverlayVisibility(deps: { selectPattern: (id: string, opened?: () => void) => void }) {
   /** Whether the Drawer (ticket 168; the iPad mini tier's left column) is open. Only the Tools button (744-1023px) ever sets it true. */
   const drawerOpen = ref(false)
 
@@ -28,9 +28,10 @@ export function useOverlayVisibility(deps: { selectPattern: (id: string) => void
 
   /** Picking a Pattern from the phone's Saved Patterns sheet opens it and puts both the sheet and the Pattern sheet under it away. */
   function onSelectPatternFromPhoneDrawer(id: string) {
-    deps.selectPattern(id)
-    phoneSavedPatternsOpen.value = false
-    openPhoneSheet.value = null
+    deps.selectPattern(id, () => {
+      phoneSavedPatternsOpen.value = false
+      openPhoneSheet.value = null
+    })
   }
 
   return {

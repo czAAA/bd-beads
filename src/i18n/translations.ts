@@ -437,6 +437,21 @@ export interface Translations {
     keepButton: string
     saveButton: string
   }
+  removePattern: {
+    title: string
+    /** `{name}` is the Pattern's name. */
+    message: string
+    confirmButton: string
+    cancelButton: string
+  }
+  switchPattern: {
+    title: string
+    /** `{current}` is the open Pattern and `{picked}` the one being opened. */
+    message: string
+    confirmButton: string
+    cancelButton: string
+    saveButton: string
+  }
   deleteAll: {
     button: string
     confirmTitle: string

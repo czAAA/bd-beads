@@ -166,6 +166,7 @@ describe('App', () => {
     await createPatternViaForm(wrapper, '30', '30')
 
     await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
   })
@@ -182,6 +183,7 @@ describe('App', () => {
 
     await wrapper.find(`[data-testid="select-pattern-${secondId}"]`).trigger('click')
     await wrapper.find(`[data-testid="remove-pattern-${secondId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(false)
     expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(1)
@@ -196,6 +198,7 @@ describe('App', () => {
     const patternId = loadPatterns()[0]!.id
 
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
     // Saved Patterns keeps its box (ticket 39: always one of the three below-canvas boxes), now showing its
@@ -874,6 +877,7 @@ describe('App', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
     await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
@@ -2581,6 +2585,7 @@ describe('App header bead', () => {
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('Miyuki Delica 11/0')
 
     await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
@@ -2591,6 +2596,7 @@ describe('App header bead', () => {
     const patternId = loadPatterns()[0]!.id
 
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
   })

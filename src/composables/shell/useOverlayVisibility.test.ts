@@ -38,7 +38,10 @@ describe('useOverlayVisibility', () => {
 
     onSelectPatternFromPhoneDrawer('abc')
 
-    expect(selectPattern).toHaveBeenCalledWith('abc')
+    expect(selectPattern).toHaveBeenCalledWith('abc', expect.any(Function))
+    // The sheets stay until the selection lands (a confirmation may come first, ticket 232).
+    expect(phoneSavedPatternsOpen.value).toBe(true)
+    selectPattern.mock.calls[0]![1]!()
     expect(phoneSavedPatternsOpen.value).toBe(false)
     expect(openPhoneSheet.value).toBeNull()
   })

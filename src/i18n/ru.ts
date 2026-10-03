@@ -416,6 +416,19 @@ export const ru: Translations = {
     keepButton: 'Оставить текущую',
     saveButton: 'Сохранить текущую',
   },
+  removePattern: {
+    title: 'Удалить схему?',
+    message: 'Схема «{name}» будет удалена с этого устройства. Это нельзя отменить.',
+    confirmButton: 'Удалить',
+    cancelButton: 'Отмена',
+  },
+  switchPattern: {
+    title: 'Перейти к другой схеме?',
+    message: 'Закрыть «{current}» и открыть «{picked}»? Ваш прогресс в схеме «{current}» сохранён.',
+    confirmButton: 'Перейти',
+    cancelButton: 'Оставить текущую',
+    saveButton: 'Сначала сохранить',
+  },
   deleteAll: {
     button: 'Очистить',
     confirmTitle: 'Очистить схему?',

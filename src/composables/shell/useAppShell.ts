@@ -21,6 +21,7 @@ import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { usePatternLabels } from '../pattern/usePatternLabels'
 import { usePatternLibrary } from '../pattern/usePatternLibrary'
+import { useSavedPatternConfirms } from '../pattern/useSavedPatternConfirms'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../pattern/useRowOps'
 import { useSaveFlow } from '../export/useSaveFlow'
@@ -359,8 +360,17 @@ function wireAppShell(services: Services) {
     activePatternId.value = undefined
   }
 
+  /** Saved Patterns asks before removing a thumbnail's Pattern or switching to it (ticket 232). */
+  const savedPatternConfirms = useSavedPatternConfirms({
+    currentPattern,
+    findPattern: (id) => patterns.value.find((pattern) => pattern.id === id),
+    openPattern: onSelectPattern,
+    removePattern,
+    saveNow,
+  })
+
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
-  const overlays = useOverlayVisibility({ selectPattern: onSelectPattern })
+  const overlays = useOverlayVisibility({ selectPattern: savedPatternConfirms.onRequestSwitch })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
@@ -418,6 +428,8 @@ function wireAppShell(services: Services) {
       !!replaceBead.replaceBeadPendingBead.value ||
       changeSize.changeSizeOpen.value ||
       !!importSwitch.pendingImport.value ||
+      !!savedPatternConfirms.pendingRemove.value ||
+      !!savedPatternConfirms.pendingSwitch.value ||
       exportFlow.qrExport.panelOpen.value ||
       shortcutsHelpOpen.value,
     collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
@@ -468,8 +480,7 @@ function wireAppShell(services: Services) {
     activePatternId,
     activePattern,
     saveFailed,
-    removePattern,
-    onSelectPattern,
+    ...savedPatternConfirms,
     onNewPattern,
     activeBeadLabel,
     patternLabel,

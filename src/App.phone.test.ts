@@ -166,7 +166,8 @@ describe('App at the phone tier (ticket 79)', () => {
     // we avoid the always-mounted (but hidden) AppDrawer PatternList in the DOM.
     const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
     const savedPatternsSheet = sheets[sheets.length - 1]!
-    await savedPatternsSheet.findAll('[data-testid^="select-pattern-"]')[0]!.trigger('click')
+    await savedPatternsSheet.findAll('[data-testid^="select-pattern-"]')[1]!.trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     // Both sheets should be gone.
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)

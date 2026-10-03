@@ -13,8 +13,8 @@ const {
   activePatternId,
   activePattern,
   saveFailed,
-  removePattern,
-  onSelectPattern,
+  onRequestRemove,
+  onRequestSwitch,
   settledPattern,
   framing,
   onNewPatternDraft,
@@ -121,8 +121,8 @@ const {
     <PatternList
       :patterns="patterns"
       :active-pattern-id="activePatternId"
-      @select="onSelectPattern"
-      @remove="removePattern"
+      @select="onRequestSwitch"
+      @remove="onRequestRemove"
       @export-pattern="onExportPatternFile"
       @export-library="onExportLibraryFile"
     />

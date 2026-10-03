@@ -414,6 +414,19 @@ export const en: Translations = {
     keepButton: 'Keep current',
     saveButton: 'Save current',
   },
+  removePattern: {
+    title: 'Remove this Pattern?',
+    message: '“{name}” will be deleted from this device. This cannot be undone.',
+    confirmButton: 'Remove',
+    cancelButton: 'Cancel',
+  },
+  switchPattern: {
+    title: 'Switch Pattern?',
+    message: 'Leave “{current}” and open “{picked}”? Your progress on “{current}” is saved.',
+    confirmButton: 'Switch',
+    cancelButton: 'Keep current',
+    saveButton: 'Save first',
+  },
   deleteAll: {
     button: 'Clear pattern',
     confirmTitle: 'Clear pattern?',

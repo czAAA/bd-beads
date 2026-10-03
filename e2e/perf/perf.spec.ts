@@ -120,6 +120,7 @@ function libraryFor(columns: number, rows: number) {
 
 async function openPattern(page: Page, id: string): Promise<void> {
   await page.getByTestId(`select-pattern-${id}`).click()
+  await page.getByTestId('confirm-modal-confirm').click()
   await settle(page)
 }
 

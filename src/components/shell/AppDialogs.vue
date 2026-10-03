@@ -23,6 +23,14 @@ const {
   pendingImport,
   pendingImportOpens,
   importSaveRefused,
+  pendingRemove,
+  onCancelRemove,
+  onConfirmRemove,
+  pendingSwitch,
+  switchSaveRefused,
+  onCancelSwitch,
+  onConfirmSwitch,
+  onSaveBeforeSwitch,
   onKeepCurrentAfterImport,
   onSwitchToImported,
   onSaveBeforeImportSwitch,
@@ -86,6 +94,40 @@ const {
     @extra="onSaveBeforeImportSwitch"
   >
     <p v-if="saveFailed && importSaveRefused" class="app-shell__modal-error" role="alert" data-testid="import-switch-save-failed">
+      {{ t.storage.saveFailedMessage }}
+    </p>
+  </ConfirmModal>
+
+  <!-- Saved Patterns asks before removing a Pattern or switching to another (ticket 232). -->
+  <ConfirmModal
+    v-if="pendingRemove"
+    data-testid="remove-pattern-modal"
+    :title="t.removePattern.title"
+    :message="t.removePattern.message.replaceAll('{name}', () => pendingRemove!.name)"
+    :confirm-label="t.removePattern.confirmButton"
+    :cancel-label="t.removePattern.cancelButton"
+    @confirm="onConfirmRemove"
+    @cancel="onCancelRemove"
+  />
+
+  <ConfirmModal
+    v-if="pendingSwitch && activePattern"
+    data-testid="switch-pattern-modal"
+    :title="t.switchPattern.title"
+    :message="
+      (saveFailed ? t.importSwitch.unsavedMessage : t.switchPattern.message)
+        .replaceAll('{current}', () => activePattern!.name)
+        .replaceAll('{picked}', () => pendingSwitch!.name)
+    "
+    :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchPattern.confirmButton"
+    :cancel-label="t.switchPattern.cancelButton"
+    :extra-label="saveFailed ? t.switchPattern.saveButton : undefined"
+    :confirm-danger="false"
+    @confirm="onConfirmSwitch"
+    @cancel="onCancelSwitch"
+    @extra="onSaveBeforeSwitch"
+  >
+    <p v-if="saveFailed && switchSaveRefused" class="app-shell__modal-error" role="alert" data-testid="switch-pattern-save-failed">
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>

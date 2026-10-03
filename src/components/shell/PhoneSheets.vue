@@ -28,7 +28,7 @@ const {
   activePatternId,
   activePattern,
   saveFailed,
-  removePattern,
+  onRequestRemove,
   activeBeadLabel,
   settledPattern,
   onNewPatternDraft,
@@ -211,7 +211,7 @@ function toolLabel(tool: Tool): string {
       :patterns="patterns"
       :active-pattern-id="activePatternId"
       @select="onSelectPatternFromPhoneDrawer"
-      @remove="removePattern"
+      @remove="onRequestRemove"
     />
   </BottomSheet>
 
