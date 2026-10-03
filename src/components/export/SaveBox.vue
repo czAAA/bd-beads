@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useFitByPriority } from '../../composables/ui/useFitByPriority'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -35,7 +37,11 @@ const emit = defineEmits<{
   'edit-maker-name': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+// Save and Export share one narrow row: when the label doesn't fit beside Export, Save shows its icon alone (ticket 231).
+const buttonsEl = ref<HTMLElement>()
+const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
 </script>
 
 <template>
@@ -44,17 +50,18 @@ const { t } = useI18n()
       <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" />
       <span>{{ saveFailed ? t.saveBox.failedState : t.saveBox.savedState }}</span>
     </p>
-    <div class="save-box__buttons">
+    <div ref="buttonsEl" class="save-box__buttons">
       <AppButton
         class="save-box__save"
         variant="primary"
         size="lg"
         icon="save"
         :title="`${t.saveBox.saveButton} (Ctrl/Cmd+S)`"
+        :aria-label="t.saveBox.saveButton"
         data-testid="save-button"
         @click="emit('save')"
       >
-        {{ t.saveBox.saveButton }}
+        <span v-show="!saveIconOnly">{{ t.saveBox.saveButton }}</span>
       </AppButton>
       <div class="save-box__export">
         <AppMenu :label="t.saveBox.exportButton" icon="export" variant="in-box" size="lg" align="end" data-testid="export-menu-button" data-tour="export">
@@ -139,7 +146,8 @@ const { t } = useI18n()
 
 .save-box__save {
   flex: 1 1 auto;
-  min-width: 0;
+  /* Never squeezed: the row overflows instead, which is what tells useFitByPriority to drop the label. */
+  min-width: min-content;
 }
 
 .save-box__export {

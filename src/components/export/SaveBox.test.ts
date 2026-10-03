@@ -42,6 +42,12 @@ describe('SaveBox (ticket 148)', () => {
     expect(wrapper.emitted('save')).toHaveLength(1)
   })
 
+  it('keeps the full name as the Save button\'s accessible name, for when only its icon fits (ticket 231)', () => {
+    const save = mountBox().find('[data-testid="save-button"]')
+
+    expect(save.attributes('aria-label')).toBe(en.saveBox.saveButton)
+  })
+
   it('opens the Export menu with QR code, PNG image and PDF for printing, and the formats hint beside it', async () => {
     const wrapper = mountBox()
     expect(wrapper.find('[data-testid="export-formats"]').text()).toBe('qr · png · pdf')

@@ -18,10 +18,6 @@ export interface PendingEntry {
 }
 
 export const PENDING: PendingEntry[] = [
-  { screen: 'Change size', texts: 'any', at: { en: [390, 360, 320], ru: [390, 360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'Clear pattern', texts: 'any', at: { en: [390, 360, 320], ru: [390, 360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'New Pattern', texts: ['Ткачество'], at: { ru: [1024] }, fixedBy: '231' },
-  { screen: 'New Pattern', texts: ['Мозаичное', 'Кирпичное'], at: { ru: [1024, 768, 320] }, fixedBy: '231' },
   { screen: 'New Pattern: Convert image', texts: ['+'], at: { en: [320], ru: [320] }, fixedBy: 'unassigned' },
   { screen: 'Overview', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: '231' },
@@ -37,15 +33,8 @@ export const PENDING: PendingEntry[] = [
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
   { screen: 'drawer', texts: ['Custom color', 'Image colors'], at: { en: [768] }, fixedBy: 'unassigned' },
   { screen: 'editor', texts: ['Custom color', 'Image colors'], at: { en: [1024, 768] }, fixedBy: 'unassigned' },
-  { screen: 'editor', texts: ['Сохранить схему'], at: { ru: [1900, 1280, 1024, 768] }, fixedBy: '231' },
   { screen: 'export menu', texts: 'any', at: { en: [768], ru: [768] }, fixedBy: 'unassigned' },
-  { screen: 'export menu: QR code', texts: 'any', at: { en: [360, 320], ru: [360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'header menu: Name on exports', texts: 'any', at: { en: [360, 320], ru: [360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'header menu: Shortcuts', texts: 'any', at: { en: [390, 360, 320], ru: [390, 360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'info popover: quantities-weight-info', texts: ['This is bead count × about 0.0108 g per bead. That averag...'], at: { en: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: 'unassigned' },
-  { screen: 'info popover: quantities-weight-info', texts: ['Вес считаем как число бисеринок × около 0.0108 г за бисер...'], at: { ru: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: '231' },
-  { screen: 'phone sheets', texts: ['Custom color', 'Image colors', 'Save Pattern'], at: { en: [320] }, fixedBy: 'unassigned' },
-  { screen: 'phone sheets', texts: ['Сохранить схему'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
+  { screen: 'phone sheets', texts: ['Custom color', 'Image colors'], at: { en: [320] }, fixedBy: 'unassigned' },
 ]
 
 export type Found = TextMisfit & { screen: string }

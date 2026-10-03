@@ -172,7 +172,8 @@ function onConfirm() {
 
 .change-size__pair {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Side by side while each label has room, stacked on a narrow phone (ticket 231). */
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: var(--space-10);
 }
 </style>

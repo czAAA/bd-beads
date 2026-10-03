@@ -125,6 +125,8 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: calc(var(--z-modal) - 1);
   display: grid;
+  /* A track that can shrink, so the dialog's max-width is the screen and not its own width (ticket 231). */
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   padding: var(--space-24);
   background: var(--scrim);
@@ -149,6 +151,13 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-lg);
   box-shadow: var(--elevation-3);
   animation: app-modal-arrive var(--duration-base) var(--ease-out);
+}
+
+/* On the narrowest phones the screen's margin gives some of its width back to the dialog (ticket 231). */
+@media (max-width: 22.5rem) {
+  .app-modal-scrim {
+    padding: var(--space-16);
+  }
 }
 
 .app-modal:focus {

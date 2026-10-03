@@ -5,7 +5,8 @@ import { ref } from 'vue'
  * Two or three always-visible choices (ticket 149; SegmentedControl card): Technique, Unit, Change from. A radiogroup
  * that is one tab stop: the arrows, Home and End move the choice, which follows focus. Options are 34px (28px `small`)
  * with a 2px inset; the chosen one is `ink` with `canvas` text. Words are in Inter, values and units (`mono`) in DM
- * Mono. A label that doesn't fit wraps to two lines, and every option keeps the same height.
+ * Mono. A label that doesn't fit wraps to two lines, and every option keeps the same height. A single word wider than
+ * its share moves the option to the next row instead of being squeezed (ticket 231).
  */
 const props = withDefaults(
   defineProps<{
@@ -77,6 +78,7 @@ function onKeydown(event: KeyboardEvent) {
 <style scoped>
 .segmented {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: var(--space-2);
   box-sizing: border-box;
@@ -90,7 +92,7 @@ function onKeydown(event: KeyboardEvent) {
   display: grid;
   flex: 1 1 0;
   place-items: center;
-  min-width: 0;
+  min-width: min-content;
   min-height: var(--control-height);
   padding: var(--space-4) var(--space-10);
   font: var(--type-tab);

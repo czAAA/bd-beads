@@ -221,8 +221,12 @@ const tipOpen = ref(false)
   color: var(--muted);
 }
 
-.bead-quantities__info-wrap {
+/* The tooltip is placed against the panel, not the button, so it stays inside the column however long its text is (ticket 231). */
+.bead-quantities {
   position: relative;
+}
+
+.bead-quantities__info-wrap {
   display: inline-flex;
 }
 
@@ -254,11 +258,12 @@ const tipOpen = ref(false)
 
 .bead-quantities__tooltip {
   position: absolute;
-  top: calc(100% + var(--space-6));
   right: 0;
+  left: 0;
   z-index: var(--z-tooltip);
   box-sizing: border-box;
-  width: var(--tooltip-wide);
+  max-width: var(--tooltip-wide);
+  margin: calc(var(--expand-size) + var(--space-6)) 0 0 auto;
   padding: var(--space-6) var(--space-8);
   font: var(--type-small);
   line-height: 1rem;

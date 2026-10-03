@@ -14,7 +14,7 @@ Findings and the fix to apply (verified by trying the shorter wordings live in t
 
 **Blocked by:** None (229 and 230 are done; the check proves each fix)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Save shows the icon alone when the label does not fit, with the full name kept as its accessible name and tooltip; the label is shown whenever there is room
 - [ ] The technique control in the New Pattern form fits at 1024 and 320 px with the shortened names from 230

@@ -108,7 +108,8 @@ function chords(keys: string): string[][] {
 
 <style scoped>
 .shortcuts-help__groups {
-  columns: 2;
+  /* Two columns when each has room, one on a phone (ticket 231). */
+  columns: 2 11rem;
   column-gap: var(--space-24);
 }
 
@@ -140,7 +141,8 @@ function chords(keys: string): string[][] {
 }
 
 .shortcuts-help__label {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   font: var(--type-body);
   color: var(--body);
 }
