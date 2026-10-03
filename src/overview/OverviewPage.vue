@@ -12,6 +12,7 @@ import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
 import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
+import { TOUR_ENABLED } from '../features'
 
 /**
  * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
@@ -51,7 +52,7 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
           <AppMenuItem icon="bead" :href="overviewHref" current data-testid="menu-item-overview">
             {{ t.header.overviewItem }}
           </AppMenuItem>
-          <AppMenuItem icon="info" data-testid="menu-item-tour" @select="emit('takeTour')">
+          <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="emit('takeTour')">
             {{ t.header.tourItem }}
           </AppMenuItem>
         </AppMenu>
@@ -103,7 +104,7 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
             <p class="overview__saved" data-testid="overview-saved">{{ patternsSaved }}</p>
           </template>
         </div>
-        <div v-if="isNew" class="overview__band">
+        <div v-if="isNew && TOUR_ENABLED" class="overview__band">
           <TourBand />
           <p class="overview__note overview__note--gold" aria-hidden="true" data-testid="overview-note-make-this">
             {{ t.overview.notes.youllMakeThis }}

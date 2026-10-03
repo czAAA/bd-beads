@@ -1,3 +1,4 @@
+import { TOUR_ENABLED } from '../../src/features'
 import type { TextMisfit } from './textFit'
 
 /**
@@ -17,7 +18,7 @@ export interface PendingEntry {
   fixedBy: string
 }
 
-export const PENDING: PendingEntry[] = [
+const ALL_PENDING: PendingEntry[] = [
   { screen: 'New Pattern: Convert image', texts: ['+'], at: { en: [320], ru: [320] }, fixedBy: 'unassigned' },
   { screen: 'Overview', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: '231' },
@@ -36,6 +37,9 @@ export const PENDING: PendingEntry[] = [
   { screen: 'export menu', texts: 'any', at: { en: [768], ru: [768] }, fixedBy: 'unassigned' },
   { screen: 'phone sheets', texts: ['Custom color', 'Image colors'], at: { en: [320] }, fixedBy: 'unassigned' },
 ]
+
+/** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as stale. */
+export const PENDING = ALL_PENDING.filter((entry) => TOUR_ENABLED || entry.screen !== 'Tour')
 
 export type Found = TextMisfit & { screen: string }
 

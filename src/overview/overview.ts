@@ -9,6 +9,7 @@ import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadPatterns } from '../services/libraryStore'
 import { saveTourProgress, saveTourStatus } from '../services/tourStore'
+import { TOUR_ENABLED } from '../features'
 import { markEditorChosen, overviewUrl } from './overviewRoute'
 import OverviewPage from './OverviewPage.vue'
 
@@ -29,7 +30,9 @@ createApp({
       patternCount: loadPatterns().length,
       overviewHref: overviewUrl(base),
       onMakeFirstPattern: () => {
-        saveTourStatus('running')
+        if (TOUR_ENABLED) {
+          saveTourStatus('running')
+        }
         goToEditor()
       },
       onOpenEditor: goToEditor,

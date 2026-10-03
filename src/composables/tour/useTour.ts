@@ -25,6 +25,7 @@ import {
 } from '../../domain/tour'
 import type { Translations } from '../../i18n/translations'
 import type { TourProgress, TourStatus, TourStore } from '../../services/tourStore'
+import { TOUR_ENABLED } from '../../features'
 import type { MessageTone } from '../ui/useToasts'
 
 /** What the Tour reads from and does to the app; every dep is read lazily, so the shell can wire it after the rest. */
@@ -74,7 +75,7 @@ export function useTourFormReset(): Ref<number> | undefined {
  * a real walk through the real editor, so every edit goes through the same commit path the editor's own commands use.
  */
 export function useTour(deps: TourDeps) {
-  const status = ref<TourStatus>(deps.store.loadStatus())
+  const status = ref<TourStatus>(TOUR_ENABLED ? deps.store.loadStatus() : 'off')
   const progress = ref<TourProgress>(deps.store.loadProgress())
   const memo = ref<TourMemo>({})
   /** The card after the last step, which stays until it is dismissed. */

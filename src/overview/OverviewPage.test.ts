@@ -3,6 +3,8 @@ import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
+vi.mock('../features', () => ({ TOUR_ENABLED: true }))
+
 const FEATURES = ['techniques', 'patternEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedPatterns']
 
 function page(patternCount = 0) {

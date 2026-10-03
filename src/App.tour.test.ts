@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { afterStep, gridsEqual } from './domain/tour'
@@ -6,7 +6,10 @@ import { BEAD_CATALOG } from './domain/beads'
 import { createPattern, frameGrid } from './domain/pattern'
 import { loadPatterns, savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
+
 import { ru } from './i18n/ru'
+
+vi.mock('./features', () => ({ TOUR_ENABLED: true }))
 
 beforeEach(() => {
   localStorage.clear()

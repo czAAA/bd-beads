@@ -21,6 +21,7 @@ import { overviewUrl } from '../../overview/overviewRoute'
 import { beadLabel } from '../../domain/beads'
 import { useThemePick } from '../../theme/useThemePick'
 import type { IconName } from '../ui/icons'
+import { TOUR_ENABLED } from '../../features'
 
 const {
   t,
@@ -144,7 +145,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
           {{ t.header.overviewItem }}
         </AppMenuItem>
-        <AppMenuItem icon="info" data-testid="menu-item-tour" @select="tour.start()">
+        <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="tour.start()">
           {{ t.header.tourItem }}
         </AppMenuItem>
       </AppMenu>

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { TOUR_ENABLED } from '../../src/features'
 import type { Locale } from '../../src/i18n/translations'
 import { openApp } from '../support/app'
 import { fixturePicture } from '../support/picture'
@@ -69,6 +70,20 @@ async function settle(page: Page): Promise<void> {
 async function click(page: Page, testid: string): Promise<void> {
   await vis(page, testid).click()
   await settle(page)
+}
+
+const TOUR_SCREEN: Screen = {
+  name: 'Tour',
+  visit: async (page, measure) => {
+    await click(page, 'header-menu')
+    await click(page, 'menu-item-tour')
+    for (let step = 1; step <= 20; step += 1) {
+      await page.getByTestId('tour-card').waitFor()
+      await measure(`step ${step}`)
+      if (!(await shown(page, 'tour-next'))) break
+      await click(page, 'tour-next')
+    }
+  },
 }
 
 const SCREENS: Screen[] = [
@@ -213,19 +228,8 @@ const SCREENS: Screen[] = [
       await measure()
     },
   })),
-  {
-    name: 'Tour',
-    visit: async (page, measure) => {
-      await click(page, 'header-menu')
-      await click(page, 'menu-item-tour')
-      for (let step = 1; step <= 20; step += 1) {
-        await page.getByTestId('tour-card').waitFor()
-        await measure(`step ${step}`)
-        if (!(await shown(page, 'tour-next'))) break
-        await click(page, 'tour-next')
-      }
-    },
-  },
+  // The Tour is switched off (ticket 247); its screen is visited again when TOUR_ENABLED is turned on.
+  ...(TOUR_ENABLED ? [TOUR_SCREEN] : []),
   {
     name: 'Overview',
     overview: true,
