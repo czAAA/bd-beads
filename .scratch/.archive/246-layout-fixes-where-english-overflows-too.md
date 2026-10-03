@@ -13,10 +13,10 @@ Places to fix (all from the pending list; widths are where the check sees the ov
 
 **Blocked by:** None (229 is done)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each place above fits at the listed widths, in English and Russian, with the design system's component specs (DESIGN.md) kept and no hardcoded colors, fonts, sizes or shadows
-- [ ] Every entry marked `fixedBy: 'unassigned'` is removed from `e2e/support/textFitPending.ts`; `npm run visual` passes
-- [ ] Looks right in the light, dark and high contrast themes, and works with the keyboard alone
-- [ ] Existing reference screenshots stay valid, or are updated only where the layout was meant to change
-- [ ] Overview and Tour question (CLAUDE.md): to ask of the user before building; record the answer here
+- [x] Each place above fits at the listed widths, in English and Russian, with the design system's component specs (DESIGN.md) kept and no hardcoded colors, fonts, sizes or shadows
+- [x] Every entry marked `fixedBy: 'unassigned'` is removed from `e2e/support/textFitPending.ts`; `npm run visual` passes
+- [x] Looks right in the light, dark and high contrast themes, and works with the keyboard alone
+- [x] Existing reference screenshots stay valid, or are updated only where the layout was meant to change
+- [x] Overview and Tour question (CLAUDE.md): asked of the user; answer: neither the Overview (77) nor the Tour (80)

@@ -143,7 +143,9 @@ onBeforeUnmount(hide)
   font: var(--type-small);
   line-height: 1rem;
   color: var(--canvas);
-  white-space: nowrap;
+  width: max-content;
+  /* A long tip wraps rather than outgrowing the screen, where the clamp couldn't bring it back (ticket 246). */
+  max-width: calc(100vw - 2 * var(--space-8));
   pointer-events: none;
   background: var(--ink);
   border-radius: var(--radius-sm);

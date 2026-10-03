@@ -331,9 +331,10 @@ const frameSummary = computed(() => {
   margin-top: var(--space-10);
 }
 
+/* Side by side while both labels fit whole, one above the other when they don't (ticket 246). */
 .toolbox__color-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-8);
   margin-top: var(--space-12);
 }

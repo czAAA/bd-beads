@@ -150,6 +150,7 @@ const directionLabel = computed(() =>
 }
 
 .progress-bar {
+  container-type: inline-size;
   display: flex;
   flex: none;
   align-items: center;
@@ -193,6 +194,18 @@ const directionLabel = computed(() =>
 }
 
 @media (max-width: 743px) {
+  .progress-bar__phone-hide {
+    display: none;
+  }
+
+  .progress-bar__phone-only {
+    display: inline-flex;
+  }
+}
+
+/* The same compact mode wherever the bar itself is too narrow for the spelled-out one, e.g. beside the Tour card or
+   the Toolbox at tablet widths (ticket 246). */
+@container (max-width: 51rem) {
   .progress-bar__phone-hide {
     display: none;
   }

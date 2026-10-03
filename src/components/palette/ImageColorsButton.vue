@@ -103,8 +103,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
 .image-colors-button {
   position: relative;
   display: flex;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: max-content;
 }
 
 .image-colors-button > :deep(.app-tooltip) {

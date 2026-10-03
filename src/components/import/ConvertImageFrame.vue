@@ -493,12 +493,15 @@ onBeforeUnmount(() => {
 
 .convert-image-frame__setting {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+  max-width: 100%;
   gap: var(--space-8);
 }
 
 .convert-image-frame__label {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
   font: var(--type-label);

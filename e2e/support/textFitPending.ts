@@ -19,23 +19,15 @@ export interface PendingEntry {
 }
 
 const ALL_PENDING: PendingEntry[] = [
-  { screen: 'New Pattern: Convert image', texts: ['+'], at: { en: [320], ru: [320] }, fixedBy: 'unassigned' },
   { screen: 'Overview', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: '231' },
-  { screen: 'Overview', texts: ['Made by one person'], at: { en: [320] }, fixedBy: 'unassigned' },
   { screen: 'Overview', texts: ['Создать бесплатный аккаунт'], at: { ru: [1024, 768, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Без аккаунта'], at: { ru: [768] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Saved Patterns expanded', texts: ['Экспортировать все'], at: { ru: [1900, 1280, 1024, 768] }, fixedBy: '231' },
-  { screen: 'Tour', texts: ['Row done'], at: { en: [1024, 768] }, fixedBy: 'unassigned' },
-  { screen: 'Tour', texts: ['Ряд готов'], at: { ru: [1024, 768] }, fixedBy: '231' },
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
-  { screen: 'drawer', texts: ['Custom color', 'Image colors'], at: { en: [768] }, fixedBy: 'unassigned' },
-  { screen: 'editor', texts: ['Custom color', 'Image colors'], at: { en: [1024, 768] }, fixedBy: 'unassigned' },
-  { screen: 'export menu', texts: 'any', at: { en: [768], ru: [768] }, fixedBy: 'unassigned' },
-  { screen: 'phone sheets', texts: ['Custom color', 'Image colors'], at: { en: [320] }, fixedBy: 'unassigned' },
 ]
 
 /** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as stale. */

@@ -281,9 +281,10 @@ function toolLabel(tool: Tool): string {
   margin-top: var(--space-16);
 }
 
+/* Side by side while both labels fit whole, one above the other when they don't (ticket 246). */
 .phone-sheet__color-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-8);
   margin-top: var(--space-12);
 }

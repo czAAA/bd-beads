@@ -54,12 +54,12 @@ function onInput(event: Event) {
 .custom-color-picker {
   position: relative;
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   gap: var(--space-8);
   box-sizing: border-box;
-  min-width: 0;
+  min-width: max-content;
   height: var(--control-height);
   margin: 0;
   padding: 0 var(--space-8);
