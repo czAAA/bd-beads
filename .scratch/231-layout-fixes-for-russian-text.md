@@ -10,7 +10,9 @@ Findings and the fix to apply (verified by trying the shorter wordings live in t
 4. **Name on exports dialog (360 and 320 px).** The dialog's footer, with its Cancel and Save buttons, ends 8px (360) to 48px (320) past the screen's edge even with the shortest label, and the "необязательно" aside and hint text overflow the same way at 320. Fix: the dialog stays within the screen width and its footer buttons wrap or stack, or share the width, on narrow phones.
 5. **Any further finding the check (229) raises on 320 px phones** (ruler numbers at the right edge of the canvas, 14, 15 and 16, run past the canvas box at 320 and 360 px; they appear in English as well, so they are checked here, and fixed only if the ruler is meant to be fully inside the canvas box at those widths; otherwise the check is told they are intentionally clipped).
 
-**Blocked by:** 229 (the check proves each fix), 230 (the strings are shortened first so the layout fix is sized for the final wording)
+6. **Everything else on the pending list in `e2e/support/textFitPending.ts` marked `'231'`** (Russian-only: the Overview plan names and "Create free account" button, "Три способа работать", Saved Patterns' "Экспортировать все" up to 768, the Tour's "Увеличить" tooltip and a step title at 320, the Overview example paper's "Ткачество"), plus the Russian side of the dialogs that overflow on phones. The places marked `'unassigned'` there fail in English too and need their own ticket(s); the dialogs' phone width is probably one fix.
+
+**Blocked by:** None (229 and 230 are done; the check proves each fix)
 
 **Status:** ready-for-agent
 

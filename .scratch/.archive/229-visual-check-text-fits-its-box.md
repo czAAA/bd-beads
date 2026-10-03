@@ -6,7 +6,7 @@ Research for this ticket (Chromium, production build, fixture loom Pattern, 1900
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## How the check decides
 
@@ -46,13 +46,22 @@ Ignore: what is off-screen on purpose (the closed drawer at tablet width, carous
 
 ## Acceptance criteria
 
-- [ ] `npm run visual` includes the new check, and it runs in CI with the rest of the visual suite
-- [ ] Run against a deliberately too-long label (done once while building, not committed), it fails and names the screen, width, language, element, text and overflow in pixels
-- [ ] Each of the pending findings above is detected by the check (so removing its entry makes the check fail until it is fixed); nothing else fails
-- [ ] A pending entry that has stopped overflowing makes the check fail, so a fixed entry can't be forgotten in the list
-- [ ] Passes on the current app with the pending list in place, in English and Russian, at all seven widths
-- [ ] Does not flag the intended truncations (a long user-typed Pattern name, off-screen drawer and carousel cards, screen-reader-only text)
-- [ ] Adding a third language to the app is picked up by the check by adding it to one list
-- [ ] Runs in a reasonable time on the CI machine; states are driven by the app's own controls like the other visual checks
-- [ ] Short note in CONTEXT.md or the visual check's docs on what the check measures and how to add a screen to it
-- [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: neither the Overview (77) nor the Tour (80)
+- [x] `npm run visual` includes the new check, and it runs in CI with the rest of the visual suite
+- [x] Run against a deliberately too-long label (done once while building, not committed), it fails and names the screen, width, language, element, text and overflow in pixels
+- [x] Each of the pending findings above is detected by the check (so removing its entry makes the check fail until it is fixed); nothing else fails
+- [x] A pending entry that has stopped overflowing makes the check fail, so a fixed entry can't be forgotten in the list
+- [x] Passes on the current app with the pending list in place, in English and Russian, at all seven widths
+- [x] Does not flag the intended truncations (a long user-typed Pattern name, off-screen drawer and carousel cards, screen-reader-only text)
+- [x] Adding a third language to the app is picked up by the check by adding it to one list
+- [x] Runs in a reasonable time on the CI machine; states are driven by the app's own controls like the other visual checks
+- [x] Short note in CONTEXT.md or the visual check's docs on what the check measures and how to add a screen to it
+- [x] Overview and Tour question (CLAUDE.md): asked of the user; answer: neither the Overview (77) nor the Tour (80)
+
+## As built
+
+- `e2e/visual/textFit.spec.ts` (screens and the language and width lists), `e2e/support/textFit.ts` (the in-browser measurement), `e2e/support/textFitPending.ts` (the pending list); how to use and extend: CONTEXT.md, "Text fit check".
+- The ticket's table was research from before 230 merged and missed places. The pending list was rebuilt from what the check measures on the app as it is after 230, 36 entries; every entry is data, see the file. Beyond the table:
+  - **Fails in English too** (`fixedBy: 'unassigned'`, nobody owns these yet): dialogs wider than the phone screen at 390, 360 and 320 (Clear pattern, Change size, Keyboard shortcuts, Name on exports, QR code), the Export menu opening off-screen at 768 (drawer), the weight popover cut by the left column at every width (the ticket had it at 1900 to 768), "Custom color" and "Image colors" cut by an ellipsis at 1024 and 768 and in the phone Colors sheet at 320, the Tour's last step "Row done" button at 1024 and 768, "Save Pattern" at 320, a "+" stepper in Convert image at 320, the Overview's "Made by one person" at 320.
+  - **Russian only, not in the table** (`fixedBy: '231'`): Overview plan names and the "Create free account" button, "Три способа работать", Saved Patterns' "Экспортировать все" up to 768, the Tour's "Увеличить" tooltip and a step title at 320, the Overview example paper's "Ткачество".
+  - **Not in the English baseline but in the table, now fixed by 230:** Image colors button, Tour back-to-loom button, Remove line, Clear pattern, Saved Patterns heading, Convert image label and carousel tab, coffee tile title (no entry).
+- Judgement calls: the segmented control's options and the Overview tab line are allowed two lines (the English ones wrap that way by design); the backdrop word, ruler numbers, drawn Pattern and the Overview's example paper are not measured (artwork and intentionally clipped); a state that can't be reached at a width is skipped, so the Export menu items at 768 are measured from the menu's own screen only.
