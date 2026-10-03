@@ -42,7 +42,7 @@ Who made the Patterns on this device: an optional name, at most 40 characters, p
 _Avoid_: author, owner, signature, user name
 
 **Palette**:
-A free-standing set of colors used to paint pattern cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 24, so at most 36 swatches), in the order they were first used. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Pattern; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
+A free-standing set of colors used to paint pattern cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 28, so at most 40 swatches), in the order they were first used. An added swatch can be removed again (never a built-in one); painted cells keep their color, and an Undo toast puts it back. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Pattern; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
 _Avoid_: color scheme, fixed palette
 
 **Bead**:
@@ -116,7 +116,7 @@ Swaps a Pattern's single Bead for a different catalog entry, after a confirmatio
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
-A paint color chosen freely with the color picker in the Colors group. The first time it paints a cell it joins the Palette as a new swatch (unless its hex is already a swatch, or 24 have been added), and from then on it is an ordinary Palette swatch. Until it is used it is only the picker's current color, and choosing another replaces it. Cells keep the hex, so a Pattern opens with its colors on a device that lacks the swatch.
+A paint color chosen freely with the color picker in the Colors group. The first time it paints a cell it joins the Palette as a new swatch (unless its hex is already a swatch, or 28 have been added), and from then on it is an ordinary Palette swatch. Until it is used it is only the picker's current color, and choosing another replaces it. Cells keep the hex, so a Pattern opens with its colors on a device that lacks the swatch.
 _Avoid_: user color, extra palette color, one-off color
 
 **Selection**:

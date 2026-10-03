@@ -25,6 +25,16 @@ const TOAST_MS = 5000
       @close="emit('dismiss', toast.id)"
     >
       {{ toast.text }}
+      <template v-if="toast.action" #actions>
+        <button
+          type="button"
+          class="ui-control toast-region__action"
+          data-testid="toast-action"
+          @click="toast.action.run(); emit('dismiss', toast.id)"
+        >
+          {{ toast.action.label }}
+        </button>
+      </template>
     </AppMessage>
   </TransitionGroup>
 </template>
@@ -44,6 +54,17 @@ const TOAST_MS = 5000
 
 .toast-region > * {
   pointer-events: auto;
+}
+
+/* The text-button action (Message card, `bb-link`): underlined link text. */
+.toast-region__action {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: var(--type-control);
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 /* Arriving 200ms, leaving 150ms, rising 8px (Motion card); reduced motion fades without the rise. */

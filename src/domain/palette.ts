@@ -54,8 +54,8 @@ export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.hex === hex)
 }
 
-/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 36 swatches (ticket 227). */
-export const MAX_ADDED_COLORS = 24
+/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 40 swatches (ticket 227; the Message card). */
+export const MAX_ADDED_COLORS = 28
 
 /** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for anything else. */
 export function normalizeHex(hex: string): string | undefined {
@@ -68,6 +68,11 @@ export function addedColorId(hex: string): string {
   return `added-${hex.slice(1)}`
 }
 
+/** Whether a Palette color joined from a Custom color (and so can be removed) rather than being one of the twelve built-in ones. */
+export function isAddedColorId(colorId: string): boolean {
+  return colorId.startsWith('added-')
+}
+
 /** The whole Palette: the built-in colors, then each added one in the order it was first used. */
 export function paletteWith(added: readonly string[]): PaletteColor[] {
   return [...PALETTE, ...added.map((hex) => ({ id: addedColorId(hex), hex }))]
@@ -77,7 +82,7 @@ export type AddUsedColorOutcome = 'added' | 'known' | 'full'
 
 /**
  * A Custom color has just painted a cell: the added colors with it appended on its first use. 'known' when the hex is
- * already a swatch (built-in or added), 'full' when 24 are added and it can't join; either way `added` is unchanged.
+ * already a swatch (built-in or added), 'full' when 28 are added and it can't join; either way `added` is unchanged.
  */
 export function addUsedColor(
   added: readonly string[],
@@ -91,4 +96,19 @@ export function addUsedColor(
     return { added, outcome: 'full' }
   }
   return { added: [...added, normalized], outcome: 'added' }
+}
+
+/** An added color taken out of the Palette (ticket 228): the colors without it, and where it stood, so Undo can put it back. */
+export function removeAddedColor(
+  added: readonly string[],
+  hex: string,
+): { added: readonly string[]; index: number } | undefined {
+  const index = added.indexOf(hex)
+  return index < 0 ? undefined : { added: added.filter((_, i) => i !== index), index }
+}
+
+/** Undo of a removal: the color back at the place it stood (or last, when the Palette has since changed length). */
+export function restoreAddedColor(added: readonly string[], hex: string, index: number): readonly string[] {
+  if (added.includes(hex) || added.length >= MAX_ADDED_COLORS) return added
+  return [...added.slice(0, index), hex, ...added.slice(index)]
 }

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MAX_ADDED_COLORS, PALETTE, addUsedColor, addedColorId, findPaletteColor, paletteWith } from './palette'
+import { MAX_ADDED_COLORS, PALETTE, addUsedColor, addedColorId, findPaletteColor, paletteWith, removeAddedColor, restoreAddedColor } from './palette'
 
 describe('PALETTE', () => {
   it('has no duplicate ids', () => {
@@ -37,5 +37,26 @@ describe('addUsedColor (ticket 227)', () => {
     const full = Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
     expect(addUsedColor(full, '#fedcba')).toEqual({ added: full, outcome: 'full' })
     expect(addUsedColor(full, full[3]!).outcome).toBe('known')
+  })
+})
+
+describe('removing an added color (ticket 228)', () => {
+  it('takes it out and says where it stood', () => {
+    expect(removeAddedColor(['#111111', '#222222', '#333333'], '#222222')).toEqual({ added: ['#111111', '#333333'], index: 1 })
+    expect(removeAddedColor(['#111111'], '#999999')).toBeUndefined()
+  })
+
+  it('restores it at its place, or not at all when it is back or the Palette is full', () => {
+    expect(restoreAddedColor(['#111111', '#333333'], '#222222', 1)).toEqual(['#111111', '#222222', '#333333'])
+    expect(restoreAddedColor(['#111111'], '#111111', 0)).toEqual(['#111111'])
+    const full = Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
+    expect(restoreAddedColor(full, '#fedcba', 0)).toEqual(full)
+  })
+})
+
+describe('the Palette limit', () => {
+  it('lets 28 colors be added, 40 swatches in all (the Message card)', () => {
+    expect(MAX_ADDED_COLORS).toBe(28)
+    expect(paletteWith(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))).toHaveLength(40)
   })
 })

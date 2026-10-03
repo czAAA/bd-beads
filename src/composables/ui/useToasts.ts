@@ -7,6 +7,8 @@ export interface Toast {
   id: string
   text: string
   tone: MessageTone
+  /** A text button after the message (Message card), such as Undo; pressing it runs `run` and closes the toast. */
+  action?: { label: string; run: () => void }
   /** Bumped on every show, so a replaced toast is a new one to Vue and its clock starts over. */
   stamp: number
 }
@@ -23,8 +25,8 @@ export function useToasts() {
     toasts.value = toasts.value.filter((toast) => toast.id !== id)
   }
 
-  function show(id: string, text: string, tone: MessageTone = 'success') {
-    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, stamp: ++stamp }]
+  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action']) {
+    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, stamp: ++stamp }]
   }
 
   return { toasts, show, dismiss }

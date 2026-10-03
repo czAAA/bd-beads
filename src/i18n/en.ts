@@ -250,6 +250,8 @@ export const en: Translations = {
     rotateButton: 'Rotate',
     customColorLabel: 'Custom color',
     limitReached: 'The Palette is full: this color painted, but it wasn’t added.',
+    removed: 'Color removed from the Palette.',
+    removeSwatch: 'Remove {hex} from the Palette',
   },
   tools: {
     paintLabel: 'Paint',

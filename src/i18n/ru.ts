@@ -252,6 +252,8 @@ export const ru: Translations = {
     rotateButton: 'Повернуть',
     customColorLabel: 'Свой цвет',
     limitReached: 'Палитра заполнена: цвет нарисован, но в палитру не добавлен.',
+    removed: 'Цвет удалён из палитры.',
+    removeSwatch: 'Убрать {hex} из палитры',
   },
   tools: {
     paintLabel: 'Кисть',

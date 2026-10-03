@@ -70,3 +70,64 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     expect(wrapper.text()).toContain(en.palette.limitReached)
   })
 })
+
+describe('an added swatch can be removed (ticket 228)', () => {
+  const seed = (hexes: string[]) => localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(hexes))
+  const removeButton = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="palette-swatch-remove"]')
+
+  it('offers no removal on a built-in swatch', async () => {
+    seed(['#123456'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[0]!.trigger('click')
+    expect(removeButton(wrapper).exists()).toBe(false)
+    await swatches(wrapper)[0]!.trigger('keydown', { key: 'Delete' })
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
+  })
+
+  it('removes the selected added swatch with its ×, falls back to the default color, keeps it gone after a reload', async () => {
+    seed(['#123456', '#abcdef'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[PALETTE.length]!.trigger('click')
+    await removeButton(wrapper).trigger('click')
+    const left = swatches(wrapper)
+    expect(left).toHaveLength(PALETTE.length + 1)
+    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
+    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#abcdef'])
+    expect(wrapper.text()).toContain(en.palette.removed)
+    expect(swatches(mount(App))).toHaveLength(PALETTE.length + 1)
+  })
+
+  it('removes a focused added swatch with Delete or Backspace', async () => {
+    seed(['#123456'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[PALETTE.length]!.trigger('keydown', { key: 'Backspace' })
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length)
+  })
+
+  it('Undo in the toast puts the swatch back where it stood, selected again', async () => {
+    seed(['#123456', '#abcdef'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[PALETTE.length]!.trigger('click')
+    await removeButton(wrapper).trigger('click')
+    await wrapper.find('[data-testid="toast-action"]').trigger('click')
+    expect(swatches(wrapper).map((swatch) => swatch.attributes('aria-label')).slice(PALETTE.length)).toEqual(['#123456', '#abcdef'])
+    expect(swatches(wrapper)[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
+    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456', '#abcdef'])
+  })
+
+  it('frees a slot at the limit, so the next new Custom color is added', async () => {
+    seed(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[PALETTE.length]!.trigger('click')
+    await removeButton(wrapper).trigger('click')
+    await choose(wrapper, '#fedcba')
+    await paint(wrapper)
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length + MAX_ADDED_COLORS)
+    expect(swatches(wrapper).at(-1)!.attributes('aria-label')).toBe('#fedcba')
+  })
+})

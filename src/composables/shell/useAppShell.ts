@@ -30,8 +30,8 @@ import { useSettledPattern } from '../pattern/useSettledPattern'
 import { useSharedPatternLink } from '../pattern/useSharedPatternLink'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
-import { useAddedColors } from '../tools/usePalette'
-import { useToolAndColor } from '../tools/useToolAndColor'
+import { provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
+import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
 import { useUndoHistory } from '../pattern/useUndoHistory'
@@ -178,7 +178,7 @@ function wireAppShell(services: Services) {
   }
 
   /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
-  const { palette, addUsed } = useAddedColors(services.addedColorsStore)
+  const { palette, addUsed, removeAdded } = useAddedColors(services.addedColorsStore)
 
   /** The active tool and which of the three paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -195,6 +195,26 @@ function wireAppShell(services: Services) {
     onSelectImageColor,
     resetImageColor,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
+
+  /**
+   * An added swatch is removed (ticket 228): painted cells keep their hex, so only the swatch goes. Removing the active
+   * one steps back to the Palette's default color, and a toast offers Undo, which puts the swatch back (selected again if it was).
+   */
+  function onRemoveAddedColor(colorId: string) {
+    const wasSelected = selectedColorId.value === colorId
+    const restore = removeAdded(colorId)
+    if (!restore) return
+    if (wasSelected) onSelectColor(DEFAULT_PALETTE_COLOR_ID)
+    // One toast per swatch, so removing a second doesn't take the first one's Undo away.
+    showToast(`palette-removed-${colorId}`, t.value.palette.removed, 'info', {
+      label: t.value.palette.undoButton,
+      run: () => {
+        // Selected again only if nothing else was chosen since.
+        if (restore() && wasSelected && selectedColorId.value === DEFAULT_PALETTE_COLOR_ID) onSelectColor(colorId)
+      },
+    })
+  }
+  provideRemoveAddedColor(onRemoveAddedColor)
 
   /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it still paints, and the user is told once per color. */
   let limitToldFor: string | undefined

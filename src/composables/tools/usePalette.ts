@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey } from 'vue'
-import { PALETTE, addUsedColor, paletteWith, type AddUsedColorOutcome, type PaletteColor } from '../../domain/palette'
+import { PALETTE, addUsedColor, isAddedColorId, paletteWith, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor } from '../../domain/palette'
 import type { AddedColorsStore } from '../../services/addedColorsStore'
 
 const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
@@ -24,7 +24,35 @@ export function useAddedColors(store: AddedColorsStore) {
     return { outcome: result.outcome, colorId: palette.value.find((color) => color.hex === hex.toLowerCase())?.id }
   }
 
-  return { palette, addUsed }
+  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back (false when it can't: the Palette has filled up since), or undefined for a color that isn't an added one. */
+  function removeAdded(colorId: string): (() => boolean) | undefined {
+    const hex = palette.value.find((color) => color.id === colorId && isAddedColorId(color.id))?.hex
+    const removal = hex ? removeAddedColor(added.value, hex) : undefined
+    if (!hex || !removal) return undefined
+    added.value = removal.added
+    store.save(removal.added)
+    return () => {
+      const restored = restoreAddedColor(added.value, hex, removal.index)
+      if (!restored.includes(hex)) return false
+      added.value = restored
+      store.save(restored)
+      return true
+    }
+  }
+
+  return { palette, addUsed, removeAdded }
+}
+
+const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')
+
+/** The app shell hands out how an added swatch is removed (ticket 228), so the three places that show the Palette needn't pass it down. */
+export function provideRemoveAddedColor(remove: (colorId: string) => void) {
+  provide(removeKey, remove)
+}
+
+/** How a swatch asks to be removed; absent (mounted alone) means no swatch offers removal. */
+export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
+  return inject(removeKey, undefined)
 }
 
 /** The Palette for a swatch component: the built-in colors alone when no app shell provides one. */

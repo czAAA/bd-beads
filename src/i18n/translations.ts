@@ -222,6 +222,10 @@ export interface Translations {
     /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
     customColorLabel: string
     limitReached: string
+    /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
+    removed: string
+    /** A removal button's accessible name; `{hex}` is the swatch's color. */
+    removeSwatch: string
   }
   tools: {
     paintLabel: string
