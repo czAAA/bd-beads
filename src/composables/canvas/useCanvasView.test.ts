@@ -113,6 +113,19 @@ describe('useCanvasView', () => {
     expect(view.scroll.value).toEqual({ x: 60 - 600, y: 60 - 400 })
   })
 
+  it('stays where it is when the same Pattern is edited, even while it still follows the fit', async () => {
+    const empty = { ...patternOf(2, 2), frame: undefined }
+    const { current, view } = setup(empty)
+    view.fit()
+    const before = { ...view.scroll.value }
+
+    current.value = paintCells(empty, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    await nextTick()
+
+    expect(view.scroll.value).toEqual(before)
+    expect(view.zoom.value).toBe(1)
+  })
+
   it('scrolls only as far as it takes to bring a bead into view', () => {
     const { view } = setup(patternOf(20, 10))
     view.fit()
