@@ -8,5 +8,6 @@ The fourth box of the left column: the five most recently saved Patterns as roun
 - **Remove:** a 20px round × (`panel` fill, 1px `line-strong`, icon 11) at the circle's top-right, shown on hover or keyboard focus.
 - **Expanded footer:** 1px `line-soft` rule, 12px above and 14px inside: Export Pattern and Export all (secondary in a box, 32px, 13px text).
 - The consumer provides the thumbnails; the preview's striped circles are placeholders.
+- **No Frame (v16):** a saved canvas with no Frame shows "no Frame" where the size goes (`meta-tiny`, `muted`). Its thumbnail is drawn from every piece on the canvas; with a Frame, from the Frame.
 
 Hand-written from DESIGN.md §5.8 and §5.9; static rendition.

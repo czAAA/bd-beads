@@ -9,6 +9,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - **Accent as text or a thin mark** on light surfaces is `accent-strong` (#c23604, 4.9:1 on panel): the active tool label and underline, the open Saved Pattern ring and name, message edges, accent icons, links. `accent` stays for fills, the current row and the logo.
 - The focus ring is `focus-ring`. Fields and Steppers, whose border is their only edge, use `field-line`; the off Switch uses `switch-off`; danger-filled buttons label in `on-danger`.
 - Changed values: `danger` light #c23604; `ruler` #6a6a6a / #888888; `subtle` light #767676; `muted` and `box-muted` dark #949494.
+- **Rulers** are measured on all eleven canvas backgrounds: regular numbers in `ruler` at 4.8:1 or more (Ash uses a lifted `#a0a0a0`, 5.4:1), every 5th in `body` at 7.9:1 or more, the current row's `marker` at 13:1 or more, and 10.9:1, 16.5:1 and 21:1 in high contrast. The Rulers card has the table. Column numbers from 100 are turned a quarter turn; none is ever thinned.
 - The logo on an accent tile (app icon, apple-touch icon, the cover) stays white in light: a graphic needs 3:1 and has 3.3:1.
 
 ## High contrast
@@ -28,7 +29,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 ## Text and zoom
 
 - Sizes in `rem`, so the browser's text size scales the chrome; the layout holds at 200% zoom (the left column scrolls, the header drops labels as on smaller tiers).
-- Nothing below 11px (rulers and Saved Pattern sizes only); on a phone nothing below 12px.
+- Nothing below 11px (rulers and Saved Pattern sizes only); on a phone nothing below 12px. Phone rulers are therefore 12px.
 - `lang="en"` / `lang="ru"` on `<html>` follows the language.
 
 ## Keyboard
@@ -76,3 +77,13 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - Escape skips the Tour; if a menu, sheet or modal is open, the first Escape closes it. A pointer move inside a step is one polite status line ("Next: Yellow, in Colors.").
 - The gold `tour-highlight` ring is not a focus indicator; the 2px `focus-ring` still shows on the focused control. High contrast replaces the ring with 3px `ink` and drops the glow; key caps and the grey pointer keep 3:1 against the dim layer. Full rules: the TourStep card.
 - The Overview's handwritten notes, bead drawings and background marks are `aria-hidden`; its carousel is a `tablist` from 1024. `note-gold` (about 2.5:1 on white) is for the decorative note only.
+
+## Open canvas and Frame (v16)
+
+- **Keys:** `F` starts Set Frame, `R` toggles the rulers, `H` picks the Hand tool. Space pressed on its own still paints at the bead cursor; Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
+- **Bead cursor:** arrows move it across the whole open canvas, and the canvas scrolls to keep it in view. With the Frame being set, arrows move the Frame by one bead, Shift + arrows resize it, Enter sets it and Escape cancels.
+- **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
+- **Announced:** "Frame set, 21 columns, 19 rows", "Frame removed", and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."
+- **Never colour alone:** the Frame is a line plus its rulers; a piece is a rectangle plus its rulers. The Frame line is `ink`, the strongest mark on every canvas background. The piece rectangle (`line-strong`) is decoration: the rulers carry the information.
+- **Touch targets:** the phone's Frame handles are drawn at 16px with a 44px hit area.
+- The keyboard rules for the Frame and the announcements are proposed with v16 and were not part of the signed-off mockups.

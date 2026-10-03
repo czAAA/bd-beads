@@ -6,5 +6,6 @@ A notice or toast: "couldn't save", import results and errors, confirmations of 
 - **Content:** a 16px icon in the tone color, the text (`body`), optional text-button actions, and a 28px close ×.
 - **Placement:** library-wide notices use the notice row under the header, full width, at elevation 0. Short-lived results show as a toast at the bottom-right of the canvas box, 16px in, above the Progress bar, and go after 5s unless hovered or focused. Errors stay until closed.
 - Import results and errors show beside the header button that caused them as a compact one-line message (no shadow, no close).
+- **Palette is full** (toast, info tone): when 28 colors are already added to the Palette, a new Custom color still paints but is not added. English: "The Palette is full: this color painted, but it wasn't added." Russian: «Палитра заполнена: цвет нарисован, но в палитру не добавлен.»
 
-Hand-written from DESIGN.md §5.12; static rendition. Preview copy is illustrative.
+Hand-written from DESIGN.md §5.12; static rendition. Preview copy is illustrative, except the Palette is full toast, which is the app's string in English and Russian.

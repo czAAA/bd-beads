@@ -12,4 +12,6 @@ Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 
 While Row progress is off (Derived) only the switch and a "row progress" label show; the bar keeps its height so the canvas does not jump.
 
-Hand-written from DESIGN.md §5.11; static rendition.
+**No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows the switch off and disabled, "Row progress" (`control`), "Set Frame to start" (`meta`) and, right-aligned, a Set Frame button (secondary in a box, `frame` icon). Row done and Row not done are not offered. The third row of the preview.
+
+Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.

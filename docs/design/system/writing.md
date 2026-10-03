@@ -54,7 +54,10 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
 | Delete all | Очистить всё | Empties the cells; the Pattern stays |
-| Mirror · Size | Отражение · Размер | Estimated size / Примерный размер |
+| Mirror | Отражение | Estimated size / Примерный размер |
+| Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
+| piece | фрагмент | Beads that touch; 1 фрагмент, 2 фрагмента, 5 фрагментов |
+| Canvas · Hand · Rulers | Холст · Рука · Линейки | The open drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | Image colors / Цвета изображения |
 
@@ -75,6 +78,19 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | `brown` | Brown | Коричневый |
 | `grey` | Gray | Серый |
 | `custom` | Custom | Свой цвет |
+
+## Canvas color names
+
+The Canvas color button (Russian "Цвет холста") offers five backgrounds in light and six in dark. The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
+
+| Choice | Light (EN / RU) | Dark (EN / RU) |
+| --- | --- | --- |
+| 1 | Studio / Студия | Night / Ночь |
+| 2 | Linen / Лён | Ink / Тушь |
+| 3 | Sage / Шалфей | Midnight / Полночь |
+| 4 | Mist / Дымка | Olive / Олива |
+| 5 | Blush / Румянец | Umber / Умбра |
+| 6 | n/a | Ash / Пепел |
 
 ## Numbers, units and dates
 
@@ -199,3 +215,28 @@ Plan contents are placeholders until paid features exist.
 | screen reader | | Tour, step {n} of 11: {title} · Next: {control}, in {place}. | Обучение, шаг {n} из 11: {title} · Далее: {control}, в «{place}». |
 
 Tour words: the Tour / обучение (lowercase in Russian, like any noun); rhombus / ромб; eye / глазок; Remove line / «Удалить линию».
+
+## Copy added in v16
+
+The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone names the thing, the Toolbox row and the Dock button. Frame is a product noun and is capitalized. The English is as signed off in the mockups; the Russian is proposed and not yet reviewed.
+
+| English | Russian |
+| --- | --- |
+| Frame · Set Frame | Рамка · Задать рамку |
+| not set · no Frame | не задана · без рамки |
+| Fit to drawing · Remove Frame · Done | По рисунку · Убрать рамку · Готово |
+| Set Frame to export | Задайте рамку для экспорта |
+| The Frame marks which beads become the Pattern. Beads outside it stay on the canvas. | Рамка отмечает, какие бисеринки войдут в схему. Бисеринки за рамкой остаются на холсте. |
+| Set Frame to count beads. | Задайте рамку, чтобы посчитать бисер. |
+| Row progress · Set Frame to start | Прогресс по рядам · Задайте рамку, чтобы начать |
+| Canvas · 3 pieces · no Frame | Холст · 3 фрагмента · без рамки |
+| 3 pieces · setting Frame | 3 фрагмента · задаётся рамка |
+| 2 pieces outside the Frame | 2 фрагмента вне рамки |
+| Frame 1, bring it into view | Рамка 1, показать на экране |
+| Rotate, Set Frame first | Повернуть: сначала задайте рамку |
+| Pattern rotated. 1 piece was in the way and moved outside the Frame. · Undo | Схема повёрнута. 1 фрагмент мешал и сдвинут за рамку. · Отменить |
+| Hand · Rulers | Рука · Линейки |
+| scroll or space drag to move · scroll to zoom | прокрутка или пробел и перетаскивание: сдвиг · прокрутка: масштаб |
+| Frame (optional) | Рамка (необязательно) |
+| Leave it empty to draw anywhere. Set Frame later, before you export. | Оставьте пустым, чтобы рисовать где угодно. Рамку можно задать позже, перед экспортом. |
+| A picture needs a Frame size. It becomes the first piece, and you can still draw outside it. | Для картинки нужен размер рамки. Она станет первым фрагментом, а рисовать можно и за рамкой. |

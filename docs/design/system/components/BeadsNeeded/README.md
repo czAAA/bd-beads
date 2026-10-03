@@ -7,5 +7,6 @@ An expandable panel listing how many beads of each color the Pattern needs, with
 - Body: up to 3 color rows while collapsed (32px each, 96px), each with a 1px `line-soft` rule above: a 12px swatch (radius 3, inset `swatch-edge`), the color name (`body`, `body` color) and the count (`meta`, `ink`, right-aligned). Expanded, every color shows.
 - Each row shows the count and, after it, the weight in `meta` `muted` ("2.5 g"): count ÷ the Bead's beads per gram (a catalog field), rounded up to 0.1 g. The title adds the total weight ("· 1 200 · ≈ 6 g"). An unknown Bead shows no grams.
 - Numbers group thousands with a no-break space: "1 200".
+- **Counts the Frame only (v16):** beads outside the Frame are not counted. With no Frame the panel keeps its header and says "Set Frame to count beads." (EmptyPanels).
 
 Hand-written from DESIGN.md §5.8; static rendition.

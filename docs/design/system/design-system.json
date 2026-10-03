@@ -1,0 +1,493 @@
+{
+  "v": 3,
+  "assetGroups": {
+    "Icons": {
+      "files": {
+        "arrow-down.svg": {
+          "blob": "21d1a7c1738c3a356cda618ccfa44829",
+          "name": "arrow-down.svg",
+          "size": 241,
+          "type": "image/svg+xml"
+        },
+        "arrow-up.svg": {
+          "blob": "330dc06533f4fe9b323771afbe5d1d32",
+          "name": "arrow-up.svg",
+          "size": 243,
+          "type": "image/svg+xml"
+        },
+        "bead.svg": {
+          "blob": "447a10d61dd2b9658b0901b0a2f0bdd3",
+          "name": "bead.svg",
+          "size": 295,
+          "type": "image/svg+xml"
+        },
+        "check.svg": {
+          "blob": "3cfd3c229760d473964b728509474681",
+          "name": "check.svg",
+          "size": 224,
+          "type": "image/svg+xml"
+        },
+        "chevron-down.svg": {
+          "blob": "4dda60960eac76d72df87b88277be710",
+          "name": "chevron-down.svg",
+          "size": 217,
+          "type": "image/svg+xml"
+        },
+        "chevron-left.svg": {
+          "blob": "48717d81bfc6c1e68a0d32db0fbd10a2",
+          "name": "chevron-left.svg",
+          "size": 219,
+          "type": "image/svg+xml"
+        },
+        "chevron-up.svg": {
+          "blob": "f460383b3701a97107829c0335a10ae2",
+          "name": "chevron-up.svg",
+          "size": 218,
+          "type": "image/svg+xml"
+        },
+        "close.svg": {
+          "blob": "22c2f199cc1106a82349925ec9753411",
+          "name": "close.svg",
+          "size": 233,
+          "type": "image/svg+xml"
+        },
+        "contrast.svg": {
+          "blob": "8bbb2af4f0cde3e318efb8802dac8486",
+          "name": "contrast.svg",
+          "size": 304,
+          "type": "image/svg+xml"
+        },
+        "copy.svg": {
+          "blob": "470fef79f493e1008622755208cede59",
+          "name": "copy.svg",
+          "size": 340,
+          "type": "image/svg+xml"
+        },
+        "delete.svg": {
+          "blob": "c6eef475a7c5752b35b141c32a0fcf7f",
+          "name": "delete.svg",
+          "size": 355,
+          "type": "image/svg+xml"
+        },
+        "device.svg": {
+          "blob": "b7c723a2fbd6745a7cbaac40aea93ebf",
+          "name": "device.svg",
+          "size": 341,
+          "type": "image/svg+xml"
+        },
+        "erase.svg": {
+          "blob": "b8140ef5aeb568eba2264dd71d579561",
+          "name": "erase.svg",
+          "size": 347,
+          "type": "image/svg+xml"
+        },
+        "export.svg": {
+          "blob": "3845ca053cd8441f36ed947e8ad91650",
+          "name": "export.svg",
+          "size": 304,
+          "type": "image/svg+xml"
+        },
+        "fill.svg": {
+          "blob": "49e453f5803c560fdb8f97fb954dc8d2",
+          "name": "fill.svg",
+          "size": 345,
+          "type": "image/svg+xml"
+        },
+        "fit.svg": {
+          "blob": "80aea620e9b79c115368038d6171976a",
+          "name": "fit.svg",
+          "size": 406,
+          "type": "image/svg+xml"
+        },
+        "grid.svg": {
+          "blob": "5b4816990042dfeda8805b40bcf1ed6c",
+          "name": "grid.svg",
+          "size": 306,
+          "type": "image/svg+xml"
+        },
+        "image.svg": {
+          "blob": "c58c5690460d65b36bef433bae07f7fa",
+          "name": "image.svg",
+          "size": 339,
+          "type": "image/svg+xml"
+        },
+        "import.svg": {
+          "blob": "6acdb745e2d748666975d704799aded7",
+          "name": "import.svg",
+          "size": 305,
+          "type": "image/svg+xml"
+        },
+        "info.svg": {
+          "blob": "667f8e33ff96de0c498c5e0e77884217",
+          "name": "info.svg",
+          "size": 289,
+          "type": "image/svg+xml"
+        },
+        "keyboard.svg": {
+          "blob": "2fdccaae13e84b9ad880f04da0d2937b",
+          "name": "keyboard.svg",
+          "size": 343,
+          "type": "image/svg+xml"
+        },
+        "library.svg": {
+          "blob": "54b334c89ce252cbdcf9a5f556d9facd",
+          "name": "library.svg",
+          "size": 368,
+          "type": "image/svg+xml"
+        },
+        "menu.svg": {
+          "blob": "424055a6ffc39dfac008b09700ac302c",
+          "name": "menu.svg",
+          "size": 234,
+          "type": "image/svg+xml"
+        },
+        "mirror-copy-mode.svg": {
+          "blob": "3c0fe37e6f7d4d0b869896135d0dd7d2",
+          "name": "mirror-copy-mode.svg",
+          "size": 350,
+          "type": "image/svg+xml"
+        },
+        "mirror-horizontal.svg": {
+          "blob": "231017d96cc75fc2ba4305809373a6ae",
+          "name": "mirror-horizontal.svg",
+          "size": 330,
+          "type": "image/svg+xml"
+        },
+        "mirror-vertical.svg": {
+          "blob": "08ced04a6cf48c40b7fcede3c322facf",
+          "name": "mirror-vertical.svg",
+          "size": 329,
+          "type": "image/svg+xml"
+        },
+        "moon.svg": {
+          "blob": "12828d3432e271adfdf349dddb73ed9a",
+          "name": "moon.svg",
+          "size": 297,
+          "type": "image/svg+xml"
+        },
+        "more.svg": {
+          "blob": "3e7b97e187ae81d1ddc4810ae21ede9f",
+          "name": "more.svg",
+          "size": 255,
+          "type": "image/svg+xml"
+        },
+        "paint.svg": {
+          "blob": "29cab2714644e900f47559616fd325ab",
+          "name": "paint.svg",
+          "size": 250,
+          "type": "image/svg+xml"
+        },
+        "paste.svg": {
+          "blob": "712c1995d0e5db31b4850a72c3f2574b",
+          "name": "paste.svg",
+          "size": 359,
+          "type": "image/svg+xml"
+        },
+        "pattern.svg": {
+          "blob": "fdb430082a4a50a7b487cd4f77b39e20",
+          "name": "pattern.svg",
+          "size": 343,
+          "type": "image/svg+xml"
+        },
+        "pdf.svg": {
+          "blob": "543b89020c5fb0323f4e47e681650580",
+          "name": "pdf.svg",
+          "size": 329,
+          "type": "image/svg+xml"
+        },
+        "plus.svg": {
+          "blob": "e92feee61eb8f3f8f52170304c741f49",
+          "name": "plus.svg",
+          "size": 219,
+          "type": "image/svg+xml"
+        },
+        "qr-code.svg": {
+          "blob": "c1f7e1e0405bd1e4fcb90c921906b72e",
+          "name": "qr-code.svg",
+          "size": 461,
+          "type": "image/svg+xml"
+        },
+        "redo.svg": {
+          "blob": "837241d556bdebd4c2d3095a382047a3",
+          "name": "redo.svg",
+          "size": 268,
+          "type": "image/svg+xml"
+        },
+        "remove-line.svg": {
+          "blob": "0f8f7310c1a32e5b4dfb28fa278989ab",
+          "name": "remove-line.svg",
+          "size": 323,
+          "type": "image/svg+xml"
+        },
+        "rotate.svg": {
+          "blob": "a9dec6b07b77f6b427517796b9a134ef",
+          "name": "rotate.svg",
+          "size": 320,
+          "type": "image/svg+xml"
+        },
+        "row-progress.svg": {
+          "blob": "211b2faf84cc29582a180cf7d7da9fe2",
+          "name": "row-progress.svg",
+          "size": 273,
+          "type": "image/svg+xml"
+        },
+        "save.svg": {
+          "blob": "42ee0443e8478c7706f18ba5b9f61dd6",
+          "name": "save.svg",
+          "size": 383,
+          "type": "image/svg+xml"
+        },
+        "scan.svg": {
+          "blob": "f9d9d3d27c7114e1e9862503c2db0e8f",
+          "name": "scan.svg",
+          "size": 373,
+          "type": "image/svg+xml"
+        },
+        "select.svg": {
+          "blob": "289f2c3a0907b865fb01eb25ddc10fec",
+          "name": "select.svg",
+          "size": 258,
+          "type": "image/svg+xml"
+        },
+        "sidebar.svg": {
+          "blob": "95b62851ba2cabdf5cb7111c00fa54bb",
+          "name": "sidebar.svg",
+          "size": 325,
+          "type": "image/svg+xml"
+        },
+        "size.svg": {
+          "blob": "b6cab576f2f6d0c113971a60a3a041e3",
+          "name": "size.svg",
+          "size": 263,
+          "type": "image/svg+xml"
+        },
+        "sun.svg": {
+          "blob": "21d60e3c2e1436734ce5a1bf4ffafc95",
+          "name": "sun.svg",
+          "size": 371,
+          "type": "image/svg+xml"
+        },
+        "turn-row-direction.svg": {
+          "blob": "22db9b804cf8e08d2a633d9a32918767",
+          "name": "turn-row-direction.svg",
+          "size": 280,
+          "type": "image/svg+xml"
+        },
+        "undo.svg": {
+          "blob": "af02200e616ec8dcabfff350807634e0",
+          "name": "undo.svg",
+          "size": 265,
+          "type": "image/svg+xml"
+        },
+        "warning.svg": {
+          "blob": "de9174563699609cd0a766247c28165c",
+          "name": "warning.svg",
+          "size": 347,
+          "type": "image/svg+xml"
+        },
+        "zoom-in.svg": {
+          "blob": "136da6d62bda153f54bc10ad40c29087",
+          "name": "zoom-in.svg",
+          "size": 296,
+          "type": "image/svg+xml"
+        },
+        "zoom-out.svg": {
+          "blob": "e035b4194f0af4717a180b63495cfbf2",
+          "name": "zoom-out.svg",
+          "size": 282,
+          "type": "image/svg+xml"
+        },
+        "frame.svg": {
+          "blob": "309b650d822827201befb27392a9310b",
+          "name": "frame.svg",
+          "size": 254,
+          "type": "image/svg+xml"
+        },
+        "ruler.svg": {
+          "blob": "b2b8a0f4b39eba70f8ec7dd45d54a332",
+          "name": "ruler.svg",
+          "size": 298,
+          "type": "image/svg+xml"
+        },
+        "hand.svg": {
+          "blob": "7ac3e78a40c1c797be11e674bb8d2e49",
+          "name": "hand.svg",
+          "size": 368,
+          "type": "image/svg+xml"
+        }
+      },
+      "name": "Icons",
+      "order": [
+        "paint.svg",
+        "fill.svg",
+        "select.svg",
+        "erase.svg",
+        "remove-line.svg",
+        "delete.svg",
+        "undo.svg",
+        "redo.svg",
+        "rotate.svg",
+        "copy.svg",
+        "image.svg",
+        "save.svg",
+        "export.svg",
+        "import.svg",
+        "qr-code.svg",
+        "scan.svg",
+        "pdf.svg",
+        "mirror-horizontal.svg",
+        "mirror-vertical.svg",
+        "mirror-copy-mode.svg",
+        "size.svg",
+        "info.svg",
+        "row-progress.svg",
+        "turn-row-direction.svg",
+        "check.svg",
+        "chevron-left.svg",
+        "plus.svg",
+        "sun.svg",
+        "moon.svg",
+        "device.svg",
+        "contrast.svg",
+        "keyboard.svg",
+        "chevron-down.svg",
+        "grid.svg",
+        "zoom-in.svg",
+        "zoom-out.svg",
+        "fit.svg",
+        "arrow-down.svg",
+        "arrow-up.svg",
+        "chevron-up.svg",
+        "close.svg",
+        "warning.svg",
+        "more.svg",
+        "menu.svg",
+        "pattern.svg",
+        "sidebar.svg",
+        "bead.svg",
+        "library.svg",
+        "paste.svg",
+        "frame.svg",
+        "ruler.svg",
+        "hand.svg"
+      ],
+      "tile": "xs"
+    },
+    "Logos": {
+      "files": {
+        "apple-touch-icon.png": {
+          "blob": "d96de1723b1e05feff816d3512962730",
+          "name": "apple-touch-icon.png",
+          "size": 5420,
+          "type": "image/png"
+        },
+        "bd-beads-app-icon-dark.svg": {
+          "blob": "711f08b2e9c39b263bde8866b057ba7e",
+          "name": "bd-beads-app-icon-dark.svg",
+          "size": 502,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-app-icon.svg": {
+          "blob": "bab37d79a95c85b729675b7e6d2fab21",
+          "name": "bd-beads-app-icon.svg",
+          "size": 502,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-mark-dark.svg": {
+          "blob": "1c1806ad1b8b4aaddff8c39222d7c689",
+          "name": "bd-beads-mark-dark.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-mark-ink.svg": {
+          "blob": "dff1b8ee5263ed12c22cced3f370d725",
+          "name": "bd-beads-mark-ink.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-mark-small.svg": {
+          "blob": "345cf71ece1901e065bda1da962bd159",
+          "name": "bd-beads-mark-small.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-mark-white.svg": {
+          "blob": "c438c2833b8995e44fb75f00aa4d317a",
+          "name": "bd-beads-mark-white.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "bd-beads-mark.svg": {
+          "blob": "26e22cba698f22dc3588b108c09bcd6d",
+          "name": "bd-beads-mark.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "favicon-32.png": {
+          "blob": "15e81132c92c9027b7d6049d91ec0412",
+          "name": "favicon-32.png",
+          "size": 1486,
+          "type": "image/png"
+        },
+        "favicon-dark.svg": {
+          "blob": "9a94f041c5021d4e88767ea49d78d72a",
+          "name": "favicon-dark.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        },
+        "favicon.svg": {
+          "blob": "8f36c131d8fb32d81a6e7a24a04a3128",
+          "name": "favicon.svg",
+          "size": 393,
+          "type": "image/svg+xml"
+        }
+      },
+      "name": "Logos",
+      "order": [
+        "bd-beads-mark.svg",
+        "bd-beads-mark-dark.svg",
+        "bd-beads-mark-ink.svg",
+        "bd-beads-mark-white.svg",
+        "bd-beads-mark-small.svg",
+        "bd-beads-app-icon.svg",
+        "bd-beads-app-icon-dark.svg",
+        "favicon.svg",
+        "favicon-dark.svg",
+        "favicon-32.png",
+        "apple-touch-icon.png"
+      ],
+      "tile": "l"
+    }
+  },
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-09-25T23:21:37Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": [
+      "project/accessibility.md",
+      "project/forms-and-states.md",
+      "project/interaction-and-motion.md",
+      "project/printed-output.md",
+      "project/responsive.md",
+      "project/writing.md"
+    ]
+  },
+  "groups": [
+    "Logos",
+    "Icons"
+  ],
+  "lastChange": {
+    "at": "2026-10-03T13:00:00Z",
+    "by": "Claude",
+    "via": "Claude (chat)",
+    "note": "v16: the Palette's maximum is now 40 swatches (12 built in, up to 28 added, five full rows), was 36; PaletteSwatches card, Message copy note and the v16 log line updated."
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "BdBeads",
+  "sections": {},
+  "title": "bd-beads"
+}

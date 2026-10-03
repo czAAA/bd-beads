@@ -44,3 +44,12 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - The gold highlight stays on the control until it is pressed, then moves on; it never pulses. Under reduced motion every Tour layer fades in 120ms and the hole jumps.
 - The dim layer blocks presses outside the holes and the card; wheel, trackpad pinch and two-finger touch over the canvas box still scroll and zoom the Pattern.
 - The Overview's steam and carousel scroll animate only with reduced motion off; its drawings never move.
+
+## Open canvas and Frame (v16)
+
+- **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag and the Hand tool show the grab cursor, and the grabbing cursor while dragging.
+- **Zoom** (⌘ or Ctrl + wheel, pinch, the strip's buttons) keeps the point under the pointer still. It stops at the `bead-min-*` floor.
+- **Set Frame:** the Frame follows the drag and snaps to whole beads with no animation; its size tag updates as it moves.
+- **Bring into view** (the Frame number) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
+- **Rotate:** the Frame and its beads turn at once. A piece that was in the way appears in its new place with no travel animation; the Message says what moved and offers Undo.
+- Rulers appear and hide at once. Nothing on the Pattern animates.

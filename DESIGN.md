@@ -1,7 +1,7 @@
 # DESIGN.md: bd-beads visual language
 
 The entry point to how bd-beads looks and behaves. The design itself lives in the **bd-beads design system,
-version 14**, copied into [`docs/design/system/`](docs/design/system/README.md). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
+version 16**, copied into [`docs/design/system/`](docs/design/system/README.md). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card
 for each component you touch (`docs/design/system/components/<Name>/README.md` and its `preview.html`), then the
@@ -225,19 +225,22 @@ The design system is edited on claude.ai; `docs/design/system/` is a copy, so ev
 files without an account.
 
 1. Download the design system from claude.ai.
-2. Copy its files over `docs/design/system/` in one commit. Leave out the `previews/` and `sign-off/` folders (the
-   component cards already hold the previews), `DOWNLOAD-README.md` (this section replaces it) and the legacy
-   `assets/Icons/row-progress.svg`.
+2. Copy these into `docs/design/system/` in one commit:
+   - **Sync:** the top-level files (`README.md`, `accessibility.md`, `forms-and-states.md`,
+     `interaction-and-motion.md`, `printed-output.md`, `responsive.md`, `writing.md`, `tokens.json`, `tokens.css`,
+     `design-system.json`) and the folders `components/` (cards, READMEs and `bundle.css`, with their
+     `preview.html` files), `assets/` and `favicon/`.
+   - **Leave out:** `api/` and `manifest.json` (they repeat `tokens.json` and the component READMEs), `previews/`
+     and `sign-off/` (the component cards already hold the previews), `DOWNLOAD-README.md` (this section replaces
+     it) and the legacy `assets/Icons/row-progress.svg`.
+   - The system `README.md` is generated and still points at `api/`; those lines are fixed by hand after each sync
+     (use `tokens.json` and `components/<Comp>/README.md`).
 3. Update the version line below, and any app-specific note (§4) the change touches, in the same commit.
 4. If `components/bundle.css` changed its non-token values, update `src/styles/design-values.css` to match (§4.6).
 5. Run the tests: once ticket 140 lands, the `PatternTheme` check (§4.2) fails if a canvas token changed without the
    renderer.
 
-**Version in the repo:** design system **v15**, synced from claude.ai on 2026-09-30. v15 adds the Tour (TourStep,
-TourPattern), the Overview page and the HeaderMenu (which replaces the OverflowMenu), the `menu` and `pattern` icons
-(Icons v2 is now 49), the `tour-highlight` and `note-gold` colors, the `z-tour-*` layers and the Overview-only type
-roles (`tagline`, `serif-heading`, `note`). It builds on v14 (synced from DESIGN.md @ e16e9c5, plus the X1 logo,
-Icons v2 and Phases A–E; the `bead`, `library` and `paste` icons of ticket 188; EmptyCanvas's full-bleed ghost board,
-ticket 180).
-Added by hand from the approved Rulers design on claude.ai (ticket 222), until the next sync replaces them: the Rulers
-card, the five `bead-min-*` tokens and the new `ruler` type usage.
+**Version in the repo:** design system **v16**, synced from claude.ai on 2026-10-03. See the Version section of
+[`docs/design/system/README.md`](docs/design/system/README.md) for what each version added. v16 adds the open canvas,
+the Frame, the Hand tool, the Rulers toggle and custom Palette swatches; the Rulers card and the `bead-min-*` tokens,
+once added by hand (ticket 222), now come from the sync.

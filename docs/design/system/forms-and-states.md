@@ -15,7 +15,7 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 
 ## Empty
 
-- Say what is missing and what to do next, in one line of `body` or `muted`, using the app's own sentences: "No Pattern open yet", "Nothing painted yet", "No Patterns saved yet", "Open a Pattern to see how many beads it needs".
+- Say what is missing and what to do next, in one line of `body` or `muted`, using the app's own sentences: "No Pattern open yet", "Nothing painted yet", "No Patterns saved yet", "Open a Pattern to see how many beads it needs", and with a Pattern open but no Frame (v16) "Set Frame to count beads." and "Set Frame to start".
 - The canvas box keeps its frame and shows an empty board; panels keep their header and hide their expand button.
 
 ## Loading
@@ -30,3 +30,9 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 - Every error offers the way out when there is one: Export Pattern when saving fails, Export Pattern when a Pattern is too large for a QR code.
 - Results that need no action ("Patterns imported: 3", "Saved") are short and go by themselves.
 - The QR code always sits on white with dark modules, in both themes, so scanners can read it.
+
+## Open canvas and Frame (v16)
+
+- **New Pattern:** the size is optional. Bead and Technique are preset and changeable later; the Frame fields may stay empty, and then the Pattern opens on an open canvas with no Frame. One field filled makes the other required. Convert image still needs a Frame size.
+- **No Frame is a state, not an error.** Each place that needs the Frame says so in one line and offers Set Frame: the Progress bar, Beads needed, the export prompt. Rotate is disabled with the reason in its name.
+- **The export prompt** is a small popover, not a Modal: it opens under Export ▾ and closes on Escape or a click outside (SaveBox card).
