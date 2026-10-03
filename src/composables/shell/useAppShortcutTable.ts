@@ -21,7 +21,12 @@ export interface AppShortcutTableDeps {
   onSelectTool: (tool: Tool) => void
   onSelectColor: (colorId: string) => void
   onDeleteSelection: () => void
-  onToggleRotate: () => void
+  onToggleRulers: () => void
+  /** F: starts Set Frame, or finishes it. */
+  onToggleFrame: () => void
+  /** Whether the Frame is being set, and the way out of it. */
+  settingFrame: () => boolean
+  finishFrame: () => void
   onCopy: () => void
   pasteAtPointer: (event: KeyboardEvent) => void
   onSave: () => void
@@ -100,6 +105,11 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         if (deps.collapseExpandedToolGroup()) {
           return
         }
+        // Set Frame is a mode: Escape is its way out, before Select or the default tool take it.
+        if (deps.settingFrame()) {
+          deps.finishFrame()
+          return
+        }
         if (deps.backOutOfSelect()) {
           return
         }
@@ -139,6 +149,12 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       guard: noModalOpen,
       action: () => deps.onSelectTool('select'),
     },
+    // Canvas group (v16): H picks the Hand tool, which moves the canvas and never changes a bead.
+    {
+      matches: (event) => isPlainLetterKey(event, 'h'),
+      guard: noModalOpen,
+      action: () => deps.onSelectTool('hand'),
+    },
     // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Eraser.
     {
       matches: (event) => event.key === 'Delete',
@@ -163,12 +179,19 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         }
       },
     },
-    // Edit group (ticket 91): R toggles Rotate, Ctrl/Cmd+C copies the active Selection.
+    // Canvas group (v16): F starts Set Frame (and finishes it).
+    {
+      matches: (event) => isPlainLetterKey(event, 'f'),
+      guard: () => noModalOpen() && !!deps.activePattern(),
+      action: () => deps.onToggleFrame(),
+    },
+    // Canvas group (v16): R shows and hides the rulers. Rotate lost the key to it; the Edit group's button remains.
     {
       matches: (event) => isPlainLetterKey(event, 'r'),
       guard: noModalOpen,
-      action: () => deps.onToggleRotate(),
+      action: () => deps.onToggleRulers(),
     },
+    // Edit group (ticket 91): Ctrl/Cmd+C copies the active Selection.
     {
       matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'c',
       guard: noModalOpen,

@@ -20,14 +20,19 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
+  /** The bar's own way to Set Frame, shown while there is no Frame to count rows on. */
+  'set-frame': []
 }>()
 
 const { t } = useI18n()
 
 const enabled = computed({
-  get: () => props.pattern.rowProgress.enabled,
+  get: () => props.pattern.rowProgress.enabled && props.pattern.frame !== undefined,
   set: (on: boolean) => emit('toggle-row-progress', on),
 })
+
+/** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
+const hasFrame = computed(() => props.pattern.frame !== undefined)
 
 const position = computed(() => rowProgressPosition(props.pattern))
 
@@ -41,9 +46,16 @@ const directionLabel = computed(() =>
 
 <template>
   <div class="progress-bar" :class="{ 'progress-bar--off': !enabled }" data-testid="progress-bar">
-    <AppSwitch v-model="enabled" :label="t.rowProgress.enabledLabel" data-testid="progress-bar-switch" data-tour="progress-switch" />
+    <AppSwitch v-model="enabled" :label="t.rowProgress.enabledLabel" :disabled="!hasFrame" data-testid="progress-bar-switch" data-tour="progress-switch" />
 
-    <template v-if="enabled">
+    <template v-if="!hasFrame">
+      <span class="progress-bar__row">{{ t.toolbox.groups.rowProgress }}</span>
+      <span class="progress-bar__need" data-testid="progress-bar-needs-frame">{{ t.frame.progressNeedsFrame }}</span>
+      <AppButton class="progress-bar__set-frame" variant="box" icon="frame" data-testid="progress-bar-set-frame" @click="emit('set-frame')">
+        {{ t.frame.setFrame }}
+      </AppButton>
+    </template>
+    <template v-else-if="enabled">
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
         <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ position.current + 1 }}</span>
         {{ ' ' }}
@@ -126,6 +138,17 @@ const directionLabel = computed(() =>
 </template>
 
 <style scoped>
+/* No Frame (ProgressBar card): "Set Frame to start" in `meta`, and the Set Frame button pushed to the right. */
+.progress-bar__need {
+  font: var(--type-meta);
+  color: var(--box-muted);
+  white-space: nowrap;
+}
+
+.progress-bar__set-frame {
+  margin-left: auto;
+}
+
 .progress-bar {
   display: flex;
   flex: none;

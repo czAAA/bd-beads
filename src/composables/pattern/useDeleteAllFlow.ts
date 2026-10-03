@@ -43,7 +43,7 @@ export function useDeleteAllFlow(deps: DeleteAllFlowDeps) {
       return
     }
 
-    deps.recordHistory({ grid: pattern.grid, rowProgress: pattern.rowProgress })
+    deps.recordHistory({ beads: pattern.beads, rowProgress: pattern.rowProgress })
     deps.replacePattern(updated)
   }
 

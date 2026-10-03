@@ -6,12 +6,10 @@ import {
   mirroredPasteBlock,
   mirroredPastedCells,
   pastedCells,
-  selectedLine,
   selectionBetween,
-  wholeLineSelection,
   type CopiedBlock,
 } from './selection'
-import { createPattern, type Pattern } from './pattern'
+import { createPattern, withFrameGrid, type Pattern, frameGrid } from './pattern'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -31,23 +29,23 @@ function pattern(columns: number, rows: number): Pattern {
 /** Paints a Pattern from a picture of it: one string per row, one character per column, '.' for an empty cell. */
 function painted(rows: string[], colors: Record<string, string> = { r: RED, b: BLUE }): Pattern {
   const base = pattern(rows[0]!.length, rows.length)
-  return {
-    ...base,
-    grid: rows.map((row) => [...row].map((char) => ({ color: colors[char] ?? null }))),
-  }
+  return withFrameGrid(
+    base,
+    rows.map((row) => [...row].map((char) => ({ color: colors[char] ?? null }))),
+  )
 }
 
 /** The inverse of `painted`, so an expectation can be written as the picture it should produce. */
 function picture(target: Pattern, colors: Record<string, string> = { r: RED, b: BLUE }): string[] {
   const chars = Object.entries(colors)
-  return target.grid.map((row) =>
+  return frameGrid(target).map((row) =>
     row.map((cell) => chars.find(([, hex]) => hex === cell.color)?.[0] ?? '.').join(''),
   )
 }
 
 describe('selectionBetween', () => {
   it('spans the rectangle between the two corners of a drag', () => {
-    expect(selectionBetween(pattern(10, 10), { row: 1, column: 2 }, { row: 3, column: 5 })).toEqual({
+    expect(selectionBetween({ row: 1, column: 2 }, { row: 3, column: 5 })).toEqual({
       top: 1,
       left: 2,
       rows: 3,
@@ -56,15 +54,14 @@ describe('selectionBetween', () => {
   })
 
   it('spans the same rectangle whichever corner the drag started from', () => {
-    const grid = pattern(10, 10)
-    const downRight = selectionBetween(grid, { row: 1, column: 2 }, { row: 3, column: 5 })
+    const downRight = selectionBetween({ row: 1, column: 2 }, { row: 3, column: 5 })
 
-    expect(selectionBetween(grid, { row: 3, column: 5 }, { row: 1, column: 2 })).toEqual(downRight)
-    expect(selectionBetween(grid, { row: 3, column: 2 }, { row: 1, column: 5 })).toEqual(downRight)
+    expect(selectionBetween({ row: 3, column: 5 }, { row: 1, column: 2 })).toEqual(downRight)
+    expect(selectionBetween({ row: 3, column: 2 }, { row: 1, column: 5 })).toEqual(downRight)
   })
 
   it('covers a single cell when the drag never left the cell it started on', () => {
-    expect(selectionBetween(pattern(10, 10), { row: 4, column: 4 }, { row: 4, column: 4 })).toEqual({
+    expect(selectionBetween({ row: 4, column: 4 }, { row: 4, column: 4 })).toEqual({
       top: 4,
       left: 4,
       rows: 1,
@@ -72,47 +69,13 @@ describe('selectionBetween', () => {
     })
   })
 
-  it('clamps a corner that fell outside the grid back onto it', () => {
-    expect(selectionBetween(pattern(4, 3), { row: -5, column: -5 }, { row: 99, column: 99 })).toEqual({
-      top: 0,
-      left: 0,
-      rows: 3,
+  it('does not clamp a corner anywhere: the open canvas has no edge, and rows and columns may be negative', () => {
+    expect(selectionBetween({ row: -5, column: -2 }, { row: 3, column: 1 })).toEqual({
+      top: -5,
+      left: -2,
+      rows: 9,
       columns: 4,
     })
-  })
-})
-
-describe('wholeLineSelection and selectedLine (ticket 123)', () => {
-  const dimensions = { columns: 5, rows: 4 }
-
-  it('builds the Selection a row ruler number picks out, spanning every column', () => {
-    expect(wholeLineSelection(dimensions, 'row', 2)).toEqual({ top: 2, left: 0, rows: 1, columns: 5 })
-  })
-
-  it('builds the Selection a column ruler number picks out, spanning every row', () => {
-    expect(wholeLineSelection(dimensions, 'column', 3)).toEqual({ top: 0, left: 3, rows: 4, columns: 1 })
-  })
-
-  it('reads a whole-row Selection back as that row', () => {
-    expect(selectedLine(dimensions, { top: 2, left: 0, rows: 1, columns: 5 })).toEqual({ axis: 'row', index: 2 })
-  })
-
-  it('reads a whole-column Selection back as that column', () => {
-    expect(selectedLine(dimensions, { top: 0, left: 3, rows: 4, columns: 1 })).toEqual({ axis: 'column', index: 3 })
-  })
-
-  it('is undefined for an ordinary block, a partial row, and no Selection at all', () => {
-    expect(selectedLine(dimensions, { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
-    expect(selectedLine(dimensions, { top: 1, left: 0, rows: 1, columns: 4 })).toBeUndefined()
-    expect(selectedLine(dimensions, undefined)).toBeUndefined()
-  })
-
-  it('round-trips through both directions', () => {
-    const rowSelection = wholeLineSelection(dimensions, 'row', 1)
-    expect(selectedLine(dimensions, rowSelection)).toEqual({ axis: 'row', index: 1 })
-
-    const columnSelection = wholeLineSelection(dimensions, 'column', 4)
-    expect(selectedLine(dimensions, columnSelection)).toEqual({ axis: 'column', index: 4 })
   })
 })
 
@@ -168,7 +131,7 @@ describe('copySelection', () => {
     const source = painted(['rr', 'rr'])
     const block = copySelection(source, { top: 0, left: 0, rows: 2, columns: 2 })
 
-    source.grid[0]![0]!.color = BLUE
+    frameGrid(source)[0]![0]!.color = BLUE
 
     expect(block.colors[0]![0]).toBe(RED)
   })
@@ -185,23 +148,23 @@ describe('pastedCells', () => {
   }
 
   it('anchors the block’s top-left corner at the given position', () => {
-    expect(pastedCells(pattern(5, 5), block, { row: 2, column: 3 })).toEqual([
+    expect(pastedCells(block, { row: 2, column: 3 })).toEqual([
       { row: 2, column: 3, color: RED },
       { row: 3, column: 4, color: BLUE },
     ])
   })
 
   it('leaves out the block’s empty cells, which paste as holes rather than as erasures', () => {
-    const cells = pastedCells(pattern(5, 5), block, { row: 0, column: 0 })
+    const cells = pastedCells(block, { row: 0, column: 0 })
 
     expect(cells).not.toContainEqual(expect.objectContaining({ row: 0, column: 1 }))
     expect(cells).not.toContainEqual(expect.objectContaining({ row: 1, column: 0 }))
   })
 
-  it('drops the part of the block that falls past the grid’s edge', () => {
-    // Anchored on the last cell of a 2x2 grid, only the block's own top-left corner still lands on the grid.
-    expect(pastedCells(pattern(2, 2), block, { row: 1, column: 1 })).toEqual([
-      { row: 1, column: 1, color: RED },
+  it('keeps the whole block wherever it lands: the open canvas has no edge to clip at, negative positions included', () => {
+    expect(pastedCells(block, { row: -1, column: -1 })).toEqual([
+      { row: -1, column: -1, color: RED },
+      { row: 0, column: 0, color: BLUE },
     ])
   })
 })
@@ -214,7 +177,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const at = { row: 1, column: 1 }
     const axes = { rows: 0, columns: 0 }
 
-    expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(target, dot, at))
+    expect(mirroredPastedCells(target.frame, dot, at, axes)).toEqual(pastedCells(dot, at))
   })
 
   it('with a single center axis on, stamps both the aimed spot and its one mirrored counterpart', () => {
@@ -279,11 +242,11 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const at = { row: 0, column: 0 }
     const axes = { rows: 0, columns: 2 }
 
-    const preview = mirroredPastedCells(target, motif, at, axes, true)
+    const preview = mirroredPastedCells(target.frame, motif, at, axes, true)
     const stamped = mirroredPasteBlock(target, motif, at, axes, true)
 
     for (const cell of preview) {
-      expect(stamped.grid[cell.row]![cell.column]!.color).toBe(cell.color)
+      expect(frameGrid(stamped)[cell.row]![cell.column]!.color).toBe(cell.color)
     }
   })
 

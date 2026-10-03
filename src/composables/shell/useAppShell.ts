@@ -1,4 +1,6 @@
-import { inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { frameContains } from '../../domain/canvas'
+import { piecesOf } from '../../domain/pieces'
 import type { CreatePatternInput } from '../../domain/pattern'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
@@ -7,13 +9,16 @@ import { useAppShortcutTable } from './useAppShortcutTable'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
-import { useChangeSizeFlow } from '../pattern/useChangeSizeFlow'
 import { useConvertImage } from '../import/useConvertImage'
 import { useDeleteAllFlow } from '../pattern/useDeleteAllFlow'
+import { useFrameFlow } from '../pattern/useFrameFlow'
+import { useRemoveLineFlow } from '../pattern/useRemoveLineFlow'
+import { useRotateFlow } from '../pattern/useRotateFlow'
 import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
+import { useRulers } from '../canvas/useRulers'
 import { useMirrorState } from '../tools/useMirrorState'
 import { useNewPatternFlow } from '../pattern/useNewPatternFlow'
 import { useOverlayVisibility } from './useOverlayVisibility'
@@ -113,8 +118,11 @@ function wireAppShell(services: Services) {
     cancelConvertImage,
   })
 
+  /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
+  const { showRulers, toggleRulers } = useRulers(services.rulersStore)
+
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, zoomIn, zoomOut, setZoom, resetZoom, zoomPercent, stripSize, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
     useCanvasFraming({
       currentPattern,
       framing: () => framing.value,
@@ -140,7 +148,7 @@ function wireAppShell(services: Services) {
 
   /**
    * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations. Ticket 174 hid
-   * Mirror's UI pending its own redesign, so only the bookkeeping a Resize and a Pattern switch still need is pulled
+   * Mirror's UI pending its own redesign, so only the bookkeeping a Frame change and a Pattern switch still need is pulled
    * out here; the axis counts stay forever at their NO_MIRROR_AXES default, which is exactly what leaves paint/fill/
    * erase's own live-mirror calls inert without deleting them.
    */
@@ -194,7 +202,7 @@ function wireAppShell(services: Services) {
     onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
-  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
+  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value, onToolChosen: () => frameFlow.done() })
 
   /**
    * An added swatch is removed (ticket 228): painted cells keep their hex, so only the swatch goes. Removing the active
@@ -242,6 +250,16 @@ function wireAppShell(services: Services) {
     flushPendingSave,
   })
 
+  /** The Piece being drawn right now (its rectangle is drawn `muted`, ADR 0026): the one under the pointer while a stroke is going, with no Frame to take the rulers over. */
+  const activePiece = computed(() => {
+    const pattern = currentPattern()
+    const hovered = hoveredCell.value
+    if (!pattern || pattern.frame || strokeMode.value === null || !hovered) {
+      return undefined
+    }
+    return piecesOf(pattern.beads, pattern.technique).find((piece) => frameContains(piece, hovered))
+  })
+
   /** The open Pattern for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
   const settledPattern = useSettledPattern(currentPattern, () => strokeMode.value !== null)
 
@@ -253,7 +271,7 @@ function wireAppShell(services: Services) {
    * panning scrolls the window instead, since nothing in the shell traps vertical overflow of its own.
    */
   const canvasScrollEl = ref<HTMLElement | null>(null)
-  const { spaceHeld, panning: spacePanning } = useSpaceDragPan(canvasScrollEl)
+  const { spaceHeld, panning: spacePanning } = useSpaceDragPan(panBy)
 
   /** A template function ref for the canvas panel's scroller, so the element stays the wiring's own rather than a name the panel has to declare. */
   function bindCanvasScroll(el: unknown) {
@@ -261,7 +279,7 @@ function wireAppShell(services: Services) {
   }
 
   /** Two fingers on the Pattern pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress ends when the second lands. */
-  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, endStroke: () => endStroke() })
+  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, endStroke: () => endStroke() })
 
   /** Mouse, touch and pen input on the Pattern (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
@@ -316,8 +334,7 @@ function wireAppShell(services: Services) {
 
   const { beadCursor, keyboardOnPattern, onPatternKeyboardFocus, onPatternKey, onPatternKeyUp } = useKeyboardCursor({
     currentPattern,
-    zoom: () => zoom.value,
-    scroller: () => canvasScrollEl.value,
+    reveal,
     hasSelection: () => !!selection.value,
     onCellHover,
     onHoverEnd,
@@ -325,13 +342,43 @@ function wireAppShell(services: Services) {
     invokeToolAt,
     extendSelectionTo,
     finishExtending,
+    onFrameKey: (event) => frameFlow.onKey(event),
   })
 
   /** Delete all and its confirmation (tickets 42, 198). */
   const deleteAll = useDeleteAllFlow({ currentPattern, replacePattern, recordHistory })
 
-  /** Resize, Change size and Remove selected row/column, one shared undo-committing path (tickets 123, 153, 199). */
-  const changeSize = useChangeSizeFlow({
+  /** Set Frame and the Toolbox's Frame row: drawing, moving and resizing the Frame, Fit to drawing and Remove Frame (ticket 233). */
+  const frameFlow = useFrameFlow({
+    currentPattern,
+    replacePattern,
+    recordHistory,
+    mirrorAxisCounts: () => mirrorAxisCounts.value,
+    clearMirrorAxisCounts,
+    clearSelectionAndHover,
+    announce,
+    messages,
+    locale: currentLocale,
+    centreOn,
+  })
+
+  /** Rotate: the Frame and its beads a quarter turn, with a Message when a Piece had to move (ticket 233). */
+  const rotateFlow = useRotateFlow({
+    currentPattern,
+    replacePattern,
+    recordHistory,
+    mirrorAxisCounts: () => mirrorAxisCounts.value,
+    clearMirrorAxisCounts,
+    clearSelectionAndHover,
+    announce,
+    showToast,
+    onUndo,
+    messages,
+    locale: currentLocale,
+  })
+
+  /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */
+  const removeLine = useRemoveLineFlow({
     currentPattern,
     replacePattern,
     recordHistory,
@@ -367,7 +414,7 @@ function wireAppShell(services: Services) {
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentPattern, replacePattern, resetZoom })
+  const rowOps = useRowOps({ currentPattern, replacePattern })
 
   /** Opening a scanned QR export's link, and the page-hide and unmount saves (tickets 55, 68, 203). */
   useSharedPatternLink({ patterns: () => patterns.value, addPattern, flushPendingSave })
@@ -446,7 +493,6 @@ function wireAppShell(services: Services) {
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
-      changeSize.changeSizeOpen.value ||
       !!importSwitch.pendingImport.value ||
       !!savedPatternConfirms.pendingRemove.value ||
       !!savedPatternConfirms.pendingSwitch.value ||
@@ -459,7 +505,14 @@ function wireAppShell(services: Services) {
     onSelectTool,
     onSelectColor,
     onDeleteSelection,
-    onToggleRotate: rowOps.onToggleRotate,
+    onToggleRulers: toggleRulers,
+    onToggleFrame: () => {
+      frameFlow.toggle()
+      // The keyboard's Set Frame works from the Pattern, so focus goes there.
+      if (frameFlow.settingFrame.value) focusPattern()
+    },
+    settingFrame: () => frameFlow.settingFrame.value,
+    finishFrame: frameFlow.done,
     onCopy,
     pasteAtPointer,
     onSave,
@@ -485,7 +538,6 @@ function wireAppShell(services: Services) {
     // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
     resetMirrorState()
     deleteAll.onCancelDeleteAll()
-    changeSize.changeSizeOpen.value = false
     replaceBead.onCancelReplaceBead()
     exportFlow.qrExport.close()
     clearSavedConfirmation()
@@ -530,6 +582,12 @@ function wireAppShell(services: Services) {
     canvasAreaWidth,
     bindCanvasScroll,
     zoom,
+    scroll,
+    showRulers,
+    toggleRulers,
+    panBy,
+    scrollBy,
+    setZoom,
     zoomIn,
     zoomOut,
     resetZoom,
@@ -576,8 +634,23 @@ function wireAppShell(services: Services) {
     bindToolbox,
     tour,
     ...rowOps,
+    onRotate: rotateFlow.onRotate,
     ...deleteAll,
-    ...changeSize,
+    ...removeLine,
+    settingFrame: frameFlow.settingFrame,
+    frameDraft: frameFlow.draft,
+    frameLocked: frameFlow.frameLocked,
+    onStartSetFrame: frameFlow.start,
+    onDoneSetFrame: frameFlow.done,
+    activePiece,
+    onFramePress: frameFlow.press,
+    onFrameDrag: frameFlow.drag,
+    onFrameRelease: frameFlow.release,
+    onFrameCancel: frameFlow.cancel,
+    onSetFrameSize: frameFlow.setSize,
+    onFitFrame: frameFlow.fit,
+    onRemoveFrame: frameFlow.remove,
+    onBringFrameIntoView: frameFlow.bringIntoView,
     ...replaceBead,
     ...importSwitch,
     ...exportFlow,

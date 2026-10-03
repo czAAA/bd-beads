@@ -53,7 +53,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   async function runExport(make: (pattern: Pattern) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
     const pattern = deps.currentPattern()
-    if (!pattern || exporting.value) {
+    // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
+    if (!pattern?.frame || exporting.value) {
       return
     }
     exporting.value = extension

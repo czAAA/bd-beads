@@ -16,7 +16,7 @@ withDefaults(
     message: string
     confirmLabel: string
     cancelLabel: string
-    /** Turns the confirm button off while what the modal asks for isn't valid yet (Change size, ticket 153). */
+    /** Turns the confirm button off while what the modal asks for isn't valid yet (a form inside the modal, say). */
     confirmDisabled?: boolean
     /** Styles the confirm as a destructive action; off for a confirmation that only moves the person along (ticket 154). */
     confirmDanger?: boolean
@@ -45,7 +45,7 @@ const messageId = useId()
     data-testid="confirm-modal-dialog"
     @cancel="emit('cancel')"
   >
-    <!-- Anything the question needs beyond a message: Change size's inputs, an error line under an import's. -->
+    <!-- Anything the question needs beyond a message: a form's inputs, an error line under an import's. -->
     <slot />
     <p
       :id="messageId"

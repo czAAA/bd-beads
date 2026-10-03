@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { createPattern, keepFinishedRows, paintCells, type Pattern } from './pattern'
+import { createPattern, keepFinishedRows, paintCells, type Pattern, frameGrid } from './pattern'
 
 const NO_MIRROR = { columns: 0, rows: 0 }
 
@@ -20,10 +20,10 @@ describe('an edit shares the rows it leaves alone', () => {
 
     const painted = paintCells(pattern, [{ row: 2, column: 3 }], '#e63746', NO_MIRROR)
 
-    expect(painted.grid[2]).not.toBe(pattern.grid[2])
-    expect(painted.grid[2]![3]).toEqual({ color: '#e63746' })
+    expect(painted.beads[2]).not.toBe(pattern.beads[2])
+    expect(frameGrid(painted)[2]![3]).toEqual({ color: '#e63746' })
     for (const row of [0, 1, 3, 4]) {
-      expect(painted.grid[row]).toBe(pattern.grid[row])
+      expect(painted.beads[row]).toBe(pattern.beads[row])
     }
   })
 
@@ -32,8 +32,8 @@ describe('an edit shares the rows it leaves alone', () => {
 
     const painted = paintCells(pattern, [{ row: 2, column: 3 }], '#e63746', NO_MIRROR)
 
-    expect(painted.grid[2]![0]).toBe(pattern.grid[2]![0])
-    expect(painted.grid[2]!.map((cell) => cell.color)).toEqual(['#2f6fed', null, null, '#e63746', null, null])
+    expect(painted.beads[2]![0]).toBe(pattern.beads[2]?.[0])
+    expect(frameGrid(painted)[2]!.map((cell) => cell.color)).toEqual(['#2f6fed', null, null, '#e63746', null, null])
   })
 
   it('paintCells copies each row a mirrored stroke reaches, and no others', () => {
@@ -42,7 +42,7 @@ describe('an edit shares the rows it leaves alone', () => {
     const painted = paintCells(pattern, [{ row: 1, column: 1 }], '#e63746', { columns: 0, rows: 1 })
 
     // One top-to-bottom axis: row 1 mirrors to row 4.
-    expect(painted.grid.map((row, index) => row !== pattern.grid[index])).toEqual([false, true, false, false, true, false])
+    expect([0, 1, 2, 3, 4, 5].map((row) => painted.beads[row] !== pattern.beads[row])).toEqual([false, true, false, false, true, false])
   })
 
   it('paintCells hands back the Pattern itself when nothing changes', () => {
@@ -57,9 +57,9 @@ describe('an edit shares the rows it leaves alone', () => {
 
     const kept = keepFinishedRows(before, after)
 
-    expect(kept.grid[3]![1]).toEqual({ color: '#e63746' })
-    expect(kept.grid[0]).toBe(before.grid[0])
-    expect(kept.grid[4]).toBe(before.grid[4])
+    expect(frameGrid(kept)[3]![1]).toEqual({ color: '#e63746' })
+    expect(kept.beads[0]).toBe(before.beads[0])
+    expect(kept.beads[4]).toBe(before.beads[4])
   })
 
   it('keepFinishedRows takes back an edit to a finished row, and says nothing changed', () => {
@@ -75,8 +75,8 @@ describe('an edit shares the rows it leaves alone', () => {
 
     const kept = keepFinishedRows(before, after)
 
-    expect(kept.grid[1]!.map((cell) => cell.color)).toEqual([null, null, null, null, '#e63746', null])
-    expect(kept.grid[0]).toBe(before.grid[0])
+    expect(frameGrid(kept)[1]!.map((cell) => cell.color)).toEqual([null, null, null, null, '#e63746', null])
+    expect(kept.beads[0]).toBe(before.beads[0])
   })
 
   it('keepFinishedRows leaves the edit alone while Row progress is off', () => {

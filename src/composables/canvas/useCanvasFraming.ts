@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Pattern } from '../../domain/pattern'
 import { useElementSize } from '../ui/useElementSize'
-import { usePatternZoom } from './usePatternZoom'
+import { useCanvasView } from './useCanvasView'
 import { useZoomFloor } from './useZoomFloor'
 
 /** What the canvas strip needs to know about the framing step: whether it is running, and the grid it frames. */
@@ -20,18 +20,15 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** The canvas area's own element, measured live (ticket 27) so the Pattern's fit zoom tracks the real available space instead of a guessed constant. */
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
+  const viewport = computed(() => ({ width: width.value, height: height.value }))
 
-  const { zoom, zoomIn, zoomOut, setZoom, resetZoom } = usePatternZoom(deps.currentPattern, width, height, useZoomFloor())
+  const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, reveal } = useCanvasView(deps.currentPattern, viewport, useZoomFloor())
 
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
-  /** The canvas strip's size meta: the open Pattern's own grid, or the Pattern a framed picture will make. */
-  const stripSize = computed(() => {
-    const framing = deps.framing()
-    const pattern = deps.currentPattern()
-    return framing ? framing.dimensions : pattern ? { columns: pattern.columns, rows: pattern.rows } : undefined
-  })
+  /** The canvas strip's size meta while a picture is being framed: the Pattern it will make. Otherwise the strip describes the open Pattern itself. */
+  const stripSize = computed(() => deps.framing()?.dimensions)
 
   /** The strip's zoom level: framing's own while framing, the Pattern's otherwise, none with nothing on the board. */
   const stripZoomPercent = computed(() =>
@@ -43,5 +40,22 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     canvasAreaEl.value = el instanceof HTMLElement ? el : null
   }
 
-  return { bindCanvasArea, canvasAreaWidth: width, zoom, zoomIn, zoomOut, setZoom, resetZoom, zoomPercent, stripSize, stripZoomPercent }
+  return {
+    bindCanvasArea,
+    canvasAreaWidth: width,
+    canvasViewport: viewport,
+    zoom,
+    scroll,
+    zoomIn,
+    zoomOut,
+    setZoom,
+    resetZoom,
+    panBy,
+    scrollBy,
+    centreOn,
+    reveal,
+    zoomPercent,
+    stripSize,
+    stripZoomPercent,
+  }
 }

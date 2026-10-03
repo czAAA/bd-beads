@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
-  changedCells,
+  changedPositions,
   createPattern,
   createPatternFromImage,
   deleteAll,
   fillArea,
+  isInFinishedRow,
   mirrorCurrent,
   mirroredCells,
   mostRecentlyUpdated,
@@ -15,7 +16,7 @@ import {
   keepFinishedRows,
   replaceBead,
   resolvePatternBead,
-  restoreGrid,
+  restoreBeads,
   restoreSnapshot,
   rowProgressPosition,
   setRowProgressEnabled,
@@ -25,9 +26,11 @@ import {
   type Cell,
   type Pattern,
   type Technique,
+  frameGrid,
+  withFrame,
+  withFrameGrid,
 } from './pattern'
 import { BEAD_CATALOG } from './beads'
-import { resizePattern } from './resize'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
@@ -42,10 +45,10 @@ describe('createPattern', () => {
 
     expect(pattern.technique).toBe('loom')
     expect(pattern.beadId).toBe(cubeBead.id)
-    expect(pattern.columns).toBe(10)
-    expect(pattern.rows).toBe(20)
-    expect(pattern.grid).toHaveLength(20)
-    expect(pattern.grid[0]).toHaveLength(10)
+    expect(pattern.frame!.columns).toBe(10)
+    expect(pattern.frame!.rows).toBe(20)
+    expect(frameGrid(pattern)).toHaveLength(20)
+    expect(frameGrid(pattern)[0]).toHaveLength(10)
   })
 
   it('takes a size in beads as the columns and rows directly', () => {
@@ -55,18 +58,18 @@ describe('createPattern', () => {
       size: { width: 12, height: 7, unit: 'beads' },
     })
 
-    expect(pattern.columns).toBe(12)
-    expect(pattern.rows).toBe(7)
-    expect(pattern.grid).toHaveLength(7)
-    expect(pattern.grid[0]).toHaveLength(12)
+    expect(pattern.frame!.columns).toBe(12)
+    expect(pattern.frame!.rows).toBe(7)
+    expect(frameGrid(pattern)).toHaveLength(7)
+    expect(frameGrid(pattern)[0]).toHaveLength(12)
   })
 
   it('derives the grid once from an mm or cm size and keeps no real-world size', () => {
     const fromMm = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
     const fromCm = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 1.5, height: 3, unit: 'cm' } })
 
-    expect(fromCm.columns).toBe(fromMm.columns)
-    expect(fromCm.rows).toBe(fromMm.rows)
+    expect(fromCm.frame!.columns).toBe(fromMm.frame!.columns)
+    expect(fromCm.frame!.rows).toBe(fromMm.frame!.rows)
     expect(fromMm).not.toHaveProperty('widthMm')
     expect(fromMm).not.toHaveProperty('heightMm')
   })
@@ -78,7 +81,7 @@ describe('createPattern', () => {
       size: { width: 3, height: 3, unit: 'mm' },
     })
 
-    for (const row of pattern.grid) {
+    for (const row of frameGrid(pattern)) {
       for (const cell of row) {
         expect(cell.color).toBeNull()
       }
@@ -109,9 +112,9 @@ describe('createPattern', () => {
     })
 
     expect(pattern.technique).toBe(technique)
-    expect(pattern.columns).toBe(10)
-    expect(pattern.rows).toBe(20)
-    expect(pattern.grid).toHaveLength(20)
+    expect(pattern.frame!.columns).toBe(10)
+    expect(pattern.frame!.rows).toBe(20)
+    expect(frameGrid(pattern)).toHaveLength(20)
   })
 
   it('throws when the bead id is not in the catalog', () => {
@@ -201,6 +204,11 @@ describe('summarizePattern', () => {
     expect(summarizePattern(pattern)).toBe('My Bracelet · 10×20')
   })
 
+  it('states no size for a canvas with no Frame: just the name', () => {
+    const { frame: _frame, ...open } = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' })
+    expect(summarizePattern(open as Pattern)).toBe('Sketch')
+  })
+
   it('falls back to the bead label when the pattern has no custom name', () => {
     const pattern = createPattern({
       technique: 'loom',
@@ -226,20 +234,20 @@ describe('summarizePattern', () => {
 })
 
 
-describe('restoreGrid', () => {
-  it('swaps in the given grid and bumps updatedAt, without mutating the original pattern', () => {
+describe('restoreBeads', () => {
+  it('swaps in the given beads and bumps updatedAt, without mutating the original pattern', () => {
     const pattern = { ...createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     }), updatedAt: 0 }
-    const snapshot = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }).grid
+    const snapshot = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }).beads
 
-    const restored = restoreGrid(pattern, snapshot)
+    const restored = restoreBeads(pattern, snapshot)
 
-    expect(restored.grid).toBe(snapshot)
+    expect(restored.beads).toBe(snapshot)
     expect(restored.updatedAt).toBeGreaterThan(0)
-    expect(pattern.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(pattern)[0]![0]!.color).toBeNull()
   })
 })
 
@@ -258,9 +266,9 @@ describe('toggleRotated (ticket 171: all four quarter turns)', () => {
     const rotated = toggleRotated(pattern)
 
     expect(rotated.rotation).toBe(90)
-    expect(rotated.grid).toBe(pattern.grid)
-    expect(rotated.columns).toBe(pattern.columns)
-    expect(rotated.rows).toBe(pattern.rows)
+    expect(rotated.beads).toBe(pattern.beads)
+    expect(rotated.frame!.columns).toBe(pattern.frame!.columns)
+    expect(rotated.frame!.rows).toBe(pattern.frame!.rows)
     expect(rotated.technique).toBe(pattern.technique)
   })
 
@@ -289,7 +297,7 @@ describe('fillArea', () => {
       beadId: cubeBead.id,
       size: { width: grid[0]!.length * 1.5, height: grid.length * 1.5, unit: 'mm' },
     })
-    return { ...base, grid }
+    return withFrameGrid(base, grid)
   }
 
   it('repaints every cell of the clicked color reachable through same-colored neighbors', () => {
@@ -301,9 +309,9 @@ describe('fillArea', () => {
 
     const filled = fillArea(pattern, 0, 0, 'green')
 
-    expect(filled.grid[0]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
-    expect(filled.grid[1]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
-    expect(filled.grid[2]!.map((c) => c.color)).toEqual(['blue', 'blue', 'blue'])
+    expect(frameGrid(filled)[0]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
+    expect(frameGrid(filled)[1]!.map((c) => c.color)).toEqual(['green', 'green', 'blue'])
+    expect(frameGrid(filled)[2]!.map((c) => c.color)).toEqual(['blue', 'blue', 'blue'])
   })
 
   it('does not spill across a differently-colored boundary', () => {
@@ -314,8 +322,8 @@ describe('fillArea', () => {
 
     const filled = fillArea(pattern, 0, 0, 'green')
 
-    expect(filled.grid[0]![1]!.color).toBe('blue')
-    expect(filled.grid[1]![1]!.color).toBe('blue')
+    expect(frameGrid(filled)[0]![1]!.color).toBe('blue')
+    expect(frameGrid(filled)[1]![1]!.color).toBe('blue')
   })
 
   it('returns the same pattern instance, unchanged, when the clicked cell already has the fill color', () => {
@@ -335,7 +343,7 @@ describe('fillArea', () => {
 
     fillArea(pattern, 0, 0, 'green')
 
-    expect(pattern.grid[0]![0]!.color).toBe('red')
+    expect(frameGrid(pattern)[0]![0]!.color).toBe('red')
   })
 
   it("connects a diagonally-offset same-color cell for Peyote that a straight Loom grid would not", () => {
@@ -348,9 +356,9 @@ describe('fillArea', () => {
     const peyoteFilled = fillArea(makeGridPattern('peyote', grid), 0, 1, 'green')
 
     // Loom: (0,1)'s only straight neighbor below is (1,1), which is unpainted, so (1,0) stays red.
-    expect(loomFilled.grid[1]![0]!.color).toBe('red')
+    expect(frameGrid(loomFilled)[1]![0]!.color).toBe('red')
     // Peyote: row 1 is shifted right, so (0,1) overlaps (1,0) and (1,1) below it, reaching the red cell.
-    expect(peyoteFilled.grid[1]![0]!.color).toBe('green')
+    expect(frameGrid(peyoteFilled)[1]![0]!.color).toBe('green')
   })
 })
 
@@ -431,8 +439,8 @@ describe('mirroredCells', () => {
       beadId: cubeBead.id,
       size: { width: 9, height: 6, unit: 'mm' },
     })
-    expect(pattern.columns).toBe(6)
-    expect(pattern.rows).toBe(4)
+    expect(pattern.frame!.columns).toBe(6)
+    expect(pattern.frame!.rows).toBe(4)
 
     const cells = mirroredCells(pattern, { row: 0, column: 0 }, { columns: 2, rows: 1 })
 
@@ -490,9 +498,9 @@ describe('paintCells', () => {
       { columns: 0, rows: 0 },
     )
 
-    expect(painted.grid[0]![0]!.color).toBe('#e63746')
-    expect(painted.grid[1]![1]!.color).toBe('#e63746')
-    expect(painted.grid[0]![1]!.color).toBeNull()
+    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[1]![1]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![1]!.color).toBeNull()
   })
 
   it.each(['loom', 'peyote', 'brick'] as const)('paints every counterpart regardless of Technique (%s)', (technique) => {
@@ -500,8 +508,8 @@ describe('paintCells', () => {
 
     const painted = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
 
-    expect(painted.grid[0]![0]!.color).toBe('#e63746')
-    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![3]!.color).toBe('#e63746')
   })
 
   it('paints every counterpart across every strip', () => {
@@ -509,8 +517,8 @@ describe('paintCells', () => {
 
     const painted = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
 
-    expect(painted.grid[0]![0]!.color).toBe('#e63746')
-    expect(painted.grid[0]![3]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![3]!.color).toBe('#e63746')
   })
 
   it('erases with a null color the same way it paints', () => {
@@ -518,8 +526,8 @@ describe('paintCells', () => {
 
     const erased = paintCells(pattern, [{ row: 0, column: 0 }], null, { columns: 1, rows: 0 })
 
-    expect(erased.grid[0]![0]!.color).toBeNull()
-    expect(erased.grid[0]![3]!.color).toBeNull()
+    expect(frameGrid(erased)[0]![0]!.color).toBeNull()
+    expect(frameGrid(erased)[0]![3]!.color).toBeNull()
   })
 
   it('returns the same Pattern instance, unchanged, when every touched cell is already that color', () => {
@@ -539,9 +547,9 @@ describe('paintCells', () => {
       true,
     )
 
-    expect(painted.grid[0]![0]!.color).toBe('#e63746')
-    expect(painted.grid[0]![2]!.color).toBe('#e63746') // copy mode: same relative cell, not the mirrored (3)
-    expect(painted.grid[0]![3]!.color).toBeNull()
+    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(painted)[0]![2]!.color).toBe('#e63746') // copy mode: same relative cell, not the mirrored (3)
+    expect(frameGrid(painted)[0]![3]!.color).toBeNull()
   })
 
   it('does not mutate the original pattern', () => {
@@ -549,7 +557,7 @@ describe('paintCells', () => {
 
     paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
 
-    expect(pattern.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(pattern)[0]![0]!.color).toBeNull()
   })
 })
 
@@ -566,7 +574,7 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
   it('with axisCount 0, a blank grid stays blank (single center axis, nothing to sync)', () => {
     const blank = makePattern()
 
-    expect(mirrorCurrent(blank, 'columns', 0, false).grid).toEqual(blank.grid)
+    expect(frameGrid(mirrorCurrent(blank, 'columns', 0, false))).toEqual(frameGrid(blank))
   })
 
   it('with axisCount 0, syncs the fuller half onto the emptier one across the center', () => {
@@ -577,9 +585,9 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
 
     // 4 columns, axisCount 0 acts as 1 axis (2 strips of 2): [0,1] holds both painted cells and is the source,
     // copied onto [2,3] mirrored (column 2 <- column 1, column 3 <- column 0).
-    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
-    expect(synced.grid[1]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
-    expect(synced.grid[2]!.map((cell) => cell.color)).toEqual([null, null, null, null])
+    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
+    expect(frameGrid(synced)[1]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
+    expect(frameGrid(synced)[2]!.map((cell) => cell.color)).toEqual([null, null, null, null])
   })
 
   it('copies the fullest strip onto every other strip, mirrored by default, with N axes', () => {
@@ -589,13 +597,13 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
       beadId: cubeBead.id,
       size: { width: 9, height: 1.5, unit: 'mm' },
     })
-    expect(pattern.columns).toBe(6)
+    expect(pattern.frame!.columns).toBe(6)
     pattern = paintCells(pattern, [{ row: 0, column: 2 }], '#e63746', { columns: 0, rows: 0 })
     pattern = paintCells(pattern, [{ row: 0, column: 3 }], '#2f6fed', { columns: 0, rows: 0 })
 
     const synced = mirrorCurrent(pattern, 'columns', 2, false)
 
-    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
       '#2f6fed',
       '#e63746',
       '#e63746',
@@ -616,7 +624,7 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
 
     const synced = mirrorCurrent(pattern, 'columns', 2, true)
 
-    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
       '#e63746',
       '#2f6fed',
       '#e63746',
@@ -640,7 +648,7 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
     const synced = mirrorCurrent(pattern, 'columns', 2, false)
 
     // Strip0's own cells stay exactly as painted (it's the source); strip1/strip2 both take strip0's color.
-    expect(synced.grid[0]!.map((cell) => cell.color)).toEqual([
+    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
       '#e63746',
       null,
       null,
@@ -656,13 +664,13 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
       beadId: cubeBead.id,
       size: { width: 1.5, height: 9, unit: 'mm' },
     })
-    expect(pattern.rows).toBe(6)
+    expect(pattern.frame!.rows).toBe(6)
     pattern = paintCells(pattern, [{ row: 2, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     pattern = paintCells(pattern, [{ row: 3, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
 
     const synced = mirrorCurrent(pattern, 'rows', 2, false)
 
-    expect(synced.grid.map((row) => row[0]!.color)).toEqual([
+    expect(frameGrid(synced).map((row) => row[0]!.color)).toEqual([
       '#2f6fed',
       '#e63746',
       '#e63746',
@@ -678,11 +686,11 @@ describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
 
     mirrorCurrent(pattern, 'columns', 1, false)
 
-    expect(pattern.grid[0]![3]!.color).toBeNull()
+    expect(frameGrid(pattern)[0]![3]!.color).toBeNull()
   })
 })
 
-describe('changedCells ("Mirror current" hover preview, ticket 47)', () => {
+describe('changedPositions ("Mirror current" hover preview, ticket 47)', () => {
   it('is empty for two identical grids', () => {
     const pattern = createPattern({
       technique: 'loom',
@@ -690,7 +698,7 @@ describe('changedCells ("Mirror current" hover preview, ticket 47)', () => {
       size: { width: 6, height: 6, unit: 'mm' },
     })
 
-    expect(changedCells(pattern.grid, pattern.grid)).toEqual([])
+    expect(changedPositions(pattern.beads, pattern.beads)).toEqual([])
   })
 
   it('lists exactly the cells whose color differs, and nothing else', () => {
@@ -701,7 +709,7 @@ describe('changedCells ("Mirror current" hover preview, ticket 47)', () => {
     })
     const after = paintCells(paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), [{ row: 2, column: 1 }], '#2f6fed', { columns: 0, rows: 0 })
 
-    expect(changedCells(pattern.grid, after.grid)).toEqual([
+    expect(changedPositions(pattern.beads, after.beads)).toEqual([
       { row: 0, column: 0 },
       { row: 2, column: 1 },
     ])
@@ -717,7 +725,7 @@ describe('changedCells ("Mirror current" hover preview, ticket 47)', () => {
 
     const result = mirrorCurrent(pattern, 'columns', 1, false)
 
-    expect(changedCells(pattern.grid, result.grid)).toEqual([{ row: 0, column: 3 }])
+    expect(changedPositions(pattern.beads, result.beads)).toEqual([{ row: 0, column: 3 }])
   })
 })
 
@@ -777,7 +785,7 @@ describe('row progress', () => {
     const first = pattern()
 
     expect(moveToRow(first, -1).rowProgress.currentRow).toBe(0)
-    expect(moveToRow(first, first.rows + 5).rowProgress.currentRow).toBe(first.rows - 1)
+    expect(moveToRow(first, first.frame!.rows + 5).rowProgress.currentRow).toBe(first.frame!.rows - 1)
   })
 
   it('leaves the grid alone and returns a new Pattern rather than mutating the old one', () => {
@@ -786,7 +794,7 @@ describe('row progress', () => {
     const after = moveToRow(before, 2)
 
     expect(before.rowProgress.currentRow).toBe(0)
-    expect(after.grid).toBe(before.grid)
+    expect(after.beads).toBe(before.beads)
   })
 })
 
@@ -848,9 +856,9 @@ describe('keepFinishedRows', () => {
 
     const kept = keepFinishedRows(before, edited)
 
-    expect(kept.grid[2]![5]!.color).toBeNull()
-    expect(kept.grid[3]![5]!.color).toBe('#e63746')
-    expect(kept.grid[9]![5]!.color).toBe('#e63746')
+    expect(frameGrid(kept)[2]![5]!.color).toBeNull()
+    expect(frameGrid(kept)[3]![5]!.color).toBe('#e63746')
+    expect(frameGrid(kept)[9]![5]!.color).toBe('#e63746')
   })
 
   it('hands back the Pattern it started from when the edit only touched finished rows, so nothing counts as changed', () => {
@@ -866,15 +874,15 @@ describe('keepFinishedRows', () => {
 
     const kept = keepFinishedRows(before, edited)
 
-    expect(kept.grid[15]![1]!.color).toBeNull()
-    expect(kept.grid[15]![2]!.color).toBe('#e63746')
+    expect(frameGrid(kept)[15]![1]!.color).toBeNull()
+    expect(frameGrid(kept)[15]![2]!.color).toBe('#e63746')
   })
 
   it('locks nothing while the overlay is off', () => {
     const before = setRowProgressEnabled(onRowThree(), false)
     const edited = paintCells(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
 
-    expect(keepFinishedRows(before, edited).grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(keepFinishedRows(before, edited))[0]![0]!.color).toBe('#e63746')
   })
 
   it('keeps the current-row half of a live-mirrored pair, dropping the half that lands on a finished row (ADR 0006)', () => {
@@ -883,8 +891,8 @@ describe('keepFinishedRows', () => {
 
     const kept = keepFinishedRows(before, edited)
 
-    expect(kept.grid[17]![5]!.color).toBe('#e63746')
-    expect(kept.grid[2]![5]!.color).toBeNull()
+    expect(frameGrid(kept)[17]![5]!.color).toBe('#e63746')
+    expect(frameGrid(kept)[2]![5]!.color).toBeNull()
   })
 })
 
@@ -930,7 +938,7 @@ describe('deleteAll', () => {
   it('empties every cell', () => {
     const cleared = deleteAll(paintedAndWoven())
 
-    expect(cleared.grid.every((row) => row.every((cell) => cell.color === null))).toBe(true)
+    expect(frameGrid(cleared).every((row) => row.every((cell) => cell.color === null))).toBe(true)
   })
 
   it('turns Row progress off and puts both direction pointers back at the first row', () => {
@@ -947,18 +955,18 @@ describe('deleteAll', () => {
     expect(cleared.name).toBe(before.name)
     expect(cleared.technique).toBe(before.technique)
     expect(cleared.beadId).toBe(before.beadId)
-    expect(cleared.columns).toBe(before.columns)
-    expect(cleared.rows).toBe(before.rows)
+    expect(cleared.frame!.columns).toBe(before.frame!.columns)
+    expect(cleared.frame!.rows).toBe(before.frame!.rows)
     expect(cleared.rotation).toBe(before.rotation)
   })
 
   it('ignores the Row progress lock: clears a finished row along with the rest', () => {
     const before = paintedAndWoven() // rows 0-2 are finished
-    expect(before.grid[0]![0]!.color).toBe('#e63746') // painted before the overlay locked it
+    expect(frameGrid(before)[0]![0]!.color).toBe('#e63746') // painted before the overlay locked it
 
     const cleared = deleteAll(before)
 
-    expect(cleared.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(cleared)[0]![0]!.color).toBeNull()
   })
 
   it('bumps updatedAt', () => {
@@ -986,8 +994,8 @@ describe('replaceBead', () => {
       beadId: roundBead.id,
       size: { width: 4, height: 2, unit: 'beads' },
     })
-    for (let row = 0; row < pattern.rows; row++) {
-      for (let column = 0; column < pattern.columns; column++) {
+    for (let row = 0; row < pattern.frame!.rows; row++) {
+      for (let column = 0; column < pattern.frame!.columns; column++) {
         pattern = paintCells(pattern, [{ row: row, column: column }], `r${row}c${column}`, { columns: 0, rows: 0 })
       }
     }
@@ -1007,9 +1015,8 @@ describe('replaceBead', () => {
 
       const replaced = replaceBead(before, to)
 
-      expect(replaced.columns).toBe(before.columns)
-      expect(replaced.rows).toBe(before.rows)
-      expect(replaced.grid).toBe(before.grid)
+      expect(replaced.frame).toBe(before.frame)
+      expect(replaced.beads).toBe(before.beads)
     },
   )
 
@@ -1036,8 +1043,8 @@ describe('replaceBead', () => {
 
     const replaced = replaceBead(before, cubeBead)
 
-    expect(replaced.columns).toBe(before.columns)
-    expect(replaced.rows).toBe(before.rows)
+    expect(replaced.frame!.columns).toBe(before.frame!.columns)
+    expect(replaced.frame!.rows).toBe(before.frame!.rows)
   })
 
   it('bumps updatedAt', () => {
@@ -1050,15 +1057,15 @@ describe('replaceBead', () => {
 describe('restoreSnapshot', () => {
   it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
     const pattern = setRowProgressEnabled(moveToRow(paintCells(createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), 2), true)
-    const blankGrid = createPattern({
+    const blankBeads = createPattern({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
-    }).grid
+    }).beads
 
-    const restored = restoreSnapshot(pattern, { grid: blankGrid })
+    const restored = restoreSnapshot(pattern, { beads: blankBeads })
 
-    expect(restored.grid).toBe(blankGrid)
+    expect(restored.beads).toBe(blankBeads)
     expect(restored.rowProgress).toEqual(pattern.rowProgress)
   })
 
@@ -1069,9 +1076,9 @@ describe('restoreSnapshot', () => {
     ), true)
     const cleared = deleteAll(before)
 
-    const restored = restoreSnapshot(cleared, { grid: before.grid, rowProgress: before.rowProgress })
+    const restored = restoreSnapshot(cleared, { beads: before.beads, rowProgress: before.rowProgress })
 
-    expect(restored.grid).toBe(before.grid)
+    expect(restored.beads).toBe(before.beads)
     expect(restored.rowProgress).toEqual(before.rowProgress)
   })
 
@@ -1083,30 +1090,51 @@ describe('restoreSnapshot', () => {
     })
     const replaced = replaceBead(before, cubeBead)
 
-    const restored = restoreSnapshot(replaced, { grid: before.grid, beadId: before.beadId })
+    const restored = restoreSnapshot(replaced, { beads: before.beads, beadId: before.beadId })
 
     expect(restored.beadId).toBe(before.beadId)
-    expect(restored.columns).toBe(before.columns)
-    expect(restored.rows).toBe(before.rows)
-    expect(restored.grid).toBe(before.grid)
+    expect(restored.frame!.columns).toBe(before.frame!.columns)
+    expect(restored.frame!.rows).toBe(before.frame!.rows)
+    expect(restored.beads).toBe(before.beads)
   })
 
-  it('restores the grid dimensions when the undo entry carries them (Resize, ADR 0017)', () => {
+  it('restores the Frame when the undo entry carries it (ADR 0026)', () => {
     const before = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const resized = resizePattern(before, { columns: 2, rows: 5 })
+    const resized = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
     const restored = restoreSnapshot(resized, {
-      grid: before.grid,
-      size: { columns: before.columns, rows: before.rows, mirrorAxisCounts: { columns: 0, rows: 0 } },
+      beads: before.beads,
+      size: { frame: before.frame, mirrorAxisCounts: { columns: 0, rows: 0 } },
     })
 
-    expect(restored.columns).toBe(4)
-    expect(restored.rows).toBe(3)
-    expect(restored.grid).toBe(before.grid)
+    expect(restored.frame!.columns).toBe(4)
+    expect(restored.frame!.rows).toBe(3)
+    expect(restored.beads).toBe(before.beads)
   })
 })
 
 describe('normalizePattern', () => {
+  it('gives a Pattern saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
+    const { beads: _beads, frame: _frame, ...base } = createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } })
+    const legacy = {
+      ...base,
+      columns: 3,
+      rows: 2,
+      grid: [
+        [{ color: '#f00' }, { color: null }, { color: null }],
+        [{ color: null }, { color: null }, { color: '#0f0' }],
+      ],
+    }
+
+    const normalized = normalizePattern(legacy)
+
+    expect(normalized.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2 })
+    expect(normalized.beads).toEqual({ 0: { 0: '#f00' }, 1: { 2: '#0f0' } })
+    expect(normalized).not.toHaveProperty('grid')
+    expect(normalized).not.toHaveProperty('columns')
+    expect(normalized).not.toHaveProperty('rows')
+  })
+
   it('backfills row progress and the rotation on a Pattern saved before they existed', () => {
     const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = createPattern({
       technique: 'loom',
@@ -1179,9 +1207,9 @@ describe('normalizePattern', () => {
 
     expect(normalized).not.toHaveProperty('widthMm')
     expect(normalized).not.toHaveProperty('heightMm')
-    expect(normalized.columns).toBe(10)
-    expect(normalized.rows).toBe(20)
-    expect(normalized.grid).toBe(base.grid)
+    expect(normalized.frame!.columns).toBe(10)
+    expect(normalized.frame!.rows).toBe(20)
+    expect(normalized.beads).toBe(base.beads)
   })
 
   it('clamps row and column pointers that no longer fit the Pattern', () => {
@@ -1224,9 +1252,9 @@ describe('createPatternFromImage', () => {
   it('creates an ordinary Pattern that arrives already painted', () => {
     const pattern = fromImage()
 
-    expect(pattern.columns).toBe(2)
-    expect(pattern.rows).toBe(2)
-    expect(pattern.grid.map((row) => row.map((cell) => cell.color))).toEqual([
+    expect(pattern.frame!.columns).toBe(2)
+    expect(pattern.frame!.rows).toBe(2)
+    expect(frameGrid(pattern).map((row) => row.map((cell) => cell.color))).toEqual([
       ['#ff0000', null],
       ['#00ff00', '#0000ff'],
     ])
@@ -1256,7 +1284,7 @@ describe('createPatternFromImage', () => {
   it('fits a grid that does not match the stated size rather than contradicting its own dimensions', () => {
     const pattern = fromImage({ grid: [[{ color: '#ff0000' }, { color: '#ff0000' }, { color: '#ff0000' }]] })
 
-    expect(pattern.grid).toEqual([
+    expect(frameGrid(pattern)).toEqual([
       [{ color: '#ff0000' }, { color: '#ff0000' }],
       [{ color: null }, { color: null }],
     ])
@@ -1306,7 +1334,7 @@ describe('Image colors are frozen (ADR 0011)', () => {
       { columns: 0, rows: 0 },
     )
 
-    expect(erased.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(erased).flat().every((cell) => cell.color === null)).toBe(true)
     expect(erased.imageColors).toEqual(['#ff0000'])
   })
 
@@ -1318,5 +1346,26 @@ describe('Image colors are frozen (ADR 0011)', () => {
 
   it('survives Delete all', () => {
     expect(deleteAll(converted()).imageColors).toEqual(['#ff0000'])
+  })
+})
+
+describe('Row progress on the Frame (ticket 233)', () => {
+  const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
+  const framed: Pattern = { ...base, frame: { row: 10, column: 10, rows: 6, columns: 4 }, rowProgress: { ...base.rowProgress, enabled: true, currentRow: 2 } }
+
+  it('locks the finished rows of the Frame, and nothing outside it', () => {
+    expect(isInFinishedRow(framed, { row: 10, column: 10 })).toBe(true)
+    expect(isInFinishedRow(framed, { row: 11, column: 13 })).toBe(true)
+    expect(isInFinishedRow(framed, { row: 12, column: 10 })).toBe(false)
+    // Above, left of, and below the Frame: not the weaver's rows.
+    expect(isInFinishedRow(framed, { row: 3, column: 10 })).toBe(false)
+    expect(isInFinishedRow(framed, { row: 10, column: 4 })).toBe(false)
+    expect(isInFinishedRow(framed, { row: 11, column: 20 })).toBe(false)
+  })
+
+  it('cannot be switched on with no Frame', () => {
+    const { frame: _frame, ...open } = base
+    expect(setRowProgressEnabled(open, true)).toBe(open)
+    expect(setRowProgressEnabled(base, true).rowProgress.enabled).toBe(true)
   })
 })

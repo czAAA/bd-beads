@@ -1,5 +1,5 @@
 import { CELL_SIZE_PX } from '../domain/grid'
-import type { GridPosition } from '../domain/grid'
+import type { GridDimensions, GridPosition, Technique } from '../domain/grid'
 import {
   patternExtentPx,
   beadRoundness,
@@ -27,7 +27,7 @@ import {
  * Pattern is rotated) measured from its first bead's top-left, which is where a surface's own coordinates start.
  */
 export function beadAt(
-  pattern: Pick<DrawnPattern, 'technique' | 'columns' | 'rows' | 'rotation'>,
+  pattern: Pick<DrawnPattern, 'technique' | 'rotation'> & GridDimensions,
   point: { x: number; y: number },
   zoom: number,
 ): GridPosition | undefined {
@@ -53,22 +53,86 @@ export function beadAt(
     return undefined
   }
 
+  return beadInGrid(technique, gridX, gridY, { firstRow: 0, lastRow: rows - 1, columns })
+}
+
+/**
+ * The bead under a point on an open canvas (ADR 0026), or undefined between beads: the same hit test with no edge, for
+ * a point in displayed px (turned, zoomed, from the bead at row 0, column 0 — see canvasRenderer), so any position,
+ * negative included, can be found.
+ */
+export function beadAtOpen(
+  pattern: Pick<DrawnPattern, 'technique' | 'rotation'>,
+  point: { x: number; y: number },
+  zoom: number,
+): GridPosition | undefined {
+  const x = point.x / zoom
+  const y = point.y / zoom
+  const [gridX, gridY] = ((): [number, number] => {
+    switch (pattern.rotation) {
+      case 90:
+        return [y, -x]
+      case 180:
+        return [-x, -y]
+      case 270:
+        return [-y, x]
+      default:
+        return [x, y]
+    }
+  })()
+  return beadInGrid(pattern.technique, gridX, gridY, {})
+}
+
+/**
+ * The bead position nearest a point on an open canvas, gaps and rounded corners included (ADR 0026): what dragging a
+ * Frame needs, where a pointer between two beads still means one of them. Same point as beadAtOpen takes.
+ */
+export function cellAtOpen(
+  pattern: Pick<DrawnPattern, 'technique' | 'rotation'>,
+  point: { x: number; y: number },
+  zoom: number,
+): GridPosition {
+  const x = point.x / zoom
+  const y = point.y / zoom
+  const [gridX, gridY] = ((): [number, number] => {
+    switch (pattern.rotation) {
+      case 90:
+        return [y, -x]
+      case 180:
+        return [-x, -y]
+      case 270:
+        return [-y, x]
+      default:
+        return [x, y]
+    }
+  })()
+  const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(pattern.technique))
+  return { row, column: Math.floor((gridX - rowShiftPx(pattern.technique, row)) / CELL_SIZE_PX) }
+}
+
+/** Where a point in grid space falls: the row the bead is in and its column, or undefined in the gap or a rounded corner. A bound left out is no bound. */
+function beadInGrid(
+  technique: Technique,
+  gridX: number,
+  gridY: number,
+  limits: { firstRow?: number; lastRow?: number; columns?: number },
+): GridPosition | undefined {
   // The rows whose beads reach this height: the one it falls in by the row pitch, and (where rows nest) the one above
   // it, whose bottom is under the next row's top. Later rows are drawn over earlier ones, so try the lowest first.
   const pitch = rowPitchPx(technique)
-  const lowest = Math.min(rows - 1, Math.floor(gridY / pitch))
-  const highest = Math.max(0, Math.ceil((gridY - CELL_SIZE_PX) / pitch))
+  const lowest = Math.min(limits.lastRow ?? Infinity, Math.floor(gridY / pitch))
+  const highest = Math.max(limits.firstRow ?? -Infinity, Math.ceil((gridY - CELL_SIZE_PX) / pitch))
   const radius = beadRoundness(technique) * CELL_SIZE_PX
 
   for (let row = lowest; row >= highest; row -= 1) {
     const offsetY = gridY - rowTopPx(technique, row)
     const offsetX = gridX - rowShiftPx(technique, row)
-    if (offsetY < 0 || offsetY >= CELL_SIZE_PX || offsetX < 0) {
+    if (offsetY < 0 || offsetY >= CELL_SIZE_PX || (limits.columns !== undefined && offsetX < 0)) {
       continue
     }
 
     const column = Math.floor(offsetX / CELL_SIZE_PX)
-    if (column >= columns) {
+    if (limits.columns !== undefined && column >= limits.columns) {
       continue
     }
     if (inRoundedCorner(offsetX - column * CELL_SIZE_PX, offsetY, radius)) {
@@ -80,7 +144,6 @@ export function beadAt(
   return undefined
 }
 
-/** Whether a point of a bead's box is in one of its rounded-off corners, outside the bead's shape. */
 function inRoundedCorner(x: number, y: number, radius: number): boolean {
   if (radius <= 0) {
     return false

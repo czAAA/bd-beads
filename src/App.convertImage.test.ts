@@ -1,3 +1,4 @@
+import { frameGrid } from './domain/pattern'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
@@ -213,7 +214,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
+    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
     // The left half of the picture is red, the right half blue.
     expect(beadColor(wrapper, 0)).toBe('#e63746')
     expect(beadColor(wrapper, 9)).toBe('#2f6fed')
@@ -228,8 +229,8 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     const saved = loadPatterns()
     expect(saved).toHaveLength(1)
     expect(new Set(saved[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
-    expect(saved[0]!.columns).toBe(10)
-    expect(saved[0]!.rows).toBe(20)
+    expect(saved[0]!.frame!.columns).toBe(10)
+    expect(saved[0]!.frame!.rows).toBe(20)
   })
 
   it('uses the name typed into the form, and the Bead label when none was', async () => {
@@ -264,7 +265,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(beadColor(wrapper, 0)).toBe('#2f6fed')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
   })
 
   it('leaves Image colors alone when the converted Pattern is painted on afterwards', async () => {
@@ -308,7 +309,7 @@ describe('App Convert image cancelling (ticket 58)', () => {
     const wrapper = mount(App)
     await stateSize(wrapper, '15', '30')
     await wrapper.find('form').trigger('submit')
-    expect(wrapper.find('[data-testid="pattern-canvas-viewport"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
 
     const savedId = loadPatterns()[0]!.id
 
@@ -318,13 +319,13 @@ describe('App Convert image cancelling (ticket 58)', () => {
     await wrapper.find(`[data-testid="select-pattern-${savedId}"]`).trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-canvas-viewport"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(false)
     // The open Pattern's editing tools go with its canvas: there is nothing visible to Undo, Rotate or Delete all.
     expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="pattern-canvas-viewport"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(true)
     expect(loadPatterns()).toHaveLength(1)
   })
@@ -381,7 +382,7 @@ describe('App Convert image edge cases (ticket 58)', () => {
 
     const saved = loadPatterns()[0]!
     expect(saved.imageColors).toEqual(['#1a1a1a'])
-    expect(saved.grid.flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
+    expect(frameGrid(saved).flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
   })
 
   it('converts a fully transparent picture to a Pattern with nothing painted and no Image colors', async () => {
@@ -397,7 +398,7 @@ describe('App Convert image edge cases (ticket 58)', () => {
 
     const saved = loadPatterns()[0]!
     expect(saved.imageColors).toEqual([])
-    expect(saved.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(saved).flat().every((cell) => cell.color === null)).toBe(true)
     expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
   })
 

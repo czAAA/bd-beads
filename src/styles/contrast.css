@@ -48,7 +48,7 @@
  */
 @media (forced-colors: active) {
   html:root :is(
-      .pattern-canvas,
+      .pattern-surface,
       .palette-picker__swatch,
       .image-colors-picker__swatch,
       .custom-color-picker__swatch,

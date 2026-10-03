@@ -37,14 +37,15 @@ const CHAINS: Record<TourControl, string[]> = {
   'tool-fill': ['tool-fill', 'dock-tool'],
   'tool-select': ['tool-select', 'dock-tool'],
   'tool-erase': ['tool-erase', 'dock-tool'],
+  'tool-hand': ['tool-hand', 'dock-tool'],
   'color-black': ['color-black', 'bottom-color', 'dock-color'],
   'color-yellow': ['color-yellow', 'bottom-color', 'dock-color'],
   copy: ['copy', 'dock-edit', 'header-tools'],
-  ruler: ['ruler'],
+  // The rulers are drawn on the canvas now (ADR 0026), so the step points at the canvas itself.
+  ruler: ['board'],
   'remove-line': ['remove-line', 'dock-tool', 'header-tools'],
   undo: ['undo', 'dock-edit'],
-  size: ['size-row', 'dock-size', 'header-tools'],
-  'change-size': ['change-size-dialog', 'change-size', 'size-row', 'dock-size', 'header-tools'],
+  size: ['frame-row', 'dock-frame', 'header-tools'],
   'progress-switch': ['progress-switch'],
   'progress-next': ['progress-next'],
   'progress-previous': ['progress-previous'],
@@ -78,7 +79,7 @@ const toolName = computed<Record<TourStepId | 'final', string>>(() => ({
   finish: t.value.palette.undoButton,
   erase: t.value.tools.eraseLabel,
   'remove-line': t.value.tools.removeLineShort,
-  size: t.value.toolbox.groups.size,
+  size: t.value.frame.title,
   rows: t.value.toolbox.groups.rowProgress,
   final: t.value.saveBox.exportButton,
 }))
@@ -250,7 +251,7 @@ const showKey = computed(() => !!tool.value.key && !phone.value)
 const showLineHint = computed(() => step.value === 'remove-line' && tour.targets.value?.control === 'ruler')
 
 function controlWords(control: TourControl): { name: string; place: string } | undefined {
-  const { tools, toolbox, palette, colorNames, patterns, changeSize, rowProgress, saveBox, header } = t.value
+  const { tools, toolbox, palette, colorNames, patterns, frame, a11y, rowProgress, saveBox, header } = t.value
   const groups = toolbox.groups
   const words: Partial<Record<TourControl, { name: string; place: string }>> = {
     'new-pattern': { name: patterns.newPatternButton, place: header.patternSheetLabel },
@@ -258,12 +259,13 @@ function controlWords(control: TourControl): { name: string; place: string } | u
     'tool-fill': { name: tools.fillLabel, place: groups.tools },
     'tool-select': { name: tools.selectLabel, place: groups.tools },
     'tool-erase': { name: tools.eraseLabel, place: groups.tools },
+    'tool-hand': { name: tools.handLabel, place: groups.tools },
     'color-black': { name: colorNames.black, place: groups.colors },
     'color-yellow': { name: colorNames.yellow, place: groups.colors },
     copy: { name: tools.copyButton, place: groups.edit },
     'remove-line': { name: tools.removeLineShort, place: groups.tools },
     undo: { name: palette.undoButton, place: groups.edit },
-    'change-size': { name: changeSize.title, place: groups.size },
+    size: { name: frame.title, place: a11y.toolsLandmark },
     'progress-switch': { name: rowProgress.enabledLabel, place: groups.rowProgress },
     'progress-next': { name: rowProgress.nextButton, place: groups.rowProgress },
     'progress-previous': { name: rowProgress.previousButton, place: groups.rowProgress },

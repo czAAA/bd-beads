@@ -1,10 +1,11 @@
+import { frameGrid } from '../../src/domain/pattern'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { openApp, setZoom } from '../support/app'
+import { openApp, patternBox, setZoom } from '../support/app'
 import { fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 import { SCENARIOS } from './scenarios'
 
 /**
@@ -35,15 +36,16 @@ for (const scenario of SCENARIOS.filter(({ name }) => COVERED.test(name))) {
 
         const box = (await page.getByTestId('pattern-surface').boundingBox())!
         const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-        if (UPDATING_REFERENCES) await writeReference(page, reference, box, { x: Math.floor(box.x), y: Math.floor(box.y) })
+        const corner = await patternBox(page, box)
+        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
         const expected = readFileSync(reference)
         const { width, height } = PNG.sync.read(expected)
-        const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
+        const origin = shownRegion(corner, pattern, zoom / 100)
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
         const label = `${scenario.name}, ${orientation}, ${zoom}%`
-        const ignore = scenario.overlaid === 'all' ? new Set(pattern.grid.flatMap((cells, row) => cells.map((_cell, column) => `(${row}, ${column})`))) : new Set(scenario.overlaid)
-        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, box, origin, ignore)
+        const ignore = scenario.overlaid === 'all' ? new Set(frameGrid(pattern).flatMap((cells, row) => cells.map((_cell, column) => `(${row}, ${column})`))) : new Set(scenario.overlaid)
+        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin, ignore)
         expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
         expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
       }

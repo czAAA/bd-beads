@@ -5,6 +5,7 @@ import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsSto
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
+import { browserRulersStore, type RulersStore } from './rulersStore'
 import { browserThemePickStore, type ThemePickStore } from './themeStore'
 import { browserTourStore, type TourStore } from './tourStore'
 
@@ -22,6 +23,7 @@ export interface Services {
   themePickStore: ThemePickStore
   localeStore: LocaleStore
   tourStore: TourStore
+  rulersStore: RulersStore
 }
 
 export const browserServices: Services = {
@@ -33,4 +35,5 @@ export const browserServices: Services = {
   themePickStore: browserThemePickStore,
   localeStore: browserLocaleStore,
   tourStore: browserTourStore,
+  rulersStore: browserRulersStore,
 }

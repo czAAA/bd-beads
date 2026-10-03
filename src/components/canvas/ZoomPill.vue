@@ -8,17 +8,28 @@ import IconButton from '../ui/IconButton.vue'
  * step. Same zoom (usePatternZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  */
-defineProps<{ zoomPercent: number }>()
+defineProps<{ zoomPercent: number; rulers?: boolean }>()
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
+  'toggle-rulers': []
 }>()
 const { t } = useI18n()
 </script>
 
 <template>
   <div class="zoom-pill" data-testid="zoom-pill">
+    <IconButton
+      v-if="rulers !== undefined"
+      icon="ruler"
+      variant="plain"
+      :icon-size="18"
+      :label="t.canvas.rulersLabel"
+      :selected="rulers"
+      data-testid="zoom-pill-rulers"
+      @click="emit('toggle-rulers')"
+    />
     <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <IconButton icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level" hidden>{{ zoomPercent }}%</span>

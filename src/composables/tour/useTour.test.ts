@@ -1,7 +1,7 @@
 import { nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, type CreatePatternInput, type Pattern } from '../../domain/pattern'
+import { createPattern, frameGrid, type CreatePatternInput, type Pattern } from '../../domain/pattern'
 import { TOUR_STEPS, afterStep, gridsEqual } from '../../domain/tour'
 import { en } from '../../i18n/en'
 import type { TourProgress, TourStatus, TourStore } from '../../services/tourStore'
@@ -84,7 +84,7 @@ describe('useTour', () => {
     await nextTick()
     tour.next()
     await nextTick()
-    expect(gridsEqual(current()!.grid, afterStep(2))).toBe(true)
+    expect(gridsEqual(frameGrid(current()!), afterStep(2))).toBe(true)
     expect(tour.step.value).toBe('outline')
   })
 
@@ -96,7 +96,7 @@ describe('useTour', () => {
     }
     expect(saved.status).toBe('finished')
     expect(tour.finalCard.value).toBe(true)
-    expect(gridsEqual(current()!.grid, afterStep(8))).toBe(true)
+    expect(gridsEqual(frameGrid(current()!), afterStep(8))).toBe(true)
     expect(current()!.rowProgress).toMatchObject({ enabled: true, currentRow: 2 })
     tour.keepEditing()
     expect(tour.active.value).toBe(false)

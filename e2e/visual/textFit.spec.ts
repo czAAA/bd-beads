@@ -12,7 +12,7 @@ const LOCALES = Object.keys({ en: 0, ru: 0 } satisfies Record<Locale, 0>) as Loc
 const WIDTHS = [1900, 1280, 1024, 768, 390, 360, 320]
 /** A typical screen height at each width, so that what is tall or short is as a person would meet it. */
 const HEIGHTS: Record<number, number> = { 1900: 1000, 1280: 800, 1024: 768, 768: 1024, 390: 844, 360: 740, 320: 640 }
-const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-size', 'dock-pattern']
+const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-frame', 'dock-pattern']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -32,11 +32,11 @@ const wholeOnScreen = async (locator: Locator): Promise<boolean> => {
 const vis = (page: Page, testid: string): Locator => page.locator(`[data-testid="${testid}"]:visible`).first()
 const shown = async (page: Page, testid: string): Promise<boolean> => (await vis(page, testid).count()) > 0 && (await wholeOnScreen(vis(page, testid)))
 
-/** Whether the control is there, opening the Toolbox's collapsed Size row if that is where it is. */
+/** Whether the control is there, opening the Toolbox's collapsed Frame row if that is where it is. */
 async function shownOrExpanded(page: Page, testid: string): Promise<boolean> {
   if (await shown(page, testid)) return true
-  if (['size-change-size', 'size-estimate-info'].includes(testid) && (await shown(page, 'tool-group-size'))) {
-    await vis(page, 'tool-group-size').locator('button').first().click()
+  if (['frame-fit', 'size-estimate-info'].includes(testid) && (await shown(page, 'tool-group-frame'))) {
+    await vis(page, 'tool-group-frame').locator('button').first().click()
     await settle(page)
     return shown(page, testid)
   }
@@ -149,10 +149,9 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'Change size',
+    name: 'Frame',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'size-change-size'))) return false
-      await click(page, 'size-change-size')
+      if (!(await reveal(page, 'frame-fit'))) return false
       await measure()
     },
   },

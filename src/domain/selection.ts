@@ -1,6 +1,7 @@
-import { positionKey, type GridDimensions, type GridPosition } from './grid'
+import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
-import { restoreGrid, type Pattern } from './pattern'
+import { colorAt, withColors, type BeadChange, type Frame } from './canvas'
+import { restoreBeads, type Pattern } from './pattern'
 
 /**
  * A rectangular area of a Pattern's grid, marked out with the Select tool (see CONTEXT.md's Selection entry).
@@ -33,24 +34,14 @@ export interface PastedCell extends GridPosition {
   color: string
 }
 
-function clamp(value: number, max: number): number {
-  return Math.min(max, Math.max(0, value))
-}
-
 /**
  * The Selection a drag from `anchor` to `focus` marks out. Either corner may be the one the drag started from, so
- * dragging up-left covers the same rectangle as dragging down-right; both are clamped onto the grid, so a drag
- * that wandered off the Pattern still yields a selection the Pattern actually has cells for.
+ * dragging up-left covers the same rectangle as dragging down-right. The open canvas has no edge to clamp to
+ * (ADR 0026): a Selection covers whatever positions the drag crossed, painted or not.
  */
-export function selectionBetween(
-  dimensions: GridDimensions,
-  anchor: GridPosition,
-  focus: GridPosition,
-): Selection {
-  const rowsSpanned = [anchor.row, focus.row].map((row) => clamp(row, dimensions.rows - 1))
-  const columnsSpanned = [anchor.column, focus.column].map((column) =>
-    clamp(column, dimensions.columns - 1),
-  )
+export function selectionBetween(anchor: GridPosition, focus: GridPosition): Selection {
+  const rowsSpanned = [anchor.row, focus.row]
+  const columnsSpanned = [anchor.column, focus.column]
   const top = Math.min(...rowsSpanned)
   const left = Math.min(...columnsSpanned)
 
@@ -60,38 +51,6 @@ export function selectionBetween(
     rows: Math.max(...rowsSpanned) - top + 1,
     columns: Math.max(...columnsSpanned) - left + 1,
   }
-}
-
-/**
- * Which whole line — a full row or a full column — a Selection exactly covers, or undefined when it's neither
- * (ticket 123): what the "remove selected row/column" Tool (see resize.ts's removeSelectedLine) requires, and the
- * inverse of wholeLineSelection below. On a 1x1 Pattern, where a Selection of the single cell fits both readings,
- * this calls it a row — an arbitrary but deterministic tiebreak, since there is only ever one cell either way.
- */
-export function selectedLine(dimensions: GridDimensions, selection: Selection | undefined): SelectedLine | undefined {
-  if (!selection) {
-    return undefined
-  }
-  if (selection.rows === 1 && selection.columns === dimensions.columns) {
-    return { axis: 'row', index: selection.top }
-  }
-  if (selection.columns === 1 && selection.rows === dimensions.rows) {
-    return { axis: 'column', index: selection.left }
-  }
-  return undefined
-}
-
-/** What selectedLine reads a Selection as: the axis it runs along, and that line's index along the other axis. */
-export interface SelectedLine {
-  axis: 'row' | 'column'
-  index: number
-}
-
-/** The Selection a ruler number picks out (ticket 123): the whole row or column at `index`, exactly what dragging the Select tool across it would leave behind. */
-export function wholeLineSelection(dimensions: GridDimensions, axis: 'row' | 'column', index: number): Selection {
-  return axis === 'row'
-    ? { top: index, left: 0, rows: 1, columns: dimensions.columns }
-    : { top: 0, left: index, rows: dimensions.rows, columns: 1 }
 }
 
 /** Whether a cell falls inside the Selection — what the marquee is drawn from, cell by cell. */
@@ -110,7 +69,7 @@ export function copySelection(pattern: Pattern, selection: Selection): CopiedBlo
     Array.from(
       { length: selection.columns },
       (_column, columnOffset) =>
-        pattern.grid[selection.top + rowOffset]?.[selection.left + columnOffset]?.color ?? null,
+        colorAt(pattern.beads, selection.top + rowOffset, selection.left + columnOffset),
     ),
   )
 
@@ -118,16 +77,11 @@ export function copySelection(pattern: Pattern, selection: Selection): CopiedBlo
 }
 
 /**
- * Where a block's painted cells land when stamped with its top-left corner at `at`. Two kinds of cell are left out,
- * and for opposite reasons: the block's own empty cells, which are holes that leave the destination's color alone
- * (stamping a motif onto painted background mustn't punch through it), and cells that fall past the grid's edge,
- * which are clipped silently rather than blocking or shifting the whole stamp.
+ * Where a block's painted cells land when stamped with its top-left corner at `at`. The block's own empty cells are
+ * left out: they are holes that leave the destination's color alone (stamping a motif onto painted background mustn't
+ * punch through it). Nothing is clipped, since the open canvas has no edge (ADR 0026).
  */
-export function pastedCells(
-  dimensions: GridDimensions,
-  block: CopiedBlock,
-  at: GridPosition,
-): PastedCell[] {
+export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] {
   const cells: PastedCell[] = []
 
   for (let rowOffset = 0; rowOffset < block.rows; rowOffset++) {
@@ -135,9 +89,8 @@ export function pastedCells(
       const color = block.colors[rowOffset]?.[columnOffset]
       const row = at.row + rowOffset
       const column = at.column + columnOffset
-      const onGrid = row >= 0 && row < dimensions.rows && column >= 0 && column < dimensions.columns
 
-      if (color && onGrid) {
+      if (color) {
         cells.push({ row, column, color })
       }
     }
@@ -175,21 +128,25 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
  * own single placement.
  */
 export function mirroredPastedCells(
-  dimensions: GridDimensions,
+  frame: Frame | undefined,
   block: CopiedBlock,
   at: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
 ): PastedCell[] {
-  const rowPlacements = mirrorBlockPlacements(at.row, block.rows, dimensions.rows, axes.rows, copyMode)
-  const columnPlacements = mirrorBlockPlacements(at.column, block.columns, dimensions.columns, axes.columns, copyMode)
+  // Mirror's axes divide the Frame; with none, or none turned on, a stamp is only itself.
+  if (!frame || (axes.columns === 0 && axes.rows === 0)) {
+    return pastedCells(block, at)
+  }
+  const rowPlacements = mirrorBlockPlacements(at.row - frame.row, block.rows, frame.rows, axes.rows, copyMode)
+  const columnPlacements = mirrorBlockPlacements(at.column - frame.column, block.columns, frame.columns, axes.columns, copyMode)
 
   const cellsByPosition = new Map<string, PastedCell>()
   for (const rowPlacement of rowPlacements) {
     for (const columnPlacement of columnPlacements) {
       const copy = flippedBlock(block, rowPlacement.flipped, columnPlacement.flipped)
-      const anchor = { row: rowPlacement.anchorIndex, column: columnPlacement.anchorIndex }
-      for (const cell of pastedCells(dimensions, copy, anchor)) {
+      const anchor = { row: frame.row + rowPlacement.anchorIndex, column: frame.column + columnPlacement.anchorIndex }
+      for (const cell of pastedCells(copy, anchor)) {
         cellsByPosition.set(positionKey(cell), cell)
       }
     }
@@ -210,20 +167,8 @@ export function mirroredPasteBlock(
   axes: MirrorAxisCounts,
   copyMode = false,
 ): Pattern {
-  const cells = mirroredPastedCells(pattern, block, at, axes, copyMode)
-  const colorsByPosition = new Map(cells.map((cell) => [positionKey(cell), cell.color]))
-
-  const changed = cells.some(({ row, column, color }) => pattern.grid[row]![column]!.color !== color)
-  if (!changed) {
-    return pattern
-  }
-
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) => {
-      const color = colorsByPosition.get(positionKey({ row: rowIndex, column: columnIndex }))
-      return color ? { color } : cell
-    }),
-  )
-
-  return restoreGrid(pattern, grid)
+  const cells = mirroredPastedCells(pattern.frame, block, at, axes, copyMode)
+  const changes: BeadChange[] = cells.map(({ row, column, color }) => ({ row, column, color }))
+  const beads = withColors(pattern.beads, changes)
+  return beads === pattern.beads ? pattern : restoreBeads(pattern, beads)
 }

@@ -34,7 +34,7 @@ function setup(tool: Tool = 'paint') {
 describe('usePaintStroke', () => {
   it('turns a whole drag into one undo step and one save', () => {
     const ctx = setup()
-    const baseline = ctx.pattern.grid
+    const baseline = ctx.pattern.beads
 
     ctx.stroke.beginOrCommitPress('paint', '#ff0000', 0, 0)
     expect(ctx.stroke.strokeMode.value).toBe('paint')
@@ -46,7 +46,7 @@ describe('usePaintStroke', () => {
 
     ctx.stroke.endStroke()
     expect(ctx.recordHistory).toHaveBeenCalledTimes(1)
-    expect(ctx.recordHistory).toHaveBeenCalledWith({ grid: baseline })
+    expect(ctx.recordHistory).toHaveBeenCalledWith({ beads: baseline })
     expect(ctx.flushPendingSave).toHaveBeenCalledTimes(1)
     expect(ctx.stroke.strokeMode.value).toBeNull()
   })

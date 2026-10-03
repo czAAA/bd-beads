@@ -117,6 +117,9 @@ const tipOpen = ref(false)
     <p v-if="!pattern" class="bead-quantities__empty" data-testid="quantities-no-pattern">
       {{ t.quantities.noPatternMessage }}
     </p>
+    <p v-else-if="!pattern.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
+      {{ t.frame.countNeedsFrame }}
+    </p>
     <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">
       {{ t.quantities.noColorsMessage }}
     </p>

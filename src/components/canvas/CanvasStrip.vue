@@ -1,44 +1,98 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { piecesOf, piecesOutsideFrame } from '../../domain/pieces'
+import { resolvePatternBead, type Pattern } from '../../domain/pattern'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
+import IconButton from '../ui/IconButton.vue'
 import ZoomControls from './ZoomControls.vue'
 
 /**
- * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the board and how far it is zoomed. The
- * size is the Pattern's (or, while framing a picture, the Pattern it will make); with nothing to show it holds just
- * the title.
+ * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the canvas, whether rulers show, and how far
+ * it is zoomed. With no Frame it reads "Canvas · 3 pieces · no Frame" ("setting Frame" while one is being drawn); with a
+ * Frame, "Pattern · 21 columns · 19 rows · 3.4 × 3.0 cm" and, when pieces lie outside it, how many (v16). While a picture
+ * is being framed it shows the Pattern that picture will make instead; with nothing to show it holds just the title.
  */
 const props = defineProps<{
+  /** The open Pattern, whose pieces and Frame the strip describes. */
+  pattern?: Pattern
+  /** The size of the Pattern a framed picture will make (Convert image), shown in place of the Pattern's own. */
   size?: { columns: number; rows: number }
   zoomPercent?: number
   /** Shown while the Pattern has keyboard focus: "arrows move · space paints · esc leaves" (BeadCursor card). */
   hint?: string
   /** What is on the board, when it isn't the Pattern: the framing step names itself here (ConvertImage card). */
   title?: string
+  /** Whether the Frame is being set right now ("3 pieces · setting Frame"). */
+  settingFrame?: boolean
+  /** Whether ruler numbers show (the Rulers toggle); undefined hides the button. */
+  rulers?: boolean
 }>()
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
+  'toggle-rulers': []
 }>()
 
 const { t, locale } = useI18n()
 
-const sizeMeta = computed(() =>
-  props.size
-    ? `${plural(locale.value, props.size.columns, t.value.canvas.columnsCount)} · ${plural(locale.value, props.size.rows, t.value.canvas.rowsCount)}`
-    : undefined,
-)
+const sizeText = (size: { columns: number; rows: number }) =>
+  `${plural(locale.value, size.columns, t.value.canvas.columnsCount)} · ${plural(locale.value, size.rows, t.value.canvas.rowsCount)}`
+
+const pieces = computed(() => (props.pattern ? piecesOf(props.pattern.beads, props.pattern.technique) : []))
+
+/** The Pattern's measured size, "3.4 × 3.0 cm": an estimate from the Frame and the Bead (Estimated size). */
+const estimate = computed(() => {
+  const pattern = props.pattern
+  const bead = pattern ? resolvePatternBead(pattern) : undefined
+  if (!pattern?.frame || !bead) return undefined
+  return formatSizeMm(estimatedSizeMm(pattern, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
+})
+
+const framed = computed(() => !props.title && props.pattern?.frame !== undefined)
+
+const heading = computed(() => props.title ?? (props.pattern ? (framed.value ? t.value.canvas.stripTitle : t.value.canvas.canvasTitle) : t.value.canvas.stripTitle))
+
+const sizeMeta = computed(() => {
+  if (props.size) return sizeText(props.size)
+  const pattern = props.pattern
+  if (!pattern) return undefined
+  if (pattern.frame) return [sizeText(pattern.frame), estimate.value].filter(Boolean).join(' · ')
+  return `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}`
+})
+
+const outsideMeta = computed(() => {
+  const frame = props.pattern?.frame
+  if (!frame || props.title) return undefined
+  const outside = piecesOutsideFrame(pieces.value, frame)
+  return outside > 0 ? plural(locale.value, outside, t.value.canvas.piecesOutside) : undefined
+})
 </script>
 
 <template>
   <div class="canvas-strip" data-testid="canvas-strip">
     <AppIcon name="grid" :size="16" />
-    <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ title ?? t.canvas.stripTitle }}</span>
+    <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
     <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta }}</span>
+    <template v-if="outsideMeta">
+      <span class="canvas-strip__divider" aria-hidden="true" />
+      <span class="canvas-strip__meta" data-testid="canvas-strip-outside">{{ outsideMeta }}</span>
+    </template>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
+    <IconButton
+      v-if="rulers !== undefined"
+      class="canvas-strip__rulers"
+      icon="ruler"
+      variant="plain"
+      :icon-size="16"
+      :label="t.canvas.rulersLabel"
+      :selected="rulers"
+      data-testid="rulers-toggle"
+      @click="emit('toggle-rulers')"
+    />
     <ZoomControls
       v-if="zoomPercent !== undefined"
       class="canvas-strip__zoom"
@@ -82,7 +136,24 @@ const sizeMeta = computed(() =>
   white-space: nowrap;
 }
 
+.canvas-strip__divider {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  background: color-mix(in srgb, var(--box-muted) 22%, transparent);
+}
+
+.canvas-strip__hint + .canvas-strip__rulers,
 .canvas-strip__hint + .canvas-strip__zoom {
+  margin-left: 0;
+}
+
+/* The Rulers toggle sits first on the right; pressed is the IconButton's selected look: an `ink` fill with a `canvas` icon (CanvasStrip card). */
+.canvas-strip__rulers {
+  margin-left: auto;
+}
+
+.canvas-strip__rulers + .canvas-strip__zoom {
   margin-left: 0;
 }
 

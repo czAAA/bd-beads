@@ -1,10 +1,10 @@
 import { ref, toRaw } from 'vue'
+import type { BeadMap } from '../../domain/canvas'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import {
   fillArea,
   keepFinishedRows,
   paintCells,
-  type Grid,
   type Pattern,
   type UndoEntry,
 } from '../../domain/pattern'
@@ -36,11 +36,11 @@ export interface PaintStrokeDeps {
 export function usePaintStroke(deps: PaintStrokeDeps) {
   /** 'paint'/'erase' while a stroke is in progress, else null. */
   const strokeMode = ref<'paint' | 'erase' | null>(null)
-  const strokeBaseline = ref<Grid | null>(null)
+  const strokeBaseline = ref<BeadMap | null>(null)
 
   function beginStroke(mode: 'paint' | 'erase', pattern: Pattern) {
     strokeMode.value = mode
-    strokeBaseline.value = pattern.grid
+    strokeBaseline.value = pattern.beads
   }
 
   /**
@@ -52,8 +52,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.endSelectPress()
 
     const pattern = deps.currentPattern()
-    if (strokeBaseline.value && pattern && pattern.grid !== strokeBaseline.value) {
-      deps.recordHistory({ grid: strokeBaseline.value })
+    if (strokeBaseline.value && pattern && pattern.beads !== strokeBaseline.value) {
+      deps.recordHistory({ beads: strokeBaseline.value })
     }
     strokeMode.value = null
     strokeBaseline.value = null

@@ -71,7 +71,7 @@ export function useSelectionGesture(
     // then takes a drag out and back rather than a click: a click has to mean one thing, and stamping is the one it
     // means.
     if (!pasteProjectionActive.value) {
-      selection.value = selectionBetween(pattern, { row, column }, { row, column })
+      selection.value = selectionBetween({ row, column }, { row, column })
     }
   }
 
@@ -85,7 +85,7 @@ export function useSelectionGesture(
 
     press.moved = true
     dropClipboard()
-    selection.value = selectionBetween(pattern, press.anchor, { row, column })
+    selection.value = selectionBetween(press.anchor, { row, column })
   }
 
   /** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
@@ -225,15 +225,15 @@ export function useSelectionGesture(
    */
   function pastePreviewCells(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
     return pasteProjectionActive.value
-      ? mirroredPastedCells(pattern, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
+      ? mirroredPastedCells(pattern.frame, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
       : []
   }
 
   /**
    * Clears just the Selection -- not the clipboard, which survives (ADR 0016): a copied block is colors, not a
    * place, so nothing about the grid changing or the open Pattern switching invalidates it. Called from the app shell's single Pattern-switch reset point, and equally from
-   * any command that changes the grid's own dimensions (Resize, "remove selected row/column", an Undo/Redo that
-   * crosses a size change) -- a Selection may no longer fit, or no longer name a whole line, once those land.
+   * any command that changes the grid's own dimensions (a change of the Frame, "remove selected row/column", an Undo/Redo that
+   * crosses a Frame change) -- a Selection may no longer fit, or no longer name a whole line, once those land.
    */
   function clearSelection() {
     selection.value = undefined

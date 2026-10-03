@@ -1,14 +1,13 @@
 import { ref } from 'vue'
-import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition } from '../../domain/grid'
+import { beadBounds } from '../../domain/canvas'
+import type { GridPosition } from '../../domain/grid'
 import type { Pattern } from '../../domain/pattern'
-import { patternExtentPx, rowShiftPx, rowTopPx } from '../../rendering/patternRenderer'
 
 /** What the keyboard cursor needs from the app shell. Deps are read lazily. */
 export interface KeyboardCursorDeps {
   currentPattern: () => Pattern | undefined
-  zoom: () => number
-  /** The canvas box that scrolls the Pattern. */
-  scroller: () => HTMLElement | null
+  /** Scrolls the open canvas just far enough to show a bead (the cursor never leaves the view). */
+  reveal: (position: GridPosition) => void
   hasSelection: () => boolean
   onCellHover: (row: number, column: number) => void
   onHoverEnd: () => void
@@ -16,6 +15,8 @@ export interface KeyboardCursorDeps {
   invokeToolAt: (cursor: GridPosition) => void
   extendSelectionTo: (from: GridPosition, to: GridPosition) => void
   finishExtending: () => void
+  /** Set Frame's keys (arrows, Enter, Escape): true when it used the key. */
+  onFrameKey?: (event: KeyboardEvent) => boolean
 }
 
 /**
@@ -27,16 +28,20 @@ export interface KeyboardCursorDeps {
 export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
   const keyboardOnPattern = ref(false)
+  let cursorPatternId: string | undefined
 
   /** Keyboard focus arriving on (or leaving) the Pattern. */
   function onPatternKeyboardFocus(focused: boolean) {
     keyboardOnPattern.value = focused
     const pattern = deps.currentPattern()
     if (focused && pattern) {
-      beadCursor.value = {
-        row: Math.min(beadCursor.value.row, pattern.rows - 1),
-        column: Math.min(beadCursor.value.column, pattern.columns - 1),
+      // A new Pattern starts the cursor at the top-left of the Frame, or of what is drawn, or at the first bead.
+      if (cursorPatternId !== pattern.id) {
+        cursorPatternId = pattern.id
+        const start = pattern.frame ?? beadBounds(pattern.beads)
+        beadCursor.value = { row: start?.row ?? 0, column: start?.column ?? 0 }
       }
+      deps.reveal(beadCursor.value)
       deps.onCellHover(beadCursor.value.row, beadCursor.value.column)
       deps.announceCursor()
     } else {
@@ -45,50 +50,10 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     }
   }
 
-  /** Keeps the cursor two beads from any edge of the visible part of the canvas box. */
-  function keepCursorInView() {
-    const pattern = deps.currentPattern()
-    const scroller = deps.scroller()
-    const surface = scroller?.querySelector<HTMLElement>('[data-testid="pattern-surface"]')
-    if (!pattern || !scroller || !surface) return
-    const zoom = deps.zoom()
-    const { row, column } = beadCursor.value
-    const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-    const gridX = rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX
-    const gridY = rowTopPx(pattern.technique, row)
-    // Each quarter turn clockwise carries a bead's own top-left (x, y) to the turned picture's own top-left corner for
-    // it, the same forward mapping patternRenderer's gridToRegion uses (composing it with itself for 180°/270°, ticket 171).
-    const [x, y] = (() => {
-      switch (pattern.rotation) {
-        case 90:
-          return [extent.height - gridY - CELL_SIZE_PX, gridX]
-        case 180:
-          return [extent.width - gridX - CELL_SIZE_PX, extent.height - gridY - CELL_SIZE_PX]
-        case 270:
-          return [gridY, extent.width - gridX - CELL_SIZE_PX]
-        default:
-          return [gridX, gridY]
-      }
-    })()
-    const bead = CELL_SIZE_PX * zoom
-    const margin = bead * 2
-    const box = scroller.getBoundingClientRect()
-    const origin = surface.getBoundingClientRect()
-    const left = origin.left + (x + GRID_BORDER_PX) * zoom
-    const top = origin.top + (y + GRID_BORDER_PX) * zoom
-    if (left - margin < box.left) scroller.scrollLeft -= box.left - (left - margin)
-    else if (left + bead + margin > box.right) scroller.scrollLeft += left + bead + margin - box.right
-    if (top - margin < box.top) scroller.scrollTop -= box.top - (top - margin)
-    else if (top + bead + margin > box.bottom) scroller.scrollTop += top + bead + margin - box.bottom
-  }
-
-  function moveCursor(row: number, column: number, extend: boolean) {
+    function moveCursor(row: number, column: number, extend: boolean) {
     const pattern = deps.currentPattern()
     if (!pattern) return
-    const next = {
-      row: Math.max(0, Math.min(pattern.rows - 1, row)),
-      column: Math.max(0, Math.min(pattern.columns - 1, column)),
-    }
+    const next = { row, column }
     if (extend) {
       deps.extendSelectionTo(beadCursor.value, next)
     } else {
@@ -96,14 +61,30 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     }
     beadCursor.value = next
     deps.onCellHover(next.row, next.column)
-    keepCursorInView()
+    deps.reveal(next)
     deps.announceCursor()
+  }
+
+  /** Where a row begins and ends for Home and End: across the Frame when there is one, otherwise from its first bead to its last (the cursor stays put on an empty row). */
+  function rowEnds(pattern: Pattern, row: number): { first: number; last: number } {
+    if (pattern.frame) {
+      return { first: pattern.frame.column, last: pattern.frame.column + pattern.frame.columns - 1 }
+    }
+    const columns = Object.keys(pattern.beads[row] ?? {}).map(Number)
+    return columns.length > 0
+      ? { first: Math.min(...columns), last: Math.max(...columns) }
+      : { first: beadCursor.value.column, last: beadCursor.value.column }
   }
 
   function onPatternKey(event: KeyboardEvent) {
     const { row, column } = beadCursor.value
     const pattern = deps.currentPattern()
     if (!pattern) return
+    if (deps.onFrameKey?.(event)) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     // Rotated, the picture is turned clockwise: on-screen arrows move along whichever grid axis now points that way
     // (ticket 171) -- undoing the same turn gridToRegion's forward mapping applies to the picture itself.
     const turn = (dRow: number, dColumn: number): [number, number] => {
@@ -128,9 +109,9 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (step) {
       moveCursor(row + step[0], column + step[1], event.shiftKey)
     } else if (event.key === 'Home') {
-      moveCursor(row, 0, false)
+      moveCursor(row, rowEnds(pattern, row).first, false)
     } else if (event.key === 'End') {
-      moveCursor(row, pattern.columns - 1, false)
+      moveCursor(row, rowEnds(pattern, row).last, false)
     } else if (event.key === 'PageUp') {
       moveCursor(row - 10, column, false)
     } else if (event.key === 'PageDown') {

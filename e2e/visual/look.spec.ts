@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { openApp, setZoom } from '../support/app'
+import { openApp, patternBox, setZoom } from '../support/app'
 import { fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 
 /**
  * The look of a Pattern in the app, held to the reference screenshots (support/referenceCheck.ts says how the
@@ -45,14 +45,15 @@ for (const scenario of scenarios) {
 
         const box = (await page.getByTestId('pattern-surface').boundingBox())!
         const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-        if (UPDATING_REFERENCES) await writeReference(page, reference, box, { x: Math.floor(box.x), y: Math.floor(box.y) })
+        const corner = await patternBox(page, box)
+        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
         const expected = readFileSync(reference)
         const { width, height } = PNG.sync.read(expected)
-        const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
+        const origin = shownRegion(corner, pattern, zoom / 100)
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
         const label = `${scenario.name}, ${orientation}, ${zoom}%`
-        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, box, origin)
+        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin)
         expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
         expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
       }
@@ -84,11 +85,12 @@ test.describe('the check notices a wrong picture', () => {
         const box = (await page.getByTestId('pattern-surface').boundingBox())!
         const expected = readFileSync(`${REFERENCES}loom-plain-upright-${zoom}.png`)
         const { width, height } = PNG.sync.read(expected)
-        const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
+        const corner = await patternBox(page, box)
+        const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
         // Judged against the Pattern the reference shows, the one bead is found and nothing else is.
-        expect(compareToReference(actual, expected, reference, zoom, box, origin).wrong, `${zoom}%`).toEqual(['(4, 7)'])
+        expect(compareToReference(actual, expected, reference, zoom, corner, origin).wrong, `${zoom}%`).toEqual(['(4, 7)'])
       }
     })
   }
@@ -101,10 +103,11 @@ test.describe('the check notices a wrong picture', () => {
     const box = (await page.getByTestId('pattern-surface').boundingBox())!
     const expected = readFileSync(`${REFERENCES}loom-plain-upright-100.png`)
     const { width, height } = PNG.sync.read(expected)
-    const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
+    const corner = await patternBox(page, box)
+    const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
     const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
     // The rows behind the pointer are faded and one is outlined: far more than the look is allowed to differ by.
-    expect(compareToReference(actual, expected, reference, 100, box, origin).look).toBeGreaterThan(MAX_DIFFERING_BLOCKS.loom)
+    expect(compareToReference(actual, expected, reference, 100, corner, origin).look).toBeGreaterThan(MAX_DIFFERING_BLOCKS.loom)
   })
 })

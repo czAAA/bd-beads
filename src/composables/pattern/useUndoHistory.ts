@@ -9,6 +9,7 @@ import {
   type History,
   type HistoryStep,
 } from '../../domain/history'
+import { sameFrame } from '../../domain/frame'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { keepFinishedRows, restoreSnapshot, type Pattern, type UndoEntry } from '../../domain/pattern'
 
@@ -57,7 +58,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
       return
     }
 
-    record({ grid: pattern.grid })
+    record({ beads: pattern.beads })
     deps.replacePattern(kept)
   }
 
@@ -69,12 +70,11 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
    */
   function currentUndoEntry(pattern: Pattern): UndoEntry {
     return {
-      grid: pattern.grid,
+      beads: pattern.beads,
       rowProgress: pattern.rowProgress,
       beadId: pattern.beadId,
       size: {
-        columns: pattern.columns,
-        rows: pattern.rows,
+        frame: pattern.frame,
         mirrorAxisCounts: deps.mirrorAxisCounts(),
       },
     }
@@ -92,7 +92,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     const { size } = step.snapshot
     if (size) {
       deps.restoreMirrorAxisCounts(size.mirrorAxisCounts)
-      if (size.columns !== pattern.columns || size.rows !== pattern.rows) {
+      if (!sameFrame(size.frame, pattern.frame)) {
         deps.clearSelectionAndHover()
       }
     }

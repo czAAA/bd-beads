@@ -29,7 +29,7 @@ export function nextRotation(rotation: Rotation): Rotation {
 /**
  * Whether this rotation swaps which grid axis (columns or rows) runs across the screen versus down it: true a quarter
  * turn either way (90°/270°), false upright or upside down (0°/180°) — the rule every "which axis is which on screen"
- * mapping in the app shares (Estimated size, Row direction, Mirror's left-right/top-bottom, Size's resize counters).
+ * mapping in the app shares (Estimated size, Row direction, Mirror's left-right/top-bottom, the Frame's Columns and Rows).
  */
 export function rotationSwapsAxes(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 270
@@ -43,6 +43,12 @@ export interface PhysicalSizeMm {
 export interface GridDimensions {
   columns: number
   rows: number
+}
+
+/** A rectangle of positions: dimensions, and — for a Frame on an Open canvas — where its top-left bead sits (0, 0 when left out). */
+export interface GridBounds extends GridDimensions {
+  row?: number
+  column?: number
 }
 
 export function toMillimeters(value: number, unit: PhysicalUnit): number {
@@ -59,18 +65,6 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
 export const CELL_SIZE_PX = 20
 
 /**
- * The board's padding round the beads, in unscaled px (BeadBoard card: 14). It sits outside the cells, so the canvas
- * box has to make room for it or the right and bottom edges get clipped (ticket 18).
- */
-export const GRID_BORDER_PX = 14
-
-/** The board's corner radius in unscaled px: `radius-board`. */
-export const BOARD_RADIUS_PX = 32
-
-/** Width of each ruler gutter at 100% zoom (tickets 19, 212). It scales with the zoom, like the numbers in it, so every bead keeps its own number. */
-export const RULER_GUTTER_PX = 28
-
-/**
  * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Pattern that needs less gets a
  * box its own shape rather than empty bands inside a fixed square (ticket 18). Raised twice from the original 480:
  * once when the editing tools left the left panel (ADR 0005) and the canvas became what reclaims that width, and
@@ -83,7 +77,7 @@ export const CANVAS_MAX_PX = 900
 
 /** Horizontal offset (px) for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
 export function rowOffsetPx(technique: Technique, rowIndex: number, cellSize = CELL_SIZE_PX): number {
-  return isOffsetTechnique(technique) && rowIndex % 2 === 1 ? cellSize / 2 : 0
+  return isOffsetTechnique(technique) && Math.abs(rowIndex % 2) === 1 ? cellSize / 2 : 0
 }
 
 /** Total rendered grid width in px, including the extra half-cell an offset technique's shifted rows take up. */
@@ -170,10 +164,10 @@ function overlappingColumns(technique: Technique, fromRow: number, toRow: number
   return [column]
 }
 
-/** The cells adjacent to (row, column) given the Pattern's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. */
+/** The cells adjacent to (row, column) given the Pattern's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. Only positions inside `bounds` come back; with no bounds the canvas is open and every neighbour does. */
 export function neighborsOf(
   technique: Technique,
-  dimensions: GridDimensions,
+  bounds: GridBounds | undefined,
   position: GridPosition,
 ): GridPosition[] {
   const { row, column } = position
@@ -182,18 +176,20 @@ export function neighborsOf(
     { row, column: column + 1 },
   ]
 
-  if (row > 0) {
-    for (const c of overlappingColumns(technique, row, row - 1, column)) {
-      candidates.push({ row: row - 1, column: c })
-    }
-  }
-  if (row < dimensions.rows - 1) {
-    for (const c of overlappingColumns(technique, row, row + 1, column)) {
-      candidates.push({ row: row + 1, column: c })
+  for (const neighborRow of [row - 1, row + 1]) {
+    for (const c of overlappingColumns(technique, row, neighborRow, column)) {
+      candidates.push({ row: neighborRow, column: c })
     }
   }
 
-  return candidates.filter((p) => p.column >= 0 && p.column < dimensions.columns)
+  if (!bounds) {
+    return candidates
+  }
+  const top = bounds.row ?? 0
+  const left = bounds.column ?? 0
+  return candidates.filter(
+    (p) => p.row >= top && p.row < top + bounds.rows && p.column >= left && p.column < left + bounds.columns,
+  )
 }
 
 export const MIN_ZOOM = 0.5
@@ -214,26 +210,6 @@ export function zoomFloorFor(beadMinPx: number): number {
 /** Keeps a zoom inside the usable range (from `min` up, MIN_ZOOM by default), at whole-percent precision so the displayed level and the applied scale agree. */
 export function clampZoom(value: number, min = MIN_ZOOM): number {
   return Math.min(MAX_ZOOM, Math.max(min, Math.round(value * 100) / 100))
-}
-
-/** Total width of the canvas box's content: the grid (outline included) flanked by two ruler gutters, all scaled by the zoom. */
-export function canvasContentWidthPx(
-  technique: Technique,
-  columns: number,
-  zoom: number,
-  cellSize = CELL_SIZE_PX,
-): number {
-  return (RULER_GUTTER_PX * 2 + gridWidthPx(technique, columns, cellSize) + GRID_BORDER_PX * 2) * zoom
-}
-
-/** Total height of the canvas box's content; see canvasContentWidthPx. */
-export function canvasContentHeightPx(
-  technique: Technique,
-  rows: number,
-  zoom: number,
-  cellSize = CELL_SIZE_PX,
-): number {
-  return (RULER_GUTTER_PX * 2 + gridHeightPx(technique, rows, cellSize) + GRID_BORDER_PX * 2) * zoom
 }
 
 export interface FitZoomInput extends GridDimensions {

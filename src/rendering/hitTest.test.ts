@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Rotation, Technique } from '../domain/grid'
-import { beadAt } from './hitTest'
+import { beadAt, beadAtOpen, cellAtOpen } from './hitTest'
 
 const pattern = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
 
@@ -167,5 +167,24 @@ describe('beadAt when the Pattern is rotated a quarter counterclockwise (270°, 
 
     expect(beadAt(loom, { x: -1, y: 10 }, 1)).toBeUndefined()
     expect(beadAt(loom, { x: 10, y: 80.5 }, 1)).toBeUndefined()
+  })
+})
+
+describe('beadAtOpen and cellAtOpen: the open canvas has no edge', () => {
+  it('find a bead at negative positions and a long way off', () => {
+    expect(beadAtOpen({ technique: 'loom', rotation: 0 }, { x: -30, y: -50 }, 1)).toEqual({ row: -3, column: -2 })
+    expect(beadAtOpen({ technique: 'loom', rotation: 0 }, { x: 1_000_010, y: 4_000_010 }, 1)).toEqual({ row: 200_000, column: 50_000 })
+  })
+
+  it('work at any zoom and turn', () => {
+    expect(beadAtOpen({ technique: 'loom', rotation: 0 }, { x: 70, y: 30 }, 2)).toEqual({ row: 0, column: 1 })
+    // Turned a quarter, displayed (x, y) is grid (y, -x): the bead at displayed (-25, 45) is grid (45, 25).
+    expect(beadAtOpen({ technique: 'loom', rotation: 90 }, { x: -25, y: 45 }, 1)).toEqual({ row: 1, column: 2 })
+  })
+
+  it('cellAtOpen names the nearest bead even between beads, which beadAtOpen leaves out', () => {
+    const brick = { technique: 'brick' as const, rotation: 0 as const }
+    expect(beadAtOpen(brick, { x: 10, y: 20.5 }, 1)).toBeUndefined()
+    expect(cellAtOpen(brick, { x: 10, y: 20.5 }, 1)).toEqual({ row: 1, column: 0 })
   })
 })

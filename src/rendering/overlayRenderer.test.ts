@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
-import { createPattern, type Pattern, type RowProgress, type Technique } from '../domain/pattern'
+import { createPattern, withFrameGrid, type Pattern, type RowProgress, type Technique } from '../domain/pattern'
 import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
@@ -12,7 +12,7 @@ function patternOf(technique: Technique, columns: number, rows: number, rowProgr
 }
 
 function whole(pattern: Pattern, zoom = 1) {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.frame!.columns, pattern.frame!.rows, zoom, pattern.rotation)
   return { x: 0, y: 0, width, height }
 }
 
@@ -413,7 +413,7 @@ describe('renderOverlay', () => {
 
     it('draws each faded over the paper, in its own color, covering the bead underneath', () => {
       const grid = [[{ color: '#e63746' }, { color: null }], [{ color: '#2f6fed' }, { color: '#1a1a1a' }]]
-      const pattern = { ...patternOf('loom', 2, 2, noProgress), grid }
+      const pattern = withFrameGrid(patternOf('loom', 2, 2, noProgress), grid)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { pattern, region: whole(pattern), zoom: 1, dimmedCells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] })

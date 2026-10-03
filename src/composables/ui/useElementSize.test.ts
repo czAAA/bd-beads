@@ -5,7 +5,7 @@ import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 import { useElementSize } from './useElementSize'
 
 /** A minimal host component: useElementSize is a composable, so it needs a live component instance (lifecycle
- *  hooks) to run inside, same as it will in PatternCanvas's parent. */
+ *  hooks) to run inside, same as it will in a component that measures its parent. */
 function mountHost(showTarget = true) {
   return mount(
     defineComponent({

@@ -18,6 +18,8 @@ const props = defineProps<{
   activeTool: Tool
   selectedColorId?: string
   openSheet: PhoneSheet | null
+  /** Whether the Frame is being set: its button sits on `panel` like an open sheet's (Dock card). */
+  settingFrame?: boolean
 }>()
 
 const emit = defineEmits<{ 'select-sheet': [sheet: PhoneSheet] }>()
@@ -25,7 +27,7 @@ const emit = defineEmits<{ 'select-sheet': [sheet: PhoneSheet] }>()
 const { t } = useI18n()
 
 function toolLabel(tool: Tool): string {
-  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel }[tool]
+  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
 }
 
 const activeToolInfo = computed(() => ({ icon: TOOL_ICONS[props.activeTool], label: toolLabel(props.activeTool) }))
@@ -36,7 +38,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool' },
   { id: 'color', icon: 'paint', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
-  { id: 'size', icon: 'size', label: t.value.toolbox.groups.size, testid: 'dock-size' },
+  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame' },
   { id: 'pattern', icon: 'save', label: t.value.header.patternSheetLabel, testid: 'dock-pattern' },
 ])
 </script>
@@ -48,7 +50,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       :key="item.id"
       type="button"
       class="ui-control dock__item"
-      :class="{ 'dock__item--open': openSheet === item.id, 'dock__item--accent': item.id === 'tool' }"
+      :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool' }"
       :aria-pressed="openSheet === item.id"
       :data-testid="item.testid"
       :data-tour="`dock-${item.id}`"

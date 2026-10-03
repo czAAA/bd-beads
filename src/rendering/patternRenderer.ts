@@ -1,5 +1,6 @@
 import { CELL_SIZE_PX, isOffsetTechnique, rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
-import { isInFinishedRow, type Pattern } from '../domain/pattern'
+import { colorAt } from '../domain/canvas'
+import { isInFinishedRow, patternDimensions, patternFrame, type Pattern } from '../domain/pattern'
 import {
   DEFAULT_THEME,
   drawFlatBead,
@@ -56,7 +57,7 @@ export function rowTopPx(technique: Technique, row: number): number {
 
 /** How far a row's beads are shifted sideways, in grid px: every other row in peyote and brick stitch, by half a bead. */
 export function rowShiftPx(technique: Technique, row: number): number {
-  return isOffsetTechnique(technique) && row % 2 === 1 ? CELL_SIZE_PX / 2 : 0
+  return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? CELL_SIZE_PX / 2 : 0
 }
 
 export interface Extent {
@@ -117,7 +118,7 @@ export function setGridTransform(
 }
 
 /** The part of grid space a displayed region covers: the inverse of gridToRegion's own mapping, one case per quarter turn. */
-function regionInGridSpace(extent: Extent, region: Region, zoom: number, rotation: Rotation): { left: number; right: number; top: number; bottom: number } {
+export function regionInGridSpace(extent: Extent, region: Region, zoom: number, rotation: Rotation): { left: number; right: number; top: number; bottom: number } {
   switch (rotation) {
     case 90:
       return {
@@ -152,12 +153,13 @@ function regionInGridSpace(extent: Extent, region: Region, zoom: number, rotatio
 
 /** The beads that touch the region of the displayed Pattern, for whatever else is drawn only where it can be seen (the overlay's Selection and dimming). */
 export function visibleBeadsIn(
-  pattern: Pick<DrawnPattern, 'technique' | 'columns' | 'rows' | 'rotation'>,
+  pattern: Pick<DrawnPattern, 'technique' | 'frame' | 'beads' | 'rotation'>,
   region: Region,
   zoom: number,
 ): ReturnType<typeof visibleBeads> {
-  const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
-  return visibleBeads(pattern.technique, pattern.columns, pattern.rows, regionInGridSpace(extent, region, zoom, pattern.rotation))
+  const { columns, rows } = patternDimensions(pattern)
+  const extent = patternExtentPx(pattern.technique, columns, rows)
+  return visibleBeads(pattern.technique, columns, rows, regionInGridSpace(extent, region, zoom, pattern.rotation))
 }
 
 /** The rows and, for each, the columns of beads that touch a stretch of grid space. Exported for the tests; the renderer's own way of skipping what is off screen. */
@@ -185,8 +187,31 @@ export function visibleBeads(
   }
 }
 
+/**
+ * The beads that touch a stretch of grid space on an open canvas (ADR 0026): the same maths as visibleBeads with no
+ * edge to stop at, so rows and columns may be negative.
+ */
+export function visibleBeadsOpen(
+  technique: Technique,
+  area: { left: number; right: number; top: number; bottom: number },
+): ReturnType<typeof visibleBeads> {
+  const pitch = rowPitchPx(technique)
+  return {
+    firstRow: Math.ceil((area.top - CELL_SIZE_PX) / pitch),
+    lastRow: Math.floor((area.bottom + SEAM_PX) / pitch),
+    columnsOf: (row) => {
+      const shift = rowShiftPx(technique, row)
+      return {
+        first: Math.ceil((area.left - shift - CELL_SIZE_PX) / CELL_SIZE_PX),
+        last: Math.floor((area.right - shift) / CELL_SIZE_PX),
+      }
+    },
+  }
+}
+
+
 /** The parts of a Pattern the renderer reads. */
-export type DrawnPattern = Pick<Pattern, 'technique' | 'columns' | 'rows' | 'grid' | 'rowProgress' | 'rotation'>
+export type DrawnPattern = Pick<Pattern, 'technique' | 'beads' | 'frame' | 'rowProgress' | 'rotation'>
 
 export interface RenderInput {
   /** The Pattern to draw: its grid, Technique, rotation and Row progress (finished rows are drawn faded). Anything shaped like one will do: the Convert image preview draws a block of beads that is not a saved Pattern. */
@@ -248,7 +273,10 @@ function bandOnSurface(
 /** Draws the part of the Pattern in the region. Clears what was there first; the surface can be redrawn in place. */
 export function renderPattern(context: DrawingContext, input: RenderInput): void {
   const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band } = input
-  const { technique, grid, columns, rows } = pattern
+  const { technique, beads } = pattern
+  const { columns, rows } = patternDimensions(pattern)
+  // Grid space starts at the Frame's first bead; a canvas with no Frame is drawn from the box round its beads.
+  const origin = patternFrame(pattern)
   const rotation = pattern.rotation
   const extent = patternExtentPx(technique, columns, rows)
 
@@ -282,7 +310,7 @@ export function renderPattern(context: DrawingContext, input: RenderInput): void
     const shift = rowShiftPx(technique, row)
 
     if (technique === 'brick' && row > 0) {
-      drawSeam(context, shift, top - SEAM_PX, columns * CELL_SIZE_PX, isRowFinished(pattern, row), theme)
+      drawSeam(context, shift, top - SEAM_PX, columns * CELL_SIZE_PX, isRowFinished(pattern, origin.row + row), theme)
     }
 
     const { first, last } = visible.columnsOf(row)
@@ -292,8 +320,8 @@ export function renderPattern(context: DrawingContext, input: RenderInput): void
         y: top,
         size: CELL_SIZE_PX,
         cornerRadius,
-        color: grid[row]?.[column]?.color ?? null,
-        dimmed: isInFinishedRow(pattern, { row, column }),
+        color: colorAt(beads, origin.row + row, origin.column + column),
+        dimmed: isInFinishedRow(pattern, { row: origin.row + row, column: origin.column + column }),
         deviceScale: zoom * pixelRatio,
         theme,
       })
@@ -305,7 +333,7 @@ export function renderPattern(context: DrawingContext, input: RenderInput): void
   }
 }
 
-function drawSeam(context: DrawingContext, x: number, y: number, width: number, dimmed: boolean, theme: PatternTheme): void {
+export function drawSeam(context: DrawingContext, x: number, y: number, width: number, dimmed: boolean, theme: PatternTheme): void {
   context.fillStyle = dimmed ? finishedColor(theme.seam, theme) : theme.seam
   context.fillRect(x, y, width, SEAM_PX)
 }

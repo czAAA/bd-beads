@@ -4,7 +4,7 @@ import App from './App.vue'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
-import { createPattern } from './domain/pattern'
+import { createPattern, frameGrid, withFrameGrid } from './domain/pattern'
 import { parsePatternsFile, patternFileName } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
@@ -66,11 +66,11 @@ describe('App Save (ticket 115)', () => {
     const wrapper = mountApp()
     await createPatternViaForm(wrapper)
     await startUnfinishedStroke(wrapper)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(wrapper.find('[data-testid="save-confirmation"]').text()).toBe(en.tools.savedConfirmation)
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
   })
@@ -157,7 +157,7 @@ describe('App Save (ticket 115)', () => {
     const event = await pressKey({ key: 's', ...modifier })
 
     expect(event.defaultPrevented).toBe(true)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(true)
   })
 
@@ -251,7 +251,7 @@ describe('App QR export (ticket 116)', () => {
       beadId: cubeBead.id,
       size: { width: 90, height: 135, unit: 'mm' }, // 60 x 90, ADR 0009's own worst-case size
     })
-    savePatterns([{ ...huge, grid: denselyColoredGrid(huge.columns, huge.rows) }])
+    savePatterns([withFrameGrid(huge, denselyColoredGrid(huge.frame!.columns, huge.frame!.rows))])
     const wrapper = mountApp()
     await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 

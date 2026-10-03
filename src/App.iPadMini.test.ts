@@ -6,7 +6,7 @@ import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 import { BEAD_CATALOG } from './domain/beads'
 import { findPaletteColor } from './domain/palette'
 import { serializeLibrary } from './domain/patternFile'
-import { createPattern } from './domain/pattern'
+import { createPattern, frameGrid } from './domain/pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const DRAWER_QUERY = '(min-width: 744px) and (max-width: 1023px)'
@@ -98,7 +98,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
       await pressBead(wrapper, 0)
       await wrapper.find('.app-shell').trigger('mouseup')
-      expect(drawnPattern(wrapper).grid[0]![0]!.color).toBe(findPaletteColor('red')!.hex)
+      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBe(findPaletteColor('red')!.hex)
     })
 
     it('undoes and redoes the same history the Toolbox\'s own buttons use', async () => {
@@ -106,13 +106,13 @@ describe('App at the iPad mini tier (ticket 168)', () => {
       await createPatternViaForm(wrapper, '15', '30')
       await pressBead(wrapper, 0)
       await wrapper.find('.app-shell').trigger('mouseup')
-      expect(drawnPattern(wrapper).grid[0]![0]!.color).not.toBeNull()
+      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
 
       await wrapper.find('[data-testid="bottom-toolbar-undo"]').trigger('click')
-      expect(drawnPattern(wrapper).grid[0]![0]!.color).toBeNull()
+      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBeNull()
 
       await wrapper.find('[data-testid="bottom-toolbar-redo"]').trigger('click')
-      expect(drawnPattern(wrapper).grid[0]![0]!.color).not.toBeNull()
+      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
     })
   })
 

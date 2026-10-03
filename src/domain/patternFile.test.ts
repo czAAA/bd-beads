@@ -16,6 +16,7 @@ import {
   paintCells,
   setRowProgressEnabled,
   type Pattern,
+  frameGrid,
 } from './pattern'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -48,7 +49,7 @@ describe('single-Pattern roundtrip', () => {
 
     expect(restored!.technique).toBe('peyote')
     expect(restored!.beadId).toBe(cubeBead.id)
-    expect(restored!.grid[2]![3]!.color).toBe('#e63746')
+    expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
     expect(restored!.rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
@@ -57,14 +58,15 @@ describe('single-Pattern roundtrip', () => {
     })
   })
 
-  it('stays readable version-1 JSON with a cell per grid cell, not the compact stored form (ADR 0009)', () => {
+  it('stays readable version-2 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
     const file = JSON.parse(serializePattern(decoratedPattern()))
 
     // A Pattern file exists to move work between devices and to be read; compactness belongs to localStorage only, so
     // export/import is an encode/decode boundary rather than a passthrough of whatever is stored.
-    expect(file.version).toBe(1)
-    expect(file.patterns[0].cells).toBeUndefined()
-    expect(file.patterns[0].grid[2][3]).toEqual({ color: '#e63746' })
+    expect(file.version).toBe(2)
+    expect(file.patterns[0].encodedBeads).toBeUndefined()
+    expect(file.patterns[0].beads[2][3]).toBe('#e63746')
+    expect(file.patterns[0].frame).toBeDefined()
   })
 
   it('does not write a color-to-bead mapping into the file (ADR 0007)', () => {
@@ -147,9 +149,9 @@ describe('parsePatternsFile', () => {
 
     const { patterns } = parsePatternsFile(JSON.stringify(file))
 
-    expect(patterns[0]!.columns).toBe(original.columns)
-    expect(patterns[0]!.rows).toBe(original.rows)
-    expect(patterns[0]!.grid).toEqual(original.grid)
+    expect(patterns[0]!.frame!.columns).toBe(original.frame!.columns)
+    expect(patterns[0]!.frame!.rows).toBe(original.frame!.rows)
+    expect(frameGrid(patterns[0]!)).toEqual(frameGrid(original))
     expect(patterns[0]).not.toHaveProperty('widthMm')
     expect(patterns[0]).not.toHaveProperty('heightMm')
   })
@@ -188,8 +190,8 @@ describe('importPatterns', () => {
 
     expect(added).toHaveLength(1)
     expect(added[0]!.id).toBe('fresh-id')
-    expect(added[0]!.grid[0]![0]!.color).toBe('#2f6fed')
-    expect(local.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(added[0]!)[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(local)[0]![0]!.color).toBeNull()
   })
 
   it('gives every colliding Pattern in one file its own new identity', () => {

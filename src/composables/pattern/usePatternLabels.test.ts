@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
-import { createPattern, moveToRow, setRowProgressEnabled, toggleRotated, type Pattern } from '../../domain/pattern'
+import { createPattern, moveToRow, setRowProgressEnabled, toggleRotated, type Pattern, frameGrid, withFrameGrid } from '../../domain/pattern'
 import { en } from '../../i18n/en'
 import { usePatternLabels } from './usePatternLabels'
 
@@ -13,7 +13,7 @@ function setup(pattern: Pattern | undefined = base) {
 
 function withColors(pattern: Pattern, colors: string[]): Pattern {
   const cells = colors.map((color) => ({ color }))
-  return { ...pattern, grid: pattern.grid.map((row, r) => row.map((cell, c) => (r === 0 && cells[c] ? { ...cell, ...cells[c] } : cell))) }
+  return withFrameGrid(pattern, frameGrid(pattern).map((row, r) => row.map((cell, c) => (r === 0 && cells[c] ? { ...cell, ...cells[c] } : cell))))
 }
 
 describe('usePatternLabels', () => {
@@ -49,6 +49,11 @@ describe('usePatternLabels', () => {
     it('adds the Row progress once it is on', () => {
       const tracking = moveToRow(setRowProgressEnabled(base, true), 2)
       expect(setup(tracking).patternLabel.value).toMatch(/, row 2 of 3 done$/)
+    })
+
+    it('names a canvas with no Frame as an open canvas, with no size to state', () => {
+      const { frame: _frame, ...open } = withColors(base, ['#ff0000'])
+      expect(setup(open as Pattern).patternLabel.value).toBe('Logo panel, open canvas with no Frame, 1 color')
     })
 
     it('is undefined with no Pattern open', () => {

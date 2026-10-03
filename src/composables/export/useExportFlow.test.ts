@@ -34,6 +34,28 @@ function setup(options: { open?: boolean } = {}) {
   return useExportFlow(deps)
 }
 
+describe('useExportFlow with no Frame (ticket 233)', () => {
+  it('exports no PNG or PDF, since they hold the Frame\'s beads', async () => {
+    const { frame: _frame, ...open } = pattern
+    const flow = useExportFlow({
+      currentPattern: () => open,
+      patterns: () => [open],
+      shareablePattern: () => open,
+      messages: () => en,
+      locale: () => 'en' as const,
+      downloadFile,
+    })
+    await flow.onExportPng()
+    await flow.onExportPdf()
+
+    expect(exportPatternPng).not.toHaveBeenCalled()
+    expect(exportPatternPdf).not.toHaveBeenCalled()
+    expect(downloadFile).not.toHaveBeenCalled()
+    expect(flow.qrExport.matrix.value).toBeUndefined()
+    expect(flow.qrExport.tooLarge.value).toBe(false)
+  })
+})
+
 describe('useExportFlow', () => {
   describe('Pattern file', () => {
     it('hands over the whole library as one file', () => {

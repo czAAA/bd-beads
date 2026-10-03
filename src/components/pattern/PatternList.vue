@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { rotationSwapsAxes } from '../../domain/grid'
 import type { Pattern } from '../../domain/pattern'
-import { summarizePattern } from '../../domain/pattern'
+import { summarizePattern, patternDimensions } from '../../domain/pattern'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -52,7 +52,7 @@ const activePattern = computed(() => props.patterns.find((pattern) => pattern.id
 
 /** A thumbnail's size line, as the Pattern shows on screen. */
 function sizeOf(pattern: Pattern): string {
-  return rotationSwapsAxes(pattern.rotation) ? `${pattern.rows}×${pattern.columns}` : `${pattern.columns}×${pattern.rows}`
+  return rotationSwapsAxes(pattern.rotation) ? `${patternDimensions(pattern).rows}×${patternDimensions(pattern).columns}` : `${patternDimensions(pattern).columns}×${patternDimensions(pattern).rows}`
 }
 </script>
 

@@ -34,7 +34,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 function toolLabel(tool: Tool): string {
-  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel }[tool]
+  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
 }
 
 /** The same four tools Toolbox's own tabs list, in the same order (ToolTabs card). */

@@ -31,11 +31,11 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
   function invokeToolAt(cursor: GridPosition) {
     const pattern = deps.currentPattern()
     if (!pattern) return
-    const before = pattern.grid
+    const before = pattern.beads
     const color = deps.selectedColorHex()
     deps.pressCell(cursor.row, cursor.column)
     deps.endStroke()
-    if (deps.currentPattern()?.grid === before) return
+    if (deps.currentPattern()?.beads === before) return
     const t = deps.messages()
     const tool = deps.activeTool()
     deps.announce(

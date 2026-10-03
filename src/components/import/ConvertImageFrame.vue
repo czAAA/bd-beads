@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } fr
 import { beadPitchMm, type Bead } from '../../domain/beads'
 import {
   CELL_SIZE_PX,
-  GRID_BORDER_PX,
   CANVAS_MAX_PX,
   computeFitZoom,
   type GridDimensions,
@@ -19,7 +18,7 @@ import {
   type PixelData,
 } from '../../domain/imageConversion'
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../../domain/imageFraming'
-import type { Cell, Grid } from '../../domain/pattern'
+import { framedGrid, type Cell, type Grid } from '../../domain/pattern'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
@@ -173,9 +172,7 @@ const drawnPattern = computed(() => {
   )
   return {
     technique: props.technique,
-    columns,
-    rows,
-    grid,
+    ...framedGrid(grid),
     rowProgress: { enabled: false, direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
     rotation: 0 as const,
   }
@@ -183,6 +180,9 @@ const drawnPattern = computed(() => {
 
 /** The lattice at its natural bead size, in unscaled px. */
 const latticeExtent = computed(() => patternExtentPx(props.technique, lattice.value.columns, lattice.value.rows))
+
+/** The space kept round the preview inside the canvas panel, in px. */
+const PREVIEW_PADDING_PX = 14
 
 /**
  * How much the whole preview is scaled down to fit the canvas panel. Only the drawing scales — the frame is still the
@@ -193,7 +193,7 @@ const fitScale = computed(() =>
   computeFitZoom({
     columns: lattice.value.columns,
     rows: lattice.value.rows,
-    maxWidth: (props.availableWidth || CANVAS_MAX_PX) - GRID_BORDER_PX * 2,
+    maxWidth: (props.availableWidth || CANVAS_MAX_PX) - PREVIEW_PADDING_PX * 2,
     maxHeight: Infinity,
     technique: props.technique,
   }),

@@ -1,10 +1,12 @@
+import { frameGrid } from '../../src/domain/pattern'
 import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
+import { normalizePattern } from '../../src/domain/pattern'
 import { decodePattern, type EncodedPattern } from '../../src/domain/patternEncoding'
 import { parsePatternsFile } from '../../src/domain/patternFile'
-import { openApp, settle } from '../support/app'
+import { openApp, patternBox, settle } from '../support/app'
 import { beadCentre } from '../support/patterns'
 import { fixturePicture } from '../support/picture'
 
@@ -27,19 +29,32 @@ async function createPattern(page: Page, columns: number, rows: number): Promise
   await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
   await page.getByTestId('pattern-surface').scrollIntoViewIfNeeded()
   await settle(page)
+  await showTopLeft(page)
+}
+
+/** A new Pattern opens centred on its Frame, which for a tall one is far from its first rows: wheel the canvas to bring them into view. */
+async function showTopLeft(page: Page): Promise<void> {
+  const surface = page.getByTestId('pattern-surface')
+  const box = (await surface.boundingBox())!
+  const margin = 40
+  const dx = -margin - (Number(await surface.getAttribute('data-scroll-x')) || 0)
+  const dy = -margin - (Number(await surface.getAttribute('data-scroll-y')) || 0)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.wheel(dx, dy)
+  await settle(page)
 }
 
 /** The beads of the first rows are on screen at any zoom; this one is a few beads in from the corner. */
 async function firstBeadPoint(page: Page, row: number, column: number) {
   const zoom = Number.parseInt((await page.getByTestId('zoom-level').textContent())!, 10) / 100
-  const box = (await page.getByTestId('pattern-surface').boundingBox())!
+  const box = await patternBox(page, (await page.getByTestId('pattern-surface').boundingBox())!)
   return beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
 }
 
 async function savedPattern(page: Page) {
   await page.getByTestId('save-button').click()
   const library = JSON.parse((await page.evaluate(() => localStorage.getItem('bd-beads:patterns')))!) as { patterns: EncodedPattern[] }
-  return decodePattern(library.patterns[0]!)
+  return normalizePattern(decodePattern(library.patterns[0]!))
 }
 
 for (const { columns, rows } of SIZES) {
@@ -48,9 +63,9 @@ for (const { columns, rows } of SIZES) {
       await createPattern(page, columns, rows)
 
       const saved = await savedPattern(page)
-      expect([saved.columns, saved.rows]).toEqual([columns, rows])
-      expect(saved.grid).toHaveLength(rows)
-      expect(saved.grid.every((cells) => cells.length === columns)).toBe(true)
+      expect([saved.frame!.columns, saved.frame!.rows]).toEqual([columns, rows])
+      expect(frameGrid(saved)).toHaveLength(rows)
+      expect(frameGrid(saved).every((cells) => cells.length === columns)).toBe(true)
       await expect(page.getByTestId('size-cap-message')).toHaveCount(0)
     })
 
@@ -59,14 +74,14 @@ for (const { columns, rows } of SIZES) {
 
       const at = await firstBeadPoint(page, 2, 3)
       await page.mouse.click(at.x, at.y)
-      expect((await savedPattern(page)).grid[2]![3]!.color).toBe(RED)
+      expect(frameGrid((await savedPattern(page)))[2]![3]!.color).toBe(RED)
 
       // Reloaded, it opens as it was left.
       await page.reload()
       await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
       const reloaded = await savedPattern(page)
-      expect([reloaded.columns, reloaded.rows]).toEqual([columns, rows])
-      expect(reloaded.grid[2]![3]!.color).toBe(RED)
+      expect([reloaded.frame!.columns, reloaded.frame!.rows]).toEqual([columns, rows])
+      expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
 
       // The whole Pattern goes out in a Pattern file, and reads back the same. Export Pattern is in Saved Patterns'
       // footer (ticket 147; ExpandablePanel), which only renders once expanded.
@@ -75,9 +90,9 @@ for (const { columns, rows } of SIZES) {
       await page.getByTestId('export-pattern').click()
       const file = readFileSync((await (await download).path())!, 'utf8')
       const exported = parsePatternsFile(file).patterns[0]!
-      expect([exported.columns, exported.rows]).toEqual([columns, rows])
-      expect(exported.grid[2]![3]!.color).toBe(RED)
-      expect(exported.grid.flat().filter((cell) => cell.color !== null)).toHaveLength(1)
+      expect([exported.frame!.columns, exported.frame!.rows]).toEqual([columns, rows])
+      expect(frameGrid(exported)[2]![3]!.color).toBe(RED)
+      expect(frameGrid(exported).flat().filter((cell) => cell.color !== null)).toHaveLength(1)
     })
 
     test('has a stroke undone, and redone', async ({ page }) => {
@@ -89,13 +104,13 @@ for (const { columns, rows } of SIZES) {
       await page.mouse.down()
       await page.mouse.move(end.x, end.y, { steps: 20 })
       await page.mouse.up()
-      expect((await savedPattern(page)).grid.flat().filter((cell) => cell.color === RED).length).toBeGreaterThan(3)
+      expect(frameGrid((await savedPattern(page))).flat().filter((cell) => cell.color === RED).length).toBeGreaterThan(3)
 
       await page.getByTestId('undo-button').click()
-      expect((await savedPattern(page)).grid.flat().every((cell) => cell.color === null)).toBe(true)
+      expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === null)).toBe(true)
 
       await page.getByTestId('redo-button').click()
-      expect((await savedPattern(page)).grid[2]![3]!.color).toBe(RED)
+      expect(frameGrid((await savedPattern(page)))[2]![3]!.color).toBe(RED)
     })
 
     test('a full device says the change is not saved, and keeps it on screen', async ({ page }) => {
@@ -114,6 +129,7 @@ for (const { columns, rows } of SIZES) {
       await settle(page)
       // The bead is drawn: its centre is the color it was painted. The notice row under the header has pushed the canvas
       // box down (ticket 141), so the bead is found again where it is now.
+      await showTopLeft(page)
       const now = await firstBeadPoint(page, 2, 3)
       const box = (await page.getByTestId('pattern-surface').boundingBox())!
       const shot = PNG.sync.read(await page.screenshot({ clip: { x: Math.floor(box.x), y: Math.floor(box.y), width: Math.ceil(box.width), height: Math.ceil(box.height) } }))
@@ -138,6 +154,6 @@ test('Convert image can frame a picture at 250 × 250, where it was once refused
 
   await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
   const saved = await savedPattern(page)
-  expect([saved.columns, saved.rows]).toEqual([250, 250])
-  expect(saved.grid.flat().some((cell) => cell.color !== null)).toBe(true)
+  expect([saved.frame!.columns, saved.frame!.rows]).toEqual([250, 250])
+  expect(frameGrid(saved).flat().some((cell) => cell.color !== null)).toBe(true)
 })

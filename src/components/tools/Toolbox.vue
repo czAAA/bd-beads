@@ -8,7 +8,7 @@ import IconButton from '../ui/IconButton.vue'
 import type { IconName } from '../ui/icons'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
-import SizeControls from '../pattern/SizeControls.vue'
+import FrameControls from '../pattern/FrameControls.vue'
 import ToolGroup from './ToolGroup.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -38,12 +38,18 @@ const emit = defineEmits<{
   'select-image-color': [hex: string]
   undo: []
   redo: []
-  'toggle-rotate': []
+  rotate: []
   copy: []
   'delete-all': []
   /** "Remove selected row/column" (ticket 123): the Selection names which one, so it takes no payload of its own. */
   'remove-selected-line': []
-  'change-size': []
+  /** The Frame row opened with no Frame: start Set Frame. */
+  'start-frame': []
+  'set-frame-size': [columns: number, rows: number]
+  'fit-frame': []
+  'remove-frame': []
+  /** The Frame number was pressed: bring the Frame into view. */
+  'bring-frame': []
 }>()
 
 const { t, locale } = useI18n()
@@ -53,12 +59,13 @@ const customColorSelected = computed(
   () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
 )
 
-/** The Tools group's four tabs (ToolTabs card), with the hotkeys shown in their tooltips. */
+/** The Tools group's five tabs (ToolTabs card), with the hotkeys shown in their tooltips. */
 const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string }[]>(() => [
   { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: '1' },
   { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: '2' },
   { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: '3' },
   { id: 'erase', icon: 'erase', label: t.value.tools.eraseLabel },
+  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: 'H' },
 ])
 
 /** The tool tabs are one Tab stop, the active tab; the arrows move between them (ticket 159). */
@@ -71,7 +78,13 @@ const colorsGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 
 /** Which disclosure row is open (DisclosureRow card): closed until pressed. */
-const sizeOpen = ref(false)
+const frameOpen = ref(false)
+
+/** Opening the Frame row with no Frame starts Set Frame as well (Frame card); the row still opens, to say what a Frame is. */
+function onFrameOpenChange(open: boolean) {
+  frameOpen.value = open
+  if (open && !props.pattern.frame) emit('start-frame')
+}
 
 /**
  * What Escape closes in the Toolbox before anything else (tickets 41, 75): an open disclosure row first, then a
@@ -79,8 +92,8 @@ const sizeOpen = ref(false)
  * used up or should fall through to its usual Select precedence.
  */
 function collapseExpandedGroup(): boolean {
-  if (sizeOpen.value) {
-    sizeOpen.value = false
+  if (frameOpen.value) {
+    frameOpen.value = false
     return true
   }
   const groups = [toolsGroupRef, colorsGroupRef, editGroupRef]
@@ -90,12 +103,19 @@ function collapseExpandedGroup(): boolean {
 
 defineExpose({ collapseExpandedGroup })
 
-/** The Size row's summary: the Estimated size, as the Size group states it (ADR 0017). */
-const sizeSummary = computed(() => {
+/** Rotate turns the Frame, so it needs one, and waits while Row progress holds the Frame's rows still (Toolbox card). */
+const rotateAvailable = computed(() => props.pattern.frame !== undefined && !props.pattern.rowProgress.enabled)
+const rotateName = computed(() => (props.pattern.frame ? t.value.palette.rotateButton : t.value.frame.rotateNeedsFrame))
+const rotateTitle = computed(() => (props.pattern.frame && props.pattern.rowProgress.enabled ? t.value.size.lockedReason : rotateName.value))
+
+/** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
+const frameSummary = computed(() => {
+  const frame = props.pattern.frame
+  if (!frame) return t.value.frame.notSet
   const bead = resolvePatternBead(props.pattern)
   if (!bead) return undefined
   return formatSizeMm(
-    estimatedSizeMm({ columns: props.pattern.columns, rows: props.pattern.rows, rotation: props.pattern.rotation }, bead),
+    estimatedSizeMm(frame, bead),
     { mm: t.value.form.unitMm, cm: t.value.form.unitCm },
     locale.value,
   )
@@ -176,11 +196,11 @@ const sizeSummary = computed(() => {
           variant="toolbox"
           size="lg"
           :icon-size="17"
-          :label="t.palette.rotateButton"
-          :title="`${t.palette.rotateButton} (R)`"
-          :selected="pattern.rotation !== 0"
+          :label="rotateName"
+          :title="rotateTitle"
+          :disabled="!rotateAvailable"
           data-testid="rotate-button"
-          @click="emit('toggle-rotate')"
+          @click="emit('rotate')"
         />
         <IconButton
           icon="copy"
@@ -198,16 +218,25 @@ const sizeSummary = computed(() => {
     </ToolGroup>
 
     <div class="toolbox__rows">
-      <!-- Estimated size and Resize (CONTEXT.md, ADR 0017). -->
+      <!-- The Frame (CONTEXT.md, ADR 0026): which beads are the Pattern, and what it measures. -->
       <DisclosureRow
-        v-model:open="sizeOpen"
-        icon="size"
-        :label="t.toolbox.groups.size"
-        :summary="sizeSummary"
-        data-testid="tool-group-size"
-        data-tour="size-row"
+        :open="frameOpen"
+        icon="frame"
+        :label="t.frame.title"
+        :summary="frameSummary"
+        :chip="pattern.frame ? '1' : undefined"
+        :chip-label="t.frame.numberLabel.replace('{number}', '1')"
+        data-testid="tool-group-frame"
+        data-tour="frame-row"
+        @update:open="onFrameOpenChange"
+        @chip="emit('bring-frame')"
       >
-        <SizeControls :pattern="pattern" @change-size="emit('change-size')" />
+        <FrameControls
+          :pattern="pattern"
+          @set-size="(columns, rows) => emit('set-frame-size', columns, rows)"
+          @fit="emit('fit-frame')"
+          @remove="emit('remove-frame')"
+        />
       </DisclosureRow>
     </div>
   </div>
@@ -230,7 +259,7 @@ const sizeSummary = computed(() => {
 /* Tool tabs (ToolTabs card): four equal columns over a `line-strong` rule. */
 .tool-tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border-bottom: 1px solid var(--line-strong);
 }
 

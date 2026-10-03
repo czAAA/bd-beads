@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPattern, createPatternFromImage, type Grid, type Pattern, type Technique } from '../domain/pattern'
+import { createPattern, createPatternFromImage, type Grid, type Pattern, type Technique, frameGrid, withFrameGrid } from '../domain/pattern'
 import { loadPatterns, savePatterns } from './libraryStore'
 import { parsePatternsFile, serializeLibrary } from '../domain/patternFile'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -25,12 +25,12 @@ function paintedOrdinaryPattern(): Pattern {
     beadId: cubeBead.id,
     size: { width: 90, height: 135, unit: 'mm' },
   })
-  const grid: Grid = pattern.grid.map((cells, row) =>
+  const grid: Grid = frameGrid(pattern).map((cells, row) =>
     cells.map((_cell, column) => ({
       color: hexes[(Math.floor(row / 10) + Math.floor(column / 10)) % hexes.length]!,
     })),
   )
-  return { ...pattern, grid }
+  return withFrameGrid(pattern, grid)
 }
 
 function storedBytes(): number {
@@ -112,8 +112,8 @@ describe('patternStorage', () => {
 
     const [loaded] = loadPatterns()
 
-    expect(loaded!.columns).toBe(pattern.columns)
-    expect(loaded!.rows).toBe(pattern.rows)
+    expect(loaded!.frame!.columns).toBe(pattern.frame!.columns)
+    expect(loaded!.frame!.rows).toBe(pattern.frame!.rows)
     expect(loaded).not.toHaveProperty('widthMm')
     expect(loaded).not.toHaveProperty('heightMm')
   })
@@ -139,9 +139,9 @@ describe('patternStorage', () => {
       savePatterns([makePattern()])
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      expect(stored.version).toBe(2)
+      expect(stored.version).toBe(3)
       expect(stored.patterns[0].grid).toBeUndefined()
-      expect(stored.patterns[0].cells).toEqual({ colors: [], runs: '0x100' })
+      expect(stored.patterns[0].encodedBeads).toEqual({ colors: [], rows: {} })
     })
 
     it('reads a library saved in the old unversioned format back unchanged', () => {
@@ -160,7 +160,7 @@ describe('patternStorage', () => {
       savePatterns(loaded)
 
       expect(loaded).toEqual([legacy])
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(2)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(3)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
 
@@ -189,7 +189,8 @@ describe('patternStorage', () => {
     it('opens a Pattern whose runs do not add up to its grid, rather than refusing it', () => {
       // A hand-edited or truncated stored value: two cells of runs for a 10x10 grid. The Pattern's own dimensions
       // decide the shape, so the rest comes back empty instead of the Pattern being unopenable.
-      const { grid: _grid, ...rest } = makePattern()
+      const { beads: _beads, frame: _frame, ...base } = makePattern()
+      const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({ version: 2, patterns: [{ ...rest, cells: { colors: ['#ff0000'], runs: '1x2' } }] }),
@@ -197,9 +198,9 @@ describe('patternStorage', () => {
 
       const [loaded] = loadPatterns()
 
-      expect(loaded!.grid.length).toBe(10)
-      expect(loaded!.grid.every((row) => row.length === 10)).toBe(true)
-      expect([loaded!.grid[0]![0]!.color, loaded!.grid[0]![1]!.color, loaded!.grid[0]![2]!.color]).toEqual([
+      expect(frameGrid(loaded!).length).toBe(10)
+      expect(frameGrid(loaded!).every((row) => row.length === 10)).toBe(true)
+      expect([frameGrid(loaded!)[0]![0]!.color, frameGrid(loaded!)[0]![1]!.color, frameGrid(loaded!)[0]![2]!.color]).toEqual([
         '#ff0000',
         '#ff0000',
         null,
@@ -207,7 +208,8 @@ describe('patternStorage', () => {
     })
 
     it('drops runs that overrun the grid instead of growing it', () => {
-      const { grid: _grid, ...rest } = makePattern()
+      const { beads: _beads, frame: _frame, ...base } = makePattern()
+      const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({ version: 2, patterns: [{ ...rest, cells: { colors: ['#ff0000'], runs: '1x400' } }] }),
@@ -215,8 +217,8 @@ describe('patternStorage', () => {
 
       const [loaded] = loadPatterns()
 
-      expect(loaded!.grid.length).toBe(10)
-      expect(loaded!.grid.every((row) => row.length === 10)).toBe(true)
+      expect(frameGrid(loaded!).length).toBe(10)
+      expect(frameGrid(loaded!).every((row) => row.length === 10)).toBe(true)
     })
 
     it('hands exported Pattern files plain Patterns, so a file stays readable JSON', () => {
@@ -225,7 +227,7 @@ describe('patternStorage', () => {
 
       const exported = serializeLibrary(loadPatterns())
 
-      expect(JSON.parse(exported).patterns[0].cells).toBeUndefined()
+      expect(JSON.parse(exported).patterns[0].encodedBeads).toBeUndefined()
       expect(parsePatternsFile(exported).patterns).toEqual([pattern])
     })
 
@@ -235,10 +237,10 @@ describe('patternStorage', () => {
 
       savePatterns([pattern])
 
-      // Measured: 105,510 bytes as plain JSON against 3,156 stored — the 100KB → 3KB ADR 0009 records. The bound is
+      // Measured: 72,149 bytes as plain JSON (a color string per bead) against about 3,200 stored — ADR 0009's saving, a little smaller now that a bead is a string and not an object. The bound is
       // loose enough that an encoding tweak doesn't have to be chased here, and tight enough to fail if the compact
       // form ever stops being written.
-      expect(plainJsonBytes).toBeGreaterThan(90 * 1024)
+      expect(plainJsonBytes).toBeGreaterThan(60 * 1024)
       expect(storedBytes()).toBeLessThan(5 * 1024)
     })
   })
@@ -273,16 +275,16 @@ describe('Image colors through storage (ticket 58)', () => {
     // The grid has three colors; erasing one leaves the stored table with two, while Image colors still records what
     // the conversion found (ADR 0011).
     const pattern = converted()
-    const erased = {
-      ...pattern,
-      grid: pattern.grid.map((row) => row.map((cell) => ({ color: cell.color === '#0000ff' ? null : cell.color }))),
-    }
+    const erased = withFrameGrid(
+      pattern,
+      frameGrid(pattern).map((row) => row.map((cell) => ({ color: cell.color === '#0000ff' ? null : cell.color }))),
+    )
 
     savePatterns([erased])
     const [loaded] = loadPatterns()
 
     expect(loaded!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
-    expect(new Set(loaded!.grid.flat().map((cell) => cell.color))).toEqual(new Set(['#ff0000', '#00ff00', null]))
+    expect(new Set(frameGrid(loaded!).flat().map((cell) => cell.color))).toEqual(new Set(['#ff0000', '#00ff00', null]))
   })
 
   it('leaves a Pattern created any other way without the field', () => {

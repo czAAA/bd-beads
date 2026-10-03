@@ -1,8 +1,11 @@
-import { nextTick, onBeforeUnmount, watch, type Ref } from 'vue'
+import { onBeforeUnmount, watch, type Ref } from 'vue'
 
 interface PinchPanDeps {
   zoom: () => number
-  setZoom: (value: number) => void
+  /** Sets the zoom, keeping the point of the viewport under `anchor` where it is. */
+  setZoom: (value: number, anchor?: { x: number; y: number }) => void
+  /** Moves the canvas under the viewport by a distance on screen. */
+  panBy: (dx: number, dy: number) => void
   /** Ends the paint stroke the first finger began: it is the one bead it already painted, kept as its own undo step. */
   endStroke: () => void
 }
@@ -68,22 +71,11 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
 
     const [a, b] = firstTwo()
     const mid = midpoint(a, b)
-    const before = deps.zoom()
-    deps.setZoom(startZoom * (distance(a, b) / startSpread))
-    const ratio = deps.zoom() / before
-    const pan = { x: lastMid.x - mid.x, y: lastMid.y - mid.y }
+    const box = scrollEl.value?.getBoundingClientRect()
+    // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with them.
+    deps.setZoom(startZoom * (distance(a, b) / startSpread), { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) })
+    deps.panBy(mid.x - lastMid.x, mid.y - lastMid.y)
     lastMid = mid
-
-    const el = scrollEl.value
-    if (!el) return
-    const box = el.getBoundingClientRect()
-    // The scroll offsets are worked out once the new zoom has laid out, so they clamp against the Pattern's new size.
-    void nextTick(() => {
-      const anchorX = mid.x - box.left
-      const anchorY = mid.y - box.top
-      el.scrollLeft = (el.scrollLeft + anchorX) * ratio - anchorX + pan.x
-      el.scrollTop = (el.scrollTop + anchorY) * ratio - anchorY + pan.y
-    })
   }
 
   function onEnd(event: PointerEvent) {

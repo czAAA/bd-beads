@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useMirrorState } from './useMirrorState'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createPattern, frameGrid, paintCells, type Pattern } from '../../domain/pattern'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 
@@ -124,7 +124,7 @@ describe('useMirrorState', () => {
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [committedPattern, updated] = commitGridChange.mock.calls[0]!
       expect(committedPattern).toBe(pattern)
-      expect(updated.grid[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
+      expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
         '#e63746',
         null,
         null,
@@ -144,7 +144,7 @@ describe('useMirrorState', () => {
 
       const [, updated] = commitGridChange.mock.calls[0]!
       // Copy mode on, 1 axis (2 strips of 2): column 2 (same relative offset in the other strip) takes the color.
-      expect(updated.grid[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
+      expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
         '#e63746',
         null,
         '#e63746',

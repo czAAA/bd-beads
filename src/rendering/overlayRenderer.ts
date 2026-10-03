@@ -1,7 +1,11 @@
+import { colorAt, type Frame } from '../domain/canvas'
+import { patternDimensions, patternFrame } from '../domain/pattern'
 import { CELL_SIZE_PX, type GridPosition, type PreviewCell } from '../domain/grid'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
 import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type PatternTheme } from './beadLook'
+import { OPEN_EXTENT, viewArea } from './canvasRenderer'
+import { drawFrameEditing, drawRulers } from './rulerRenderer'
 import { cachedSprite } from './sprites'
 import {
   patternExtentPx,
@@ -10,6 +14,7 @@ import {
   beadRoundness,
   setGridTransform,
   visibleBeadsIn,
+  visibleBeadsOpen,
   type DrawnPattern,
   type Region,
 } from './patternRenderer'
@@ -62,12 +67,54 @@ export interface OverlayInput {
   cursor?: GridPosition
   /** What the Tour marks on the Pattern (ticket 80): beads to paint or erase, and frames to select or paste into. */
   tourMarks?: TourMarks
+  /**
+   * Whether the region is a viewport onto the open canvas (ADR 0026), measured from the bead at row 0, column 0, with no
+   * edge: any position can carry a preview, a Selection or the cursor. Otherwise the Pattern is the Frame alone, drawn
+   * from its first bead, as an export or a picture shows it.
+   */
+  open?: boolean
+  /**
+   * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with their
+   * numbers while `numbers` is on. `fontPx` is the numbers' size and `viewport` the surface's size in px.
+   */
+  rulers?: { numbers: boolean; fontPx: number; viewport: { width: number; height: number }; activePiece?: Frame }
+  /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
+  frameEditing?: { touch: boolean; tooltip: string }
 }
 
 /** The Tour's marks on the Pattern, dashed. */
 export interface TourMarks {
   cells: readonly GridPosition[]
   boxes: readonly Selection[]
+}
+
+/**
+ * Where an overlay's positions live. On the open canvas every position is real and the Frame, when there is one, sits
+ * where it is; drawn on its own (an export, a picture) the Pattern is the Frame and its first bead is position (0, 0).
+ */
+interface Space {
+  open: boolean
+  /** The Frame's first row and column in the coordinates grid space uses, and its size. */
+  origin: GridPosition
+  columns: number
+  rows: number
+  hasFrame: boolean
+}
+
+function spaceOf(pattern: DrawnPattern, open: boolean): Space {
+  const { columns, rows } = patternDimensions(pattern)
+  const frame = patternFrame(pattern)
+  return { open, origin: open ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }, columns, rows, hasFrame: !open || pattern.frame !== undefined }
+}
+
+/** Whether a position can be drawn on: anywhere on the open canvas, inside the Pattern otherwise. */
+function inSpace(space: Space, row: number, column: number): boolean {
+  return space.open || (row >= 0 && row < space.rows && column >= 0 && column < space.columns)
+}
+
+/** The beads in view, with no edge on the open canvas. */
+function visibleIn(pattern: DrawnPattern, space: Space, region: Region, zoom: number): ReturnType<typeof visibleBeadsIn> {
+  return space.open ? visibleBeadsOpen(pattern.technique, viewArea(region, zoom, pattern.rotation)) : visibleBeadsIn(pattern, region, zoom)
 }
 
 /** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
@@ -83,25 +130,31 @@ function outlineRect(context: DrawingContext, x: number, y: number, width: numbe
  * rectangle, 3px outside it with rounded corners, so on peyote and brick stitch it follows the row's half-bead shift.
  * It stays inside the Pattern's own extent, so the first and last rows' outlines aren't cut off at the surface's edge.
  */
-function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, theme: PatternTheme): void {
-  const { technique, columns, rows } = pattern
-  const row = pattern.rowProgress.currentRow
-  if (row < 0 || row >= rows) {
+function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, space: Space, theme: PatternTheme): void {
+  const { technique } = pattern
+  const { columns, rows } = space
+  const relative = pattern.rowProgress.currentRow
+  if (!space.hasFrame || relative < 0 || relative >= rows) {
     return
   }
 
-  const extent = patternExtentPx(technique, columns, rows)
-  const left = Math.max(0, rowShiftPx(technique, row) - ROW_OUTLINE_OUTSET_PX)
-  const top = Math.max(0, rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX)
-  const right = Math.min(extent.width, rowShiftPx(technique, row) + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX)
-  const bottom = Math.min(extent.height, rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX)
-  const width = right - left
-  const height = bottom - top
+  const row = space.origin.row + relative
+  const first = space.origin.column * CELL_SIZE_PX
+  const extent = space.open ? undefined : patternExtentPx(technique, columns, rows)
+  const left = rowShiftPx(technique, row) + first - ROW_OUTLINE_OUTSET_PX
+  const top = rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX
+  const right = rowShiftPx(technique, row) + first + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
+  const bottom = rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
+  // Drawn on its own the Pattern's surface ends at its extent, so the first and last rows' outlines stay inside it.
+  const clippedLeft = extent ? Math.max(0, left) : left
+  const clippedTop = extent ? Math.max(0, top) : top
+  const width = (extent ? Math.min(extent.width, right) : right) - clippedLeft
+  const height = (extent ? Math.min(extent.height, bottom) : bottom) - clippedTop
 
   context.fillStyle = theme.marker
   context.beginPath()
-  roundedRect(context, left, top, width, height, ROW_OUTLINE_RADIUS_PX)
-  roundedRect(context, left + MARKER_PX, top + MARKER_PX, width - MARKER_PX * 2, height - MARKER_PX * 2, ROW_OUTLINE_RADIUS_PX - MARKER_PX)
+  roundedRect(context, clippedLeft, clippedTop, width, height, ROW_OUTLINE_RADIUS_PX)
+  roundedRect(context, clippedLeft + MARKER_PX, clippedTop + MARKER_PX, width - MARKER_PX * 2, height - MARKER_PX * 2, ROW_OUTLINE_RADIUS_PX - MARKER_PX)
   context.fill('evenodd')
 }
 
@@ -112,26 +165,29 @@ function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, theme: P
  * at the top of the first bead and the bottom of the last, so it reads as one outlined strip; on peyote and brick stitch
  * every bead is outlined whole, which keeps the zigzag readable as one chain.
  */
-function drawCurrentColumn(context: DrawingContext, pattern: DrawnPattern, theme: PatternTheme): void {
-  const { technique, columns, rows } = pattern
-  const column = pattern.rowProgress.currentColumn
-  if (column < 0 || column >= columns) {
+function drawCurrentColumn(context: DrawingContext, pattern: DrawnPattern, space: Space, theme: PatternTheme): void {
+  const { technique } = pattern
+  const { columns, rows } = space
+  const relative = pattern.rowProgress.currentColumn
+  if (!space.hasFrame || relative < 0 || relative >= columns) {
     return
   }
+  const column = space.origin.column + relative
 
   context.fillStyle = theme.marker
   const size = CELL_SIZE_PX + 2
-  for (let row = 0; row < rows; row += 1) {
+  for (let offset = 0; offset < rows; offset += 1) {
+    const row = space.origin.row + offset
     const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX - 1
     const y = rowTopPx(technique, row) - 1
 
     if (technique === 'loom') {
       context.fillRect(x, y, MARKER_PX, size)
       context.fillRect(x + size - MARKER_PX, y, MARKER_PX, size)
-      if (row === 0) {
+      if (offset === 0) {
         context.fillRect(x + MARKER_PX, y, size - MARKER_PX * 2, MARKER_PX)
       }
-      if (row === rows - 1) {
+      if (offset === rows - 1) {
         context.fillRect(x + MARKER_PX, y + size - MARKER_PX, size - MARKER_PX * 2, MARKER_PX)
       }
     } else {
@@ -172,13 +228,13 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
  * holds (a pasted block in each bead's own colors), or, with no color to show, a 2px outline in the dark ink. Square
  * inside a peyote bead's rounded corners, as the DOM grid drew it.
  */
-function drawPreview(context: DrawingContext, pattern: DrawnPattern, preview: HoverPreview, theme: PatternTheme): void {
-  const { technique, columns, rows } = pattern
+function drawPreview(context: DrawingContext, pattern: DrawnPattern, space: Space, preview: HoverPreview, theme: PatternTheme): void {
+  const { technique } = pattern
   const size = CELL_SIZE_PX - 2
   const roundness = beadRoundness(technique) * CELL_SIZE_PX - 1
 
   for (const cell of preview.cells) {
-    if (cell.row < 0 || cell.row >= rows || cell.column < 0 || cell.column >= columns) {
+    if (!inSpace(space, cell.row, cell.column)) {
       continue
     }
     const x = rowShiftPx(technique, cell.row) + cell.column * CELL_SIZE_PX + 1
@@ -228,19 +284,20 @@ function washSprite(cornerRadius: number, deviceScale: number, theme: PatternThe
 function drawSelection(
   context: DrawingContext,
   pattern: DrawnPattern,
+  space: Space,
   selection: Selection,
   region: Region,
   zoom: number,
   pixelRatio: number,
   theme: PatternTheme,
 ): void {
-  const { technique, columns, rows } = pattern
-  const visible = visibleBeadsIn(pattern, region, zoom)
+  const { technique } = pattern
+  const visible = visibleIn(pattern, space, region, zoom)
   const size = CELL_SIZE_PX - 2
   const rounded = technique === 'peyote'
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
-  const bottom = Math.min(selection.top + selection.rows - 1, rows - 1)
-  const right = Math.min(selection.left + selection.columns - 1, columns - 1)
+  const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
+  const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
   const firstRow = Math.max(selection.top, visible.firstRow)
   const lastRow = Math.min(bottom, visible.lastRow)
   const sprite = rounded ? washSprite(radius, zoom * pixelRatio, theme) : undefined
@@ -305,18 +362,19 @@ function drawSelection(
 function drawDimmed(
   context: DrawingContext,
   pattern: DrawnPattern,
+  space: Space,
   cells: readonly GridPosition[],
   region: Region,
   zoom: number,
   pixelRatio: number,
   theme: PatternTheme,
 ): void {
-  const { technique, columns, rows, grid } = pattern
-  const visible = visibleBeadsIn(pattern, region, zoom)
+  const { technique, beads } = pattern
+  const visible = visibleIn(pattern, space, region, zoom)
   const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
 
   for (const { row, column } of cells) {
-    if (row < 0 || row >= rows || column < 0 || column >= columns || row < visible.firstRow || row > visible.lastRow) {
+    if (!inSpace(space, row, column) || row < visible.firstRow || row > visible.lastRow) {
       continue
     }
     drawFlatBead(context, {
@@ -324,7 +382,7 @@ function drawDimmed(
       y: rowTopPx(technique, row),
       size: CELL_SIZE_PX,
       cornerRadius,
-      color: grid[row]?.[column]?.color ?? null,
+      color: colorAt(beads, row, column),
       dimmed: true,
       backdrop: theme.background,
       deviceScale: zoom * pixelRatio,
@@ -337,9 +395,9 @@ function drawDimmed(
  * The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px wide in
  * high contrast), following its corners. Drawn last, over everything, so it is never hidden.
  */
-function drawCursor(context: DrawingContext, pattern: DrawnPattern, cursor: GridPosition, theme: PatternTheme): void {
-  const { technique, columns, rows } = pattern
-  if (cursor.row < 0 || cursor.row >= rows || cursor.column < 0 || cursor.column >= columns) {
+function drawCursor(context: DrawingContext, pattern: DrawnPattern, space: Space, cursor: GridPosition, theme: PatternTheme): void {
+  const { technique } = pattern
+  if (!inSpace(space, cursor.row, cursor.column)) {
     return
   }
   // The bead stands a pixel in from its cell (its gap); the ring starts 2px outside that.
@@ -375,13 +433,14 @@ function strokeTourMark(context: DrawingContext, theme: PatternTheme, draw: () =
   context.setLineDash([])
 }
 
-function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, marks: TourMarks, theme: PatternTheme): void {
-  const { technique, columns, rows } = pattern
+function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, space: Space, marks: TourMarks, theme: PatternTheme): void {
+  const { technique } = pattern
+  const { columns, rows } = space
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
   const size = CELL_SIZE_PX - 2
 
   for (const { row, column } of marks.cells) {
-    if (row < 0 || row >= rows || column < 0 || column >= columns) {
+    if (!inSpace(space, row, column)) {
       continue
     }
     const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + 1
@@ -394,8 +453,8 @@ function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, marks: To
   }
 
   for (const box of marks.boxes) {
-    const bottom = Math.min(box.top + box.rows, rows) - 1
-    const right = Math.min(box.left + box.columns, columns) - 1
+    const bottom = (space.open ? box.top + box.rows : Math.min(box.top + box.rows, rows)) - 1
+    const right = (space.open ? box.left + box.columns : Math.min(box.left + box.columns, columns)) - 1
     const left = rowShiftPx(technique, box.top) + box.left * CELL_SIZE_PX
     const top = rowTopPx(technique, box.top)
     const width = (right - box.left + 1) * CELL_SIZE_PX
@@ -412,22 +471,27 @@ function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, marks: To
 const AXIS_OPACITY = 0.65
 const AXIS_PX = 2
 
-function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, counts: MirrorAxisCounts, theme: PatternTheme): void {
-  const { width, height } = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
+function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, space: Space, counts: MirrorAxisCounts, theme: PatternTheme): void {
+  if (!space.hasFrame) {
+    return
+  }
+  const { width, height } = patternExtentPx(pattern.technique, space.columns, space.rows)
+  const left = space.origin.column * CELL_SIZE_PX
+  const top = rowTopPx(pattern.technique, space.origin.row)
   context.globalAlpha = AXIS_OPACITY
   context.fillStyle = theme.marker
   for (const fraction of axisLinePositions(counts.columns)) {
-    context.fillRect(fraction * width - AXIS_PX / 2, 0, AXIS_PX, height)
+    context.fillRect(left + fraction * width - AXIS_PX / 2, top, AXIS_PX, height)
   }
   for (const fraction of axisLinePositions(counts.rows)) {
-    context.fillRect(0, fraction * height - AXIS_PX / 2, width, AXIS_PX)
+    context.fillRect(left, top + fraction * height - AXIS_PX / 2, width, AXIS_PX)
   }
   context.globalAlpha = 1
 }
 
 /** Draws the overlay for the part of the Pattern in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks } = input
+  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -436,11 +500,13 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
-  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks) {
+  const ruled = open && rulers !== undefined && (pattern.frame !== undefined || Object.keys(pattern.beads).length > 0)
+  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing) {
     return
   }
 
-  const extent = patternExtentPx(pattern.technique, pattern.columns, pattern.rows)
+  const space = spaceOf(pattern, open)
+  const extent = open ? OPEN_EXTENT : patternExtentPx(pattern.technique, space.columns, space.rows)
   setGridTransform(context, extent, region, zoom, pattern.rotation, pixelRatio)
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
@@ -448,28 +514,51 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, the marker lifted above its row, and Mirror's axes above everything.
   if (dimmed) {
-    drawDimmed(context, pattern, dimmed, region, zoom, pixelRatio, theme)
+    drawDimmed(context, pattern, space, dimmed, region, zoom, pixelRatio, theme)
   }
   if (selection) {
-    drawSelection(context, pattern, selection, region, zoom, pixelRatio, theme)
+    drawSelection(context, pattern, space, selection, region, zoom, pixelRatio, theme)
   }
   if (preview) {
-    drawPreview(context, pattern, preview, theme)
+    drawPreview(context, pattern, space, preview, theme)
   }
   if (enabled) {
     if (direction === 'rows') {
-      drawCurrentRow(context, pattern, theme)
+      drawCurrentRow(context, pattern, space, theme)
     } else {
-      drawCurrentColumn(context, pattern, theme)
+      drawCurrentColumn(context, pattern, space, theme)
     }
   }
   if (axes) {
-    drawMirrorAxes(context, pattern, axes, theme)
+    drawMirrorAxes(context, pattern, space, axes, theme)
   }
   if (marks) {
-    drawTourMarks(context, pattern, marks, theme)
+    drawTourMarks(context, pattern, space, marks, theme)
   }
   if (cursor) {
-    drawCursor(context, pattern, cursor, theme)
+    drawCursor(context, pattern, space, cursor, theme)
+  }
+
+  // The rulers are laid out in the viewport's own px, over everything the grid-space drawing above made.
+  if (ruled && rulers) {
+    drawRulers(context, {
+      pattern,
+      view: { technique: pattern.technique, rotation: pattern.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      pixelRatio,
+      theme,
+      showNumbers: rulers.numbers,
+      cursor,
+      activePiece: rulers.activePiece,
+    })
+  }
+  if (open && rulers && frameEditing && pattern.frame) {
+    drawFrameEditing(context, {
+      frame: pattern.frame,
+      view: { technique: pattern.technique, rotation: pattern.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      pixelRatio,
+      theme,
+      touch: frameEditing.touch,
+      tooltip: frameEditing.tooltip,
+    })
   }
 }

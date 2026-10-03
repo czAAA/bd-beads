@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createPattern, frameGrid, paintCells, type Pattern } from '../../domain/pattern'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -127,7 +127,7 @@ describe('useSelectionGesture', () => {
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [committed, updated] = commitGridChange.mock.calls[0]!
       expect(committed).toBe(pattern)
-      expect(updated.grid[2]![3]!.color).toBe(RED)
+      expect(frameGrid(updated)[2]![3]!.color).toBe(RED)
     })
 
     it('does not start a Selection on a click while a projection is armed', () => {
@@ -174,7 +174,7 @@ describe('useSelectionGesture', () => {
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [, updated] = commitGridChange.mock.calls[0]!
-      expect(updated.grid[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
+      expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
     })
   })
 
@@ -258,7 +258,7 @@ describe('useSelectionGesture', () => {
 
       const [committed, updated] = commitGridChange.mock.calls[0]!
       expect(committed).toBe(pattern)
-      expect(updated.grid[3]![3]!.color).toBe(RED)
+      expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
     })
 
     it('is a no-op with nothing copied', () => {
@@ -314,9 +314,9 @@ describe('useSelectionGesture', () => {
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [committed, updated] = commitGridChange.mock.calls[0]!
       expect(committed).toBe(pattern)
-      expect(updated.grid[0]![0]!.color).toBeNull()
-      expect(updated.grid[1]![1]!.color).toBeNull()
-      expect(updated.grid[3]![3]!.color).toBe(RED)
+      expect(frameGrid(updated)[0]![0]!.color).toBeNull()
+      expect(frameGrid(updated)[1]![1]!.color).toBeNull()
+      expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
       expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
     })
 

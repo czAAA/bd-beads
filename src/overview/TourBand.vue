@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
+import { framedGrid } from '../domain/pattern'
 import { TOUR_COLUMNS, TOUR_ROWS, tourFinishedGrid } from '../domain/tour'
 import type { DrawnPattern } from '../rendering/patternRenderer'
 import { displayedExtentPx, renderPattern } from '../rendering/patternRenderer'
@@ -13,16 +14,14 @@ import { useResolvedTheme } from '../theme/useResolvedTheme'
  */
 const PATTERN: DrawnPattern = {
   technique: 'loom',
-  columns: TOUR_COLUMNS,
-  rows: TOUR_ROWS,
-  grid: tourFinishedGrid(),
+  ...framedGrid(tourFinishedGrid()),
   rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
   rotation: 270,
 }
 
 /** Drawn at this zoom and scaled to the page's width by CSS: the band is the same picture at every screen size. */
 const ZOOM = 0.6
-const EXTENT = displayedExtentPx(PATTERN.technique, PATTERN.columns, PATTERN.rows, ZOOM, PATTERN.rotation)
+const EXTENT = displayedExtentPx(PATTERN.technique, TOUR_COLUMNS, TOUR_ROWS, ZOOM, PATTERN.rotation)
 
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()

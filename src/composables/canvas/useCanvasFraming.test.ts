@@ -31,9 +31,9 @@ describe('useCanvasFraming', () => {
     stop()
   })
 
-  it('shows the open Pattern’s own grid and zoom in the strip', () => {
+  it('leaves the size to the strip itself for the open Pattern, and shows its zoom', () => {
     const { result, stop } = setup()
-    expect(result.stripSize.value).toEqual({ columns: 4, rows: 6 })
+    expect(result.stripSize.value).toBeUndefined()
     expect(result.stripZoomPercent.value).toBe(result.zoomPercent.value)
     stop()
   })

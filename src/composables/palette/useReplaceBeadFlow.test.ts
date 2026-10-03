@@ -77,10 +77,10 @@ describe('useReplaceBeadFlow', () => {
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
     expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({ grid: base.grid, beadId: base.beadId })
+    expect(deps.recordHistory).toHaveBeenCalledWith({ beads: base.beads, beadId: base.beadId })
     const replaced = deps.replacePattern.mock.calls[0]![0] as Pattern
     expect(replaced.beadId).toBe(other.id)
-    expect(replaced.grid).toBe(base.grid)
+    expect(replaced.beads).toBe(base.beads)
     expect(replaced.rowProgress).toEqual(base.rowProgress)
   })
 

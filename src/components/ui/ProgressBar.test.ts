@@ -44,7 +44,7 @@ describe('ProgressBar', () => {
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(true)
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(false)
 
-    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.rows - 1) } })
+    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.frame!.rows - 1) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(false)
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(true)
   })
@@ -84,7 +84,7 @@ describe('ProgressBar', () => {
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(true)
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(false)
 
-    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.rows - 1) } })
+    const atEnd = mount(ProgressBar, { props: { pattern: moveToRow(pattern, pattern.frame!.rows - 1) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(false)
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(true)
   })
@@ -116,5 +116,26 @@ describe('ProgressBar', () => {
 
     expect(wrapper.emitted('toggle-row-direction')).toHaveLength(1)
     expect(wrapper.emitted('toggle-row-progress')).toEqual([[false]])
+  })
+})
+
+describe('ProgressBar with no Frame (ticket 233)', () => {
+  function openCanvas(): Pattern {
+    const { frame: _frame, ...rest } = makePattern()
+    return rest
+  }
+
+  it('shows the switch off and disabled, "Set Frame to start" and a Set Frame button, and no row buttons', async () => {
+    const wrapper = mount(ProgressBar, { props: { pattern: openCanvas() } })
+
+    const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
+    expect(toggle.attributes('disabled')).toBeDefined()
+    expect(toggle.attributes('aria-checked')).toBe('false')
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="progress-bar-set-frame"]').trigger('click')
+    expect(wrapper.emitted('set-frame')).toHaveLength(1)
   })
 })

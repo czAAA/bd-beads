@@ -1,13 +1,14 @@
-import { CELL_SIZE_PX, GRID_BORDER_PX } from '../../src/domain/grid'
+import { CELL_SIZE_PX } from '../../src/domain/grid'
 import type { Rotation, Technique } from '../../src/domain/grid'
 import { PALETTE } from '../../src/domain/palette'
-import type { Cell, Pattern, RowProgress } from '../../src/domain/pattern'
+import { framedGrid, type Cell, type Pattern, type RowProgress } from '../../src/domain/pattern'
 import { encodePattern } from '../../src/domain/patternEncoding'
-import { patternExtentPx, rowShiftPx, rowTopPx } from '../../src/rendering/patternRenderer'
+import { gridToDisplayed } from '../../src/rendering/canvasView'
+import { rowShiftPx, rowTopPx } from '../../src/rendering/patternRenderer'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by writing it directly. */
 const STORAGE_KEY = 'bd-beads:patterns'
-const STORED_VERSION = 2
+const STORED_VERSION = 3
 
 export interface FixtureOptions {
   technique: Technique
@@ -50,9 +51,7 @@ export function fixturePattern({
     name: `Fixture ${technique}`,
     technique,
     beadId: 'toho-cube-1.5mm',
-    columns,
-    rows,
-    grid,
+    ...framedGrid(grid),
     rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress },
     rotation,
     createdAt: 1_700_000_000_000,
@@ -68,37 +67,20 @@ export function storedLibrary(patterns: Pattern[]): string {
 export { STORAGE_KEY }
 
 /**
- * Where a bead's centre is on screen, given the surface's bounding box. Worked out from the Technique's geometry (the
- * renderer's, brick stitch's seam pixel included) and the zoom, and for the turned view: each quarter turn clockwise
- * carries the unrotated point (x, y) to (height − y, x) -- composing that with itself for 180°/270° (ticket 171).
- * `box` is already sized to the displayed (rotated) extent, so its width/height stand in for the unrotated one's own.
+ * Where a bead's centre is on screen, given the surface's bounding box and where the view is scrolled to (the surface's
+ * `data-scroll-x` and `data-scroll-y`, which are 0 until the canvas has been moved). The surface is the open canvas
+ * itself (ADR 0026): a bead is at its own displayed position, turned and zoomed, less the scroll, from the surface's
+ * corner. Worked out from the Technique's geometry (the renderer's, brick stitch's seam pixel included).
  */
 export function beadCentre(
   pattern: Pick<Pattern, 'technique' | 'rotation'>,
   box: { x: number; y: number; width: number; height: number },
   zoom: number,
   { row, column }: { row: number; column: number },
+  scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
-  const x = (GRID_BORDER_PX + rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2) * zoom
-  const y = (GRID_BORDER_PX + rowTopPx(pattern.technique, row) + CELL_SIZE_PX / 2) * zoom
-
-  const [dx, dy] = ((): [number, number] => {
-    switch (pattern.rotation) {
-      case 90:
-        return [box.width - y, x]
-      case 180:
-        return [box.width - x, box.height - y]
-      case 270:
-        return [y, box.height - x]
-      default:
-        return [x, y]
-    }
-  })()
-  return { x: box.x + dx, y: box.y + dy }
-}
-
-/** The grid element's unrotated, unscaled size in px, outline included — for tests that want to check a bounding box. */
-export function gridSizePx(technique: Technique, columns: number, rows: number): { width: number; height: number } {
-  const { width, height } = patternExtentPx(technique, columns, rows)
-  return { width: width + GRID_BORDER_PX * 2, height: height + GRID_BORDER_PX * 2 }
+  const x = rowShiftPx(pattern.technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2
+  const y = rowTopPx(pattern.technique, row) + CELL_SIZE_PX / 2
+  const [displayedX, displayedY] = gridToDisplayed(pattern.rotation, x, y, zoom)
+  return { x: box.x + displayedX - scroll.x, y: box.y + displayedY - scroll.y }
 }

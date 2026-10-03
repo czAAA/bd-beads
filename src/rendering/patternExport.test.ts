@@ -4,7 +4,7 @@ import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MAX_PIXELS, PNG_MARGIN_PX, pngBo
 import { PRINT_BOARD_PAD } from './printPlan'
 import type { Rotation, Technique } from '../domain/grid'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows } })
 
 describe('pngZoom (ticket 73)', () => {
   it('draws a bead at the legible size for an ordinary Pattern', () => {

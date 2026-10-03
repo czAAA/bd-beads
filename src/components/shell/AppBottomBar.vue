@@ -7,6 +7,7 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
   t,
+  settingFrame,
   patterns,
   activePattern,
   framing,
@@ -64,6 +65,7 @@ const {
     :active-tool="activeTool"
     :selected-color-id="selectedColorId"
     :open-sheet="openPhoneSheet"
+    :setting-frame="settingFrame"
     @select-sheet="onSelectPhoneSheet"
   />
 </template>

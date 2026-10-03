@@ -1,7 +1,7 @@
 import { nextTick, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import { PALETTE } from '../../domain/palette'
-import type { Pattern } from '../../domain/pattern'
+import { beadColorAt, type Pattern } from '../../domain/pattern'
 import type { Translations } from '../../i18n/translations'
 
 /** What announcing needs from the app shell: the language, the open Pattern and the bead cursor. */
@@ -35,7 +35,11 @@ export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
     return color ? (t.colorNames[color.id] ?? hex) : t.colorNames.custom!
   }
 
-  /** Says the bead cursor's row, column and the color under it. */
+  /**
+   * Says the bead cursor's row, column and the color under it. With a Frame the numbers are the Frame's own (its rulers
+   * count from 1 at its top-left), so a bead above or left of it is row or column 0 and below; with none they are the
+   * canvas's, from the bead at row 0, column 0.
+   */
   function announceCursor() {
     const pattern = deps.currentPattern()
     if (!pattern) return
@@ -43,9 +47,9 @@ export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
     announce(
       deps
         .messages()
-        .a11y.cursorPosition.replace('{row}', String(row + 1))
-        .replace('{column}', String(column + 1))
-        .replace('{color}', colorWords(pattern.grid[row]?.[column]?.color)),
+        .a11y.cursorPosition.replace('{row}', String(row - (pattern.frame?.row ?? 0) + 1))
+        .replace('{column}', String(column - (pattern.frame?.column ?? 0) + 1))
+        .replace('{color}', colorWords(beadColorAt(pattern, row, column))),
     )
   }
 

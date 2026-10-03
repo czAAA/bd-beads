@@ -1,6 +1,6 @@
 import { beadLabel, findBead } from '../domain/beads'
-import { normalizePattern, type Pattern } from '../domain/pattern'
-import { decodePattern, encodePattern, type EncodedPattern } from '../domain/patternEncoding'
+import { normalizePattern, type GridPattern, type Pattern } from '../domain/pattern'
+import { decodePattern, encodePattern, type EncodedGridPattern, type EncodedPattern } from '../domain/patternEncoding'
 
 const STORAGE_KEY = 'bd-beads:patterns'
 
@@ -20,11 +20,17 @@ const UNREADABLE_KEY = 'bd-beads:patterns:unreadable'
  *
  * Nothing but loadPatterns and savePatterns ever sees either shape — the rest of the app works with plain Patterns.
  */
-const STORED_VERSION = 2
+const STORED_VERSION = 3
 
 interface StoredLibrary {
   version: number
   patterns: EncodedPattern[]
+}
+
+/** The same envelope as version 2 wrote it: every Pattern a fixed grid of cells, before the open canvas (ADR 0026). */
+interface StoredGridLibrary {
+  version: number
+  patterns: EncodedGridPattern[]
 }
 
 /**
@@ -35,9 +41,10 @@ interface StoredLibrary {
  * A reader may throw on a value that isn't the shape it claims to be; loadPatterns treats that the same as unparseable
  * JSON.
  */
-const READERS: Record<number, (parsed: unknown) => Pattern[]> = {
-  1: (parsed) => parsed as Pattern[],
-  2: (parsed) => (parsed as StoredLibrary).patterns.map(decodePattern),
+const READERS: Record<number, (parsed: unknown) => (Pattern | GridPattern)[]> = {
+  1: (parsed) => parsed as GridPattern[],
+  2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodePattern),
+  3: (parsed) => (parsed as StoredLibrary).patterns.map(decodePattern),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned envelope. */
@@ -50,7 +57,7 @@ function versionOf(parsed: unknown): number | undefined {
 }
 
 /** Patterns saved before the `name` field existed have none; fall back to the bead label. */
-function withName(pattern: Pattern): Pattern {
+function withName<T extends Pattern | GridPattern>(pattern: T): T {
   if (pattern.name) {
     return pattern
   }

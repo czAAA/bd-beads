@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import type { ConvertedImage, PixelData } from '../../domain/imageConversion'
+import type { StatedSize } from '../../domain/patternSize'
 import {
   createPattern,
   createPatternFromImage,
@@ -18,20 +19,25 @@ export interface NewPatternFlowDeps {
 /** New-Pattern creation, blank or from Convert image (tickets 58, 196; ADR 0023). Deps are read lazily. */
 export function useNewPatternFlow(deps: NewPatternFlowDeps) {
   /**
-   * The last New Pattern form state that named a real size. The frame follows the form's fields as they're edited
+   * The last New Pattern form state that named a real size (a form with none is an open canvas, which has no frame to follow). The frame follows the form's fields as they're edited
    * during framing, and this is what a Create reads — holding the last *valid* state rather than the live one is what
    * keeps the frame put while a width field is momentarily empty mid-retype, instead of collapsing it to a single cell.
    */
-  const newPatternDraft = ref<CreatePatternInput | undefined>()
+  const newPatternDraft = ref<(CreatePatternInput & { size: StatedSize }) | undefined>()
 
   function onNewPatternDraft(draft: CreatePatternInput) {
-    const { width, height, unit } = draft.size
-    const geometry = patternGeometry(draft)
+    // A draft with no size (an open canvas, or a field mid-retype) is no frame to follow: Convert image needs a size.
+    if (!draft.size) {
+      return
+    }
+    const sized = { ...draft, size: draft.size }
+    const { width, height, unit } = sized.size
+    const geometry = patternGeometry(sized)
     const wholeBeads = unit !== 'beads' || (Number.isInteger(width) && Number.isInteger(height))
 
     // A size the form would refuse (not whole beads) is no more a frame to follow than an empty field is.
     if (width > 0 && height > 0 && wholeBeads && geometry) {
-      newPatternDraft.value = draft
+      newPatternDraft.value = sized
     }
   }
 

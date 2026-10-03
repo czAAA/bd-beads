@@ -1,3 +1,4 @@
+import { patternDimensions } from '../domain/pattern'
 import { CELL_SIZE_PX } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
@@ -75,9 +76,9 @@ const STRIP_PIXELS = 1_000_000
 const PNG_STORY_RESERVE_PIXELS = 2_500_000
 
 /** How far to enlarge the Pattern for a PNG: to a legible bead size, and no further than the pixel budget (less the story's own room) allows. */
-export function pngZoom(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>): number {
+export function pngZoom(pattern: Pick<Pattern, 'technique' | 'frame' | 'beads' | 'rotation'>): number {
   const wanted = PNG_BEAD_PX / CELL_SIZE_PX
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
+  const { width, height } = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, 1, pattern.rotation)
   if (width === 0 || height === 0) {
     return wanted
   }
@@ -102,7 +103,7 @@ export function pngZoom(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' 
 export async function exportPatternPng(source: Pattern, words: PrintText): Promise<Blob> {
   const pattern = forExport(source)
   const zoom = pngZoom(pattern)
-  const displayed = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const displayed = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, zoom, pattern.rotation)
   const beadsWidth = Math.ceil(displayed.width)
   const beadsHeight = Math.ceil(displayed.height)
   // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183): room for the background name.

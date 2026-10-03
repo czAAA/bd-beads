@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Toolbox from './Toolbox.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, type Pattern } from '../../domain/pattern'
+import { createPattern, setRowProgressEnabled, type Pattern } from '../../domain/pattern'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 
@@ -35,7 +35,7 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
 }
 
 describe('Toolbox', () => {
-  it('renders Tools, Colors and Edit as groups, then Size as a disclosure row (tickets 75, 144, 174)', () => {
+  it('renders Tools, Colors and Edit as groups, then Frame as a disclosure row (tickets 75, 144, 174, 233)', () => {
     const wrapper = mountToolbox()
 
     const groups = wrapper.findAll('.tool-group')
@@ -44,9 +44,9 @@ describe('Toolbox', () => {
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
     ])
-    // Size is a disclosure row (ticket 75), closed until pressed; ticket 174 hid Mirror's pending its own redesign.
+    // Frame is a disclosure row (ticket 75), closed until pressed; ticket 174 hid Mirror's pending its own redesign.
     const rows = wrapper.findAll('.disclosure-row')
-    expect(rows.map((row) => row.find('.disclosure-row__label').text())).toEqual([ru.toolbox.groups.size])
+    expect(rows.map((row) => row.find('.disclosure-row__label').text())).toEqual([ru.frame.title])
     expect(rows.map((row) => row.find('button').attributes('aria-expanded'))).toEqual(['false'])
   })
 
@@ -135,10 +135,10 @@ describe('Toolbox', () => {
     }
   })
 
-  it("shows Rotate's and Copy's shortcuts in their tooltips (ticket 91)", () => {
+  it("shows Copy's shortcut in its tooltip (ticket 91); R is the Rulers now, so Rotate has none", () => {
     const wrapper = mountToolbox()
 
-    expect(wrapper.find('[data-testid="rotate-button"]').attributes('title')).toContain('(R)')
+    expect(wrapper.find('[data-testid="rotate-button"]').attributes('title')).not.toContain('(R)')
     expect(wrapper.find('[data-testid="copy-button"]').attributes('title')).toContain('Ctrl/Cmd+C')
   })
 
@@ -181,7 +181,7 @@ describe('Toolbox', () => {
     expect(withPaletteActive.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('emits undo, toggle-rotate, copy and redo from the Edit group', async () => {
+  it('emits undo, rotate, copy and redo from the Edit group', async () => {
     const wrapper = mountToolbox({ canUndo: true, canRedo: true, canCopy: true })
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -190,7 +190,7 @@ describe('Toolbox', () => {
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
     expect(wrapper.emitted('undo')).toHaveLength(1)
-    expect(wrapper.emitted('toggle-rotate')).toHaveLength(1)
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
     expect(wrapper.emitted('copy')).toHaveLength(1)
     expect(wrapper.emitted('redo')).toHaveLength(1)
   })
@@ -201,15 +201,6 @@ describe('Toolbox', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
-  })
-
-  it('reflects the rotated state from the pattern prop', () => {
-    const pattern = makePattern()
-    pattern.rotation = 90
-
-    const wrapper = mountToolbox({ pattern })
-
-    expect(wrapper.find('[data-testid="rotate-button"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('has no Row progress controls of its own (ticket 144)', () => {
@@ -335,9 +326,9 @@ describe('Toolbox rail (ticket 114)', () => {
 })
 
 describe('Toolbox disclosure rows (ticket 75)', () => {
-  it('opens Size in place below its row, the chevron turning up', async () => {
+  it('opens Frame in place below its row, the chevron turning up', async () => {
     const wrapper = mountToolbox()
-    const row = wrapper.find('[data-testid="tool-group-size"]')
+    const row = wrapper.find('[data-testid="tool-group-frame"]')
 
     expect(row.find('.disclosure-row__panel').isVisible()).toBe(false)
 
@@ -349,16 +340,106 @@ describe('Toolbox disclosure rows (ticket 75)', () => {
 
   it('closes an open row on Escape before anything else', async () => {
     const wrapper = mountToolbox()
-    await wrapper.find('[data-testid="tool-group-size"] button').trigger('click')
+    await wrapper.find('[data-testid="tool-group-frame"] button').trigger('click')
 
     expect((wrapper.vm as unknown as { collapseExpandedGroup: () => boolean }).collapseExpandedGroup()).toBe(true)
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="tool-group-size"] button').attributes('aria-expanded')).toBe('false')
+    expect(wrapper.find('[data-testid="tool-group-frame"] button').attributes('aria-expanded')).toBe('false')
     expect((wrapper.vm as unknown as { collapseExpandedGroup: () => boolean }).collapseExpandedGroup()).toBe(false)
   })
 
-  it('sums Size up with the Estimated size', () => {
+  it('sums the Frame up with its number and measured size', () => {
     const wrapper = mountToolbox()
-    expect(wrapper.find('[data-testid="tool-group-size"] .disclosure-row__summary').text()).toMatch(/\d/)
+    expect(wrapper.find('[data-testid="tool-group-frame"] .disclosure-row__summary').text()).toMatch(/\d/)
+    expect(wrapper.find('[data-testid="tool-group-frame"] .disclosure-row__chip').text()).toBe('1')
+  })
+})
+
+describe('Toolbox Rotate (ticket 233)', () => {
+  const rotate = (wrapper: ReturnType<typeof mountToolbox>) => wrapper.find('[data-testid="rotate-button"]')
+
+  it('is disabled and named "Rotate, Set Frame first" with no Frame', async () => {
+    const { frame: _frame, ...open } = makePattern()
+    const wrapper = mountToolbox({ pattern: open })
+    expect(rotate(wrapper).attributes('disabled')).toBeDefined()
+    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.frame.rotateNeedsFrame)
+    await rotate(wrapper).trigger('click')
+    expect(wrapper.emitted('rotate')).toBeUndefined()
+  })
+
+  it('waits while Row progress is on, saying why', () => {
+    const wrapper = mountToolbox({ pattern: setRowProgressEnabled(makePattern(), true) })
+    expect(rotate(wrapper).attributes('disabled')).toBeDefined()
+    expect(rotate(wrapper).attributes('title')).toBe(ru.size.lockedReason)
+  })
+
+  it('is named "Rotate" and works with a Frame', () => {
+    const wrapper = mountToolbox()
+    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.palette.rotateButton)
+    expect(rotate(wrapper).attributes('disabled')).toBeUndefined()
+  })
+})
+
+describe('Toolbox Frame row (ticket 233)', () => {
+  const frameRow = (wrapper: ReturnType<typeof mountToolbox>) => wrapper.find('[data-testid="tool-group-frame"]')
+  const withoutFrame = (): Pattern => {
+    const { frame: _frame, ...rest } = makePattern()
+    return rest
+  }
+
+  it('reads "not set" with no Frame, and has no number to press', () => {
+    const wrapper = mountToolbox({ pattern: withoutFrame() })
+    expect(frameRow(wrapper).find('.disclosure-row__summary').text()).toBe(ru.frame.notSet)
+    expect(frameRow(wrapper).find('.disclosure-row__chip').exists()).toBe(false)
+  })
+
+  it('starts Set Frame when opened with no Frame, and says what a Frame is', async () => {
+    const wrapper = mountToolbox({ pattern: withoutFrame() })
+    await frameRow(wrapper).find('button').trigger('click')
+    expect(wrapper.emitted('start-frame')).toHaveLength(1)
+    expect(frameRow(wrapper).find('[data-testid="frame-explainer"]').text()).toBe(ru.frame.explainer)
+    expect(frameRow(wrapper).find('[data-testid="frame-remove"]').exists()).toBe(false)
+  })
+
+  it('does not start Set Frame when opened with a Frame', async () => {
+    const wrapper = mountToolbox()
+    await frameRow(wrapper).find('button').trigger('click')
+    expect(wrapper.emitted('start-frame')).toBeUndefined()
+  })
+
+  it('names the number chip and asks to bring the Frame into view when it is pressed', async () => {
+    const wrapper = mountToolbox()
+    const chip = frameRow(wrapper).find('.disclosure-row__chip')
+    expect(chip.attributes('aria-label')).toBe(ru.frame.numberLabel.replace('{number}', '1'))
+    await chip.trigger('click')
+    expect(wrapper.emitted('bring-frame')).toHaveLength(1)
+    expect(wrapper.emitted('start-frame')).toBeUndefined()
+  })
+
+  it('steps the Columns and Rows, Fits to drawing and Removes the Frame', async () => {
+    const wrapper = mountToolbox()
+    const frame = makePattern().frame!
+    await frameRow(wrapper).find('button').trigger('click')
+
+    expect(frameRow(wrapper).find('[data-testid="frame-columns"]').text()).toBe(String(frame.columns))
+    await frameRow(wrapper).find('[data-testid="frame-columns-increase"]').trigger('click')
+    await frameRow(wrapper).find('[data-testid="frame-rows-decrease"]').trigger('click')
+    await frameRow(wrapper).find('[data-testid="frame-fit"]').trigger('click')
+    await frameRow(wrapper).find('[data-testid="frame-remove"]').trigger('click')
+
+    expect(wrapper.emitted('set-frame-size')).toEqual([[frame.columns + 1, frame.rows], [frame.columns, frame.rows - 1]])
+    expect(wrapper.emitted('fit-frame')).toHaveLength(1)
+    expect(wrapper.emitted('remove-frame')).toHaveLength(1)
+  })
+
+  it('locks the size while Row progress is on, and writes why', async () => {
+    const pattern = setRowProgressEnabled(makePattern(), true)
+    const wrapper = mountToolbox({ pattern })
+    await frameRow(wrapper).find('button').trigger('click')
+
+    for (const id of ['frame-columns-increase', 'frame-rows-decrease', 'frame-fit', 'frame-remove']) {
+      expect(frameRow(wrapper).find(`[data-testid="${id}"]`).attributes('disabled')).toBeDefined()
+    }
+    expect(frameRow(wrapper).find('[data-testid="frame-locked"]').text()).toBe(ru.size.lockedReason)
   })
 })

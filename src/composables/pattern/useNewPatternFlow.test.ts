@@ -27,7 +27,26 @@ describe('useNewPatternFlow', () => {
     const { deps, flow } = setup()
     flow.onCreatePattern(draft)
     expect(deps.addPattern).toHaveBeenCalledOnce()
-    expect(deps.addPattern.mock.calls[0][0]).toMatchObject({ columns: 3, rows: 2 })
+    expect(deps.addPattern.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 } })
+  })
+
+  it('creates an open canvas, with no Frame, when the form states no size', () => {
+    const { deps, flow } = setup()
+    flow.onCreatePattern({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+    const created = deps.addPattern.mock.calls[0][0]
+    expect(created.frame).toBeUndefined()
+    expect(created.beads).toEqual({})
+  })
+
+  it('has no frame to follow from a draft with no size, and keeps the last one that had a size', () => {
+    const { image, flow } = setup()
+    image.value = picture
+    flow.onNewPatternDraft({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+    expect(flow.framing.value).toBeUndefined()
+
+    flow.onNewPatternDraft(draft)
+    flow.onNewPatternDraft({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+    expect(flow.framing.value).toMatchObject({ dimensions: { columns: 3, rows: 2 } })
   })
 
   it('is not framing without a picture, or without a valid draft', () => {
@@ -63,7 +82,7 @@ describe('useNewPatternFlow', () => {
     } as unknown as ConvertedImage
     flow.onConvertImageCreate(converted)
     expect(deps.addPattern).toHaveBeenCalledOnce()
-    expect(deps.addPattern.mock.calls[0][0]).toMatchObject({ columns: 3, rows: 2, imageColors: converted.imageColors })
+    expect(deps.addPattern.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 }, imageColors: converted.imageColors })
     expect(deps.cancelConvertImage).toHaveBeenCalled()
   })
 

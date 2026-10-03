@@ -9,11 +9,12 @@ import {
   pressBead,
   previewedBeads,
   rowProgressView,
+  rulerNumbers,
   selectedBeadCount,
 } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { PALETTE } from './domain/palette'
-import { createPattern, type Pattern } from './domain/pattern'
+import { createPattern, type Pattern, frameGrid } from './domain/pattern'
 import { serializeLibrary } from './domain/patternFile'
 import { loadPatterns, savePatterns } from './services/libraryStore'
 import { serializePatternForQr } from './domain/qrExport'
@@ -112,13 +113,13 @@ describe('App', () => {
 
     await createPatternViaForm(wrapper, '15', '30')
 
-    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
+    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
 
     const saved = loadPatterns()
     expect(saved).toHaveLength(1)
     expect(saved[0]!.beadId).toBe(cubeBead.id)
-    expect(saved[0]!.columns).toBe(10)
-    expect(saved[0]!.rows).toBe(20)
+    expect(saved[0]!.frame!.columns).toBe(10)
+    expect(saved[0]!.frame!.rows).toBe(20)
   })
 
   it('shows the previously created pattern unchanged after a reload', async () => {
@@ -130,7 +131,7 @@ describe('App', () => {
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(drawnPattern(afterReload)).toMatchObject({ rows: 20, columns: 10 })
+    expect(drawnPattern(afterReload)).toMatchObject({ frame: { rows: 20, columns: 10 } })
   })
 
   it('shows a summary of the currently open pattern', async () => {
@@ -168,7 +169,7 @@ describe('App', () => {
     await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(drawnPattern(wrapper)).toMatchObject({ rows: 20, columns: 10 })
+    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
   })
 
   it('removing the open pattern switches to another remaining one', async () => {
@@ -272,7 +273,7 @@ describe('App', () => {
       'tool-fill',
       'palette-picker',
       'undo-button',
-      'tool-group-size',
+      'tool-group-frame',
     ]) {
       expect(toolbox.find(`[data-testid="${testId}"]`).exists()).toBe(true)
     }
@@ -323,7 +324,7 @@ describe('App', () => {
 
     // Releasing the button ends the stroke, which is when a stroke reaches storage (ticket 55).
     await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('paints a cell regardless of the Pattern\'s Technique', async () => {
@@ -339,7 +340,7 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('fills a contiguous same-colored region with the fill tool', async () => {
@@ -357,7 +358,7 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0)
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#2f6fed')
     expect(grid[1]![0]!.color).toBe('#2f6fed')
@@ -378,11 +379,11 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0)
 
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#2f6fed')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
@@ -402,77 +403,77 @@ describe('App', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#2f6fed')
   })
 
-  it('rotating is a view-only flip: it turns the picture on screen but never touches the grid, dimensions, or technique', async () => {
+  it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '5', '3') // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0) // paint (0,0)
+    await pressBead(wrapper, 0) // paint (0,0), the top-left bead
     await wrapper.trigger('mouseup')
     const beforeRotate = loadPatterns()[0]!
 
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
     const afterRotate = loadPatterns()[0]!
-    expect(afterRotate.rotation).toBe(90)
-    expect(afterRotate.columns).toBe(beforeRotate.columns)
-    expect(afterRotate.rows).toBe(beforeRotate.rows)
-    expect(afterRotate.grid).toEqual(beforeRotate.grid)
-    // The header summary reflects how the Pattern currently looks (swapped), even though the stored grid didn't change.
+    // A data turn, not a view one: the Pattern is not left turned, its Frame and beads are.
+    expect(afterRotate.rotation).toBe(0)
+    expect(afterRotate.technique).toBe(beforeRotate.technique)
+    expect(afterRotate.frame).toMatchObject({ columns: beforeRotate.frame!.rows, rows: beforeRotate.frame!.columns })
+    // The top-left bead of a quarter turn clockwise is the top-right one.
+    expect(frameGrid(afterRotate)[0]![1]!.color).toBe('#e63746')
+    expect(frameGrid(afterRotate).flat().filter((cell) => cell.color).length).toBe(1)
     expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
   })
 
-  it('cycles through all four quarter turns and back to upright on a fifth click (ticket 171)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '5', '3')
-
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    expect(loadPatterns()[0]!.rotation).toBe(90)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
-
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    expect(loadPatterns()[0]!.rotation).toBe(180)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('3×2')
-
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    expect(loadPatterns()[0]!.rotation).toBe(270)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
-
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    expect(loadPatterns()[0]!.rotation).toBe(0)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('3×2')
-  })
-
-  it('is not an undo step: rotating does not touch the undo history', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '5', '3')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
-
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
-  })
-
-  it('leaves redo untouched: Rotate is not a grid edit', async () => {
+  it('comes back to upright after four turns (ticket 233)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '5', '3')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    const before = loadPatterns()[0]!
 
+    for (const summary of ['2×3', '3×2', '2×3', '3×2']) {
+      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+      expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain(summary)
+    }
+
+    const after = loadPatterns()[0]!
+    expect(after.frame).toEqual(before.frame)
+    expect(frameGrid(after)).toEqual(frameGrid(before))
+  })
+
+  it('is one undo step: Undo turns it back and Redo turns it again', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '5', '3')
+    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    const turned = loadPatterns()[0]!
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    expect(loadPatterns()[0]!.frame).toMatchObject({ columns: 3, rows: 2 })
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(loadPatterns()[0]!.frame).toEqual(turned.frame)
+    expect(frameGrid(loadPatterns()[0]!)).toEqual(frameGrid(turned))
+  })
+
+  it('keeps a Pattern saved turned (the legacy view) turned, and Rotate turns the data on top of it', async () => {
+    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+    savePatterns([{ ...saved, rotation: 90 }])
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(loadPatterns()[0]!.rotation).toBe(90)
+    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
   })
 
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
@@ -484,7 +485,7 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {
@@ -498,7 +499,7 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#123456')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#123456')
   })
 
   it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
@@ -546,7 +547,7 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#abcdef')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#abcdef')
     expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 1)
   })
 
@@ -573,7 +574,7 @@ describe('App', () => {
     await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -593,7 +594,7 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
@@ -615,7 +616,7 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -643,7 +644,7 @@ describe('App', () => {
     await hoverBead(wrapper, 6, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![5]!.color).toBe('#27ae60')
     expect(grid[0]![6]!.color).toBe('#2f6fed')
   })
@@ -655,12 +656,12 @@ describe('App', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await pressBead(wrapper, 0, { button: 2 })
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
@@ -678,14 +679,14 @@ describe('App', () => {
     await hoverBead(wrapper, 2, { buttons: 2 })
     await wrapper.trigger('mouseup')
 
-    let grid = loadPatterns()[0]!.grid
+    let grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    grid = loadPatterns()[0]!.grid
+    grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -706,7 +707,7 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0, { button: 2 })
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[1]![0]!.color).toBeNull()
@@ -726,11 +727,11 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0, { button: 2 })
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
@@ -756,13 +757,13 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('disables undo when there is nothing to undo', async () => {
@@ -795,13 +796,13 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
   })
 
   it('alternates undo and redo freely without losing or duplicating a step', async () => {
@@ -819,10 +820,10 @@ describe('App', () => {
     await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to blue
     await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
     await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to empty
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to red
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
@@ -951,7 +952,7 @@ describe('App', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
 
     // Export/import round-tripping an unresolved beadId is covered directly in patternFile.test.ts; here it's
     // enough that the button (disabled only while no Pattern is open) is live for this one.
@@ -1006,7 +1007,7 @@ describe('App', () => {
     // Fixed to the canvas panel itself, not to the Pattern's own bordered box inside it (ticket 51 anchored it there;
     // ticket 57 moved it one level up).
     expect(
-      wrapper.find('[data-testid="pattern-canvas-viewport"]').find('[data-testid="zoom-controls"]').exists(),
+      wrapper.find('[data-testid="pattern-surface"]').find('[data-testid="zoom-controls"]').exists(),
     ).toBe(false)
   })
 
@@ -1116,10 +1117,21 @@ describe('App', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    const canvas = wrapper.find('[data-testid="app-canvas"]')
-    for (const edge of ['row-start', 'row-end', 'column-start', 'column-end']) {
-      expect(canvas.find(`[data-testid="pattern-ruler-${edge}"]`).exists()).toBe(true)
+    const numbers = rulerNumbers(wrapper)
+    // 10 columns above and below, 20 rows left and right (15 × 30 mm of 1.5 mm cubes): every number drawn, 1 upwards, on all four sides of the Frame.
+    for (const axis of ['column', 'row'] as const) {
+      const count = axis === 'column' ? 10 : 20
+      const along = numbers.filter((label) => label.axis === axis)
+      expect(along).toHaveLength(count * 2)
+      expect(along.map((label) => label.text).sort()).toEqual([...Array(count).keys()].flatMap((i) => [String(i + 1), String(i + 1)]).sort())
     }
+    // Left of the Frame, right of it, above it and below it.
+    const row1 = numbers.filter((label) => label.axis === 'row' && label.text === '1').sort((a, b) => a.x - b.x)
+    expect(row1[0]!.x).toBeLessThan(0)
+    expect(row1[1]!.x).toBeGreaterThan(10 * 20)
+    const column1 = numbers.filter((label) => label.axis === 'column' && label.text === '1').sort((a, b) => a.y - b.y)
+    expect(column1[0]!.y).toBeLessThan(0)
+    expect(column1[1]!.y).toBeGreaterThan(20 * 20)
   })
 })
 
@@ -1142,7 +1154,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   const iconButtons = [
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton, icon: 'undo' },
     { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton, icon: 'redo' },
-    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton, icon: 'rotate', titleSuffix: ' (R)' },
+    { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton, icon: 'rotate' },
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, icon: 'copy', titleSuffix: ' (Ctrl/Cmd+C)' },
   ]
 
@@ -1190,7 +1202,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(deleteAll.classes()).toContain('app-link--danger')
   })
 
-  it('gives the three always-open groups a label and makes Size a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
+  it('gives the three always-open groups a label and makes Frame a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -1200,7 +1212,7 @@ describe('App Toolbox controls (ticket 75)', () => {
       en.toolbox.groups.colors,
       en.toolbox.groups.edit,
     ])
-    expect(wrapper.findAll('.disclosure-row__label').map((label) => label.text())).toEqual([en.toolbox.groups.size])
+    expect(wrapper.findAll('.disclosure-row__label').map((label) => label.text())).toEqual([en.frame.title])
   })
 
   it('shows which tool is active', async () => {
@@ -1238,12 +1250,12 @@ describe('App Progress bar', () => {
     expect(loadPatterns()[0]!.rowProgress.enabled).toBe(true)
   })
 
-  it('is the same bar whatever the Pattern\'s shape or rotation', async () => {
+  it('is the same bar whatever the Pattern\'s shape or direction', async () => {
     const wrapper = mount(App)
     await enableRowProgress(wrapper, '15', '30') // 10 columns x 20 rows
     const classes = wrapper.find('[data-testid="progress-bar"]').classes()
 
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
     expect(wrapper.find('[data-testid="progress-bar"]').classes()).toEqual(classes)
   })
@@ -1309,7 +1321,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'z', ...modifier })
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it.each([{ ctrlKey: true, shiftKey: true }, { metaKey: true, shiftKey: true }, { ctrlKey: true, key: 'y' }])(
@@ -1318,11 +1330,11 @@ describe('App keyboard shortcuts', () => {
       const wrapper = mount(App)
       await paintFirstCell(wrapper)
       await pressKey({ key: 'z', ctrlKey: true })
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
       await pressKey({ key: modifier.key ?? 'z', ...modifier })
 
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     },
   )
 
@@ -1343,12 +1355,12 @@ describe('App keyboard shortcuts', () => {
 
         await pressKey({ key: 'z', ctrlKey: true }, field)
 
-        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+        expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
 
         await wrapper.find('[data-testid="undo-button"]').trigger('click')
         await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
 
-        expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+        expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
       } finally {
         field.remove()
       }
@@ -1373,7 +1385,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'z', ctrlKey: true })
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
   })
 })
 
@@ -1473,7 +1485,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
 
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe(color.hex)
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe(color.hex)
     },
   )
 
@@ -1489,7 +1501,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await wrapper.trigger('mouseup')
 
       // Red is still the default selected color (ticket 27); Shift+2 (orange) never landed.
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     } finally {
       field.remove()
     }
@@ -1518,14 +1530,14 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
     await click(wrapper, 0)
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[1]![0]!.color).toBe('#e63746')
     expect(grid[1]![1]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === '#e63746')).toBe(true)
+    expect(frameGrid(loadPatterns()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
   it('erases every cell dragged over, as one undo step, on the primary press -- no right-click needed', async () => {
@@ -1543,13 +1555,13 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
     await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    let grid = loadPatterns()[0]!.grid
+    let grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    grid = loadPatterns()[0]!.grid
+    grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -1569,7 +1581,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
     await click(wrapper, 0) // (0,0), in the finished row
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('leaves right-click erase under Paint and Fill unaffected by the new default behavior', async () => {
@@ -1579,7 +1591,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
     await pressBead(wrapper, 0, { button: 2 })
 
-    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(loadPatterns()[0]!).flat().every((cell) => cell.color === null)).toBe(true)
   })
 })
 
@@ -1638,7 +1650,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
     // The tool switched to Paint; a press now paints one bead rather than flood-filling.
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
@@ -1670,7 +1682,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
 
     await pressKey({ key: 'Delete' })
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[1]![0]!.color).toBeNull()
@@ -1680,7 +1692,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
     expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('activates Erase when Select is active with no Selection', async () => {
@@ -1719,14 +1731,21 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
   })
 })
 
-describe('App Edit group hotkeys — Rotate (R) and Copy (Ctrl/Cmd+C) (ticket 91)', () => {
-  it('toggles Rotate on R, the same as clicking the button', async () => {
+describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for the Rulers (v16)', () => {
+  it('shows and hides the rulers on R, as the strip\'s Rulers button does, and remembers the choice on the device', async () => {
     const wrapper = mountAppForCleanup()
     await createPatternViaForm(wrapper, '15', '30')
+    const toggle = () => wrapper.find('[data-testid="rulers-toggle"]')
+    expect(toggle().attributes('aria-pressed')).toBe('true')
 
     await pressKey({ key: 'r' })
+    expect(toggle().attributes('aria-pressed')).toBe('false')
+    expect(localStorage.getItem('bd-beads:rulers')).toBe('off')
+    expect(loadPatterns()[0]!.rotation).toBe(0)
 
-    expect(loadPatterns()[0]!.rotation).toBe(90)
+    await toggle().trigger('click')
+    expect(toggle().attributes('aria-pressed')).toBe('true')
+    expect(localStorage.getItem('bd-beads:rulers')).toBe('on')
   })
 
   it('copies the active Selection on Ctrl/Cmd+C, the same as clicking Copy', async () => {
@@ -1776,13 +1795,13 @@ describe('App Mirror group hotkeys removed (ticket 174, pending its own redesign
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    const before = loadPatterns()[0]!.grid
+    const before = frameGrid(loadPatterns()[0]!)
 
     for (const key of ['-', '=', '[', ']', 'm', 'h', 'v']) {
       await pressKey({ key })
     }
 
-    expect(loadPatterns()[0]!.grid).toEqual(before)
+    expect(frameGrid(loadPatterns()[0]!)).toEqual(before)
   })
 })
 
@@ -1938,7 +1957,7 @@ describe('App Space+drag pan (ticket 95)', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('shows a grab cursor while Space is held', async () => {
@@ -2179,22 +2198,17 @@ describe('App row progress', () => {
       expect(position(afterReload)).toMatch(/\b2\D+10\b/)
     })
 
-    it('is its own toggle, apart from Rotate: neither changes the other, and flipping is not an undo step', async () => {
+    it('is its own toggle: it changes neither the beads nor the rotation, and flipping is not an undo step', async () => {
       const wrapper = mount(App)
       await createPatternViaForm(wrapper, '15', '30')
-      const gridBefore = loadPatterns()[0]!.grid
+      const gridBefore = frameGrid(loadPatterns()[0]!)
 
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
       expect(loadPatterns()[0]!.rotation).toBe(0)
-      expect(loadPatterns()[0]!.grid).toEqual(gridBefore)
+      expect(frameGrid(loadPatterns()[0]!)).toEqual(gridBefore)
       expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
-
-      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-
-      expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
-      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
       expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
     })
 
@@ -2213,7 +2227,7 @@ describe('App row progress', () => {
 
       expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
       await wrapper.find('[data-testid="redo-button"]').trigger('click')
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     })
   })
 })
@@ -2229,7 +2243,7 @@ describe('App finished rows', () => {
   }
 
   function colorAt(row: number, column: number) {
-    return loadPatterns()[0]!.grid[row]![column]!.color
+    return frameGrid(loadPatterns()[0]!)[row]![column]!.color
   }
 
   function undoDisabled(wrapper: ReturnType<typeof mount>) {
@@ -2413,7 +2427,7 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
-    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
   })
 
   it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
@@ -2426,7 +2440,7 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
   })
 
   it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
@@ -2443,12 +2457,12 @@ describe('App delete all', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
 
     // If Escape had also run backOutOfSelect, it would have dropped the copied block (cancelPaste), and this next
     // click would start a fresh Selection instead of stamping — leaving (1,1) uncolored.
     await click(wrapper, 5) // (1,1)
-    expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[1]![1]!.color).toBe('#e63746')
   })
 
   it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
@@ -2466,7 +2480,7 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(loadedPattern()).flat().every((cell) => cell.color === null)).toBe(true)
     expect(loadedPattern().rowProgress).toEqual({
       enabled: false,
       direction: 'rows',
@@ -2480,7 +2494,6 @@ describe('App delete all', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
     const before = loadedPattern()
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
@@ -2490,10 +2503,9 @@ describe('App delete all', () => {
     expect(after.name).toBe(before.name)
     expect(after.technique).toBe(before.technique)
     expect(after.beadId).toBe(before.beadId)
-    expect(after.columns).toBe(before.columns)
-    expect(after.rows).toBe(before.rows)
+    expect(after.frame!.columns).toBe(before.frame!.columns)
+    expect(after.frame!.rows).toBe(before.frame!.rows)
     expect(after.rotation).toBe(before.rotation)
-    expect(after.rotation).toBe(90)
   })
 
   it('ignores the Row progress lock, clearing beads in finished rows along with the rest', async () => {
@@ -2507,7 +2519,7 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().grid[0]![4]!.color).toBeNull()
+    expect(frameGrid(loadedPattern())[0]![4]!.color).toBeNull()
   })
 
 
@@ -2526,7 +2538,7 @@ describe('App delete all', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    expect(loadedPattern().grid[0]![4]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[0]![4]!.color).toBe('#e63746')
     expect(loadedPattern().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
@@ -2658,16 +2670,16 @@ describe('App replace bead', () => {
     // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
     expect(modal.text()).toContain('With TOHO Round 11/0, this Pattern will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
     expect(modal.text()).toContain('Your design and its bead count stay exactly the same')
-    expect(modal.text()).toContain('add or remove rows and columns afterwards')
     expect(modal.text()).not.toContain('New size')
     expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
   })
 
-  it('reports the estimate the way the screen shows the Pattern, so a rotated Pattern swaps width and height', async () => {
+  it('reports the estimate the way the screen shows the Pattern, so a Pattern saved turned swaps width and height', async () => {
+    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    savePatterns([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    await flushPromises()
     await wrapper.find('[data-testid="language-en"]').trigger('click')
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
@@ -2742,7 +2754,7 @@ describe('App replace bead', () => {
     // start a fresh Selection instead of stamping.
     await pressBead(wrapper, 5)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(loadedPattern().grid[1]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[1]![1]!.color).toBe('#e63746')
   })
 
   it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
@@ -2753,8 +2765,8 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().columns).toBe(10)
-    expect(loadedPattern().rows).toBe(20)
+    expect(loadedPattern().frame!.columns).toBe(10)
+    expect(loadedPattern().frame!.rows).toBe(20)
     expect(loadedPattern()).not.toHaveProperty('widthMm')
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
   })
@@ -2766,14 +2778,14 @@ describe('App replace bead', () => {
     await pressBead(wrapper, 0) // (0,0)
     await pressBead(wrapper, 199) // (19,9)
     await wrapper.find('.app-shell').trigger('mouseup')
-    const before = loadedPattern().grid
+    const before = frameGrid(loadedPattern())
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().grid).toEqual(before)
-    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
-    expect(loadedPattern().grid[19]![9]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())).toEqual(before)
+    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedPattern())[19]![9]!.color).toBe('#e63746')
   })
 
   it('keeps Row progress as it was, since the grid it describes is unchanged', async () => {
@@ -2807,15 +2819,16 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('miyuki-delica-11-0')
-    expect(loadedPattern().columns).toBe(12)
-    expect(loadedPattern().rows).toBe(5)
-    expect(loadedPattern().grid[0]![7]!.color).toBe('#e63746')
+    expect(loadedPattern().frame!.columns).toBe(12)
+    expect(loadedPattern().frame!.rows).toBe(5)
+    expect(frameGrid(loadedPattern())[0]![7]!.color).toBe('#e63746')
   })
 
   it('keeps name, Technique and rotation unchanged', async () => {
+    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    savePatterns([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    await flushPromises()
     const before = loadedPattern()
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
@@ -2843,9 +2856,9 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
-    expect(loadedPattern().columns).toBe(10)
-    expect(loadedPattern().rows).toBe(20)
-    expect(loadedPattern().grid[0]![0]!.color).toBe('#e63746')
+    expect(loadedPattern().frame!.columns).toBe(10)
+    expect(loadedPattern().frame!.rows).toBe(20)
+    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
     expect(loadedPattern().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
@@ -2856,7 +2869,7 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
     expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().columns).toBe(10)
+    expect(loadedPattern().frame!.columns).toBe(10)
   })
 
   it('does nothing when there is no open Pattern', () => {
@@ -3128,7 +3141,7 @@ describe('App select, copy and paste', () => {
 
     await drag(wrapper, [0, 1, 5])
 
-    expect(loadPatterns()[0]!.grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(loadPatterns()[0]!).flat().every((cell) => cell.color === null)).toBe(true)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
   })
 
@@ -3177,14 +3190,14 @@ describe('App select, copy and paste', () => {
 
     await click(wrapper, 10) // (2,2)
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[2]![2]!.color).toBe('#e63746')
     expect(grid[3]![3]!.color).toBe('#2f6fed')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
-    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[3]![3]!.color).toBeNull()
   })
 
   it('redoes a stamped paste as a single action', async () => {
@@ -3197,7 +3210,7 @@ describe('App select, copy and paste', () => {
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[2]![2]!.color).toBe('#e63746')
     expect(grid[3]![3]!.color).toBe('#2f6fed')
   })
@@ -3217,7 +3230,7 @@ describe('App select, copy and paste', () => {
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 
   it('can stamp the same block again at another position without copying again', async () => {
@@ -3229,7 +3242,7 @@ describe('App select, copy and paste', () => {
     await click(wrapper, 8) // (2,0)
     await click(wrapper, 10) // (2,2)
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[2]![0]!.color).toBe('#e63746')
     expect(grid[2]![2]!.color).toBe('#e63746')
   })
@@ -3242,7 +3255,7 @@ describe('App select, copy and paste', () => {
 
     await click(wrapper, 15) // (3,3), the last cell: only the block's own top-left corner fits
 
-    expect(loadPatterns()[0]!.grid[3]![3]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[3]![3]!.color).toBe('#e63746')
   })
 
   it('leaves the destination untouched under the block’s empty cells', async () => {
@@ -3258,7 +3271,7 @@ describe('App select, copy and paste', () => {
 
     await click(wrapper, 8) // stamp at (2,0)
 
-    expect(loadPatterns()[0]!.grid[2]![1]!.color).toBe('#27ae60')
+    expect(frameGrid(loadPatterns()[0]!)[2]![1]!.color).toBe('#27ae60')
   })
 
   it('drops the clipboard when a new selection is drawn, so the next click selects rather than stamps', async () => {
@@ -3270,7 +3283,7 @@ describe('App select, copy and paste', () => {
     await drag(wrapper, [10, 11]) // a fresh selection replaces both it and the clipboard
     await click(wrapper, 8)
 
-    expect(loadPatterns()[0]!.grid[2]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![0]!.color).toBeNull()
   })
 
   /** Escape is bound to the window, not to the canvas, so it is dispatched there rather than on an element. */
@@ -3293,7 +3306,7 @@ describe('App select, copy and paste', () => {
     await pressBead(wrapper, 10, { button: 2 })
     await click(wrapper, 10) // (2,2) — would have stamped the motif
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedCount(wrapper)).toBe(1)
   })
 
@@ -3304,7 +3317,7 @@ describe('App select, copy and paste', () => {
     await pressEscape(wrapper)
     await click(wrapper, 10)
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedCount(wrapper)).toBe(1)
   })
 
@@ -3337,7 +3350,7 @@ describe('App select, copy and paste', () => {
 
     // The clipboard stays armed even though nothing is highlighted, so the next click still pastes.
     await click(wrapper, 10)
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
 
     // Nothing is left highlighted, so copying the same block again means dragging a new Selection over it first.
     expect(selectedCount(wrapper)).toBe(0)
@@ -3347,7 +3360,7 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
     await click(wrapper, 8) // (2,0)
 
-    expect(loadPatterns()[0]!.grid[2]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![0]!.color).toBe('#e63746')
   })
 
   it('clears a selection nothing has been copied from on Escape', async () => {
@@ -3369,7 +3382,7 @@ describe('App select, copy and paste', () => {
     await pressBead(wrapper, 0, { button: 2 }) // a painted cell
 
     expect(selectedCount(wrapper)).toBe(0)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('cancels the pending Paste on Escape without reviving the selection (ticket 49)', async () => {
@@ -3400,7 +3413,7 @@ describe('App select, copy and paste', () => {
 
     await pressBead(wrapper, 0, { button: 2 }) // a painted cell
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('leaves the other tools alone: Escape is not a general-purpose cancel', async () => {
@@ -3411,7 +3424,7 @@ describe('App select, copy and paste', () => {
 
     await pressEscape(wrapper)
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
   })
 
@@ -3435,7 +3448,7 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await click(wrapper, 10) // (2,2)
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedCount(wrapper)).toBe(1) // a fresh selection, not a stamp
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
   })
@@ -3468,7 +3481,7 @@ describe('App select, copy and paste', () => {
 
     // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
     await click(wrapper, 0)
-    expect(loadPatterns().find((p) => p.id !== firstId)!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns().find((p) => p.id !== firstId)!)[0]![0]!.color).toBe('#e63746')
   })
 })
 
@@ -3512,7 +3525,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     pasteAtHoveredCell()
     await flushPromises()
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 
   it('is a no-op when the pointer is not over the grid', async () => {
@@ -3524,7 +3537,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     pasteAtHoveredCell()
     await flushPromises()
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
   })
 
   it.each(['tool-paint', 'tool-fill'])('pastes via Ctrl/Cmd+V while %s is the active tool', async (tool) => {
@@ -3536,7 +3549,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     pasteAtHoveredCell()
     await flushPromises()
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 
   it('keeps the clipboard armed after switching tools away from Select and back, for keyboard paste (ticket 92)', async () => {
@@ -3550,7 +3563,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     pasteAtHoveredCell()
     await flushPromises()
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 
   it('hides the live preview after switching away from Select, even though Ctrl/Cmd+V can still paste', async () => {
@@ -3572,7 +3585,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await click(wrapper, 10)
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedBeadCount(wrapper)).toBe(1)
   })
 
@@ -3587,7 +3600,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     pasteAtHoveredCell()
     await flushPromises()
 
-    expect(loadPatterns()[0]!.grid[2]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 })
 
@@ -3671,7 +3684,7 @@ describe('App storage writes', () => {
     await wrapper.trigger('mouseup')
 
     expect(writes.count).toBe(1)
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[0]![2]!.color]).toEqual([
       '#e63746',
       '#e63746',
@@ -3695,8 +3708,8 @@ describe('App storage writes', () => {
     await wrapper.trigger('mouseup')
 
     expect(writes.count).toBe(1)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBeNull()
   })
 
   it('writes a stroke whose mouseup never arrived when the page goes away', async () => {
@@ -3707,11 +3720,11 @@ describe('App storage writes', () => {
     // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
     // stroke is still only in memory.
     await pressBead(wrapper, 0)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
     window.dispatchEvent(new Event('pagehide'))
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('writes a stroke whose mouseup never arrived when the editor is torn down', async () => {
@@ -3722,7 +3735,7 @@ describe('App storage writes', () => {
 
     wrapper.unmount()
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('ends a touch/pen stroke the OS cancels mid-drag (ticket 60), instead of leaving it stuck in progress', async () => {
@@ -3734,13 +3747,13 @@ describe('App storage writes', () => {
     await hoverBead(wrapper, 1, { buttons: 1, pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointercancel')
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#e63746')
 
     // The cancelled stroke really ended: painting a third cell starts a fresh one rather than continuing the old.
     await pressBead(wrapper, 2, { pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointerup')
-    expect(loadPatterns()[0]!.grid[0]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![2]!.color).toBe('#e63746')
   })
 
   it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
@@ -3753,7 +3766,7 @@ describe('App storage writes', () => {
     await pressBead(wrapper, 0)
 
     expect(writes.count).toBe(1)
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('says so, in the current language, when a write to storage is refused', async () => {
@@ -3791,7 +3804,7 @@ describe('App storage writes', () => {
 
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
     // The retry carries the refused cell too, since a save writes the whole library from memory.
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
-    expect(loadPatterns()[0]!.grid[0]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#e63746')
   })
 })

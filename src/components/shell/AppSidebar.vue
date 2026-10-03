@@ -35,9 +35,13 @@ const {
   selection,
   onCopy,
   bindToolbox,
-  onToggleRotate,
+  onRotate,
   onRequestDeleteAll,
-  onRequestChangeSize,
+  onStartSetFrame,
+  onSetFrameSize,
+  onFitFrame,
+  onRemoveFrame,
+  onBringFrameIntoView,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
   qrExport,
@@ -96,15 +100,20 @@ const {
       @select-image-color="onSelectImageColor"
       @undo="onUndo"
       @redo="onRedo"
-      @toggle-rotate="onToggleRotate"
+      @rotate="onRotate"
       @copy="onCopy"
       @delete-all="onRequestDeleteAll"
-      @change-size="onRequestChangeSize"
+      @start-frame="onStartSetFrame"
+      @set-frame-size="onSetFrameSize"
+      @fit-frame="onFitFrame"
+      @remove-frame="onRemoveFrame"
+      @bring-frame="onBringFrameIntoView"
       @remove-selected-line="onRemoveSelectedLine"
     />
     <!-- The save box (ticket 148): the library's save state, Save Pattern and Export ▾, beside the open Pattern's tools. -->
     <SaveBox
       v-if="activePattern && !framing"
+      :has-frame="activePattern.frame !== undefined"
       :save-failed="saveFailed"
       :qr-too-large="qrExport.tooLarge.value"
       :exporting="exporting"
@@ -116,6 +125,8 @@ const {
       @export-qr="qrExport.open"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
+      @fit-frame="onFitFrame"
+      @set-frame="onStartSetFrame"
     />
     <BeadQuantities :pattern="settledPattern" />
     <PatternList

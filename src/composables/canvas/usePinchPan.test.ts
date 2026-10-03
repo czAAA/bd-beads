@@ -9,8 +9,9 @@ function setup(zoom = 1) {
   const setZoom = vi.fn((v: number) => {
     state.zoom = v
   })
+  const panBy = vi.fn()
   const endStroke = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, endStroke }))
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, endStroke }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -22,7 +23,7 @@ function setup(zoom = 1) {
     Object.assign(e, { pointerId: id, clientX: x, clientY: y, pointerType })
     child.dispatchEvent(e)
   }
-  return { state, setZoom, endStroke, heard, fire }
+  return { state, setZoom, panBy, endStroke, heard, fire }
 }
 
 describe('usePinchPan', () => {
@@ -54,6 +55,15 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 2, 100, 0)
     t.fire('pointermove', 2, 200, 0)
     expect(t.state.zoom).toBeCloseTo(2)
+  })
+
+  it('zooms about the point between the fingers and moves the canvas with them', () => {
+    const t = setup(1)
+    t.fire('pointerdown', 1, 0, 0)
+    t.fire('pointerdown', 2, 100, 0)
+    t.fire('pointermove', 2, 200, 20)
+    expect(t.setZoom).toHaveBeenLastCalledWith(expect.closeTo(2, 1), { x: 100, y: 10 })
+    expect(t.panBy).toHaveBeenLastCalledWith(50, 10)
   })
 
   it('ignores a mouse and a pen', () => {

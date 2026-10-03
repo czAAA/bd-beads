@@ -44,7 +44,7 @@ describe('PatternList', () => {
     const items = wrapper.findAll('[data-testid="pattern-item"]')
     expect(items).toHaveLength(2)
     expect(items[0]!.text()).toContain(first.name)
-    expect(items[0]!.text()).toContain(`${first.columns}×${first.rows}`)
+    expect(items[0]!.text()).toContain(`${first.frame!.columns}×${first.frame!.rows}`)
     expect(items[0]!.find(`[data-testid="select-pattern-${first.id}"]`).attributes('aria-label')).toBe(summarizePattern(first))
     expect(items[1]!.text()).toContain(second.name)
   })

@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { afterStep, gridsEqual } from './domain/tour'
 import { BEAD_CATALOG } from './domain/beads'
-import { createPattern } from './domain/pattern'
+import { createPattern, frameGrid } from './domain/pattern'
 import { loadPatterns, savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
@@ -72,8 +72,8 @@ describe('App Tour (ticket 80)', () => {
     expect(localStorage.getItem('bd-beads:tour')).toBe('finished')
 
     const [pattern] = loadPatterns()
-    expect(pattern).toMatchObject({ technique: 'loom', columns: 10, rows: 75 })
-    expect(gridsEqual(pattern!.grid, afterStep(8))).toBe(true)
+    expect(pattern).toMatchObject({ technique: 'loom', frame: { columns: 10, rows: 75 } })
+    expect(gridsEqual(frameGrid(pattern!), afterStep(8))).toBe(true)
 
     await wrapper.find('[data-testid="tour-keep-editing"]').trigger('click')
     expect(card(wrapper).exists()).toBe(false)

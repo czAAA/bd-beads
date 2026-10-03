@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useSpaceDragPan } from './useSpaceDragPan'
 
 /** A minimal host component: useSpaceDragPan needs a live component instance (lifecycle hooks) to run inside, same as it will in App.vue. */
-function mountHost(scrollEl: HTMLElement | null = document.createElement('div')) {
+function mountHost(panBy: (dx: number, dy: number) => void = () => {}) {
   let state!: ReturnType<typeof useSpaceDragPan>
   const wrapper = mount(
     defineComponent({
       setup() {
-        state = useSpaceDragPan(ref(scrollEl))
+        state = useSpaceDragPan(panBy)
       },
       render() {
         return h('div')
@@ -82,11 +82,9 @@ describe('useSpaceDragPan', () => {
     }
   })
 
-  it('pans the scroll element both ways while dragging with Space held', () => {
-    const scrollEl = document.createElement('div')
-    scrollEl.scrollLeft = 50
-    scrollEl.scrollTop = 40
-    const { state } = mountHost(scrollEl)
+  it('moves the canvas both ways, with the pointer, while dragging with Space held', () => {
+    const panBy = vi.fn()
+    const { state } = mountHost(panBy)
     const scrollBySpy = vi.spyOn(window, 'scrollBy').mockImplementation(() => {})
 
     keydown({ code: 'Space' })
@@ -95,8 +93,7 @@ describe('useSpaceDragPan', () => {
 
     pointer('pointermove', { clientX: 80, clientY: 70 })
 
-    expect(scrollEl.scrollLeft).toBe(70) // dx = -20, scrollLeft -= dx
-    expect(scrollEl.scrollTop).toBe(70) // dy = -30, scrollTop -= dy
+    expect(panBy).toHaveBeenCalledWith(-20, -30)
     expect(scrollBySpy).not.toHaveBeenCalled() // the page never scrolls
 
     pointer('pointerup', { clientX: 80, clientY: 70 })

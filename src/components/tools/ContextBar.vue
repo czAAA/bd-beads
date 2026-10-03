@@ -19,12 +19,20 @@ const props = defineProps<{
   /** Whether a copied block is armed to paste (useSelectionGesture's pasteProjectionActive). */
   pasteArmed: boolean
   canRemoveLine: boolean
+  /** Whether the Frame is being set: the bar then holds the Frame's size, Fit to drawing and Done (v16). */
+  settingFrame?: boolean
+  /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
+  frameSummary?: string
+  /** Why Rotate is off, when it is: it turns the Frame, so it needs one, and waits while Row progress is on. It is named by this too. */
+  rotateOff?: string
 }>()
 
 const emit = defineEmits<{
   copy: []
   rotate: []
   'remove-line': []
+  'fit-frame': []
+  'done-frame': []
   /** The pre-copy clear x and the post-copy Cancel both just back out one step (App.vue's backOutOfSelect). */
   dismiss: []
 }>()
@@ -39,21 +47,38 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
 
 <template>
   <div
-    v-if="selectionSize || pasteArmed"
+    v-if="settingFrame || selectionSize || pasteArmed"
     ref="rowEl"
     class="context-bar"
-    :class="{ 'context-bar--armed': pasteArmed }"
+    :class="{ 'context-bar--armed': pasteArmed && !settingFrame }"
     role="toolbar"
     :aria-label="t.contextBar.label"
     data-testid="context-bar"
   >
-    <template v-if="!pasteArmed">
+    <template v-if="settingFrame">
+      <span class="context-bar__size context-bar__frame-size" data-testid="context-bar-frame-size">{{ frameSummary }}</span>
+      <button
+        type="button"
+        class="ui-control context-bar__button"
+        :aria-label="t.frame.fitToDrawing"
+        :title="t.frame.fitToDrawing"
+        data-testid="context-bar-fit-frame"
+        @click="emit('fit-frame')"
+      >
+        <AppIcon name="frame" :size="16" />
+      </button>
+      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-done-frame" @click="emit('done-frame')">
+        <AppIcon name="check" :size="16" />
+        <span>{{ t.frame.done }}</span>
+      </button>
+    </template>
+    <template v-else-if="!pasteArmed">
       <span class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
       <button type="button" class="ui-control context-bar__button" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')">
         <AppIcon name="copy" :size="16" />
         <span v-if="dropped < 3">{{ t.tools.copyButton }}</span>
       </button>
-      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-rotate" @click="emit('rotate')">
+      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-rotate" :disabled="!!rotateOff" :aria-label="rotateOff" :title="rotateOff" @click="emit('rotate')">
         <AppIcon name="rotate" :size="16" />
         <span v-if="dropped < 2">{{ t.palette.rotateButton }}</span>
       </button>
@@ -80,7 +105,7 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
     </template>
     <template v-else>
       <span class="context-bar__hint" data-testid="context-bar-hint">{{ t.contextBar.pasteHint }}</span>
-      <button type="button" class="ui-control context-bar__button context-bar__button--accent" data-testid="context-bar-rotate" @click="emit('rotate')">
+      <button type="button" class="ui-control context-bar__button context-bar__button--accent" data-testid="context-bar-rotate" :disabled="!!rotateOff" :aria-label="rotateOff" :title="rotateOff" @click="emit('rotate')">
         <AppIcon name="rotate" :size="16" />
         <span v-if="dropped < 1">{{ t.palette.rotateButton }}</span>
       </button>

@@ -15,7 +15,7 @@ import PalettePicker from '../palette/PalettePicker.vue'
 import PatternImport from '../import/PatternImport.vue'
 import PatternList from '../pattern/PatternList.vue'
 import SaveBox from '../export/SaveBox.vue'
-import SizeControls from '../pattern/SizeControls.vue'
+import FrameControls from '../pattern/FrameControls.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
@@ -49,9 +49,12 @@ const {
   selection,
   pasteProjectionActive,
   onCopy,
-  onToggleRotate,
+  onRotate,
   onRequestDeleteAll,
-  onRequestChangeSize,
+  onStartSetFrame,
+  onSetFrameSize,
+  onFitFrame,
+  onRemoveFrame,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
   replaceBeadCandidates,
@@ -77,7 +80,7 @@ const {
 const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id) })))
 
 function toolLabel(tool: Tool): string {
-  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel }[tool]
+  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
 }
 </script>
 
@@ -125,7 +128,16 @@ function toolLabel(tool: Tool): string {
     <div class="phone-sheet__edit">
       <IconButton icon="undo" variant="toolbox" size="lg" data-tour="undo" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
       <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
-      <IconButton icon="rotate" variant="toolbox" size="lg" :label="t.palette.rotateButton" :selected="activePattern.rotation !== 0" @click="onToggleRotate" />
+      <IconButton
+        icon="rotate"
+        variant="toolbox"
+        size="lg"
+        :label="activePattern.frame ? t.palette.rotateButton : t.frame.rotateNeedsFrame"
+        :disabled="!activePattern.frame || activePattern.rowProgress.enabled"
+        :title="activePattern.frame && activePattern.rowProgress.enabled ? t.size.lockedReason : undefined"
+        data-testid="sheet-rotate"
+        @click="onRotate"
+      />
       <IconButton icon="copy" variant="toolbox" size="lg" data-tour="copy" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
       <IconButton
         icon="paste"
@@ -139,8 +151,15 @@ function toolLabel(tool: Tool): string {
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'size' && activePattern" :title="t.toolbox.groups.size" @close="openPhoneSheet = null">
-    <SizeControls :pattern="activePattern" @change-size="onRequestChangeSize" />
+  <BottomSheet v-if="openPhoneSheet === 'frame' && activePattern" :title="t.frame.title" @close="openPhoneSheet = null">
+    <FrameControls
+      :pattern="activePattern"
+      with-set-frame
+      @set-frame="onStartSetFrame(); openPhoneSheet = null"
+      @set-size="onSetFrameSize"
+      @fit="onFitFrame"
+      @remove="onRemoveFrame"
+    />
   </BottomSheet>
 
   <!--
@@ -165,6 +184,7 @@ function toolLabel(tool: Tool): string {
         </AppSelect>
       </p>
       <SaveBox
+        :has-frame="activePattern.frame !== undefined"
         :save-failed="saveFailed"
         :qr-too-large="qrExport.tooLarge.value"
         :exporting="exporting"
@@ -176,6 +196,8 @@ function toolLabel(tool: Tool): string {
         @export-qr="qrExport.open"
         @export-png="onExportPng"
         @export-pdf="onExportPdf"
+        @fit-frame="onFitFrame(); openPhoneSheet = null"
+        @set-frame="onStartSetFrame(); openPhoneSheet = null"
       />
       <BeadQuantities :pattern="settledPattern" />
     </template>

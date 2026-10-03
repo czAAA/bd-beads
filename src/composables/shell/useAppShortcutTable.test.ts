@@ -17,7 +17,10 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSelectTool: vi.fn(),
     onSelectColor: vi.fn(),
     onDeleteSelection: vi.fn(),
-    onToggleRotate: vi.fn(),
+    onToggleRulers: vi.fn(),
+    onToggleFrame: vi.fn(),
+    settingFrame: () => false,
+    finishFrame: vi.fn(),
     onCopy: vi.fn(),
     pasteAtPointer: vi.fn(),
     onSave: vi.fn(),
@@ -43,6 +46,27 @@ function press(init: KeyboardEventInit) {
 }
 
 describe('useAppShortcutTable', () => {
+  it('F toggles Set Frame only while a Pattern is open', () => {
+    const none = mountTable()
+    press({ key: 'f' })
+    expect(none.deps.onToggleFrame).not.toHaveBeenCalled()
+    none.wrapper.unmount()
+
+    const { deps, wrapper } = mountTable({ activePattern: () => ({}) as never })
+    press({ key: 'f' })
+    expect(deps.onToggleFrame).toHaveBeenCalledOnce()
+    wrapper.unmount()
+  })
+
+  it('Escape finishes Set Frame before Select or the default tool take it', () => {
+    const { deps, wrapper } = mountTable({ settingFrame: () => true, activeTool: () => 'erase' })
+    press({ key: 'Escape' })
+    expect(deps.finishFrame).toHaveBeenCalledOnce()
+    expect(deps.backOutOfSelect).not.toHaveBeenCalled()
+    expect(deps.onSelectTool).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it('routes Ctrl+Z to undo and Ctrl+Shift+Z / Ctrl+Y to redo', () => {
     const { deps, wrapper } = mountTable()
     press({ key: 'z', ctrlKey: true })

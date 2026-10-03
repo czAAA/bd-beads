@@ -1,5 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { openApp, settle } from '../support/app'
+import { openApp, patternBox, settle } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
 import { fixturePicture } from '../support/picture'
 
@@ -136,8 +136,8 @@ function onScreenBeads(
 ): { x: number; y: number }[] {
   const margin = 40
   const beads: { x: number; y: number }[] = []
-  for (let row = 0; row < pattern.rows; row += 1) {
-    for (let column = 0; column < pattern.columns; column += 1) {
+  for (let row = 0; row < pattern.frame!.rows; row += 1) {
+    for (let column = 0; column < pattern.frame!.columns; column += 1) {
       const centre = beadCentre(pattern, box, zoom, { row, column })
       if (centre.x > margin && centre.x < viewport.width - margin && centre.y > margin && centre.y < viewport.height - margin) {
         beads.push(centre)
@@ -183,7 +183,7 @@ for (const slowdown of SLOWDOWNS) {
       await settle(page)
       const zoomPercent = Number.parseInt((await page.getByTestId('zoom-level').textContent()) ?? '100', 10)
       const zoom = zoomPercent / 100
-      const box = (await grid.boundingBox())!
+      const box = await patternBox(page, (await grid.boundingBox())!)
       const beads = onScreenBeads(big, box, zoom, page.viewportSize()!)
 
       if (wanted('hover')) {

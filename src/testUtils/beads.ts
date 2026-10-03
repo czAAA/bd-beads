@@ -1,8 +1,12 @@
+import { beadColorAt, frameGrid, patternDimensions } from '../domain/pattern'
 import type { VueWrapper } from '@vue/test-utils'
+import { expect } from 'vitest'
 import PatternSurface from '../components/canvas/PatternSurface.vue'
-import { CELL_SIZE_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
+import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Selection } from '../domain/selection'
-import { patternExtentPx, rowShiftPx, rowTopPx } from '../rendering/patternRenderer'
+import { gridToDisplayed } from '../rendering/canvasView'
+import { labelAt, visibleRulerLabels, type RulerLabel } from '../rendering/rulers'
+import { rowShiftPx, rowTopPx } from '../rendering/patternRenderer'
 
 /**
  * Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109 and 110). The surface is one
@@ -40,39 +44,24 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
   if (typeof at !== 'number') {
     return at
   }
-  const { columns } = drawnPattern(wrapper)
+  const { columns } = patternDimensions(drawnPattern(wrapper))
   return { row: Math.floor(at / columns), column: at % columns }
 }
 
-/** Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom and rotation. */
+/** Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom, rotation and scroll. */
 function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as 'loom' | 'peyote' | 'brick'
-  const columns = Number(root.attributes('data-columns'))
-  const rows = Number(root.attributes('data-rows'))
   const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
+  const scrollX = Number(root.attributes('data-scroll-x'))
+  const scrollY = Number(root.attributes('data-scroll-y'))
   const { row, column } = positionOf(wrapper, at)
 
   const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2
   const y = rowTopPx(technique, row) + CELL_SIZE_PX / 2
-  const border = GRID_BORDER_PX * zoom
-  const extent = patternExtentPx(technique, columns, rows)
-  // Each quarter turn clockwise carries the Pattern's own (x, y) to (height − y, x); composing that with itself
-  // gives 180° and 270° (ticket 171), the same forward mapping patternRenderer's gridToRegion uses.
-  const [dx, dy] = ((): [number, number] => {
-    switch (rotation) {
-      case 90:
-        return [extent.height - y, x]
-      case 180:
-        return [extent.width - x, extent.height - y]
-      case 270:
-        return [y, extent.width - x]
-      default:
-        return [x, y]
-    }
-  })()
-  return { clientX: border + dx * zoom, clientY: border + dy * zoom }
+  const [displayedX, displayedY] = gridToDisplayed(rotation, x, y, zoom)
+  return { clientX: displayedX - scrollX, clientY: displayedY - scrollY }
 }
 
 /** Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the test, as it is up to a hand. */
@@ -103,12 +92,12 @@ export async function leaveSurface(wrapper: Anywhere): Promise<void> {
 /** A bead's color as a `#rrggbb`, or null while it is empty. */
 export function beadColor(wrapper: Anywhere, at: BeadAt): string | null {
   const { row, column } = positionOf(wrapper, at)
-  return drawnPattern(wrapper).grid[row]![column]!.color
+  return beadColorAt(drawnPattern(wrapper), row, column)
 }
 
 /** Every bead's color, row by row. */
 export function beadColors(wrapper: Anywhere): (string | null)[][] {
-  return drawnPattern(wrapper).grid.map((cells) => cells.map((cell) => cell.color))
+  return frameGrid(drawnPattern(wrapper)).map((cells) => cells.map((cell) => cell.color))
 }
 
 /** The rectangle marked out with the Select tool, if there is one. */
@@ -122,7 +111,7 @@ export function selectedBeadCount(wrapper: Anywhere): number {
   if (!marked) {
     return 0
   }
-  const { rows, columns } = drawnPattern(wrapper)
+  const { rows, columns } = patternDimensions(drawnPattern(wrapper))
   return (
     Math.max(0, Math.min(marked.top + marked.rows, rows) - marked.top) *
     Math.max(0, Math.min(marked.left + marked.columns, columns) - marked.left)
@@ -154,4 +143,33 @@ export function rowProgressView(wrapper: Anywhere) {
   const { enabled, direction, currentRow, currentColumn } = drawnPattern(wrapper).rowProgress
   const current = direction === 'rows' ? currentRow : currentColumn
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
+}
+
+/** Every ruler number the open canvas lays out for the view the surface is in (a surface with no layout has no edge to cut them at). */
+export function rulerNumbers(wrapper: Anywhere): RulerLabel[] {
+  const root = surfaceRoot(wrapper)
+  return visibleRulerLabels(drawnPattern(wrapper), {
+    technique: root.attributes('data-technique') as 'loom' | 'peyote' | 'brick',
+    rotation: Number(root.attributes('data-rotation')) as Rotation,
+    zoom: Number(root.attributes('data-zoom')),
+    scroll: { x: Number(root.attributes('data-scroll-x')), y: Number(root.attributes('data-scroll-y')) },
+    viewport: { width: Infinity, height: Infinity },
+    fontPx: 11,
+  })
+}
+
+/**
+ * Presses the number of a row or column on a ruler, as a pointer does: `index` counts from the first (0), and `edge` is
+ * the side it is on — the left or top ruler (start) or the right or bottom one (end), which only a Frame has.
+ */
+export async function pressRulerNumber(wrapper: Anywhere, axis: 'row' | 'column', index: number, edge: 'start' | 'end' = 'start'): Promise<void> {
+  const matches = rulerNumbers(wrapper)
+    .filter((label) => label.axis === axis && label.index === index)
+    .sort((a, b) => (axis === 'row' ? a.x - b.x : a.y - b.y))
+  const label = edge === 'start' ? matches[0] : matches.at(-1)
+  if (!label || (edge === 'end' && matches.length < 2)) {
+    throw new Error(`No ${edge} ${axis} ruler number ${index + 1} to press`)
+  }
+  expect(labelAt(rulerNumbers(wrapper), { x: label.x, y: label.y })).toBeDefined()
+  await surfaceRoot(wrapper).trigger('pointerdown', { clientX: label.x, clientY: label.y, button: 0, buttons: 1 })
 }

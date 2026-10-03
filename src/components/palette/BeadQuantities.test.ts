@@ -198,3 +198,22 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     })
   })
 })
+
+describe('BeadQuantities and the Frame (ticket 233)', () => {
+  it('counts the Frame only, leaving out beads that lie outside it', () => {
+    const framed = paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const withOutsider = { ...framed, beads: { ...framed.beads, 40: { 40: '#e63746' } } }
+    const wrapper = mountQuantities(withOutsider)
+
+    expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
+  })
+
+  it('keeps its header and says "Set Frame to count beads." with no Frame', () => {
+    const { frame: _frame, ...open } = paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const wrapper = mountQuantities(open)
+
+    expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe('Set Frame to count beads.')
+    expect(wrapper.find('table').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Beads needed')
+  })
+})

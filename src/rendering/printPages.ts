@@ -1,3 +1,4 @@
+import { patternDimensions } from '../domain/pattern'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
@@ -180,7 +181,7 @@ export interface Span {
   last: number
 }
 
-type RulerShape = Pick<Pattern, 'columns' | 'rows' | 'rotation'>
+type RulerShape = Pick<Pattern, 'frame' | 'beads' | 'rotation'>
 
 /**
  * Each quarter turn reverses one axis and swaps which of columns/rows is which (composing gridToRegion's own per-turn
@@ -196,13 +197,13 @@ function downReversed(rotation: Rotation): boolean {
 
 /** The Pattern's own number for a bead at this across-axis index (a turned Pattern's rows may run across), counted from its far end when the turn reverses this axis. */
 function acrossNumber(pattern: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(pattern.rotation) ? pattern.rows : pattern.columns
+  const dimension = rotationSwapsAxes(pattern.rotation) ? patternDimensions(pattern).rows : patternDimensions(pattern).columns
   return acrossReversed(pattern.rotation) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
 function downNumber(pattern: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(pattern.rotation) ? pattern.columns : pattern.rows
+  const dimension = rotationSwapsAxes(pattern.rotation) ? patternDimensions(pattern).columns : patternDimensions(pattern).rows
   return downReversed(pattern.rotation) ? dimension - index : index + 1
 }
 
@@ -281,8 +282,8 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
  * side column's room far better than the fixed band left under a truly wide one, and picking by shape alone once
  * left it tiny with the rest of the sheet empty.
  */
-export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>, page: PageSize) {
-  const wide = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
+export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'frame' | 'beads' | 'rotation'>, page: PageSize) {
+  const wide = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, 1, pattern.rotation)
   const top = PRINT_MARGIN + mm(30)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const maxZoom = mm(7) / CELL_SIZE_PX
@@ -416,7 +417,7 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
   }
 
   // The whole Pattern, on its board, with rulers every 10, the 10-bead lines and the parts dashed and numbered.
-  const whole = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, layout.zoom, pattern.rotation)
+  const whole = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, layout.zoom, pattern.rotation)
   drawBoard(context, pattern, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board)
   const grid = displayedGrid(pattern)
   drawRulers(context, pattern, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)

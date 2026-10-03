@@ -21,6 +21,7 @@ export type DrawingContext = Pick<
   | 'moveTo'
   | 'lineTo'
   | 'arcTo'
+  | 'arc'
   | 'roundRect'
   | 'drawImage'
   | 'imageSmoothingEnabled'
@@ -33,6 +34,12 @@ export type DrawingContext = Pick<
   | 'lineWidth'
   | 'lineCap'
   | 'setLineDash'
+  | 'fillText'
+  | 'font'
+  | 'textAlign'
+  | 'textBaseline'
+  | 'translate'
+  | 'rotate'
 >
 
 /**
@@ -41,6 +48,18 @@ export type DrawingContext = Pick<
  * a stylesheet to ask; patternThemes.test.ts keeps them equal to tokens.json.
  */
 export interface PatternTheme {
+  /** The open canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
+  canvas: string
+  /** The 1.5px dots that mark empty bead positions on the open canvas (`bead-empty`). */
+  dot: string
+  /** The rectangle round a piece (`line-strong`), and round the piece being drawn (`muted`). */
+  pieceLine: string
+  pieceLineActive: string
+  /** The Frame's line and handles (`ink`). */
+  frameLine: string
+  /** Ruler numbers: regular (`ruler`) and every 5th, bold (`body`). */
+  ruler: string
+  rulerStrong: string
   /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
   /** The faint rim round every bead (`bead-rim`), or null for none: dark draws none. */
@@ -67,6 +86,13 @@ export interface PatternTheme {
 
 /** The light theme (BeadBoard card). */
 export const LIGHT_THEME: PatternTheme = {
+  canvas: '#fafafa',
+  dot: '#d8d2cc',
+  pieceLine: '#c7c7c7',
+  pieceLineActive: '#6a6a6a',
+  frameLine: '#1f1f1f',
+  ruler: '#6a6a6a',
+  rulerStrong: '#4a4a4a',
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
   emptyBead: '#d8d2cc',
@@ -81,6 +107,13 @@ export const LIGHT_THEME: PatternTheme = {
 
 /** The dark theme: no rim, finished rows in grey. */
 export const DARK_THEME: PatternTheme = {
+  canvas: '#202020',
+  dot: '#3c3c3c',
+  pieceLine: '#3a3a3a',
+  pieceLineActive: '#949494',
+  frameLine: '#ffffff',
+  ruler: '#888888',
+  rulerStrong: '#cccccc',
   background: '#202020',
   rim: null,
   emptyBead: '#3c3c3c',
@@ -95,6 +128,13 @@ export const DARK_THEME: PatternTheme = {
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
 export const CONTRAST_THEME: PatternTheme = {
+  canvas: '#ffffff',
+  dot: '#b8b0a8',
+  pieceLine: '#000000',
+  pieceLineActive: '#3d3d3d',
+  frameLine: '#000000',
+  ruler: '#3d3d3d',
+  rulerStrong: '#1f1f1f',
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',

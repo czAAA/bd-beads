@@ -1,4 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
+import { sizeOf, type Sized } from './canvas'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
@@ -39,9 +40,10 @@ export interface EstimatedSizeMm {
  *
  * Width and height follow the rotated view, the way summarizePattern's do: a quarter turn either way swaps them.
  */
-export function estimatedSizeMm(pattern: GridDimensions & { rotation?: Rotation }, bead: Bead): EstimatedSizeMm {
-  const widthMm = pattern.columns * beadPitchMm(bead)
-  const heightMm = pattern.rows * bead.heightMm
+export function estimatedSizeMm(pattern: Sized & { rotation?: Rotation }, bead: Bead): EstimatedSizeMm {
+  const { columns, rows } = sizeOf(pattern)
+  const widthMm = columns * beadPitchMm(bead)
+  const heightMm = rows * bead.heightMm
   return pattern.rotation !== undefined && rotationSwapsAxes(pattern.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 

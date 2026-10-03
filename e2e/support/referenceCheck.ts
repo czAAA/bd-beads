@@ -1,8 +1,11 @@
+import { beadColorAt } from '../../src/domain/pattern'
 import { writeFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Pattern } from '../../src/domain/pattern'
-import { isInFinishedRow } from '../../src/domain/pattern'
+import { isInFinishedRow, patternFrame } from '../../src/domain/pattern'
+import { displayedBox } from '../../src/rendering/canvasView'
+import type { Region } from '../../src/rendering/patternRenderer'
 import { LIGHT_THEME } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './patterns'
@@ -41,17 +44,17 @@ function rgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
 }
 
-/** How much of its own color a finished bead keeps in the light theme, over the board (BeadBoard card: 28%). */
+/** How much of its own color a finished bead keeps in the light theme, over the open canvas (28%). */
 const FINISHED_SHARE = 0.28
 
-/** The color a bead should show at its centre, from the Pattern alone. A finished row's beads are their own color at 28% over the board. */
+/** The color a bead should show at its centre, from the Pattern alone. A finished row's beads are their own color at 28% over the open canvas. */
 function expectedCentre(pattern: Pattern, row: number, column: number): [number, number, number] {
-  const color = pattern.grid[row]![column]!.color
+  const color = beadColorAt(pattern, row, column)
   const own = rgb(color ?? LIGHT_THEME.emptyBead)
   if (!isInFinishedRow(pattern, { row, column })) {
     return own
   }
-  const board = rgb(LIGHT_THEME.background)
+  const board = rgb(LIGHT_THEME.canvas)
   return own.map((channel, index) => FINISHED_SHARE * channel + (1 - FINISHED_SHARE) * board[index]!) as [number, number, number]
 }
 
@@ -71,8 +74,8 @@ export function wrongBeads(
 ): string[] {
   const png = PNG.sync.read(image)
   const wrong: string[] = []
-  for (let row = 0; row < pattern.rows; row += 1) {
-    for (let column = 0; column < pattern.columns; column += 1) {
+  for (let row = 0; row < pattern.frame!.rows; row += 1) {
+    for (let column = 0; column < pattern.frame!.columns; column += 1) {
       if (ignore.has(`(${row}, ${column})`)) {
         continue
       }
@@ -119,8 +122,13 @@ export function compareToReference(
  */
 export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
-/** Writes a new reference: the whole Pattern surface, from `origin`, at its drawn size. */
-export async function writeReference(page: Page, path: string, box: { width: number; height: number }, origin: { x: number; y: number }): Promise<void> {
-  const image = await page.screenshot({ clip: { ...origin, width: Math.ceil(box.width), height: Math.ceil(box.height) } })
-  writeFileSync(path, image)
+/** The pixels the Pattern's Frame covers on screen, from the Pattern's corner: turned and zoomed, to whole pixels. */
+export function shownRegion(corner: { x: number; y: number }, pattern: Pattern, zoom: number): Region {
+  const shown = displayedBox(pattern.technique, pattern.rotation, patternFrame(pattern), zoom)
+  return { x: Math.floor(corner.x + shown.x), y: Math.floor(corner.y + shown.y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
+}
+
+/** Writes a new reference: the pixels the Pattern's Frame covers. */
+export async function writeReference(page: Page, path: string, region: Region): Promise<void> {
+  writeFileSync(path, await page.screenshot({ clip: region }))
 }

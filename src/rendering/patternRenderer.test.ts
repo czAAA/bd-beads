@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
-import { createPattern, type Grid, type Pattern, type Technique } from '../domain/pattern'
+import { createPattern, withFrameGrid, type Grid, type Pattern, type Technique } from '../domain/pattern'
 import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import {
   displayedExtentPx,
@@ -24,12 +24,14 @@ function beadsDrawn(pattern: Pattern, region: Region, zoom = 1): BeadShape[] {
   return beads
 }
 
-function patternOf(technique: Technique, columns: number, rows: number, extra: Partial<Pattern> = {}): Pattern {
-  return { ...createPattern({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
+function patternOf(technique: Technique, columns: number, rows: number, extra: Partial<Pattern> & { grid?: Grid } = {}): Pattern {
+  const { grid, ...rest } = extra
+  const pattern = { ...createPattern({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  return grid ? withFrameGrid(pattern, grid) : pattern
 }
 
 const whole = (pattern: Pattern, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const { width, height } = displayedExtentPx(pattern.technique, pattern.frame!.columns, pattern.frame!.rows, zoom, pattern.rotation)
   return { x: 0, y: 0, width, height }
 }
 

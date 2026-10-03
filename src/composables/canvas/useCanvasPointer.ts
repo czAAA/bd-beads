@@ -34,6 +34,9 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
 
   function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
     const tool = deps.activeTool()
+    if (tool === 'hand') {
+      return []
+    }
     if (tool === 'select') {
       return deps.pastePreviewCells(pattern, hovered)
     }
@@ -87,6 +90,10 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     }
 
     const tool = deps.activeTool()
+    // The Hand tool moves the canvas (the surface handles the drag) and never changes a bead.
+    if (tool === 'hand') {
+      return
+    }
     if (tool === 'select') {
       deps.beginSelectPress(row, column)
       return
@@ -140,6 +147,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
   function onCellSecondaryDown(row: number, column: number) {
     if (deps.spaceHeld()) {
+      return
+    }
+
+    // The Hand tool changes no bead, with either button.
+    if (deps.activeTool() === 'hand') {
       return
     }
 

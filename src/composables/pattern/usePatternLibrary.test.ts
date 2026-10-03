@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createPattern, paintCells, type Pattern, frameGrid } from '../../domain/pattern'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { loadPatterns } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
@@ -69,7 +69,7 @@ describe('usePatternLibrary', () => {
 
     library.replacePattern(withPaintedCell(pattern, 0, 0))
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('holds back a deferred replace until the pending save is flushed', () => {
@@ -79,12 +79,12 @@ describe('usePatternLibrary', () => {
 
     library.replacePattern(withPaintedCell(pattern, 0, 0), { deferSave: true })
 
-    expect(library.activePattern.value!.grid[0]![0]!.color).toBe('#e63746')
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(library.activePattern.value!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
     library.flushPendingSave()
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('writes once for a whole stroke of deferred cells, not once per cell', () => {
@@ -100,7 +100,7 @@ describe('usePatternLibrary', () => {
     library.flushPendingSave()
 
     expect(writes.count).toBe(1)
-    expect(loadPatterns()[0]!.grid[0]!.every((cell) => cell.color === '#e63746')).toBe(true)
+    expect(frameGrid(loadPatterns()[0]!)[0]!.every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
   it('flushing with nothing pending writes nothing', () => {
@@ -121,7 +121,7 @@ describe('usePatternLibrary', () => {
     library.replacePattern(withPaintedCell(pattern, 0, 0), { deferSave: true })
     library.replacePattern(withPaintedCell(library.activePattern.value!, 1, 1))
 
-    const grid = loadPatterns()[0]!.grid
+    const grid = frameGrid(loadPatterns()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[1]![1]!.color).toBe('#e63746')
   })
@@ -213,7 +213,7 @@ describe('usePatternLibrary', () => {
 
     library.flushPendingSave()
 
-    expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(library.saveFailed.value).toBe(false)
   })
 
@@ -227,7 +227,7 @@ describe('usePatternLibrary', () => {
       const saved = library.saveNow()
 
       expect(saved).toBe(true)
-      expect(loadPatterns()[0]!.grid[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
     })
 
     it('writes even with nothing pending, so a "saved" answer never rests on an assumption', () => {

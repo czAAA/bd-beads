@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import PatternImport from './PatternImport.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import type { PixelData } from '../../domain/imageConversion'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createPattern, paintCells, type Pattern, frameGrid } from '../../domain/pattern'
 import { serializeLibrary, serializePattern } from '../../domain/patternFile'
 import { patternQrMatrix } from '../../domain/qrExport'
 import { rasterizeQrMatrix } from '../../testUtils/rasterizeQrMatrix'
@@ -77,7 +77,7 @@ describe('PatternImport import', () => {
     const [added] = wrapper.emitted('import')![0] as [Pattern[]]
     expect(added).toHaveLength(1)
     expect(added[0]!.id).not.toBe(local.id)
-    expect(added[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(added[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('says so and imports nothing when the file is not a bd-beads file', async () => {
@@ -113,7 +113,7 @@ describe('PatternImport QR import (ticket 68)', () => {
     const [added] = wrapper.emitted('import')![0] as [Pattern[]]
     expect(added).toHaveLength(1)
     expect(added[0]!.id).not.toBe(local.id)
-    expect(added[0]!.grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(added[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('says so and imports nothing when the picture holds no QR code', async () => {

@@ -1,8 +1,11 @@
 import { computed, inject, provide, ref, watch, type InjectionKey, type Ref } from 'vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import {
+  frameGrid,
   moveToRow,
+  patternDimensions,
   setRowProgressEnabled,
+  withFrameGrid,
   type CreatePatternInput,
   type Pattern,
 } from '../../domain/pattern'
@@ -88,9 +91,10 @@ export function useTour(deps: TourDeps) {
     const pattern = deps.currentPattern()
     return {
       patternId: pattern?.id,
-      columns: pattern?.columns ?? 0,
-      rows: pattern?.rows ?? 0,
-      grid: pattern?.grid ?? [],
+      // The Tour reads the Frame it made; a canvas with none (drawn anywhere) is not the Tour's Pattern.
+      columns: pattern?.frame?.columns ?? 0,
+      rows: pattern?.frame?.rows ?? 0,
+      grid: pattern?.frame ? frameGrid(pattern) : [],
       tool: deps.activeTool(),
       colorId: deps.selectedColorId(),
       selection: deps.selection(),
@@ -205,13 +209,13 @@ export function useTour(deps: TourDeps) {
 
     switch (current) {
       case 'create':
-        if (!pattern || pattern.columns !== TOUR_COLUMNS || pattern.rows !== TOUR_ROWS) {
+        if (!pattern || patternDimensions(pattern).columns !== TOUR_COLUMNS || patternDimensions(pattern).rows !== TOUR_ROWS) {
           deps.createPattern({ name: deps.draftName(), ...TOUR_CREATE })
         }
         return
       case 'remove-line':
       case 'size':
-        if (pattern && (pattern.columns !== TOUR_COLUMNS || pattern.rows !== TOUR_ROWS)) {
+        if (pattern && (patternDimensions(pattern).columns !== TOUR_COLUMNS || patternDimensions(pattern).rows !== TOUR_ROWS)) {
           deps.undo()
         }
         markDone(current)
@@ -226,7 +230,7 @@ export function useTour(deps: TourDeps) {
         const stepIndex = { fill: 2, outline: 3, rhombus: 4, eye: 5, copy: 6, finish: 7, erase: 8 }[current]
         if (pattern && stepIndex) {
           deps.clearSelection()
-          deps.commitGridChange(pattern, { ...pattern, grid: afterStep(stepIndex) })
+          deps.commitGridChange(pattern, withFrameGrid(pattern, afterStep(stepIndex)))
         }
         markDone(current)
       }

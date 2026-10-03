@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { summarizePattern } from '../../domain/pattern'
-import ChangeSizeModal from '../pattern/ChangeSizeModal.vue'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import NameOnExportsModal from '../export/NameOnExportsModal.vue'
 import QrExportPanel from '../export/QrExportPanel.vue'
@@ -14,8 +13,6 @@ const {
   deleteAllConfirmOpen,
   onCancelDeleteAll,
   onConfirmDeleteAll,
-  changeSizeOpen,
-  onConfirmChangeSize,
   replaceBeadPendingBead,
   replaceBeadConfirmMessage,
   onCancelReplaceBead,
@@ -63,13 +60,6 @@ const {
     :cancel-label="t.replaceBead.cancelButton"
     @confirm="onConfirmReplaceBead"
     @cancel="onCancelReplaceBead"
-  />
-
-  <ChangeSizeModal
-    v-if="changeSizeOpen && activePattern"
-    :pattern="activePattern"
-    @confirm="onConfirmChangeSize"
-    @cancel="changeSizeOpen = false"
   />
 
   <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->

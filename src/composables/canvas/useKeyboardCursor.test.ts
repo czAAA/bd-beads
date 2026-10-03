@@ -10,8 +10,7 @@ function setup(hasSelection = false) {
   })
   const deps = {
     currentPattern: () => pattern,
-    zoom: () => 1,
-    scroller: () => null,
+    reveal: vi.fn(),
     hasSelection: () => hasSelection,
     onCellHover: vi.fn(),
     onHoverEnd: vi.fn(),
@@ -31,15 +30,16 @@ function press(key: string, init: KeyboardEventInit = {}) {
 }
 
 describe('useKeyboardCursor', () => {
-  it('moves with the arrows, stays inside the grid, and announces', () => {
+  it('moves with the arrows, past the Frame and into the negative, keeps itself in view, and announces', () => {
     const { beadCursor, deps, onPatternKey } = setup()
     onPatternKey(press('ArrowRight'))
     onPatternKey(press('ArrowDown'))
     expect(beadCursor.value).toEqual({ row: 1, column: 1 })
     onPatternKey(press('ArrowUp'))
     onPatternKey(press('ArrowUp'))
-    expect(beadCursor.value).toEqual({ row: 0, column: 1 })
-    expect(deps.onCellHover).toHaveBeenLastCalledWith(0, 1)
+    expect(beadCursor.value).toEqual({ row: -1, column: 1 })
+    expect(deps.onCellHover).toHaveBeenLastCalledWith(-1, 1)
+    expect(deps.reveal).toHaveBeenLastCalledWith({ row: -1, column: 1 })
     expect(deps.announceCursor).toHaveBeenCalledTimes(4)
   })
 
@@ -48,7 +48,7 @@ describe('useKeyboardCursor', () => {
     onPatternKey(press('End'))
     expect(beadCursor.value.column).toBe(4)
     onPatternKey(press('PageDown'))
-    expect(beadCursor.value.row).toBe(3)
+    expect(beadCursor.value.row).toBe(10)
     onPatternKey(press('Home'))
     onPatternKey(press('PageUp'))
     expect(beadCursor.value).toEqual({ row: 0, column: 0 })

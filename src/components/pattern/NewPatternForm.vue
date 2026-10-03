@@ -100,6 +100,9 @@ const height = computed(() => Number(heightText.value))
 const selectedBead = computed(() => props.beads.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
+/** Whether either size field has been filled: with both empty the Pattern is an open canvas with no Frame, and with one the other is required. */
+const sizeEntered = computed(() => widthText.value.trim() !== '' || heightText.value.trim() !== '')
+
 /** A size in beads is a whole number of them, at least one; mm/cm just have to be positive. */
 const isSizeStated = computed(() => {
   const stated = width.value > 0 && height.value > 0
@@ -117,7 +120,8 @@ const dimensions = computed(() =>
     : undefined,
 )
 
-const isValid = computed(() => isSizeStated.value)
+/** Create Pattern waits only for a size that is half-stated or wrong: no size at all is a canvas to draw on anywhere. */
+const isValid = computed(() => !sizeEntered.value || isSizeStated.value)
 
 const techniqueOptions = computed(() => [
   { value: 'loom' as const, label: t.value.form.techniqueLoom },
@@ -162,8 +166,11 @@ const touched = ref({ width: false, height: false })
 
 /** A size field's error, saying what to enter (`writing.md`, Field error); none until the field has been left. */
 function sizeError(text: string, value: number, field: 'width' | 'height'): string | undefined {
-  if (!touched.value[field]) return undefined
-  if (text.trim() === '' || !(value > 0)) return field === 'width' ? t.value.form.enterWidth : t.value.form.enterHeight
+  // Nothing in either field is an open canvas, not an error; one filled field asks for the other at once.
+  if (!sizeEntered.value) return undefined
+  const missing = text.trim() === ''
+  if (!missing && !touched.value[field]) return undefined
+  if (missing || !(value > 0)) return field === 'width' ? t.value.form.enterWidth : t.value.form.enterHeight
   if (unit.value === 'beads' && !Number.isInteger(value)) return t.value.form.enterWholeBeads
   return undefined
 }
@@ -199,7 +206,7 @@ function currentInput(): CreatePatternInput {
     name: name.value.trim(),
     technique: technique.value,
     beadId: beadId.value,
-    size: { width: width.value, height: height.value, unit: unit.value },
+    ...(isSizeStated.value ? { size: { width: width.value, height: height.value, unit: unit.value } } : {}),
     makerName: makerName.value.trim(),
   }
 }
@@ -269,7 +276,7 @@ const reading = ref(false)
 
 /** A picture dropped on Convert image: only once a size is stated, the same as picking one. */
 function onDropImage(file: File) {
-  if (isValid.value) void convertFile(file)
+  if (isSizeStated.value) void convertFile(file)
 }
 </script>
 
@@ -314,6 +321,12 @@ function onDropImage(file: File) {
         data-testid="technique-select"
       />
     </FormField>
+
+    <!-- The Frame is optional (NewPatternForm card): Width and Height with their Unit; empty makes a canvas to draw on anywhere. -->
+    <p class="new-pattern-form__frame-heading" data-testid="new-pattern-frame-heading">
+      <span class="new-pattern-form__frame-title">{{ t.form.frameLabel }}</span>
+      <span class="new-pattern-form__frame-aside">{{ t.form.optional }}</span>
+    </p>
 
     <FormField :label="t.form.unitLabel" label-id="unit-label">
       <template v-if="estimate" #aside>
@@ -391,6 +404,8 @@ function onDropImage(file: File) {
 
 
 
+    <p v-if="!sizeEntered" class="new-pattern-form__hint" data-testid="new-pattern-frame-hint">{{ t.form.frameHint }}</p>
+
     <p v-if="sizeConversion" class="new-pattern-form__conversion" data-testid="size-conversion">
       <span>{{ sizeConversion }}</span>
       <AppTooltip :text="t.form.sizeConversionInfo" placement="top">
@@ -427,8 +442,8 @@ function onDropImage(file: File) {
         data-testid="convert-image-input"
         :accept="imageInputAccept()"
         :title="limitsHint"
-        :disabled="!isValid"
-        :disabled-reason="t.form.enterSizeFirst"
+        :disabled="!isSizeStated"
+        :disabled-reason="t.form.convertNeedsFrame"
         @change="onConvertImage"
         @drop-file="onDropImage"
       />
@@ -447,6 +462,24 @@ function onDropImage(file: File) {
 </template>
 
 <style scoped>
+/* The Frame group's heading: the label in `control`, "optional" beside it in `meta-small` (FormField's own label row). */
+.new-pattern-form__frame-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 calc(var(--space-16) * -0.5);
+}
+
+.new-pattern-form__frame-title {
+  font: var(--type-control);
+  color: var(--ink);
+}
+
+.new-pattern-form__frame-aside {
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
+
 .new-pattern-form {
   display: flex;
   flex-direction: column;

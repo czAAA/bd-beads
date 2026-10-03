@@ -16,7 +16,7 @@ describe('ShortcutsHelp', () => {
     document.body.innerHTML = ''
   })
 
-  it('lists shortcuts grouped under the four Tool group names', () => {
+  it('lists shortcuts grouped under the Tool group names, with the Canvas group (v16) after Tools', () => {
     const wrapper = mountHelp()
 
     const groupTitles = wrapper.findAll('[data-testid="shortcuts-help-group"]').map((group) =>
@@ -24,22 +24,26 @@ describe('ShortcutsHelp', () => {
     )
     expect(groupTitles).toEqual([
       ru.toolbox.groups.tools,
+      ru.shortcutsHelp.canvasGroup,
       ru.toolbox.groups.colors,
       ru.toolbox.groups.edit,
       ru.toolbox.groups.rowProgress,
     ])
   })
 
-  it('names every shortcut from tickets 87, 88, 90, 91, 92, 94, 95', () => {
+  it('names every shortcut from tickets 87, 88, 90, 91, 92, 94, 95, and the canvas ones of ticket 233', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'R', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
+    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'H', 'R', 'Ctrl/Cmd + wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)
     expect(text).toContain(ru.shortcutsHelp.eraseOrClearSelection)
     expect(text).toContain(ru.shortcutsHelp.panCanvas)
+    expect(text).toContain(ru.tools.handLabel)
+    expect(text).toContain(ru.canvas.rulersLabel)
+    expect(text).toContain(ru.shortcutsHelp.zoomCanvas)
     expect(text).toContain(ru.shortcutsHelp.paletteColors)
     expect(text).toContain(ru.tools.pasteLabel)
     expect(text).toContain(ru.tools.saveButton)

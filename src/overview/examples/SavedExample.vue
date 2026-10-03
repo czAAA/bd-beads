@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Grid } from '../../domain/pattern'
+import { framedGrid, type Grid } from '../../domain/pattern'
 import { useI18n } from '../../i18n/useI18n'
 import { thumbnailPixels } from '../../rendering/patternThumbnail'
 import ExampleFrame from './ExampleFrame.vue'
@@ -17,7 +17,7 @@ function draw(canvas: unknown, grid: Grid) {
   if (!(canvas instanceof HTMLCanvasElement)) return
   const context = canvas.getContext('2d')
   if (!context) return
-  const image = thumbnailPixels({ columns: grid[0]!.length, rows: grid.length, rotation: 0, grid }, SIZE)
+  const image = thumbnailPixels({ ...framedGrid(grid), rotation: 0 }, SIZE)
   canvas.width = image.width
   canvas.height = image.height
   context.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0)

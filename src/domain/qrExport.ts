@@ -1,8 +1,9 @@
 import { create as createQrCode } from 'qrcode'
 import jsQR from 'jsqr'
 import type { PixelData } from './imageConversion'
+import { beadsInFrame } from './canvas'
 import { normalizePattern, type Pattern } from './pattern'
-import { decodePattern, encodePattern, type EncodedPattern } from './patternEncoding'
+import { decodePattern, encodePattern, type EncodedGridPattern, type EncodedPattern } from './patternEncoding'
 
 /**
  * QR export (ticket 68, ADR 0015): a Pattern encoded with the same compact run-length color-table encoding
@@ -19,12 +20,14 @@ import { decodePattern, encodePattern, type EncodedPattern } from './patternEnco
  * server, and needs no backend, so ADR 0014's local-only stance holds.
  */
 const QR_FILE_KIND = 'bd-beads/qr-pattern'
-const QR_FILE_VERSION = 1
+/** Version 1 carried a fixed grid (`cells`); version 2 carries beads by position and a Frame (ADR 0026). Both are read, only 2 is written. */
+const QR_FILE_VERSION = 2
+const QR_FILE_VERSIONS: readonly number[] = [1, 2]
 
 interface QrPatternFile {
   kind: typeof QR_FILE_KIND
   version: number
-  pattern: EncodedPattern
+  pattern: EncodedPattern | EncodedGridPattern
 }
 
 /** The fragment key the link carries the Pattern under: `<app url>#pattern=<base64url of the envelope>`. */
@@ -47,7 +50,9 @@ function fromBase64Url(encoded: string): string {
  * QR code's real capacity — see createQrCode's own overflow, not a guessed byte count.
  */
 export function serializePatternForQr(pattern: Pattern, appUrl: string): string {
-  const file: QrPatternFile = { kind: QR_FILE_KIND, version: QR_FILE_VERSION, pattern: encodePattern(pattern) }
+  // The code carries the Pattern, which is the Frame's beads: whatever else is on the canvas stays off it (v16).
+  const carried = pattern.frame ? { ...pattern, beads: beadsInFrame(pattern.beads, pattern.frame) } : pattern
+  const file: QrPatternFile = { kind: QR_FILE_KIND, version: QR_FILE_VERSION, pattern: encodePattern(carried) }
   return `${appUrl}#${SHARE_FRAGMENT_KEY}${toBase64Url(JSON.stringify(file))}`
 }
 
@@ -96,7 +101,7 @@ function parseEnvelope(text: string): Pattern {
   if (typeof file !== 'object' || file === null || file.kind !== QR_FILE_KIND) {
     throw new Error('Not a bd-beads QR code')
   }
-  if (file.version !== QR_FILE_VERSION) {
+  if (typeof file.version !== 'number' || !QR_FILE_VERSIONS.includes(file.version)) {
     throw new Error(`Unsupported bd-beads QR code version: ${String(file.version)}`)
   }
   if (!file.pattern) {

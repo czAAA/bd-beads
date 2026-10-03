@@ -47,7 +47,9 @@ export interface Translations {
     enterHeight: string
     enterWholeBeads: string
     /** Under Convert image while it waits for a size. */
-    enterSizeFirst: string
+    frameLabel: string
+    frameHint: string
+    convertNeedsFrame: string
     /** Between Create Pattern and Convert image. */
     or: string
     /** Beside Unit: the stated size in the other unit, "≈ 40×30 beads". */
@@ -70,6 +72,8 @@ export interface Translations {
     emptyBead: string
     /** The Pattern's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
     patternLabel: string
+    /** The Pattern's name for a screen reader while it has no Frame: an open canvas, with no size to state. */
+    canvasLabel: string
     colorsCount: PluralForms
     progressDone: string
     /** Shown in the canvas strip while the Pattern has keyboard focus. */
@@ -113,6 +117,27 @@ export interface Translations {
     /** The strip's size meta, "40 columns · 30 rows": each count in its plural form, joined by a spaced middle dot. */
     columnsCount: PluralForms
     rowsCount: PluralForms
+    /** The strip's title while the canvas has no Frame (CanvasStrip card, v16). */
+    canvasTitle: string
+    /** "3 pieces": how many Pieces the canvas holds. */
+    piecesCount: PluralForms
+    /** The strip's meta with no Frame ("3 pieces · no Frame") and while the Frame is being set ("3 pieces · setting Frame"). */
+    noFrame: string
+    settingFrame: string
+    /** "2 pieces outside the Frame". */
+    piecesOutside: PluralForms
+    /** The Rulers toggle's name (Rulers card). */
+    rulersLabel: string
+    /** The hint in the drawing area's bottom-left corner (CanvasHint card), in pieces around its key chips. */
+    hint: {
+      scrollOr: string
+      spaceKey: string
+      dragToMove: string
+      scrollToZoom: string
+      hand: string
+      setFrame: string
+      rulers: string
+    }
   }
   shell: {
     /** Under 'No Pattern open yet': what to do (EmptyCanvas card). */
@@ -233,6 +258,8 @@ export interface Translations {
     selectLabel: string
     /** The 4th Tool group member (ticket 89): flood-erases a clicked region's connected same-color cells. */
     eraseLabel: string
+    /** The Hand tool (v16): moves the open canvas by dragging and never changes a bead. */
+    handLabel: string
     copyButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
     saveButton: string
@@ -385,14 +412,48 @@ export interface Translations {
       colors: string
       edit: string
       mirror: string
-      size: string
       rowProgress: string
     }
   }
   /**
-   * The Size Tool group (CONTEXT.md's Estimated size and Resize, ADR 0017): the open Pattern's estimate, and the
-   * button that opens Change size (ticket 172 removed the old stepper controls).
+   * The Frame (CONTEXT.md, ADR 0026) and everything that needs one. The action is always "Set Frame"; "Frame" alone names
+   * the thing, the Toolbox row and the Dock button. The Russian is proposed in the design system and not yet reviewed.
    */
+  frame: {
+    title: string
+    setFrame: string
+    notSet: string
+    /** The number chip's accessible name: pressing it brings the Frame into view. */
+    numberLabel: string
+    fitToDrawing: string
+    removeFrame: string
+    done: string
+    columnsLabel: string
+    rowsLabel: string
+    fewerColumns: string
+    moreColumns: string
+    fewerRows: string
+    moreRows: string
+    /** The one line under a Frame control that says what the Frame is. */
+    explainer: string
+    /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */
+    sizeTooltip: string
+    announceSet: string
+    announceRemoved: string
+    /** Fit to drawing with nothing drawn: there is nothing to wrap. */
+    announceNothingToFit: string
+    announceRotated: string
+    /** Export without a Frame opens a dialog with this title. */
+    exportPromptTitle: string
+    countNeedsFrame: string
+    progressNeedsFrame: string
+    /** Rotate's accessible name while it is disabled for want of a Frame. */
+    rotateNeedsFrame: string
+    /** The Message after Rotate moved pieces out of the way ("{count}" of them): the singular and plural of the sentence. */
+    rotatedMessage: PluralForms
+    /** The cursor and the keyboard while the Frame is being set. */
+    keyboardHint: string
+  }
   size: {
     /** Names the Estimated size readout for assistive technology. */
     estimateLabel: string
@@ -400,32 +461,8 @@ export interface Translations {
     estimateInfoButton: string
     /** The warning tooltip on the Estimated size: it is a guide, not a measurement. */
     estimateWarning: string
-    /** Hover/focus text on the Change size button while Row progress is on and it is disabled. */
+    /** Hover/focus text on the Frame's controls while Row progress is on and they are disabled. */
     lockedReason: string
-  }
-  /** The Delete all control (CONTEXT.md) and its confirmation modal (ticket 42). */
-  /** Change size (ticket 153): the Size group's button and the modal that sets the grid in beads, mm or cm. */
-  changeSize: {
-    button: string
-    title: string
-    columnsLabel: string
-    rowsLabel: string
-    /** A beads-to-beads change; `{from}` and `{to}` are "columns × rows". */
-    messageBeads: string
-    /** A mm/cm change; `{from}` and `{to}` are in beads, `{size}` is "width × height" and `{unit}` the chosen unit. */
-    messagePhysical: string
-    shrinkWarning: string
-    /** Above the crop picker (ticket 173), shown only once the typed size shrinks the grid. */
-    cropHint: string
-    /** The crop picker's own accessible name (ticket 173): a pointer-hover preview of which region a shrink keeps, with no keyboard equivalent. */
-    cropPickerLabel: string
-    problemEmpty: string
-    problemNotANumber: string
-    problemNotPositive: string
-    problemNotWhole: string
-    problemNoBead: string
-    confirmButton: string
-    cancelButton: string
   }
   /** Importing while a Pattern is open asks first whether to switch to what came in (ticket 154). */
   importSwitch: {
@@ -536,6 +573,9 @@ export interface Translations {
     escapeSelectsPaint: string
     /** Ticket 95: Space+drag. */
     panCanvas: string
+    /** The Canvas group (v16): its title and the zoom shortcut. */
+    canvasGroup: string
+    zoomCanvas: string
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
     paletteColors: string
   }

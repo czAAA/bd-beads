@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useFitByPriority } from '../../composables/ui/useFitByPriority'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -13,7 +13,9 @@ import LoadingState from '../ui/LoadingState.vue'
  * state on this device (ADR 0012), a full-width Save Pattern, and Export ▾ with QR code, PNG image and PDF for
  * printing. It only asks; the app does the saving and exporting.
  */
-defineProps<{
+const props = withDefaults(defineProps<{
+  /** Whether the open Pattern has a Frame: exports take only the Frame's beads, so with none Export ▾ asks for one first (v16). */
+  hasFrame?: boolean
   /** The last write to this device was refused (usePatternLibrary's saveFailed). */
   saveFailed: boolean
   /** The open Pattern doesn't fit a single QR code (ADR 0015). */
@@ -24,7 +26,7 @@ defineProps<{
   patternName?: string
   /** The maker's name printed on the exports (ticket 161); empty when not set. */
   makerName?: string
-}>()
+}>(), { hasFrame: true })
 
 const emit = defineEmits<{
   save: []
@@ -35,7 +37,19 @@ const emit = defineEmits<{
   'export-pattern': []
   /** Change or Add the maker's name, from the Export menu's last row (ticket 161). */
   'edit-maker-name': []
+  /** The Export prompt's two ways out: frame every bead drawn, or draw the Frame by hand. */
+  'fit-frame': []
+  'set-frame': []
 }>()
+
+const exportMenu = ref<InstanceType<typeof AppMenu>>()
+const framed = computed(() => props.hasFrame)
+
+function fromPrompt(action: 'fit-frame' | 'set-frame') {
+  exportMenu.value?.close()
+  if (action === 'fit-frame') emit('fit-frame')
+  else emit('set-frame')
+}
 
 const { t, locale } = useI18n()
 
@@ -64,24 +78,33 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
         <span v-show="!saveIconOnly">{{ t.saveBox.saveButton }}</span>
       </AppButton>
       <div class="save-box__export">
-        <AppMenu :label="t.saveBox.exportButton" icon="export" variant="in-box" size="lg" align="end" data-testid="export-menu-button" data-tour="export">
-          <AppMenuItem icon="qr-code" :disabled="qrTooLarge" data-testid="export-qr" @select="emit('export-qr')">
+        <AppMenu ref="exportMenu" :label="t.saveBox.exportButton" icon="export" variant="in-box" size="lg" align="end" :popover="!framed" data-testid="export-menu-button" data-tour="export">
+          <!-- Export needs a Frame (SaveBox card): with none, the menu's place is taken by the prompt "Set Frame to export". -->
+          <div v-if="!framed" class="save-box__prompt" data-testid="export-needs-frame">
+            <p class="save-box__prompt-title">{{ t.frame.exportPromptTitle }}</p>
+            <p class="save-box__prompt-body">{{ t.frame.explainer }}</p>
+            <div class="save-box__prompt-actions">
+              <AppButton variant="toolbox" data-testid="export-fit-frame" @click="fromPrompt('fit-frame')">{{ t.frame.fitToDrawing }}</AppButton>
+              <AppButton variant="primary" icon="frame" data-testid="export-set-frame" @click="fromPrompt('set-frame')">{{ t.frame.setFrame }}</AppButton>
+            </div>
+          </div>
+          <AppMenuItem v-if="framed" icon="qr-code" :disabled="qrTooLarge" data-testid="export-qr" @select="emit('export-qr')">
             {{ t.saveBox.menuQr }}
           </AppMenuItem>
-          <template v-if="qrTooLarge">
+          <template v-if="framed && qrTooLarge">
             <p class="save-box__reason" data-testid="export-qr-reason">{{ t.transfer.qrTooLargeMessage }}</p>
             <AppMenuItem icon="export" data-testid="export-qr-way-out" @select="emit('export-pattern')">
               {{ t.saveBox.exportPatternFile }}
             </AppMenuItem>
           </template>
-          <AppMenuItem icon="image" :disabled="!!exporting" data-testid="export-png" @select="emit('export-png')">
+          <AppMenuItem v-if="framed" icon="image" :disabled="!!exporting" data-testid="export-png" @select="emit('export-png')">
             {{ t.saveBox.menuPng }}
           </AppMenuItem>
-          <AppMenuItem icon="pdf" :disabled="!!exporting" data-testid="export-pdf" @select="emit('export-pdf')">
+          <AppMenuItem v-if="framed" icon="pdf" :disabled="!!exporting" data-testid="export-pdf" @select="emit('export-pdf')">
             {{ t.saveBox.menuPdf }}
           </AppMenuItem>
           <!-- The Export menu ends with the name on exports (NameOnExports card). -->
-          <template #footer>
+          <template v-if="framed" #footer>
             <div class="save-box__name" data-testid="name-on-exports">
               <span class="save-box__name-text">
                 <span class="save-box__name-label">{{ t.saveBox.nameOnExports }}</span>
@@ -109,6 +132,30 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
 </template>
 
 <style scoped>
+.save-box__prompt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.save-box__prompt-title {
+  margin: 0;
+  font: var(--type-control);
+}
+
+.save-box__prompt-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--body);
+}
+
+.save-box__prompt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+}
+
 /* Elevation 1 in light; the `panel` step carries it in dark (the token is none there). */
 .save-box {
   box-sizing: border-box;

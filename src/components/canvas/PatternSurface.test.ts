@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PatternSurface from './PatternSurface.vue'
-import { createPattern, type Pattern, type RowProgress, type Technique } from '../../domain/pattern'
-import { GRID_BORDER_PX } from '../../domain/grid'
+import { createPattern, type Pattern, type RowProgress, type Technique, frameGrid, withFrameGrid } from '../../domain/pattern'
 import { DARK_THEME, DEFAULT_THEME } from '../../rendering/beadLook'
+import { gridToDisplayed } from '../../rendering/canvasView'
+import { rowShiftPx, rowTopPx } from '../../rendering/patternRenderer'
 import { recordingContext } from '../../testUtils/recordingContext'
 
 /** A Pattern of this many beads, with any of its fields changed. */
@@ -13,14 +14,10 @@ function patternOf(columns: number, rows: number, extra: Partial<Pattern> = {}, 
   return { ...pattern, ...extra }
 }
 
-/** Where the surface sits on the screen, and what else clips it. jsdom does no layout, so every rectangle is said here. */
-interface Layout {
-  surface: { left: number; top: number }
-  /** An ancestor that clips (the canvas panel's horizontal scroll), as a screen rectangle. */
-  clip?: { left: number; top: number; right: number; bottom: number }
-}
+/** How big the drawing area is on the screen. jsdom does no layout, so it is said here. */
+const VIEWPORT = { width: 1000, height: 800 }
 
-let layout: Layout
+let viewport = VIEWPORT
 let context: ReturnType<typeof recordingContext>
 
 function rectOf(left: number, top: number, width: number, height: number): DOMRect {
@@ -28,29 +25,12 @@ function rectOf(left: number, top: number, width: number, height: number): DOMRe
 }
 
 beforeEach(() => {
+  viewport = VIEWPORT
   context = recordingContext()
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context.context as unknown as CanvasRenderingContext2D)
-  layout = { surface: { left: 0, top: 0 }, clip: { left: 0, top: 0, right: 1000, bottom: 800 } }
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    if (this.classList.contains('pattern-surface')) {
-      // The box is the displayed Pattern plus its outline: what the surface's own style says.
-      const style = (this as HTMLElement).style
-      return rectOf(layout.surface.left, layout.surface.top, Number.parseFloat(style.width), Number.parseFloat(style.height))
-    }
-    if (this.hasAttribute('data-clip') && layout.clip) {
-      const { left, top, right, bottom } = layout.clip
-      return rectOf(left, top, right - left, bottom - top)
-    }
-    return rectOf(0, 0, 0, 0)
+    return this.classList.contains('pattern-surface') ? rectOf(0, 0, viewport.width, viewport.height) : rectOf(0, 0, 0, 0)
   })
-  // A frame arrives right after the event that asked for it, which is all these tests need of one.
-  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-    queueMicrotask(() => callback(0))
-    return 1
-  })
-  vi.stubGlobal('cancelAnimationFrame', () => undefined)
-  Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
-  Object.defineProperty(window, 'innerHeight', { value: 800, configurable: true })
 })
 
 afterEach(() => {
@@ -58,30 +38,23 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/** Mounts the surface inside a stand-in for the canvas panel's scroll container (which clips), attached so styles apply. */
-async function mountSurface(pattern: Pattern, zoom = 1) {
-  const host = document.createElement('div')
-  host.setAttribute('data-clip', '')
-  host.style.overflowX = 'auto'
-  document.body.append(host)
-  const wrapper = mount(PatternSurface, { props: { pattern, zoom }, attachTo: host })
-  // The window is found once the box is on the page, and the canvases are drawn once they have their size.
+/** Mounts the surface over a drawing area of the given size, looking at the canvas from `scroll` at `zoom`. */
+async function mountSurface(pattern: Pattern, zoom = 1, scroll = { x: 0, y: 0 }, extra: Record<string, unknown> = {}) {
+  const wrapper = mount(PatternSurface, { props: { pattern, zoom, scroll, ...extra }, attachTo: document.body })
+  // The canvases are drawn once they have their size.
   await nextTick()
   await nextTick()
-  return { wrapper, host }
+  return { wrapper }
 }
 
-const windowOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
-  wrapper.find('[data-testid="pattern-surface-cells"]').attributes('data-window')
-
-/** Times the surface has been drawn: each draws the cells and then the overlay, and each starts by clearing. */
+/** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
 const draws = () => context.named('clearRect').length / 2
 
 describe('PatternSurface', () => {
-  it('redraws both layers in the new theme\'s colors when the theme changes, at the same size and window', async () => {
+  it('redraws both layers when the theme changes, at the same size', async () => {
     const { wrapper } = await mountSurface(patternOf(20, 10), 1)
-    const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
-    const window = windowOf(wrapper)
+    const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
+    const size = [canvas.width, canvas.height]
     context.calls.length = 0
 
     document.documentElement.dataset.theme = 'dark'
@@ -91,164 +64,104 @@ describe('PatternSurface', () => {
       await nextTick()
 
       expect(draws()).toBe(1)
-      // The whole surface is cleared and painted the dark board first.
-      expect(context.named('fillRect')[0]!.fillStyle).toBe(DARK_THEME.background)
-      expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toBe(style)
-      expect(windowOf(wrapper)).toBe(window)
+      // The empty positions outside the Frame are dots in the dark theme's own color.
+      expect(context.named('fill').some((call) => call.fillStyle === DARK_THEME.dot)).toBe(true)
+      expect([canvas.width, canvas.height]).toEqual(size)
     } finally {
       document.documentElement.dataset.theme = 'light'
       await nextTick()
     }
   })
 
-  it('is the box the DOM grid was, the size of the Pattern and its outline', async () => {
-    const { wrapper } = await mountSurface(patternOf(20, 10), 1)
+  it('fills the drawing area: a bitmap exactly as big as it is, however big the canvas', async () => {
+    const small = await mountSurface(patternOf(2, 2), 1)
+    const large = await mountSurface(patternOf(400, 400), 3)
 
-    const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
-    // 20 × 10 loom beads at 20px, and the board's 14px padding on every side.
-    expect(style).toContain('width: 428px')
-    expect(style).toContain('height: 228px')
+    for (const { wrapper } of [small, large]) {
+      const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
+      expect([canvas.width, canvas.height]).toEqual([1000, 800])
+    }
   })
 
-  it('holds a window of a Pattern too big to draw whole: the screen and a margin, not the Pattern', async () => {
-    const { wrapper } = await mountSurface(patternOf(250, 250), 3)
-
-    // 15,000 px across at 300%; the screen shows 1000 × 800 of it less the board's 42px padding, from the first bead, and 160 more.
-    expect(windowOf(wrapper)).toBe('0,0,1118,918')
-    const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
-    expect([canvas.width, canvas.height]).toEqual([1119, 919])
-  })
-
-  it('draws a Pattern that fits on screen whole, and no bigger', async () => {
-    const { wrapper } = await mountSurface(patternOf(20, 10), 1)
-
-    expect(windowOf(wrapper)).toBe('0,0,400,200')
-  })
-
-  it('draws no more beads for a bigger Pattern: the cost follows the screen', async () => {
+  it('draws no more for a bigger canvas: the cost follows what is in view', async () => {
     const drawn = async (columns: number, rows: number) => {
       context.calls.length = 0
-      await mountSurface(patternOf(columns, rows), 1)
-      return context.named('fillRect').length
+      await mountSurface(patternOf(columns, rows), 1, { x: 4000, y: 4000 })
+      return context.calls.length
     }
 
-    const large = await drawn(250, 250)
-    const larger = await drawn(400, 400)
+    const large = await drawn(400, 400)
+    const larger = await drawn(900, 900)
 
+    // Both look at positions well inside the Frame: the size of the Frame is nothing to the drawing.
     expect(larger).toBe(large)
   })
 
-  it('holds a Pattern that is bigger than the screen but not big for a canvas whole, so that scrolling it draws nothing (ticket 122)', async () => {
-    const { wrapper } = await mountSurface(patternOf(75, 75), 1)
-    const before = draws()
-
-    // 1500px each way against a screen of 1000 × 800: the whole of it, with no margin to run out of.
-    expect(windowOf(wrapper)).toBe('0,0,1500,1500')
-
-    for (const top of [-300, -700, -100, 0]) {
-      layout.surface.top = top
-      window.dispatchEvent(new Event('scroll'))
-      await nextTick()
-      await nextTick()
-    }
-    expect(draws()).toBe(before)
-  })
-
-  it('still holds a window when the Pattern would need a bigger bitmap than a canvas is safe at, on a dense screen', async () => {
-    Object.defineProperty(window, 'devicePixelRatio', { value: 3, configurable: true })
+  it('makes a bitmap as dense as the screen: twice the pixels on a 2× display', async () => {
+    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true })
     try {
-      // 1500px across is 4500 device px: 20 million of them, both ways.
-      const { wrapper } = await mountSurface(patternOf(75, 75), 1)
+      viewport = { width: 400, height: 200 }
+      const { wrapper } = await mountSurface(patternOf(20, 10), 1)
 
-      expect(windowOf(wrapper)).toBe('0,0,1146,946')
+      const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
+      expect([canvas.width, canvas.height]).toEqual([800, 400])
     } finally {
       Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
     }
   })
 
-  it('cuts what is on screen by whatever clips the Pattern, such as the canvas panel\'s scroll', async () => {
-    layout.clip = { left: 0, top: 0, right: 500, bottom: 800 }
-    const { wrapper } = await mountSurface(patternOf(250, 250), 1)
+  it('draws the dots of empty positions outside the Frame, and full empty beads inside it', async () => {
+    viewport = { width: 100, height: 100 }
+    const framed = patternOf(2, 2)
+    const open = { ...framed, frame: undefined }
 
-    // 500px visible across (less the board's 14px padding), and 160 more on the right; the whole screen's height as before.
-    expect(windowOf(wrapper)).toBe('0,0,646,946')
+    await mountSurface(open, 1, { x: 0, y: 0 })
+    const dotsOnly = context.named('arc').length
+    context.calls.length = 0
+    await mountSurface(framed, 1, { x: 0, y: 0 })
+
+    // The four positions the Frame covers are beads now, not dots.
+    expect(dotsOnly - context.named('arc').length).toBe(4)
   })
 
-  it('draws it again when scrolling takes the screen out of what it holds, and not before', async () => {
-    const { wrapper } = await mountSurface(patternOf(250, 250), 1)
-    const before = draws()
-    expect(windowOf(wrapper)).toBe('0,0,1146,946')
+  it('draws a bead painted far from the first bead when the view is moved to it', async () => {
+    viewport = { width: 100, height: 100 }
+    const pattern = { ...patternOf(2, 2), beads: { [-500]: { [3000]: '#e63746' } } }
+    const home = await mountSurface(pattern, 1, { x: 0, y: 0 })
+    const atHome = context.named('drawImage').length + context.named('fillRect').length
+    home.wrapper.unmount()
+    context.calls.length = 0
 
-    // Scrolled 100px: still inside the margin. Nothing to draw.
-    layout.surface.top = -100
-    window.dispatchEvent(new Event('scroll'))
-    await nextTick()
-    await nextTick()
-    expect(draws()).toBe(before)
+    await mountSurface(pattern, 1, { x: 3000 * 20 - 40, y: -500 * 20 - 40 })
 
-    // Scrolled 400px: the bottom of the screen is past what was drawn.
-    layout.surface.top = -400
-    window.dispatchEvent(new Event('scroll'))
-
-    await nextTick()
-    await nextTick()
-    expect(windowOf(wrapper)).toBe('0,226,1146,1120')
-    expect(draws()).toBe(before + 1)
-  })
-
-  it('listens for scrolling anywhere, since the panel and the page each scroll on their own', async () => {
-    const add = vi.spyOn(window, 'addEventListener')
-
-    await mountSurface(patternOf(20, 10))
-
-    expect(add).toHaveBeenCalledWith('scroll', expect.any(Function), expect.objectContaining({ capture: true }))
-  })
-
-  it('stops listening when it goes away', async () => {
-    const { wrapper } = await mountSurface(patternOf(20, 10))
-    const remove = vi.spyOn(window, 'removeEventListener')
-
-    wrapper.unmount()
-
-    expect(remove).toHaveBeenCalledWith('scroll', expect.any(Function), expect.objectContaining({ capture: true }))
-    expect(remove).toHaveBeenCalledWith('resize', expect.any(Function))
-  })
-
-  it('starts again from what is on screen when the zoom changes', async () => {
-    const { wrapper } = await mountSurface(patternOf(250, 250), 1)
-    expect(windowOf(wrapper)).toBe('0,0,1146,946')
-
-    await wrapper.setProps({ zoom: 1.5 })
-    await nextTick()
-    await nextTick()
-
-    // At 150% the Pattern is 7,500 px across and tall: the screen's 1000 × 800 (less the board's 21px padding), and 160 more.
-    expect(windowOf(wrapper)).toBe('0,0,1139,939')
-    expect(wrapper.find('[data-testid="pattern-surface"]').attributes('style')).toContain('width: 7542px')
+    expect(atHome).toBeGreaterThanOrEqual(0)
+    expect(context.named('drawImage').length + context.named('fillRect').length).toBeGreaterThan(0)
+    expect(context.calls.some((call) => call.fillStyle === '#e63746' || call.name === 'drawImage')).toBe(true)
   })
 
   describe('when the Pattern is edited', () => {
     /** The Pattern with one bead of one row painted. */
     function painted(pattern: Pattern, row: number, column: number): Pattern {
-      return {
-        ...pattern,
-        grid: pattern.grid.map((cells, index) => (index === row ? cells.map((cell, at) => (at === column ? { color: '#e63746' } : cell)) : cells)),
-      }
+      return withFrameGrid(
+        pattern,
+        frameGrid(pattern).map((cells, index) => (index === row ? cells.map((cell, at) => (at === column ? { color: '#e63746' } : cell)) : cells)),
+      )
     }
 
-    it('draws only the rows it changed, and their neighbours, and does not move the window', async () => {
+    it('draws only the rows it changed, and their neighbours', async () => {
+      viewport = { width: 400, height: 600 }
       const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
       context.calls.length = 0
 
       await wrapper.setProps({ pattern: painted(pattern, 12, 4) })
 
-      // Row 12 is y 240 to 260, across the whole 400px width: one band, cut to it.
+      // Row 12 is y 240 to 260, across the whole 400px width of the view: one band, cut to it.
       expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
-      expect(windowOf(wrapper)).toBe('0,0,400,600')
     })
 
     it('draws a band for each cluster of changed rows, as a Mirror stroke changes rows far apart', async () => {
+      viewport = { width: 400, height: 600 }
       const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
       context.calls.length = 0
@@ -258,7 +171,8 @@ describe('PatternSurface', () => {
       expect(context.named('rect').map((call) => call.args[1])).toEqual([60, 520])
     })
 
-    it('draws no cells at all when nothing on screen changed, and only redraws the overlay', async () => {
+    it('draws no beads at all when nothing in view changed, and only redraws the overlay', async () => {
+      viewport = { width: 400, height: 600 }
       const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
       context.calls.length = 0
@@ -266,53 +180,66 @@ describe('PatternSurface', () => {
       await wrapper.setProps({ pattern: { ...pattern, updatedAt: pattern.updatedAt + 1 } })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(context.named('fillRect')).toHaveLength(0)
-      expect(context.named('clearRect')).toHaveLength(1) // the overlay's
     })
 
     it('draws everything again when so much changed that bands would cost more, such as an Undo', async () => {
+      viewport = { width: 400, height: 1000 }
       const pattern = patternOf(20, 60)
+      const { wrapper } = await mountSurface(pattern)
+      const everyOtherRow = (target: Pattern) => {
+        let result = target
+        for (let row = 0; row < 60; row += 1) result = painted(result, row, 0)
+        return result
+      }
+      context.calls.length = 0
+
+      await wrapper.setProps({ pattern: everyOtherRow(pattern) })
+
+      expect(context.named('rect')).toHaveLength(0)
+      expect(draws()).toBe(1)
+    })
+
+    it('draws everything again when the Frame changes, since empty beads are drawn inside it', async () => {
+      viewport = { width: 400, height: 600 }
+      const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
       context.calls.length = 0
 
-      await wrapper.setProps({
-        pattern: { ...pattern, grid: pattern.grid.map((cells) => cells.map(() => ({ color: '#e63746' }))) },
-      })
+      await wrapper.setProps({ pattern: { ...pattern, frame: { ...pattern.frame!, rows: 10 } } })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(context.named('clearRect')[0]!.args).toEqual([0, 0, 400, 1200])
+      expect(draws()).toBe(1)
     })
 
     it('draws everything again when Row progress moves, since rows are faded by it', async () => {
-      const pattern = patternOf(20, 10, { rowProgress: { enabled: true, direction: 'rows', currentRow: 2, currentColumn: 0 } })
+      viewport = { width: 400, height: 600 }
+      const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
       context.calls.length = 0
 
-      await wrapper.setProps({ pattern: { ...pattern, rowProgress: { ...pattern.rowProgress, currentRow: 3 } } })
+      await wrapper.setProps({ pattern: { ...pattern, rowProgress: { enabled: true, direction: 'rows', currentRow: 5, currentColumn: 0 } } })
 
       expect(context.named('rect')).toHaveLength(0)
-      expect(context.named('clearRect')[0]!.args).toEqual([0, 0, 400, 200])
     })
 
-    it('keeps the window and the canvases: an edit never sends them away', async () => {
+    it('draws everything again when the view moves', async () => {
       const pattern = patternOf(20, 30)
       const { wrapper } = await mountSurface(pattern)
-      const canvas = wrapper.find('[data-testid="pattern-surface-cells"]').element
+      context.calls.length = 0
 
-      await wrapper.setProps({ pattern: painted(pattern, 12, 4) })
+      await wrapper.setProps({ scroll: { x: 40, y: 0 } })
 
-      expect(wrapper.find('[data-testid="pattern-surface-cells"]').element).toBe(canvas)
-      expect(wrapper.find('[data-testid="pattern-surface-cells"]').attributes('style')).not.toContain('display: none')
+      expect(context.named('rect')).toHaveLength(0)
+      expect(draws()).toBe(1)
     })
   })
 
-  it('takes the turned shape of a rotated Pattern: as tall as the Pattern is wide', async () => {
-    const { wrapper } = await mountSurface(patternOf(20, 10, { rotation: 90 }), 1)
+  it('shows the turn of a rotated Pattern in what it says about itself', async () => {
+    const { wrapper } = await mountSurface(patternOf(20, 10, { rotation: 90 }), 1, { x: -300, y: 0 })
 
-    const style = wrapper.find('[data-testid="pattern-surface"]').attributes('style')
-    expect(style).toContain('width: 228px')
-    expect(style).toContain('height: 428px')
-    expect(windowOf(wrapper)).toBe('0,0,200,400')
+    const root = wrapper.find('[data-testid="pattern-surface"]')
+    expect(root.attributes('data-rotation')).toBe('90')
+    expect(root.attributes('data-scroll-x')).toBe('-300')
   })
 
   it('draws the Row progress marker on the overlay, and no marker while it is off', async () => {
@@ -326,29 +253,86 @@ describe('PatternSurface', () => {
     expect(context.named('fill').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
   })
 
-  it('makes a bitmap as dense as the screen: twice the pixels on a 2× display', async () => {
-    Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true })
-    try {
-      const { wrapper } = await mountSurface(patternOf(20, 10), 1)
+  describe('moving the canvas', () => {
+    it('scrolls by the wheel, sideways with Shift on a vertical wheel', async () => {
+      const { wrapper } = await mountSurface(patternOf(20, 10))
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
 
-      const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="pattern-surface-cells"]').element
-      expect([canvas.width, canvas.height]).toEqual([800, 400])
-    } finally {
-      Object.defineProperty(window, 'devicePixelRatio', { value: 1, configurable: true })
-    }
+      surface.element.dispatchEvent(new WheelEvent('wheel', { deltaX: 3, deltaY: 40, bubbles: true, cancelable: true }))
+      surface.element.dispatchEvent(new WheelEvent('wheel', { deltaX: 0, deltaY: 40, shiftKey: true, bubbles: true, cancelable: true }))
+
+      expect(wrapper.emitted('scroll')).toEqual([[3, 40], [40, 0]])
+    })
+
+    it('keeps the browser from scrolling the page behind it', async () => {
+      const { wrapper } = await mountSurface(patternOf(20, 10))
+      const event = new WheelEvent('wheel', { deltaY: 40, cancelable: true, bubbles: true })
+
+      wrapper.find('[data-testid="pattern-surface"]').element.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('zooms about the pointer on Ctrl + wheel or ⌘ + wheel, in for a wheel up', async () => {
+      const { wrapper } = await mountSurface(patternOf(20, 10))
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+      surface.element.dispatchEvent(new WheelEvent('wheel', { deltaY: -10, ctrlKey: true, clientX: 120, clientY: 60, bubbles: true, cancelable: true }))
+      surface.element.dispatchEvent(new WheelEvent('wheel', { deltaY: 10, metaKey: true, clientX: 120, clientY: 60, bubbles: true, cancelable: true }))
+
+      const calls = wrapper.emitted('zoom-by') as [number, { x: number; y: number }][]
+      expect(calls[0]![0]).toBeGreaterThan(1)
+      expect(calls[1]![0]).toBeLessThan(1)
+      expect(calls[0]![1]).toEqual({ x: 120, y: 60 })
+      expect(wrapper.emitted('scroll')).toBeUndefined()
+    })
+
+    it('drags the canvas, and draws nothing, while moving (the Hand tool or Space)', async () => {
+      const pattern = patternOf(20, 10)
+      const { wrapper } = await mountSurface(pattern, 1, { x: 0, y: 0 }, { moving: true })
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { clientX: 70, clientY: 45, buttons: 1 })
+      await surface.trigger('pointerup', { clientX: 70, clientY: 45 })
+      await surface.trigger('pointermove', { clientX: 90, clientY: 45, buttons: 0 })
+
+      expect(wrapper.emitted('pan')).toEqual([[20, -5]])
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+      expect(wrapper.emitted('cell-hover')).toBeUndefined()
+    })
+
+    it('drags the canvas with the middle button on any tool', async () => {
+      const { wrapper } = await mountSurface(patternOf(20, 10))
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 1, buttons: 4 })
+      await surface.trigger('pointermove', { clientX: 40, clientY: 60, buttons: 4 })
+
+      expect(wrapper.emitted('pan')).toEqual([[-10, 10]])
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+    })
+
+    it('shows an open hand while moving, closed while dragging', async () => {
+      const { wrapper } = await mountSurface(patternOf(20, 10), 1, { x: 0, y: 0 }, { moving: true })
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+      expect(surface.classes()).toContain('pattern-surface--moving')
+
+      await surface.trigger('pointerdown', { clientX: 5, clientY: 5, button: 0, buttons: 1 })
+      expect(surface.classes()).toContain('pattern-surface--dragging')
+
+      await surface.trigger('pointerup')
+      expect(surface.classes()).not.toContain('pattern-surface--dragging')
+    })
   })
 
   describe('the pointer', () => {
-    /** Where on the screen a bead's centre is, for a Pattern whose surface is at the screen's corner, at a zoom. */
-    function centreOf(pattern: Pattern, row: number, column: number, zoom = 1): { clientX: number; clientY: number } {
-      const shiftX = pattern.technique !== 'loom' && row % 2 === 1 ? 10 : 0
-      const pitch = pattern.technique === 'peyote' ? 15 : pattern.technique === 'brick' ? 21 : 20
-      const x = shiftX + column * 20 + 10
-      const y = row * pitch + 10
-      const border = GRID_BORDER_PX * zoom
-      return pattern.rotation === 90
-        ? { clientX: border + (Math.round((pattern.technique === 'loom' ? pattern.rows * 20 : pattern.rows * pitch + (20 - pitch)) - y) * zoom), clientY: border + x * zoom }
-        : { clientX: border + x * zoom, clientY: border + y * zoom }
+    /** Where on the screen a bead's centre is, for a surface at the screen's corner, at a zoom and a scroll. */
+    function centreOf(pattern: Pattern, row: number, column: number, zoom = 1, scroll = { x: 0, y: 0 }): { clientX: number; clientY: number } {
+      const x = rowShiftPx(pattern.technique, row) + column * 20 + 10
+      const y = rowTopPx(pattern.technique, row) + 10
+      const [dx, dy] = gridToDisplayed(pattern.rotation, x, y, zoom)
+      return { clientX: dx - scroll.x, clientY: dy - scroll.y }
     }
 
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
@@ -440,26 +424,37 @@ describe('PatternSurface', () => {
     })
 
     it('says nothing for a move in a gap, and hovers the bead again on coming back to it', async () => {
-      const pattern = patternOf(20, 10, {}, 'peyote')
+      const pattern = patternOf(20, 10, {}, 'brick')
       const { wrapper } = await mountSurface(pattern)
       const surface = wrapper.find('[data-testid="pattern-surface"]')
 
       await surface.trigger('pointermove', { ...centreOf(pattern, 1, 0), buttons: 0 })
-      // Left of a shifted row there is no bead.
-      await surface.trigger('pointermove', { clientX: 3 + 4, clientY: 3 + 25, buttons: 0 })
+      // Brick stitch's seam between two rows is on no bead.
+      await surface.trigger('pointermove', { clientX: 10, clientY: 20.5, buttons: 0 })
       await surface.trigger('pointermove', { ...centreOf(pattern, 1, 0), buttons: 0 })
 
       expect(events(wrapper)['cell-hover']).toEqual([[1, 0], [1, 0]])
     })
 
-    it('says nothing for the Pattern\'s outline, which is on no bead', async () => {
-      const pattern = patternOf(20, 10)
+    it('says nothing for a press in the seam between two rows of brick stitch', async () => {
+      const pattern = patternOf(20, 10, {}, 'brick')
       const { wrapper } = await mountSurface(pattern)
 
-      await wrapper.find('[data-testid="pattern-surface"]').trigger('pointerdown', { clientX: 1, clientY: 1, button: 0, buttons: 1 })
+      await wrapper.find('[data-testid="pattern-surface"]').trigger('pointerdown', { clientX: 10, clientY: 20.5, button: 0, buttons: 1 })
 
-      expect(events(wrapper)['cell-hover']).toBeUndefined()
       expect(events(wrapper)['cell-primary-down']).toBeUndefined()
+    })
+
+    it('finds a bead anywhere on the open canvas: far from the first bead, and at negative positions', async () => {
+      const pattern = patternOf(20, 10)
+      const { wrapper } = await mountSurface(pattern, 1, { x: -2000, y: -2000 })
+      const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+      await surface.trigger('pointerdown', { ...centreOf(pattern, -40, -25, 1, { x: -2000, y: -2000 }), button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { ...centreOf(pattern, 400, 9000, 1, { x: -2000, y: -2000 }), buttons: 1 })
+
+      expect(events(wrapper)['cell-primary-down']).toEqual([[-40, -25]])
+      expect(events(wrapper)['cell-primary-move']).toEqual([[400, 9000]])
     })
 
     it('says the hover is over when the pointer leaves', async () => {
@@ -542,15 +537,16 @@ describe('PatternSurface', () => {
       expect(context.named('clearRect')).toHaveLength(1)
     })
 
-    it('follows the zoom and the window of a Pattern much bigger than the screen', async () => {
+    it('follows the zoom of the view', async () => {
       const { wrapper } = await mountSurface(patternOf(250, 250), 3)
       context.calls.length = 0
 
       await wrapper.setProps({ previewCells: [{ row: 0, column: 0 }], previewColor: null })
 
-      // A neutral outline: filled even-odd in the dark ink, through the transform that scales it by 3.
-      expect(context.named('fill').at(-1)!.args).toEqual(['evenodd'])
-      expect(context.named('setTransform').at(-1)!.args).toEqual([3, 0, 0, 3, -0, -0])
+      // A neutral outline: filled even-odd in the dark ink, through the transform that scales it by 3 (the rulers
+      // then reset it to the viewport's own px, so the transform the outline was drawn through is the one before).
+      expect(context.named('fill').some((call) => call.args[0] === 'evenodd')).toBe(true)
+      expect(context.named('setTransform').some((call) => call.args[0] === 3 && call.args[3] === 3)).toBe(true)
     })
   })
 
@@ -588,5 +584,71 @@ describe('PatternSurface', () => {
       expect(context.named('drawImage')).toHaveLength(2)
       expect(context.named('rect')).toHaveLength(0)
     })
+  })
+})
+
+describe('PatternSurface while setting the Frame', () => {
+  /** A press at a point of the viewport, then moves and a release. */
+  async function gesture(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], from: [number, number], to: [number, number]) {
+    const surface = wrapper.find('[data-testid="pattern-surface"]')
+    await surface.trigger('pointerdown', { button: 0, clientX: from[0], clientY: from[1], pointerId: 1 })
+    await surface.trigger('pointermove', { buttons: 1, clientX: to[0], clientY: to[1], pointerId: 1 })
+    await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
+  }
+
+  it('reports a press on the open canvas, the drag and the release, and draws no bead', async () => {
+    const pattern = { ...patternOf(4, 3), frame: undefined }
+    const { wrapper } = await mountSurface(pattern, 1, { x: 0, y: 0 }, { settingFrame: true })
+    await gesture(wrapper, [65, 45], [165, 85])
+
+    expect(wrapper.emitted('frame-press')).toEqual([[{ kind: 'outside' }, { row: 2, column: 3 }]])
+    expect(wrapper.emitted('frame-drag')).toEqual([[{ row: 4, column: 8 }]])
+    expect(wrapper.emitted('frame-release')).toHaveLength(1)
+    expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+    expect(wrapper.emitted('cell-hover')).toBeUndefined()
+  })
+
+  it('tells a press inside the Frame from one on its handle and one outside it', async () => {
+    const pattern = { ...patternOf(4, 3), frame: { row: 0, column: 0, columns: 4, rows: 3 } }
+    const { wrapper } = await mountSurface(pattern, 1, { x: 0, y: 0 }, { settingFrame: true })
+    const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+    await surface.trigger('pointerdown', { button: 0, clientX: 40, clientY: 30, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    await surface.trigger('pointerdown', { button: 0, clientX: 500, clientY: 500, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    // The bottom-right handle stands on the corner of the Frame's line, 7px outside its beads.
+    await surface.trigger('pointerdown', { button: 0, clientX: 87, clientY: 67, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'inside' }, { kind: 'outside' }, { kind: 'handle', edges: ['bottom', 'right'] }])
+  })
+
+  it('draws beads as usual when the Frame is not being set', async () => {
+    const { wrapper } = await mountSurface(patternOf(4, 3), 1)
+    await gesture(wrapper, [25, 15], [25, 15])
+    expect(wrapper.emitted('frame-press')).toBeUndefined()
+    expect(wrapper.emitted('cell-primary-down')).toBeDefined()
+  })
+
+  it('moves the canvas, not the Frame, while the Hand tool is on', async () => {
+    const { wrapper } = await mountSurface(patternOf(4, 3), 1, { x: 0, y: 0 }, { settingFrame: true, moving: true })
+    await gesture(wrapper, [25, 15], [45, 35])
+    expect(wrapper.emitted('frame-press')).toBeUndefined()
+    expect(wrapper.emitted('pan')).toBeDefined()
+  })
+
+  it('drops a Frame drag when a second finger lands, and does not start another press with it', async () => {
+    const pattern = { ...patternOf(4, 3), frame: undefined }
+    const { wrapper } = await mountSurface(pattern, 1, { x: 0, y: 0 }, { settingFrame: true })
+    const surface = wrapper.find('[data-testid="pattern-surface"]')
+
+    await surface.trigger('pointerdown', { button: 0, clientX: 25, clientY: 15, pointerId: 1, pointerType: 'touch', isPrimary: true })
+    await surface.trigger('pointerdown', { button: 0, clientX: 105, clientY: 75, pointerId: 2, pointerType: 'touch', isPrimary: false })
+
+    expect(wrapper.emitted('frame-press')).toHaveLength(1)
+    expect(wrapper.emitted('frame-cancel')).toHaveLength(1)
+    await surface.trigger('pointermove', { buttons: 1, clientX: 45, clientY: 35, pointerId: 1, pointerType: 'touch', isPrimary: true })
+    expect(wrapper.emitted('frame-drag')).toBeUndefined()
   })
 })

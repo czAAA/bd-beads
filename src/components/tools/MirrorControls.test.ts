@@ -31,7 +31,7 @@ describe('MirrorControls (pulled out of Toolbox.vue for ticket 79\'s Mirror Tool
   it('emits the grid-space axis a counter button was pressed for, not the screen one', async () => {
     const rotated = mountControls(makePattern(true))
     await rotated.get('[data-testid="mirror-left-right-increase"]').trigger('click')
-    // Left-right is the rows axis once rotated (PatternCanvas's own width/height relabeling).
+    // Left-right is the rows axis once rotated (the view-only turn swaps width and height).
     expect(rotated.emitted('set-mirror-axis-count')![0]).toEqual(['rows', 2])
   })
 

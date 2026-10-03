@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPattern, moveToRow, setRowProgressEnabled, type Pattern } from '../../domain/pattern'
+import { createPattern, moveToRow, setRowProgressEnabled, type Pattern, frameGrid, withFrameGrid } from '../../domain/pattern'
 import { useDeleteAllFlow } from './useDeleteAllFlow'
 
 const blank = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-const painted: Pattern = {
-  ...blank,
-  grid: blank.grid.map((row, r) => row.map((cell, c) => (r === 0 && c === 0 ? { ...cell, color: '#ff0000' } : cell))),
-}
+const painted: Pattern = withFrameGrid(
+  blank,
+  frameGrid(blank).map((row, r) => row.map((cell, c) => (r === 0 && c === 0 ? { ...cell, color: '#ff0000' } : cell))),
+)
 
 function setup(pattern: Pattern | null = painted) {
   const deps = {
@@ -43,10 +43,10 @@ describe('useDeleteAllFlow', () => {
     onConfirmDeleteAll()
     expect(deleteAllConfirmOpen.value).toBe(false)
     expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({ grid: painted.grid, rowProgress: painted.rowProgress })
+    expect(deps.recordHistory).toHaveBeenCalledWith({ beads: painted.beads, rowProgress: painted.rowProgress })
     expect(deps.replacePattern).toHaveBeenCalledTimes(1)
     const replaced = deps.replacePattern.mock.calls[0]![0] as Pattern
-    expect(replaced.grid.flat().every((cell) => !cell.color)).toBe(true)
+    expect(frameGrid(replaced).flat().every((cell) => !cell.color)).toBe(true)
   })
 
   it('ignores the Row progress lock: progress resets along with the grid', () => {
@@ -54,7 +54,7 @@ describe('useDeleteAllFlow', () => {
     const { deps, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
     const replaced = deps.replacePattern.mock.calls[0]![0] as Pattern
-    expect(replaced.grid.flat().every((cell) => !cell.color)).toBe(true)
+    expect(frameGrid(replaced).flat().every((cell) => !cell.color)).toBe(true)
     expect(replaced.rowProgress).not.toEqual(inProgress.rowProgress)
   })
 

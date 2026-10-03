@@ -14,14 +14,14 @@ describe('AppDock', () => {
   })
 
   it('marks whichever sheet is open, and emits select-sheet for each of the five', async () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'size' } })
-    expect(wrapper.get('[data-testid="dock-size"]').attributes('aria-pressed')).toBe('true')
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'frame' } })
+    expect(wrapper.get('[data-testid="dock-frame"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
 
-    for (const id of ['tool', 'color', 'edit', 'size', 'pattern']) {
+    for (const id of ['tool', 'color', 'edit', 'frame', 'pattern']) {
       await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['size'], ['pattern']])
+    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['frame'], ['pattern']])
   })
 
   it('has no Mirror sheet button left (ticket 174, pending its own redesign)', () => {

@@ -1,3 +1,4 @@
+import { frameGrid } from '../../src/domain/pattern'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
@@ -71,7 +72,7 @@ test('PNG export draws each bead in its color, at a legible size, on the print b
   // Exports are always light, on the print board (DESIGN.md §4.3), whatever the app's theme — rounded, so its very corner is left white.
   expect(hex(png, 15, 15)).toBe(PRINT_THEME.background)
   // The middle of the bead in row 3, column 2 (the gap and rim are at its edge, so the middle is all its color).
-  const painted = pattern.grid[3]![2]!.color
+  const painted = frameGrid(pattern)[3]![2]!.color
   expect(hex(png, PNG_MARGIN_PX + 2 * PNG_BEAD_PX + PNG_BEAD_PX / 2, PNG_MARGIN_PX + 3 * PNG_BEAD_PX + PNG_BEAD_PX / 2)).toBe(painted ?? PRINT_THEME.emptyBead)
   expect(PALETTE.some((color) => color.hex === painted)).toBe(true)
   // The story tells its own words below the chart.
@@ -124,7 +125,7 @@ test('a wide Pattern with a maker name shows the watermark under its board too, 
   const { bytes } = await downloadOf(page, 'export-png')
   const png = PNG.sync.read(bytes)
   const zoom = pngZoom(pattern)
-  const chart = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const chart = displayedExtentPx(pattern.technique, pattern.frame!.columns, pattern.frame!.rows, zoom, pattern.rotation)
   const chartWidth = Math.ceil(chart.width) + PNG_MARGIN_PX * 2
   const chartHeight = Math.ceil(chart.height) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
   // Under the board, before the story starts beneath it: the regression this guards against painted over it here,
@@ -144,7 +145,7 @@ test('PNG export of a 250 × 250 peyote Pattern is one picture within the pixel 
   // The chart itself, drawn at the zoom the budget allows: the last bands are drawn, not left blank (some of the
   // beads in its bottom-right corner are not white — the Palette has a white of its own, so not every one).
   const zoom = pngZoom(pattern)
-  const chart = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, zoom, pattern.rotation)
+  const chart = displayedExtentPx(pattern.technique, pattern.frame!.columns, pattern.frame!.rows, zoom, pattern.rotation)
   const chartRight = Math.ceil(chart.width) + PNG_MARGIN_PX
   const chartBottom = Math.ceil(chart.height) + PNG_MARGIN_PX
   const corner = new Set<string>()

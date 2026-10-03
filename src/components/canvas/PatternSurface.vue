@@ -1,34 +1,35 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
-import { BOARD_RADIUS_PX, GRID_BORDER_PX, type GridPosition, type PreviewCell } from '../../domain/grid'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import type { Frame } from '../../domain/canvas'
+import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
+import { changedPositions, type Pattern } from '../../domain/pattern'
 import type { Selection } from '../../domain/selection'
-import type { Pattern } from '../../domain/pattern'
-import { beadAt } from '../../rendering/hitTest'
-import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { PATTERN_THEMES, type PatternTheme } from '../../rendering/beadLook'
-import { displayedExtentPx, renderPattern } from '../../rendering/patternRenderer'
-import { contains, drawingWindow, type Rect } from '../../rendering/surfaceWindow'
+import type { Scroll } from '../../rendering/canvasView'
+import { renderCanvas } from '../../rendering/canvasRenderer'
+import { framePressAt, type FramePress } from '../../rendering/frameHandles'
+import { beadAtOpen, cellAtOpen } from '../../rendering/hitTest'
+import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
+import { labelAt, visibleRulerLabels } from '../../rendering/rulers'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 /**
- * A Pattern drawn by the Pattern renderer instead of one DOM element per bead (ADR 0018): the Drawing surface of
- * CONTEXT.md. It is the box the DOM grid was (the outline, the paper behind the beads) with two canvases inside it, one
- * for the cells and one over it for what comes and goes with a tool or the pointer (see overlayRenderer).
+ * The open canvas drawn by the canvas renderer (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
+ * drawing area edge to edge with two canvases the size of what is on screen, one for the beads and the dots round them
+ * and one over it for what comes and goes with a tool or the pointer (see overlayRenderer). There is no board, no edge
+ * and no scroll container: what is shown is decided by the `scroll` and the `zoom` it is given, so a canvas of any size
+ * costs what is in view and no more.
  *
- * The canvases are only as big as the screen, not the Pattern: at 300% a 250 × 250 Pattern is 15,000 px across, which no
- * canvas can be (iPad Safari's limit is about 16 megapixels) and no one needs to look at at once. So they hold a window
- * of the displayed Pattern, the part on screen plus a margin, and are drawn again when the screen moves out of it —
- * on scroll, on zoom — leaving the cost to follow what is visible rather than how big the Pattern is.
- *
- * It sits where the DOM grid did, inside the canvas panel's own scroll containers and zoom box (PatternCanvas.vue), but
- * not inside the CSS transform that zooms and turns the rulers: a canvas scaled by a transform is a bitmap stretched, and
- * beads must stay crisp at every zoom, so the renderer applies the zoom and the rotation itself.
+ * It also reads the gestures that move the view — the wheel and Ctrl/⌘ + wheel, a drag with the Hand tool or the middle
+ * button — and reports them, leaving the view itself to its owner (useCanvasView).
  */
 const props = defineProps<{
   pattern: Pattern
-  /** How much the Pattern is enlarged by; 1 is a bead 20 px across. */
+  /** How much the canvas is enlarged by; 1 is a bead 20 px across. */
   zoom: number
+  /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see canvasView). */
+  scroll: Scroll
   /** Beads to show a hover preview on (ticket 23): the hovered bead and its live-mirror counterparts, or a whole copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
   /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no Palette color is selected. */
@@ -45,6 +46,16 @@ const props = defineProps<{
   tourMarks?: TourMarks
   /** The Pattern's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
+  /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held). */
+  moving?: boolean
+  /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
+  showRulers?: boolean
+  /** The Piece being drawn now, whose rectangle is drawn `muted` rather than `line-strong` (BeadBoard card). */
+  activePiece?: Frame
+  /** Whether the Frame is being set (Set Frame): a drag draws, moves or resizes it instead of drawing beads, and its handles show. */
+  settingFrame?: boolean
+  /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
+  frameTooltip?: string
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +69,22 @@ const emit = defineEmits<{
   'cursor-key': [event: KeyboardEvent]
   /** Keyboard focus arrived (true) or left (false): the cursor shows only after focus by keyboard. */
   'keyboard-focus': [focused: boolean]
+  /** The canvas was dragged by this many px (the Hand tool, the middle button). */
+  pan: [dx: number, dy: number]
+  /** The wheel or a trackpad scrolled the canvas by this many px. */
+  scroll: [dx: number, dy: number]
+  /** Ctrl/⌘ + wheel (or a trackpad pinch) asked to change the zoom by this factor about a point of the viewport. */
+  'zoom-by': [factor: number, anchor: Scroll]
+  /** A ruler number was pressed: the whole row or column it numbers is to be selected. */
+  'select-line': [selection: Selection]
+  /** Set Frame: a press grabbed a handle, the inside of the Frame or the open canvas, at this bead position. */
+  'frame-press': [target: FramePress, cell: GridPosition]
+  /** Set Frame: the pointer moved with the press held, over this bead position. */
+  'frame-drag': [cell: GridPosition]
+  /** Set Frame: the press ended. */
+  'frame-release': []
+  /** Set Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
+  'frame-cancel': []
 }>()
 
 /**
@@ -79,165 +106,41 @@ function onBlur() {
   emit('keyboard-focus', false)
 }
 
-/** How much beyond the screen the canvases reach, so that a little scrolling does not need a redraw. */
-const MARGIN_PX = 160
-
-/**
- * A Pattern whose whole bitmap is no bigger than this many device pixels is held whole (ticket 122): its window is all
- * of it, so scrolling never leaves what is drawn and costs nothing. Without this, a Pattern only a little bigger than
- * the screen (250 × 250 at its fit zoom is 1500 px each way) runs out of margin on the side its window is cut to the
- * Pattern's edge and is drawn again every few wheel clicks. Well inside the roughly 16 megapixels of iPad Safari's
- * canvas limit, since the cells and the overlay each have one.
- */
-const WHOLE_PATTERN_MAX_DEVICE_PX = 10_000_000
-
-const displayed = computed(() =>
-  displayedExtentPx(props.pattern.technique, props.pattern.columns, props.pattern.rows, props.zoom, props.pattern.rotation),
-)
-
-/** The board's padding round the beads is in the Pattern's own px, so it scales with the zoom like the beads do. */
-const border = computed(() => GRID_BORDER_PX * props.zoom)
-
-/** Where the beads start inside the clip, which begins on a whole pixel: the part of the border past it. */
-const shift = computed(() => ({ x: border.value - Math.floor(border.value), y: border.value - Math.floor(border.value) }))
-
-const rootStyle = computed(() => ({
-  width: `${displayed.value.width + border.value * 2}px`,
-  height: `${displayed.value.height + border.value * 2}px`,
-}))
-
-/**
- * The board. Drawn under the same kind of transform the DOM grid was, because a border of 0.75 px is laid out as 1 px
- * but painted as 0.75 px when scaled, and this must line up with the canvases at every zoom.
- */
-const frameStyle = computed(() => ({
-  '--board-padding': GRID_BORDER_PX,
-  '--board-radius': BOARD_RADIUS_PX,
-  width: `${displayed.value.width / props.zoom}px`,
-  height: `${displayed.value.height / props.zoom}px`,
-  transform: `scale(${props.zoom})`,
-}))
-
-/**
- * Holds the canvases. Square: the board's corners are rounded wider than its padding, but the beads' own rectangle
- * still sits inside them. Starts on a whole pixel so the canvases can.
- */
-const clipStyle = computed(() => ({
-  left: `${Math.floor(border.value)}px`,
-  top: `${Math.floor(border.value)}px`,
-  width: `${displayed.value.width + shift.value.x}px`,
-  height: `${displayed.value.height + shift.value.y}px`,
-}))
-
-/** The colors the beads are drawn in follow the app's theme; a change redraws both layers, at the same size and scroll. */
+/** The colors the beads are drawn in follow the app's theme; a change redraws both layers. */
 const resolvedTheme = useResolvedTheme()
 const theme = computed(() => PATTERN_THEMES[resolvedTheme.value])
+
+/** Whether the last pointer was a finger: its Frame handles are the four larger corner ones. */
+const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
 
 const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
 const overlayEl = ref<HTMLCanvasElement>()
 
-/** The window of the displayed Pattern the canvases hold now (see drawingWindow), or none until the screen has been looked at. */
-const held = shallowRef<Rect>()
+/** How big the surface is on screen, measured: the canvases are exactly this big. */
+const size = ref({ width: 0, height: 0 })
+let resizeObserver: ResizeObserver | undefined
 
-const canvasStyle = computed(() => {
-  const window = held.value
-  if (!window) {
-    return { display: 'none' }
-  }
-  return {
-    left: `${window.x}px`,
-    top: `${window.y}px`,
-    width: `${canvasSize.value.width}px`,
-    height: `${canvasSize.value.height}px`,
-  }
-})
-
-/** The canvases are a pixel bigger than the window, to reach the fraction of a pixel the beads start part-way into. */
-const canvasSize = computed(() => {
-  const window = held.value
-  const clipWidth = Math.ceil(displayed.value.width + shift.value.x)
-  const clipHeight = Math.ceil(displayed.value.height + shift.value.y)
-  return window
-    ? { width: Math.min(window.width + 1, clipWidth - window.x), height: Math.min(window.height + 1, clipHeight - window.y) }
-    : { width: 0, height: 0 }
-})
-
-/**
- * What is on screen of the displayed Pattern, in its own px from its first bead: the Pattern's box cut by every
- * ancestor that clips it (the canvas panel's horizontal scroll, the box's own rounded clip) and by the window.
- */
-function visibleRect(): Rect | undefined {
+function measure(): void {
   const root = rootEl.value
-  if (!root) {
-    return undefined
-  }
-
+  if (!root) return
   const box = root.getBoundingClientRect()
-  const originX = box.left + border.value
-  const originY = box.top + border.value
-  let left = originX
-  let top = originY
-  let right = originX + displayed.value.width
-  let bottom = originY + displayed.value.height
-
-  for (let ancestor = root.parentElement; ancestor && ancestor !== document.documentElement; ancestor = ancestor.parentElement) {
-    const style = getComputedStyle(ancestor)
-    const clipsX = style.overflowX !== 'visible'
-    const clipsY = style.overflowY !== 'visible'
-    if (clipsX || clipsY) {
-      const clip = ancestor.getBoundingClientRect()
-      if (clipsX) {
-        left = Math.max(left, clip.left)
-        right = Math.min(right, clip.right)
-      }
-      if (clipsY) {
-        top = Math.max(top, clip.top)
-        bottom = Math.min(bottom, clip.bottom)
-      }
-    }
-  }
-
-  left = Math.max(left, 0)
-  top = Math.max(top, 0)
-  right = Math.min(right, window.innerWidth)
-  bottom = Math.min(bottom, window.innerHeight)
-
-  return right > left && bottom > top ? { x: left - originX, y: top - originY, width: right - left, height: bottom - top } : undefined
-}
-
-/** Looks at what is on screen and, if it has moved out of what the canvases hold, moves them to hold it. */
-function update(): void {
-  const visible = visibleRect()
-  if (!visible || (held.value && contains(held.value, visible))) {
-    return
-  }
-  const pixelRatio = globalThis.devicePixelRatio || 1
-  const wholeArea = displayed.value.width * displayed.value.height * pixelRatio * pixelRatio
-  held.value = drawingWindow(visible, displayed.value, wholeArea <= WHOLE_PATTERN_MAX_DEVICE_PX ? Infinity : MARGIN_PX)
-}
-
-/** Drawing is at most once a frame however many scroll events arrive. */
-let frame = 0
-function schedule(): void {
-  if (frame === 0) {
-    frame = requestAnimationFrame(() => {
-      frame = 0
-      update()
-    })
+  const width = Math.round(box.width)
+  const height = Math.round(box.height)
+  if (width !== size.value.width || height !== size.value.height) {
+    size.value = { width, height }
   }
 }
 
 /** What the cells were last drawn from, to draw only what an edit changed. */
-let drawn: { pattern: Pattern; zoom: number; held: Rect; pixelRatio: number; theme: PatternTheme } | undefined
+let drawn: { pattern: Pattern; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: PatternTheme } | undefined
 
 /** Whether two Patterns are laid out and dimmed alike, so that what differs between them is only which color each bead holds. */
 function sameLayout(a: Pattern, b: Pattern): boolean {
   const progress = (pattern: Pattern) => pattern.rowProgress
   return (
     a.technique === b.technique &&
-    a.columns === b.columns &&
-    a.rows === b.rows &&
+    a.frame === b.frame &&
     a.rotation === b.rotation &&
     progress(a).enabled === progress(b).enabled &&
     progress(a).direction === progress(b).direction &&
@@ -251,24 +154,11 @@ const MOST_ROWS_WORTH_A_BAND = 40
 
 /**
  * The bands of rows an edit changed, for drawing just those: rows apart by no more than two share a band, since a row's
- * neighbours are drawn with it anyway. Empty when nothing on screen changed; undefined when so much did (an Undo, a
- * Fill, a Mirror current) that drawing it all again is the cheaper way.
+ * neighbours are drawn with it anyway. Empty when nothing changed; undefined when so much did (an Undo, a Fill, a Mirror
+ * current) that drawing it all again is the cheaper way.
  */
 function changedBands(before: Pattern, after: Pattern): { first: number; last: number }[] | undefined {
-  const changed: number[] = []
-  for (let row = 0; row < after.rows; row += 1) {
-    const was = before.grid[row]
-    const now = after.grid[row]
-    if (was === now || !was || !now) {
-      continue
-    }
-    for (let column = 0; column < after.columns; column += 1) {
-      if (was[column]?.color !== now[column]?.color) {
-        changed.push(row)
-        break
-      }
-    }
-  }
+  const changed = [...new Set(changedPositions(before.beads, after.beads).map((position) => position.row))].sort((x, y) => x - y)
   if (changed.length > MOST_ROWS_WORTH_A_BAND) {
     return undefined
   }
@@ -285,7 +175,7 @@ function changedBands(before: Pattern, after: Pattern): { first: number; last: n
   return bands
 }
 
-/** Sizes a canvas to the window and the screen's pixel density, leaving it alone (and its drawing with it) when it already is. Whether it had to change. */
+/** Sizes a canvas to the surface and the screen's pixel density, leaving it alone (and its drawing with it) when it already is. Whether it had to change. */
 function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, pixelRatio: number): boolean {
   const bitmapWidth = Math.max(1, Math.round(width * pixelRatio))
   const bitmapHeight = Math.max(1, Math.round(height * pixelRatio))
@@ -297,22 +187,20 @@ function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, pi
   return true
 }
 
-/** The part of the displayed Pattern the canvases show, in the displayed Pattern's px: the window, from where the beads start part-way into a pixel. */
-function currentRegion(window: Rect): Rect {
-  const { width, height } = canvasSize.value
-  return { x: window.x - shift.value.x, y: window.y - shift.value.y, width, height }
+/** The viewport in displayed px: where the canvas has been moved to, and how much of it the surface shows. */
+function currentRegion() {
+  return { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
 }
 
-/** Draws the cells: all of them, or, when an edit changed only some rows of what is already drawn, just those. */
+/** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
-  const window = held.value
   const canvas = baseEl.value
-  if (!window || !canvas) {
+  if (!canvas || size.value.width === 0 || size.value.height === 0) {
     return
   }
 
   const pixelRatio = globalThis.devicePixelRatio || 1
-  const region = currentRegion(window)
+  const region = currentRegion()
   const pattern = toRaw(props.pattern)
   const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
   const context = canvas.getContext('2d')
@@ -321,31 +209,44 @@ function drawCells(): void {
   }
 
   const before = drawn
-  drawn = { pattern, zoom: props.zoom, held: window, pixelRatio, theme: theme.value }
+  drawn = { pattern, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value }
   const bands =
-    !resized && before && before.held === window && before.zoom === props.zoom && before.pixelRatio === pixelRatio && before.theme === theme.value && sameLayout(before.pattern, pattern)
+    !resized &&
+    before &&
+    before.zoom === props.zoom &&
+    before.scroll.x === props.scroll.x &&
+    before.scroll.y === props.scroll.y &&
+    before.width === region.width &&
+    before.height === region.height &&
+    before.pixelRatio === pixelRatio &&
+    before.theme === theme.value &&
+    sameLayout(before.pattern, pattern)
       ? changedBands(before.pattern, pattern)
       : undefined
 
   if (bands === undefined) {
-    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio, theme: theme.value })
+    renderCanvas(context, { pattern, region, zoom: props.zoom, pixelRatio, theme: theme.value })
     return
   }
   for (const rows of bands) {
-    renderPattern(context, { pattern, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
+    renderCanvas(context, { pattern, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
   }
 }
 
-/** Draws the overlay: everything over the cells that comes and goes with a tool or the pointer. */
+/** The numbers' size: 11px, 12px on a phone (Rulers card). */
+function rulerFontPx(): number {
+  return window.innerWidth <= 743 ? 12 : 11
+}
+
+/** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
 function drawOverlay(): void {
-  const window = held.value
   const canvas = overlayEl.value
-  if (!window || !canvas) {
+  if (!canvas || size.value.width === 0 || size.value.height === 0) {
     return
   }
 
   const pixelRatio = globalThis.devicePixelRatio || 1
-  const region = currentRegion(window)
+  const region = currentRegion()
   sizeCanvas(canvas, region.width, region.height, pixelRatio)
   const context = canvas.getContext('2d')
   if (context) {
@@ -355,37 +256,33 @@ function drawOverlay(): void {
       zoom: props.zoom,
       pixelRatio,
       theme: theme.value,
+      open: true,
       cursor: props.cursor,
       preview: props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
+      frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
+      rulers: {
+        numbers: props.showRulers ?? true,
+        fontPx: rulerFontPx(),
+        viewport: size.value,
+        activePiece: props.activePiece,
+      },
     })
   }
 }
 
-/**
- * A different size (a zoom, a Resize, a Rotate) starts from what is on screen again, once the box has its new size. Its
- * numbers are watched, not the object they come in: an edit that changes no size must not send the canvases away.
- */
-watch(
-  () => `${displayed.value.width}x${displayed.value.height}`,
-  () => {
-    held.value = undefined
-    void nextTick(update)
-  },
-  { flush: 'post' },
-)
-
 // The Pattern is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([held, () => props.pattern, () => props.zoom, theme], drawCells, { flush: 'post' })
+watch([size, () => props.pattern, () => props.zoom, () => props.scroll, theme], drawCells, { flush: 'post' })
 watch(
   [
-    held,
+    size,
     () => props.pattern,
     () => props.zoom,
+    () => props.scroll,
     () => props.previewCells,
     () => props.previewColor,
     () => props.selection,
@@ -393,6 +290,11 @@ watch(
     () => props.dimmedCells,
     () => props.cursor,
     () => props.tourMarks,
+    () => props.showRulers,
+    () => props.settingFrame,
+    () => props.frameTooltip,
+    () => props.activePiece,
+    touchInput,
     theme,
   ],
   drawOverlay,
@@ -401,12 +303,16 @@ watch(
 
 /**
  * Pointer events (ticket 60), not mouse events, so a paint or erase stroke works the same by mouse, touch and pen. The
- * surface is one element, so which bead a pointer is on is worked out from where it is (see beadAt) instead of being
+ * surface is one element, so which bead a pointer is on is worked out from where it is (see beadAtOpen) instead of being
  * told by the bead's own element; and, as an element's pointerenter did, only a change of bead is news. A touch or pen
  * contact keeps its implicit capture on the surface, so the moves of a stroke go on arriving here.
  */
 const overBead = ref(false)
+const dragging = ref(false)
+/** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
+const framing = ref(false)
 let lastBead: GridPosition | undefined
+let lastPoint = { x: 0, y: 0 }
 
 function beadUnder(event: PointerEvent): GridPosition | undefined {
   const root = rootEl.value
@@ -414,7 +320,11 @@ function beadUnder(event: PointerEvent): GridPosition | undefined {
     return undefined
   }
   const box = root.getBoundingClientRect()
-  return beadAt(toRaw(props.pattern), { x: event.clientX - box.left - border.value, y: event.clientY - box.top - border.value }, props.zoom)
+  return beadAtOpen(
+    { technique: props.pattern.technique, rotation: props.pattern.rotation },
+    { x: event.clientX - box.left + props.scroll.x, y: event.clientY - box.top + props.scroll.y },
+    props.zoom,
+  )
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -430,7 +340,67 @@ function hoversFor(event: PointerEvent): boolean {
   return event.pointerType !== 'touch'
 }
 
+/** A press that moves the canvas instead of drawing: the Hand tool (or Space), or the middle button on any tool. */
+function startsDrag(event: PointerEvent): boolean {
+  return props.moving === true || event.button === 1
+}
+
+/** The point of the viewport a pointer is at, in px from its top-left corner. */
+function pointInSurface(event: PointerEvent): { x: number; y: number } {
+  const box = rootEl.value?.getBoundingClientRect()
+  return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) }
+}
+
+/** The bead position nearest a pointer, wherever it is: dragging a Frame needs one even between beads. */
+function cellUnder(event: PointerEvent): GridPosition {
+  const point = pointInSurface(event)
+  return cellAtOpen({ technique: props.pattern.technique, rotation: props.pattern.rotation }, { x: point.x + props.scroll.x, y: point.y + props.scroll.y }, props.zoom)
+}
+
 function onPointerDown(event: PointerEvent): void {
+  touchInput.value = event.pointerType === 'touch'
+  if (props.settingFrame && event.pointerType === 'touch' && !event.isPrimary) {
+    // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
+    if (framing.value) {
+      framing.value = false
+      emit('frame-cancel')
+    }
+    return
+  }
+  if (props.settingFrame && !startsDrag(event) && event.button === 0) {
+    framing.value = true
+    rootEl.value?.setPointerCapture?.(event.pointerId)
+    const target = framePressAt(props.pattern.frame, { technique: props.pattern.technique, rotation: props.pattern.rotation, zoom: props.zoom, scroll: props.scroll }, pointInSurface(event), touchInput.value)
+    emit('frame-press', target, cellUnder(event))
+    event.preventDefault()
+    return
+  }
+  if (startsDrag(event)) {
+    dragging.value = true
+    lastPoint = { x: event.clientX, y: event.clientY }
+    lastBead = undefined
+    overBead.value = false
+    rootEl.value?.setPointerCapture?.(event.pointerId)
+    event.preventDefault()
+    return
+  }
+
+  // A ruler number selects its whole row or column, from any tool, instead of reaching the beads under it.
+  if (event.button === 0) {
+    const box = rootEl.value?.getBoundingClientRect()
+    // The numbers are laid out again for the press, from the same maths that drew them. A surface not yet measured (no layout) has no edge to cut them at.
+    const viewport = size.value.width > 0 ? size.value : { width: Infinity, height: Infinity }
+    const labels =
+      props.showRulers === false
+        ? []
+        : visibleRulerLabels(toRaw(props.pattern), { technique: props.pattern.technique, rotation: props.pattern.rotation, zoom: props.zoom, scroll: props.scroll, viewport, fontPx: rulerFontPx() })
+    const label = labelAt(labels, { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) })
+    if (label) {
+      emit('select-line', label.selection)
+      return
+    }
+  }
+
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
   if (!bead) {
@@ -457,6 +427,21 @@ function onPointerDown(event: PointerEvent): void {
  * primary-move branch covers all three input kinds without checking pointerType.
  */
 function onPointerMove(event: PointerEvent): void {
+  if (framing.value) {
+    emit('frame-drag', cellUnder(event))
+    return
+  }
+  if (dragging.value) {
+    emit('pan', event.clientX - lastPoint.x, event.clientY - lastPoint.y)
+    lastPoint = { x: event.clientX, y: event.clientY }
+    return
+  }
+  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame.
+  if (props.moving || props.settingFrame) {
+    overBead.value = false
+    return
+  }
+
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
   if (isSameBead(bead, lastBead)) {
@@ -476,25 +461,55 @@ function onPointerMove(event: PointerEvent): void {
   }
 }
 
+function onPointerEnd(): void {
+  dragging.value = false
+  if (framing.value) {
+    framing.value = false
+    emit('frame-release')
+  }
+}
+
 function onPointerLeave(): void {
   lastBead = undefined
   overBead.value = false
   emit('hover-end')
 }
 
+/** The wheel's distance in px whichever unit the device reports it in. */
+function wheelPx(delta: number, mode: number): number {
+  return mode === 1 ? delta * 16 : mode === 2 ? delta * size.value.height : delta
+}
+
+/** Ctrl/⌘ + wheel zooms (a trackpad's pinch arrives the same way); the wheel on its own moves the canvas, Shift turning a vertical wheel sideways. */
+function onWheel(event: WheelEvent): void {
+  event.preventDefault()
+  const box = rootEl.value?.getBoundingClientRect()
+  const dx = wheelPx(event.deltaX, event.deltaMode)
+  const dy = wheelPx(event.deltaY, event.deltaMode)
+  if (event.ctrlKey || event.metaKey) {
+    const step = Math.max(-30, Math.min(30, dy))
+    emit('zoom-by', Math.exp(-step * 0.01), { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) })
+    return
+  }
+  const sideways = event.shiftKey && dx === 0
+  emit('scroll', sideways ? dy : dx, sideways ? 0 : dy)
+}
+
 onMounted(() => {
-  update()
-  window.addEventListener('scroll', schedule, { capture: true, passive: true })
-  window.addEventListener('resize', schedule, { passive: true })
+  measure()
+  if (typeof ResizeObserver !== 'undefined' && rootEl.value) {
+    resizeObserver = new ResizeObserver(measure)
+    resizeObserver.observe(rootEl.value)
+  }
+  window.addEventListener('resize', measure, { passive: true })
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', schedule, { capture: true })
-  window.removeEventListener('resize', schedule)
-  cancelAnimationFrame(frame)
+  resizeObserver?.disconnect()
+  window.removeEventListener('resize', measure)
 })
 
-defineExpose({ update })
+defineExpose({ measure })
 </script>
 
 <template>
@@ -504,12 +519,16 @@ defineExpose({ update })
     data-testid="pattern-surface"
     data-tour="board"
     :data-technique="pattern.technique"
-    :data-columns="pattern.columns"
-    :data-rows="pattern.rows"
     :data-rotation="pattern.rotation"
     :data-zoom="zoom"
-    :class="{ 'pattern-surface--over-bead': overBead }"
-    :style="rootStyle"
+    :data-scroll-x="scroll.x"
+    :data-scroll-y="scroll.y"
+    :class="{
+      'pattern-surface--over-bead': overBead && !moving,
+      'pattern-surface--moving': moving,
+      'pattern-surface--setting-frame': settingFrame && !moving,
+      'pattern-surface--dragging': dragging,
+    }"
     tabindex="0"
     role="img"
     :aria-label="label"
@@ -519,25 +538,14 @@ defineExpose({ update })
     @pointerdown.capture="onPress"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
+    @pointerup="onPointerEnd"
+    @pointercancel="onPointerEnd"
     @pointerleave="onPointerLeave"
+    @wheel="onWheel"
     @contextmenu.prevent
   >
-    <div class="pattern-surface__frame" :style="frameStyle" />
-    <div class="pattern-surface__clip" :style="clipStyle">
-      <canvas
-        ref="baseEl"
-        class="pattern-surface__canvas"
-        data-testid="pattern-surface-cells"
-        :data-window="held ? `${held.x},${held.y},${held.width},${held.height}` : undefined"
-        :style="canvasStyle"
-      />
-      <canvas
-        ref="overlayEl"
-        class="pattern-surface__canvas"
-        data-testid="pattern-surface-overlay"
-        :style="canvasStyle"
-      />
-    </div>
+    <canvas ref="baseEl" class="pattern-surface__canvas" data-testid="pattern-surface-cells" />
+    <canvas ref="overlayEl" class="pattern-surface__canvas" data-testid="pattern-surface-overlay" />
   </div>
 </template>
 
@@ -548,42 +556,42 @@ defineExpose({ update })
 }
 
 .pattern-surface {
-  position: relative;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
   /*
-   * Without this (ticket 60), a touch/pen drag across the grid is fair game for the browser to treat as a scroll/pan
-   * gesture instead of delivering it to the pointermove handler -- there's a horizontally scrolling ancestor
-   * (.app-shell__canvas-scroll) that would otherwise compete for exactly this gesture.
+   * Without this (ticket 60), a touch/pen drag across the canvas is fair game for the browser to treat as a scroll/pan
+   * gesture instead of delivering it to the pointermove handler.
    */
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* A crosshair over the board's beads (BeadHover card). */
+/* A crosshair over the canvas's beads (BeadHover card). */
 .pattern-surface--over-bead {
   cursor: crosshair;
 }
 
-/*
- * The board the beads sit on (BeadBoard card): `board`, rounded, its padding the frame's border in the same color. Its
- * sizes are in the Pattern's own px, scaled with it by frameStyle's transform.
- */
-.pattern-surface__frame {
-  position: absolute;
-  top: 0;
-  left: 0;
-  box-sizing: content-box;
-  border: calc(var(--board-padding) * 1px) solid var(--board);
-  border-radius: calc(var(--board-radius) * 1px);
-  background: var(--board);
-  transform-origin: top left;
+/* The Hand tool and Space + drag (CanvasHint card): an open hand, closed while the canvas is being moved. */
+.pattern-surface--moving {
+  cursor: grab;
 }
 
-.pattern-surface__clip {
-  position: absolute;
-  overflow: hidden;
+/* Set Frame: a crosshair, since a drag marks out beads (Frame card). */
+.pattern-surface--setting-frame {
+  cursor: crosshair;
+}
+
+.pattern-surface--dragging {
+  cursor: grabbing;
 }
 
 .pattern-surface__canvas {
   position: absolute;
+  inset: 0;
   display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>

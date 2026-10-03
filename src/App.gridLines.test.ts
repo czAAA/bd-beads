@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
-import { beadColors, drawnPattern, pressBead, selectedBeadCount } from './testUtils/beads'
+import { beadColors, drawnPattern, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
 import type { Technique } from './domain/pattern'
 import { loadPatterns } from './services/libraryStore'
 
@@ -35,11 +35,6 @@ async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId =
 
 const stored = () => loadPatterns()[0]!
 
-/** Every ruler-label button in one of the four gutters, in index order (1st = row/column 1). */
-function rulerLabels(wrapper: ReturnType<typeof mount>, axis: 'row' | 'column', edge: 'start' | 'end' = 'start') {
-  return wrapper.findAll(`[data-testid="pattern-ruler-${axis}-${edge}"] [data-testid="ruler-label"]`)
-}
-
 const removeLineButton = (wrapper: ReturnType<typeof mount>) =>
   wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]')
 const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="undo-button"]').trigger('click')
@@ -49,7 +44,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 5)
 
-    await rulerLabels(wrapper, 'row')[1]!.trigger('click') // row 2 (index 1)
+    await pressRulerNumber(wrapper, 'row', 1) // row 2 (index 1)
 
     expect(selectedBeadCount(wrapper)).toBe(4)
   })
@@ -58,7 +53,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 5)
 
-    await rulerLabels(wrapper, 'column')[2]!.trigger('click') // column 3
+    await pressRulerNumber(wrapper, 'column', 2) // column 3
 
     expect(selectedBeadCount(wrapper)).toBe(5)
   })
@@ -67,7 +62,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 5)
 
-    await rulerLabels(wrapper, 'row', 'end')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0, 'end')
 
     expect(selectedBeadCount(wrapper)).toBe(4)
   })
@@ -77,7 +72,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     await createInBeads(wrapper, 4, 5)
     // Paint is the default active tool; a ruler click still marks a Selection.
 
-    await rulerLabels(wrapper, 'row')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0)
 
     expect(selectedBeadCount(wrapper)).toBe(4)
   })
@@ -92,7 +87,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
 
-    await rulerLabels(wrapper, 'row')[1]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 1)
 
     // The new Selection re-enables Copy (a fresh block to copy) rather than leaving the old clipboard armed.
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
@@ -116,7 +111,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
 
-    await rulerLabels(wrapper, 'row')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0)
 
     expect(removeLineButton(wrapper).element.disabled).toBe(false)
   })
@@ -127,10 +122,10 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     await paint(wrapper, 1) // (0,1)
     await paint(wrapper, 10, 'blue') // (3,1), below the row that's about to go
 
-    await rulerLabels(wrapper, 'row')[1]!.trigger('click') // row 2 (index 1), a middle row, no beads on it
+    await pressRulerNumber(wrapper, 'row', 1) // row 2 (index 1), a middle row, no beads on it
     await removeLineButton(wrapper).trigger('click')
 
-    expect(stored().rows).toBe(3)
+    expect(stored().frame!.rows).toBe(3)
     expect(beadColors(wrapper)).toEqual([
       [null, RED, null],
       [null, null, null],
@@ -139,7 +134,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
 
     await undo(wrapper)
 
-    expect(stored().rows).toBe(4)
+    expect(stored().frame!.rows).toBe(4)
     expect(beadColors(wrapper)[3]![1]).toBe(BLUE)
   })
 
@@ -149,10 +144,10 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     await paint(wrapper, 0) // (0,0)
     await paint(wrapper, 7, 'blue') // (1,3)
 
-    await rulerLabels(wrapper, 'column')[1]!.trigger('click') // column 2 (index 1)
+    await pressRulerNumber(wrapper, 'column', 1) // column 2 (index 1)
     await removeLineButton(wrapper).trigger('click')
 
-    expect(stored().columns).toBe(3)
+    expect(stored().frame!.columns).toBe(3)
     expect(beadColors(wrapper)).toEqual([
       [RED, null, null],
       [null, null, BLUE],
@@ -162,7 +157,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   it('clears the Selection once it lands, same as Resize', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
-    await rulerLabels(wrapper, 'row')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0)
 
     await removeLineButton(wrapper).trigger('click')
 
@@ -172,23 +167,23 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   it('is refused while Row progress is on, same as Resize', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
-    await rulerLabels(wrapper, 'row')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(removeLineButton(wrapper).element.disabled).toBe(true)
 
     // Even a stray click changes nothing: removeSelectedLine itself refuses under the lock.
     await removeLineButton(wrapper).trigger('click')
-    expect(stored().rows).toBe(4)
+    expect(stored().frame!.rows).toBe(4)
   })
 
   it('is drawn as the resized grid', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 3, 4)
-    await rulerLabels(wrapper, 'row')[0]!.trigger('click')
+    await pressRulerNumber(wrapper, 'row', 0)
 
     await removeLineButton(wrapper).trigger('click')
 
-    expect(drawnPattern(wrapper)).toMatchObject({ columns: 3, rows: 3 })
+    expect(drawnPattern(wrapper)).toMatchObject({ frame: { columns: 3, rows: 3 } })
   })
 })

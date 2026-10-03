@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import type { Grid, RowProgress, Technique } from '../../domain/pattern'
+import { framedGrid, type Grid, type RowProgress, type Technique } from '../../domain/pattern'
 import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
 import { renderOverlay } from '../../rendering/overlayRenderer'
@@ -35,13 +35,11 @@ const marksEl = ref<HTMLCanvasElement>()
 
 const pattern = computed(() => ({
   technique: props.technique,
-  columns: props.grid[0]?.length ?? 0,
-  rows: props.grid.length,
-  grid: props.grid,
+  ...framedGrid(props.grid),
   rowProgress: props.rowProgress,
   rotation: 0 as const,
 }))
-const extent = computed(() => displayedExtentPx(props.technique, pattern.value.columns, pattern.value.rows, props.zoom, 0))
+const extent = computed(() => displayedExtentPx(props.technique, props.grid[0]?.length ?? 0, props.grid.length, props.zoom, 0))
 const hasMarks = computed(() => props.rowProgress.enabled || !!props.selection || !!props.preview)
 
 function size(canvas: HTMLCanvasElement, pixelRatio: number) {

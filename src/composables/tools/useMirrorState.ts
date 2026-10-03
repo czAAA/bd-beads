@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { changedCells, keepFinishedRows, mirrorCurrent, type Pattern } from '../../domain/pattern'
+import { changedPositions, keepFinishedRows, mirrorCurrent, type Pattern, patternDimensions } from '../../domain/pattern'
 
 /** Which "Mirror current" button an interaction names -- grid-space-neutral, since screen left-right/top-bottom is a view-layer concern (Toolbox.vue) that swaps under rotation. */
 export type MirrorCurrentAxis = 'horizontal' | 'vertical'
@@ -59,7 +59,7 @@ export function useMirrorState(
     const axis = gridAxisOf(hovered)
     const result = keepFinishedRows(pattern, mirrorCurrent(pattern, axis, axisCounts.value[axis], copyMode.value))
 
-    return changedCells(pattern.grid, result.grid)
+    return changedPositions(pattern.beads, result.beads)
   })
 
   function onHoverCurrent(axis: MirrorCurrentAxis | null) {
@@ -73,7 +73,7 @@ export function useMirrorState(
       return
     }
 
-    const cellsAcross = axis === 'columns' ? pattern.columns : pattern.rows
+    const cellsAcross = axis === 'columns' ? patternDimensions(pattern).columns : patternDimensions(pattern).rows
     axisCounts.value = { ...axisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
   }
 
@@ -102,7 +102,7 @@ export function useMirrorState(
     axisCounts.value = counts
   }
 
-  /** A Resize resets just the axis counts (ADR 0017): the grid they were clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
+  /** A change of the Frame resets just the axis counts (ADR 0017): the Frame they were clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
   function clearAxisCounts() {
     axisCounts.value = { ...NO_MIRROR_AXES }
   }

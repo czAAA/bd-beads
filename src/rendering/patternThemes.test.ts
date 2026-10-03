@@ -12,6 +12,13 @@ const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) =
 /** DESIGN.md §4.2: which token each PatternTheme field copies. */
 const FIELDS: Record<Exclude<keyof PatternTheme, 'rim' | 'finished' | 'cursorWidth'>, string> = {
   background: 'board',
+  canvas: 'box',
+  dot: 'bead-empty',
+  pieceLine: 'line-strong',
+  pieceLineActive: 'muted',
+  frameLine: 'ink',
+  ruler: 'ruler',
+  rulerStrong: 'body',
   emptyBead: 'bead-empty',
   seam: 'bead-seam',
   marker: 'marker',

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { Grid, Pattern, RowProgress } from './pattern'
+import { framedGrid, type Grid, type Pattern, type RowProgress } from './pattern'
 import { parsePatternsFile } from './patternFile'
 import { loadPatterns, savePatterns } from '../services/libraryStore'
 import libraryFile from './fixtures/library-file.json?raw'
@@ -35,16 +35,16 @@ const BEAD = 'toho-cube-1.5mm'
 const noProgress: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** A Pattern the way it should read back: every field present, nothing a newer build dropped still hanging on. */
-function expectedPattern(fields: Partial<Pattern> & Pick<Pattern, 'id' | 'name' | 'technique' | 'grid'>): Pattern {
+function expectedPattern(fields: Partial<Omit<Pattern, 'beads' | 'frame'>> & Pick<Pattern, 'id' | 'name' | 'technique'> & { grid: Grid }): Pattern {
+  const { grid: cells, ...rest } = fields
   return {
     beadId: BEAD,
-    columns: fields.grid[0]!.length,
-    rows: fields.grid.length,
+    ...framedGrid(cells),
     rowProgress: noProgress,
     rotation: 0,
     createdAt: 0,
     updatedAt: 0,
-    ...fields,
+    ...rest,
   }
 }
 
@@ -159,7 +159,7 @@ describe('stored-data compatibility', () => {
     })
 
     it('opens a Pattern larger than the current cell cap, every bead where it was', () => {
-      expect(overCapPattern.columns * overCapPattern.rows).toBeGreaterThan(FORMER_CELL_CAP)
+      expect(overCapPattern.frame!.columns * overCapPattern.frame!.rows).toBeGreaterThan(FORMER_CELL_CAP)
       localStorage.setItem(STORAGE_KEY, libraryV2OverCap)
 
       expect(loadPatterns()).toEqual([overCapPattern])
@@ -183,18 +183,18 @@ describe('stored-data compatibility', () => {
 
       savePatterns(loadPatterns())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 2 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 3 })
       expect(loadPatterns()).toEqual(expected)
     })
 
-    it('writes a version 2 library byte-for-byte the way the fixture holds it', () => {
+    it('writes the current format the same way every time: save, load, save again is byte-for-byte the same', () => {
       localStorage.setItem(STORAGE_KEY, libraryV2)
 
       savePatterns(loadPatterns())
+      const first = localStorage.getItem(STORAGE_KEY)
+      savePatterns(loadPatterns())
 
-      // The fixture is pretty-printed; the app writes it compact. Same content, same key order.
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(JSON.parse(libraryV2))
-      expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify(JSON.parse(libraryV2)))
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(first)
     })
   })
 

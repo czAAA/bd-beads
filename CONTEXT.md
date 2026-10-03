@@ -24,14 +24,38 @@ bd-beads lets a single user design beadwork Patterns for hand weaving (peyote, b
 - **Pattern file**: the exported `.json` holding one Pattern or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
 - **Convert image**: a second way to create a Pattern — from a picture rather than an empty grid, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md), amended by [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/`, entered through [DESIGN.md](DESIGN.md); see [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md). The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
-- **App shell layout**: a header, a notice row under it (only while there is something library-wide to say), then one left column that scrolls on its own beside the canvas box, which takes all the remaining width and height; the page itself never scrolls, and the Pattern scrolls inside the canvas box. The left column holds separate boxes in a fixed order: the Toolbox (or the New Pattern form in its place, with no Pattern open or during Convert image framing), the save box, Beads needed, Saved Patterns. The header's summary holds the open Pattern's info alongside New Pattern and the Import controls; zoom sits at the canvas box's top-right; the Progress bar runs along the canvas box's bottom edge — see [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md), which supersedes the layout parts of [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md), before adding a new screen or control
+- **App shell layout** (the canvas box holds an Open canvas with a canvas strip, the Hand/Set Frame tools, a Rulers toggle and the canvas hint; ADR 0026): a header, a notice row under it (only while there is something library-wide to say), then one left column that scrolls on its own beside the canvas box, which takes all the remaining width and height; the page itself never scrolls, and the Pattern scrolls inside the canvas box. The left column holds separate boxes in a fixed order: the Toolbox (or the New Pattern form in its place, with no Pattern open or during Convert image framing), the save box, Beads needed, Saved Patterns. The header's summary holds the open Pattern's info alongside New Pattern and the Import controls; zoom sits at the canvas box's top-right; the Progress bar runs along the canvas box's bottom edge — see [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md), which supersedes the layout parts of [ADR 0004](docs/adr/0004-three-panel-app-shell.md) and [ADR 0005](docs/adr/0005-tools-above-canvas.md), before adding a new screen or control
 - **Text fit check**: `e2e/visual/textFit.spec.ts` (part of `npm run visual`, ticket 229) opens the app in every language at every supported width, visits each screen, menu, sheet, dialog and popover, and measures — no reference screenshots — whether any text pokes out of its box, the screen or a clipping ancestor, is cut off by an ellipsis, or wraps in a control meant to be one line (`e2e/support/textFit.ts`; user-typed Pattern names, the closed drawer, carousel cards not yet scrolled to and the canvas's own backdrop and rulers are skipped). A failure names the screen, element, text, overflow in pixels, language and width. Places known to overflow are listed in `e2e/support/textFitPending.ts`, each deleted by the ticket that fixes it; an entry that stops overflowing fails the check until it is removed. To add a screen, add a `Screen` to `SCREENS` in the spec (its `visit` drives the app by its own controls and calls `measure()`, or returns false where the state can't be reached); to add a language, list it in `LOCALES` (the type check reminds you). `TEXTFIT_DEBUG=1` prints every misfit and skipped screen.
 
 ## Language
 
 **Pattern**:
-A saveable, re-editable beadwork design: a grid of cells (shape depends on the chosen technique and bead form factor), each cell painted with a color from the palette.
+A saveable, re-editable beadwork design: an Open canvas of bead positions (their geometry depends on the chosen technique and bead form factor), each painted bead with a color from the palette, and optionally a Frame that marks which beads are the Pattern.
 _Avoid_: design, drawing, chart
+
+**Open canvas**:
+What a Pattern is drawn on: an endless field of bead positions with no board and no fixed size (see [ADR 0026](docs/adr/0026-open-canvas-and-frame.md)). Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
+_Avoid_: board, grid, infinite grid, sheet
+
+**Piece**:
+A set of beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and erased. Each Piece has a rectangle around it and, while there is no Frame, its own rulers.
+_Avoid_: island, cluster, group, shape
+
+**Frame**:
+The one rectangle per Open canvas, on whole beads, that marks which beads are the Pattern. A line only: drawing outside it stays possible and is saved with the Pattern, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Pattern has a size (columns × rows, and an Estimated size); without one it has none. Set, moved, resized and removed as Undo steps that never change a bead. A Pattern from before the Frame opens with a Frame the size of its old grid.
+_Avoid_: border, crop, artboard, page, grid size
+
+**Set Frame**:
+The mode (F, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead) and Remove Frame, and Columns/Rows steppers once set.
+_Avoid_: crop, resize, set size
+
+**Hand tool**:
+The tool (H) that moves the view by dragging and never changes a bead. Space + drag does the same from any tool.
+_Avoid_: pan mode, grab tool
+
+**Rulers toggle**:
+The button (and R) that shows or hides the rulers, kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece, from 1, or the Frame's on all four sides once a Frame is set.
+_Avoid_: ruler switch, numbers toggle
 
 **Pattern library**:
 Every Pattern saved on this device, taken together — what the Saved Patterns box lists and what a library Pattern file exports in one go. It is ordered by last save, most recently saved first, with no grouping or nesting: saving a Pattern (any change to it, or Save) moves it to the front, a new or imported Pattern starts there, and a library saved before the order existed is put in order by when each Pattern was last changed (ticket 145). A Pattern belongs to the library from the moment it is created, and leaves it only by being removed. Lives only on the device that made it (ADR 0001), so moving it anywhere means exporting a Pattern file. Saves itself as it changes, so the Toolbox's Save only reassures on the device side: it writes at once and says "Saved", or says so if the device refuses (ticket 115). Save also hands over the open Pattern as a Pattern file, so a Pattern can be opened on another device without a separate Export (ticket 119). Every command persists the moment it lands, except a dragged paint or erase stroke, which is saved when the button is released. If a save doesn't get through — the browser's storage is full — the editor says so in the top bar and keeps the change on screen rather than losing it silently. Importing while a Pattern is open asks first whether to switch to the imported Pattern (saying the current one's progress is saved, or, after a failed save, offering to save it first); either way the imported Pattern joins the library, and with no Pattern open it opens without asking (ticket 154). The Saved Patterns box asks too: the remove × asks "Remove this Pattern?" in a danger confirmation, and picking a different thumbnail asks "Switch Pattern?" naming both, with the same save-first offer after a failed save; picking the open Pattern does nothing (ticket 232). See [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md).
@@ -57,8 +81,8 @@ _Avoid_: bead shape
 The weaving method used (loom, peyote, brick stitch, etc.), which determines the grid geometry/offset of a pattern's cells. A pattern has exactly one technique and one bead catalog entry for its entire grid.
 _Avoid_: stitch, weave type
 
-**Row progress**:
-An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Clear pattern is the exception: it clears Row progress along with the grid. Not changeable by Resize while on. Saved together with the pattern. Every control for it — the switch that turns it on, Row direction, the pointer readout and the buttons that move the pointer — lives in the Progress bar along the canvas box's bottom edge (ticket 144).
+**Row progress**: With an Open canvas it works on the Frame's rows only (the finished-row lock covers the Frame only); with no Frame the Progress bar says "Set Frame to start" and offers Set Frame.
+An overlay toggled on top of the pattern editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Clear pattern is the exception: it clears Row progress along with the grid. The Frame cannot be changed, and Rotate waits, while it is on. Saved together with the pattern. Every control for it — the switch that turns it on, Row direction, the pointer readout and the buttons that move the pointer — lives in the Progress bar along the canvas box's bottom edge (ticket 144).
 _Avoid_: progress bar (as a name for this overlay/mechanic — it isn't a fill/percentage visualization, which is exactly what "Progress bar" is reserved for instead, see Progress bar), completion state
 
 **Row direction**:
@@ -70,7 +94,7 @@ The bar along the canvas box's bottom edge that holds every Row progress control
 _Avoid_: progress control, row control
 
 **Mirror**:
-A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Axis counts and copy mode are an editing-session setting, reset when switching Patterns or when a Resize changes grid dimensions. Fill and Clear pattern are not affected by Mirror; Paste now is — see Paste.
+A symmetric-drawing aid for a Pattern. Each direction (left–right and top–bottom) has its own count of Mirror axes, from 0 (off) up to one fewer than the cells across that direction. N axes split the grid into N+1 equal strips (an axis may run through the middle of a cell, which then mirrors onto itself); painting a cell with the Paint tool also paints its counterpart in every other strip. By default neighbouring strips are mirror images of each other (A | A′ | A); a copy mode, one switch for both directions, instead repeats the strip unflipped (A | A | A). Directions are as seen on screen, so rotating the Pattern swaps the two counts. Axes are drawn as faint lines on the canvas while either count is above 0. A separate "Mirror current" action per direction does a one-time sync of what's already painted, copying the strip with the most painted cells onto the rest (1 center axis if that direction's count is 0), honouring copy mode; hovering it shows the axes and dims the cells it would overwrite. Axis counts and copy mode are an editing-session setting, reset when switching Patterns or when the Frame changes. Fill and Clear pattern are not affected by Mirror; Paste now is — see Paste.
 _Avoid_: reflect, symmetry mode, apply mirror
 
 **Toolbox**:
@@ -90,8 +114,16 @@ Resets the open Pattern to how it was when first created at its size: every cell
 _Avoid_: delete all, reset, wipe
 
 **Pattern size**:
-How big a Pattern is: its columns × rows, counted in beads. A size given in mm/cm is converted to whole beads when the Pattern is created, or when it is applied to an open Pattern with Resize's Change size, and is not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
+How big a Pattern is: its Frame's columns × rows, counted in beads (a Pattern with no Frame has no size yet). A size given in mm/cm is converted to whole beads when the Pattern is created, and is not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
 _Avoid_: dimensions, resolution, physical size
+
+**Rotate**:
+Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Disabled, named "Rotate, Set Frame first", with no Frame.
+_Avoid_: flip, spin, orientation
+
+**Beads needed**:
+The count (and Estimated weight) of beads per color inside the Frame only; with no Frame it says "Set Frame to count beads." Beads outside the Frame are never counted.
+_Avoid_: shopping list, bead count
 
 **Estimated size**:
 A Pattern's width and height in mm/cm, worked out from its Pattern size and Bead as one bead's size multiplied by the bead count, and never stored. Always presented as an estimate, since a real piece comes out a little different.
@@ -101,14 +133,8 @@ _Avoid_: real size, actual size, physical size
 The grams of beads a Pattern needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Pattern's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
 _Avoid_: real weight, exact weight
 
-**Resize**:
-Adding or removing one whole row/column at a time on an open Pattern, from either end of each direction, via −/+ buttons on the Size group's columns/rows counts (not a typeable number); removing them removes the beads painted on them. Not available while Row progress is on.
-
-Change size is the other way to Resize: a modal from the Size group that sets the whole grid from a size stated in beads, mm or cm (mm/cm converted through the Pattern's Bead, once, and forgotten, as when creating a Pattern), with a message saying what will happen before it is confirmed. Growing adds empty rows/columns and shrinking keeps the top-left. It is one undo step, resets Mirror axis counts, and is refused while Row progress is on, like any Resize.
-_Avoid_: crop, stretch, scale, change grid
-
 **Remove row/column**:
-A Tools-group tool, next to Eraser, that removes the specific row or column the Selection marks out — any index, not just an end the way Resize is limited to — shifting the rest of the grid to close the gap, as one undo step. Enabled only when the Selection is exactly one whole row or column (see Selection); refused while Row progress is on, the same lock Resize itself respects.
+A Tools-group tool, next to Eraser, that removes the specific row or column of the Frame the Selection marks out, from any index, shifting the Frame's beads after it to close the gap and shrinking the Frame by one, as one undo step. Beads outside the Frame stay where they are. Enabled only when the Selection is exactly one whole row or column of the Frame (a ruler number selects one; see Selection); refused while Row progress is on, which holds the Frame's rows still.
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
@@ -132,14 +158,14 @@ Stamps the copied block onto the grid with its top-left corner at the clicked ce
 _Avoid_: place, insert, apply
 
 **Undo**:
-Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, a Resize (either way, −/+ or Change size), a Remove row/column, a Replace Bead, or a "Mirror current" — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Rotate, Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Pattern, and reset whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
+Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, a Set Frame, Fit to drawing or Remove Frame, a Rotate, a Remove row/column, a Replace Bead, or a "Mirror current" — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Pattern, and reset whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
 _Avoid_: revert, step back
 
 **Redo**:
 Steps forward through whatever Undo has stepped back from, re-applying each undone edit in order; Undo and Redo can be alternated freely without losing or duplicating a step. A new edit that actually changes the grid clears it — the same edits that count as an Undo step in the first place, so one that lands on nothing (e.g. aimed only at finished rows) leaves it alone. Reset alongside Undo whenever the open Pattern changes. Available anywhere in the editor via Ctrl/Cmd+Shift+Z or Ctrl+Y, except while typing in a form field.
 _Avoid_: repeat, step forward
 
-**Convert image**:
+**Convert image**: Needs a size: the picture lands in a Frame of that size on a new Open canvas (ADR 0026).
 Creating a Pattern from a picture instead of an empty grid: the picture is shown rendered as beads, and a frame — the Pattern itself, sized by its physical dimensions, Bead and Technique — is positioned over it to choose which part is kept. What falls inside the frame is resampled onto the Pattern's grid and its colors become the Pattern's Image colors. A way of creating a Pattern only, never a command that converts into one already open.
 _Avoid_: import image, trace, pixelate, image import
 

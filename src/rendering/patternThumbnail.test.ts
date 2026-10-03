@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { thumbnailPixels } from './patternThumbnail'
 import type { Rotation } from '../domain/grid'
-import type { Pattern } from '../domain/pattern'
+import { framedGrid, type Pattern } from '../domain/pattern'
 
 function pattern(grid: (string | null)[][], rotation: Rotation = 0): Pattern {
   return {
@@ -9,9 +9,7 @@ function pattern(grid: (string | null)[][], rotation: Rotation = 0): Pattern {
     name: 'P',
     technique: 'loom',
     beadId: 'toho-cube-1.5mm',
-    columns: grid[0]!.length,
-    rows: grid.length,
-    grid: grid.map((row) => row.map((color) => ({ color }))),
+    ...framedGrid(grid.map((row) => row.map((color) => ({ color })))),
     rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
     rotation,
     createdAt: 0,

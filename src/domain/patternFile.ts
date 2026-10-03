@@ -1,4 +1,4 @@
-import { normalizePattern, type Pattern } from './pattern'
+import { normalizePattern, type GridPattern, type Pattern } from './pattern'
 
 /**
  * The export file format. There is no backend to migrate a Pattern for us (ADR 0001), so a file carries the kind it
@@ -7,12 +7,14 @@ import { normalizePattern, type Pattern } from './pattern'
  */
 const PATTERN_FILE_KIND = 'bd-beads/pattern'
 const LIBRARY_FILE_KIND = 'bd-beads/library'
-const FILE_VERSION = 1
+/** Version 1 held a fixed grid of cells per Pattern; version 2 holds beads by position and a Frame (ADR 0026). Both are read, only 2 is written. */
+const FILE_VERSION = 2
+const FILE_VERSIONS: readonly number[] = [1, 2]
 
 interface PatternFile {
   kind: typeof PATTERN_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
-  patterns: Pattern[]
+  patterns: (Pattern | GridPattern)[]
 }
 
 /** What an exported file holds once read back. */
@@ -58,17 +60,17 @@ export function libraryFileName(): string {
   return 'bd-beads-library.json'
 }
 
-function looksLikePattern(value: unknown): value is Pattern {
-  const pattern = value as Pattern | null
+function looksLikePattern(value: unknown): value is Pattern | GridPattern {
+  const pattern = value as Partial<Pattern & GridPattern> | null
+  const hasBeads = typeof pattern?.beads === 'object' && pattern.beads !== null
+  const hasGrid = typeof pattern?.columns === 'number' && typeof pattern.rows === 'number' && Array.isArray(pattern.grid)
   return (
     typeof pattern === 'object' &&
     pattern !== null &&
     typeof pattern.id === 'string' &&
     typeof pattern.technique === 'string' &&
     typeof pattern.beadId === 'string' &&
-    typeof pattern.columns === 'number' &&
-    typeof pattern.rows === 'number' &&
-    Array.isArray(pattern.grid)
+    (hasBeads || hasGrid)
   )
 }
 
@@ -94,7 +96,7 @@ export function parsePatternsFile(text: string): PatternFileContents {
     throw new Error('Not a bd-beads file')
   }
 
-  if (file.version !== FILE_VERSION) {
+  if (typeof file.version !== 'number' || !FILE_VERSIONS.includes(file.version)) {
     throw new Error(`Unsupported bd-beads file version: ${String(file.version)}`)
   }
 

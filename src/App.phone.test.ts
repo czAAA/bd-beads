@@ -1,3 +1,4 @@
+import { frameGrid } from './domain/pattern'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
@@ -47,7 +48,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await createPatternViaPhoneSheet(wrapper, '15', '30')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(drawnPattern(wrapper).columns).toBe(10)
+    expect(drawnPattern(wrapper).frame!.columns).toBe(10)
     // After creation the Dock replaces the pattern-management bar.
     expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="phone-pattern-bar"]').exists()).toBe(false)
@@ -61,12 +62,39 @@ describe('App at the phone tier (ticket 79)', () => {
       ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
       ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
       ['dock-edit', () => wrapper.find('[data-testid="sheet-paste"]').exists()],
-      ['dock-size', () => wrapper.find('[data-testid="size-change-size"]').exists()],
+      ['dock-frame', () => wrapper.find('[data-testid="frame-set"]').exists()],
     ] as const) {
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(expectFound()).toBe(true)
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    }
+  })
+
+  it('sets the Frame from the Dock\'s Frame sheet, with the ContextBar holding its size, Fit to drawing and Done', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('10')
+    await wrapper.find('[data-testid="frame-set"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-frame"]').classes()).toContain('dock__item--open')
+    expect(wrapper.find('[data-testid="context-bar-frame-size"]').text()).toMatch(/^10×20/)
+
+    await wrapper.find('[data-testid="context-bar-done-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="context-bar-frame-size"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('dock__item--open')
+  })
+
+  it('has the five tools in the Tool sheet, Hand among them', async () => {
+    const wrapper = mount(App)
+    await createPatternViaForm(wrapper, '15', '30')
+    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
+
+    for (const tool of ['paint', 'fill', 'select', 'erase', 'hand']) {
+      expect(wrapper.find(`[data-testid="sheet-tool-${tool}"]`).exists()).toBe(true)
     }
   })
 
@@ -101,7 +129,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(drawnPattern(wrapper).grid[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBe('#e63746')
   })
 
   it('undoes and redoes from the phone header', async () => {
@@ -109,13 +137,13 @@ describe('App at the phone tier (ticket 79)', () => {
     await createPatternViaForm(wrapper, '15', '30')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(drawnPattern(wrapper).grid[0]![0]!.color).not.toBeNull()
+    expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
 
     await wrapper.find('[data-testid="phone-undo-button"]').trigger('click')
-    expect(drawnPattern(wrapper).grid[0]![0]!.color).toBeNull()
+    expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="phone-redo-button"]').trigger('click')
-    expect(drawnPattern(wrapper).grid[0]![0]!.color).not.toBeNull()
+    expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
   })
 
   it('shows the Pattern sheet\'s Save box for the open Pattern', async () => {

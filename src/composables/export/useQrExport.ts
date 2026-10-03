@@ -3,7 +3,7 @@ import type { Pattern } from '../../domain/pattern'
 import { patternQrMatrix, type QrMatrix } from '../../domain/qrExport'
 
 export interface QrExport {
-  /** The open Pattern's code, or undefined when there is no Pattern or it doesn't fit a single QR code (ADR 0015). */
+  /** The open Pattern's code, or undefined when there is no Pattern, it has no Frame, or it doesn't fit a single QR code (ADR 0015). */
   matrix: ComputedRef<QrMatrix | undefined>
   /** A Pattern is open but too large for a code: the control turns itself off and says why, instead of offering a dead end. */
   tooLarge: ComputedRef<boolean>
@@ -32,9 +32,10 @@ export function useQrExport(pattern: () => Pattern | undefined): QrExport {
     const open = pattern()
     // Read as the Pattern itself: the code reads every bead, and through the library's reactive wrapper that is a proxy
     // per bead. It depends on the Pattern's identity alone, which every edit changes.
-    return open ? patternQrMatrix(toRaw(open), currentAppUrl()) : undefined
+    return open?.frame ? patternQrMatrix(toRaw(open), currentAppUrl()) : undefined
   })
-  const tooLarge = computed(() => pattern() !== undefined && matrix.value === undefined)
+  // A Pattern with no Frame has no code either, but that isn't for being too large: Export asks for a Frame first.
+  const tooLarge = computed(() => pattern()?.frame !== undefined && matrix.value === undefined)
 
   const requested: Ref<boolean> = ref(false)
   const panelOpen = computed(() => requested.value && matrix.value !== undefined)

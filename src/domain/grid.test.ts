@@ -1,12 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
-  GRID_BORDER_PX,
   MAX_ZOOM,
   MIN_ZOOM,
-  RULER_GUTTER_PX,
-  canvasContentHeightPx,
-  canvasContentWidthPx,
   cellCenter,
   clampZoom,
   computeFitZoom,
@@ -282,23 +278,6 @@ describe('clampZoom', () => {
   it('never goes below the minimum or above the maximum', () => {
     expect(clampZoom(0.01)).toBe(MIN_ZOOM)
     expect(clampZoom(99)).toBe(MAX_ZOOM)
-  })
-})
-
-describe('canvasContentPx', () => {
-  it('scales the grid and its bold outline by the zoom, with the two ruler gutters', () => {
-    expect(canvasContentWidthPx('loom', 10, 0.5, 20)).toBe(
-      (RULER_GUTTER_PX * 2 + gridWidthPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
-    )
-    expect(canvasContentHeightPx('loom', 10, 0.5, 20)).toBe(
-      (RULER_GUTTER_PX * 2 + gridHeightPx('loom', 10, 20) + GRID_BORDER_PX * 2) * 0.5,
-    )
-  })
-
-  it('leaves room for the outline on all four sides, not just the left and top', () => {
-    // Without the outline counted in, the box would be 6px short and clip the right/bottom edges.
-    const withOutline = canvasContentWidthPx('loom', 10, 1, 20)
-    expect(withOutline - RULER_GUTTER_PX * 2 - gridWidthPx('loom', 10, 20)).toBe(GRID_BORDER_PX * 2)
   })
 })
 

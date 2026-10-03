@@ -200,7 +200,6 @@ describe('NewPatternForm draft (ticket 58)', () => {
       name: '',
       technique: 'loom',
       beadId: BEAD_CATALOG[0]!.id,
-      size: { width: 0, height: 0, unit: 'beads' },
       makerName: '',
     })
   })
@@ -578,10 +577,11 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
   it('says what to enter at a size field once it has been left empty, and not before', async () => {
     const { en } = await import('../../i18n/en')
     const wrapper = mount(NewPatternForm)
+    // Both empty is an open canvas, not a mistake, however often the fields are left.
+    await wrapper.find('[data-testid="height-input"]').trigger('blur')
     expect(wrapper.find('[data-testid="height-error"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="height-input"]').trigger('blur')
-
+    await wrapper.find('[data-testid="width-input"]').setValue('12')
     expect(wrapper.find('[data-testid="height-error"]').text()).toBe(en.form.enterHeight)
     expect(wrapper.find('[data-testid="height-input"]').attributes('aria-invalid')).toBe('true')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
@@ -698,7 +698,7 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
     const { en } = await import('../../i18n/en')
     const decodeImage = vi.fn().mockResolvedValue(onePixel)
     const wrapper = mount(NewPatternForm, { props: { decodeImage } })
-    expect(wrapper.find('[data-testid="convert-image-field"]').text()).toContain(en.form.enterSizeFirst)
+    expect(wrapper.find('[data-testid="convert-image-field"]').text()).toContain(en.form.convertNeedsFrame)
 
     await wrapper.find('[data-testid="width-input"]').setValue('10')
     await wrapper.find('[data-testid="height-input"]').setValue('10')
@@ -709,5 +709,61 @@ describe('NewPatternForm on the design system (ticket 149)', () => {
 
     expect(decodeImage).toHaveBeenCalledTimes(1)
     expect(wrapper.emitted('convert-image')).toEqual([[onePixel]])
+  })
+})
+
+describe('NewPatternForm with the Frame optional (ticket 233)', () => {
+  beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+
+  const createButton = (wrapper: ReturnType<typeof mount>) => wrapper.find<HTMLButtonElement>('button[type="submit"]')
+
+  it('heads the size fields "Frame (optional)" and says empty means draw anywhere', async () => {
+    const { en } = await import('../../i18n/en')
+    const wrapper = mount(NewPatternForm)
+
+    expect(wrapper.find('[data-testid="new-pattern-frame-heading"]').text()).toContain(en.form.frameLabel)
+    expect(wrapper.find('[data-testid="new-pattern-frame-heading"]').text()).toContain(en.form.optional)
+    expect(wrapper.find('[data-testid="new-pattern-frame-hint"]').text()).toBe(en.form.frameHint)
+
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    expect(wrapper.find('[data-testid="new-pattern-frame-hint"]').exists()).toBe(false)
+  })
+
+  it('creates an open canvas with no size at all', async () => {
+    const wrapper = mount(NewPatternForm)
+    expect(createButton(wrapper).element.disabled).toBe(false)
+
+    await wrapper.find('form').trigger('submit')
+
+    const payload = wrapper.emitted('submit')![0]![0] as Record<string, unknown>
+    expect(payload).not.toHaveProperty('size')
+  })
+
+  it('needs both fields once one is filled, and says which is missing', async () => {
+    const { en } = await import('../../i18n/en')
+    const wrapper = mount(NewPatternForm)
+
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    expect(createButton(wrapper).element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="height-error"]').text()).toBe(en.form.enterHeight)
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')).toBeUndefined()
+
+    await wrapper.find('[data-testid="width-input"]').setValue('')
+    await wrapper.find('[data-testid="height-input"]').setValue('8')
+    expect(wrapper.find('[data-testid="width-error"]').text()).toBe(en.form.enterWidth)
+    expect(createButton(wrapper).element.disabled).toBe(true)
+  })
+
+  it('keeps Convert image waiting for a size, saying a picture needs one', async () => {
+    const { en } = await import('../../i18n/en')
+    const wrapper = mount(NewPatternForm)
+
+    expect(wrapper.find<HTMLInputElement>('[data-testid="convert-image-input"]').element.disabled).toBe(true)
+    expect(wrapper.find('[data-testid="convert-image-field"]').text()).toContain(en.form.convertNeedsFrame)
+
+    await wrapper.find('[data-testid="width-input"]').setValue('10')
+    await wrapper.find('[data-testid="height-input"]').setValue('10')
+    expect(wrapper.find<HTMLInputElement>('[data-testid="convert-image-input"]').element.disabled).toBe(false)
   })
 })

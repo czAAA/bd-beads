@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { openApp } from '../support/app'
+import { openApp, patternBox } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
 
 /**
@@ -18,7 +18,7 @@ test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   }
 
   await page.getByTestId('zoom-reset').click()
-  const box = (await page.getByTestId('pattern-surface').boundingBox())!
+  const box = await patternBox(page, (await page.getByTestId('pattern-surface').boundingBox())!)
   const zoom = Number.parseInt((await page.getByTestId('zoom-level').textContent())!, 10) / 100
   const at = (row: number, column: number) => beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
   const started = await heapMb()

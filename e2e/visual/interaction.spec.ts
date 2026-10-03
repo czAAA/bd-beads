@@ -1,14 +1,16 @@
+import { frameGrid } from '../../src/domain/pattern'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Technique } from '../../src/domain/grid'
+import { normalizePattern } from '../../src/domain/pattern'
 import { decodePattern } from '../../src/domain/patternEncoding'
 import type { EncodedPattern } from '../../src/domain/patternEncoding'
 import { PALETTE } from '../../src/domain/palette'
-import { gridBox, openApp, setZoom, settle } from '../support/app'
+import { gridBox, openApp, patternBox, setZoom, settle } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
 
 /**
  * The pointer tools on the Drawing surface, in a real browser: the hover preview looks as the references have it, and
@@ -24,7 +26,7 @@ async function savedPattern(page: Page) {
   await page.getByTestId('save-button').click()
   const stored = await page.evaluate(() => localStorage.getItem('bd-beads:patterns'))
   const library = JSON.parse(stored!) as { patterns: EncodedPattern[] }
-  return decodePattern(library.patterns[0]!)
+  return normalizePattern(decodePattern(library.patterns[0]!))
 }
 
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
@@ -32,7 +34,7 @@ async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomP
   return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
-const colorAt = (pattern: Awaited<ReturnType<typeof savedPattern>>, row: number, column: number) => pattern.grid[row]![column]!.color
+const colorAt = (pattern: Awaited<ReturnType<typeof savedPattern>>, row: number, column: number) => frameGrid(pattern)[row]![column]!.color
 
 test.describe('the hover preview', () => {
   const scenarios = [
@@ -61,15 +63,16 @@ test.describe('the hover preview', () => {
 
           const box = (await page.getByTestId('pattern-surface').boundingBox())!
           const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-          if (UPDATING_REFERENCES) await writeReference(page, reference, box, { x: Math.floor(box.x), y: Math.floor(box.y) })
+          const corner = await patternBox(page, box)
+          if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
           const expected = readFileSync(reference)
           const { width, height } = PNG.sync.read(expected)
-          const origin = { x: Math.floor(box.x), y: Math.floor(box.y) }
+          const origin = shownRegion(corner, pattern, zoom / 100)
           const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
           const label = `${scenario.name}, ${orientation}, ${zoom}%`
           // The hovered bead's centre carries the preview, which is what is being looked at, not a wrong color.
-          const { look, wrong } = compareToReference(actual, expected, pattern, zoom, box, origin, new Set(['(3, 5)']))
+          const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin, new Set(['(3, 5)']))
           expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
           expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
         }
@@ -96,7 +99,7 @@ test.describe('the pointer tools', () => {
 
         const saved = await savedPattern(page)
         expect(colorAt(saved, 4, 7)).toBe(DEFAULT_COLOR)
-        expect(saved.grid.flat().filter((cell) => cell.color !== null)).toHaveLength(1)
+        expect(frameGrid(saved).flat().filter((cell) => cell.color !== null)).toHaveLength(1)
       })
     }
   }
@@ -116,7 +119,7 @@ test.describe('the pointer tools', () => {
     expect(colorAt(saved, 2, 0)).toBeNull()
 
     await page.getByTestId('undo-button').click()
-    expect((await savedPattern(page)).grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 
   test('a right click erases, and a right-button drag erases a stroke', async ({ page }) => {
@@ -136,7 +139,7 @@ test.describe('the pointer tools', () => {
     const saved = await savedPattern(page)
     expect([7, 10, 11, 12, 13].map((column) => colorAt(saved, 4, column))).toEqual(Array(5).fill(null))
     // What was not touched is as it was.
-    expect(colorAt(saved, 4, 8)).toBe(pattern.grid[4]![8]!.color)
+    expect(colorAt(saved, 4, 8)).toBe(frameGrid(pattern)[4]![8]!.color)
   })
 
   test('the Fill tool fills the area under a click', async ({ page }) => {
@@ -146,7 +149,7 @@ test.describe('the pointer tools', () => {
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y)
 
-    expect((await savedPattern(page)).grid.flat().every((cell) => cell.color === DEFAULT_COLOR)).toBe(true)
+    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === DEFAULT_COLOR)).toBe(true)
   })
 
   test('the Erase tool erases with the left button', async ({ page }) => {
@@ -175,7 +178,7 @@ test.describe('the pointer tools', () => {
     const saved = await savedPattern(page)
     expect(colorAt(saved, 1, 3)).toBeNull()
     expect(colorAt(saved, 4, 3)).toBe(DEFAULT_COLOR)
-    expect(pattern.grid[1]![3]!.color).toBeNull()
+    expect(frameGrid(pattern)[1]![3]!.color).toBeNull()
   })
 
   test('holding Space and dragging pans instead of painting', async ({ page }) => {
@@ -190,7 +193,7 @@ test.describe('the pointer tools', () => {
     await page.mouse.up()
     await page.keyboard.up('Space')
 
-    expect((await savedPattern(page)).grid.flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 })
 

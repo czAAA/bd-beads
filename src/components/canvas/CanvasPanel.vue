@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import CanvasBackdrop from './CanvasBackdrop.vue'
+import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
-import PatternCanvas from './PatternCanvas.vue'
+import PatternSurface from './PatternSurface.vue'
 import ProgressBar from '../ui/ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import type { Technique } from '../../domain/grid'
+import { resolvePatternBead } from '../../domain/pattern'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
 
 const {
   t,
@@ -33,6 +36,14 @@ const {
   canvasAreaWidth,
   bindCanvasScroll,
   zoom,
+  scroll,
+  onSelectLine,
+  activeTool,
+  showRulers,
+  toggleRulers,
+  panBy,
+  scrollBy,
+  setZoom,
   zoomIn,
   zoomOut,
   resetZoom,
@@ -46,7 +57,6 @@ const {
   selection,
   pasteProjectionActive,
   onCopy,
-  onSelectLine,
   backOutOfSelect,
   previewCells,
   previewedMirrorAxisCounts,
@@ -62,13 +72,46 @@ const {
   onPatternKeyboardFocus,
   onPatternKey,
   onPatternKeyUp,
-  onToggleRotate,
+  onRotate,
   onToggleRowProgress,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
+  locale,
+  settingFrame,
+  settledPattern,
+  activePiece,
+  onStartSetFrame,
+  onDoneSetFrame,
+  onFitFrame,
+  frameDraft,
+  onFramePress,
+  onFrameDrag,
+  onFrameRelease,
+  onFrameCancel,
 } = useAppShell()
+
+/** The Pattern as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
+const shownPattern = computed(() => (activePattern.value && frameDraft.value ? { ...activePattern.value, frame: frameDraft.value } : activePattern.value))
+
+/** Why Rotate is off, if it is: no Frame to turn, or Row progress holding the Frame's rows still. */
+const rotateOff = computed(() => {
+  const pattern = activePattern.value
+  if (!pattern) return undefined
+  if (!pattern.frame) return t.value.frame.rotateNeedsFrame
+  return pattern.rowProgress.enabled ? t.value.size.lockedReason : undefined
+})
+
+/** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
+const frameTooltip = computed(() => {
+  const pattern = shownPattern.value
+  const frame = pattern?.frame
+  if (!pattern || !frame) return ''
+  const bead = resolvePatternBead(pattern)
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
+})
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
 const framingControlsEl = ref<HTMLElement>()
@@ -99,24 +142,33 @@ function techniqueWord(technique: Technique): string {
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
+        :pattern="settledPattern"
         :size="stripSize"
         :zoom-percent="stripZoomPercent"
         :hint="keyboardOnPattern ? t.a11y.keyboardHint : undefined"
         :title="framing ? t.convertImage.heading : undefined"
+        :rulers="activePattern && !framing ? showRulers : undefined"
+        :setting-frame="settingFrame"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
         @zoom-out="framing ? convertZoomOut() : zoomOut()"
         @reset="framing ? convertResetZoom() : resetZoom()"
+        @toggle-rulers="toggleRulers"
       />
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Pattern). -->
       <div :ref="bindCanvasArea" class="app-shell__drawing" data-testid="app-drawing-area">
         <CanvasBackdrop v-if="activePattern && !framing" :word="techniqueWord(activePattern.technique)" />
 
+        <!-- How to move the canvas and its shortcuts: always, from the iPad mini up (CanvasHint card). -->
+        <CanvasHint v-if="activePattern && !framing" class="app-shell__canvas-hint" />
+
         <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Pattern's bottom-right corner instead. -->
         <ZoomPill
           v-if="activePattern && !framing"
           class="app-shell__zoom-pill"
           :zoom-percent="zoomPercent"
+          :rulers="showRulers"
+          @toggle-rulers="toggleRulers"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @reset="resetZoom"
@@ -145,10 +197,16 @@ function techniqueWord(technique: Technique): string {
               @create="onConvertImageCreate"
               @cancel="cancelConvertImage"
             />
-            <PatternCanvas
+            <PatternSurface
               v-else-if="activePattern"
-              :pattern="activePattern"
+              :pattern="shownPattern!"
+              :active-piece="activePiece"
+              :setting-frame="settingFrame"
+              :frame-tooltip="frameTooltip"
               :zoom="zoom"
+              :scroll="scroll"
+              :show-rulers="showRulers"
+              :moving="activeTool === 'hand'"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
@@ -166,7 +224,14 @@ function techniqueWord(technique: Technique): string {
               @cell-secondary-move="onCellSecondaryMove"
               @cell-hover="onCellHover"
               @hover-end="onHoverEnd"
+              @pan="panBy"
+              @scroll="scrollBy"
+              @zoom-by="(factor, anchor) => setZoom(zoom * factor, anchor)"
               @select-line="onSelectLine"
+              @frame-press="onFramePress"
+              @frame-drag="onFrameDrag"
+              @frame-release="onFrameRelease"
+              @frame-cancel="onFrameCancel"
             />
             <EmptyCanvas v-else />
           </div>
@@ -195,8 +260,13 @@ function techniqueWord(technique: Technique): string {
         :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
         :paste-armed="pasteProjectionActive"
         :can-remove-line="canRemoveSelectedLine"
+        :setting-frame="settingFrame"
+        :frame-summary="frameTooltip"
+        :rotate-off="rotateOff"
+        @fit-frame="onFitFrame"
+        @done-frame="onDoneSetFrame"
         @copy="onCopy"
-        @rotate="onToggleRotate"
+        @rotate="onRotate"
         @remove-line="onRemoveSelectedLine"
         @dismiss="backOutOfSelect"
       />
@@ -211,6 +281,7 @@ function techniqueWord(technique: Technique): string {
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
         @toggle-row-direction="onToggleRowDirection"
+        @set-frame="onStartSetFrame"
       />
     </div>
   </main>
@@ -270,10 +341,8 @@ function techniqueWord(technique: Technique): string {
  * dot-grid notepad texture as the Toolbox until ticket 143 restyles it. Its rows stack top to bottom (the zoom cluster,
  * a horizontal Progress bar, then the Pattern), and the Pattern's own row takes the rest of the height.
  *
- * The Pattern scrolls inside .app-shell__canvas-scroll, both ways: the page never does. The Pattern's own box
- * (PatternCanvas) sizes itself to the open Pattern's shape rather than stretching, and centers itself with margin:
- * auto — block layout, not flex, inside the scroller (ticket 28): a flex container with justify-content: center and
- * overflow: auto has a long-standing browser bug where an overflowing child's start edge can't be scrolled to.
+ * The canvas is a surface that fills .app-shell__canvas-scroll edge to edge and moves under its own view (zoom and
+ * scroll, ADR 0026), so nothing scrolls natively: the page never does either.
  *
  * The zoom cluster is a sibling of the scroller, not a descendant, so it never scrolls, zooms or rotates along with the
  * Pattern below it.
@@ -309,8 +378,9 @@ function techniqueWord(technique: Technique): string {
  * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Pattern
  * (below), and this broader rule's `relative` used to outrank that in specificity -- `.app-shell__drawing > :not(x)`
  * beats a plain `.app-shell__zoom-pill`, stretching the pill across the top of the canvas box instead of floating it.
+ * CanvasHint is excluded for the same reason: it floats over the bottom-left corner.
  */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill) {
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill):not(.app-shell__canvas-hint) {
   position: relative;
 }
 
@@ -329,21 +399,21 @@ function techniqueWord(technique: Technique): string {
 }
 
 /*
- * Centers the Pattern's scroll box in the drawing area both ways while it is smaller than the area; once it is bigger,
- * the scroll box is capped at the area's size (max-height below; min-width: 0 across) and scrolls instead.
+ * The row takes the whole drawing area; the surface inside it fills it, so the open canvas has no box of its own to centre.
  */
 .app-shell__canvas-row {
-  display: flex;
+  position: relative;
   flex: 1 1 auto;
-  justify-content: center;
-  align-items: center;
+  align-self: stretch;
   min-height: 0;
 }
 
+/* Fills the drawing area: the open canvas's surface (and Convert image's framing step) is laid over all of it. */
 .app-shell__canvas-scroll {
+  position: absolute;
+  inset: 0;
   box-sizing: border-box;
   min-width: 0;
-  max-height: 100%;
   overflow: auto;
 }
 
@@ -352,6 +422,13 @@ function techniqueWord(technique: Technique): string {
   align-self: stretch;
   width: 100%;
   overflow: hidden;
+}
+
+/* The phone has no wheel and no keyboard to hint at (CanvasHint card). */
+@media (max-width: 743px) {
+  .app-shell__canvas-hint {
+    display: none;
+  }
 }
 
 /* No canvas strip on phone (responsive.md): ZoomPill floats over the Pattern instead. */

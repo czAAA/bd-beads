@@ -102,3 +102,38 @@ describe('SaveBox ways out (ticket 158)', () => {
     expect(wrapper.emitted('export-pattern')).toHaveLength(1)
   })
 })
+
+describe('SaveBox without a Frame (ticket 233)', () => {
+  it('opens "Set Frame to export" in the menu\'s place, with Fit to drawing and Set Frame', async () => {
+    const wrapper = mountBox({ hasFrame: false })
+    await openMenu(wrapper)
+
+    const prompt = wrapper.find('[data-testid="export-needs-frame"]')
+    expect(prompt.text()).toContain(en.frame.exportPromptTitle)
+    expect(prompt.text()).toContain(en.frame.explainer)
+    expect(wrapper.find('[data-testid="export-qr"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-pdf"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="name-on-exports"]').exists()).toBe(false)
+    expect(wrapper.find('[aria-haspopup="dialog"]').exists()).toBe(true)
+  })
+
+  it('asks for Fit to drawing or Set Frame, and closes the prompt', async () => {
+    const wrapper = mountBox({ hasFrame: false })
+    await openMenu(wrapper)
+    await wrapper.find('[data-testid="export-fit-frame"]').trigger('click')
+    expect(wrapper.emitted('fit-frame')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
+
+    await openMenu(wrapper)
+    await wrapper.find('[data-testid="export-set-frame"]').trigger('click')
+    expect(wrapper.emitted('set-frame')).toHaveLength(1)
+  })
+
+  it('offers the formats as before once there is a Frame', async () => {
+    const wrapper = mountBox({ hasFrame: true })
+    await openMenu(wrapper)
+    expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
+  })
+})

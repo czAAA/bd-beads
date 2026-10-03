@@ -1,5 +1,19 @@
 import { beadLabel, findBead, type Bead } from './beads'
 import {
+  beadBounds,
+  beadsFromColors,
+  colorAt,
+  colorsInFrame,
+  forEachBead,
+  frameContains,
+  frameDimensions,
+  withColors,
+  type BeadChange,
+  type BeadMap,
+  type Frame,
+} from './canvas'
+import { sameFrame } from './frame'
+import {
   neighborsOf,
   nextRotation as nextRotationOf,
   positionKey,
@@ -21,6 +35,7 @@ export interface Cell {
   color: string | null
 }
 
+/** A dense rows × columns array of cells: not what a Pattern stores (it stores `beads`), but what Convert image produces and what older Patterns were saved as. */
 export type Grid = Cell[][]
 
 /**
@@ -46,12 +61,15 @@ export interface Pattern {
   technique: Technique
   beadId: string
   /**
-   * The Pattern size (CONTEXT.md): the grid itself is the size, counted in beads. A Pattern stores no real-world size
-   * — what the editor shows in millimetres is an Estimated size worked out on demand (see estimatedSizeMm, ADR 0017).
+   * What is painted on the Open canvas, by position (ADR 0026); see BeadMap. A Pattern stores no real-world size —
+   * what the editor shows in millimetres is an Estimated size worked out on demand from the Frame (estimatedSizeMm).
    */
-  columns: number
-  rows: number
-  grid: Grid
+  beads: BeadMap
+  /**
+   * The Frame (CONTEXT.md): which beads are the Pattern, and so its size in beads. Absent on a canvas that has none
+   * yet; a Pattern saved before the open canvas has one the size of its old grid (see normalizePattern).
+   */
+  frame?: Frame
   rowProgress: RowProgress
   /**
    * A view-only orientation turn (tickets 28, 171): shows the Pattern turned this many degrees clockwise, like a
@@ -92,16 +110,13 @@ export interface CreatePatternInput {
   name?: string
   technique: Technique
   beadId: string
-  /** How big the Pattern is, in beads or in mm/cm — the latter converted once to a grid and not remembered (ADR 0017). */
-  size: StatedSize
+  /**
+   * How big the Pattern's Frame is, in beads or in mm/cm — the latter converted once to a grid and not remembered
+   * (ADR 0017). Left out, the Pattern is an open canvas with no Frame (ADR 0026).
+   */
+  size?: StatedSize
   /** This Pattern's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
   makerName?: string
-}
-
-function createEmptyGrid(columns: number, rows: number): Grid {
-  return Array.from({ length: rows }, () =>
-    Array.from({ length: columns }, () => ({ color: null })),
-  )
 }
 
 /** Row progress exactly as a freshly created Pattern starts out — also what Delete all (ticket 42) resets it back to. */
@@ -119,7 +134,7 @@ export interface PatternGeometry extends GridDimensions {
  * will actually be created at, so both read it from here rather than each converting units and dividing by the Bead's
  * footprint in their own way.
  */
-export function patternGeometry(input: CreatePatternInput): PatternGeometry | undefined {
+export function patternGeometry(input: CreatePatternInput & { size: StatedSize }): PatternGeometry | undefined {
   // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
   const bead = findBead(input.beadId)
   if (!bead) {
@@ -130,12 +145,12 @@ export function patternGeometry(input: CreatePatternInput): PatternGeometry | un
 }
 
 export function createPattern(input: CreatePatternInput): Pattern {
-  const geometry = patternGeometry(input)
-  if (!geometry) {
+  const bead = findBead(input.beadId)
+  if (!bead) {
     throw new Error(`Unknown bead id: ${input.beadId}`)
   }
 
-  const { bead, columns, rows } = geometry
+  const dimensions = input.size ? gridFromSize(input.size, bead) : undefined
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
@@ -145,9 +160,8 @@ export function createPattern(input: CreatePatternInput): Pattern {
     name,
     technique: input.technique,
     beadId: input.beadId,
-    columns,
-    rows,
-    grid: createEmptyGrid(columns, rows),
+    beads: {},
+    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotation: 0,
     ...(makerName ? { makerName } : {}),
@@ -158,7 +172,9 @@ export function createPattern(input: CreatePatternInput): Pattern {
 
 /** A new Pattern made from a picture (CONTEXT.md's Convert image): the same fields as any other, plus what the conversion produced. */
 export interface CreatePatternFromImageInput extends CreatePatternInput {
-  /** The converted cells, sampled at the Pattern's own grid size (see domain/imageConversion.ts). */
+  /** A picture needs a Frame to land in: the Frame's size, which is also the grid it was sampled at. */
+  size: StatedSize
+  /** The converted cells, sampled at the Pattern's own Frame size (see domain/imageConversion.ts). */
   grid: Grid
   /** The colors that conversion found, saved on the Pattern and never changed afterwards (ADR 0011). */
   imageColors: string[]
@@ -178,11 +194,15 @@ export interface CreatePatternFromImageInput extends CreatePatternInput {
  */
 export function createPatternFromImage(input: CreatePatternFromImageInput): Pattern {
   const pattern = createPattern(input)
+  const frame = pattern.frame!
 
   return {
     ...pattern,
-    grid: pattern.grid.map((row, rowIndex) =>
-      row.map((cell, columnIndex) => ({ color: input.grid[rowIndex]?.[columnIndex]?.color ?? cell.color })),
+    beads: beadsFromColors(
+      Array.from({ length: frame.rows }, (_row, rowIndex) =>
+        Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
+      ),
+      frame,
     ),
     imageColors: [...input.imageColors],
   }
@@ -194,7 +214,68 @@ function touch(pattern: Pattern, changes: Partial<Pattern>): Pattern {
 }
 
 function clampRow(row: number, rows: number): number {
-  return Math.min(rows - 1, Math.max(0, row))
+  return Math.max(0, Math.min(rows - 1, row))
+}
+
+/**
+ * The Pattern's Frame, or — for a canvas that has none — the smallest box round its beads (nothing at all for an empty
+ * one). What the parts of the app that still think in a Pattern's extent read: with a Frame it is the Pattern itself.
+ */
+export function patternFrame(pattern: Pick<Pattern, 'frame' | 'beads'>): Frame {
+  return pattern.frame ?? beadBounds(pattern.beads) ?? { row: 0, column: 0, columns: 0, rows: 0 }
+}
+
+/** What the open Pattern's Frame measures in beads, for the grid-shaped helpers (mirror strips, adjacency, fit zoom). */
+export function patternDimensions(pattern: Pick<Pattern, 'frame' | 'beads'>): GridDimensions {
+  return frameDimensions(patternFrame(pattern))
+}
+
+/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the Tour's check, a test's expectation). Empty with no Frame and no beads. */
+export function frameGrid(pattern: Pick<Pattern, 'frame' | 'beads'>): Grid {
+  return colorsInFrame(pattern.beads, patternFrame(pattern)).map((row) => row.map((color) => ({ color })))
+}
+
+/** A dense grid of cells as beads with a Frame the size of the grid: what the Convert image preview, the Overview's pictures and a test's hand-made block of beads are drawn from. */
+export function framedGrid(grid: Grid): Pick<Pattern, 'beads' | 'frame'> {
+  return {
+    beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))),
+    frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length },
+  }
+}
+
+/** The Pattern with its Frame's beads replaced by a dense grid of cells whose top-left sits at the Frame's; beads outside the Frame stay as they are. */
+export function withFrameGrid(pattern: Pattern, grid: Grid): Pattern {
+  const frame = patternFrame(pattern)
+  const outside = withColors(
+    pattern.beads,
+    colorsInFrame(pattern.beads, frame).flatMap((cells, rowOffset) =>
+      cells.map((_color, columnOffset) => ({ row: frame.row + rowOffset, column: frame.column + columnOffset, color: null })),
+    ),
+  )
+  return {
+    ...pattern,
+    beads: withColors(
+      outside,
+      grid.flatMap((cells, rowOffset) =>
+        cells.map((cell, columnOffset) => ({ row: frame.row + rowOffset, column: frame.column + columnOffset, color: cell.color })),
+      ),
+    ),
+  }
+}
+
+/** The color at a position on the open canvas: a hex, or null where nothing is painted. */
+export function beadColorAt(pattern: Pick<Pattern, 'beads'>, row: number, column: number): string | null {
+  return colorAt(pattern.beads, row, column)
+}
+
+/**
+ * A Pattern as it was saved before the open canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
+ * beads by position and a Frame. Read by normalizePattern only, which gives it a Frame the size of the grid.
+ */
+export type GridPattern = Omit<Pattern, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
+
+function isGridPattern(pattern: Pattern | GridPattern): pattern is GridPattern {
+  return Array.isArray((pattern as GridPattern).grid)
 }
 
 /**
@@ -203,6 +284,9 @@ function clampRow(row: number, rows: number): number {
  * ticket 28's two-position `rotated` boolean rather than ticket 171's four-position `rotation`.
  */
 type PatternWithLegacyFields = Pattern & {
+  columns?: unknown
+  rows?: unknown
+  grid?: unknown
   colorBeadOverrides?: unknown
   widthMm?: unknown
   heightMm?: unknown
@@ -225,7 +309,7 @@ function normalizeRotation(pattern: PatternWithLegacyFields): Rotation {
  * one Bead, not a per-color mapping) and the stored millimetre size (ADR 0017: the grid is the size) — so a Pattern
  * read back from storage or an imported file is safe to use whatever version wrote it, and never re-saves them.
  */
-export function normalizePattern(pattern: Pattern): Pattern {
+export function normalizePattern(pattern: Pattern | GridPattern): Pattern {
   const rowProgress = pattern.rowProgress ?? { enabled: false, currentRow: 0 }
   const legacy = pattern as PatternWithLegacyFields
   const {
@@ -233,23 +317,60 @@ export function normalizePattern(pattern: Pattern): Pattern {
     widthMm: _legacyWidthMm,
     heightMm: _legacyHeightMm,
     rotated: _legacyRotated,
+    columns: _legacyColumns,
+    rows: _legacyRows,
+    grid: _legacyGrid,
     ...rest
   } = legacy
 
+  // A Pattern saved before the open canvas becomes beads by position with a Frame the size of its old grid.
+  const placed = isGridPattern(pattern)
+    ? {
+        beads: beadsFromColors(pattern.grid.map((row) => row.map((cell) => cell.color))),
+        frame: { row: 0, column: 0, columns: pattern.columns, rows: pattern.rows },
+      }
+    : { beads: pattern.beads ?? {}, ...(pattern.frame ? { frame: pattern.frame } : {}) }
+  const frame = patternFrame(placed)
+
   return {
     ...rest,
+    ...placed,
     rowProgress: {
       ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
-      currentRow: clampRow(rowProgress.currentRow, pattern.rows),
-      currentColumn: clampRow(rowProgress.currentColumn ?? 0, pattern.columns),
+      currentRow: clampRow(rowProgress.currentRow, frame.rows),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, frame.columns),
     },
     rotation: normalizeRotation(legacy),
   }
 }
 
+/**
+ * The Pattern with its Frame set, moved, resized or removed (ADR 0026). No bead changes: the Frame only says which of
+ * them are the Pattern. Row progress's pointers are kept inside the new Frame; a Pattern with the same Frame comes back
+ * as it is, so a gesture that ends where it began is no change.
+ */
+export function withFrame(pattern: Pattern, frame: Frame | undefined): Pattern {
+  if (sameFrame(pattern.frame, frame)) {
+    return pattern
+  }
+  const { frame: _previous, ...rest } = pattern
+  const rowProgress = frame
+    ? {
+        ...pattern.rowProgress,
+        currentRow: clampRow(pattern.rowProgress.currentRow, frame.rows),
+        currentColumn: clampRow(pattern.rowProgress.currentColumn, frame.columns),
+      }
+    : pattern.rowProgress
+  return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
+}
+
 /** Shows or hides the row-progress overlay, leaving the pointer where it is. */
 export function setRowProgressEnabled(pattern: Pattern, enabled: boolean): Pattern {
+  // Row progress counts the Frame's rows, so with no Frame there is nothing to switch on.
+  if (enabled && !pattern.frame) {
+    return pattern
+  }
   return touch(pattern, { rowProgress: { ...pattern.rowProgress, enabled } })
 }
 
@@ -264,21 +385,46 @@ export function toggleRowDirection(pattern: Pattern): Pattern {
   return touch(pattern, { rowProgress: { ...pattern.rowProgress, direction } })
 }
 
-/** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many rows there are. */
-export function rowProgressPosition(pattern: Pattern): { current: number; total: number } {
+/** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many rows the Frame has. */
+export function rowProgressPosition(pattern: Pick<Pattern, 'rowProgress' | 'frame'>): { current: number; total: number } {
   const { direction, currentRow, currentColumn } = pattern.rowProgress
+  const frame = pattern.frame
   return direction === 'rows'
-    ? { current: currentRow, total: pattern.rows }
-    : { current: currentColumn, total: pattern.columns }
+    ? { current: currentRow, total: frame?.rows ?? 0 }
+    : { current: currentColumn, total: frame?.columns ?? 0 }
 }
 
-/** Whether a bead sits in a row the weaver has already finished: before the pointer, counted the way rows run. Only while the overlay is on. */
-export function isInFinishedRow(pattern: Pick<Pattern, 'rowProgress'>, { row, column }: GridPosition): boolean {
+/** Whether a bead sits in a row the weaver has already finished: before the pointer, counted the way rows run from the Frame's first. Only while the overlay is on and a Frame is set. */
+export function isInFinishedRow(pattern: Pick<Pattern, 'rowProgress' | 'frame'>, { row, column }: GridPosition): boolean {
   const { enabled, direction, currentRow, currentColumn } = pattern.rowProgress
-  if (!enabled) {
+  const frame = pattern.frame
+  // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
+  if (!enabled || !frame || !frameContains(frame, { row, column })) {
     return false
   }
-  return direction === 'rows' ? row < currentRow : column < currentColumn
+  return direction === 'rows' ? row - frame.row < currentRow : column - frame.column < currentColumn
+}
+
+/** Every position whose color differs between two bead maps; a row both share is passed over unread. */
+export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
+  const changed: GridPosition[] = []
+  const rows = new Set([...Object.keys(before), ...Object.keys(after)])
+  for (const key of rows) {
+    const row = Number(key)
+    const was = before[row]
+    const now = after[row]
+    if (was === now) {
+      continue
+    }
+    const columns = new Set([...Object.keys(was ?? {}), ...Object.keys(now ?? {})])
+    for (const columnKey of columns) {
+      const column = Number(columnKey)
+      if (was?.[column] !== now?.[column]) {
+        changed.push({ row, column })
+      }
+    }
+  }
+  return changed.sort((a, b) => a.row - b.row || a.column - b.column)
 }
 
 /**
@@ -287,22 +433,11 @@ export function isInFinishedRow(pattern: Pick<Pattern, 'rowProgress'>, { row, co
  * `before` itself, the same "unchanged" signal the drawing commands give, so it records no undo step.
  */
 export function keepFinishedRows(before: Pattern, after: Pattern): Pattern {
-  const { enabled, direction, currentRow, currentColumn } = before.rowProgress
-  // Only a row the edit actually replaced can hold a change, so the others (shared with `before`) are passed over.
-  const grid = after.grid.map((cells, row) => {
-    const was = before.grid[row]!
-    if (!enabled || cells === was) {
-      return cells
-    }
-    if (direction === 'rows') {
-      return row < currentRow ? was : cells
-    }
-    return cells.map((cell, column) => (column < currentColumn ? was[column]! : cell))
-  })
-  const changed = grid.some(
-    (cells, row) => cells !== before.grid[row] && cells.some((cell, column) => cell.color !== before.grid[row]![column]!.color),
-  )
-  return changed ? { ...after, grid } : before
+  const reverts: BeadChange[] = changedPositions(before.beads, after.beads)
+    .filter((position) => isInFinishedRow(before, position))
+    .map(({ row, column }) => ({ row, column, color: colorAt(before.beads, row, column) }))
+  const beads = withColors(after.beads, reverts)
+  return changedPositions(before.beads, beads).length > 0 ? { ...after, beads } : before
 }
 
 /** Points row progress at the given row in its current direction, clamped to the Pattern — used to advance a finished row and to go back to an earlier one. */
@@ -314,51 +449,45 @@ export function moveToRow(pattern: Pattern, row: number): Pattern {
   })
 }
 
-/** Swaps in a whole new grid (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
-export function restoreGrid(pattern: Pattern, grid: Grid): Pattern {
-  return touch(pattern, { grid })
+/** Swaps in a whole new set of beads (e.g. to restore a prior snapshot on undo), returning a new Pattern rather than mutating the one passed in. */
+export function restoreBeads(pattern: Pattern, beads: BeadMap): Pattern {
+  return touch(pattern, { beads })
 }
 
 /**
- * What a Resize (ADR 0017) changes alongside the grid, bundled onto one UndoEntry: the grid's dimensions, plus
- * Mirror's axis counts, which a Resize resets. Mirror's counts are an editing-session setting App.vue owns, not a
- * Pattern field, so restoreSnapshot leaves applying them to the caller — bundled here only so a single history entry
- * carries everything one Undo/Redo step needs.
+ * What a change of the Frame (Set Frame, Remove line, Rotate; ADR 0026) alters alongside the beads, bundled onto one
+ * UndoEntry: the Frame, plus Mirror's axis counts, which such a change resets. Mirror's counts are an editing-session setting App.vue owns, not a Pattern field, so
+ * restoreSnapshot leaves applying them to the caller — bundled here only so a single history entry carries everything
+ * one Undo/Redo step needs.
  */
 export interface SizeSnapshot {
-  columns: number
-  rows: number
+  frame: Frame | undefined
   mirrorAxisCounts: MirrorAxisCounts
 }
 
 /**
- * One entry on the editing-session undo stack (App.vue): the grid to restore, plus whatever else the command that
+ * One entry on the editing-session undo stack (App.vue): the beads to restore, plus whatever else the command that
  * made it also changed, so a single Undo brings it all back together — Row progress for Delete all (ticket 42, see
- * deleteAll) and Resize (which may clamp its pointers), the Bead for Replace Bead (ticket 48, see replaceBead), the
- * grid's dimensions for Resize. Every other drawing command's entry carries only a grid, leaving the rest as Undo
- * finds it.
+ * deleteAll) and a change of the Frame (which may clamp its pointers), the Bead for Replace Bead (ticket 48, see replaceBead), the
+ * Frame for Set Frame, Remove line and Rotate. Every other drawing command's entry carries only beads, leaving the rest as Undo finds it.
  */
 export interface UndoEntry {
-  grid: Grid
+  beads: BeadMap
   rowProgress?: RowProgress
   /** Present only for Replace Bead (ticket 48): the Bead to go back to. */
   beadId?: string
-  /** Present only for Resize (ADR 0017) — see SizeSnapshot. */
+  /** Present only for a change of the Frame (ADR 0026) — see SizeSnapshot. */
   size?: SizeSnapshot
 }
 
-/** Restores a grid, and Row progress/Bead/dimensions alongside it when the undo entry carries them (see UndoEntry) — otherwise the same as restoreGrid. */
+/** Restores beads, and Row progress/Bead/Frame alongside them when the undo entry carries them (see UndoEntry) — otherwise the same as restoreBeads. */
 export function restoreSnapshot(pattern: Pattern, entry: UndoEntry): Pattern {
   return touch(pattern, {
-    grid: entry.grid,
+    beads: entry.beads,
     ...(entry.rowProgress ? { rowProgress: entry.rowProgress } : {}),
     ...(entry.beadId ? { beadId: entry.beadId } : {}),
-    ...(entry.size ? { columns: entry.size.columns, rows: entry.size.rows } : {}),
+    ...(entry.size ? { frame: entry.size.frame } : {}),
   })
-}
-
-function isEmptyGrid(grid: Grid): boolean {
-  return grid.every((row) => row.every((cell) => cell.color === null))
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
@@ -379,12 +508,12 @@ function isInitialRowProgress(rowProgress: RowProgress): boolean {
  * routing it through keepFinishedRows. Returns the same Pattern instance, unchanged, if it's already in that state.
  */
 export function deleteAll(pattern: Pattern): Pattern {
-  if (isEmptyGrid(pattern.grid) && isInitialRowProgress(pattern.rowProgress)) {
+  if (Object.keys(pattern.beads).length === 0 && isInitialRowProgress(pattern.rowProgress)) {
     return pattern
   }
 
   return touch(pattern, {
-    grid: createEmptyGrid(pattern.columns, pattern.rows),
+    beads: {},
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
 }
@@ -400,18 +529,34 @@ export function replaceBead(pattern: Pattern, bead: Bead): Pattern {
 }
 
 /**
+ * Where a Fill stops (ADR 0026): the Frame when it starts inside one, otherwise the box round the Frame and every
+ * painted bead, one position wider on each side, so filling empty open space stays a finite patch rather than the
+ * whole endless canvas.
+ */
+function fillLimit(pattern: Pick<Pattern, 'beads' | 'frame'>, start: GridPosition): Frame {
+  if (pattern.frame && frameContains(pattern.frame, start)) {
+    return pattern.frame
+  }
+  const boxes = [pattern.frame, beadBounds(pattern.beads), { row: start.row, column: start.column, rows: 1, columns: 1 }].filter(
+    (box): box is Frame => box !== undefined,
+  )
+  const top = Math.min(...boxes.map((box) => box.row)) - 1
+  const left = Math.min(...boxes.map((box) => box.column)) - 1
+  const bottom = Math.max(...boxes.map((box) => box.row + box.rows)) + 1
+  const right = Math.max(...boxes.map((box) => box.column + box.columns)) + 1
+  return { row: top, column: left, rows: bottom - top, columns: right - left }
+}
+
+/**
  * Every cell reachable from `start` through same-colored neighbors, per the Pattern's grid adjacency (see
  * neighborsOf) -- the flood region a click at `start` would act on. Used by Fill (fillArea), including right-click
  * erase under Fill (ticket 25), which calls fillArea with a null color.
  */
-function floodRegionKeys(pattern: Pick<Pattern, 'grid' | 'technique' | 'columns' | 'rows'>, start: GridPosition): Set<string> {
-  const targetColor = pattern.grid[start.row]?.[start.column]?.color
-  const dimensions = { columns: pattern.columns, rows: pattern.rows }
+function floodRegion(pattern: Pick<Pattern, 'beads' | 'frame' | 'technique'>, start: GridPosition): GridPosition[] {
+  const targetColor = colorAt(pattern.beads, start.row, start.column)
+  const limit = fillLimit(pattern, start)
   const visited = new Set<string>()
-  const region = new Set<string>()
-  if (targetColor === undefined) {
-    return region
-  }
+  const region: GridPosition[] = []
 
   const stack = [start]
   while (stack.length > 0) {
@@ -422,48 +567,50 @@ function floodRegionKeys(pattern: Pick<Pattern, 'grid' | 'technique' | 'columns'
     }
     visited.add(key)
 
-    if (pattern.grid[position.row]?.[position.column]?.color !== targetColor) {
+    if (colorAt(pattern.beads, position.row, position.column) !== targetColor) {
       continue
     }
-    region.add(key)
-    stack.push(...neighborsOf(pattern.technique, dimensions, position))
+    region.push(position)
+    stack.push(...neighborsOf(pattern.technique, limit, position))
   }
 
   return region
 }
 
-/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors (see floodRegionKeys), with the given color. Returns the same Pattern instance, unchanged, if the clicked cell is already that color. */
+/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors (see floodRegion), with the given color. Returns the same Pattern instance, unchanged, if the clicked cell is already that color. */
 export function fillArea(pattern: Pattern, row: number, column: number, color: string | null): Pattern {
-  const targetColor = pattern.grid[row]?.[column]?.color
-  if (targetColor === undefined || targetColor === color) {
+  if (colorAt(pattern.beads, row, column) === color) {
     return pattern
   }
 
-  const region = floodRegionKeys(pattern, { row, column })
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) => (region.has(positionKey({ row: rowIndex, column: columnIndex })) ? { color } : cell)),
-  )
-
-  return restoreGrid(pattern, grid)
+  const region = floodRegion(pattern, { row, column })
+  return restoreBeads(pattern, withColors(pattern.beads, region.map((position) => ({ ...position, color }))))
 }
 
 /**
  * Every cell a live-mirrored stroke touches when painting `position` (ADR 0006/ticket 22, generalized to
  * per-direction axis *counts* by ticket 44): itself, plus its reflection(s) across every Mirror axis, fixed to the
- * grid's exact center(s) rather than mirrorCurrent's adaptive "fullest strip" heuristic (there's no drawn-so-far
- * content to judge a source strip from mid-stroke). `axes.columns` splits the grid across its columns
+ * Frame's exact center(s) rather than mirrorCurrent's adaptive "fullest strip" heuristic (there's no drawn-so-far
+ * content to judge a source strip from mid-stroke). `axes.columns` splits the Frame across its columns
  * ("horizontal"), `axes.rows` across its rows ("vertical"); see domain/mirror.ts for the strip math and why counts
  * are grid-space, never screen-space. `copyMode` (ticket 45) is one switch for both directions: strips repeat the
- * same way round (A | A | A) instead of mirror-imaging (A | A' | A).
+ * same way round (A | A | A) instead of mirror-imaging (A | A' | A). A position outside the Frame, or a canvas
+ * without one, has no axes to reflect across and is only itself.
  */
 export function mirroredCells(
-  pattern: Pick<Pattern, 'rows' | 'columns'>,
+  pattern: Pick<Pattern, 'frame'>,
   position: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
 ): GridPosition[] {
-  const rows = mirrorCounterparts(position.row, pattern.rows, axes.rows, copyMode)
-  const columns = mirrorCounterparts(position.column, pattern.columns, axes.columns, copyMode)
+  const frame = pattern.frame
+  if (!frame || !frameContains(frame, position)) {
+    return [position]
+  }
+  const rows = mirrorCounterparts(position.row - frame.row, frame.rows, axes.rows, copyMode).map((row) => row + frame.row)
+  const columns = mirrorCounterparts(position.column - frame.column, frame.columns, axes.columns, copyMode).map(
+    (column) => column + frame.column,
+  )
 
   const seen = new Set<string>()
   const cells: GridPosition[] = []
@@ -483,7 +630,8 @@ export function mirroredCells(
  * Paints every position in `positions` plus each one's live-mirror counterpart(s) (see mirroredCells) as a single
  * Pattern edit, so a whole stroke — mirrored or not, one cell or a whole dragged path (ticket 24) — is one undo
  * step rather than one per cell. Returns the same Pattern instance, unchanged, if every touched cell is already
- * that color.
+ * that color. Only the rows a stroke touched are copied (see withColors): an edit costs what it touched, not the size
+ * of the Pattern.
  */
 export function paintCells(
   pattern: Pattern,
@@ -492,58 +640,38 @@ export function paintCells(
   axes: MirrorAxisCounts,
   copyMode = false,
 ): Pattern {
-  const targets = new Map<string, GridPosition>()
+  const targets = new Map<string, BeadChange>()
   for (const position of positions) {
     for (const cell of mirroredCells(pattern, position, axes, copyMode)) {
-      targets.set(positionKey(cell), cell)
+      targets.set(positionKey(cell), { ...cell, color })
     }
   }
 
-  const changed = [...targets.values()].some(
-    ({ row, column }) => pattern.grid[row]?.[column]?.color !== color,
-  )
-  if (!changed) {
-    return pattern
-  }
-
-  // Only the rows a stroke touched are copied: the others are the very arrays the Pattern already had, so an edit costs
-  // what it touched, not the size of the Pattern (and whatever compares two Patterns can tell those rows are the same by
-  // looking no further than the array).
-  const columnsByRow = new Map<number, Set<number>>()
-  for (const { row, column } of targets.values()) {
-    const columns = columnsByRow.get(row) ?? new Set<number>()
-    columns.add(column)
-    columnsByRow.set(row, columns)
-  }
-  const grid = pattern.grid.map((gridRow, rowIndex) => {
-    const columns = columnsByRow.get(rowIndex)
-    return columns ? gridRow.map((cell, columnIndex) => (columns.has(columnIndex) ? { color } : cell)) : gridRow
-  })
-
-  return restoreGrid(pattern, grid)
+  const beads = withColors(pattern.beads, targets.values())
+  return beads === pattern.beads ? pattern : restoreBeads(pattern, beads)
 }
 
-/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) along `axis`, per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
-function paintedCountsByStrip(grid: Grid, dimension: number, axis: 'columns' | 'rows', axisCount: number): number[] {
+/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) of the Frame along `axis`, per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
+function paintedCountsByStrip(pattern: Pattern, frame: Frame, axis: 'columns' | 'rows', axisCount: number): number[] {
   const counts = new Array(axisCount + 1).fill(0)
-  grid.forEach((gridRow, rowIndex) => {
-    gridRow.forEach((cell, columnIndex) => {
-      if (cell.color === null) {
-        return
-      }
-      const index = axis === 'columns' ? columnIndex : rowIndex
-      counts[stripOf(index, dimension, axisCount)]++
-    })
+  const dimension = axis === 'columns' ? frame.columns : frame.rows
+  forEachBead(pattern.beads, (row, column) => {
+    if (!frameContains(frame, { row, column })) {
+      return
+    }
+    const index = axis === 'columns' ? column - frame.column : row - frame.row
+    counts[stripOf(index, dimension, axisCount)]++
   })
   return counts
 }
 
 /**
- * "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync of what's already painted along ONE direction,
- * using that direction's own axis count -- the other direction is left alone entirely, matching how the per-axis
- * buttons have always worked (see onMirrorCurrent in App.vue). The strip holding the most painted cells becomes the
- * source and is copied onto every other strip, mirrored by default or unflipped in copy mode (see
- * mirrorCounterpartInStrip). Ties go to the lowest strip index (leftmost/topmost).
+ * "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync of what's already painted in the Frame along ONE
+ * direction, using that direction's own axis count -- the other direction is left alone entirely, matching how the
+ * per-axis buttons have always worked (see onMirrorCurrent in App.vue). The strip holding the most painted cells
+ * becomes the source and is copied onto every other strip, mirrored by default or unflipped in copy mode (see
+ * mirrorCounterpartInStrip). Ties go to the lowest strip index (leftmost/topmost). Beads outside the Frame are not
+ * touched; with no Frame there is nothing to mirror across and the Pattern comes back unchanged.
  *
  * A count of 0 acts as a single center axis (1 axis, 2 strips) purely for this one sync -- the stored axis count
  * itself is untouched -- so the button always does something even before any axis is turned on.
@@ -554,49 +682,45 @@ export function mirrorCurrent(
   axisCount: number,
   copyMode: boolean,
 ): Pattern {
-  const dimension = axis === 'columns' ? pattern.columns : pattern.rows
+  const frame = pattern.frame
+  if (!frame) {
+    return pattern
+  }
+  const dimension = axis === 'columns' ? frame.columns : frame.rows
   const effectiveAxisCount = axisCount === 0 ? 1 : axisCount
 
-  const counts = paintedCountsByStrip(pattern.grid, dimension, axis, effectiveAxisCount)
+  const counts = paintedCountsByStrip(pattern, frame, axis, effectiveAxisCount)
   const sourceStrip = counts.reduce((best, count, strip) => (count > counts[best]! ? strip : best), 0)
 
-  const grid = pattern.grid.map((gridRow, rowIndex) =>
-    gridRow.map((cell, columnIndex) => {
-      const index = axis === 'columns' ? columnIndex : rowIndex
+  const changes: BeadChange[] = []
+  for (let rowOffset = 0; rowOffset < frame.rows; rowOffset++) {
+    for (let columnOffset = 0; columnOffset < frame.columns; columnOffset++) {
+      const index = axis === 'columns' ? columnOffset : rowOffset
       if (stripOf(index, dimension, effectiveAxisCount) === sourceStrip) {
-        return cell
+        continue
       }
-
       const sourceIndex = mirrorCounterpartInStrip(index, dimension, effectiveAxisCount, copyMode, sourceStrip)
-      const sourceCell = axis === 'columns' ? pattern.grid[rowIndex]![sourceIndex]! : pattern.grid[sourceIndex]![columnIndex]!
-      return { color: sourceCell.color }
-    }),
-  )
+      const sourceRow = frame.row + (axis === 'columns' ? rowOffset : sourceIndex)
+      const sourceColumn = frame.column + (axis === 'columns' ? sourceIndex : columnOffset)
+      changes.push({
+        row: frame.row + rowOffset,
+        column: frame.column + columnOffset,
+        color: colorAt(pattern.beads, sourceRow, sourceColumn),
+      })
+    }
+  }
 
-  return restoreGrid(pattern, grid)
+  return restoreBeads(pattern, withColors(pattern.beads, changes))
 }
 
-/**
- * Every cell whose color differs between two same-shaped grids -- what the "Mirror current" hover preview (ticket
- * 47) dims: the cells a click would actually overwrite, and nothing else. Kept here as a plain domain function
- * (rather than inline in App.vue) so it's unit-testable on its own and matches this file's other grid-diffing
- * helpers, e.g. keepFinishedRows above and paintedCountsByStrip's own cell-by-cell walk.
- */
-export function changedCells(before: Grid, after: Grid): GridPosition[] {
-  const changed: GridPosition[] = []
-  after.forEach((row, rowIndex) => {
-    row.forEach((cell, columnIndex) => {
-      if (cell.color !== before[rowIndex]![columnIndex]!.color) {
-        changed.push({ row: rowIndex, column: columnIndex })
-      }
-    })
-  })
-  return changed
-}
-
-/** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated); reflects the rotated view's swapped dimensions, since that's how the Pattern currently looks. */
+/** A short, language-neutral identifier for a Pattern in UI lists (names are proper nouns, not translated): its name and, once it has a Frame, the Frame's size; reflects the rotated view's swapped dimensions, since that's how the Pattern currently looks. */
 export function summarizePattern(pattern: Pattern): string {
-  const [width, height] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+  // The size is the Frame's: a canvas with none has no size to state (ADR 0026).
+  if (!pattern.frame) {
+    return pattern.name
+  }
+  const { columns, rows } = patternDimensions(pattern)
+  const [width, height] = rotationSwapsAxes(pattern.rotation) ? [rows, columns] : [columns, rows]
   return `${pattern.name} · ${width}×${height}`
 }
 

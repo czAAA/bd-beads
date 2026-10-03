@@ -1,3 +1,4 @@
+import { patternDimensions } from '../domain/pattern'
 import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
 import type { Pattern } from '../domain/pattern'
 import { displayedExtentPx, rowPitchPx, type Region } from './patternRenderer'
@@ -82,7 +83,7 @@ export interface PrintPlan {
 
 /** Wider than tall, as displayed (a turned Pattern's rows run across). */
 export function isPatternWide(pattern: Shape): boolean {
-  const { width, height } = displayedExtentPx(pattern.technique, pattern.columns, pattern.rows, 1, pattern.rotation)
+  const { width, height } = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, 1, pattern.rotation)
   return width > height
 }
 
@@ -91,10 +92,12 @@ export function orientedPage(pattern: Shape): PageSize {
   return isPatternWide(pattern) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
-type Shape = Pick<Pattern, 'technique' | 'columns' | 'rows' | 'rotation'>
+type Shape = Pick<Pattern, 'technique' | 'frame' | 'beads' | 'rotation'>
 
 /** Beads across and down as the Pattern shows (turned, its rows run across at a quarter turn), and one bead's step each way at zoom 1. */
-export function displayedGrid({ technique, columns, rows, rotation }: Shape) {
+export function displayedGrid(pattern: Shape) {
+  const { technique, rotation } = pattern
+  const { columns, rows } = patternDimensions(pattern)
   const pitch = rowPitchPx(technique)
   return rotationSwapsAxes(rotation)
     ? { across: rows, down: columns, stepAcross: pitch, stepDown: CELL_SIZE_PX }

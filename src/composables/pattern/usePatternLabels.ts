@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
-import { resolvePatternBead, type Pattern } from '../../domain/pattern'
+import { resolvePatternBead, type Pattern, patternDimensions } from '../../domain/pattern'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 
@@ -35,18 +35,21 @@ export function usePatternLabels(deps: PatternLabelsDeps) {
       return undefined
     }
     const t = deps.messages()
-    const colors = new Set(pattern.grid.flat().map((cell) => cell.color).filter(Boolean)).size
-    const [columns, rows] = rotationSwapsAxes(pattern.rotation) ? [pattern.rows, pattern.columns] : [pattern.columns, pattern.rows]
+    const colors = new Set(Object.values(pattern.beads).flatMap((row) => Object.values(row))).size
+    const dimensions = patternDimensions(pattern)
+    const [columns, rows] = rotationSwapsAxes(pattern.rotation) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
+    const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)
+    // With no Frame the canvas has no size to say: it is named as an open canvas.
     const parts = [
-      t.a11y.patternLabel
+      (pattern.frame ? t.a11y.patternLabel : t.a11y.canvasLabel)
         .replace('{name}', pattern.name)
         .replace('{columns}', String(columns))
         .replace('{rows}', String(rows))
-        .replace('{colors}', plural(deps.locale(), colors, t.a11y.colorsCount)),
+        .replace('{colors}', colorWords),
     ]
     if (pattern.rowProgress.enabled) {
       const position = pattern.rowProgress.direction === 'rows' ? pattern.rowProgress.currentRow : pattern.rowProgress.currentColumn
-      const total = pattern.rowProgress.direction === 'rows' ? pattern.rows : pattern.columns
+      const total = pattern.rowProgress.direction === 'rows' ? patternDimensions(pattern).rows : patternDimensions(pattern).columns
       parts.push(t.a11y.progressDone.replace('{row}', String(position)).replace('{total}', String(total)))
     }
     return parts.join(', ')

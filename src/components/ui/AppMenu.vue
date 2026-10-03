@@ -24,8 +24,10 @@ const props = withDefaults(
     align?: 'start' | 'end'
     /** The header menu's trigger (HeaderMenu card): just the icon in a ghost button, no label or chevron; `label` is its accessible name. */
     iconOnly?: boolean
+    /** The popup is a small dialog of its own (the Export prompt "Set Frame to export", SaveBox card), not a list of items: Tab moves through it and leaving it closes it. */
+    popover?: boolean
   }>(),
-  { icon: undefined, variant: 'secondary', size: 'md', align: 'start', iconOnly: false },
+  { icon: undefined, variant: 'secondary', size: 'md', align: 'start', iconOnly: false, popover: false },
 )
 
 const open = ref(false)
@@ -36,7 +38,8 @@ const buttonEl = ref<HTMLElement>()
 const anchored = useAnchoredPosition(buttonEl, menuEl, () => props.align)
 
 function items(): HTMLElement[] {
-  return [...(menuEl.value?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [])]
+  const selector = props.popover ? 'button:not(:disabled)' : '[role="menuitem"]:not(:disabled)'
+  return [...(menuEl.value?.querySelectorAll<HTMLElement>(selector) ?? [])]
 }
 
 function onPointerDownOutside(event: PointerEvent) {
@@ -47,7 +50,7 @@ async function show(focus?: 'first' | 'last') {
   open.value = true
   document.addEventListener('pointerdown', onPointerDownOutside)
   await nextTick()
-  buttonEl.value = rootEl.value?.querySelector<HTMLElement>('[aria-haspopup="menu"]') ?? undefined
+  buttonEl.value = rootEl.value?.querySelector<HTMLElement>('[aria-haspopup]') ?? undefined
   anchored.follow()
   if (focus) (focus === 'first' ? items()[0] : items().at(-1))?.focus()
 }
@@ -57,7 +60,7 @@ function close(returnFocus = true) {
   open.value = false
   document.removeEventListener('pointerdown', onPointerDownOutside)
   anchored.stop()
-  if (returnFocus) rootEl.value?.querySelector<HTMLElement>('[aria-haspopup="menu"]')?.focus()
+  if (returnFocus) rootEl.value?.querySelector<HTMLElement>('[aria-haspopup]')?.focus()
 }
 
 provide(MENU_CLOSE, () => close())
@@ -83,7 +86,13 @@ function onButtonKeydown(event: KeyboardEvent) {
   }
 }
 
+/** A popover closes when focus leaves it for somewhere else. */
+function onFocusOut(event: FocusEvent) {
+  if (props.popover && open.value && event.relatedTarget instanceof Node && !rootEl.value?.contains(event.relatedTarget)) close(false)
+}
+
 function onMenuKeydown(event: KeyboardEvent) {
+  if (props.popover) return
   if (event.key === 'Tab') {
     close(false)
     return
@@ -120,7 +129,7 @@ defineExpose({ close })
       class="ui-control app-menu__icon-button"
       :class="{ 'app-menu__icon-button--open': open }"
       :aria-label="label"
-      aria-haspopup="menu"
+      :aria-haspopup="popover ? 'dialog' : 'menu'"
       :aria-expanded="open"
       :aria-controls="open ? menuId : undefined"
       @click="onButtonClick"
@@ -135,7 +144,7 @@ defineExpose({ close })
       :size="size"
       :icon="icon"
       trailing-icon="chevron-down"
-      aria-haspopup="menu"
+      :aria-haspopup="popover ? 'dialog' : 'menu'"
       :aria-expanded="open"
       :aria-controls="open ? menuId : undefined"
       @click="onButtonClick"
@@ -149,11 +158,12 @@ defineExpose({ close })
         :id="menuId"
         ref="menuEl"
         class="app-menu__list"
-        :class="`app-menu__list--${align}`"
+        :class="[`app-menu__list--${align}`, { 'app-menu__list--popover': popover }]"
         :style="anchored.style.value"
-        role="menu"
+        :role="popover ? 'dialog' : 'menu'"
         :aria-label="label"
         @keydown="onMenuKeydown"
+        @focusout="onFocusOut"
       >
         <slot />
         <div v-if="$slots.footer" class="app-menu__footer">
@@ -227,6 +237,13 @@ defineExpose({ close })
   border: 1px solid var(--overlay-line);
   border-radius: var(--radius-md);
   box-shadow: var(--elevation-3);
+}
+
+/* The Export prompt (SaveBox card): 288px, padding 14, radius 10. */
+.app-menu__list--popover {
+  width: 288px;
+  padding: var(--space-14);
+  border-radius: 10px;
 }
 
 .app-menu__list--start {

@@ -10,6 +10,8 @@ export interface ToolAndColorDeps {
   leaveSelectTool: () => void
   /** The Palette as it stands, built-in and added swatches; the built-in colors alone when omitted. */
   palette?: () => readonly PaletteColor[]
+  /** Called whenever a tool is chosen, even the one already active: choosing a tool ends Set Frame. */
+  onToolChosen?: () => void
 }
 
 /**
@@ -52,6 +54,7 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   const previewColor = computed(() => selectedColorHex())
 
   function onSelectTool(tool: Tool) {
+    deps.onToolChosen?.()
     /*
      * Leaving Select forgets what it was holding. The marquee is noise once you're painting rather than selecting,
      * and a clipboard that outlived its marquee would be invisible state: coming back to Select and clicking would

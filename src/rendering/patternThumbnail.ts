@@ -1,5 +1,6 @@
+import { colorAt } from '../domain/canvas'
 import { rotationSwapsAxes } from '../domain/grid'
-import type { Pattern } from '../domain/pattern'
+import { patternDimensions, patternFrame, type Pattern } from '../domain/pattern'
 
 export interface ThumbnailImage {
   width: number
@@ -21,10 +22,14 @@ function rgb(hex: string): [number, number, number] | undefined {
  * longer side, square beads, turned as it shows on screen, empty beads left clear. Each pixel samples the bead under
  * it, so a Pattern of any size costs at most size × size lookups (ADR 0019: no size limit).
  */
-export function thumbnailPixels(pattern: Pick<Pattern, 'columns' | 'rows' | 'rotation' | 'grid'>, size: number): ThumbnailImage {
-  const { columns, rows } = pattern
+export function thumbnailPixels(pattern: Pick<Pattern, 'frame' | 'beads' | 'rotation'>, size: number): ThumbnailImage {
+  const { columns, rows } = patternDimensions(pattern)
+  const frame = patternFrame(pattern)
   const swapped = rotationSwapsAxes(pattern.rotation)
   const [across, down] = swapped ? [rows, columns] : [columns, rows]
+  if (across === 0 || down === 0) {
+    return { width: 1, height: 1, data: new Uint8ClampedArray(4) }
+  }
   const scale = size / Math.max(across, down)
   const width = Math.max(1, Math.round(across * scale))
   const height = Math.max(1, Math.round(down * scale))
@@ -48,7 +53,7 @@ export function thumbnailPixels(pattern: Pick<Pattern, 'columns' | 'rows' | 'rot
             return [shownRow, shownColumn]
         }
       })()
-      const hex = pattern.grid[row]?.[column]?.color
+      const hex = colorAt(pattern.beads, frame.row + row, frame.column + column)
       if (!hex) continue
       if (!colors.has(hex)) colors.set(hex, rgb(hex))
       const color = colors.get(hex)

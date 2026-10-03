@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import type { PixelData } from './imageConversion'
-import { createPattern, type Pattern } from './pattern'
+import { createPattern, withFrameGrid, type Pattern } from './pattern'
 import { encodePattern } from './patternEncoding'
 import {
   decodeQrText,
@@ -33,7 +33,7 @@ function largePattern(): Pattern {
 describe('serializePatternForQr / parsePatternFromQr', () => {
   it('round-trips a Pattern exactly', () => {
     let pattern = smallPattern()
-    pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
+    pattern = withFrameGrid(pattern, denselyColoredGrid(pattern.frame!.columns, pattern.frame!.rows))
 
     const text = serializePatternForQr(pattern, APP_URL)
 
@@ -88,6 +88,18 @@ describe('serializePatternForQr / parsePatternFromQr', () => {
   })
 })
 
+describe('what a QR code carries (ticket 233)', () => {
+  it('holds the Frame\'s beads only, leaving out what lies outside it', () => {
+    const base = smallPattern()
+    const pattern: Pattern = { ...base, beads: { ...base.beads, 0: { ...base.beads[0], 0: '#e63746' }, 90: { 90: '#2f6fed' } } }
+    const read = parsePatternFromQr(serializePatternForQr(pattern, APP_URL))
+
+    expect(read.frame).toEqual(pattern.frame)
+    expect(read.beads[0]![0]).toBe('#e63746')
+    expect(read.beads[90]).toBeUndefined()
+  })
+})
+
 describe('patternQrMatrix / fitsInQrCode', () => {
   it('fits an ordinary small Pattern in a single QR code', () => {
     const pattern = smallPattern()
@@ -118,7 +130,7 @@ describe('patternQrMatrix / fitsInQrCode', () => {
 
   it('reports a densely-painted large Pattern as too large for a single QR code', () => {
     let pattern = largePattern()
-    pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
+    pattern = withFrameGrid(pattern, denselyColoredGrid(pattern.frame!.columns, pattern.frame!.rows))
 
     // Same shape ADR 0009 measures as its own worst case; well past a QR code's ~2.9KB capacity even RLE-compressed.
     expect(serializePatternForQr(pattern, APP_URL).length).toBeGreaterThan(3000)
@@ -152,7 +164,7 @@ describe('decodeQrText / parsePatternFromQrImage (the import side -- ticket 68)'
 
   it('reproduces the exact Pattern end to end: create -> QR matrix -> rasterized picture -> decode -> parse', () => {
     let pattern = smallPattern()
-    pattern = { ...pattern, grid: denselyColoredGrid(pattern.columns, pattern.rows) }
+    pattern = withFrameGrid(pattern, denselyColoredGrid(pattern.frame!.columns, pattern.frame!.rows))
     const matrix = patternQrMatrix(pattern, APP_URL)!
 
     const imported = parsePatternFromQrImage(rasterizeQrMatrix(matrix))

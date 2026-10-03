@@ -6,7 +6,7 @@ import { MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_OPACITY } from
 import { PRINT_COLORS } from './printColors'
 import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN, PRINT_NAME_BAND } from './printPlan'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows } })
 
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
   color: { tokens: { name: string; value: { light: string } }[] }

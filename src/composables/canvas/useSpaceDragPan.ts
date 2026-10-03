@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
 
 /**
@@ -11,14 +11,14 @@ function activatesOnSpace(target: EventTarget | null): boolean {
 }
 
 /**
- * Holding Space and dragging pans the canvas panel's viewport (ticket 95): a pure scroll, regardless of which tool
+ * Holding Space and dragging moves the canvas (tickets 95, 233): a pure pan, regardless of which tool
  * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
- * than this composable trying to intercept those events itself. Both directions land on `scrollEl` (the canvas
- * box's own scroller, `.app-shell__canvas-scroll` in App.vue): the page itself never scrolls (ticket 141).
+ * than this composable trying to intercept those events itself. Both directions move the open canvas (`panBy`); the page
+ * itself never scrolls (ticket 141).
  * Bound to the window, the same way useKeyboardShortcuts is: the canvas takes no keyboard focus of its own, and a
  * drag can wander (or start) anywhere once Space is held.
  */
-export function useSpaceDragPan(scrollEl: Ref<HTMLElement | null>) {
+export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   /** Space is currently held down (not while typing) -- shows the grab cursor and arms panning on the next pointerdown. */
   const spaceHeld = ref(false)
   /** A pan drag is actively in progress -- shows the grabbing cursor. */
@@ -62,11 +62,8 @@ export function useSpaceDragPan(scrollEl: Ref<HTMLElement | null>) {
     lastX = event.clientX
     lastY = event.clientY
 
-    // The Pattern scrolls inside the canvas box both ways (ticket 141): the page itself never does.
-    if (scrollEl.value) {
-      scrollEl.value.scrollLeft -= dx
-      scrollEl.value.scrollTop -= dy
-    }
+    // The canvas moves with the pointer, both ways: the page itself never scrolls (ticket 141).
+    panBy(dx, dy)
   }
 
   function onPointerEnd() {

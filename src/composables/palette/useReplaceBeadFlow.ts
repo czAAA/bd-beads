@@ -91,7 +91,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
       return
     }
 
-    deps.recordHistory({ grid: pattern.grid, beadId: pattern.beadId })
+    deps.recordHistory({ beads: pattern.beads, beadId: pattern.beadId })
     deps.replacePattern(replaceBead(pattern, bead))
   }
 

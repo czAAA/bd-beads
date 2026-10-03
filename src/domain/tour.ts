@@ -49,6 +49,7 @@ export type TourControl =
   | 'tool-fill'
   | 'tool-select'
   | 'tool-erase'
+  | 'tool-hand'
   | 'color-black'
   | 'color-yellow'
   | 'copy'
@@ -56,7 +57,6 @@ export type TourControl =
   | 'remove-line'
   | 'undo'
   | 'size'
-  | 'change-size'
   | 'progress-switch'
   | 'progress-next'
   | 'progress-previous'
@@ -182,7 +182,7 @@ export interface TourSnapshot {
 
 /** What a step remembers between looks that the app's state doesn't hold on its own. */
 export interface TourMemo {
-  /** The size left the Tour Pattern's (Remove line, Resize), so coming back to it is the step's Undo. */
+  /** The Tour Pattern lost a line (Remove line), so coming back to it is the step's Undo. */
   sizeLeft?: boolean
   /** Row progress got to row 4, so three rows were marked done. */
   reachedRow3?: boolean
@@ -317,7 +317,7 @@ export function tourTargets(step: TourStepId, snapshot: TourSnapshot, memo: Tour
       }
       return { control: isWholeLine(snapshot) ? 'remove-line' : 'ruler' }
     case 'size':
-      return memo.sizeLeft || !atTourSize(snapshot) ? { control: 'undo' } : { control: 'change-size' }
+      return memo.sizeLeft || !atTourSize(snapshot) ? { control: 'undo' } : { control: 'size' }
     case 'rows': {
       const { enabled, currentRow } = snapshot.rowProgress
       if (!enabled) {

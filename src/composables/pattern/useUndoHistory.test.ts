@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createPattern, type Pattern } from '../../domain/pattern'
+import { createPattern, type Pattern, frameGrid, withFrameGrid } from '../../domain/pattern'
 import { useUndoHistory } from './useUndoHistory'
 
 function setup(initial: Pattern) {
@@ -24,9 +24,9 @@ function newPattern(): Pattern {
 }
 
 function painted(pattern: Pattern): Pattern {
-  const grid = pattern.grid.map((row) => [...row])
-  grid[0][0] = { color: 'x' }
-  return { ...pattern, grid: grid as Pattern['grid'] }
+  const grid = frameGrid(pattern).map((row) => [...row])
+  grid[0]![0] = { color: 'x' }
+  return withFrameGrid(pattern, grid)
 }
 
 describe('useUndoHistory', () => {
@@ -42,15 +42,15 @@ describe('useUndoHistory', () => {
     const after = painted(before)
 
     ctx.history.commitGridChange(before, after)
-    expect(ctx.pattern.grid).toEqual(after.grid)
+    expect(frameGrid(ctx.pattern)).toEqual(frameGrid(after))
     expect(ctx.history.canUndo.value).toBe(true)
 
     ctx.history.onUndo()
-    expect(ctx.pattern.grid).toEqual(before.grid)
+    expect(frameGrid(ctx.pattern)).toEqual(frameGrid(before))
     expect(ctx.history.canRedo.value).toBe(true)
 
     ctx.history.onRedo()
-    expect(ctx.pattern.grid).toEqual(after.grid)
+    expect(frameGrid(ctx.pattern)).toEqual(frameGrid(after))
     expect(ctx.history.canRedo.value).toBe(false)
   })
 
@@ -73,8 +73,8 @@ describe('useUndoHistory', () => {
     const ctx = setup(newPattern())
     const before = ctx.pattern
     ctx.history.record({
-      grid: before.grid,
-      size: { columns: 5, rows: 5, mirrorAxisCounts: NO_MIRROR_AXES },
+      beads: before.beads,
+      size: { frame: { row: 0, column: 0, columns: 5, rows: 5 }, mirrorAxisCounts: NO_MIRROR_AXES },
     })
     ctx.history.onUndo()
     expect(ctx.restoreMirrorAxisCounts).toHaveBeenCalledWith(NO_MIRROR_AXES)
