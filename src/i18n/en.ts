@@ -130,6 +130,7 @@ export const en: Translations = {
     menuButton: 'Menu',
     overviewItem: 'Overview',
     tourItem: 'Take the tour',
+    sourceItem: 'Source code',
     projectSheetLabel: 'Project',
     newProjectSheetTitle: 'New Project',
   },

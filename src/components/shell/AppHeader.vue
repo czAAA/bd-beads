@@ -58,6 +58,9 @@ const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!a
 const wide = useMediaQuery('(min-width: 1024px)')
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
+/** The repository's own URL (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted copy to link to its source. */
+const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
+
 /** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the header menu. */
 const THEME_ICONS: Record<string, IconName> = { device: 'device', light: 'sun', dark: 'moon', contrast: 'contrast' }
 const { pick: themePick } = useThemePick()
@@ -100,8 +103,8 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
       The header menu (ticket 210; HeaderMenu card), next to the logo at every size, replacing the header menu (ticket
       168, 79). 744-1023px: Import a file/QR code, Language, Theme and Name on exports; below 744px it drops Import
       (the Project sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
-      the theme sheet. Every tier ends with a rule and Overview (ticket 77; Take the tour joins it in ticket 80); at
-      1024px and up those are all it holds.
+      the theme sheet. Every tier ends with a rule, Overview (ticket 77; Take the tour joins it in ticket 80) and
+      Source code (ticket 269, the repo's own AGPL-3.0 link); at 1024px and up those are all it holds.
     -->
     <span class="app-header__menu">
       <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
@@ -147,6 +150,10 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
         </AppMenuItem>
         <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="tour.start()">
           {{ t.header.tourItem }}
+        </AppMenuItem>
+        <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
+        <AppMenuItem icon="code" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="menu-item-source">
+          {{ t.header.sourceItem }}
         </AppMenuItem>
       </AppMenu>
     </span>

@@ -132,6 +132,7 @@ export const ru: Translations = {
     menuButton: 'Меню',
     overviewItem: 'Обзор',
     tourItem: 'Пройти обучение',
+    sourceItem: 'Исходный код',
     projectSheetLabel: 'Проект',
     newProjectSheetTitle: 'Новый проект',
   },

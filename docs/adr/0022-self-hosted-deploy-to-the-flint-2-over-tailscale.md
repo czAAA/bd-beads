@@ -1,8 +1,8 @@
 # Hosting: a private build on the Flint 2 router, deployed by GitHub Actions over Tailscale
 
-_Supersedes [ADR 0003](0003-github-pages-hosting.md)._
+_Supersedes [ADR 0003](0003-github-pages-hosting.md). Its "private and proprietary" framing below is superseded by [ADR 0031](0031-public-agpl-3-license.md) (ticket 269); the hosting choice itself stands._
 
-The repository is private and proprietary (ticket 64), and GitHub Pages on a private repository needs a paid plan; for now nothing paid is wanted. So the pre-release build is served from the owner's GL.iNet Flint 2 router: a `uhttpd` instance on `127.0.0.1:8088` serves `/mnt/sda1/www/` (ext4 on a USB stick), and `tailscale serve` exposes it, tailnet-only, at `https://tailnet-host.example:8444/bd-beads/`. HTTPS comes from Tailscale's certificate for the `.ts.net` name, which the camera and clipboard features need (secure context). The app is still a client-only SPA with no server ([ADR 0001](0001-local-only-persistence.md)); the router only serves static files.
+The repository was private and proprietary (ticket 64), and GitHub Pages on a private repository needs a paid plan; for now nothing paid is wanted. So the pre-release build is served from the owner's GL.iNet Flint 2 router: a `uhttpd` instance on `127.0.0.1:8088` serves `/mnt/sda1/www/` (ext4 on a USB stick), and `tailscale serve` exposes it, tailnet-only, at `https://tailnet-host.example:8444/bd-beads/`. HTTPS comes from Tailscale's certificate for the `.ts.net` name, which the camera and clipboard features need (secure context). The app is still a client-only SPA with no server ([ADR 0001](0001-local-only-persistence.md)); the router only serves static files.
 
 ## The deploy
 

@@ -1,7 +1,7 @@
 # bd-beads
 beads drawing app
 
-Proprietary software, all rights reserved (see [LICENSE](LICENSE)). This is a private repository, not open source, and is not accepting outside contributions.
+Open source under the GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)); see [ADR 0031](docs/adr/0031-public-agpl-3-license.md) for why. Issues are welcome; outside contributions (pull requests) are not accepted yet.
 
 Hosted privately (tailnet only): https://tailnet-host.example:8444/bd-beads/
 

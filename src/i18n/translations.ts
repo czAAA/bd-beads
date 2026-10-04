@@ -159,6 +159,8 @@ export interface Translations {
     menuButton: string
     overviewItem: string
     tourItem: string
+    /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted copy to offer one. */
+    sourceItem: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Projects, New Project, Import. */
     projectSheetLabel: string
     newProjectSheetTitle: string
