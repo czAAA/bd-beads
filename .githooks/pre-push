@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Runs the unit and visual tests before a push when the change touches code. CI no longer runs them (ADR 0029).
-# Skip once with `git push --no-verify`; the tests are then unchecked, so say so in the PR.
+# Runs typecheck, lint and the unit and visual tests before a push when the change touches code. CI runs none of
+# them (ADR 0029).
+# Skip once with `git push --no-verify`; the code is then unchecked, so say so in the PR.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -20,11 +21,25 @@ fi
 
 # Code the tests exercise: the app, the browser tests, and what builds or configures them.
 if ! echo "$changed" | grep -qE '^(src/|e2e/|public/|index\.html$|package(-lock)?\.json$|vite[^/]*\.ts$|playwright[^/]*\.ts$|tsconfig[^/]*\.json$|docs/design/system/)'; then
-  echo "pre-push: no src or e2e changes; skipping the tests."
+  echo "pre-push: no src or e2e changes; skipping the checks."
   exit 0
 fi
 
+# Memory caps (a full run peaks near 1.5 GB; the 8 GB, no-swap dev machine got a run killed before, ticket 256):
+# Node's heap is limited, and where a systemd user session exists the whole run sits in a cgroup, so going over the
+# cap kills this run alone. Override with PREPUSH_MEMORY_MAX (e.g. 4G) and PREPUSH_NODE_HEAP_MB.
+export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=${PREPUSH_NODE_HEAP_MB:-1536}"
+run() { "$@"; }
+if systemd-run --user --scope -q true 2>/dev/null; then
+  run() { systemd-run --user --scope -q -p MemoryMax="${PREPUSH_MEMORY_MAX:-3G}" -p MemorySwapMax=0 "$@"; }
+else
+  echo "pre-push: no systemd user session; running without a cgroup memory cap."
+fi
+
+echo "pre-push: typecheck and lint"
+run npm run typecheck
+run npm run lint
 echo "pre-push: unit tests"
-npm test
+run npm test
 echo "pre-push: visual check"
-VISUAL_WORKERS="${VISUAL_WORKERS:-2}" npm run visual
+VISUAL_WORKERS="${VISUAL_WORKERS:-2}" run npm run visual

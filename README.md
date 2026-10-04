@@ -32,7 +32,7 @@ The first run needs the browser: `npx playwright install chromium`. The referenc
 
 ### Tests before a push
 
-GitHub Actions minutes are kept for deployments (ADR 0029). CI runs only "Typecheck and lint", and skips even that for a PR that touches nothing but tickets and Markdown. The unit and visual tests run on your machine: `npm install` points git at `.githooks/`, and the `pre-push` hook runs `npm test` and `npm run visual` whenever the push changes `src/`, `e2e/` or the files that build them. `git push --no-verify` skips it; say so in the PR if you do.
+GitHub Actions minutes are kept for deployments (ADR 0029). CI runs nothing on pull requests; the deploy workflow's build (`vue-tsc` and `vite build`) is its only check. Typecheck, lint and the tests run on your machine: `npm install` points git at `.githooks/`, and the `pre-push` hook runs `npm run typecheck`, `npm run lint`, `npm test` and `npm run visual` whenever the push changes `src/`, `e2e/` or the files that build them. A full run peaks near 1.5 GB of RAM and takes about 10 minutes on a Raspberry Pi. The hook caps Node's heap at 1536 MB (`PREPUSH_NODE_HEAP_MB`) and, when a systemd user session exists, the run's memory at 3 GB (`PREPUSH_MEMORY_MAX`); without one it says so and runs uncapped. `git push --no-verify` skips it; say so in the PR if you do.
 
 ### Performance check
 
