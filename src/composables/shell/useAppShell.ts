@@ -332,7 +332,7 @@ function wireAppShell(services: Services) {
     colorWords,
   })
 
-  const { beadCursor, keyboardOnProject, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
+  const { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
     currentProject,
     reveal,
     hasSelection: () => !!selection.value,
@@ -343,6 +343,7 @@ function wireAppShell(services: Services) {
     extendSelectionTo,
     finishExtending,
     onFrameKey: (event) => frameFlow.onKey(event),
+    settingFrame: () => frameFlow.settingFrame.value,
   })
 
   /** Delete all and its confirmation (tickets 42, 198). */
@@ -630,6 +631,7 @@ function wireAppShell(services: Services) {
     onHoverEnd,
     beadCursor,
     keyboardOnProject,
+    cursorShown,
     onProjectKeyboardFocus,
     onProjectKey: unlessTourLocks(onProjectKey),
     onProjectKeyUp,

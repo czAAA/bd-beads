@@ -70,6 +70,7 @@ const {
   onHoverEnd,
   beadCursor,
   keyboardOnProject,
+  cursorShown,
   onProjectKeyboardFocus,
   onProjectKey,
   onProjectKeyUp,
@@ -156,7 +157,7 @@ function techniqueWord(technique: Technique): string {
         :project="settledProject"
         :size="stripSize"
         :zoom-percent="stripZoomPercent"
-        :hint="keyboardOnProject ? t.a11y.keyboardHint : undefined"
+        :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"
         :title="framing ? t.convertImage.heading : undefined"
         :rulers="activeProject && !framing ? showRulers : undefined"
         :setting-frame="settingFrame"
@@ -224,7 +225,7 @@ function techniqueWord(technique: Technique): string {
               :selection="selection"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
-              :cursor="keyboardOnProject ? beadCursor : undefined"
+              :cursor="cursorShown ? beadCursor : undefined"
               :tour-marks="tour.marks.value"
               :label="projectLabel"
               @cursor-key="onProjectKey"

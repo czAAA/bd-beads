@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
@@ -126,6 +127,19 @@ describe('Set Frame', () => {
     await surface(wrapper).trigger('keydown', { key: 'ArrowRight', shiftKey: true })
     await surface(wrapper).trigger('keydown', { key: 'ArrowDown' })
     expect(savedFrame()).toEqual({ row: 1, column: 0, rows: 1, columns: 2 })
+  })
+
+  it('shows no bead cursor when F focuses the Project, and hints at the Frame keys instead (ticket 286)', async () => {
+    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
+    await key({ key: 'f' })
+
+    expect(document.activeElement).toBe(surface(wrapper).element)
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
+    expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.frame.keyboardHint)
+
+    await surface(wrapper).trigger('keydown', { key: 'Enter' })
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
+    expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.a11y.keyboardHint)
   })
 
   it('is refused while Row progress is on', async () => {

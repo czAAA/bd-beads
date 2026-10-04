@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { beadBounds } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
@@ -17,6 +17,8 @@ export interface KeyboardCursorDeps {
   finishExtending: () => void
   /** Set Frame's keys (arrows, Enter, Escape): true when it used the key. */
   onFrameKey?: (event: KeyboardEvent) => boolean
+  /** Whether Set Frame is on: its arrows move the Frame, so the cursor stays hidden meanwhile (ticket 286). */
+  settingFrame?: () => boolean
 }
 
 /**
@@ -28,6 +30,8 @@ export interface KeyboardCursorDeps {
 export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
   const keyboardOnProject = ref(false)
+  /** The cursor is drawn only with keyboard focus on the Project, and not during Set Frame. */
+  const cursorShown = computed(() => keyboardOnProject.value && !deps.settingFrame?.())
   let cursorProjectId: string | undefined
 
   /** Keyboard focus arriving on (or leaving) the Project. */
@@ -41,6 +45,8 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
         const start = project.frame ?? beadBounds(project.beads)
         beadCursor.value = { row: start?.row ?? 0, column: start?.column ?? 0 }
       }
+      // F focuses the Project for Set Frame's arrows: the cursor stays hidden, so nothing to reveal, hover or announce (ticket 286).
+      if (deps.settingFrame?.()) return
       deps.reveal(beadCursor.value)
       deps.onCellHover(beadCursor.value.row, beadCursor.value.column)
       deps.announceCursor()
@@ -133,5 +139,5 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (event.key === 'Shift') deps.finishExtending()
   }
 
-  return { beadCursor, keyboardOnProject, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp }
+  return { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp }
 }
