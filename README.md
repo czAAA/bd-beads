@@ -18,7 +18,7 @@ The host and path come from GitHub Actions settings, not the workflow. Variables
 | `npm test` | Unit and component tests (Vitest, jsdom). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
 | `npm run typecheck` | Type-checks the app, the build config and the browser checks |
 | `npm run lint` | ESLint |
-| `npm run visual` | The visual check (below). Runs in CI |
+| `npm run visual` | The visual check (below). Run by the pre-push hook, not CI (below) |
 | `npm run visual:update` | Rewrites the Convert image framing screenshots, the only ones the Playwright runner itself owns; the others are read from `e2e/visual/__screenshots__` as they are, and change only when the look is meant to (delete and regenerate them deliberately) |
 | `npm run perf` | The performance check (below). By hand, never in CI |
 
@@ -28,7 +28,11 @@ Renders fixture Projects in a real browser (Playwright, Chromium) and compares t
 
 Those references were made from the one-element-per-bead grid the renderer replaced (ticket 103), and are what the renderer is held to ("visually indistinguishable", ADR 0018). A canvas never lands on exactly the same pixels as the DOM did, so the comparison is two checks (`e2e/support/referenceCheck.ts`): a look check (both images reduced to the average color of blocks a fraction of a bead wide, at most a per-Technique share of blocks may differ) and a content check (every bead's centre is its color, finished rows' greys included). `e2e/visual/look.spec.ts` runs them on the app for every Technique, plain and with Row progress in both directions, at every zoom, upright and rotated; `overlays.spec.ts` for the Selection, paste preview, Mirror axes and dimming; `interaction.spec.ts` for the hover preview and for the pointer tools (paint, erase, Fill, Row progress lock, Mirror, Undo, Space-drag pan, a touch stroke); `framing.spec.ts` for the Convert image framing preview; `large-projects.spec.ts` for 70 × 250 and 250 × 250 Projects end to end. The check tests itself: `look.spec.ts` renders Projects with a bead recolored or missing, and a Row progress marker the reference does not have, and expects the comparison to fail.
 
-The first run needs the browser: `npx playwright install chromium`. The references are made and checked on Linux, the platform CI runs; on another OS, small rendering differences can fail the check locally. To look at a failure, open `playwright-report/index.html` (`npx playwright show-report`). In CI the check runs as shards (Playwright's `--shard`), each reporting a blob; the "Visual report" job merges them into one HTML report, uploaded as the `visual-check-report` artifact, and "Visual check passed" is the one check that fails if any shard does.
+The first run needs the browser: `npx playwright install chromium`. The references are made and checked on Linux, the platform CI runs; on another OS, small rendering differences can fail the check locally. To look at a failure, open `playwright-report/index.html` (`npx playwright show-report`). CI does not run it (see Tests before a push).
+
+### Tests before a push
+
+GitHub Actions minutes are kept for deployments (ADR 0029). CI runs only "Typecheck and lint", and skips even that for a PR that touches nothing but tickets and Markdown. The unit and visual tests run on your machine: `npm install` points git at `.githooks/`, and the `pre-push` hook runs `npm test` and `npm run visual` whenever the push changes `src/`, `e2e/` or the files that build them. `git push --no-verify` skips it; say so in the PR if you do.
 
 ### Performance check
 

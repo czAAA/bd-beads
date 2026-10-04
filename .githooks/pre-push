@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Runs the unit and visual tests before a push when the change touches code. CI no longer runs them (ADR 0029).
+# Skip once with `git push --no-verify`; the tests are then unchecked, so say so in the PR.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Deleting a remote branch pushes nothing to test.
+while read -r _ local_sha _ _; do
+  if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then exit 0; fi
+done
+
+base=$(git merge-base HEAD origin/main 2>/dev/null || true)
+if [ -z "$base" ]; then
+  echo "pre-push: no origin/main to compare with; running the tests."
+  changed="src/"
+else
+  changed=$(git diff --name-only "$base" HEAD)
+fi
+
+# Code the tests exercise: the app, the browser tests, and what builds or configures them.
+if ! echo "$changed" | grep -qE '^(src/|e2e/|public/|index\.html$|package(-lock)?\.json$|vite[^/]*\.ts$|playwright[^/]*\.ts$|tsconfig[^/]*\.json$|docs/design/system/)'; then
+  echo "pre-push: no src or e2e changes; skipping the tests."
+  exit 0
+fi
+
+echo "pre-push: unit tests"
+npm test
+echo "pre-push: visual check"
+VISUAL_WORKERS="${VISUAL_WORKERS:-2}" npm run visual

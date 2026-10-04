@@ -1,164 +1,49 @@
 name: CI
 
-# Jobs that run at the same time; the pipeline takes as long as the slowest. Branch protection requires three checks
-# by name: "Typecheck and lint", "Unit tests passed" (the aggregate of the unit shards) and "Visual check passed" (the aggregate of the visual shards).
+# Kept to the cheapest check that must hold for every code change: typecheck and lint, in one job. The unit and visual
+# tests run on the developer's machine before a push (.githooks/pre-push, ADR 0029), so GitHub Actions minutes go to
+# deployments. Branch protection requires one check, "Typecheck and lint".
 
 on:
-  push:
-    branches: [main]
   pull_request:
+
+# A newer push to the same PR makes the older run pointless.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   check:
     name: Typecheck and lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-
-  # The unit tests are split across runners with Vitest's own sharding. Every test file lands in exactly one shard.
-  # Three shards, from the measured times in the PR for ticket 256: fewer leave the slowest shard long, more lose the
-  # saving to each shard's install and startup. Changing the count is this list only; the --shard flag follows it.
-  unit:
-    name: Unit tests (shard ${{ matrix.shard }})
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npx vitest run --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-
-  # The one check branch protection names for the unit tests, so the shard count can change without touching it.
-  # `if: always()` matters: a skipped or failed shard must fail this job, not skip it (a skipped required check passes).
-  unit-passed:
-    name: Unit tests passed
-    runs-on: ubuntu-latest
-    needs: unit
-    if: always()
-    steps:
-      - run: test "${{ needs.unit.result }}" = success
-
-  # Built once and served as it is by every visual shard (SKIP_BUILD, e2e/support/server.ts).
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist
-          if-no-files-found: error
-
-  # The visual tests are split across runners with Playwright's own sharding (the tests are fullyParallel, so it splits
-  # by test, not by file). Every test lands in exactly one shard; the reference screenshots stay one folder.
-  # Shard and worker counts are from the measured times in the PR for ticket 257. Changing the shard count is this list
-  # only; the --shard flag follows it.
-  visual:
-    name: Visual check (shard ${{ matrix.shard }})
-    runs-on: ubuntu-latest
-    needs: build
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    env:
-      VISUAL_WORKERS: '2'
-      SKIP_BUILD: '1'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-      - name: Read the Playwright version
-        id: playwright
-        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@v4
-        id: browsers
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      # The browser download is cached; the system libraries it needs are not, so they are installed on every run.
-      - if: steps.browsers.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - if: steps.browsers.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
-      # Two runs, each sharded the same way. Playwright hands a shard a contiguous slice of the tests, and the fourteen
-      # text-fit tests (textFit.spec.ts, ~16 s each against ~1 s for the rest) would all land in one shard, so they are
-      # sharded among themselves and every shard gets its share of both kinds.
-      - run: npx playwright test --grep-invert 'text fits its box' --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-      - run: npx playwright test --grep 'text fits its box' --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      # The job always runs, so the required check always reports; a workflow-level `paths-ignore` would leave it
+      # pending forever on a PR that only touches tickets or docs. Only the steps below are skipped.
+      - name: Look for code changes
+        id: changes
         env:
-          PLAYWRIGHT_BLOB_OUTPUT_FILE: blob-report/report-${{ matrix.shard }}-text-fit.zip
-      # Each shard's blob report, kept on failure and success alike so the merged report is whole.
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: visual-blob-${{ matrix.shard }}
-          path: blob-report
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: visual-test-results-${{ matrix.shard }}
-          path: test-results
-
-  # One HTML report from all the shards' blobs, so a failure is read in one place.
-  visual-report:
-    name: Visual report
-    runs-on: ubuntu-latest
-    needs: visual
-    if: always() && needs.visual.result != 'skipped'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --paginate -q '.[].filename')
+          if echo "$files" | grep -qvE '^(\.scratch/|.*\.md$|LICENSE$)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only tickets and Markdown changed; nothing to check."
+          fi
+      - if: steps.changes.outputs.code == 'true'
+        uses: actions/checkout@v4
+      - if: steps.changes.outputs.code == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: visual-blob-*
-          path: all-blob-reports
-          merge-multiple: true
-      - run: npx playwright merge-reports --reporter html ./all-blob-reports
-      - uses: actions/upload-artifact@v4
-        with:
-          name: visual-check-report
-          path: playwright-report
-          retention-days: 7
-
-  # The one check branch protection names for the visual tests, so the shard count can change without touching it.
-  # `if: always()` matters: a skipped or failed shard must fail this job, not skip it (a skipped required check passes).
-  visual-passed:
-    name: Visual check passed
-    runs-on: ubuntu-latest
-    needs: [build, visual]
-    if: always()
-    steps:
-      - run: test "${{ needs.build.result }}" = success && test "${{ needs.visual.result }}" = success
+      - if: steps.changes.outputs.code == 'true'
+        run: npm ci
+      - if: steps.changes.outputs.code == 'true'
+        run: npm run typecheck
+      - if: steps.changes.outputs.code == 'true'
+        run: npm run lint

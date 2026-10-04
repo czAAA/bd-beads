@@ -6,6 +6,10 @@ name: Deploy
 on:
   push:
     branches: [main]
+    # A merge that only moves tickets or edits Markdown changes nothing that is served.
+    paths-ignore:
+      - '.scratch/**'
+      - '**.md'
   workflow_dispatch:
 
 permissions:
