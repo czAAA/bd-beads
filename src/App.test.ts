@@ -1142,23 +1142,23 @@ describe('App', () => {
  * the screen-reader name, so the Toolbox stays compact.
  */
 describe('App Toolbox controls (ticket 75)', () => {
-  /** The Tools group's tabs: icon-only buttons named by aria-label (ticket 250), with the key as a badge and in the hint. */
+  /** The Tools group's tabs: icon-only buttons named by aria-label (ticket 250), with the key as a badge and in its Tooltip. */
   const tabs = [
-    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel, icon: 'paint', titleSuffix: ' (1)' },
-    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel, icon: 'fill', titleSuffix: ' (2)' },
-    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel, icon: 'select', titleSuffix: ' (3)' },
-    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', titleSuffix: ' (E)' },
+    { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel, icon: 'paint', chip: '1' },
+    { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel, icon: 'fill', chip: '2' },
+    { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel, icon: 'select', chip: '3' },
+    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', chip: 'E' },
   ]
 
-  /** Icon-only buttons: named by aria-label, shown as a tooltip; the hotkey, where there is one, in the title. */
+  /** Icon-only buttons: named by aria-label, shown as a tooltip; the hotkey, where there is one, as the Tooltip's chip. */
   const iconButtons = [
     { testId: 'undo-button', label: (t: typeof en) => t.palette.undoButton, icon: 'undo' },
     { testId: 'redo-button', label: (t: typeof en) => t.palette.redoButton, icon: 'redo' },
     { testId: 'rotate-button', label: (t: typeof en) => t.palette.rotateButton, icon: 'rotate' },
-    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, icon: 'copy', titleSuffix: ' (Ctrl/Cmd+C)' },
+    { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, icon: 'copy', chip: 'Ctrl/Cmd+C' },
   ]
 
-  it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, titleSuffix }) => {
+  it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1167,13 +1167,14 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(tab.classes()).toContain('tool-button')
     expect(tab.find('svg').attributes('data-icon')).toBe(icon)
     expect(tab.attributes('aria-label')).toBe(label(en))
-    expect(tab.attributes('title')).toBe(`${label(en)}${titleSuffix}`)
+    expect(tab.attributes('title')).toBeUndefined()
+    expect(tab.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
 
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
     expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))
   })
 
-  it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, titleSuffix }) => {
+  it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
@@ -1183,7 +1184,8 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(button.find('svg').attributes('data-icon')).toBe(icon)
     expect(button.text()).toBe('')
     expect(button.attributes('aria-label')).toBe(label(en))
-    if (titleSuffix) expect(button.attributes('title')).toBe(`${label(en)}${titleSuffix}`)
+    expect(button.attributes('title')).toBeUndefined()
+    if (chip) expect(button.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
 
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
     expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))

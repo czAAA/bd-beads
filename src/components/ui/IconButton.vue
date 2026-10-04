@@ -20,13 +20,16 @@ withDefaults(
     iconSize?: IconSize
     selected?: boolean
     disabled?: boolean
+    /** The Tooltip's key chip (ticket 251): the control's shortcut, as the shortcuts help writes it. */
+    shortcut?: string
+    description?: string
   }>(),
-  { shape: 'square', variant: 'secondary', size: 'md', iconSize: 15, selected: undefined },
+  { shape: 'square', variant: 'secondary', size: 'md', iconSize: 15, selected: undefined, shortcut: undefined, description: undefined },
 )
 </script>
 
 <template>
-  <AppTooltip :text="label" :announce="false">
+  <AppTooltip :text="label" :shortcut="shortcut" :description="description" :disabled="disabled" :announce="false">
     <button
       class="ui-control icon-btn"
       :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${size}`, { 'icon-btn--selected': selected }]"

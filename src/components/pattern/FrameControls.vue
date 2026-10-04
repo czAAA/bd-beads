@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { resolvePatternBead, type Pattern } from '../../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
@@ -63,6 +64,7 @@ const tipOpen = ref(false)
           v-model="columns"
           :min="1"
           :disabled="locked"
+          tooltip
           :decrease-label="t.frame.fewerColumns"
           :increase-label="t.frame.moreColumns"
           decrease-testid="frame-columns-decrease"
@@ -76,6 +78,7 @@ const tipOpen = ref(false)
           v-model="rows"
           :min="1"
           :disabled="locked"
+          tooltip
           :decrease-label="t.frame.fewerRows"
           :increase-label="t.frame.moreRows"
           decrease-testid="frame-rows-decrease"
@@ -87,9 +90,11 @@ const tipOpen = ref(false)
 
     <!-- While Row progress is on the buttons are locked, and the reason is on their title and written below. -->
     <div class="frame-controls__actions">
-      <AppButton v-if="withSetFrame" variant="primary" icon="frame" data-testid="frame-set" @click="emit('set-frame')">
-        {{ t.frame.setFrame }}
-      </AppButton>
+      <AppTooltip v-if="withSetFrame" :text="t.frame.setFrame" shortcut="F" :description="t.frame.setFrameHint" :announce="false">
+        <AppButton variant="primary" icon="frame" data-testid="frame-set" @click="emit('set-frame')">
+          {{ t.frame.setFrame }}
+        </AppButton>
+      </AppTooltip>
       <AppButton variant="toolbox" data-testid="frame-fit" :disabled="locked" :title="locked ? t.size.lockedReason : undefined" @click="emit('fit')">
         {{ t.frame.fitToDrawing }}
       </AppButton>

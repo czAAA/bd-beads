@@ -1,45 +1,63 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import AppIcon from '../ui/AppIcon.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 
 /**
  * A Tool button (CONTEXT.md; ticket 250): a square, icon-only button for one tool, the active one in the accent
  * colour. A tool with a single-key shortcut shows that key as a badge in the corner (hidden on a coarse pointer and on
- * phone, where there is no keyboard). `label` is the accessible name; the hover hint is the name and the key, until
- * ticket 251 replaces it with the Tooltip. Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
+ * phone, where there is no keyboard). `label` is the accessible name; its Tooltip (ticket 251) shows the name, the key
+ * and the `description`, if the tool needs one. Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
  */
-const props = withDefaults(
+defineOptions({ inheritAttrs: false })
+withDefaults(
   defineProps<{
     icon: IconName
     label: string
     active: boolean
     /** The tool's single-key shortcut, as shown on its badge ("1", "H", "E"). */
     hotkey?: string
+    description?: string
     iconSize?: 18 | 22
   }>(),
-  { iconSize: 22 },
+  { iconSize: 22, hotkey: undefined, description: undefined },
 )
-
-const hint = computed(() => (props.hotkey ? `${props.label} (${props.hotkey})` : props.label))
 </script>
 
 <template>
-  <button
-    type="button"
-    class="ui-control tool-button"
-    :class="{ 'tool-button--active': active }"
-    :title="hint"
-    :aria-label="label"
-    :aria-pressed="active"
+  <AppTooltip
+    class="tool-button-wrap"
+    :text="label"
+    :shortcut="hotkey"
+    :description="description"
+    :announce="!!description"
   >
-    <AppIcon :name="icon" :size="iconSize" />
-    <span v-if="hotkey" class="tool-button__key" aria-hidden="true">{{ hotkey }}</span>
-  </button>
+    <template #default="{ describedby }">
+      <button
+        type="button"
+        class="ui-control tool-button"
+        :class="{ 'tool-button--active': active }"
+        :aria-label="label"
+        :aria-pressed="active"
+        :aria-describedby="describedby"
+        v-bind="$attrs"
+      >
+        <AppIcon :name="icon" :size="iconSize" />
+        <span v-if="hotkey" class="tool-button__key" aria-hidden="true">{{ hotkey }}</span>
+      </button>
+    </template>
+  </AppTooltip>
 </template>
 
 <style scoped>
+/* The Tooltip's wrapper takes the grid cell, and the button fills it. */
+.tool-button-wrap {
+  display: flex;
+  min-width: 0;
+}
+
 .tool-button {
+  width: 100%;
   position: relative;
   display: flex;
   align-items: center;

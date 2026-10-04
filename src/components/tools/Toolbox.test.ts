@@ -87,13 +87,27 @@ describe('Toolbox', () => {
     expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it("shows each numbered tool's shortcut in its tooltip (ticket 87)", () => {
+  it("shows each tool's Tooltip: name, shortcut chip and, where needed, a description (ticket 251)", () => {
     const wrapper = mountToolbox()
+    const tip = (tool: string) => wrapper.get(`[data-testid="tool-${tool}"]`).element.closest('.app-tooltip')!
+    const chip = (tool: string) => tip(tool).querySelector('.app-tooltip__key')?.textContent
+    const description = (tool: string) => tip(tool).querySelector('.app-tooltip__description')?.textContent
 
-    expect(wrapper.find('[data-testid="tool-paint"]').attributes('title')).toContain('(1)')
-    expect(wrapper.find('[data-testid="tool-erase"]').attributes('title')).toContain('(E)')
-    expect(wrapper.find('[data-testid="tool-fill"]').attributes('title')).toContain('(2)')
-    expect(wrapper.find('[data-testid="tool-select"]').attributes('title')).toContain('(3)')
+    expect([chip('paint'), chip('fill'), chip('select'), chip('erase'), chip('hand')]).toEqual(['1', '2', '3', 'E', 'H'])
+    expect(description('paint')).toBe(ru.tools.paintHint)
+    expect(description('fill')).toBe(ru.tools.fillHint)
+    expect(description('select')).toBe(ru.tools.selectHint)
+    expect(description('hand')).toBe(ru.tools.handHint)
+    expect(description('erase')).toBeUndefined()
+    expect(tip('erase').querySelector('.app-tooltip__name')?.textContent).toBe(ru.tools.eraseLabel)
+  })
+
+  it('leaves no Toolbox button on a native title', () => {
+    const wrapper = mountToolbox()
+    const names = ['paint', 'fill', 'select', 'erase', 'hand']
+    for (const id of [...names.map((n) => `tool-${n}`), 'undo-button', 'redo-button', 'rotate-button', 'copy-button']) {
+      expect(wrapper.get(`[data-testid="${id}"]`).attributes('title')).toBeUndefined()
+    }
   })
 
   it('emits delete-all when its button is clicked', async () => {
@@ -136,11 +150,15 @@ describe('Toolbox', () => {
     }
   })
 
-  it("shows Copy's shortcut in its tooltip (ticket 91); R is the Rulers now, so Rotate has none", () => {
+  it("shows the Edit buttons' shortcuts as chips; R is the Rulers now, so Rotate has none (tickets 91, 251)", () => {
     const wrapper = mountToolbox()
+    const chip = (id: string) =>
+      wrapper.get(`[data-testid="${id}"]`).element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent
 
-    expect(wrapper.find('[data-testid="rotate-button"]').attributes('title')).not.toContain('(R)')
-    expect(wrapper.find('[data-testid="copy-button"]').attributes('title')).toContain('Ctrl/Cmd+C')
+    expect(chip('rotate-button')).toBeUndefined()
+    expect(chip('copy-button')).toBe('Ctrl/Cmd+C')
+    expect(chip('undo-button')).toBe('Ctrl/Cmd+Z')
+    expect(chip('redo-button')).toBe('Ctrl/Cmd+Shift+Z')
   })
 
   it('emits select-tool when a tool button is clicked', async () => {
@@ -371,7 +389,7 @@ describe('Toolbox Rotate (ticket 233)', () => {
   it('waits while Row progress is on, saying why', () => {
     const wrapper = mountToolbox({ pattern: setRowProgressEnabled(makePattern(), true) })
     expect(rotate(wrapper).attributes('disabled')).toBeDefined()
-    expect(rotate(wrapper).attributes('title')).toBe(ru.size.lockedReason)
+    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.size.lockedReason)
   })
 
   it('is named "Rotate" and works with a Frame', () => {

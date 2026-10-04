@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import AppTooltip from '../AppTooltip.vue'
+
 /**
  * The − value + control (ticket 149; Stepper card), for every counted setting on desktop: 40px tall, 40px buttons, the
  * value in `meta` between hairlines. At a limit that button turns `faint`; a locked stepper (`disabled`) is all `faint`
- * on `surface`, and its reason goes under it in words. Each button has its own name ("Fewer columns").
+ * on `surface`, and its reason goes under it in words. Each button has its own name ("Fewer columns"), which the
+ * Toolbox's Size controls also show as a Tooltip (`tooltip`, ticket 251); a stepper in a form or dialog shows none.
  */
 const props = withDefaults(
   defineProps<{
@@ -11,11 +14,12 @@ const props = withDefaults(
     decreaseLabel: string
     increaseLabel: string
     disabled?: boolean
+    tooltip?: boolean
     decreaseTestid?: string
     increaseTestid?: string
     valueTestid?: string
   }>(),
-  { min: -Infinity, max: Infinity, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined },
+  { min: -Infinity, max: Infinity, tooltip: false, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined },
 )
 const value = defineModel<number>({ required: true })
 
@@ -27,27 +31,31 @@ function step(delta: number) {
 
 <template>
   <span class="stepper" :class="{ 'stepper--disabled': disabled }">
-    <button
-      class="ui-control stepper__button"
-      type="button"
-      :aria-label="decreaseLabel"
-      :disabled="disabled || value <= min"
-      :data-testid="decreaseTestid"
-      @click="step(-1)"
-    >
-      −
-    </button>
+    <AppTooltip :text="decreaseLabel" :disabled="!tooltip || disabled || value <= min" :announce="false">
+      <button
+        class="ui-control stepper__button"
+        type="button"
+        :aria-label="decreaseLabel"
+        :disabled="disabled || value <= min"
+        :data-testid="decreaseTestid"
+        @click="step(-1)"
+      >
+        −
+      </button>
+    </AppTooltip>
     <span class="stepper__value" :data-testid="valueTestid">{{ value }}</span>
-    <button
-      class="ui-control stepper__button"
-      type="button"
-      :aria-label="increaseLabel"
-      :disabled="disabled || value >= max"
-      :data-testid="increaseTestid"
-      @click="step(1)"
-    >
-      +
-    </button>
+    <AppTooltip :text="increaseLabel" :disabled="!tooltip || disabled || value >= max" :announce="false">
+      <button
+        class="ui-control stepper__button"
+        type="button"
+        :aria-label="increaseLabel"
+        :disabled="disabled || value >= max"
+        :data-testid="increaseTestid"
+        @click="step(1)"
+      >
+        +
+      </button>
+    </AppTooltip>
   </span>
 </template>
 

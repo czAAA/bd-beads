@@ -283,6 +283,10 @@ export const en: Translations = {
     selectLabel: 'Select',
     eraseLabel: 'Eraser',
     handLabel: 'Hand',
+    paintHint: 'Click or drag to paint; right-click erases.',
+    fillHint: 'Fills the connected area; right-click erases it.',
+    selectHint: 'Drag to mark an area, then copy and paste it.',
+    handHint: 'Drag to move around the canvas.',
     copyButton: 'Copy',
     saveButton: 'Save',
     savedConfirmation: 'Saved',
@@ -405,6 +409,7 @@ export const en: Translations = {
   frame: {
     title: 'Frame',
     setFrame: 'Set Frame',
+    setFrameHint: 'Drag to mark which beads are the Pattern.',
     notSet: 'not set',
     numberLabel: 'Frame {number}, bring it into view',
     fitToDrawing: 'Fit to drawing',

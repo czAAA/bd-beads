@@ -267,6 +267,11 @@ export interface Translations {
     eraseLabel: string
     /** The Hand tool (v16): moves the open canvas by dragging and never changes a bead. */
     handLabel: string
+    /** The one-line descriptions in the Tool buttons' Tooltips (ticket 251); Eraser needs none. */
+    paintHint: string
+    fillHint: string
+    selectHint: string
+    handHint: string
     copyButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
     saveButton: string
@@ -429,6 +434,8 @@ export interface Translations {
   frame: {
     title: string
     setFrame: string
+    /** The description line in Set Frame's Tooltip (ticket 251). */
+    setFrameHint: string
     notSet: string
     /** The number chip's accessible name: pressing it brings the Frame into view. */
     numberLabel: string

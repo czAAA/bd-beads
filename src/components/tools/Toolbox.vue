@@ -61,12 +61,12 @@ const customColorSelected = computed(
 )
 
 /** The Tools group's five icon buttons (ToolTabs card), with the hotkeys shown as badges and in their hints. */
-const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string }[]>(() => [
-  { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: TOOL_HOTKEYS.paint },
-  { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: TOOL_HOTKEYS.fill },
-  { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: TOOL_HOTKEYS.select },
+const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string; description?: string }[]>(() => [
+  { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: TOOL_HOTKEYS.paint, description: t.value.tools.paintHint },
+  { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: TOOL_HOTKEYS.fill, description: t.value.tools.fillHint },
+  { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: TOOL_HOTKEYS.select, description: t.value.tools.selectHint },
   { id: 'erase', icon: 'erase', label: t.value.tools.eraseLabel, hotkey: TOOL_HOTKEYS.erase },
-  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: TOOL_HOTKEYS.hand },
+  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: TOOL_HOTKEYS.hand, description: t.value.tools.handHint },
 ])
 
 /** The tool tabs are one Tab stop, the active tab; the arrows move between them (ticket 159). */
@@ -106,8 +106,10 @@ defineExpose({ collapseExpandedGroup })
 
 /** Rotate turns the Frame, so it needs one, and waits while Row progress holds the Frame's rows still (Toolbox card). */
 const rotateAvailable = computed(() => props.pattern.frame !== undefined && !props.pattern.rowProgress.enabled)
-const rotateName = computed(() => (props.pattern.frame ? t.value.palette.rotateButton : t.value.frame.rotateNeedsFrame))
-const rotateTitle = computed(() => (props.pattern.frame && props.pattern.rowProgress.enabled ? t.value.size.lockedReason : rotateName.value))
+const rotateName = computed(() => {
+  if (!props.pattern.frame) return t.value.frame.rotateNeedsFrame
+  return props.pattern.rowProgress.enabled ? t.value.size.lockedReason : t.value.palette.rotateButton
+})
 
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
 const frameSummary = computed(() => {
@@ -138,6 +140,7 @@ const frameSummary = computed(() => {
           :icon="tool.icon"
           :label="tool.label"
           :hotkey="tool.hotkey"
+          :description="tool.description"
           :active="activeTool === tool.id"
           :icon-size="18"
           :data-testid="`tool-${tool.id}`"
@@ -187,15 +190,14 @@ const frameSummary = computed(() => {
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton icon="undo" variant="toolbox" size="lg" :icon-size="17" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
-        <IconButton icon="redo" variant="toolbox" size="lg" :icon-size="17" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
+        <IconButton icon="undo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
+        <IconButton icon="redo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
         <IconButton
           icon="rotate"
           variant="toolbox"
           size="lg"
           :icon-size="17"
           :label="rotateName"
-          :title="rotateTitle"
           :disabled="!rotateAvailable"
           data-testid="rotate-button"
           @click="emit('rotate')"
@@ -206,7 +208,7 @@ const frameSummary = computed(() => {
           size="lg"
           :icon-size="17"
           :label="t.tools.copyButton"
-          :title="`${t.tools.copyButton} (Ctrl/Cmd+C)`"
+          shortcut="Ctrl/Cmd+C"
           data-testid="copy-button"
           data-tour="copy"
           :disabled="!canCopy"

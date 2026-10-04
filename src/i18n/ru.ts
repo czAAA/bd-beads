@@ -285,6 +285,10 @@ export const ru: Translations = {
     selectLabel: 'Выделение',
     eraseLabel: 'Ластик',
     handLabel: 'Рука',
+    paintHint: 'Нажмите или проведите, чтобы рисовать; правая кнопка стирает.',
+    fillHint: 'Заливает связную область; правая кнопка стирает её.',
+    selectHint: 'Обведите область, затем скопируйте и вставьте её.',
+    handHint: 'Перетаскивайте, чтобы двигаться по холсту.',
     copyButton: 'Копировать',
     saveButton: 'Сохранить',
     savedConfirmation: 'Сохранено',
@@ -407,6 +411,7 @@ export const ru: Translations = {
   frame: {
     title: 'Рамка',
     setFrame: 'Задать рамку',
+    setFrameHint: 'Выделите, какие бусины входят в узор.',
     notSet: 'не задана',
     numberLabel: 'Рамка {number}, показать на экране',
     fitToDrawing: 'По рисунку',

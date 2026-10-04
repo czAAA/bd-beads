@@ -85,6 +85,30 @@ describe('AppTooltip', () => {
     expect(bubble.isVisible()).toBe(false)
   })
 
+  it('shows the name, a key chip and a description line when given them (ticket 251)', async () => {
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { text: 'Paint', shortcut: '1', description: 'Click or drag to paint.' },
+      slots: { default: '<button type="button">x</button>' },
+    })
+    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+
+    expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
+    expect(wrapper.get('.app-tooltip__key').text()).toBe('1')
+    expect(wrapper.get('.app-tooltip__description').text()).toBe('Click or drag to paint.')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+  })
+
+  it('shows nothing for a disabled trigger (ticket 251)', async () => {
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { text: 'Undo', disabled: true },
+      slots: { default: '<button type="button" disabled>x</button>' },
+    })
+    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
+
   it('does not show for a touch', async () => {
     const wrapper = tooltip()
     await wrapper.trigger('pointerenter', { pointerType: 'touch' })

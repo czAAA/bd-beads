@@ -14,7 +14,7 @@ A disabled control shows no tooltip (forms-and-states). The Tooltip never takes 
 
 **Blocked by:** 250 (icon-only Tool buttons).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every Tool button shows the Tooltip on hover and on keyboard focus: name, shortcut chip, and a description for Paint, Fill, Select, Hand and Set Frame
 - [ ] The Eraser tooltip has name and `E` only
@@ -28,3 +28,5 @@ A disabled control shows no tooltip (forms-and-states). The Tooltip never takes 
 - [ ] Tests for the Toolbox are updated; the Tour's existing steps that point at tools are checked for wording and for the Tooltip not covering the highlighted control
 - [ ] CONTEXT.md already defines Tooltip; confirm it still matches what was built
 - [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: no Overview tile; Tour needs only the wording check above
+
+**Notes (implementation):** the design system's Tooltip card (`.bb-tooltip`) has no key chip or description line; the rich variant was built from existing tokens (`--type-meta-tiny`, `--radius-xs`, `--canvas` on `--ink`) and still needs adding to the design system on claude.ai (`DESIGN.md` §6). Set Frame's tooltip is on the button in FrameControls (phone sheets); the Toolbox has no Set Frame button, the Frame row starts it. Rotate's Row-progress reason moved from `title` to its accessible name. Visual snapshots were not regenerated here.
