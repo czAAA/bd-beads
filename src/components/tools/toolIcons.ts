@@ -16,3 +16,12 @@ export const TOOL_ICONS: Record<Tool, IconName> = {
 
 /** The five tools, in their fixed order (ToolTabs card). */
 export const TOOL_ORDER: readonly Tool[] = ['paint', 'fill', 'select', 'erase', 'hand']
+
+/** Each tool's single-key shortcut, shown as a badge on its Tool button (ticket 250). Eraser's `Del` is not one. */
+export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {
+  paint: '1',
+  fill: '2',
+  select: '3',
+  erase: 'E',
+  hand: 'H',
+}

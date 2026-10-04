@@ -152,7 +152,7 @@ describe('landmarks and the skip link (ticket 159)', () => {
 describe('one Tab stop per group (ticket 159)', () => {
   it('makes the active tool tab the tool tabs\' only stop, and moves focus with the arrows without choosing', async () => {
     const wrapper = await openPattern()
-    const tabs = wrapper.findAll('.tool-tab')
+    const tabs = wrapper.findAll('[data-testid="toolbox"] .tool-button')
 
     expect(tabs.map((tab) => tab.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
     ;(tabs[0]!.element as HTMLElement).focus()

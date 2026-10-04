@@ -91,6 +91,7 @@ describe('Toolbox', () => {
     const wrapper = mountToolbox()
 
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('title')).toContain('(1)')
+    expect(wrapper.find('[data-testid="tool-erase"]').attributes('title')).toContain('(E)')
     expect(wrapper.find('[data-testid="tool-fill"]').attributes('title')).toContain('(2)')
     expect(wrapper.find('[data-testid="tool-select"]').attributes('title')).toContain('(3)')
   })
@@ -441,5 +442,14 @@ describe('Toolbox Frame row (ticket 233)', () => {
       expect(frameRow(wrapper).find(`[data-testid="${id}"]`).attributes('disabled')).toBeDefined()
     }
     expect(frameRow(wrapper).find('[data-testid="frame-locked"]').text()).toBe(ru.size.lockedReason)
+  })
+
+  it('shows icon-only tool buttons named by their label, with key badges for single-key tools', () => {
+    const wrapper = mountToolbox()
+    const paint = wrapper.find('[data-testid="tool-paint"]')
+    expect(paint.text()).toBe('1')
+    expect(paint.attributes('aria-label')).toBeTruthy()
+    const badges = wrapper.findAll('[data-testid^="tool-"] .tool-button__key').map((badge) => badge.text())
+    expect(badges).toEqual(['1', '2', '3', 'E', 'H'])
   })
 })

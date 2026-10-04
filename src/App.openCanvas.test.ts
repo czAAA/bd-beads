@@ -191,8 +191,8 @@ describe('the Hand tool', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await key({ key: 'h' })
-    expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-tab--active')
-    expect(wrapper.findAll('.tool-tab')).toHaveLength(5)
+    expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-button--active')
+    expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(5)
 
     const before = JSON.stringify(loadPatterns()[0]!.beads)
     const root = surface(wrapper)

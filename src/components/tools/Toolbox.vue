@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import AppIcon from '../ui/AppIcon.vue'
 import AppLink from '../ui/AppLink.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
@@ -9,7 +8,9 @@ import type { IconName } from '../ui/icons'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 import FrameControls from '../pattern/FrameControls.vue'
+import ToolButton from './ToolButton.vue'
 import ToolGroup from './ToolGroup.vue'
+import { TOOL_HOTKEYS } from './toolIcons'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Tool } from '../../domain/tool'
@@ -59,13 +60,13 @@ const customColorSelected = computed(
   () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
 )
 
-/** The Tools group's five tabs (ToolTabs card), with the hotkeys shown in their tooltips. */
+/** The Tools group's five icon buttons (ToolTabs card), with the hotkeys shown as badges and in their hints. */
 const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string }[]>(() => [
-  { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: '1' },
-  { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: '2' },
-  { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: '3' },
-  { id: 'erase', icon: 'erase', label: t.value.tools.eraseLabel },
-  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: 'H' },
+  { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: TOOL_HOTKEYS.paint },
+  { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: TOOL_HOTKEYS.fill },
+  { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: TOOL_HOTKEYS.select },
+  { id: 'erase', icon: 'erase', label: t.value.tools.eraseLabel, hotkey: TOOL_HOTKEYS.erase },
+  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: TOOL_HOTKEYS.hand },
 ])
 
 /** The tool tabs are one Tab stop, the active tab; the arrows move between them (ticket 159). */
@@ -130,23 +131,20 @@ const frameSummary = computed(() => {
   -->
   <div class="toolbox" data-testid="toolbox">
     <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
-      <div ref="tabsEl" class="tool-tabs" @keydown="tabsRoving.onKeydown">
-        <button
+      <div ref="tabsEl" class="tool-buttons" @keydown="tabsRoving.onKeydown">
+        <ToolButton
           v-for="tool in tools"
           :key="tool.id"
-          type="button"
-          class="ui-control tool-tab"
-          :class="{ 'tool-tab--active': activeTool === tool.id }"
+          :icon="tool.icon"
+          :label="tool.label"
+          :hotkey="tool.hotkey"
+          :active="activeTool === tool.id"
+          :icon-size="18"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
-          :title="tool.hotkey ? `${tool.label} (${tool.hotkey})` : tool.label"
-          :aria-pressed="activeTool === tool.id"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id)"
           @click="emit('select-tool', tool.id)"
-        >
-          <AppIcon :name="tool.icon" :size="18" />
-          <span class="tool-tab__label">{{ tool.label }}</span>
-        </button>
+        />
       </div>
       <div class="toolbox__links">
         <AppLink
@@ -256,73 +254,11 @@ const frameSummary = computed(() => {
   border-radius: var(--radius-lg);
 }
 
-/* Tool tabs (ToolTabs card): four equal columns over a `line-strong` rule. */
-.tool-tabs {
+/* Tool buttons (ToolTabs card): square icon buttons, four to a row. */
+.tool-buttons {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  border-bottom: 1px solid var(--line-strong);
-}
-
-.tool-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: -1px;
-  padding: var(--space-8) 0 var(--space-10);
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition:
-    color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-instant) var(--ease-standard);
-}
-
-.tool-tab__label {
-  font: var(--type-tab);
-}
-
-.tool-tab--active {
-  color: var(--accent-strong);
-  border-bottom-color: var(--accent-strong);
-}
-
-@media (hover: hover) {
-  .tool-tab:not(.tool-tab--active):hover {
-    color: var(--ink);
-  }
-}
-
-.tool-tab:active {
-  transform: scale(0.96);
-}
-
-.tool-tab:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-:root[data-theme='contrast'] .tool-tab--active {
-  font-weight: 700;
-  border-bottom-width: 3px;
-}
-
-/*
- * Touch input (ticket 166): a tab grows to a real 48px minimum instead of controls.css's usual invisible 44px hit
- * area, one of the two documented exceptions alongside palette swatches.
- */
-@media (pointer: coarse) {
-  .tool-tab {
-    box-sizing: border-box;
-    min-height: 3rem;
-    justify-content: center;
-  }
-
-  .tool-tab::before {
-    content: none;
-  }
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
 }
 
 .toolbox__links {
@@ -355,11 +291,5 @@ const frameSummary = computed(() => {
 /* Size as a disclosure row, with a rule above it. */
 .toolbox__rows {
   border-top: 1px solid var(--panel-rule);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tool-tab:active {
-    transform: none;
-  }
 }
 </style>

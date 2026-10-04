@@ -1142,12 +1142,12 @@ describe('App', () => {
  * the screen-reader name, so the Toolbox stays compact.
  */
 describe('App Toolbox controls (ticket 75)', () => {
-  /** The Tools group's tabs: an icon over a visible name, with the hotkey in the tooltip where there is one. */
+  /** The Tools group's tabs: icon-only buttons named by aria-label (ticket 250), with the key as a badge and in the hint. */
   const tabs = [
     { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel, icon: 'paint', titleSuffix: ' (1)' },
     { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel, icon: 'fill', titleSuffix: ' (2)' },
     { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel, icon: 'select', titleSuffix: ' (3)' },
-    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', titleSuffix: '' },
+    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', titleSuffix: ' (E)' },
   ]
 
   /** Icon-only buttons: named by aria-label, shown as a tooltip; the hotkey, where there is one, in the title. */
@@ -1158,19 +1158,19 @@ describe('App Toolbox controls (ticket 75)', () => {
     { testId: 'copy-button', label: (t: typeof en) => t.tools.copyButton, icon: 'copy', titleSuffix: ' (Ctrl/Cmd+C)' },
   ]
 
-  it.each(tabs)('draws $testId as a tab with its icon and its name, in both languages', async ({ testId, label, icon, titleSuffix }) => {
+  it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, titleSuffix }) => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const tab = wrapper.find(`[data-testid="${testId}"]`)
-    expect(tab.classes()).toContain('tool-tab')
+    expect(tab.classes()).toContain('tool-button')
     expect(tab.find('svg').attributes('data-icon')).toBe(icon)
-    expect(tab.text()).toBe(label(en))
+    expect(tab.attributes('aria-label')).toBe(label(en))
     expect(tab.attributes('title')).toBe(`${label(en)}${titleSuffix}`)
 
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
-    expect(wrapper.find(`[data-testid="${testId}"]`).text()).toBe(label(ru))
+    expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))
   })
 
   it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, titleSuffix }) => {
@@ -1219,7 +1219,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     const wrapper = mount(App)
     await createPatternViaForm(wrapper, '15', '30')
 
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-tab--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
   })
 })
@@ -1373,10 +1373,10 @@ describe('App keyboard shortcuts', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressKey({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-tab--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
 
     await pressKey({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-tab--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
   })
 
   it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {

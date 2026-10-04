@@ -8,7 +8,8 @@ import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
-import { TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
+import ToolButton from '../tools/ToolButton.vue'
+import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
 
 /**
  * The design system's BottomToolbar (ticket 168; BottomToolbar card): the iPad mini tier's own toolbar, under the
@@ -37,8 +38,8 @@ function toolLabel(tool: Tool): string {
   return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
 }
 
-/** The same four tools Toolbox's own tabs list, in the same order (ToolTabs card). */
-const tools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id) })))
+/** The same tools Toolbox's own buttons list, in the same order (ToolTabs card). */
+const tools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id), hotkey: TOOL_HOTKEYS[id] })))
 
 const palette = usePalette()
 const colorHex = computed(() => (props.selectedColorId ? palette.value.find((color) => color.id === props.selectedColorId)?.hex : undefined))
@@ -84,20 +85,18 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
 
 <template>
   <div ref="rootEl" class="bottom-toolbar" data-testid="bottom-toolbar">
-    <button
+    <ToolButton
       v-for="tool in tools"
       :key="tool.id"
-      type="button"
-      class="ui-control bottom-toolbar__item"
-      :class="{ 'bottom-toolbar__item--active': activeTool === tool.id }"
+      class="bottom-toolbar__tool"
+      :icon="tool.icon"
+      :label="tool.label"
+      :hotkey="tool.hotkey"
+      :active="activeTool === tool.id"
       :data-testid="`bottom-toolbar-${tool.id}`"
       :data-tour="`tool-${tool.id}`"
-      :aria-pressed="activeTool === tool.id"
       @click="emit('select-tool', tool.id)"
-    >
-      <AppIcon :name="tool.icon" :size="22" />
-      <span class="bottom-toolbar__label">{{ tool.label }}</span>
-    </button>
+    />
 
     <button
       ref="buttonEl"
@@ -174,6 +173,14 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
   border: 0;
   cursor: pointer;
   transition: color var(--duration-fast) var(--ease-standard);
+}
+
+/* Tool buttons are icon-only squares, so they size to the bar's height rather than stretch (ticket 250). */
+.bottom-toolbar__tool {
+  flex: 0 0 auto;
+  align-self: center;
+  height: calc(var(--dock-height) - var(--space-16));
+  margin-inline: var(--space-4);
 }
 
 .bottom-toolbar__item--active {

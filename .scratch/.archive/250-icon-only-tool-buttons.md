@@ -6,7 +6,7 @@ Spec: the design system's ToolTabs and Toolbox cards (as updated by 233); if the
 
 **Blocked by:** 233 (open canvas and frame, which adds Hand and Set Frame and rewrites these components) and 249 (pencil icon).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The Tools group shows icon-only square buttons, four to a row, no text labels; the active tool is accent-coloured and `aria-pressed`
 - [ ] The group keeps one Tab stop with arrow-key movement between tools (ticket 159)
@@ -21,3 +21,9 @@ Spec: the design system's ToolTabs and Toolbox cards (as updated by 233); if the
 - [ ] Tests and visual snapshots for the Toolbox, BottomToolbar, Dock and shortcuts help are updated
 - [ ] CONTEXT.md: the Eraser entry names `E`; Tool button is already defined
 - [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: no Overview tile; Tour steps that point at tools only need a wording check
+
+## Outcome
+
+Shared `ToolButton.vue` (icon, key badge, accessible name) now serves the Toolbox, BottomToolbar and phone tool sheet; the Dock is untouched. `E` selects Eraser; shortcuts help and CONTEXT.md updated. There is no `F` badge: Set Frame is not a tool button (ToolTabs card: "There is no Frame tab").
+
+Left for a human: the ToolTabs and Toolbox design system cards still describe labelled tabs, so update them on claude.ai and copy in (DESIGN.md §6); regenerate the Toolbox, BottomToolbar, Dock and shortcuts-help visual snapshots in CI/e2e (not run here); check the five screen sizes and three themes by eye; ask the user to confirm the Overview/Tour answer.

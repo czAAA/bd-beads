@@ -88,6 +88,13 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
+  it('E picks the eraser, but not while a modal is open', () => {
+    const { deps, wrapper } = mountTable()
+    press({ key: 'e' })
+    expect(deps.onSelectTool).toHaveBeenCalledWith('erase')
+    wrapper.unmount()
+  })
+
   it('Delete clears the selection under Select, else picks the eraser', () => {
     const { deps, wrapper } = mountTable({ activeTool: () => 'select', hasSelection: () => true })
     press({ key: 'Delete' })

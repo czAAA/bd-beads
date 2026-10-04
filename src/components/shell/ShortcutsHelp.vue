@@ -29,6 +29,7 @@ const groups = computed(() => [
       { keys: '1', label: t.value.tools.paintLabel },
       { keys: '2', label: t.value.tools.fillLabel },
       { keys: '3', label: t.value.tools.selectLabel },
+      { keys: 'E', label: t.value.tools.eraseLabel },
       { keys: 'Del', label: t.value.shortcutsHelp.eraseOrClearSelection },
       { keys: 'Esc', label: t.value.shortcutsHelp.escapeSelectsPaint },
     ],

@@ -155,6 +155,12 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       guard: noModalOpen,
       action: () => deps.onSelectTool('hand'),
     },
+    // ticket 250: E picks Eraser, so it is no longer the one tool without a key.
+    {
+      matches: (event) => isPlainLetterKey(event, 'e'),
+      guard: noModalOpen,
+      action: () => deps.onSelectTool('erase'),
+    },
     // ticket 90: Del clears just the selected cells under Select with a Selection present, else activates Eraser.
     {
       matches: (event) => event.key === 'Delete',

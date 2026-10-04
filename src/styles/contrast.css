@@ -32,10 +32,6 @@
   border-top-width: 2px;
 }
 
-:root[data-theme='contrast'] .tool-tabs {
-  border-bottom-width: 2px;
-}
-
 /* The Bead pill is white on white here: it keeps its shape with an edge. */
 :root[data-theme='contrast'] .app-header__pill {
   box-shadow: inset 0 0 0 2px var(--line);
@@ -104,8 +100,8 @@
     background: ButtonText;
   }
 
-  html:root .tool-tab--active {
-    border-bottom: 3px solid Highlight;
+  html:root .tool-button--active {
+    border: 2px solid Highlight;
   }
 
   html:root :is(.palette-picker__swatch, .image-colors-picker__swatch)[aria-pressed='true'],

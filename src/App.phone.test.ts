@@ -106,7 +106,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="sheet-tool-erase"]').trigger('click')
 
     expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('phone-sheet__tile--active')
+    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('tool-button--active')
 
     await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)

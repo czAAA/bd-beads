@@ -35,7 +35,7 @@ describe('ShortcutsHelp', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', 'Del', 'Space + drag', 'H', 'R', 'Ctrl/Cmd + wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
+    for (const key of ['1', '2', '3', 'E', 'Del', 'Space + drag', 'H', 'R', 'Ctrl/Cmd + wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)

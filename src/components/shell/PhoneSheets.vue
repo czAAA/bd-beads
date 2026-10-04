@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import AppLink from '../ui/AppLink.vue'
 import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
@@ -20,7 +19,8 @@ import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import type { Tool } from '../../domain/tool'
-import { TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
+import ToolButton from '../tools/ToolButton.vue'
+import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
 
 const {
   t,
@@ -77,7 +77,7 @@ const {
 } = useAppShell()
 
 /** The phone Tool sheet's four tiles (ToolSheet card), same order and icons as everywhere else the four tools list themselves. */
-const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id) })))
+const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id), hotkey: TOOL_HOTKEYS[id] })))
 
 function toolLabel(tool: Tool): string {
   return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
@@ -87,20 +87,17 @@ function toolLabel(tool: Tool): string {
 <template>
   <BottomSheet v-if="openPhoneSheet === 'tool' && activePattern" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
     <div class="phone-sheet__tiles">
-      <button
+      <ToolButton
         v-for="tool in phoneTools"
         :key="tool.id"
-        type="button"
-        class="ui-control phone-sheet__tile"
-        :class="{ 'phone-sheet__tile--active': activeTool === tool.id }"
+        :icon="tool.icon"
+        :label="tool.label"
+        :hotkey="tool.hotkey"
+        :active="activeTool === tool.id"
         :data-testid="`sheet-tool-${tool.id}`"
         :data-tour="`tool-${tool.id}`"
-        :aria-pressed="activeTool === tool.id"
         @click="onSelectTool(tool.id)"
-      >
-        <AppIcon :name="tool.icon" :size="22" />
-        <span>{{ tool.label }}</span>
-      </button>
+      />
     </div>
     <div class="phone-sheet__links">
       <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" :aria-label="t.tools.removeLineName" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
@@ -249,30 +246,6 @@ function toolLabel(tool: Tool): string {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--space-8);
-}
-
-.phone-sheet__tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-  height: 4.5rem;
-  color: var(--body);
-  background: var(--elevated);
-  border: 1px solid var(--panel-line);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.phone-sheet__tile--active {
-  color: var(--accent-strong);
-  border-color: var(--accent-strong);
-}
-
-.phone-sheet__tile:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 .phone-sheet__links {
