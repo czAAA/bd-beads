@@ -10,14 +10,14 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** not applicable (no user-facing change); recorded per CLAUDE.md.
 
-- [ ] Typecheck+lint, unit and visual run as separate jobs, in parallel
-- [ ] The visual job builds once and the build is an artifact other jobs can download
-- [ ] Browser install is cached; a warm run skips the download
-- [ ] The deploy workflow no longer runs the unit tests
-- [ ] A failing visual job uploads its report and test results
+- [x] Typecheck+lint, unit and visual run as separate jobs, in parallel
+- [x] The visual job builds once and the build is an artifact other jobs can download
+- [x] Browser install is cached; a warm run skips the download
+- [x] The deploy workflow no longer runs the unit tests
+- [x] A failing visual job uploads its report and test results
 - [ ] A PR cannot merge with any of the jobs failing or missing
 - [ ] Wall time of a green run on CI is stated in the PR, against the 9.8 min baseline

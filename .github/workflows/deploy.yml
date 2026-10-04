@@ -25,7 +25,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
       - run: npm run build
         env:
           DEPLOY_BASE: ${{ vars.DEPLOY_BASE }}

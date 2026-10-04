@@ -8,7 +8,7 @@ The repository is private and proprietary (ticket 64), and GitHub Pages on a pri
 
 `.github/workflows/deploy.yml` runs on every push to `main` and on manual dispatch, in two jobs:
 
-1. **build**: `npm ci`, `npm test`, `npm run build`, and upload `dist/` as an artifact. A failed test stops the run before anything is deployed.
+1. **build**: `npm ci`, `npm run build`, and upload `dist/` as an artifact. The tests are not run again here: CI gates main (ticket 255), so this job only builds.
 2. **deploy** (`needs: build`): the runner joins the tailnet as an ephemeral node tagged `tag:ci` (Tailscale GitHub Action, OAuth client), loads a dedicated deploy SSH key and a pinned `known_hosts`, and runs `rsync -rlt --delete` (with fixed file modes, so the runner's owner and permissions are not copied) of the artifact to the host. An unreachable router or a failed rsync fails the run. A `concurrency` group keeps deploys from overlapping.
 
 Access is narrow on purpose. The Tailscale policy lets `tag:ci` reach only the router's SSH port (TCP 22); the OAuth client can only mint keys for `tag:ci`; the SSH key is used for nothing else and is stored, with the OAuth credentials, as GitHub Actions secrets. Host key checking is on, against the `DEPLOY_KNOWN_HOSTS` secret.

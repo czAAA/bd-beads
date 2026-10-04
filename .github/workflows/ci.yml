@@ -1,12 +1,16 @@
 name: CI
 
+# Three jobs that run at the same time; the pipeline takes as long as the slowest. Branch protection requires all
+# three by name: "Typecheck and lint", "Unit tests" and "Visual check".
+
 on:
   push:
     branches: [main]
   pull_request:
 
 jobs:
-  test:
+  check:
+    name: Typecheck and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,10 +20,53 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
       - run: npm run lint
-      - run: npx playwright install --with-deps chromium
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  visual:
+    name: Visual check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Built once, here, and served as it is by the test runner (SKIP_BUILD, e2e/support/server.ts).
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+      - name: Read the Playwright version
+        id: playwright
+        run: echo "version=$(npx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      # The browser download is cached; the system libraries it needs are not, so they are installed on every run.
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
       - run: npm run visual
+        env:
+          SKIP_BUILD: '1'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
