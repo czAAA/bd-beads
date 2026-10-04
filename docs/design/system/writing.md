@@ -235,6 +235,7 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | Frame 1, bring it into view | Рамка 1, показать на экране |
 | Rotate, Set Frame first | Повернуть: сначала задайте рамку |
 | Pattern rotated. 1 piece was in the way and moved outside the Frame. · Undo | Схема повёрнута. 1 фрагмент мешал и сдвинут за рамку. · Отменить |
+| Frame set. 1 piece was in the margin and moved outside it. · Undo | Рамка задана. 1 фрагмент был в поле рамки и перемещён за его пределы. · Отменить |
 | Hand · Rulers | Рука · Линейки |
 | scroll or space drag to move · scroll to zoom | прокрутка или пробел и перетаскивание: сдвиг · прокрутка: масштаб |
 | Frame (optional) | Рамка (необязательно) |

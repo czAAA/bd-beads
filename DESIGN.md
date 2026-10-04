@@ -1,7 +1,7 @@
 # DESIGN.md: bd-beads visual language
 
 The entry point to how bd-beads looks and behaves. The design itself lives in the **bd-beads design system,
-version 16**, copied into [`docs/design/system/`](docs/design/system/README.md). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
+version 18**, copied into [`docs/design/system/`](docs/design/system/README.md). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card
 for each component you touch (`docs/design/system/components/<Name>/README.md` and its `preview.html`), then the
@@ -244,7 +244,7 @@ files without an account.
 5. Run the tests: once ticket 140 lands, the `ProjectTheme` check (§4.2) fails if a canvas token changed without the
    renderer.
 
-**Version in the repo:** design system **v16**, synced from claude.ai on 2026-10-03. See the Version section of
-[`docs/design/system/README.md`](docs/design/system/README.md) for what each version added. v16 adds the open canvas,
-the Frame, the Hand tool, the Rulers toggle and custom Palette swatches; the Rulers card and the `bead-min-*` tokens,
-once added by hand (ticket 222), now come from the sync.
+**Version in the repo:** design system **v18**, synced from claude.ai on 2026-10-04. See the Version section of
+[`docs/design/system/README.md`](docs/design/system/README.md) for what each version added. v17 is vocabulary only
+(Project and Pattern); v18 adds the Frame margin and the icon-tile Toolbox (the `ToolTabs` card now shows tiles).
+The `CanvasStrip` card still carries the "pieces outside the Frame" count (§4.2).

@@ -92,10 +92,12 @@ body {
 .bb-theme button[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
 
 /* 5.4 Tool tabs */
-.bb-tabs { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line-strong); }
-.bb-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 10px; background: none; border: 0; margin-bottom: -1px; border-bottom: 2px solid transparent; font: 500 13px/18px var(--font-sans); color: var(--muted); cursor: pointer; }
-.bb-tab[aria-selected="true"] { color: var(--accent-strong); border-bottom-color: var(--accent-strong); }
-.bb-tab-actions { display: flex; justify-content: space-between; margin-top: 10px; }
+.bb-tools { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.bb-tool { aspect-ratio: 1; display: grid; place-items: center; padding: 0; background: var(--elevated); border: 0; border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; }
+.bb-tool[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent-strong); }
+.bb-tool-remove { margin-top: 12px; }
+.bb-tool-actions { display: flex; justify-content: space-between; margin-top: 10px; }
+.bb-tool-actions .bb-link[disabled] { color: var(--faint); cursor: default; }
 
 /* 5.5 Swatches */
 .bb-swatches { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
@@ -576,13 +578,15 @@ body {
 [data-theme="contrast"]{--track-fill:var(--accent);--scrim:rgba(0,0,0,.6);--overlay-fill:var(--canvas);--overlay-line:var(--line-strong);--in-box-line:var(--line-strong)}
 [data-theme="contrast"] :where(button,select,[role="switch"],a):focus-visible,[data-theme="contrast"] .ix:focus-visible,[data-theme="contrast"] .ix.is-focus,[data-theme="contrast"] .f-in.focus{outline-width:3px}
 [data-theme="contrast"] :is(.f-in,.f-step,.bb-btn,.f-btn,.ix,.m-b){border-width:2px}
-[data-theme="contrast"] :is(.bb-tab[aria-selected="true"],.ix-tab.is-on){border-bottom-width:3px;font-weight:700}
+[data-theme="contrast"] .ix-tab.is-on{border-bottom-width:3px;font-weight:700}
+[data-theme="contrast"] .bb-tool[aria-selected="true"]{box-shadow:inset 0 0 0 3px var(--accent-strong)}
 /* Windows high contrast: let the system colours win, keep outlines, never rely on a fill */
 @media (forced-colors: active){
   :where(button,select,[role="switch"],a):focus-visible,.ix:focus-visible{outline:2px solid Highlight}
   :is(.bb-btn,.f-btn,.ix,.m-b,.f-in,.f-step,.bb-switch){border:1px solid ButtonText}
   .bb-switch[aria-checked="true"]{background:Highlight}
-  .bb-tab[aria-selected="true"],.ix-tab.is-on{border-bottom:3px solid Highlight}
+  .ix-tab.is-on{border-bottom:3px solid Highlight}
+  .bb-tool[aria-selected="true"]{outline:2px solid Highlight;outline-offset:-2px}
   .bb-thumb.is-open .bb-thumb-circle{outline:2px solid Highlight;outline-offset:2px}
 }
 /* Stacking: the zIndex tokens (--z-*) come from tokens.css */
@@ -648,7 +652,6 @@ body {
 .pe-sample{background:var(--canvas);border-radius:10px;padding:14px}
 
 /* ---------- v16 Open canvas, pieces, the Frame ---------- */
-.bb-tabs--5 { grid-template-columns: repeat(5, 1fr); }
 .bb-open { position: relative; overflow: hidden; background-color: var(--box); }
 .bb-open-grid { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--bead-empty) 0 1.5px, transparent 2.1px); background-size: 18px 18px; }
 .bb-open-cells { position: absolute; background-color: var(--box); background-image: radial-gradient(circle, var(--bead-empty) 0 38%, transparent 42%); background-size: 18px 18px; }
@@ -667,6 +670,11 @@ body {
 .bb-frame-handle { position: absolute; width: 9px; height: 9px; box-sizing: border-box; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--box); }
 .bb-frame-handle--touch { width: 16px; height: 16px; border-radius: 4px; }
 .bb-frame-tag { position: absolute; white-space: nowrap; }
+/* v18: the Frame's margin, three bead positions of clear space on every side */
+.bb-frame-clear { position: absolute; box-sizing: border-box; background: var(--box); border-radius: 12px; pointer-events: none; }
+.bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
+.bb-frame-margin[hidden] { display: block; opacity: 0; }
+[data-theme="contrast"] .bb-frame-margin { border-width: 2px; }
 .bb-frame-num { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--elevated); font: 400 12px/20px var(--font-mono); color: var(--ink); cursor: pointer; }
 .bb-disclosure--split { cursor: default; }
 .bb-disclosure--split .bb-disclosure-main { display: flex; align-items: center; gap: var(--space-8); background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
