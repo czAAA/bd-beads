@@ -1,10 +1,10 @@
-import { frameGrid } from './domain/pattern'
+import { createPattern, frameGrid } from './domain/pattern'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PatternSurface from './components/canvas/PatternSurface.vue'
 import App from './App.vue'
-import { loadPatterns } from './services/libraryStore'
+import { loadPatterns, savePatterns } from './services/libraryStore'
 import { en } from './i18n/en'
 
 /*
@@ -18,12 +18,8 @@ beforeEach(() => {
 })
 
 async function openPattern(columns = 6, rows = 4) {
-  const wrapper = mount(App, { attachTo: document.body })
-  await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="width-input"]').setValue(String(columns))
-  await wrapper.find('[data-testid="height-input"]').setValue(String(rows))
-  await wrapper.find('form').trigger('submit')
-  return wrapper
+  savePatterns([createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })])
+  return mount(App, { attachTo: document.body })
 }
 
 const surface = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="pattern-surface"]')

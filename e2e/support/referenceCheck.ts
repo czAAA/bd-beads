@@ -132,3 +132,11 @@ export function shownRegion(corner: { x: number; y: number }, pattern: Pattern, 
 export async function writeReference(page: Page, path: string, region: Region): Promise<void> {
   writeFileSync(path, await page.screenshot({ clip: region }))
 }
+
+/**
+ * The zooms a reference exists for. Rotation and zoom are independent in the renderer, so rotated is checked at 100%
+ * (catches a wrong rotation) and upright at both (catches a wrong zoom); rotated at 300% would only repeat those two.
+ */
+export function zoomsFor(rotated: boolean): number[] {
+  return rotated ? [100] : [100, 300]
+}

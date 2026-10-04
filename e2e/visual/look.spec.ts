@@ -4,12 +4,12 @@ import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { openApp, patternBox, setZoom } from '../support/app'
 import { fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 /**
  * The look of a Pattern in the app, held to the reference screenshots (support/referenceCheck.ts says how the
- * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300%, upright
- * and rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
+ * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300% upright and at 100%
+ * rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
  * the overlays that come with a tool in overlays.spec.ts.
  */
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
@@ -39,7 +39,7 @@ for (const scenario of scenarios) {
       await openApp(page, [pattern])
       await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
 
-      for (const zoom of ZOOMS) {
+      for (const zoom of zoomsFor(rotated)) {
         await setZoom(page, zoom)
         await page.mouse.move(5, 5)
 

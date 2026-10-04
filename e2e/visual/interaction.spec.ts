@@ -10,7 +10,7 @@ import type { EncodedPattern } from '../../src/domain/patternEncoding'
 import { PALETTE } from '../../src/domain/palette'
 import { gridBox, openApp, patternBox, setZoom, settle } from '../support/app'
 import { beadCentre, fixturePattern } from '../support/patterns'
-import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference } from '../support/referenceCheck'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 /**
  * The pointer tools on the Drawing surface, in a real browser: the hover preview looks as the references have it, and
@@ -18,7 +18,6 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
  * and no others (ticket 174 hid Mirror's own UI pending its own redesign).
  */
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
-const ZOOMS = [100, 300]
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
 /** The Pattern the app has saved, read back the way it is stored. */
@@ -55,7 +54,7 @@ test.describe('the hover preview', () => {
           await page.getByTestId(scenario.tool).click()
         }
 
-        for (const zoom of ZOOMS) {
+        for (const zoom of zoomsFor(rotated)) {
           await setZoom(page, zoom)
           const at = await pointOn(page, scenario.technique, rotated, zoom, 3, 5)
           await page.mouse.move(at.x, at.y)

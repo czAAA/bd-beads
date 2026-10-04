@@ -2,6 +2,7 @@ import { frameGrid } from './domain/pattern'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
+import { mountWithPattern } from './testUtils/seedPattern'
 import { drawnPattern, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 
@@ -55,8 +56,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('toggles each ToolSheet from the Dock, closing on a second press of the same button', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     for (const [dockId, expectFound] of [
       ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
@@ -72,8 +72,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('sets the Frame from the Dock\'s Frame sheet, with the ContextBar holding its size, Fit to drawing and Done', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-testid="dock-frame"]').trigger('click')
     expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('10')
@@ -89,8 +88,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('has the five tools in the Tool sheet, Hand among them', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
     for (const tool of ['paint', 'fill', 'select', 'erase', 'hand']) {
@@ -99,8 +97,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('picks a tool from the Tool sheet, without auto-closing it (the active tile stays outlined, ToolSheet card)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
     await wrapper.find('[data-testid="sheet-tool-erase"]').trigger('click')
@@ -113,16 +110,14 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('draws the Edit sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-edit"]').trigger('click')
 
     expect(wrapper.get('[data-testid="sheet-paste"] svg').attributes('data-icon')).toBe('paste')
   })
 
   it('picks a Palette color from the Colour sheet and paints with it', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-color"]').trigger('click')
 
     await wrapper.get('[data-testid="bottom-sheet"] [data-color-id="red"]').trigger('click')
@@ -133,8 +128,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('undoes and redoes from the phone header', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
@@ -147,8 +141,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('shows the Pattern sheet\'s Save box for the open Pattern', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
 
     const sheet = wrapper.find('[data-testid="bottom-sheet"]')
@@ -163,8 +156,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('enables the Saved Patterns icon and opens a drawer when patterns exist', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
 
     const btn = wrapper.find('[data-testid="phone-saved-patterns-button"]')
@@ -202,8 +194,7 @@ describe('App at the phone tier (ticket 79)', () => {
   })
 
   it('shows the compact import control in the Pattern sheet actions', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="dock-pattern"]').trigger('click')
 
     // The compact import file input should be present in the pattern sheet.

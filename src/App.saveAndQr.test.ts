@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import { seedPattern } from './testUtils/seedPattern'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
@@ -39,14 +40,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-async function createPatternViaForm(wrapper: ReturnType<typeof mount>) {
-  await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue('15')
-  await wrapper.find('[data-testid="height-input"]').setValue('30')
-  await wrapper.find('form').trigger('submit')
-}
-
 /** Dispatches a cancelable keydown on window and hands the event back, so a test can see whether it was default-prevented. */
 async function pressKey(init: KeyboardEventInit): Promise<KeyboardEvent> {
   const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
@@ -63,8 +56,8 @@ async function startUnfinishedStroke(wrapper: ReturnType<typeof mount>) {
 
 describe('App Save (ticket 115)', () => {
   it('writes a pending change to the device and shows "Saved"', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await startUnfinishedStroke(wrapper)
     expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
 
@@ -76,8 +69,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('also hands over the open Pattern as a Pattern file (ticket 119)', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
@@ -89,8 +82,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('still hands over the Pattern file when the device refuses the write, since it is then the only copy', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
 
     refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-testid="save-button"]').trigger('click')
@@ -101,8 +94,8 @@ describe('App Save (ticket 115)', () => {
 
   it('takes the "Saved" confirmation down by itself after a moment', async () => {
     vi.useFakeTimers()
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(true)
@@ -114,8 +107,8 @@ describe('App Save (ticket 115)', () => {
 
   it('keeps showing "Saved" for a full period after a second press, rather than being cut short by the first one\'s timer', async () => {
     vi.useFakeTimers()
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     await vi.advanceTimersByTimeAsync(1500)
@@ -126,8 +119,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('shows the "couldn\'t save" notice and no "Saved" when the device refuses the write', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await startUnfinishedStroke(wrapper)
 
     refuseStorageWrites(PATTERNS_KEY)
@@ -138,8 +131,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('does not leave a "Saved" showing when a later Save is refused', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(true)
 
@@ -150,8 +143,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it.each([{ ctrlKey: true }, { metaKey: true }])('does the same on %s+S, and suppresses the browser\'s save-page dialog', async (modifier) => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await startUnfinishedStroke(wrapper)
 
     const event = await pressKey({ key: 's', ...modifier })
@@ -162,8 +155,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('does nothing on Ctrl+S while a modal is open', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     const writes = spyOnStorageWrites(PATTERNS_KEY)
 
@@ -186,8 +179,8 @@ describe('App Save (ticket 115)', () => {
   })
 
   it('leaves a plain S alone', async () => {
-    const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
+    seedPattern(15, 30)
+    mountApp()
     const writes = spyOnStorageWrites(PATTERNS_KEY)
 
     const event = await pressKey({ key: 's' })
@@ -205,8 +198,8 @@ async function openQrPanel(wrapper: ReturnType<typeof mount>) {
 
 describe('App QR export (ticket 116)', () => {
   it('opens the QR panel for the open Pattern from the Export menu, and Close hides it', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
 
     await openQrPanel(wrapper)
@@ -220,8 +213,8 @@ describe('App QR export (ticket 116)', () => {
   })
 
   it('closes the panel on Escape without also backing out of Select', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -235,8 +228,8 @@ describe('App QR export (ticket 116)', () => {
   })
 
   it('withholds the editing shortcuts while the panel is open, like any other modal', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
     await openQrPanel(wrapper)
 
     await pressKey({ key: 'r' })
@@ -260,8 +253,8 @@ describe('App QR export (ticket 116)', () => {
   })
 
   it('is gone from the Export and import box', async () => {
+    seedPattern(15, 30)
     const wrapper = mountApp()
-    await createPatternViaForm(wrapper)
 
     expect(wrapper.find('[data-testid="pattern-transfer"] [data-testid="export-qr"]').exists()).toBe(false)
   })

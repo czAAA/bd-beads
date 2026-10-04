@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
+import { mountWithPattern } from './testUtils/seedPattern'
 import { drawnPattern, hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 import { BEAD_CATALOG } from './domain/beads'
@@ -22,14 +23,6 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
-  await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(width)
-  await wrapper.find('[data-testid="height-input"]').setValue(height)
-  await wrapper.find('form').trigger('submit')
-}
-
 /** A drag across the grid, released on the shell (a real drag can end anywhere), which is what commits it to undo history. */
 async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
   await pressBead(wrapper, indices[0]!)
@@ -42,8 +35,7 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
 describe('App at the iPad mini tier (ticket 168)', () => {
   describe('the Drawer', () => {
     it('is closed to start, opens from the header\'s Tools button, holds the left column\'s boxes, and closes again on a second press', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
 
       const drawer = wrapper.find('[data-testid="drawer"]')
       expect(wrapper.find('[data-testid="drawer-open-button"]').attributes('aria-pressed')).toBe('false')
@@ -59,8 +51,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('closes on Escape and on the scrim', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
 
       await wrapper.find('[data-testid="drawer-open-button"]').trigger('click')
       expect(wrapper.find('[data-testid="drawer-open-button"]').attributes('aria-pressed')).toBe('true')
@@ -77,8 +68,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
   describe('the BottomToolbar', () => {
     it('selects a tool the same way the Toolbox\'s own tabs do', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
 
       expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
       await wrapper.find('[data-testid="bottom-toolbar-erase"]').trigger('click')
@@ -87,8 +77,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('picks a Palette color from its own popover, without opening the Drawer, and paints with it', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
 
       await wrapper.find('[data-testid="bottom-toolbar-color"]').trigger('click')
       await wrapper.find('[data-testid="bottom-toolbar"] [data-color-id="red"]').trigger('click')
@@ -102,8 +91,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('undoes and redoes the same history the Toolbox\'s own buttons use', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
       await pressBead(wrapper, 0)
       await wrapper.find('.app-shell').trigger('mouseup')
       expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
@@ -118,8 +106,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
   describe('the header menu', () => {
     it('holds Import a file, Import QR code, Language, Theme and Name on exports', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
 
       await wrapper.find('[data-testid="header-menu"]').trigger('click')
       expect(wrapper.find('[data-testid="menu-import-file"]').exists()).toBe(true)
@@ -170,8 +157,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
   describe('the ContextBar', () => {
     it('shows Copy, Rotate, Remove line and a clear x for a Selection, wired to the same actions as the Toolbox', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '3', '30') // 2 columns, so a 2-cell drag along a row is the whole line
+      const wrapper = await mountWithPattern(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1]) // a 1x2 row selection
 
@@ -188,8 +174,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('removes the selected line through the same command Toolbox\'s Remove line link uses', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '3', '30')
+      const wrapper = await mountWithPattern(3, 30)
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1])
 
@@ -202,8 +187,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('clears the Selection on the clear x without erasing anything', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '3', '30')
+      const wrapper = await mountWithPattern(3, 30)
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1])
 

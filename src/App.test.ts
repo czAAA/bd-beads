@@ -20,6 +20,7 @@ import { loadPatterns, savePatterns } from './services/libraryStore'
 import { serializePatternForQr } from './domain/qrExport'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
+import { mountWithPattern } from './testUtils/seedPattern'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -109,9 +110,7 @@ describe('App', () => {
   })
 
   it('creates a pattern, renders its grid, and autosaves it without an explicit save action', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
 
@@ -123,9 +122,7 @@ describe('App', () => {
   })
 
   it('shows the previously created pattern unchanged after a reload', async () => {
-    const first = mount(App)
-
-    await createPatternViaForm(first, '15', '30')
+    const first = await mountWithPattern(15, 30)
     first.unmount()
 
     const afterReload = mount(App)
@@ -135,17 +132,13 @@ describe('App', () => {
   })
 
   it('shows a summary of the currently open pattern', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('10×20')
   })
 
   it('lists a newly created pattern below the canvas and lets a second one be started alongside it', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(1)
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
@@ -158,9 +151,7 @@ describe('App', () => {
   })
 
   it('switches the open pattern when a different one is selected from the list', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const firstId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
@@ -173,9 +164,7 @@ describe('App', () => {
   })
 
   it('removing the open pattern switches to another remaining one', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const firstId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
@@ -193,9 +182,7 @@ describe('App', () => {
   })
 
   it('removing the last remaining pattern falls back to the empty home screen', async () => {
-    const wrapper = mount(App)
-
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const patternId = loadPatterns()[0]!.id
 
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
@@ -259,8 +246,7 @@ describe('App', () => {
   })
 
   it('puts the Toolbox first in the left column while a Pattern is open, in place of the New Pattern form (tickets 114, 141)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
     const toolbox = wrapper.find('[data-testid="toolbox"]')
@@ -280,8 +266,7 @@ describe('App', () => {
   })
 
   it('shows the New Pattern form in the left column, and no Toolbox, with no Pattern open (ticket 114)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
 
@@ -304,8 +289,7 @@ describe('App', () => {
   })
 
   it('keeps the canvas box outside the left column, side by side in the body (ticket 141)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const column = wrapper.find('[data-testid="app-main-panel"]').element
     expect(column.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
@@ -314,8 +298,7 @@ describe('App', () => {
   })
 
   it('paints a cell with the selected palette color', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -344,8 +327,7 @@ describe('App', () => {
   })
 
   it('fills a contiguous same-colored region with the fill tool', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
@@ -368,8 +350,7 @@ describe('App', () => {
   })
 
   it('undoes a fill as a single action, restoring every cell it repainted', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -389,8 +370,7 @@ describe('App', () => {
   })
 
   it('redoes an undone fill as a single action, re-repainting every cell it had touched', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -409,8 +389,7 @@ describe('App', () => {
   })
 
   it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '5', '3') // 3 columns x 2 rows
+    const wrapper = await mountWithPattern(5, 3) // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // paint (0,0), the top-left bead
@@ -431,8 +410,7 @@ describe('App', () => {
   })
 
   it('comes back to upright after four turns (ticket 233)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '5', '3')
+    const wrapper = await mountWithPattern(5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -449,8 +427,7 @@ describe('App', () => {
   })
 
   it('is one undo step: Undo turns it back and Redo turns it again', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '5', '3')
+    const wrapper = await mountWithPattern(5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -477,8 +454,7 @@ describe('App', () => {
   })
 
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
 
@@ -489,8 +465,7 @@ describe('App', () => {
   })
 
   it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -503,8 +478,7 @@ describe('App', () => {
   })
 
   it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -515,8 +489,7 @@ describe('App', () => {
   })
 
   it('deselects the Custom color slot when a Palette swatch is picked afterwards, and vice versa', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -534,8 +507,7 @@ describe('App', () => {
   })
 
   it('replaces the previous Custom color when another one is chosen, and only the one that paints joins the Palette (ticket 227)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
@@ -552,8 +524,7 @@ describe('App', () => {
   })
 
   it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -565,8 +536,7 @@ describe('App', () => {
   })
 
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -583,8 +553,7 @@ describe('App', () => {
   })
 
   it('undoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -604,8 +573,7 @@ describe('App', () => {
   })
 
   it('redoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -626,8 +594,7 @@ describe('App', () => {
   })
 
   it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     // Isolate cell 5 from cell 6 with different colors, so flood-fill's own same-color spread can't
     // explain either cell's result — only a (nonexistent) drag continuation could paint cell 6 green.
@@ -650,8 +617,7 @@ describe('App', () => {
   })
 
   it('right-clicks a single cell to erase it with the Paint tool', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -665,8 +631,7 @@ describe('App', () => {
   })
 
   it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -693,8 +658,7 @@ describe('App', () => {
   })
 
   it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -717,8 +681,7 @@ describe('App', () => {
   })
 
   it('undoes a single-click flood-erase as one step', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -737,8 +700,7 @@ describe('App', () => {
   })
 
   it('suppresses the native context menu when right-clicking the canvas', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
     wrapper.find('[data-testid="pattern-surface"]').element.dispatchEvent(event)
@@ -747,8 +709,7 @@ describe('App', () => {
   })
 
   it('undoes the most recent paint action, and repeated undo steps back further', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -767,8 +728,7 @@ describe('App', () => {
   })
 
   it('disables undo when there is nothing to undo', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
       true,
@@ -784,8 +744,7 @@ describe('App', () => {
   })
 
   it('redoes the most recently undone change, and repeated redo steps forward through every undone change in order', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -806,8 +765,7 @@ describe('App', () => {
   })
 
   it('alternates undo and redo freely without losing or duplicating a step', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -827,8 +785,7 @@ describe('App', () => {
   })
 
   it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
@@ -845,8 +802,7 @@ describe('App', () => {
   })
 
   it('clears the redo history once a new edit actually changes the grid', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -862,8 +818,7 @@ describe('App', () => {
   })
 
   it('switching or creating a Pattern clears the redo history, the same as the undo stack', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const firstId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -884,8 +839,7 @@ describe('App', () => {
   })
 
   it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const undoButton = wrapper.find('[data-testid="undo-button"]')
     expect(undoButton.text()).toBe('')
@@ -894,8 +848,7 @@ describe('App', () => {
   })
 
   it('persists painted cells across a reload', async () => {
-    const first = mount(App)
-    await createPatternViaForm(first, '15', '30')
+    const first = await mountWithPattern(15, 30)
 
     await first.find('[data-color-id="red"]').trigger('click')
     await pressBead(first, 0)
@@ -984,8 +937,7 @@ describe('App', () => {
   })
 
   it('reserves red for destructive actions, leaving every other button in the default style', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const patternId = loadPatterns()[0]!.id
 
     // Remove is the Saved Patterns card's small neutral × (ticket 147); nothing outside a confirmation is red.
@@ -997,8 +949,7 @@ describe('App', () => {
   })
 
   it('floats the zoom controls in the canvas panel, fixed to its corner rather than the Pattern\'s own box (ticket 57)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-testid="app-main-panel"]').find('[data-testid="zoom-controls"]').exists()).toBe(false)
 
@@ -1012,8 +963,7 @@ describe('App', () => {
   })
 
   it('zooms the open Pattern from the floating canvas-box controls', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
 
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
@@ -1074,8 +1024,7 @@ describe('App', () => {
   })
 
   it('keeps the two primary actions apart: Replace bead and New Pattern never sit side by side (ticket 142)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const select = wrapper.find('[data-testid="replace-bead-select"]').element.closest('.app-select')!
     expect(select.nextElementSibling?.getAttribute('data-testid')).not.toBe('new-pattern-button')
@@ -1092,8 +1041,7 @@ describe('App', () => {
   })
 
   it('has New Pattern and the Imports only in the header, not in the Saved Patterns box (tickets 117, 142)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const patternList = wrapper.find('[data-testid="pattern-list"]')
     for (const testId of ['new-pattern-button', 'import-file', 'import-qr']) {
@@ -1102,8 +1050,7 @@ describe('App', () => {
   })
 
   it('keeps the two file exports in the Saved Patterns box, with no Export and import box (ticket 118)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const patternList = wrapper.find('[data-testid="pattern-list"]')
     // They sit in the footer the box shows once expanded (ticket 147).
@@ -1114,8 +1061,7 @@ describe('App', () => {
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const numbers = rulerNumbers(wrapper)
     // 10 columns above and below, 20 rows left and right (15 × 30 mm of 1.5 mm cubes): every number drawn, 1 upwards, on all four sides of the Frame.
@@ -1159,8 +1105,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   ]
 
   it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const tab = wrapper.find(`[data-testid="${testId}"]`)
@@ -1175,8 +1120,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const button = wrapper.find(`[data-testid="${testId}"]`)
@@ -1192,8 +1136,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('puts Remove line and Delete all under the tabs as links, Delete all in the danger color', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
     const removeLine = wrapper.find('[data-testid="tool-remove-line"]')
@@ -1205,8 +1148,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('gives the three always-open groups a label and makes Frame a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
     expect(wrapper.findAll('.tool-group__title').map((title) => title.text())).toEqual([
@@ -1218,8 +1160,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('shows which tool is active', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
@@ -1231,14 +1172,12 @@ describe('App Toolbox controls (ticket 75)', () => {
  * while a Pattern is open, since its first control is the switch that turns Row progress on.
  */
 describe('App Progress bar', () => {
-  async function enableRowProgress(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
-    await createPatternViaForm(wrapper, width, height)
+  async function enableRowProgress(wrapper: ReturnType<typeof mount>) {
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
   }
 
   it('is always there under the drawing area, with just its switch while Row progress is off', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const bar = wrapper.find('[data-testid="progress-bar"]')
     expect(bar.exists()).toBe(true)
@@ -1253,8 +1192,8 @@ describe('App Progress bar', () => {
   })
 
   it('is the same bar whatever the Pattern\'s shape or direction', async () => {
-    const wrapper = mount(App)
-    await enableRowProgress(wrapper, '15', '30') // 10 columns x 20 rows
+    const wrapper = await mountWithPattern(15, 30)
+    await enableRowProgress(wrapper)
     const classes = wrapper.find('[data-testid="progress-bar"]').classes()
 
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
@@ -1263,7 +1202,7 @@ describe('App Progress bar', () => {
   })
 
   it('names Row not done and Row done in words, in both languages, with their icons', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await enableRowProgress(wrapper)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -1278,7 +1217,7 @@ describe('App Progress bar', () => {
   })
 
   it('makes Row done the primary action and names the switch for screen readers', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await enableRowProgress(wrapper)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
@@ -1290,7 +1229,7 @@ describe('App Progress bar', () => {
   })
 
   it('fills the track with the finished share of the rows', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await enableRowProgress(wrapper) // 20 rows
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -1311,14 +1250,13 @@ describe('App keyboard shortcuts', () => {
 
   /** Paints (0,0) red, as a single undo step to exercise the shortcuts against. */
   async function paintFirstCell(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
   }
 
   it.each([{ ctrlKey: true }, { metaKey: true }])('undoes on %s+Z', async (modifier) => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await paintFirstCell(wrapper)
 
     await pressKey({ key: 'z', ...modifier })
@@ -1329,7 +1267,7 @@ describe('App keyboard shortcuts', () => {
   it.each([{ ctrlKey: true, shiftKey: true }, { metaKey: true, shiftKey: true }, { ctrlKey: true, key: 'y' }])(
     'redoes on %s',
     async (modifier) => {
-      const wrapper = mount(App)
+      const wrapper = await mountWithPattern(15, 30)
       await paintFirstCell(wrapper)
       await pressKey({ key: 'z', ctrlKey: true })
       expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
@@ -1352,7 +1290,7 @@ describe('App keyboard shortcuts', () => {
       document.body.appendChild(field)
 
       try {
-        const wrapper = mount(App)
+        const wrapper = await mountWithPattern(15, 30)
         await paintFirstCell(wrapper)
 
         await pressKey({ key: 'z', ctrlKey: true }, field)
@@ -1370,8 +1308,7 @@ describe('App keyboard shortcuts', () => {
   )
 
   it('Escape switches Fill back to Paint, and with Paint already active changes nothing (ticket 214)', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressKey({ key: 'Escape' })
@@ -1382,7 +1319,7 @@ describe('App keyboard shortcuts', () => {
   })
 
   it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await paintFirstCell(wrapper)
 
     await pressKey({ key: 'z', ctrlKey: true })
@@ -1404,8 +1341,8 @@ async function pressKey(init: KeyboardEventInit, target: EventTarget = window) {
  * each test's dispatched keydowns reaching only its own wrapper.
  */
 const mountedAppsForCleanup: ReturnType<typeof mount>[] = []
-function mountAppForCleanup() {
-  const wrapper = mount(App)
+async function mountAppForCleanup(widthMm: number, heightMm: number) {
+  const wrapper = await mountWithPattern(widthMm, heightMm)
   mountedAppsForCleanup.push(wrapper)
   return wrapper
 }
@@ -1421,8 +1358,7 @@ describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
     { key: '2', testId: 'tool-fill' },
     { key: '3', testId: 'tool-select' },
   ])('$key selects $testId, the same as clicking it', async ({ key, testId }) => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click') // start on a different tool
 
     await pressKey({ key })
@@ -1431,8 +1367,7 @@ describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
   })
 
   it('works even while a Selection or a paste projection is active', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountAppForCleanup(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -1447,8 +1382,7 @@ describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
       await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
       await pressKey({ key: '1' }, field)
@@ -1460,8 +1394,7 @@ describe('App Tools group hotkeys — 1/2/3 (ticket 87)', () => {
   })
 
   it('has no effect while a confirm modal is open', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
@@ -1477,26 +1410,24 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
     'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyQ', 'KeyW',
   ]
 
-  it.each(PALETTE.map((color, index) => ({ color, code: COLOR_SHORTCUT_CODES[index]! })))(
-    'Shift+$code paints with $color.id, in Palette order',
-    async ({ color, code }) => {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+  it('Shift+each key paints with the next Palette color, in Palette order', async () => {
+    const wrapper = await mountAppForCleanup(15, 30)
 
-      await pressKey({ code, shiftKey: true })
-      await pressBead(wrapper, 0)
+    for (const index of PALETTE.keys()) {
+      await pressKey({ code: COLOR_SHORTCUT_CODES[index]!, shiftKey: true })
+      await pressBead(wrapper, index)
       await wrapper.trigger('mouseup')
+    }
 
-      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe(color.hex)
-    },
-  )
+    const grid = frameGrid(loadPatterns()[0]!)
+    expect(PALETTE.map((_color, index) => grid[Math.floor(index / 10)]![index % 10]!.color)).toEqual(PALETTE.map((color) => color.hex))
+  })
 
   it('has no effect while typing in a form field', async () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
 
       await pressKey({ code: 'Digit2', shiftKey: true }, field)
       await pressBead(wrapper, 0)
@@ -1518,7 +1449,6 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
   /** A 2x2 Pattern (from a 3mm x 3mm cube-bead Pattern), fully painted red. */
   async function paintedSmallPattern(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '3', '3')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     for (let index = 0; index < 4; index++) {
       await click(wrapper, index)
@@ -1526,7 +1456,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
   }
 
   it('erases just the clicked bead, not its connected same-color region, as one undo step', async () => {
-    const wrapper = mountAppForCleanup()
+    const wrapper = await mountAppForCleanup(3, 3)
     await paintedSmallPattern(wrapper)
     await wrapper.find('[data-testid="tool-erase"]').trigger('click')
 
@@ -1543,8 +1473,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
   })
 
   it('erases every cell dragged over, as one undo step, on the primary press -- no right-click needed', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -1571,8 +1500,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
 
   it('respects the Row progress lock: a finished row is left alone', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    const wrapper = await mountAppForCleanup(6, 6) // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     for (let index = 0; index < 8; index++) {
       await click(wrapper, index) // paint the first two rows
@@ -1587,7 +1515,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
   })
 
   it('leaves right-click erase under Paint and Fill unaffected by the new default behavior', async () => {
-    const wrapper = mountAppForCleanup()
+    const wrapper = await mountAppForCleanup(3, 3)
     await paintedSmallPattern(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
@@ -1599,8 +1527,7 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
 describe('App picking a color switches to Paint (ticket 171)', () => {
   it.each(['tool-fill', 'tool-select', 'tool-erase'])('switches from %s to Paint on picking a Palette color', async (testId) => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -1610,8 +1537,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
   })
 
   it('switches to Paint on picking a Custom color', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await wrapper.find('[data-testid="custom-color-input"]').setValue('#123456')
@@ -1620,8 +1546,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
   })
 
   it('switches to Paint on picking a Palette color by its Shift+key shortcut (ticket 88)', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     await pressKey({ code: 'Digit1', shiftKey: true })
@@ -1630,8 +1555,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
   })
 
   it('leaves Paint active and does not clear a Select marquee when Paint is already the active tool', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     await wrapper.find('[data-color-id="blue"]').trigger('click')
 
@@ -1639,8 +1563,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
   })
 
   it('leaves a Fill in progress unaffected: picking a color only changes the next stroke\'s tool', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await pressBead(wrapper, 1)
@@ -1673,8 +1596,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
   }
 
   it('clears just the selected cells, keeping the Selection and staying on Select, as one undo step', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    const wrapper = await mountAppForCleanup(6, 6) // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     for (let index = 0; index < 16; index++) {
       await click(wrapper, index)
@@ -1698,8 +1620,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
   })
 
   it('activates Erase when Select is active with no Selection', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     await pressKey({ key: 'Delete' })
@@ -1708,8 +1629,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
   })
 
   it('activates Erase when any other tool is active', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressKey({ key: 'Delete' })
@@ -1721,8 +1641,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
 
       await pressKey({ key: 'Delete' }, field)
 
@@ -1735,8 +1654,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
 
 describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for the Rulers (v16)', () => {
   it('shows and hides the rulers on R, as the strip\'s Rulers button does, and remembers the choice on the device', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     const toggle = () => wrapper.find('[data-testid="rulers-toggle"]')
     expect(toggle().attributes('aria-pressed')).toBe('true')
 
@@ -1751,8 +1669,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
   })
 
   it('copies the active Selection on Ctrl/Cmd+C, the same as clicking Copy', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountAppForCleanup(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -1765,8 +1682,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
   })
 
   it('is a no-op copying with no Selection (Copy disabled)', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     await pressKey({ key: 'c', ctrlKey: true })
 
@@ -1778,8 +1694,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      await mountAppForCleanup(15, 30)
 
       await pressKey({ key: 'r' }, field)
 
@@ -1792,8 +1707,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
 
 describe('App Mirror group hotkeys removed (ticket 174, pending its own redesign)', () => {
   it('-, =, [, ], M, H and V no longer do anything: no UI is left for them to reach', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    const wrapper = await mountAppForCleanup(6, 6) // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -1809,8 +1723,7 @@ describe('App Mirror group hotkeys removed (ticket 174, pending its own redesign
 
 describe('App Row progress group hotkeys (ticket 94)', () => {
   it('P toggles Row progress on/off', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     await pressKey({ key: 'p' })
 
@@ -1818,8 +1731,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('D toggles Row direction', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     await pressKey({ key: 'd' })
     expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
@@ -1830,8 +1742,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('Enter/Shift+Enter move to the next/previous row', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await pressKey({ key: 'Enter' })
@@ -1843,8 +1754,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('respects the disabled bounds at the first/last row', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '3', '3') // 2x2
+    const wrapper = await mountAppForCleanup(3, 3) // 2x2
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await pressKey({ key: 'Enter', shiftKey: true }) // already at the first row
@@ -1853,8 +1763,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('is a no-op while Row progress is off', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    await mountAppForCleanup(15, 30)
 
     await pressKey({ key: 'Enter' })
 
@@ -1862,8 +1771,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('suppresses Enter/Shift+Enter when a Toolbox button has focus, so Tab+Enter does not also move the row', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     const button = wrapper.find('[data-testid="undo-button"]').element as HTMLButtonElement
@@ -1874,8 +1782,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('suppresses Enter/Shift+Enter when a Progress bar button itself has focus (ticket 124 moved it off the Toolbox), so a plain click there does not also double-move the row', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     const button = wrapper.find('[data-testid="progress-bar-next"]').element as HTMLButtonElement
@@ -1886,8 +1793,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('Space/Shift+Space also move to the next/previous row (ticket 178)', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await pressKey({ key: ' ' })
@@ -1899,8 +1805,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('is a no-op for Space/Shift+Space too while Row progress is off', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    await mountAppForCleanup(15, 30)
 
     await pressKey({ key: ' ' })
     await pressKey({ key: ' ', shiftKey: true })
@@ -1909,8 +1814,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
   })
 
   it('suppresses Space/Shift+Space when a Toolbox or Progress bar button has focus, so it activates the button rather than double-moving the row', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     const toolboxButton = wrapper.find('[data-testid="undo-button"]').element as HTMLButtonElement
@@ -1930,8 +1834,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
     document.body.appendChild(field)
 
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       await pressKey({ key: ' ' }, field)
@@ -1950,8 +1853,7 @@ describe('App Space+drag pan (ticket 95)', () => {
   }
 
   it('does not paint even if the pointer moves over cells while Space is held', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     spaceDown()
@@ -1963,8 +1865,7 @@ describe('App Space+drag pan (ticket 95)', () => {
   })
 
   it('shows a grab cursor while Space is held', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     spaceDown()
     await flushPromises()
@@ -1976,8 +1877,7 @@ describe('App Space+drag pan (ticket 95)', () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
 
       field.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }))
       await flushPromises()
@@ -1991,8 +1891,7 @@ describe('App Space+drag pan (ticket 95)', () => {
 
 describe('App shortcuts help overlay (ticket 96)', () => {
   it('opens on ?', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
 
     await pressKey({ key: '?' })
 
@@ -2000,8 +1899,7 @@ describe('App shortcuts help overlay (ticket 96)', () => {
   })
 
   it('closes on Escape without also backing out of Select', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountAppForCleanup(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -2018,8 +1916,7 @@ describe('App shortcuts help overlay (ticket 96)', () => {
     const field = document.createElement('input')
     document.body.appendChild(field)
     try {
-      const wrapper = mountAppForCleanup()
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountAppForCleanup(15, 30)
 
       await pressKey({ key: '?' }, field)
 
@@ -2030,8 +1927,7 @@ describe('App shortcuts help overlay (ticket 96)', () => {
   })
 
   it('has no effect while a confirm modal is open', async () => {
-    const wrapper = mountAppForCleanup()
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
     await pressKey({ key: '?' })
@@ -2042,8 +1938,7 @@ describe('App shortcuts help overlay (ticket 96)', () => {
 
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await hoverBead(wrapper, 5)
@@ -2061,8 +1956,7 @@ describe('App hover preview', () => {
 
 describe('App row progress', () => {
   it('shows the overlay only once it is toggled on, without leaving the editor', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(rowProgressView(wrapper).markerShown).toBe(false)
 
@@ -2073,8 +1967,7 @@ describe('App row progress', () => {
   })
 
   it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2086,8 +1979,7 @@ describe('App row progress', () => {
   })
 
   it('moves the pointer back to an earlier row', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2099,8 +1991,7 @@ describe('App row progress', () => {
   })
 
   it('will not step past either end of the Pattern', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '3', '3') // 2x2
+    const wrapper = await mountWithPattern(3, 3) // 2x2
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(
@@ -2115,8 +2006,7 @@ describe('App row progress', () => {
   })
 
   it('remembers where the weaving got to across a reload', async () => {
-    const first = mount(App)
-    await createPatternViaForm(first, '15', '30')
+    const first = await mountWithPattern(15, 30)
     await first.find('[data-testid="progress-bar-switch"]').trigger('click')
     await first.find('[data-testid="progress-bar-next"]').trigger('click')
     first.unmount()
@@ -2139,8 +2029,7 @@ describe('App row progress', () => {
     }
 
     it('turns rows to run down the columns: the readout counts columns and the steps move through them', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+      const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
@@ -2157,8 +2046,7 @@ describe('App row progress', () => {
     })
 
     it('will not step past the last column', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '5', '3') // 3 columns x 2 rows
+      const wrapper = await mountWithPattern(5, 3) // 3 columns x 2 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
@@ -2172,8 +2060,7 @@ describe('App row progress', () => {
     })
 
     it('returns to the row the weaver was on after flipping the direction and back', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+      const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2187,8 +2074,7 @@ describe('App row progress', () => {
     })
 
     it('remembers the direction and where the weaving got to across a reload', async () => {
-      const first = mount(App)
-      await createPatternViaForm(first, '15', '30')
+      const first = await mountWithPattern(15, 30)
       await first.find('[data-testid="progress-bar-switch"]').trigger('click')
       await first.find('[data-testid="progress-bar-direction"]').trigger('click')
       await first.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2201,8 +2087,7 @@ describe('App row progress', () => {
     })
 
     it('is its own toggle: it changes neither the beads nor the rotation, and flipping is not an undo step', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
       const gridBefore = frameGrid(loadPatterns()[0]!)
 
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -2215,8 +2100,7 @@ describe('App row progress', () => {
     })
 
     it('leaves redo untouched: Row direction and moving the Row progress pointer are not grid edits', async () => {
-      const wrapper = mount(App)
-      await createPatternViaForm(wrapper, '15', '30')
+      const wrapper = await mountWithPattern(15, 30)
       await wrapper.find('[data-color-id="red"]').trigger('click')
       await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
@@ -2237,7 +2121,6 @@ describe('App row progress', () => {
 describe('App finished rows', () => {
   /** Opens a 10-column x 20-row Pattern with Row progress on and rows 1-2 marked done, red selected; returns its cells. */
   async function withTwoRowsWoven(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2257,7 +2140,7 @@ describe('App finished rows', () => {
   }
 
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await pressBead(wrapper, 14) // (1,4)
@@ -2268,7 +2151,7 @@ describe('App finished rows', () => {
   })
 
   it('an edit that lands only on a finished row changes nothing, so it leaves redo alone', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
     await pressBead(wrapper, 24) // (2,4), the current row — a real edit
     await wrapper.trigger('mouseup')
@@ -2285,7 +2168,7 @@ describe('App finished rows', () => {
   })
 
   it('paints only the unfinished part of a drag that crosses into the current row', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await pressBead(wrapper, 14) // (1,4)
@@ -2299,8 +2182,7 @@ describe('App finished rows', () => {
   })
 
   it('will not right-click erase a bead in a finished row', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4), painted before it was woven
     await wrapper.trigger('mouseup')
@@ -2314,7 +2196,7 @@ describe('App finished rows', () => {
   })
 
   it('fills only the unfinished part of an area that reaches into finished rows', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
@@ -2327,7 +2209,7 @@ describe('App finished rows', () => {
   })
 
   it('stamps a pasted block only onto the unfinished beads it covers', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
     await pressBead(wrapper, 50) // (5,0)
     await hoverBead(wrapper, 60, { buttons: 1 }) // (6,0)
@@ -2346,7 +2228,7 @@ describe('App finished rows', () => {
   })
 
   it('locks the finished columns instead once rows run down them', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -2361,7 +2243,7 @@ describe('App finished rows', () => {
   })
 
   it('lets every bead be drawn on again once the overlay is off', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
@@ -2372,7 +2254,7 @@ describe('App finished rows', () => {
   })
 
   it('previews no paint on a finished bead', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await hoverBead(wrapper, 14) // (1,4)
@@ -2380,8 +2262,7 @@ describe('App finished rows', () => {
   })
 
   it('still undoes in full, even a change to a row marked done since', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
@@ -2394,8 +2275,7 @@ describe('App finished rows', () => {
   })
 
   it('redoes in full too, even onto a row marked done since', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
@@ -2421,8 +2301,7 @@ describe('App delete all', () => {
   }
 
   it('opens a confirmation modal instead of clearing immediately', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
 
@@ -2433,8 +2312,7 @@ describe('App delete all', () => {
   })
 
   it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
@@ -2446,8 +2324,7 @@ describe('App delete all', () => {
   })
 
   it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    const wrapper = await mountWithPattern(6, 6) // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0) // paint (0,0) red
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
@@ -2468,8 +2345,7 @@ describe('App delete all', () => {
   })
 
   it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10 columns x 20 rows
+    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
     await click(wrapper, 25)
@@ -2492,8 +2368,7 @@ describe('App delete all', () => {
   })
 
   it('keeps name, size, Technique, Bead and rotation unchanged', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
     const before = loadedPattern()
@@ -2511,8 +2386,7 @@ describe('App delete all', () => {
   })
 
   it('ignores the Row progress lock, clearing beads in finished rows along with the rest', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4), painted before it's locked
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -2526,8 +2400,7 @@ describe('App delete all', () => {
 
 
   it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -2557,8 +2430,7 @@ describe('App delete all', () => {
   })
 
   it('translates the modal title, message and button labels with the interface language', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
@@ -2578,15 +2450,13 @@ describe('App delete all', () => {
 
 describe('App header bead', () => {
   it("shows the open Pattern's Bead label in the header", async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
   it('updates the Bead shown when switching to another Pattern', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const firstId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
@@ -2605,8 +2475,7 @@ describe('App header bead', () => {
   })
 
   it('shows no Bead in the header with no Pattern open', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const patternId = loadPatterns()[0]!.id
 
     await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
@@ -2631,8 +2500,7 @@ describe('App header bead', () => {
   })
 
   it('leaves the Saved Patterns list unchanged: no Bead shown there', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const patternId = loadPatterns()[0]!.id
 
     await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
@@ -2651,8 +2519,7 @@ describe('App replace bead', () => {
   }
 
   it('offers the other built-in catalog Beads, not the current one', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // Cube
+    const wrapper = await mountWithPattern(15, 30) // Cube
 
     const labels = wrapper.find('[data-testid="replace-bead-select"]').findAll('option').map((option) => option.text())
     expect(labels).not.toContain('TOHO Cube 1.5mm')
@@ -2661,8 +2528,7 @@ describe('App replace bead', () => {
   })
 
   it('opens a confirmation modal showing the new Estimated size next to the current one instead of replacing immediately', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube: about 1.5 x 3.0 cm
+    const wrapper = await mountWithPattern(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
@@ -2689,8 +2555,7 @@ describe('App replace bead', () => {
   })
 
   it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
@@ -2700,8 +2565,7 @@ describe('App replace bead', () => {
   })
 
   it('goes back to its placeholder after Cancel, rather than keeping the declined Bead selected (ticket 113)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
@@ -2711,8 +2575,7 @@ describe('App replace bead', () => {
   })
 
   it('opens the modal again when the same Bead is picked a second time after Cancel (ticket 113)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
@@ -2723,8 +2586,7 @@ describe('App replace bead', () => {
   })
 
   it('goes back to its placeholder after Confirm, with the current Bead label showing the new Bead (ticket 113)', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
@@ -2735,8 +2597,7 @@ describe('App replace bead', () => {
   })
 
   it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6') // 4x4 at Cube
+    const wrapper = await mountWithPattern(6, 6) // 4x4 at Cube
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
@@ -2760,8 +2621,7 @@ describe('App replace bead', () => {
   })
 
   it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30') // 10x20 at Cube
+    const wrapper = await mountWithPattern(15, 30) // 10x20 at Cube
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -2774,8 +2634,7 @@ describe('App replace bead', () => {
   })
 
   it('leaves every painted cell where it was, with no rescale', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // (0,0)
     await pressBead(wrapper, 199) // (19,9)
@@ -2791,8 +2650,7 @@ describe('App replace bead', () => {
   })
 
   it('keeps Row progress as it was, since the grid it describes is unchanged', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
@@ -2843,8 +2701,7 @@ describe('App replace bead', () => {
   })
 
   it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
@@ -2881,8 +2738,7 @@ describe('App replace bead', () => {
   })
 
   it('translates the modal title, message and button labels with the interface language', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
@@ -2901,7 +2757,6 @@ describe('App replace bead', () => {
 
 describe('App bead quantities', () => {
   async function patternWithPaintedCells(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '15', '30')
     await wrapper.find('[data-color-id="red"]').trigger('click')
     // Each press is a click, so each is released: the bead counts follow a stroke a few times a second (ticket 106) and
     // settle when it ends, which is what a release does.
@@ -2915,7 +2770,7 @@ describe('App bead quantities', () => {
   }
 
   it('totals the beads each color needs from the painted cells, with no bead picker in sight', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await patternWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('2')
@@ -2924,15 +2779,14 @@ describe('App bead quantities', () => {
   })
 
   it('shows no row for a color painted nowhere in the Pattern', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(15, 30)
     await patternWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-green"]').exists()).toBe(false)
   })
 
   it("adds a color's row as soon as it is painted, and removes it once its last cell is erased", async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -2951,8 +2805,7 @@ describe('App bead quantities', () => {
   })
 
   it('shows a "nothing painted yet" message for a Pattern with nothing painted on it', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     expect(wrapper.find('[data-testid="quantities-empty"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
@@ -2962,8 +2815,7 @@ describe('App bead quantities', () => {
 describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
     localStorage.setItem('bd-beads:locale', 'en')
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -2984,8 +2836,7 @@ describe('App estimated weight (ticket 155)', () => {
 
   it('labels the weight in grams or in Russian «г» by the app language, with its own decimal sign (writing.md)', async () => {
     localStorage.setItem('bd-beads:locale', 'ru')
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
@@ -3038,8 +2889,7 @@ describe('App pattern transfer', () => {
   })
 
   it('imports a Pattern that clashes with a local one as a separate entry, keeping both', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     const local = loadPatterns()[0]!
 
     await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }]))
@@ -3107,7 +2957,6 @@ describe('App select, copy and paste', () => {
 
   /** A 4x4 Pattern with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
   async function patternWithMotif(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '6', '6') // 4x4 grid
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0) // (0,0)
     await wrapper.find('[data-color-id="blue"]').trigger('click')
@@ -3116,8 +2965,7 @@ describe('App select, copy and paste', () => {
   }
 
   it('offers Select alongside Paint and Fill, chosen the same way', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
@@ -3126,8 +2974,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('marks out a rectangle as the cursor is dragged, and keeps it after the drag ends', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
+    const wrapper = await mountWithPattern(6, 6) // 4x4
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
@@ -3136,8 +2983,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('leaves the grid alone while selecting: dragging under Select paints nothing', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
@@ -3148,8 +2994,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('replaces the previous selection when a new drag starts, leaving only one active', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     await drag(wrapper, [0, 1, 4, 5]) // a 2x2 rectangle
@@ -3161,8 +3006,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('enables Copy only once something is selected', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
@@ -3173,7 +3017,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('previews the copied block in its own colors, following the cursor', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5]) // select the 2x2 holding both painted cells
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3185,7 +3029,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('stamps the copied block where it is clicked, as a single undo step', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3203,7 +3047,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('redoes a stamped paste as a single action', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3218,7 +3062,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('leaves redo untouched: Select, Copy, and cancelling a Paste are not grid edits', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3236,7 +3080,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('can stamp the same block again at another position without copying again', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3250,7 +3094,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('clips a stamp that runs off the edge instead of refusing it', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3261,7 +3105,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('leaves the destination untouched under the block’s empty cells', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3277,7 +3121,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('drops the clipboard when a new selection is drawn, so the next click selects rather than stamps', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -3301,41 +3145,43 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
   }
 
-  it('drops the copied block on a right-click, so the next click selects instead of stamping', async () => {
-    const wrapper = mount(App)
+  it('drops the copied block on a right-click without reviving the selection, so the next click selects instead of stamping (ticket 49)', async () => {
+    const wrapper = await mountWithPattern(6, 6)
     await copiedMotif(wrapper)
+    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
 
     await pressBead(wrapper, 10, { button: 2 })
+
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
     await click(wrapper, 10) // (2,2) — would have stamped the motif
 
     expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedCount(wrapper)).toBe(1)
   })
 
-  it('drops the copied block on Escape, so the next click selects instead of stamping', async () => {
-    const wrapper = mount(App)
+  it('drops the copied block on Escape: no preview, no revived selection, and the next click selects instead of stamping (ticket 49)', async () => {
+    const wrapper = await mountWithPattern(6, 6)
     await copiedMotif(wrapper)
-
-    await pressEscape(wrapper)
-    await click(wrapper, 10)
-
-    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
-    expect(selectedCount(wrapper)).toBe(1)
-  })
-
-  it('stops previewing the block once the copy is dropped', async () => {
-    const wrapper = mount(App)
-    await copiedMotif(wrapper)
+    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
     await hoverBead(wrapper, 10)
     expect(previewedBeads(wrapper)).toHaveLength(2)
 
     await pressEscape(wrapper)
 
     expect(previewedBeads(wrapper)).toHaveLength(0)
+    expect(selectedCount(wrapper)).toBe(0)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+
+    await click(wrapper, 10)
+
+    expect(frameGrid(loadPatterns()[0]!)[2]![2]!.color).toBeNull()
+    expect(selectedCount(wrapper)).toBe(1)
   })
 
   it('hides the Selection marquee immediately once Copy is clicked (ticket 49)', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
     expect(selectedCount(wrapper)).toBe(4)
@@ -3347,7 +3193,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('still pastes normally after Copy hides the marquee, but needs a fresh drag to copy the same block again', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await copiedMotif(wrapper)
 
     // The clipboard stays armed even though nothing is highlighted, so the next click still pastes.
@@ -3366,7 +3212,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('clears a selection nothing has been copied from on Escape', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
 
@@ -3377,7 +3223,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('clears a selection nothing has been copied from on a right-click, without erasing anything', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
 
@@ -3387,30 +3233,8 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('cancels the pending Paste on Escape without reviving the selection (ticket 49)', async () => {
-    const wrapper = mount(App)
-    await copiedMotif(wrapper)
-    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
-
-    await pressEscape(wrapper)
-
-    expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
-  })
-
-  it('cancels the pending Paste on a right-click without reviving the selection (ticket 49)', async () => {
-    const wrapper = mount(App)
-    await copiedMotif(wrapper)
-    expect(selectedCount(wrapper)).toBe(0) // Copy already hid the marquee
-
-    await pressBead(wrapper, 10, { button: 2 })
-
-    expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
-  })
-
   it('still never erases under Select: a right-click cancels the paste rather than clearing a cell', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await copiedMotif(wrapper)
 
     await pressBead(wrapper, 0, { button: 2 }) // a painted cell
@@ -3419,8 +3243,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('leaves the other tools alone: Escape is not a general-purpose cancel', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
 
@@ -3431,8 +3254,7 @@ describe('App select, copy and paste', () => {
   })
 
   it.each(['tool-paint', 'tool-fill'])('forgets the selected area when the tool changes to %s', async (tool) => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await drag(wrapper, [0, 1, 4, 5])
     expect(selectedCount(wrapper)).toBe(4)
@@ -3443,7 +3265,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('forgets the copied block too, so returning to Select does not stamp out of nowhere', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await copiedMotif(wrapper)
 
     await wrapper.find('[data-testid="tool-paint"]').trigger('click')
@@ -3456,8 +3278,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('keeps the selection when Select is re-chosen while already active', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '6', '6')
+    const wrapper = await mountWithPattern(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await drag(wrapper, [0, 1, 4, 5])
 
@@ -3467,7 +3288,7 @@ describe('App select, copy and paste', () => {
   })
 
   it('resets the Selection, but keeps the clipboard armed, when a different Pattern is opened (ticket 92)', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithMotif(wrapper)
     const firstId = loadPatterns()[0]!.id
     await drag(wrapper, [0, 1, 5])
@@ -3503,7 +3324,6 @@ describe('App clipboard lifecycle (ticket 92)', () => {
 
   /** A 4x4 Pattern with a red cell at (0,0), Select active and that cell copied. */
   async function patternWithCopiedCell(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0) // (0,0)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
@@ -3520,7 +3340,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   }
 
   it('pastes at the cell under the pointer on Ctrl/Cmd+V, matching a click-to-paste stamp', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
     await hoverCell(wrapper, 10) // (2,2)
 
@@ -3531,7 +3351,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it('is a no-op when the pointer is not over the grid', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
     await hoverCell(wrapper, 10)
     await leaveSurface(wrapper)
@@ -3543,7 +3363,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it.each(['tool-paint', 'tool-fill'])('pastes via Ctrl/Cmd+V while %s is the active tool', async (tool) => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
     await wrapper.find(`[data-testid="${tool}"]`).trigger('click')
     await hoverCell(wrapper, 10)
@@ -3555,7 +3375,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it('keeps the clipboard armed after switching tools away from Select and back, for keyboard paste (ticket 92)', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
@@ -3569,7 +3389,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it('hides the live preview after switching away from Select, even though Ctrl/Cmd+V can still paste', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
@@ -3580,7 +3400,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it('does not revive the click-to-stamp gesture after switching back to Select: a click marks out a Selection instead', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
@@ -3592,7 +3412,7 @@ describe('App clipboard lifecycle (ticket 92)', () => {
   })
 
   it('can still paste via Ctrl/Cmd+V after Escape dismisses the projection', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await patternWithCopiedCell(wrapper)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
@@ -3612,7 +3432,6 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
   }
 
   async function createPatternWithSelection(wrapper: ReturnType<typeof mount>) {
-    await createPatternViaForm(wrapper, '6', '6') // 4x4
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -3634,7 +3453,7 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
   }
 
   it('lets an expanded Tool group swallow the first Escape, leaving the Selection untouched', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await createPatternWithSelection(wrapper)
     expect(selectedCount(wrapper)).toBe(4)
 
@@ -3646,7 +3465,7 @@ describe('App Tool group Escape precedence (ticket 41)', () => {
   })
 
   it('reaches Select as usual on the Escape after that, once no group reports being expanded', async () => {
-    const wrapper = mount(App)
+    const wrapper = await mountWithPattern(6, 6)
     await createPatternWithSelection(wrapper)
 
     stubOneExpandedGroup(wrapper)
@@ -3672,8 +3491,7 @@ describe('App storage writes', () => {
   })
 
   it('writes a dragged paint stroke once, when the stroke ends, rather than once per cell', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     const writes = spyOnStorageWrites(PATTERNS_KEY)
@@ -3695,8 +3513,7 @@ describe('App storage writes', () => {
   })
 
   it('writes a dragged erase stroke once too', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -3715,8 +3532,7 @@ describe('App storage writes', () => {
   })
 
   it('writes a stroke whose mouseup never arrived when the page goes away', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
@@ -3730,8 +3546,7 @@ describe('App storage writes', () => {
   })
 
   it('writes a stroke whose mouseup never arrived when the editor is torn down', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
 
@@ -3741,8 +3556,7 @@ describe('App storage writes', () => {
   })
 
   it('ends a touch/pen stroke the OS cancels mid-drag (ticket 60), instead of leaving it stuck in progress', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0, { pointerType: 'touch' })
@@ -3759,8 +3573,7 @@ describe('App storage writes', () => {
   })
 
   it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
@@ -3772,8 +3585,7 @@ describe('App storage writes', () => {
   })
 
   it('says so, in the current language, when a write to storage is refused', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
 
     refuseStorageWrites(PATTERNS_KEY)
@@ -3789,8 +3601,7 @@ describe('App storage writes', () => {
   })
 
   it('keeps the refused edit on screen, and takes the message down once a save gets through', async () => {
-    const wrapper = mount(App)
-    await createPatternViaForm(wrapper, '15', '30')
+    const wrapper = await mountWithPattern(15, 30)
 
     const refusing = refuseStorageWrites(PATTERNS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
