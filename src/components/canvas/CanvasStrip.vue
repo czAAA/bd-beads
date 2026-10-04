@@ -7,6 +7,7 @@ import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
+import CanvasColorPicker from './CanvasColorPicker.vue'
 import ZoomControls from './ZoomControls.vue'
 
 /**
@@ -29,6 +30,8 @@ const props = defineProps<{
   settingFrame?: boolean
   /** Whether ruler numbers show (the Rulers toggle); undefined hides the button. */
   rulers?: boolean
+  /** Whether the Canvas color button shows (ticket 252): with a Pattern open on the drawing area. Hidden in high contrast either way. */
+  canvasColor?: boolean
 }>()
 const emit = defineEmits<{
   'zoom-in': []
@@ -93,6 +96,7 @@ const outsideMeta = computed(() => {
       data-testid="rulers-toggle"
       @click="emit('toggle-rulers')"
     />
+    <CanvasColorPicker v-if="canvasColor" class="canvas-strip__color" />
     <ZoomControls
       v-if="zoomPercent !== undefined"
       class="canvas-strip__zoom"
@@ -153,6 +157,16 @@ const outsideMeta = computed(() => {
   margin-left: auto;
 }
 
+.canvas-strip__color {
+  margin-left: auto;
+}
+
+.canvas-strip__rulers + .canvas-strip__color,
+.canvas-strip__hint + .canvas-strip__color {
+  margin-left: 0;
+}
+
+.canvas-strip__color + .canvas-strip__zoom,
 .canvas-strip__rulers + .canvas-strip__zoom {
   margin-left: 0;
 }

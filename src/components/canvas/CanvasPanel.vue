@@ -11,6 +11,7 @@ import ProgressBar from '../ui/ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolvePatternBead } from '../../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
@@ -116,6 +117,15 @@ const frameTooltip = computed(() => {
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
 const framingControlsEl = ref<HTMLElement>()
 
+/** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background needs one. */
+const canvasBackground = useCanvasBackground()
+const drawingStyle = computed(() => {
+  const color = canvasBackground.background.value?.color
+  if (!color) return undefined
+  const word = canvasBackground.wordColor.value
+  return { '--canvas-bg': color, ...(word ? { '--word': word } : {}) }
+})
+
 /** The Technique's name, the background word behind the board (ticket 143). */
 function techniqueWord(technique: Technique): string {
   const form = t.value.form
@@ -149,6 +159,7 @@ function techniqueWord(technique: Technique): string {
         :title="framing ? t.convertImage.heading : undefined"
         :rulers="activePattern && !framing ? showRulers : undefined"
         :setting-frame="settingFrame"
+        :canvas-color="activePattern && !framing"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
         @zoom-out="framing ? convertZoomOut() : zoomOut()"
         @reset="framing ? convertResetZoom() : resetZoom()"
@@ -156,7 +167,7 @@ function techniqueWord(technique: Technique): string {
       />
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Pattern). -->
-      <div :ref="bindCanvasArea" class="app-shell__drawing" data-testid="app-drawing-area">
+      <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
         <CanvasBackdrop v-if="activePattern && !framing" :word="techniqueWord(activePattern.technique)" />
 
         <!-- How to move the canvas and its shortcuts: always, from the iPad mini up (CanvasHint card). -->
@@ -367,6 +378,7 @@ function techniqueWord(technique: Technique): string {
  */
 .app-shell__drawing {
   position: relative;
+  background: var(--canvas-bg, transparent);
   display: flex;
   flex: 1 1 0;
   flex-direction: column;

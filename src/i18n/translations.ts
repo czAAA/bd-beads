@@ -128,6 +128,13 @@ export interface Translations {
     piecesOutside: PluralForms
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
+    /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */
+    canvasColor: {
+      label: string
+      pickerLabel: string
+      swatchLabel: string
+      names: Record<'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash', string>
+    }
     /** The hint in the drawing area's bottom-left corner (CanvasHint card), in pieces around its key chips. */
     hint: {
       scrollOr: string

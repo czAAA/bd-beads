@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { changedPositions, type Pattern } from '../../domain/pattern'
 import type { Selection } from '../../domain/selection'
-import { PATTERN_THEMES, type PatternTheme } from '../../rendering/beadLook'
+import type { PatternTheme } from '../../rendering/beadLook'
 import type { Scroll } from '../../rendering/canvasView'
 import { renderCanvas } from '../../rendering/canvasRenderer'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
 import { beadAtOpen, cellAtOpen } from '../../rendering/hitTest'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { labelAt, visibleRulerLabels } from '../../rendering/rulers'
-import { useResolvedTheme } from '../../theme/useResolvedTheme'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
  * The open canvas drawn by the canvas renderer (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
@@ -106,9 +106,8 @@ function onBlur() {
   emit('keyboard-focus', false)
 }
 
-/** The colors the beads are drawn in follow the app's theme; a change redraws both layers. */
-const resolvedTheme = useResolvedTheme()
-const theme = computed(() => PATTERN_THEMES[resolvedTheme.value])
+/** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both layers. */
+const theme = useCanvasBackground().patternTheme
 
 /** Whether the last pointer was a finger: its Frame handles are the four larger corner ones. */
 const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)

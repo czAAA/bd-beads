@@ -104,6 +104,12 @@ export const ru: Translations = {
     settingFrame: 'задаётся рамка',
     piecesOutside: { one: '{count} фрагмент вне рамки', few: '{count} фрагмента вне рамки', many: '{count} фрагментов вне рамки', other: '{count} фрагмента вне рамки' },
     rulersLabel: 'Линейки',
+    canvasColor: {
+      label: 'Цвет холста',
+      pickerLabel: 'цвет холста',
+      swatchLabel: '{name}, {n} из {count}',
+      names: { studio: 'Студия', linen: 'Лён', sage: 'Шалфей', mist: 'Дымка', blush: 'Румянец', night: 'Ночь', ink: 'Тушь', midnight: 'Полночь', olive: 'Олива', umber: 'Умбра', ash: 'Пепел' },
+    },
     hint: {
       scrollOr: 'прокрутка или',
       spaceKey: 'пробел',

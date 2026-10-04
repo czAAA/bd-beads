@@ -145,6 +145,8 @@ Ticket 140 adds a test that keeps each theme's `PatternTheme` equal to `tokens.j
 the canvas behind.
 The board, bead shape, finished rows and current row are drawn as the `BeadBoard` card describes.
 
+On screen the drawing area's `canvas` (and `background`) is the person's Canvas color (`src/rendering/canvasBackgrounds.ts`, ticket 252), not always `box`. The repo's design system copy has no `canvas-bg-1` to `canvas-bg-6` tokens yet, so the eleven colors are written out there from the CanvasBackground card, with two app-specific deviations: dark Night is today's `box` (#202020, the card says #1a1a1a) so the default doesn't shift, and its ruler numbers are #8c8c8c to reach 4.8:1. Drop both once the design system is re-synced with the tokens.
+
 ### 4.3 Exports are always light
 
 PNG and PDF exports use the light `PatternTheme` with `print-board`, whichever theme the user works in, so a printed

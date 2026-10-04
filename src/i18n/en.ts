@@ -102,6 +102,12 @@ export const en: Translations = {
     settingFrame: 'setting Frame',
     piecesOutside: { one: '{count} piece outside the Frame', other: '{count} pieces outside the Frame' },
     rulersLabel: 'Rulers',
+    canvasColor: {
+      label: 'Canvas color',
+      pickerLabel: 'canvas color',
+      swatchLabel: '{name}, {n} of {count}',
+      names: { studio: 'Studio', linen: 'Linen', sage: 'Sage', mist: 'Mist', blush: 'Blush', night: 'Night', ink: 'Ink', midnight: 'Midnight', olive: 'Olive', umber: 'Umber', ash: 'Ash' },
+    },
     hint: {
       scrollOr: 'scroll or',
       spaceKey: 'space',
