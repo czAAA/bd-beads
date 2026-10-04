@@ -1,7 +1,7 @@
 name: CI
 
-# Three jobs that run at the same time; the pipeline takes as long as the slowest. Branch protection requires all
-# three by name: "Typecheck and lint", "Unit tests" and "Visual check".
+# Jobs that run at the same time; the pipeline takes as long as the slowest. Branch protection requires three checks
+# by name: "Typecheck and lint", "Unit tests passed" (the aggregate of the unit shards) and "Visual check".
 
 on:
   push:
@@ -22,9 +22,16 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
 
+  # The unit tests are split across runners with Vitest's own sharding. Every test file lands in exactly one shard.
+  # Three shards, from the measured times in the PR for ticket 256: fewer leave the slowest shard long, more lose the
+  # saving to each shard's install and startup. Changing the count is this list only; the --shard flag follows it.
   unit:
-    name: Unit tests
+    name: Unit tests (shard ${{ matrix.shard }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,7 +39,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npx vitest run --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+  # The one check branch protection names for the unit tests, so the shard count can change without touching it.
+  # `if: always()` matters: a skipped or failed shard must fail this job, not skip it (a skipped required check passes).
+  unit-passed:
+    name: Unit tests passed
+    runs-on: ubuntu-latest
+    needs: unit
+    if: always()
+    steps:
+      - run: test "${{ needs.unit.result }}" = success
 
   visual:
     name: Visual check

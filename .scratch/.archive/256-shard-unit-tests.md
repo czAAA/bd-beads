@@ -6,11 +6,11 @@ Pick the shard count by measurement: more shards stop paying off once install an
 
 **Blocked by:** 254 (Split the App test file by feature), 255 (Run CI as parallel jobs).
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** not applicable (no user-facing change); recorded per CLAUDE.md.
 
-- [ ] The unit job is a matrix of shards, and every test runs in exactly one shard (total count matches an unsharded run)
-- [ ] One aggregate check fails if any shard fails, and is the check branch protection requires
-- [ ] The unit job's wall time on CI is 2 min or less, or the PR says what stops it getting there
-- [ ] The shard count is chosen from measured times, which are in the PR
+- [x] The unit job is a matrix of shards, and every test runs in exactly one shard (total count matches an unsharded run)
+- [x] One aggregate check fails if any shard fails, and is the check branch protection requires
+- [x] The unit job's wall time on CI is 2 min or less, or the PR says what stops it getting there
+- [x] The shard count is chosen from measured times, which are in the PR
