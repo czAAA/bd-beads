@@ -102,6 +102,18 @@ describe('App at the iPad mini tier (ticket 168)', () => {
       await wrapper.find('[data-testid="bottom-toolbar-redo"]').trigger('click')
       expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
     })
+
+    it('has all six Toolbox tools, Frame included, and starts Set Frame from its own Frame tool (ticket 275)', async () => {
+      const wrapper = await mountWithProject(15, 30)
+
+      for (const tool of ['paint', 'fill', 'select', 'erase', 'hand', 'frame']) {
+        expect(wrapper.find(`[data-testid="bottom-toolbar-${tool}"]`).exists()).toBe(true)
+      }
+
+      await wrapper.find('[data-testid="bottom-toolbar-frame"]').trigger('click')
+      expect(wrapper.find('[data-testid="bottom-toolbar-frame"]').attributes('aria-pressed')).toBe('true')
+      expect(wrapper.find('[data-testid="context-bar-frame-size"]').exists()).toBe(true)
+    })
   })
 
   describe('the header menu', () => {

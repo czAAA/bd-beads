@@ -24,6 +24,20 @@ describe('BottomToolbar', () => {
     expect(wrapper.emitted('select-tool')).toEqual([['erase']])
   })
 
+  it('shows the Toolbox\'s own six tools with their hotkey corners, and starts Set Frame from the Frame tool', async () => {
+    const wrapper = mountBar()
+    const badges = wrapper.findAll('[data-testid^="bottom-toolbar-"] .tool-button__key').map((badge) => badge.text())
+    expect(badges).toEqual(['1', '2', '3', 'E', 'H', 'F'])
+
+    await wrapper.get('[data-testid="bottom-toolbar-frame"]').trigger('click')
+    expect(wrapper.emitted('start-frame')).toHaveLength(1)
+  })
+
+  it('marks the Frame tool active while the Frame is being set', () => {
+    const wrapper = mountBar({ settingFrame: true })
+    expect(wrapper.get('[data-testid="bottom-toolbar-frame"]').attributes('aria-pressed')).toBe('true')
+  })
+
   it('undoes and redoes, disabled exactly when the props say so', async () => {
     const wrapper = mountBar({ canUndo: true, canRedo: false })
     expect(wrapper.get('[data-testid="bottom-toolbar-undo"]').attributes('disabled')).toBeUndefined()

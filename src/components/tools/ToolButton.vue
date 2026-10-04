@@ -5,13 +5,13 @@ import type { IconName } from '../ui/icons'
 
 /**
  * A Tool button (CONTEXT.md; ticket 250): a square, icon-only button for one tool, the active one in the accent
- * colour. A tool with a single-key shortcut shows that key as a badge in the corner (hidden on a coarse pointer and on
- * phone, where there is no keyboard). `label` is the accessible name; its Tooltip (ticket 251) shows the name, the key
- * and the `description`, if the tool needs one. Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
+ * colour. A tool with a single-key shortcut shows that key as a badge in the corner, on every device (ticket 275:
+ * BottomToolbar, Dock and the phone ToolSheet all print it too, not just a keyboard-equipped desktop). `label` is the
+ * accessible name; its Tooltip (ticket 251) shows the name, the key and the `description`, if the tool needs one.
+ * Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
  *
  * The `tile` variant (ticket 274; ToolTabs card) is the desktop Toolbox's swatch-sized tile: a borderless 16px icon
- * that turns `ink` with an inset accent outline when active, and the key printed in the top-right corner on every
- * device. The tablet toolbar and the phone sheet keep the default variant until ticket 275.
+ * that turns `ink` with an inset accent outline when active.
  */
 defineOptions({ inheritAttrs: false })
 withDefaults(
@@ -117,22 +117,22 @@ withDefaults(
 
 .tool-button__key {
   position: absolute;
-  top: var(--space-2);
+  top: 3px;
   right: var(--space-4);
   font: var(--type-meta-tiny);
   line-height: 1;
-  color: var(--faint);
+  color: var(--muted);
+}
+
+/* Phone (BottomToolbar/Dock card; ToolSheet card): nothing is below 12px, so the badge steps up from meta-tiny. */
+@media (max-width: 743px) {
+  .tool-button__key {
+    font: var(--type-meta-small);
+  }
 }
 
 .tool-button--active .tool-button__key {
   color: var(--accent-strong);
-}
-
-/* No keyboard on touch or phone, so no key to show. */
-@media (pointer: coarse), (max-width: 743px) {
-  .tool-button__key {
-    display: none;
-  }
 }
 
 /*
@@ -165,8 +165,6 @@ withDefaults(
   right: 2px;
   font: 400 0.625rem/1 var(--font-mono);
   color: var(--muted);
-  /* Shown on every device, a fingertip's included: out-ranks the base rule that hides the key on touch and phone. */
-  display: block;
 }
 
 .tool-button--tile.tool-button--active .tool-button__key,

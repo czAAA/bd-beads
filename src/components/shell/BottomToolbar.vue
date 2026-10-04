@@ -13,16 +13,19 @@ import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
 
 /**
  * The design system's BottomToolbar (ticket 168; BottomToolbar card): the iPad mini tier's own toolbar, under the
- * thumb, so drawing never needs the Drawer -- the four tools, the current colour (a popover onto the Palette, since
- * the Drawer's own Colors group is otherwise the only place to change it), Undo and Redo. Same anatomy as the
- * phone Dock (ticket 79): 22px icons over 11px labels, the active tool in accent, `dock-height` (64px) plus the
- * bottom safe-area inset. Custom and Image colors stay Drawer-only -- the popover is the Palette alone.
+ * thumb, so drawing never needs the Drawer -- the six tools (Frame included, ticket 275), the current colour (a
+ * popover onto the Palette, since the Drawer's own Colors group is otherwise the only place to change it), Undo and
+ * Redo. Same anatomy as the phone Dock (ticket 79): 22px icons over 11px labels, the active tool in accent,
+ * `dock-height` (64px) plus the bottom safe-area inset. Custom and Image colors stay Drawer-only -- the popover is
+ * the Palette alone.
  */
 const props = defineProps<{
   activeTool: Tool
   selectedColorId?: string
   canUndo: boolean
   canRedo: boolean
+  /** Whether the Frame is being set: the Frame tool shows as the active tool (Toolbox card). */
+  settingFrame?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +33,8 @@ const emit = defineEmits<{
   'select-color': [colorId: string]
   undo: []
   redo: []
+  /** The Frame tool was pressed: start Set Frame (Toolbox card). */
+  'start-frame': []
 }>()
 
 const { t } = useI18n()
@@ -96,6 +101,19 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       :data-testid="`bottom-toolbar-${tool.id}`"
       :data-tour="`tool-${tool.id}`"
       @click="emit('select-tool', tool.id)"
+    />
+
+    <!-- The Frame tool (ticket 258; Toolbox card): Set Frame is a mode, not a Tool, so it lights up from `settingFrame`. -->
+    <ToolButton
+      class="bottom-toolbar__tool"
+      icon="frame"
+      :label="t.frame.setFrame"
+      hotkey="F"
+      :description="t.frame.setFrameHint"
+      :active="!!settingFrame"
+      data-testid="bottom-toolbar-frame"
+      data-tour="tool-frame"
+      @click="emit('start-frame')"
     />
 
     <button

@@ -8,9 +8,20 @@ describe('AppDock', () => {
     localStorage.setItem('bd-beads:locale', 'en')
   })
 
-  it('shows the active tool\'s own icon and name on the first button', () => {
+  it('shows the active tool\'s own icon, name and hotkey on the first button', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
-    expect(wrapper.get('[data-testid="dock-tool"]').text()).toBe('Fill')
+    const button = wrapper.get('[data-testid="dock-tool"]')
+    expect(button.find('.dock__label').text()).toBe('Fill')
+    expect(button.get('.dock__key').text()).toBe('2')
+    expect(button.attributes('aria-keyshortcuts')).toBe('2')
+  })
+
+  it('shows the Frame button\'s F key, and no key on the group buttons', () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
+    expect(wrapper.get('[data-testid="dock-frame"]').get('.dock__key').text()).toBe('F')
+    expect(wrapper.find('[data-testid="dock-color"] .dock__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-edit"] .dock__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-project"] .dock__key').exists()).toBe(false)
   })
 
   it('marks whichever sheet is open, and emits select-sheet for each of the five', async () => {

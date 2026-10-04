@@ -79,12 +79,15 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('dock__item--open')
   })
 
-  it('has the five tools in the Tool sheet, Hand among them', async () => {
+  it('has the five tools in the Tool sheet, Hand among them, each with its hotkey corner (ticket 275)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
-    for (const tool of ['paint', 'fill', 'select', 'erase', 'hand']) {
-      expect(wrapper.find(`[data-testid="sheet-tool-${tool}"]`).exists()).toBe(true)
+    const expectedKeys: Record<string, string> = { paint: '1', fill: '2', select: '3', erase: 'E', hand: 'H' }
+    for (const [tool, key] of Object.entries(expectedKeys)) {
+      const tile = wrapper.find(`[data-testid="sheet-tool-${tool}"]`)
+      expect(tile.exists()).toBe(true)
+      expect(tile.get('.tool-button__key').text()).toBe(key)
     }
   })
 

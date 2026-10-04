@@ -129,7 +129,7 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
   - Repo, 2026-10-04, ticket 273: the repo became the source. The last claude.ai v18 export was copied in: each Toolbox tile centers its icon and prints its hotkey in the top-right corner, the iPad toolbar has six tools (Frame joins) with the Toolbox's icons, the Dock shows the active tool's icon and key, and the phone ToolSheet tiles stay labelled thumb targets.
-  - Repo, 2026-10-04, ticket 275: the ToolSheet tiles also print their key in the top-right corner, as the Dock does (card text; the preview follows with the ticket).
+  - Repo, 2026-10-04, ticket 275: the iPad toolbar and the Dock print the Toolbox's hotkey corner too (the iPad toolbar's own Frame tool included), and the ToolSheet tiles print their key in the top-right corner, as the Dock does; the key no longer hides on a coarse pointer or on a phone. The ToolSheet preview now draws the corner on its four drawn tool tiles.
   - Repo, 2026-10-04, ticket 274: the desktop Toolbox now draws the Tools group as the card says (swatch-sized tiles, corner key on every device, Remove Frame always shown and disabled while there is no Frame). Card text unchanged.
   - Repo, 2026-10-04, ticket 269: new `code` icon (two chevrons, `< >`) for the header menu's Source code link, added when the repository went public. Icons group: 54 icons.
 

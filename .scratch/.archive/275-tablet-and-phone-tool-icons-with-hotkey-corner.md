@@ -12,10 +12,10 @@ Today `ToolButton.vue` hides the key badge on a coarse pointer and on phone, and
 
 **Human involvement:** interactive
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] BottomToolbar: six tools, the Toolbox's icons at 22px, the corner key on each tool and none on Colour, Undo or Redo; the Frame tool starts Set Frame as the Toolbox's does
-- [ ] Dock: the first button shows the active tool's icon and key, the Frame button shows its icon and F, with the card's sizes, insets and `accent` on the active tool, in portrait and in the landscape rail
-- [ ] The key badge shows on coarse pointers and phone too (it is `aria-hidden`; the names stay the tool names), and nothing overflows at 320px in English and Russian
-- [ ] Tooltips, `aria-keyshortcuts`, focus rings and the active, pressed and disabled states match the Toolbox tile's; the phone ToolSheet tiles show the corner key and keep their size and labels
-- [ ] Unit tests for the changed components; the tablet and phone visual references regenerated deliberately; the README Version changelog has a line
+- [x] BottomToolbar: six tools, the Toolbox's icons at 22px, the corner key on each tool and none on Colour, Undo or Redo; the Frame tool starts Set Frame as the Toolbox's does
+- [x] Dock: the first button shows the active tool's icon and key, the Frame button shows its icon and F, with the card's sizes, insets and `accent` on the active tool, in portrait and in the landscape rail
+- [x] The key badge shows on coarse pointers and phone too (it is `aria-hidden`; the names stay the tool names), and nothing overflows at 320px in English and Russian
+- [x] Tooltips, `aria-keyshortcuts`, focus rings and the active, pressed and disabled states match the Toolbox tile's; the phone ToolSheet tiles show the corner key and keep their size and labels
+- [x] Unit tests for the changed components; the tablet and phone visual references regenerated deliberately; the README Version changelog has a line

@@ -5,7 +5,7 @@ import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import type { IconName } from '../ui/icons'
-import { TOOL_ICONS } from './toolIcons'
+import { TOOL_HOTKEYS, TOOL_ICONS } from './toolIcons'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
@@ -34,11 +34,12 @@ const activeToolInfo = computed(() => ({ icon: TOOL_ICONS[props.activeTool], lab
 const palette = usePalette()
 const colorHex = computed(() => (props.selectedColorId ? palette.value.find((color) => color.id === props.selectedColorId)?.hex : undefined))
 
-const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string }[]>(() => [
-  { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool' },
+/** The first button's and Frame's hotkey corner (Dock card, ticket 275): the Toolbox's own keys, `aria-hidden`. Colour, Edit and Project are groups, not tools, so they have none. */
+const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string; key?: string }[]>(() => [
+  { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool', key: TOOL_HOTKEYS[props.activeTool] },
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
-  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame' },
+  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: 'F' },
   { id: 'project', icon: 'save', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
 ])
 </script>
@@ -52,6 +53,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       class="ui-control dock__item"
       :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool' }"
       :aria-pressed="openSheet === item.id"
+      :aria-keyshortcuts="item.key"
       :data-testid="item.testid"
       :data-tour="`dock-${item.id}`"
       @click="emit('select-sheet', item.id)"
@@ -59,6 +61,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       <span v-if="item.id === 'color'" class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
       <AppIcon v-else :name="item.icon" :size="22" />
       <span class="dock__label">{{ item.label }}</span>
+      <span v-if="item.key" class="dock__key" :class="{ 'dock__key--accent': item.id === 'tool' || (item.id === 'frame' && settingFrame) }" aria-hidden="true">{{ item.key }}</span>
     </button>
   </nav>
 </template>
@@ -74,6 +77,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 }
 
 .dock__item {
+  position: relative;
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
@@ -86,6 +90,20 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   background: none;
   border: 0;
   cursor: pointer;
+}
+
+/* The first button's and Frame's hotkey corner (Dock card): DM Mono 12px, 3px from the top, 6px from the right. */
+.dock__key {
+  position: absolute;
+  top: 3px;
+  right: var(--space-6);
+  font: var(--type-meta-small);
+  line-height: 1;
+  color: var(--muted);
+}
+
+.dock__key--accent {
+  color: var(--accent-strong);
 }
 
 .dock__item--accent {
@@ -139,6 +157,10 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 
   .dock__item {
     width: auto;
+  }
+
+  .dock__key {
+    right: var(--space-8);
   }
 }
 </style>

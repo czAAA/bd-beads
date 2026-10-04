@@ -19,6 +19,7 @@ const {
   selectedColorId,
   onSelectTool,
   onSelectColor,
+  onStartSetFrame,
   onImportProjects,
   decodeImage,
   onImportToast,
@@ -30,10 +31,10 @@ const {
 
 <template>
   <!--
-    The iPad mini tier's own toolbar (ticket 168; BottomToolbar card): the four tools, the colour, Undo and Redo,
-    under the thumb, so drawing never needs the Drawer. A flex sibling of the body, not nested in the canvas box, so
-    it takes its own height off the bottom of the screen rather than sitting inside the canvas box's own padding
-    (ADR 0018: the canvas resizes once, when this shows or hides with the tier, not per frame).
+    The iPad mini tier's own toolbar (ticket 168; BottomToolbar card): the six tools (Frame included, ticket 275),
+    the colour, Undo and Redo, under the thumb, so drawing never needs the Drawer. A flex sibling of the body, not
+    nested in the canvas box, so it takes its own height off the bottom of the screen rather than sitting inside the
+    canvas box's own padding (ADR 0018: the canvas resizes once, when this shows or hides with the tier, not per frame).
   -->
   <BottomToolbar
     v-if="activeProject && !framing"
@@ -42,10 +43,12 @@ const {
     :selected-color-id="selectedColorId"
     :can-undo="canUndo"
     :can-redo="canRedo"
+    :setting-frame="settingFrame"
     @select-tool="onSelectTool"
     @select-color="onSelectColor"
     @undo="onUndo"
     @redo="onRedo"
+    @start-frame="onStartSetFrame"
   />
 
   <!--
