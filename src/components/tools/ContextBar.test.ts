@@ -69,6 +69,16 @@ describe('ContextBar', () => {
       expect(wrapper.emitted('done-frame')).toHaveLength(1)
     })
 
+    it('offers Remove Frame only once a Frame is set (ticket 258)', async () => {
+      const props = { settingFrame: true, pasteArmed: false, canRemoveLine: false }
+      expect(mount(ContextBar, { props }).find('[data-testid="context-bar-remove-frame"]').exists()).toBe(false)
+
+      const wrapper = mount(ContextBar, { props: { ...props, hasFrame: true } })
+      expect(wrapper.get('[data-testid="context-bar-remove-frame"]').attributes('aria-label')).toBe('Remove Frame')
+      await wrapper.get('[data-testid="context-bar-remove-frame"]').trigger('click')
+      expect(wrapper.emitted('remove-frame')).toHaveLength(1)
+    })
+
     it('takes the bar over from a Selection', () => {
       const wrapper = mount(ContextBar, {
         props: { settingFrame: true, selectionSize: { columns: 2, rows: 2 }, pasteArmed: false, canRemoveLine: true },

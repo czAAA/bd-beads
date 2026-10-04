@@ -86,6 +86,7 @@ const {
   onStartSetFrame,
   onDoneSetFrame,
   onFitFrame,
+  onRemoveFrame,
   frameDraft,
   onFramePress,
   onFrameDrag,
@@ -274,7 +275,9 @@ function techniqueWord(technique: Technique): string {
         :setting-frame="settingFrame"
         :frame-summary="frameTooltip"
         :rotate-off="rotateOff"
+        :has-frame="!!activePattern?.frame && !activePattern.rowProgress.enabled"
         @fit-frame="onFitFrame"
+        @remove-frame="onRemoveFrame"
         @done-frame="onDoneSetFrame"
         @copy="onCopy"
         @rotate="onRotate"

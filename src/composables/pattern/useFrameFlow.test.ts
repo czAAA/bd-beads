@@ -115,6 +115,13 @@ describe('useFrameFlow', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame removed')
   })
 
+  it('stays ready to draw a new Frame after Remove Frame (ticket 258)', () => {
+    const { settingFrame, remove } = setup()
+    expect(settingFrame.value).toBe(false)
+    remove()
+    expect(settingFrame.value).toBe(true)
+  })
+
   it('fits the Frame to what is drawn, or says there is nothing to fit', () => {
     const empty = setup(open)
     empty.fit()

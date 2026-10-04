@@ -150,7 +150,7 @@ describe('one Tab stop per group (ticket 159)', () => {
     const wrapper = await openPattern()
     const tabs = wrapper.findAll('[data-testid="toolbox"] .tool-button')
 
-    expect(tabs.map((tab) => tab.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
+    expect(tabs.map((tab) => tab.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1', '-1'])
     ;(tabs[0]!.element as HTMLElement).focus()
     await tabs[0]!.trigger('keydown', { key: 'ArrowRight' })
 

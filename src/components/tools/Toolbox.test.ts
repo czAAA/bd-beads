@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Toolbox from './Toolbox.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, setRowProgressEnabled, type Pattern } from '../../domain/pattern'
+import { createPattern, setRowProgressEnabled, withFrame, type Pattern } from '../../domain/pattern'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 
@@ -451,6 +451,23 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(wrapper.emitted('remove-frame')).toHaveLength(1)
   })
 
+  it('has a Frame tool that starts Set Frame and lights up while it is on, with Remove Frame beside it (ticket 258)', async () => {
+    const wrapper = mountToolbox()
+    expect(wrapper.get('[data-testid="tool-frame"]').attributes('tabindex')).toBe('-1')
+    await wrapper.get('[data-testid="tool-frame"]').trigger('click')
+    expect(wrapper.emitted('start-frame')).toHaveLength(1)
+
+    await wrapper.get('[data-testid="tool-remove-frame"]').trigger('click')
+    expect(wrapper.emitted('remove-frame')).toHaveLength(1)
+
+    await wrapper.setProps({ settingFrame: true })
+    expect(wrapper.get('[data-testid="tool-frame"]').attributes('tabindex')).toBe('0')
+    expect(wrapper.get('[data-testid="tool-paint"]').attributes('tabindex')).toBe('-1')
+
+    await wrapper.setProps({ pattern: withFrame(makePattern(), undefined) })
+    expect(wrapper.find('[data-testid="tool-remove-frame"]').exists()).toBe(false)
+  })
+
   it('locks the size while Row progress is on, and writes why', async () => {
     const pattern = setRowProgressEnabled(makePattern(), true)
     const wrapper = mountToolbox({ pattern })
@@ -468,6 +485,6 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(paint.text()).toBe('1')
     expect(paint.attributes('aria-label')).toBeTruthy()
     const badges = wrapper.findAll('[data-testid^="tool-"] .tool-button__key').map((badge) => badge.text())
-    expect(badges).toEqual(['1', '2', '3', 'E', 'H'])
+    expect(badges).toEqual(['1', '2', '3', 'E', 'H', 'F'])
   })
 })

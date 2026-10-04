@@ -38,6 +38,7 @@ const {
   onRotate,
   onRequestDeleteAll,
   onStartSetFrame,
+  settingFrame,
   onSetFrameSize,
   onFitFrame,
   onRemoveFrame,
@@ -94,6 +95,7 @@ const {
       :can-redo="canRedo"
       :can-copy="!!selection"
       :can-remove-selected-line="canRemoveSelectedLine"
+      :setting-frame="settingFrame"
       @select-tool="onSelectTool"
       @select-color="onSelectColor"
       @select-custom-color="onSelectCustomColor"

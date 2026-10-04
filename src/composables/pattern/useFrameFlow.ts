@@ -134,8 +134,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
+  /** Remove Frame, leaving Set Frame on so a new Frame can be drawn straight away (ticket 258). */
   function remove(): void {
+    const pattern = deps.currentPattern()
+    if (!pattern?.frame || locked.value) return
     commit(undefined)
+    start()
   }
 
   /** The keyboard's Set Frame: arrows move the Frame, Shift + arrows resize it from its bottom-right, Enter or Escape is done. Whether the key was used. */

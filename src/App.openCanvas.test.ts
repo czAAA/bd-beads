@@ -192,7 +192,7 @@ describe('the Hand tool', () => {
 
     await key({ key: 'h' })
     expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-button--active')
-    expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(5)
+    expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(6)
 
     const before = JSON.stringify(loadPatterns()[0]!.beads)
     const root = surface(wrapper)

@@ -2,6 +2,7 @@
 
 A floating bar above the Progress bar on phone and iPad mini that offers what a Selection can do.
 
+- While the Frame is being set: its size, Fit to drawing, Remove Frame (`close` icon, only with a Frame set) and Done (ticket 258).
 - While a Selection exists: its size (`meta`), Copy, Rotate, Remove line and a clear ×, on `ink` with `canvas` text, 14px radius, `elevation-3`.
 - After Copy it turns `accent` (`on-accent` text): "Tap where to paste", Rotate and Cancel.
 - 10px from the screen edges, 40px buttons with 13px labels.

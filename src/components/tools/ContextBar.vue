@@ -23,6 +23,8 @@ const props = defineProps<{
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
   frameSummary?: string
+  /** Whether a Frame is set, so Remove Frame has something to remove (ticket 258). */
+  hasFrame?: boolean
   /** Why Rotate is off, when it is: it turns the Frame, so it needs one, and waits while Row progress is on. It is named by this too. */
   rotateOff?: string
 }>()
@@ -32,6 +34,7 @@ const emit = defineEmits<{
   rotate: []
   'remove-line': []
   'fit-frame': []
+  'remove-frame': []
   'done-frame': []
   /** The pre-copy clear x and the post-copy Cancel both just back out one step (App.vue's backOutOfSelect). */
   dismiss: []
@@ -66,6 +69,17 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
         @click="emit('fit-frame')"
       >
         <AppIcon name="frame" :size="16" />
+      </button>
+      <button
+        v-if="hasFrame"
+        type="button"
+        class="ui-control context-bar__button"
+        :aria-label="t.frame.removeFrame"
+        :title="t.frame.removeFrame"
+        data-testid="context-bar-remove-frame"
+        @click="emit('remove-frame')"
+      >
+        <AppIcon name="close" :size="16" />
       </button>
       <button type="button" class="ui-control context-bar__button" data-testid="context-bar-done-frame" @click="emit('done-frame')">
         <AppIcon name="check" :size="16" />

@@ -30,6 +30,8 @@ const props = defineProps<{
   canCopy: boolean
   /** Whether "remove selected row/column" (ticket 123) would apply right now: the Selection is exactly one whole row or column, and Row progress isn't locking it. */
   canRemoveSelectedLine: boolean
+  /** Whether the Frame is being set: the Frame tool shows as the active tool. */
+  settingFrame?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -145,9 +147,32 @@ const frameSummary = computed(() => {
           :icon-size="18"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
-          :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id)"
+          :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
           @click="emit('select-tool', tool.id)"
         />
+        <!-- The Frame tool (ticket 258): Set Frame is a mode, not a Tool, so it lights up from `settingFrame`; choosing any tool ends it. -->
+        <ToolButton
+          icon="frame"
+          :label="t.frame.setFrame"
+          hotkey="F"
+          :description="t.frame.setFrameHint"
+          :active="!!settingFrame"
+          :icon-size="18"
+          data-testid="tool-frame"
+          :tabindex="tabsRoving.tabIndexFor(!!settingFrame)"
+          @click="emit('start-frame')"
+        />
+      </div>
+      <div v-if="pattern.frame" class="toolbox__links">
+        <AppLink
+          icon="close"
+          data-testid="tool-remove-frame"
+          :disabled="pattern.rowProgress.enabled"
+          :title="pattern.rowProgress.enabled ? t.size.lockedReason : undefined"
+          @click="emit('remove-frame')"
+        >
+          {{ t.frame.removeFrame }}
+        </AppLink>
       </div>
       <div class="toolbox__links">
         <AppLink
