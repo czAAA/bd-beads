@@ -32,10 +32,14 @@ Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for a
 
 All UI work follows the bd-beads design system (version 16), copied into `docs/design/system/`. `DESIGN.md` at the repo root is its entry point: the rule for which source wins, a map of where each topic lives, and the app-specific notes (the canvas `PatternTheme`, light-only exports, bundled fonts). The design system wins for tokens, component specs, copy and artwork; `DESIGN.md` wins only for its app-specific notes. Use the role-named tokens from `docs/design/system/tokens.json`; don't hardcode colors, fonts, sizes or shadows. If a UI need isn't covered, add it to the design system on claude.ai first, then copy it in (`DESIGN.md` §6); don't edit `docs/design/system/` by hand. Take icons, logo and favicon files from `docs/design/system/`; don't redraw them. The decision to follow the design system is ADR 0021.
 
+### Tour
+
+The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticket 247), so don't ask about it.
+
 ## Context hygiene
 - Search with grep/glob before reading; read with offset/limit, not whole large files.
 - Don't re-read files already in context unless they changed.
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
-- While implementing, run only the tests related to your change (`npx vitest related --run <changed files>`), never the full suite by hand: it can exhaust this machine's memory. CI no longer runs the unit or visual tests; the `.githooks/pre-push` hook runs both in full when a push touches `src/` or `e2e/` (ADR 0029). Don't bypass it with `--no-verify`; if it can't run here, say so in the PR so a human runs it.
+- While implementing, run only the tests related to your change (`npx vitest related --run <changed files>`), never the full suite: CI runs that, and it can exhaust this machine's memory.
 - Never cat lock files, generated files, minified bundles, or large logs.
 - Screenshots and visual-test artifacts (`test-results/`, `e2e/visual/__screenshots__/`) are images: each one read into context stays there for the rest of the session. Trust Playwright's text reporter (pass/fail, pixel-diff count) first; only `Read` an image when a diff genuinely needs visual judgment. Crop to the region under review before reading rather than reading a full-page screenshot. When a visual test fails, read the `diff.png` before reaching for `actual.png`/`expected.png` too.
