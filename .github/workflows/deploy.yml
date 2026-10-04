@@ -22,6 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +42,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    environment: production
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -54,11 +56,11 @@ jobs:
       - name: Check the deploy configuration
         run: |
           for v in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH; do
-            if [ -z "${!v}" ]; then echo "::error::Repository variable $v is not set"; exit 1; fi
+            if [ -z "${!v}" ]; then echo "::error::$v is not set in the production environment"; exit 1; fi
           done
 
       - name: Join the tailnet
-        uses: tailscale/github-action@v3
+        uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v3.3.0
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}

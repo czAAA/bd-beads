@@ -9,7 +9,7 @@ Hosted privately (tailnet only); see [ADR 0022](docs/adr/0022-self-hosted-deploy
 
 The build is served from the owner's Flint 2 router, reachable only over Tailscale; see [ADR 0022](docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md) for why and what a new host would need. Every push to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): it tests and builds the app, joins the tailnet as `tag:ci` and rsyncs `dist/` to the router. No manual deploy step is needed. A run can also be started by hand from the Actions tab ("Run workflow").
 
-The host and path come from GitHub Actions settings, not the workflow. Variables: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (with a trailing slash), `DEPLOY_BASE` (the URL path the app is served from, default `/bd-beads/`). Secrets: `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`. Don't set `DEPLOY_BASE` when running `npm run visual` locally; the browser checks expect the default.
+The host and path come from a `production` GitHub Actions environment, not the workflow; its deployment branches are limited to `main`, so no other workflow or branch can read them (see ADR 0022's one-time setup). Secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`, `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_SECRET`. Variables: `DEPLOY_PATH` (with a trailing slash), `DEPLOY_BASE` (the URL path the app is served from, default `/bd-beads/`). Don't set `DEPLOY_BASE` when running `npm run visual` locally; the browser checks expect the default.
 
 ## Checks
 
