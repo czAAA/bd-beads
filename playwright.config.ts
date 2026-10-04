@@ -24,6 +24,11 @@ export default defineConfig({
     colorScheme: 'light',
     reducedMotion: 'reduce',
     locale: 'en-US',
+    launchOptions: {
+      // Draw like every other machine: no hinting of glyph outlines, no subpixel (LCD) text, and the sRGB profile
+      // rather than the display's, which differs from one Mac to the next.
+      args: ['--font-render-hinting=none', '--disable-lcd-text', '--force-color-profile=srgb'],
+    },
   },
   expect: {
     toHaveScreenshot: {

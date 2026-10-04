@@ -51,6 +51,7 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
   return page.evaluate(
     ({ oneLine, userText, moreLines, cutOffByDesign }) => {
       const TOLERANCE = 1
+      const WRAP_TOLERANCE = 2
       const misfits: TextMisfit[] = []
       const seen = new Set<string>()
 
@@ -66,6 +67,20 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
         misfits.push(misfit)
       }
       const round = (value: number) => Math.round(value * 10) / 10
+
+      /** How many pixels the control's text, set on one line, is wider than the room the control has for it. */
+      const overshoot = (control: Element): number => {
+        const style = getComputedStyle(control)
+        const room = control.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+        const element = control as HTMLElement
+        const before = element.style.whiteSpace
+        element.style.whiteSpace = 'nowrap'
+        const oneLine = document.createRange()
+        oneLine.selectNodeContents(control)
+        const width = oneLine.getBoundingClientRect().width
+        element.style.whiteSpace = before
+        return width - room
+      }
 
       const isHidden = (element: Element): boolean => {
         for (let node: Element | null = element; node; node = node.parentElement) {
@@ -169,7 +184,12 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
           const lines = new Set(rects.map((rect) => Math.round(rect.top / 4))).size
           const allowed = moreLines.find(([selector]) => owner.closest(selector))?.[1] ?? 1
           if (lines > allowed) {
-            add({ problem: 'wraps', element: describe(owner), text: shown, pixels: lines - allowed, against: `${lines} lines, at most ${allowed}` })
+            // A one-line control is told off only when its text is clearly wider than its box: a sliver of a pixel
+            // of difference in how an operating system sets the same font would otherwise decide whether it wraps.
+            const over = allowed === 1 ? overshoot(control) : Infinity
+            if (over > WRAP_TOLERANCE) {
+              add({ problem: 'wraps', element: describe(owner), text: shown, pixels: lines - allowed, against: `${lines} lines, at most ${allowed}${Number.isFinite(over) ? `; the text is ${round(over)}px wider than its room` : ''}` })
+            }
           }
         }
       }

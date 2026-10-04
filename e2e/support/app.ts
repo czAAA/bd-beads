@@ -18,6 +18,14 @@ export async function openApp(page: Page, projects: Project[]): Promise<void> {
   }
   // An empty library would otherwise send a new visitor to the Overview (ticket 77); these checks are about the editor.
   await page.addInitScript(() => sessionStorage.setItem('bd-beads:editor-chosen', '1'))
+  // Text is set from the font files' own measurements, not the operating system's: no hinting, fractional advances,
+  // kerning on, and no synthesized bold or italic, so a Mac, a Linux box and CI break lines in the same places.
+  // Added on every load, so it survives the navigations some checks make.
+  await page.addInitScript((css) => {
+    const style = document.createElement('style')
+    style.textContent = css
+    document.documentElement.appendChild(style)
+  }, '* { text-rendering: geometricPrecision; font-kerning: normal; font-synthesis: none; -webkit-font-smoothing: antialiased; }')
   await page.goto('./')
   await page.getByTestId('app-topbar').waitFor()
   // The app's line height is 145% of 18px, which puts everything below the first line of text at a fractional pixel

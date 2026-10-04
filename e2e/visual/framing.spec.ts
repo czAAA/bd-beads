@@ -26,7 +26,11 @@ test.describe('Convert image framing', () => {
 
       const expectShot = async (name: string) => {
         await page.mouse.move(5, 5)
-        await expect.soft(preview, name).toHaveScreenshot(`framing-${technique}-${name}.png`, { maxDiffPixelRatio: 0.008 })
+        await expect.soft(preview, name).toHaveScreenshot(`framing-${technique}-${name}.png`, {
+          maxDiffPixelRatio: 0.008,
+          // The hint's light-on-dark text is anti-aliased differently by every operating system; that its words fit is the text fit check's business.
+          mask: [page.locator('.convert-image-frame__hint')],
+        })
       }
 
       await expectShot('zoom-100')
