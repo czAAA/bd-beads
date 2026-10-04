@@ -32,10 +32,6 @@ Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for a
 
 All UI work follows the bd-beads design system (version 16), copied into `docs/design/system/`. `DESIGN.md` at the repo root is its entry point: the rule for which source wins, a map of where each topic lives, and the app-specific notes (the canvas `PatternTheme`, light-only exports, bundled fonts). The design system wins for tokens, component specs, copy and artwork; `DESIGN.md` wins only for its app-specific notes. Use the role-named tokens from `docs/design/system/tokens.json`; don't hardcode colors, fonts, sizes or shadows. If a UI need isn't covered, add it to the design system on claude.ai first, then copy it in (`DESIGN.md` §6); don't edit `docs/design/system/` by hand. Take icons, logo and favicon files from `docs/design/system/`; don't redraw them. The decision to follow the design system is ADR 0021.
 
-### Overview
-
-Whenever you add or change user-facing functionality (writing a ticket or building one), ask the user whether it should be added to the Overview (ticket 77), and record the answer in the ticket. Don't add it without asking. The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticket 247), so don't ask about it.
-
 ## Context hygiene
 - Search with grep/glob before reading; read with offset/limit, not whole large files.
 - Don't re-read files already in context unless they changed.
