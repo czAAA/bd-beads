@@ -39,8 +39,8 @@ Manual checks on top of the scanner:
 
 | Item | Where | Count / detail |
 | --- | --- | --- |
-| Tailnet hostname `tailnet-host.example` (plus `root@` login in the ssh example) | `README.md`, `docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md`, `.scratch/64-repo-housekeeping.md` and its archived copy, tickets 270/285; in history of all of them | Only reachable from inside the tailnet, but it names the home server and the login user |
-| Author identities | commit metadata | `Aliaksei <30803022+czAAA@users.noreply.github.com>` (212, GitHub web commits, already anonymous); `A B <30803022+czAAA@users.noreply.github.com>` (147) and `czAAA <30803022+czAAA@users.noreply.github.com>` (119): **personal Gmail**; `Aliaksei <30803022+czAAA@users.noreply.github.com>` (138): full name, empty email |
+| Tailnet hostname (redacted here as `tailnet-host.example`) (plus `root@` login in the ssh example) | `README.md`, `docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md`, `.scratch/64-repo-housekeeping.md` and its archived copy, tickets 270/285; in history of all of them | Only reachable from inside the tailnet, but it names the home server and the login user |
+| Author identities | commit metadata | The GitHub noreply identity (212, GitHub web commits, already anonymous); a short handle with the personal Gmail (147 and 119 commits, under two display names); the full legal name with an empty email (138). The Gmail address and the full name are redacted in this copy of the report |
 | Internal notes | `.scratch/` tickets and archive, `docs/agents/`, `CLAUDE.md`, `CONTEXT.md`, `.claude/settings.json`, ADRs | Working notes and agent setup; no credentials, but they describe the deploy setup and plans |
 | GitHub Pages URL `czaaa.github.io/bd-beads` | README and others | Already public by design |
 
@@ -55,5 +55,5 @@ Manual checks on top of the scanner:
 ### For 268 to decide
 
 1. Hostname and `root` login: in current files and all history. Scrubbing needs a history rewrite plus deleting old Actions runs (271 already lists that).
-2. Personal Gmail and full name in commits: only a rewrite with a mailmap removes them.
+2. Personal email and full name in commits: only a rewrite with a mailmap removes them.
 3. Old Actions runs and artifacts: delete before going public regardless of the rewrite, since run logs keep the hostname.

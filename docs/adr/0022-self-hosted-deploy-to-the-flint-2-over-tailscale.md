@@ -19,8 +19,8 @@ The router is a stepping stone: the target may become a Raspberry Pi and, if the
 
 | Kind | Name | Meaning |
 | --- | --- | --- |
-| Variable | `DEPLOY_HOST` | Host to SSH to (`tailnet-host.example`) |
-| Variable | `DEPLOY_USER` | SSH user (`root`) |
+| Secret | `DEPLOY_HOST` | Host to SSH to. A secret, not a variable, so public run logs show `***` |
+| Secret | `DEPLOY_USER` | SSH user. A secret for the same reason |
 | Variable | `DEPLOY_PATH` | Target directory, with a trailing slash (`/mnt/sda1/www/bd-beads/`) |
 | Variable | `DEPLOY_BASE` | URL path the app is served from (`/bd-beads/`) |
 | Secret | `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` | Deploy key and pinned host key |

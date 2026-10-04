@@ -3,7 +3,7 @@ beads drawing app
 
 Open source under the GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)); see [ADR 0031](docs/adr/0031-public-agpl-3-license.md) for why. Issues are welcome; outside contributions (pull requests) are not accepted yet.
 
-Hosted privately (tailnet only): https://tailnet-host.example:8444/bd-beads/
+Hosted privately (tailnet only); see [ADR 0022](docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md).
 
 ## Deploy
 
