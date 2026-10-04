@@ -27,6 +27,9 @@ export interface FrameFlowDeps {
 }
 
 
+/** What the user did to the Frame, for the margin Message's lead. */
+type FrameAction = 'set' | 'moved' | 'resized'
+
 type Gesture =
   | { kind: 'draw'; anchor: GridPosition }
   | { kind: 'move'; origin: GridPosition; start: Frame }
@@ -54,8 +57,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       .replace('{rows}', plural(deps.locale(), frame.rows, t.canvas.rowsCount))
   }
 
-  /** Commits a new Frame (or none) as one undo step; a no-change is no step. */
-  function commit(frame: Frame | undefined, announce = true): void {
+  /** Commits a new Frame (or none) as one undo step; a no-change is no step. The action names what happened in the margin Message. */
+  function commit(frame: Frame | undefined, action: FrameAction = 'set', announce = true): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
     const framed = withFrame(project, frame)
@@ -72,7 +75,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.clearSelectionAndHover()
     if (moved > 0) {
       const t = deps.messages()
-      deps.showToast('frame-margin-cleared', plural(deps.locale(), moved, t.frame.marginClearedMessage), 'info', {
+      const text = `${t.frame.marginLead[action]} ${plural(deps.locale(), moved, t.frame.marginClearedMessage)}`
+      deps.showToast('frame-margin-cleared', text, 'info', {
         label: t.palette.undoButton,
         run: deps.onUndo,
       })
@@ -124,9 +128,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function release(): void {
     const result = draft.value
+    const kind = gesture?.kind
     gesture = undefined
     draft.value = undefined
-    if (result && dragged) commit(result)
+    if (result && dragged) commit(result, kind === 'move' ? 'moved' : kind === 'resize' ? 'resized' : 'set')
   }
 
   /** Lets go of a drag without committing it: a second finger arrived, so it was a pinch. */
@@ -137,7 +142,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function setSize(columns: number, rows: number): void {
     const frame = deps.currentProject()?.frame
-    if (frame) commit(frameWithSize(frame, columns, rows))
+    if (frame) commit(frameWithSize(frame, columns, rows), 'resized')
   }
 
   function fit(): void {
@@ -170,9 +175,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project.frame) {
       commit(frameFromCells(project.technique, { row: 0, column: 0 }, { row: 0, column: 0 }))
     } else if (event.shiftKey) {
-      commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
+      commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]), 'resized')
     } else {
-      commit(movedFrame(project.technique, project.frame, step[0], step[1]))
+      commit(movedFrame(project.technique, project.frame, step[0], step[1]), 'moved')
     }
     return true
   }

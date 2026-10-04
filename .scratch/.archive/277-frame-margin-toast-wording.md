@@ -6,9 +6,9 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Set, move and resize each produce their own lead, in English and Russian; the Rotate Message keeps its own wording
-- [ ] Singular and plural English and Russian forms are correct for the bead count (the existing plural helper)
-- [ ] The Undo step, timeout and hold-while-hovered behaviour are unchanged
-- [ ] `writing.md` and the `Message` and `Frame` cards carry the final wording; the README Version changelog has a line
+- [x] Set, move and resize each produce their own lead, in English and Russian; the Rotate Message keeps its own wording
+- [x] Singular and plural English and Russian forms are correct for the bead count (the existing plural helper)
+- [x] The Undo step, timeout and hold-while-hovered behaviour are unchanged
+- [x] `writing.md` and the `Message` and `Frame` cards carry the final wording; the README Version changelog has a line
