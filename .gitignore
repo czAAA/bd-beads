@@ -33,3 +33,4 @@ design-exploration/
 # Local overnight ticket runner and its logs
 docs/scripts/
 .overnight-logs/
+docs/personal/
