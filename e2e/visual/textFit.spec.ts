@@ -1,18 +1,16 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { TOUR_ENABLED } from '../../src/features'
-import type { Locale } from '../../src/i18n/translations'
 import { openApp } from '../support/app'
 import { fixturePicture } from '../support/picture'
 import { fixtureProject, STORAGE_KEY, storedLibrary } from '../support/projects'
+import type { Project } from '../../src/domain/project'
+import { findHoverMisfits } from '../support/hoverText'
+import { HOVER_PENDING } from '../support/hoverPending'
+import { recordOpened } from '../support/hoverReach'
 import { findTextMisfits } from '../support/textFit'
+import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-/** Where the check looks (ticket 229): every language the app is translated into, at every screen width it supports. */
-// Typed so that a language added to the app fails the type check until it is listed here.
-const LOCALES = Object.keys({ en: 0, ru: 0 } satisfies Record<Locale, 0>) as Locale[]
-const WIDTHS = [1900, 1280, 1024, 768, 390, 360, 320]
-/** A typical screen height at each width, so that what is tall or short is as a person would meet it. */
-const HEIGHTS: Record<number, number> = { 1900: 1000, 1280: 800, 1024: 768, 768: 1024, 390: 844, 360: 740, 320: 640 }
 const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-frame', 'dock-project']
 
 type Measure = (detail?: string) => Promise<void>
@@ -21,6 +19,8 @@ interface Screen {
   /** Gets the app into the state (from a fresh load, or from the Overview for `overview`) and calls `measure` for each look. Returns false when the state can't be reached at this width. */
   visit: (page: Page, measure: Measure) => Promise<boolean | void>
   overview?: boolean
+  /** The Project the screen starts with, when it is not the plain one (a Row progress that is on, say). */
+  project?: Project
 }
 
 const wholeOnScreen = async (locator: Locator): Promise<boolean> => {
@@ -88,6 +88,29 @@ const TOUR_SCREEN: Screen = {
 
 const SCREENS: Screen[] = [
   { name: 'editor', visit: async (_page, measure) => measure() },
+  {
+    // The Progress bar's buttons only show while Row progress is on, and it clips its overflow: its Tooltips are the hard case (ticket 264).
+    name: 'Row progress',
+    project: fixtureProject({ technique: 'loom', rowProgress: { enabled: true } }),
+    visit: async (_page, measure) => measure(),
+  },
+  {
+    name: 'selection',
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'tool-select'))) return false
+      await click(page, 'tool-select')
+      // On the phone the tool sheet is still open over the canvas.
+      if (await shown(page, 'sheet-close')) await click(page, 'sheet-close')
+      const box = await vis(page, 'project-surface').boundingBox()
+      if (!box) return false
+      await page.mouse.move(box.x + 40, box.y + 40)
+      await page.mouse.down()
+      await page.mouse.move(box.x + 120, box.y + 120, { steps: 4 })
+      await page.mouse.up()
+      await settle(page)
+      await measure()
+    },
+  },
   {
     name: 'drawer',
     visit: async (page, measure) => {
@@ -176,6 +199,15 @@ const SCREENS: Screen[] = [
       const id = (await reveal(page, 'delete-all-button')) ? 'delete-all-button' : (await reveal(page, 'sheet-delete-all')) ? 'sheet-delete-all' : null
       if (!id) return false
       await click(page, id)
+      await measure()
+    },
+  },
+  {
+    name: 'empty library',
+    visit: async (page, measure) => {
+      await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
+      await page.reload()
+      await page.getByTestId('app-topbar').waitFor()
       await measure()
     },
   },
@@ -278,10 +310,15 @@ for (const locale of LOCALES) {
       await openApp(page, [fixtureProject({ technique: 'loom' })])
       const found: Found[] = []
       const seen = new Set<string>()
+      // The hover text check (ticket 264): what it has opened in this run, and which source places those Tooltips come from.
+      const hoverFound: Found[] = []
+      const hoverSeen = new Set<string>()
+      const hoverKeys = new Set<string>()
+      const opened = new Set<string>()
       const library = storedLibrary([fixtureProject({ technique: 'loom' })])
       for (const screen of SCREENS) {
         // Some screens start from an empty library; each begins with the Project open.
-        await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, library])
+        await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, screen.project ? storedLibrary([screen.project]) : library])
         if (screen.overview) await page.goto('./overview/')
         else await page.goto('./')
         await page.getByTestId(screen.overview ? 'overview' : 'app-topbar').waitFor()
@@ -296,16 +333,28 @@ for (const locale of LOCALES) {
               found.push({ ...misfit, screen: current })
             }
           }
+          const hover = await findHoverMisfits(page, hoverSeen)
+          for (const owner of hover.opened) opened.add(owner)
+          for (const misfit of hover.misfits) {
+            const key = `${misfit.problem}|${misfit.element}|${misfit.text}|${misfit.against}`
+            if (!hoverKeys.has(key)) {
+              hoverKeys.add(key)
+              hoverFound.push({ ...misfit, screen: current })
+            }
+          }
         }
         try {
           const result = await screen.visit(page, measure)
           if (result === false && process.env.TEXTFIT_DEBUG) console.log(`${locale} ${width} | ${screen.name} | skipped`)
         } catch (error) {
-          found.push({ problem: 'pokes-out', element: 'the check itself', text: `could not drive "${current}": ${String(error).split('\n')[0]}`, pixels: 0, against: '', screen: current })
+          found.push({ problem: 'pokes-out', element: 'the check itself', text: `could not drive "${current}": ${String(error).split('\n').slice(0, process.env.TEXTFIT_DEBUG ? 12 : 1).join(' ⏎ ')}`, pixels: 0, against: '', screen: current })
         }
       }
       if (process.env.TEXTFIT_DEBUG) for (const f of found) console.log(`${locale} ${width} | ${f.screen} | ${f.problem} ${f.element} "${f.text}" ${f.pixels}px ${f.against}`)
+      if (process.env.TEXTFIT_DEBUG) for (const f of hoverFound) console.log(`HOVER ${locale} ${width} | ${f.screen} | ${f.element} "${f.text}" ${f.pixels}px ${f.against}`)
+      recordOpened(locale, width, opened)
       expect(unexplained(locale, width, found), `${locale}, ${width}px`).toEqual([])
+      expect(unexplained(locale, width, hoverFound, HOVER_PENDING), `hover text, ${locale}, ${width}px`).toEqual([])
     })
   }
 }

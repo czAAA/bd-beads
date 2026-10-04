@@ -18,7 +18,7 @@ The host and path come from GitHub Actions settings, not the workflow. Variables
 | `npm test` | Unit and component tests (Vitest, jsdom). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
 | `npm run typecheck` | Type-checks the app, the build config and the browser checks |
 | `npm run lint` | ESLint |
-| `npm run visual` | The visual check (below). Run by the pre-push hook, not CI (below) |
+| `npm run visual` | The visual check (below). Run by hand, not by a hook or CI (below) |
 | `npm run visual:update` | Rewrites the Convert image framing screenshots, the only ones the Playwright runner itself owns; the others are read from `e2e/visual/__screenshots__` as they are, and change only when the look is meant to (delete and regenerate them deliberately) |
 | `npm run perf` | The performance check (below). By hand, never in CI |
 
@@ -32,7 +32,7 @@ The first run needs the browser: `npx playwright install chromium`. The referenc
 
 ### Tests before a push
 
-GitHub Actions minutes are kept for deployments (ADR 0029). CI runs nothing on pull requests; the deploy workflow's build (`vue-tsc` and `vite build`) is its only check. Typecheck, lint and the tests run on your machine: `npm install` points git at `.githooks/`, and the `pre-push` hook runs `npm run typecheck`, `npm run lint`, `npm test` and `npm run visual` whenever the push changes `src/`, `e2e/` or the files that build them. A full run peaks near 1.5 GB of RAM and takes about 10 minutes on a Raspberry Pi. The hook caps Node's heap at 1536 MB (`PREPUSH_NODE_HEAP_MB`) and, when a systemd user session exists, the run's memory at 3 GB (`PREPUSH_MEMORY_MAX`); without one it says so and runs uncapped. `git push --no-verify` skips it; say so in the PR if you do.
+GitHub Actions minutes are kept for deployments (ADR 0029). CI runs nothing on pull requests; the deploy workflow's build (`vue-tsc` and `vite build`) is its only check. Typecheck, lint and the tests run on your machine: `npm install` points git at `.githooks/`, the `pre-commit` hook runs `npm test` before every commit, and the `pre-push` hook runs `npm run typecheck` and `npm run lint` whenever the push changes `src/`, `e2e/` or the files that build them. `npm run visual` is run by hand. A full unit run peaks near 1.5 GB of RAM and takes several minutes on a Raspberry Pi. The hooks cap Node's heap at 1536 MB (`PREPUSH_NODE_HEAP_MB`) and, when a systemd user session exists, the run's memory at 3 GB (`PREPUSH_MEMORY_MAX`); without one it says so and runs uncapped. `--no-verify` on `git commit` or `git push` skips them; say so in the PR if you do.
 
 ### Performance check
 

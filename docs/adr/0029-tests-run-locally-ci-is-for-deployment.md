@@ -9,7 +9,7 @@ The repository is private, so Actions runs on the free plan's 2,000 minutes a mo
 ## Decision
 
 - `ci.yml` is deleted. No workflow runs on pull requests; GitHub Actions only deploys.
-- `.githooks/pre-push` runs typecheck, lint, the unit tests and the visual check in full when a push touches `src/`, `e2e/` or what builds them; `npm install` enables it through `core.hooksPath`.
+- `.githooks/pre-commit` runs all the unit tests before every commit, and `.githooks/pre-push` runs typecheck and lint when a push touches `src/`, `e2e/` or what builds them. The visual check is not a hook: it is run by hand from time to time; `npm install` enables it through `core.hooksPath`.
 - The deploy build still runs `vue-tsc -b` (the `build` script), so a type error cannot ship.
 - The deploy workflow ignores pushes that change only `.scratch/` or Markdown.
 - No sharding, aggregate jobs or report merging remain.

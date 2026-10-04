@@ -22,7 +22,7 @@ Found by a throwaway probe, at 1900, 1280, 1024, 768, 390, 360 and 320 px, Engli
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every hover text in the app is opened by the check (by hover, by keyboard focus, and the long-press on a coarse pointer), in English and Russian, at every width the text-fit check uses, on every screen and state where its trigger exists; it finds them from the page, with no list of triggers
 - [ ] Reachability guard: every use of the Tooltip or an info popover in the source is opened at least once in the run; one that never is fails the check naming the component, unless it is in the exemption list, where each entry has a written reason

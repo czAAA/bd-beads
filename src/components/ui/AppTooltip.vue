@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { tooltipOwners } from './tooltipOwner'
 
 /**
  * The design system's Tooltip (ticket 157; Modal card): a short `ink` label that shows while its trigger is hovered
@@ -33,6 +34,8 @@ const VIEWPORT_MARGIN_PX = 8
 const LONG_PRESS_MS = 500
 
 const id = useId()
+/** For the hover text check (ticket 264): the components this Tooltip comes from. */
+const owners = tooltipOwners(getCurrentInstance())
 const open = ref(false)
 const bubbleEl = ref<HTMLElement>()
 const shiftPx = ref(0)
@@ -144,6 +147,7 @@ onBeforeUnmount(hide)
         role="tooltip"
         :aria-hidden="announce ? undefined : 'true'"
         data-testid="tooltip"
+        :data-owner="owners"
       >
         <template v-if="rich">
           <span class="app-tooltip__head">

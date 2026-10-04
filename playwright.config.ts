@@ -34,5 +34,7 @@ export default defineConfig({
       caret: 'hide',
     },
   },
+  // The hover text check's reachability guard (ticket 264) needs every language-and-width test's result, so it runs after them all.
+  globalTeardown: './e2e/support/hoverTeardown.ts',
   webServer,
 })

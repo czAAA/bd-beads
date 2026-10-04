@@ -43,11 +43,11 @@ const covers = (entry: PendingEntry, locale: string, width: number, found: Found
   (entry.texts === 'any' || entry.texts.includes(found.text))
 
 /** What is wrong at this language and width once the pending entries are taken out: misfits nobody listed, and entries that no longer match. */
-export function unexplained(locale: string, width: number, found: Found[]): string[] {
+export function unexplained(locale: string, width: number, found: Found[], pending: PendingEntry[] = PENDING): string[] {
   const problems = found
-    .filter((misfit) => !PENDING.some((entry) => covers(entry, locale, width, misfit)))
+    .filter((misfit) => !pending.some((entry) => covers(entry, locale, width, misfit)))
     .map((f) => `${f.screen}: ${f.problem} ${f.element} "${f.text}" by ${f.pixels}px (${f.against})`)
-  for (const entry of PENDING) {
+  for (const entry of pending) {
     if (!(entry.at[locale] ?? []).includes(width)) continue
     // Each listed text must still overflow on its own; a whole-screen entry needs at least one misfit.
     const stale = entry.texts === 'any' ? (found.some((misfit) => covers(entry, locale, width, misfit)) ? [] : ['any']) : entry.texts.filter((text) => !found.some((misfit) => covers(entry, locale, width, misfit) && misfit.text === text))
