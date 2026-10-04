@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Runs typecheck and lint before a push when the change touches code. The unit tests run in pre-commit; the visual
-# check is run by hand (ADR 0029). CI runs none of them.
+# Runs typecheck, lint and the unit and visual tests before a push when the change touches code. CI runs none of
+# them (ADR 0029).
 # Skip once with `git push --no-verify`; the code is then unchecked, so say so in the PR.
 set -euo pipefail
 
@@ -13,7 +13,7 @@ done
 
 base=$(git merge-base HEAD origin/main 2>/dev/null || true)
 if [ -z "$base" ]; then
-  echo "pre-push: no origin/main to compare with; running the checks."
+  echo "pre-push: no origin/main to compare with; running the tests."
   changed="src/"
 else
   changed=$(git diff --name-only "$base" HEAD)
@@ -39,3 +39,7 @@ fi
 echo "pre-push: typecheck and lint"
 run npm run typecheck
 run npm run lint
+echo "pre-push: unit tests"
+run npm test
+echo "pre-push: visual check"
+VISUAL_WORKERS="${VISUAL_WORKERS:-2}" run npm run visual

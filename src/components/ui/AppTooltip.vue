@@ -10,6 +10,10 @@ import { tooltipOwners } from './tooltipOwner'
  * `describedby` slot prop; an icon-only button whose own name already says the same passes `announce: false`, so
  * screen readers don't hear it twice.
  *
+ * The bubble is never clipped (ticket 265): while open it sits in the browser's top layer (a manual popover), outside
+ * every ancestor's `overflow`, positioned in screen coordinates from its trigger. It opens on the side that has room
+ * (`placement` is the side it prefers), stays inside the screen on all four edges and wraps at a maximum width.
+ *
  * A Toolbox button's Tooltip (ticket 251) is richer: the name in bold, the `shortcut` as a key chip beside it and, only
  * where the control needs one, a `description` line below. A `disabled` trigger shows none (forms-and-states).
  */
@@ -27,9 +31,10 @@ const props = withDefaults(
 
 const rich = computed(() => !!props.shortcut || !!props.description)
 
-/** Keeps the bubble's centered position but nudged clear of the viewport's edges (ticket 169): a trigger near the
- * screen's side, like the header's last icon, would otherwise center a wide bubble half off-screen. */
+/** The bubble's clearance from the screen's edges (ticket 169). */
 const VIEWPORT_MARGIN_PX = 8
+/** The bubble's gap to its trigger (the design system's space-6). */
+const TRIGGER_GAP_PX = 6
 
 const LONG_PRESS_MS = 500
 
@@ -38,17 +43,55 @@ const id = useId()
 const owners = tooltipOwners(getCurrentInstance())
 const open = ref(false)
 const bubbleEl = ref<HTMLElement>()
-const shiftPx = ref(0)
+const triggerEl = ref<HTMLElement>()
+/** Whether this browser has popovers (a test DOM may not). */
+const topLayer = typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLElement.prototype
+const position = ref({ left: 0, top: 0 })
 
-async function clampToViewport() {
-  shiftPx.value = 0
+/** Puts the bubble in the top layer, where no ancestor's `overflow` can cut it; a browser without popovers keeps it
+ * where it is, positioned the same way. */
+function setTopLayer(on: boolean) {
+  const bubble = bubbleEl.value
+  if (!bubble || !topLayer) return
+  try {
+    if (on && !bubble.matches(':popover-open')) bubble.showPopover()
+    else if (!on && bubble.matches(':popover-open')) bubble.hidePopover()
+  } catch {
+    // Already in the wanted state.
+  }
+}
+
+/** Centers the bubble on its trigger, on the preferred side or, where that has no room for it, the other, and keeps it
+ * inside the screen: the bubble is `fixed`, so what it is measured against is the screen, not any column. */
+async function place() {
+  position.value = { left: 0, top: 0 }
   await nextTick()
-  const rect = bubbleEl.value?.getBoundingClientRect()
-  if (!rect) return
-  const overflowRight = rect.right - (window.innerWidth - VIEWPORT_MARGIN_PX)
-  const overflowLeft = VIEWPORT_MARGIN_PX - rect.left
-  if (overflowRight > 0) shiftPx.value = -overflowRight
-  else if (overflowLeft > 0) shiftPx.value = overflowLeft
+  const bubble = bubbleEl.value?.getBoundingClientRect()
+  const trigger = triggerEl.value?.getBoundingClientRect()
+  if (!bubble || !trigger) return
+  const room = {
+    bottom: window.innerHeight - VIEWPORT_MARGIN_PX - (trigger.bottom + TRIGGER_GAP_PX),
+    top: trigger.top - TRIGGER_GAP_PX - VIEWPORT_MARGIN_PX,
+  }
+  const other = props.placement === 'top' ? 'bottom' : 'top'
+  const side = room[props.placement] >= bubble.height || room[props.placement] >= room[other] ? props.placement : other
+  const top = side === 'bottom' ? trigger.bottom + TRIGGER_GAP_PX : trigger.top - TRIGGER_GAP_PX - bubble.height
+  const left = trigger.left + trigger.width / 2 - bubble.width / 2
+  const fit = (value: number, size: number, screen: number) => Math.max(VIEWPORT_MARGIN_PX, Math.min(value, screen - VIEWPORT_MARGIN_PX - size))
+  position.value = { left: fit(left, bubble.width, window.innerWidth), top: fit(top, bubble.height, window.innerHeight) }
+}
+
+async function openBubble() {
+  await nextTick()
+  setTopLayer(true)
+  await place()
+}
+
+/** A scroll anywhere (the column, the canvas) or a resize moves the trigger from under the bubble. */
+function follow(on: boolean) {
+  const method = on ? 'addEventListener' : 'removeEventListener'
+  window[method]('scroll', place, true)
+  window[method]('resize', place)
 }
 
 /** Set by a press inside the trigger, so the focus that press gives it doesn't pop a tooltip over what was pressed. */
@@ -63,8 +106,10 @@ function clearLongPress() {
 
 function show() {
   if (props.disabled) return
+  if (open.value) return
   open.value = true
-  void clampToViewport()
+  follow(true)
+  void openBubble()
 }
 
 function onPointerEnter(event: PointerEvent) {
@@ -100,7 +145,10 @@ function onFocusIn(event: FocusEvent) {
 
 function hide() {
   clearLongPress()
+  if (!open.value) return
   open.value = false
+  follow(false)
+  setTopLayer(false)
 }
 
 function onFocusOut() {
@@ -125,6 +173,7 @@ onBeforeUnmount(hide)
 
 <template>
   <span
+    ref="triggerEl"
     class="app-tooltip"
     @pointerenter="onPointerEnter"
     @pointerleave="hide"
@@ -142,8 +191,8 @@ onBeforeUnmount(hide)
         :id="id"
         ref="bubbleEl"
         class="app-tooltip__bubble"
-        :class="`app-tooltip__bubble--${placement}`"
-        :style="{ transform: `translateX(calc(-50% + ${shiftPx}px))` }"
+        :style="{ left: `${position.left}px`, top: `${position.top}px` }"
+        :popover="topLayer ? 'manual' : undefined"
         role="tooltip"
         :aria-hidden="announce ? undefined : 'true'"
         data-testid="tooltip"
@@ -168,7 +217,6 @@ onBeforeUnmount(hide)
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-width: min(15rem, calc(100vw - 2 * var(--space-8)));
 }
 
 .app-tooltip__head {
@@ -206,31 +254,28 @@ onBeforeUnmount(hide)
 }
 
 .app-tooltip {
-  position: relative;
   display: inline-flex;
 }
 
 .app-tooltip__bubble {
-  position: absolute;
-  left: 50%;
+  /* In the top layer (a manual popover) and placed in screen coordinates by the script; the rest undoes the popover's
+     own box (centered, bordered, scrolling). */
+  position: fixed;
+  inset: auto;
   z-index: var(--z-tooltip);
+  box-sizing: border-box;
+  width: max-content;
+  /* A long tip wraps at the wide-tooltip measure, or at the screen's width where that is narrower (tickets 246, 265). */
+  max-width: min(15rem, calc(100vw - 2 * var(--space-8)));
+  margin: 0;
   padding: var(--space-6) var(--space-8);
+  overflow: visible;
   font: var(--type-small);
   line-height: 1rem;
   color: var(--canvas);
-  width: max-content;
-  /* A long tip wraps rather than outgrowing the screen, where the clamp couldn't bring it back (ticket 246). */
-  max-width: calc(100vw - 2 * var(--space-8));
   pointer-events: none;
   background: var(--ink);
+  border: 0;
   border-radius: var(--radius-sm);
-}
-
-.app-tooltip__bubble--bottom {
-  top: calc(100% + var(--space-6));
-}
-
-.app-tooltip__bubble--top {
-  bottom: calc(100% + var(--space-6));
 }
 </style>

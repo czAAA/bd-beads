@@ -51,7 +51,7 @@ Ticket 264's reachability guard exists to close exactly this gap; run its check 
 
 **Blocked by:** 264 (the check that proves it, and the pending list this ticket empties).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every row of the table is fixed: its Tooltip shows whole in English and Russian at 320, 360, 390, 768, 1024, 1280 and 1900 px, including the Hand tooltip in the drawer from the user's screenshot and every Progress bar and zoom Tooltip
 - [ ] No ancestor clips a Tooltip: a Tooltip placed in a new `overflow: hidden` box, anywhere in the app, still shows whole (proved in development, not committed)
