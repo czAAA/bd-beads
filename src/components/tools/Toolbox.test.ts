@@ -465,7 +465,20 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(wrapper.get('[data-testid="tool-paint"]').attributes('tabindex')).toBe('-1')
 
     await wrapper.setProps({ project: withFrame(makeProject(), undefined) })
-    expect(wrapper.find('[data-testid="tool-remove-frame"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="tool-remove-frame"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps Remove Frame under the tiles, enabled only while there is a Frame (ticket 274)', async () => {
+    const wrapper = mountToolbox({ project: withFrame(makeProject(), undefined) })
+    const remove = () => wrapper.get<HTMLButtonElement>('[data-testid="tool-remove-frame"]')
+    expect(remove().element.disabled).toBe(true)
+    expect(wrapper.get('[data-testid="tool-group-tools"]').element.contains(remove().element)).toBe(true)
+
+    await wrapper.setProps({ project: makeProject() })
+    expect(remove().element.disabled).toBe(false)
+
+    await wrapper.setProps({ project: setRowProgressEnabled(makeProject(), true) })
+    expect(remove().element.disabled).toBe(true)
   })
 
   it('locks the size while Row progress is on, and writes why', async () => {
@@ -486,5 +499,18 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(paint.attributes('aria-label')).toBeTruthy()
     const badges = wrapper.findAll('[data-testid^="tool-"] .tool-button__key').map((badge) => badge.text())
     expect(badges).toEqual(['1', '2', '3', 'E', 'H', 'F'])
+  })
+
+  it('draws the six tools as swatch-sized tiles with their key in aria-keyshortcuts (ticket 274)', () => {
+    const wrapper = mountToolbox()
+    const tiles = wrapper.findAll('.tool-buttons .tool-button')
+    expect(tiles).toHaveLength(6)
+    expect(tiles.map((tile) => tile.classes('tool-button--tile'))).toEqual(Array(6).fill(true))
+    expect(tiles.map((tile) => tile.attributes('aria-keyshortcuts'))).toEqual(['1', '2', '3', 'E', 'H', 'F'])
+    // Each tile holds its 16px icon and, apart from it, only the aria-hidden key.
+    for (const tile of tiles) {
+      expect(tile.find('svg').attributes('style')).toContain('width: 1rem')
+      expect(tile.find('.tool-button__key').attributes('aria-hidden')).toBe('true')
+    }
   })
 })

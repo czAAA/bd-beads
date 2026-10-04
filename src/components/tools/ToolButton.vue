@@ -8,6 +8,10 @@ import type { IconName } from '../ui/icons'
  * colour. A tool with a single-key shortcut shows that key as a badge in the corner (hidden on a coarse pointer and on
  * phone, where there is no keyboard). `label` is the accessible name; its Tooltip (ticket 251) shows the name, the key
  * and the `description`, if the tool needs one. Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
+ *
+ * The `tile` variant (ticket 274; ToolTabs card) is the desktop Toolbox's swatch-sized tile: a borderless 16px icon
+ * that turns `ink` with an inset accent outline when active, and the key printed in the top-right corner on every
+ * device. The tablet toolbar and the phone sheet keep the default variant until ticket 275.
  */
 defineOptions({ inheritAttrs: false })
 withDefaults(
@@ -19,8 +23,9 @@ withDefaults(
     hotkey?: string
     description?: string
     iconSize?: 18 | 22
+    variant?: 'button' | 'tile'
   }>(),
-  { iconSize: 22, hotkey: undefined, description: undefined },
+  { iconSize: 22, hotkey: undefined, description: undefined, variant: 'button' },
 )
 </script>
 
@@ -36,13 +41,14 @@ withDefaults(
       <button
         type="button"
         class="ui-control tool-button"
-        :class="{ 'tool-button--active': active }"
+        :class="[{ 'tool-button--active': active }, `tool-button--${variant}`]"
         :aria-label="label"
+        :aria-keyshortcuts="hotkey"
         :aria-pressed="active"
         :aria-describedby="describedby"
         v-bind="$attrs"
       >
-        <AppIcon :name="icon" :size="iconSize" />
+        <AppIcon :name="icon" :size="variant === 'tile' ? 16 : iconSize" />
         <span v-if="hotkey" class="tool-button__key" aria-hidden="true">{{ hotkey }}</span>
       </button>
     </template>
@@ -126,6 +132,53 @@ withDefaults(
 @media (pointer: coarse), (max-width: 743px) {
   .tool-button__key {
     display: none;
+  }
+}
+
+/*
+ * The tile (ToolTabs card, v18): a swatch-sized square, `elevated` fill, no border, `radius-sm`. The icon is centred by
+ * the button's flex alone; the key is out of the flow in the top-right corner, so it never moves the icon. Active:
+ * `ink` icon and a 1.5px inset `accent-strong` outline (3px in high contrast, a 2px Highlight outline in forced colors).
+ */
+.tool-button--tile {
+  border: 0;
+  border-radius: var(--radius-sm);
+}
+
+.tool-button--tile.tool-button--active {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--accent-strong);
+}
+
+:root[data-theme='contrast'] .tool-button--tile.tool-button--active {
+  box-shadow: inset 0 0 0 3px var(--accent-strong);
+}
+
+@media (hover: hover) {
+  .tool-button--tile:not(.tool-button--active):hover {
+    color: var(--ink);
+  }
+}
+
+.tool-button--tile .tool-button__key {
+  top: 1px;
+  right: 2px;
+  font: 400 0.625rem/1 var(--font-mono);
+  color: var(--muted);
+  /* Shown on every device, a fingertip's included: out-ranks the base rule that hides the key on touch and phone. */
+  display: block;
+}
+
+.tool-button--tile.tool-button--active .tool-button__key,
+:root[data-theme='contrast'] .tool-button--tile .tool-button__key {
+  color: var(--ink);
+}
+
+@media (forced-colors: active) {
+  .tool-button--tile.tool-button--active:not(:focus-visible) {
+    box-shadow: none;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
   }
 }
 

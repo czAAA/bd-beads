@@ -62,7 +62,7 @@ const customColorSelected = computed(
   () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
 )
 
-/** The Tools group's five icon buttons (ToolTabs card), with the hotkeys shown as badges and in their hints. */
+/** The Tools group's six icon tiles (ToolTabs card), with the hotkeys shown as badges and in their hints. */
 const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string; description?: string }[]>(() => [
   { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: TOOL_HOTKEYS.paint, description: t.value.tools.paintHint },
   { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: TOOL_HOTKEYS.fill, description: t.value.tools.fillHint },
@@ -144,7 +144,7 @@ const frameSummary = computed(() => {
           :hotkey="tool.hotkey"
           :description="tool.description"
           :active="activeTool === tool.id"
-          :icon-size="18"
+          variant="tile"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
@@ -157,17 +157,17 @@ const frameSummary = computed(() => {
           hotkey="F"
           :description="t.frame.setFrameHint"
           :active="!!settingFrame"
-          :icon-size="18"
+          variant="tile"
           data-testid="tool-frame"
           :tabindex="tabsRoving.tabIndexFor(!!settingFrame)"
           @click="emit('start-frame')"
         />
       </div>
-      <div v-if="project.frame" class="toolbox__links">
+      <div class="toolbox__links toolbox__links--frame">
         <AppLink
           icon="close"
           data-testid="tool-remove-frame"
-          :disabled="project.rowProgress.enabled"
+          :disabled="!project.frame || project.rowProgress.enabled"
           :title="project.rowProgress.enabled ? t.size.lockedReason : undefined"
           @click="emit('remove-frame')"
         >
@@ -281,10 +281,10 @@ const frameSummary = computed(() => {
   border-radius: var(--radius-lg);
 }
 
-/* Tool buttons (ToolTabs card): square icon buttons, four to a row. */
+/* Tool tiles (ToolTabs card, v18): the Palette swatches' 8 columns, so a tile is a swatch's size and the six tools fill the first six. */
 .tool-buttons {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: var(--space-6);
 }
 
@@ -292,6 +292,11 @@ const frameSummary = computed(() => {
   display: flex;
   justify-content: space-between;
   margin-top: var(--space-10);
+}
+
+/* Remove Frame sits 12px below the tiles (ToolTabs card). */
+.toolbox__links--frame {
+  margin-top: var(--space-12);
 }
 
 /* Side by side while both labels fit whole, one above the other when they don't (ticket 246). */
