@@ -26,3 +26,12 @@ export async function mountWithPattern(widthMm: number, heightMm: number, option
   await nextTick()
   return wrapper
 }
+
+/** Fills in and submits the New Pattern form: Toho Cube 1.5mm beads, sized in mm. */
+export async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
+  await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
+  await wrapper.find('[data-testid="width-input"]').setValue(width)
+  await wrapper.find('[data-testid="height-input"]').setValue(height)
+  await wrapper.find('form').trigger('submit')
+}

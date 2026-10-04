@@ -6,11 +6,11 @@ Tests move as they are: same tests, same names, same count.
 
 **Blocked by:** 253 (Audit and slim the App-level tests), so tests that are about to be moved or deleted aren't split first.
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Overview / Tour:** not applicable (no user-facing change); recorded per CLAUDE.md.
 
-- [ ] No App test file takes more than about 30s on CI
-- [ ] The total test count is the same as before the split
-- [ ] Shared setup moves to the existing test helpers, not copied into each new file
-- [ ] The unit run on CI is shorter than before the split, with the per-file times in the PR description
+- [x] No App test file takes more than about 30s on CI
+- [x] The total test count is the same as before the split
+- [x] Shared setup moves to the existing test helpers, not copied into each new file
+- [x] The unit run on CI is shorter than before the split, with the per-file times in the PR description

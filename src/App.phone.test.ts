@@ -2,7 +2,7 @@ import { frameGrid } from './domain/pattern'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
-import { mountWithPattern } from './testUtils/seedPattern'
+import { mountWithPattern, createPatternViaForm } from './testUtils/seedPattern'
 import { drawnPattern, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 
@@ -12,14 +12,6 @@ beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
 })
-
-async function createPatternViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
-  await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(width)
-  await wrapper.find('[data-testid="height-input"]').setValue(height)
-  await wrapper.find('form').trigger('submit')
-}
 
 /**
  * The phone New Pattern sheet's own form: with it open, the wider tiers' own (hidden but still mounted, ticket 79's
