@@ -1,6 +1,6 @@
 import { CELL_SIZE_PX, isOffsetTechnique, type Rotation, type Technique } from '../domain/grid'
 import type { Frame } from '../domain/canvas'
-import { rowTopPx, type Region } from './patternRenderer'
+import { rowTopPx, type Region } from './projectRenderer'
 
 /**
  * The geometry of looking at an open canvas through a viewport (ADR 0026): where a rectangle of beads lands on screen,
@@ -18,7 +18,7 @@ export interface Size {
   height: number
 }
 
-/** A point in grid space (px at zoom 1) carried to displayed space at a zoom: turned about the origin by the Pattern's rotation, then scaled. */
+/** A point in grid space (px at zoom 1) carried to displayed space at a zoom: turned about the origin by the Project's rotation, then scaled. */
 export function gridToDisplayed(rotation: Rotation, x: number, y: number, zoom: number): [number, number] {
   switch (rotation) {
     case 90:

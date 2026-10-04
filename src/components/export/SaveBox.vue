@@ -9,21 +9,21 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import LoadingState from '../ui/LoadingState.vue'
 
 /**
- * The save box (ticket 148; SaveBox, SaveStates and Menu cards), second in the left column: the Pattern library's save
- * state on this device (ADR 0012), a full-width Save Pattern, and Export ▾ with QR code, PNG image and PDF for
+ * The save box (ticket 148; SaveBox, SaveStates and Menu cards), second in the left column: the Project library's save
+ * state on this device (ADR 0012), a full-width Save Project, and Export ▾ with QR code, PNG image and PDF for
  * printing. It only asks; the app does the saving and exporting.
  */
 const props = withDefaults(defineProps<{
-  /** Whether the open Pattern has a Frame: exports take only the Frame's beads, so with none Export ▾ asks for one first (v16). */
+  /** Whether the open Project has a Frame: exports take only the Frame's beads, so with none Export ▾ asks for one first (v16). */
   hasFrame?: boolean
-  /** The last write to this device was refused (usePatternLibrary's saveFailed). */
+  /** The last write to this device was refused (useProjectLibrary's saveFailed). */
   saveFailed: boolean
-  /** The open Pattern doesn't fit a single QR code (ADR 0015). */
+  /** The open Project doesn't fit a single QR code (ADR 0015). */
   qrTooLarge?: boolean
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one, and a long one says so. */
   exporting?: 'png' | 'pdf'
-  /** The open Pattern's name, for what the wait says it is doing. */
-  patternName?: string
+  /** The open Project's name, for what the wait says it is doing. */
+  projectName?: string
   /** The maker's name printed on the exports (ticket 161); empty when not set. */
   makerName?: string
 }>(), { hasFrame: true })
@@ -33,8 +33,8 @@ const emit = defineEmits<{
   'export-qr': []
   'export-png': []
   'export-pdf': []
-  /** The open Pattern as a Pattern file: the way out when it is too large for a QR code (ticket 158). */
-  'export-pattern': []
+  /** The open Project as a Project file: the way out when it is too large for a QR code (ticket 158). */
+  'export-project': []
   /** Change or Add the maker's name, from the Export menu's last row (ticket 161). */
   'edit-maker-name': []
   /** The Export prompt's two ways out: frame every bead drawn, or draw the Frame by hand. */
@@ -93,8 +93,8 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
           </AppMenuItem>
           <template v-if="framed && qrTooLarge">
             <p class="save-box__reason" data-testid="export-qr-reason">{{ t.transfer.qrTooLargeMessage }}</p>
-            <AppMenuItem icon="export" data-testid="export-qr-way-out" @select="emit('export-pattern')">
-              {{ t.saveBox.exportPatternFile }}
+            <AppMenuItem icon="export" data-testid="export-qr-way-out" @select="emit('export-project')">
+              {{ t.saveBox.exportProjectFile }}
             </AppMenuItem>
           </template>
           <AppMenuItem v-if="framed" icon="image" :disabled="!!exporting" data-testid="export-png" @select="emit('export-png')">
@@ -126,7 +126,7 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
       v-if="exporting"
       class="save-box__loading"
       compact
-      :text="(exporting === 'pdf' ? t.saveBox.makingPdf : t.saveBox.makingPng).replace('{name}', patternName ?? '')"
+      :text="(exporting === 'pdf' ? t.saveBox.makingPdf : t.saveBox.makingPng).replace('{name}', projectName ?? '')"
     />
   </section>
 </template>

@@ -15,7 +15,7 @@ export interface Box {
 export type Stick = Record<Side, number>
 
 /**
- * How far each side of the Pattern's box has scrolled out of view, in screen px (ticket 225): the distance each
+ * How far each side of the Project's box has scrolled out of view, in screen px (ticket 225): the distance each
  * ruler has to be carried inward to stay at its edge of the scroll area. A ruler is never carried past the far side
  * of its own gutter, so it stops at the opposite edge when the box is scrolled nearly out of view.
  */
@@ -31,7 +31,7 @@ export function stickDistances(box: Box, view: Box, gutterPx: number): Stick {
   }
 }
 
-/** The side of the screen a side of the Pattern faces once the Pattern is turned clockwise by `rotation`. */
+/** The side of the screen a side of the Project faces once the Project is turned clockwise by `rotation`. */
 export function screenSideOf(side: Side, rotation: Rotation): Side {
   return SIDES[(SIDES.indexOf(side) + rotation / 90) % 4]!
 }

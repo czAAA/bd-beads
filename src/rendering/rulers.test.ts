@@ -12,7 +12,7 @@ const view = (extra: Partial<RulerView> = {}): RulerView => ({
   fontPx: 11,
   ...extra,
 })
-const pattern = (positions: [number, number][], frame?: { row: number; column: number; rows: number; columns: number }) => ({
+const project = (positions: [number, number][], frame?: { row: number; column: number; rows: number; columns: number }) => ({
   technique: 'loom' as const,
   frame,
   beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
@@ -20,12 +20,12 @@ const pattern = (positions: [number, number][], frame?: { row: number; column: n
 
 describe('which boxes carry rulers', () => {
   it('is each piece, with only the start sides, until a Frame is set', () => {
-    const boxes = ruledBoxes(pattern([[0, 0], [10, 10]]))
+    const boxes = ruledBoxes(project([[0, 0], [10, 10]]))
     expect(boxes.map((box) => [box.kind, box.sides, box.outset])).toEqual([['piece', 'start', 5], ['piece', 'start', 5]])
   })
 
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
-    const boxes = ruledBoxes(pattern([[0, 0], [10, 10]], { row: 2, column: 3, rows: 4, columns: 5 }))
+    const boxes = ruledBoxes(project([[0, 0], [10, 10]], { row: 2, column: 3, rows: 4, columns: 5 }))
     expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'all' }])
   })
 })
@@ -100,7 +100,7 @@ describe('the numbers of a ruled box', () => {
   })
 
   it('leave out the numbers far off screen, and find the one under a point', () => {
-    const labels = visibleRulerLabels(pattern([[0, 0], [0, 1], [900, 900]]), view())
+    const labels = visibleRulerLabels(project([[0, 0], [0, 1], [900, 900]]), view())
 
     expect(labels.some((l) => l.text === '1' && l.axis === 'row')).toBe(true)
     expect(labels.length).toBeLessThan(10)

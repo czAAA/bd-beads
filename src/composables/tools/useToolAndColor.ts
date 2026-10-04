@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { PALETTE, normalizeHex, type PaletteColor } from '../../domain/palette'
 import type { Tool } from '../../domain/tool'
 
-/** Red is the Palette's first swatch and its default: a Pattern almost always opens ready to paint, not on a dead click-a-color-first step. */
+/** Red is the Palette's first swatch and its default: a Project almost always opens ready to paint, not on a dead click-a-color-first step. */
 export const DEFAULT_PALETTE_COLOR_ID = 'red'
 
 /** What choosing a tool needs from the app shell: leaving Select forgets what it was holding. */
@@ -33,9 +33,9 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   const customColor = ref<string | undefined>(undefined)
 
   /**
-   * The Image color being painted with (CONTEXT.md's Image colors, ticket 58): one of the open Pattern's own converted
+   * The Image color being painted with (CONTEXT.md's Image colors, ticket 58): one of the open Project's own converted
    * colors, offered in the Colors group alongside the Palette. The third of three mutually exclusive paint colors,
-   * kept exclusive by the onSelect* handlers below, and reset on a Pattern switch since a hex from one Pattern's
+   * kept exclusive by the onSelect* handlers below, and reset on a Project switch since a hex from one Project's
    * conversion means nothing in another.
    */
   const selectedImageColor = ref<string | undefined>(undefined)
@@ -100,14 +100,14 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     selectedColorId.value = colorId
   }
 
-  /** Choosing one of the open Pattern's Image colors (ticket 58) paints with it, the same way a Palette swatch does; the Custom slot keeps its own last hex, unselected. */
+  /** Choosing one of the open Project's Image colors (ticket 58) paints with it, the same way a Palette swatch does; the Custom slot keeps its own last hex, unselected. */
   function onSelectImageColor(hex: string) {
     selectedImageColor.value = hex
     selectedColorId.value = undefined
     switchToPaintOnColorPick()
   }
 
-  /** A Pattern switch: an Image color belongs to the Pattern that was converted, so it can't stay selected; the Palette's own default steps back in, rather than leaving the editor with no paint color at all. */
+  /** A Project switch: an Image color belongs to the Project that was converted, so it can't stay selected; the Palette's own default steps back in, rather than leaving the editor with no paint color at all. */
   function resetImageColor() {
     if (selectedImageColor.value) {
       selectedImageColor.value = undefined

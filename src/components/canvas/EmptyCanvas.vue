@@ -2,8 +2,8 @@
 import { useI18n } from '../../i18n/useI18n'
 
 /**
- * The canvas box with no Pattern open (ticket 158; EmptyCanvas card): the frame stays, and the drawing area shows an
- * empty board (the `board` with `bead-empty` beads, no curve or word), "No Pattern open yet" and one line on what to do.
+ * The canvas box with no Project open (ticket 158; EmptyCanvas card): the frame stays, and the drawing area shows an
+ * empty board (the `board` with `bead-empty` beads, no curve or word), "No Project open yet" and one line on what to do.
  */
 const { t } = useI18n()
 </script>

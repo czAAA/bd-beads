@@ -14,12 +14,12 @@ defineProps<{ feature: keyof Translations['overview']['features'] }>()
 
 const EXAMPLES: Record<keyof Translations['overview']['features'], Component> = {
   techniques: TechniquesExample,
-  patternEditing: EditingExample,
+  projectEditing: EditingExample,
   convertImage: ConvertExample,
   rowProgress: ProgressExample,
   beadsNeeded: BeadsExample,
   exports: ExportsExample,
-  savedPatterns: SavedExample,
+  savedProjects: SavedExample,
 }
 </script>
 

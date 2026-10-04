@@ -1,18 +1,18 @@
 // The artwork is copied from docs/design/system/components/TourPattern/tour-pattern.json; tour.test.ts keeps the two equal.
-import tourPattern from './tourPatternData.json'
+import tourProject from './tourProjectData.json'
 import { findPaletteColor } from './palette'
-import type { Grid, RowProgress } from './pattern'
+import type { Grid, RowProgress } from './project'
 import type { Selection } from './selection'
 import type { Tool } from './tool'
 
 /**
- * The Tour (CONTEXT.md; ticket 80): eleven steps inside the real editor that build one finished Pattern, TourPattern
- * in the design system. This module is the Tour's rules with no screen in them: the steps, the Pattern's grid at the end
+ * The Tour (CONTEXT.md; ticket 80): eleven steps inside the real editor that build one finished Project, TourProject
+ * in the design system. This module is the Tour's rules with no screen in them: the steps, the Project's grid at the end
  * of each step, when a step counts as done, and which control (or which beads) the Tour is pointing at right now.
  */
 
-export const TOUR_COLUMNS = tourPattern.size.columns
-export const TOUR_ROWS = tourPattern.size.rows
+export const TOUR_COLUMNS = tourProject.size.columns
+export const TOUR_ROWS = tourProject.size.rows
 
 export type TourStepId =
   | 'create'
@@ -44,7 +44,7 @@ export const TOUR_STEPS: readonly TourStepId[] = [
 
 /** The controls a step can point at; the screen maps each to the control's place on the current screen size. */
 export type TourControl =
-  | 'new-pattern'
+  | 'new-project'
   | 'tool-paint'
   | 'tool-fill'
   | 'tool-select'
@@ -61,7 +61,7 @@ export type TourControl =
   | 'progress-next'
   | 'progress-previous'
   | 'export'
-  /** The Pattern itself, for a step that marks beads on it. */
+  /** The Project itself, for a step that marks beads on it. */
   | 'board'
 
 const YELLOW = findPaletteColor('yellow')!.hex
@@ -78,21 +78,21 @@ function cells(list: readonly (readonly number[])[]): TourCell[] {
   return list.map(([row, column]) => ({ row: row! - 1, column: column! - 1 }))
 }
 
-const OUTLINE = cells(tourPattern.marks['3'])
-const EYE = cells(tourPattern.marks['5'])
-const STRAY = cells(tourPattern.marks['8'])
+const OUTLINE = cells(tourProject.marks['3'])
+const EYE = cells(tourProject.marks['5'])
+const STRAY = cells(tourProject.marks['8'])
 
-const [SELECT_TOP, SELECT_LEFT, SELECT_ROWS, SELECT_COLUMNS] = tourPattern.marks['6'].select as [number, number, number, number]
+const [SELECT_TOP, SELECT_LEFT, SELECT_ROWS, SELECT_COLUMNS] = tourProject.marks['6'].select as [number, number, number, number]
 /** The rhombus the Copy step selects. */
 export const TOUR_SELECTION: Selection = { top: SELECT_TOP - 1, left: SELECT_LEFT - 1, rows: SELECT_ROWS, columns: SELECT_COLUMNS }
 /** Where the Copy step pastes it: the top-left bead of each of the four other rhombuses. */
-const PASTE_SPOTS = cells(tourPattern.marks['6'].pasteAt)
+const PASTE_SPOTS = cells(tourProject.marks['6'].pasteAt)
 
 function colorOf(letter: string): string | null {
   return letter === 'Y' ? YELLOW : letter === 'K' ? BLACK : null
 }
 
-const FINAL: Grid = tourPattern.rows.map((row) => [...row].map((letter) => ({ color: colorOf(letter) })))
+const FINAL: Grid = tourProject.rows.map((row) => [...row].map((letter) => ({ color: colorOf(letter) })))
 
 function blank(color: string | null): Grid {
   return Array.from({ length: TOUR_ROWS }, () => Array.from({ length: TOUR_COLUMNS }, () => ({ color })))
@@ -136,7 +136,7 @@ function stamp(grid: Grid, from: Grid, row: number, column: number): Grid {
 }
 
 /**
- * The Pattern's grid once step `n` (1 to 8) is done. Step 1 leaves it empty, 7 leaves one stray yellow bead in the
+ * The Project's grid once step `n` (1 to 8) is done. Step 1 leaves it empty, 7 leaves one stray yellow bead in the
  * top-left corner for step 8, which erases it.
  */
 export function afterStep(n: number): Grid {
@@ -167,8 +167,8 @@ export function gridsEqual(a: Grid, b: Grid): boolean {
 
 /** What the Tour reads off the app to decide where a step stands. */
 export interface TourSnapshot {
-  /** The open Pattern's id; none while the New Pattern form is up. */
-  patternId: string | undefined
+  /** The open Project's id; none while the New Project form is up. */
+  projectId: string | undefined
   columns: number
   rows: number
   grid: Grid
@@ -182,7 +182,7 @@ export interface TourSnapshot {
 
 /** What a step remembers between looks that the app's state doesn't hold on its own. */
 export interface TourMemo {
-  /** The Tour Pattern lost a line (Remove line), so coming back to it is the step's Undo. */
+  /** The Tour Project lost a line (Remove line), so coming back to it is the step's Undo. */
   sizeLeft?: boolean
   /** Row progress got to row 4, so three rows were marked done. */
   reachedRow3?: boolean
@@ -208,8 +208,8 @@ export function evaluateStep(step: TourStepId, snapshot: TourSnapshot, memo: Tou
 
   switch (step) {
     case 'create':
-      // Only a blank Tour-sized Pattern counts, so a Pattern of someone's own that happens to be open is never built on.
-      return { memo, done: snapshot.patternId !== undefined && atTourSize(snapshot) && gridsEqual(snapshot.grid, afterStep(1)) }
+      // Only a blank Tour-sized Project counts, so a Project of someone's own that happens to be open is never built on.
+      return { memo, done: snapshot.projectId !== undefined && atTourSize(snapshot) && gridsEqual(snapshot.grid, afterStep(1)) }
     case 'remove-line':
     case 'size': {
       const sizeLeft = memo.sizeLeft || !atTourSize(snapshot)
@@ -233,10 +233,10 @@ export interface TourBox {
   columns: number
 }
 
-/** What the Tour points at right now: one control, and on the Pattern the beads or boxes to mark. */
+/** What the Tour points at right now: one control, and on the Project the beads or boxes to mark. */
 export interface TourTargets {
   control: TourControl
-  /** Beads still to paint or erase, outlined on the Pattern. */
+  /** Beads still to paint or erase, outlined on the Project. */
   cells?: TourCell[]
   /** The frame to select. */
   box?: TourBox
@@ -259,7 +259,7 @@ function stillToMark(grid: Grid, list: readonly TourCell[], color: string | null
   return list.filter(({ row, column }) => grid[row]?.[column]?.color !== color)
 }
 
-/** The tool, then the color, then the Pattern: each is pointed at only until it is the one in use. */
+/** The tool, then the color, then the Project: each is pointed at only until it is the one in use. */
 function toolThenColor(snapshot: TourSnapshot, tool: Tool, colorId: 'black' | 'yellow'): TourControl | undefined {
   if (snapshot.tool !== tool) {
     return `tool-${tool}`
@@ -276,7 +276,7 @@ export function tourTargets(step: TourStepId, snapshot: TourSnapshot, memo: Tour
   const { grid } = snapshot
   switch (step) {
     case 'create':
-      return { control: 'new-pattern' }
+      return { control: 'new-project' }
     case 'fill':
       return { control: toolThenColor(snapshot, 'fill', 'black') ?? 'board' }
     case 'outline': {
@@ -328,7 +328,7 @@ export function tourTargets(step: TourStepId, snapshot: TourSnapshot, memo: Tour
   }
 }
 
-/** The finished Tour Pattern, as the Overview shows it lying across its page (ticket 216). */
+/** The finished Tour Project, as the Overview shows it lying across its page (ticket 216). */
 export function tourFinishedGrid(): Grid {
   return FINAL
 }

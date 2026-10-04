@@ -1,8 +1,8 @@
 import { normalizeMakerName } from '../domain/makerName'
 
 /**
- * The maker's name (CONTEXT.md, ticket 161): who made a Pattern, printed on its PDF and PNG exports. It belongs to the
- * person using this device, not to a Pattern, so it is kept on the device like the theme and never sent anywhere
+ * The maker's name (CONTEXT.md, ticket 161): who made a Project, printed on its PDF and PNG exports. It belongs to the
+ * person using this device, not to a Project, so it is kept on the device like the theme and never sent anywhere
  * (ADR 0001). Empty means the exports leave it out.
  */
 export const MAKER_NAME_KEY = 'bd-beads:maker-name'

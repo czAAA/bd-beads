@@ -25,7 +25,7 @@ describe('stickDistances', () => {
 })
 
 describe('screenSideOf', () => {
-  it('follows the pattern as it is turned clockwise', () => {
+  it('follows the project as it is turned clockwise', () => {
     expect(screenSideOf('top', 0)).toBe('top')
     expect(screenSideOf('top', 90)).toBe('right')
     expect(screenSideOf('left', 90)).toBe('top')

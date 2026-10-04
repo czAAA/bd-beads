@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, setRowProgressEnabled, type Pattern } from '../../domain/pattern'
+import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
 
-const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const other = BEAD_CATALOG.find((bead) => bead.id !== base.beadId)!
 
-function setup(pattern: Pattern | null = base) {
+function setup(project: Project | null = base) {
   const deps = {
-    currentPattern: () => pattern ?? undefined,
-    replacePattern: vi.fn(),
+    currentProject: () => project ?? undefined,
+    replaceProject: vi.fn(),
     recordHistory: vi.fn(),
     messages: () => en,
     locale: () => 'en' as const,
@@ -24,7 +24,7 @@ function selectWith(value: string) {
 }
 
 describe('useReplaceBeadFlow', () => {
-  it('offers every catalog Bead but the Pattern’s own', () => {
+  it('offers every catalog Bead but the Project’s own', () => {
     const { replaceBeadCandidates } = setup()
     expect(replaceBeadCandidates.value.map((bead) => bead.id)).not.toContain(base.beadId)
     expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length - 1)
@@ -41,7 +41,7 @@ describe('useReplaceBeadFlow', () => {
     expect(replaceBeadPendingBead.value?.id).toBe(other.id)
   })
 
-  it('ignores the placeholder pick and a pick with no Pattern open', () => {
+  it('ignores the placeholder pick and a pick with no Project open', () => {
     const open = setup()
     open.onPickReplaceBead(selectWith(''))
     expect(open.replaceBeadPendingBead.value).toBeUndefined()
@@ -66,7 +66,7 @@ describe('useReplaceBeadFlow', () => {
     onPickReplaceBead(selectWith(other.id))
     onCancelReplaceBead()
     expect(replaceBeadPendingBead.value).toBeUndefined()
-    expect(deps.replacePattern).not.toHaveBeenCalled()
+    expect(deps.replaceProject).not.toHaveBeenCalled()
     expect(deps.recordHistory).not.toHaveBeenCalled()
   })
 
@@ -78,7 +78,7 @@ describe('useReplaceBeadFlow', () => {
     expect(replaceBeadPendingBead.value).toBeUndefined()
     expect(deps.recordHistory).toHaveBeenCalledTimes(1)
     expect(deps.recordHistory).toHaveBeenCalledWith({ beads: base.beads, beadId: base.beadId })
-    const replaced = deps.replacePattern.mock.calls[0]![0] as Pattern
+    const replaced = deps.replaceProject.mock.calls[0]![0] as Project
     expect(replaced.beadId).toBe(other.id)
     expect(replaced.beads).toBe(base.beads)
     expect(replaced.rowProgress).toEqual(base.rowProgress)
@@ -88,13 +88,13 @@ describe('useReplaceBeadFlow', () => {
     const { deps, onPickReplaceBead, onConfirmReplaceBead } = setup(setRowProgressEnabled(base, true))
     onPickReplaceBead(selectWith(other.id))
     onConfirmReplaceBead()
-    expect(deps.replacePattern).toHaveBeenCalledTimes(1)
+    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
   })
 
   it('confirming with nothing pending does nothing', () => {
     const { deps, onConfirmReplaceBead } = setup()
     onConfirmReplaceBead()
     expect(deps.recordHistory).not.toHaveBeenCalled()
-    expect(deps.replacePattern).not.toHaveBeenCalled()
+    expect(deps.replaceProject).not.toHaveBeenCalled()
   })
 })

@@ -6,7 +6,7 @@ import { defineComponent, h } from 'vue'
 import FeatureExample from './FeatureExample.vue'
 import { CHECKS, GOLD_STRIP, HEART, HILLS, POPPY, POPPY_PAINTING, STRIPES } from './exampleArt'
 
-const FEATURES = ['techniques', 'patternEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedPatterns'] as const
+const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects'] as const
 
 function example(feature: (typeof FEATURES)[number], locale = 'en') {
   localStorage.setItem('bd-beads:locale', locale)
@@ -58,8 +58,8 @@ describe('the carousel examples', () => {
     expect(wrapper.findAll('canvas')).toHaveLength(3)
   })
 
-  it('pattern editing: shows Paint active in the toolbar', () => {
-    const wrapper = example('patternEditing')
+  it('project editing: shows Paint active in the toolbar', () => {
+    const wrapper = example('projectEditing')
     expect(wrapper.findAll('.editing__tool--on')).toHaveLength(1)
     expect(wrapper.find('.editing__tool--on [data-icon="paint"]').exists()).toBe(true)
   })
@@ -77,7 +77,7 @@ describe('the carousel examples', () => {
     expect(wrapper.text()).toContain('Row done')
   })
 
-  it('beads needed: lists the Tour Pattern colors and a total that adds up', () => {
+  it('beads needed: lists the Tour Project colors and a total that adds up', () => {
     const wrapper = example('beadsNeeded')
     const numbers = wrapper.findAll('.beads__number').map((el) => Number(el.text()))
     const total = numbers.pop()!
@@ -90,7 +90,7 @@ describe('the carousel examples', () => {
   it('exports: a page with the technique word, and the four ways out', () => {
     const wrapper = example('exports')
     expect(wrapper.get('[data-testid="example-word"]').text()).toBe('Loom')
-    expect(wrapper.findAll('.formats__item').map((el) => el.text())).toEqual(['PDF', 'PNG', 'QR', 'Pattern file'])
+    expect(wrapper.findAll('.formats__item').map((el) => el.text())).toEqual(['PDF', 'PNG', 'QR', 'Project file'])
   })
 
   it("exports: keeps the word's proportions whatever the width", () => {
@@ -98,8 +98,8 @@ describe('the carousel examples', () => {
     expect(wrapper.get('[data-testid="example-word"]').attributes('preserveAspectRatio')).toBe('xMidYMid meet')
   })
 
-  it('saved patterns: six named thumbnails, the first one open', () => {
-    const wrapper = example('savedPatterns')
+  it('saved projects: six named thumbnails, the first one open', () => {
+    const wrapper = example('savedProjects')
     expect(wrapper.findAll('.gallery__name').map((el) => el.text())).toEqual(['Gold strip', 'Poppy', 'Heart', 'Hills', 'Stripes', 'Checks'])
     expect(wrapper.findAll('.gallery__item--open')).toHaveLength(1)
     expect(wrapper.findAll('.gallery__item')[0]!.classes()).toContain('gallery__item--open')
@@ -107,7 +107,7 @@ describe('the carousel examples', () => {
 
   it('speaks Russian when the language is Russian', () => {
     expect(example('techniques', 'ru').findAll('.ex-label').map((el) => el.text())).toEqual(['ткачество', 'мозаика', 'кирпичик'])
-    expect(example('savedPatterns', 'ru').findAll('.gallery__name')[1]!.text()).toBe('Мак')
+    expect(example('savedProjects', 'ru').findAll('.gallery__name')[1]!.text()).toBe('Мак')
     expect(example('exports', 'ru').get('[data-testid="example-word"]').text()).toBe('Ткачество')
   })
 })

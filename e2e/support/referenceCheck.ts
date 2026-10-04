@@ -1,17 +1,17 @@
-import { beadColorAt } from '../../src/domain/pattern'
+import { beadColorAt } from '../../src/domain/project'
 import { writeFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
-import type { Pattern } from '../../src/domain/pattern'
-import { isInFinishedRow, patternFrame } from '../../src/domain/pattern'
+import type { Project } from '../../src/domain/project'
+import { isInFinishedRow, projectFrame } from '../../src/domain/project'
 import { displayedBox } from '../../src/rendering/canvasView'
-import type { Region } from '../../src/rendering/patternRenderer'
+import type { Region } from '../../src/rendering/projectRenderer'
 import { LIGHT_THEME } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
-import { beadCentre } from './patterns'
+import { beadCentre } from './projects'
 
 /**
- * The comparisons that hold the app's drawing of a Pattern to the reference screenshots in e2e/visual/__screenshots__.
+ * The comparisons that hold the app's drawing of a Project to the reference screenshots in e2e/visual/__screenshots__.
  * Those were made from the one-element-per-bead grid the renderer replaced (ticket 103), and stay as the reference the
  * renderer is held to (ADR 0018: "visually indistinguishable"). A canvas never lands on exactly the same pixels as the
  * DOM did (that snapped a scaled box's inside to whole pixels its own way, and rasterized a 0.25px rim its own way), so
@@ -47,11 +47,11 @@ function rgb(hex: string): [number, number, number] {
 /** How much of its own color a finished bead keeps in the light theme, over the open canvas (28%). */
 const FINISHED_SHARE = 0.28
 
-/** The color a bead should show at its centre, from the Pattern alone. A finished row's beads are their own color at 28% over the open canvas. */
-function expectedCentre(pattern: Pattern, row: number, column: number): [number, number, number] {
-  const color = beadColorAt(pattern, row, column)
+/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 28% over the open canvas. */
+function expectedCentre(project: Project, row: number, column: number): [number, number, number] {
+  const color = beadColorAt(project, row, column)
   const own = rgb(color ?? LIGHT_THEME.emptyBead)
-  if (!isInFinishedRow(pattern, { row, column })) {
+  if (!isInFinishedRow(project, { row, column })) {
     return own
   }
   const board = rgb(LIGHT_THEME.canvas)
@@ -65,7 +65,7 @@ function expectedCentre(pattern: Pattern, row: number, column: number): [number,
  */
 export function wrongBeads(
   image: Buffer,
-  pattern: Pattern,
+  project: Project,
   zoom: number,
   box: { x: number; y: number; width: number; height: number },
   origin: { x: number; y: number },
@@ -74,15 +74,15 @@ export function wrongBeads(
 ): string[] {
   const png = PNG.sync.read(image)
   const wrong: string[] = []
-  for (let row = 0; row < pattern.frame!.rows; row += 1) {
-    for (let column = 0; column < pattern.frame!.columns; column += 1) {
+  for (let row = 0; row < project.frame!.rows; row += 1) {
+    for (let column = 0; column < project.frame!.columns; column += 1) {
       if (ignore.has(`(${row}, ${column})`)) {
         continue
       }
-      const centre = beadCentre(pattern, box, zoom, { row, column })
+      const centre = beadCentre(project, box, zoom, { row, column })
       const x = Math.floor(centre.x - origin.x)
       const y = Math.floor(centre.y - origin.y)
-      const expected = expectedCentre(pattern, row, column)
+      const expected = expectedCentre(project, row, column)
       const found = [-1, 0, 1].some((dy) =>
         [-1, 0, 1].some((dx) => {
           const at = ((y + dy) * png.width + (x + dx)) * 4
@@ -97,11 +97,11 @@ export function wrongBeads(
   return wrong
 }
 
-/** What a screenshot of the drawn Pattern (the `actual`) is judged on against a reference: the share of blocks that differ in look, and the beads whose centre is the wrong color. */
+/** What a screenshot of the drawn Project (the `actual`) is judged on against a reference: the share of blocks that differ in look, and the beads whose centre is the wrong color. */
 export function compareToReference(
   actual: Buffer,
   expected: Buffer,
-  pattern: Pattern,
+  project: Project,
   zoom: number,
   box: { x: number; y: number; width: number; height: number },
   origin: { x: number; y: number },
@@ -111,7 +111,7 @@ export function compareToReference(
   const differing = differingBlocks(actual, expected, blockFor(zoom), BLOCK_TOLERANCE)
   return {
     look: typeof differing === 'number' ? differing / Math.ceil((width * height) / blockFor(zoom) ** 2) : differing,
-    wrong: wrongBeads(actual, pattern, zoom / 100, box, origin, ignore),
+    wrong: wrongBeads(actual, project, zoom / 100, box, origin, ignore),
   }
 }
 
@@ -122,13 +122,13 @@ export function compareToReference(
  */
 export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
-/** The pixels the Pattern's Frame covers on screen, from the Pattern's corner: turned and zoomed, to whole pixels. */
-export function shownRegion(corner: { x: number; y: number }, pattern: Pattern, zoom: number): Region {
-  const shown = displayedBox(pattern.technique, pattern.rotation, patternFrame(pattern), zoom)
+/** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
+export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
+  const shown = displayedBox(project.technique, project.rotation, projectFrame(project), zoom)
   return { x: Math.floor(corner.x + shown.x), y: Math.floor(corner.y + shown.y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }
 
-/** Writes a new reference: the pixels the Pattern's Frame covers. */
+/** Writes a new reference: the pixels the Project's Frame covers. */
 export async function writeReference(page: Page, path: string, region: Region): Promise<void> {
   writeFileSync(path, await page.screenshot({ clip: region }))
 }

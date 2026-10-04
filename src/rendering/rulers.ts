@@ -2,9 +2,9 @@ import type { Frame } from '../domain/canvas'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
 import { piecesOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
-import type { PatternTheme } from './beadLook'
+import type { ProjectTheme } from './beadLook'
 import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
-import { rowShiftPx, rowTopPx } from './patternRenderer'
+import { rowShiftPx, rowTopPx } from './projectRenderer'
 
 /**
  * The rulers and the lines they hang from on the open canvas (Rulers and BeadBoard cards, ADR 0026): every row and
@@ -65,11 +65,11 @@ export interface RulerView {
 }
 
 /** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece (those near the viewport are chosen by the caller). */
-export function ruledBoxes(pattern: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique }): RuledBox[] {
-  if (pattern.frame) {
-    return [{ ...pattern.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
+export function ruledBoxes(project: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique }): RuledBox[] {
+  if (project.frame) {
+    return [{ ...project.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
   }
-  return piecesOf(pattern.beads, pattern.technique).map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
+  return piecesOf(project.beads, project.technique).map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
 }
 
 /** A box's rectangle in viewport px: where its beads are, without the outset. */
@@ -161,11 +161,11 @@ export function labelAt(labels: readonly RulerLabel[], point: { x: number; y: nu
 
 /** Every ruler number in view, for all the boxes that carry rulers and are near the viewport. */
 export function visibleRulerLabels(
-  pattern: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique },
+  project: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique },
   view: RulerView,
 ): RulerLabel[] {
   const reach = view.fontPx * 4 + FRAME_OUTSET_PX + 40
-  return ruledBoxes(pattern).flatMap((box) => {
+  return ruledBoxes(project).flatMap((box) => {
     const shown = boxOnScreen(box, view)
     const near =
       shown.x + shown.width > -reach &&
@@ -177,4 +177,4 @@ export function visibleRulerLabels(
 }
 
 /** What the rulers are drawn in: the numbers and the lines. */
-export type RulerTheme = Pick<PatternTheme, 'ruler' | 'rulerStrong' | 'marker' | 'cursor' | 'frameLine' | 'pieceLine' | 'pieceLineActive'>
+export type RulerTheme = Pick<ProjectTheme, 'ruler' | 'rulerStrong' | 'marker' | 'cursor' | 'frameLine' | 'pieceLine' | 'pieceLineActive'>

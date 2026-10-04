@@ -1,12 +1,12 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { isInFinishedRow, mirroredCells, type Pattern } from '../../domain/pattern'
+import { isInFinishedRow, mirroredCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 
-/** What pointer input on the canvas needs from the app shell: the open Pattern and tool, the paint color, and the paint/selection gestures it drives. */
+/** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the paint/selection gestures it drives. */
 export interface CanvasPointerDeps {
-  currentPattern: () => Pattern | undefined
+  currentProject: () => Project | undefined
   activeTool: () => Tool
   /** Whether Space is held: Space+drag pans the canvas, never paints. */
   spaceHeld: () => boolean
@@ -14,7 +14,7 @@ export interface CanvasPointerDeps {
   selectedColorHex: () => string | null
   mirrorAxisCounts: () => MirrorAxisCounts
   mirrorCopyMode: () => boolean
-  pastePreviewCells: (pattern: Pattern, hovered: GridPosition) => PreviewCell[]
+  pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
   beginSelectPress: (row: number, column: number) => void
   extendSelection: (row: number, column: number) => void
   backOutOfSelect: () => void
@@ -25,26 +25,26 @@ export interface CanvasPointerDeps {
 }
 
 /**
- * Mouse, touch and pen input on the Pattern (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0023): the hovered cell and
+ * Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0023): the hovered cell and
  * its paint preview, and what a primary or secondary press and drag does under each tool. Deps are read lazily.
  */
 export function useCanvasPointer(deps: CanvasPointerDeps) {
   /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
   const hoveredCell: Ref<GridPosition | undefined> = ref()
 
-  function cellsUnderCursor(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
+  function cellsUnderCursor(project: Project, hovered: GridPosition): PreviewCell[] {
     const tool = deps.activeTool()
     if (tool === 'hand') {
       return []
     }
     if (tool === 'select') {
-      return deps.pastePreviewCells(pattern, hovered)
+      return deps.pastePreviewCells(project, hovered)
     }
     if (tool !== 'paint') {
       // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
       return [hovered]
     }
-    return mirroredCells(pattern, hovered, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
+    return mirroredCells(project, hovered, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
   }
 
   /**
@@ -53,11 +53,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
    * lands on them (ticket 33).
    */
   const previewCells = computed<PreviewCell[]>(() => {
-    const pattern = deps.currentPattern()
-    if (!pattern || !hoveredCell.value) {
+    const project = deps.currentProject()
+    if (!project || !hoveredCell.value) {
       return []
     }
-    return cellsUnderCursor(pattern, hoveredCell.value).filter((cell) => !isInFinishedRow(pattern, cell))
+    return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !isInFinishedRow(project, cell))
   })
 
   function onCellHover(row: number, column: number) {
@@ -85,7 +85,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    if (!deps.currentPattern()) {
+    if (!deps.currentProject()) {
       return
     }
 

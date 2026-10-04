@@ -1,18 +1,18 @@
-import { frameGrid } from './domain/pattern'
+import { frameGrid } from './domain/project'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { beadColor, drawnPattern, pressBead } from './testUtils/beads'
+import { beadColor, drawnProject, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { gridWidthPx } from './domain/grid'
 import type { PixelData } from './domain/imageConversion'
 import { ImageConversionError } from './domain/imageConversion'
-import { loadPatterns } from './services/libraryStore'
+import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
 
 /**
- * Convert image end to end through the app shell (ticket 58): the New Pattern form's file input, the framing step
- * taking the canvas panel over, and the Pattern it creates.
+ * Convert image end to end through the app shell (ticket 58): the New Project form's file input, the framing step
+ * taking the canvas panel over, and the Project it creates.
  *
  * The one thing stubbed is the decode itself — jsdom decodes no image bytes and paints no canvas (see imageDecode.ts),
  * so the picture arrives here as pixel data built by hand, which is exactly what the real adapter would have produced.
@@ -65,7 +65,7 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', 
   await flushPromises()
 }
 
-/** Starts framing a 15 x 30mm Pattern (10 x 20 cells in 1.5mm cubes) from the two-block picture. */
+/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture. */
 async function startFraming(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
   await stateSize(wrapper, width, height)
   await chooseImage(wrapper)
@@ -101,7 +101,7 @@ describe('App Convert image framing (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-frame"] [data-testid="convert-image-create"]').exists()).toBe(false)
   })
 
-  it('keeps the New Pattern form up and editable while framing', async () => {
+  it('keeps the New Project form up and editable while framing', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
@@ -206,15 +206,15 @@ describe('App Convert image framing (ticket 58)', () => {
   })
 })
 
-describe('App Convert image creating the Pattern (ticket 58)', () => {
-  it('creates a Pattern from the picture and opens it', async () => {
+describe('App Convert image creating the Project (ticket 58)', () => {
+  it('creates a Project from the picture and opens it', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
     // The left half of the picture is red, the right half blue.
     expect(beadColor(wrapper, 0)).toBe('#e63746')
     expect(beadColor(wrapper, 9)).toBe('#2f6fed')
@@ -226,7 +226,7 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
-    const saved = loadPatterns()
+    const saved = loadProjects()
     expect(saved).toHaveLength(1)
     expect(new Set(saved[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
     expect(saved[0]!.frame!.columns).toBe(10)
@@ -240,10 +240,10 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
-    expect(loadPatterns()[0]!.name).toBe('Fox')
+    expect(loadProjects()[0]!.name).toBe('Fox')
   })
 
-  it('offers the Image colors in the Colors group of the Pattern it created', async () => {
+  it('offers the Image colors in the Colors group of the Project it created', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
@@ -265,10 +265,10 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(beadColor(wrapper, 0)).toBe('#2f6fed')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#2f6fed')
   })
 
-  it('leaves Image colors alone when the converted Pattern is painted on afterwards', async () => {
+  it('leaves Image colors alone when the converted Project is painted on afterwards', async () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
@@ -279,16 +279,16 @@ describe('App Convert image creating the Pattern (ticket 58)', () => {
     await pressBead(wrapper, 1, { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
 
-    expect(new Set(loadPatterns()[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
+    expect(new Set(loadProjects()[0]!.imageColors)).toEqual(new Set(['#e63746', '#2f6fed']))
   })
 
-  it('leaves a Pattern created the ordinary way without Image colors', async () => {
+  it('leaves a Project created the ordinary way without Image colors', async () => {
     const wrapper = mount(App)
     await stateSize(wrapper, '15', '30')
 
     await wrapper.find('form').trigger('submit')
 
-    expect(loadPatterns()[0]!.imageColors).toBeUndefined()
+    expect(loadProjects()[0]!.imageColors).toBeUndefined()
     expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
   })
 })
@@ -300,34 +300,34 @@ describe('App Convert image cancelling (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
 
-    expect(loadPatterns()).toEqual([])
+    expect(loadProjects()).toEqual([])
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
   })
 
-  it('takes the panel over with a Pattern already open, and hands it back on Cancel', async () => {
+  it('takes the panel over with a Project already open, and hands it back on Cancel', async () => {
     const wrapper = mount(App)
     await stateSize(wrapper, '15', '30')
     await wrapper.find('form').trigger('submit')
-    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
 
-    const savedId = loadPatterns()[0]!.id
+    const savedId = loadProjects()[0]!.id
 
-    // Back to the New Pattern form, start framing, then reopen the saved Pattern underneath it.
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    // Back to the New Project form, start framing, then reopen the saved Project underneath it.
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     await startFraming(wrapper)
-    await wrapper.find(`[data-testid="select-pattern-${savedId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="select-project-${savedId}"]`).trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(false)
-    // The open Pattern's editing tools go with its canvas: there is nothing visible to Undo, Rotate or Delete all.
+    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(false)
+    // The open Project's editing tools go with its canvas: there is nothing visible to Undo, Rotate or Delete all.
     expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(true)
-    expect(loadPatterns()).toHaveLength(1)
+    expect(loadProjects()).toHaveLength(1)
   })
 
   it('starts from a clean slate when framing is entered again', async () => {
@@ -380,12 +380,12 @@ describe('App Convert image edge cases (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
-    const saved = loadPatterns()[0]!
+    const saved = loadProjects()[0]!
     expect(saved.imageColors).toEqual(['#1a1a1a'])
     expect(frameGrid(saved).flat().every((cell) => cell.color === '#1a1a1a')).toBe(true)
   })
 
-  it('converts a fully transparent picture to a Pattern with nothing painted and no Image colors', async () => {
+  it('converts a fully transparent picture to a Project with nothing painted and no Image colors', async () => {
     decodeState.image = {
       width: 2,
       height: 2,
@@ -396,7 +396,7 @@ describe('App Convert image edge cases (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
-    const saved = loadPatterns()[0]!
+    const saved = loadProjects()[0]!
     expect(saved.imageColors).toEqual([])
     expect(frameGrid(saved).flat().every((cell) => cell.color === null)).toBe(true)
     expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)

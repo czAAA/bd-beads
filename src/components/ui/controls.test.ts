@@ -11,10 +11,10 @@ import IconButton from './IconButton.vue'
 
 describe('AppButton', () => {
   it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger'] as const)('draws the %s variant', (variant) => {
-    const button = mount(AppButton, { props: { variant }, slots: { default: 'Save Pattern' } }).get('button')
+    const button = mount(AppButton, { props: { variant }, slots: { default: 'Save Project' } }).get('button')
     expect(button.classes()).toContain(`app-button--${variant}`)
     expect(button.classes()).toContain('ui-control')
-    expect(button.text()).toBe('Save Pattern')
+    expect(button.text()).toBe('Save Project')
     expect(button.attributes('type')).toBe('button')
   })
 
@@ -240,10 +240,10 @@ describe('the controls follow the interaction rules and use only tokens', () => 
   )
 })
 
-describe('New Pattern', () => {
+describe('New Project', () => {
   it('is the primary Button with the plus icon', async () => {
     const { default: App } = await import('../../App.vue')
-    const button = mount(App).get('[data-testid="new-pattern-button"]')
+    const button = mount(App).get('[data-testid="new-project-button"]')
     expect(button.classes()).toEqual(expect.arrayContaining(['app-button', 'app-button--primary']))
     expect(button.get('svg').attributes('data-icon')).toBe('plus')
   })

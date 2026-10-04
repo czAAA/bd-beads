@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import AppDrawer from './AppDrawer.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
-import NewPatternForm from '../pattern/NewPatternForm.vue'
-import PatternList from '../pattern/PatternList.vue'
+import NewProjectForm from '../project/NewProjectForm.vue'
+import ProjectList from '../project/ProjectList.vue'
 import SaveBox from '../export/SaveBox.vue'
 import Toolbox from '../tools/Toolbox.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
   t,
-  patterns,
-  activePatternId,
-  activePattern,
+  projects,
+  activeProjectId,
+  activeProject,
   saveFailed,
   onRequestRemove,
   onRequestSwitch,
-  settledPattern,
+  settledProject,
   framing,
-  onNewPatternDraft,
-  onCreatePattern,
+  onNewProjectDraft,
+  onCreateProject,
   startConvertImage,
   canUndo,
   canRedo,
@@ -49,7 +49,7 @@ const {
   makerName,
   nameOnExportsOpen,
   exporting,
-  onExportPatternFile,
+  onExportProjectFile,
   onExportLibraryFile,
   decodeImage,
   onExportPng,
@@ -62,31 +62,31 @@ const {
 <template>
   <!--
     The left column (ticket 141, ADR 0021): one column that scrolls on its own, holding separate boxes in a fixed
-    order — the Toolbox (or the New Pattern form in its place), the save box (ticket 148), Beads needed, Saved
-    Patterns. The first box is the form with no Pattern open or while a Convert image framing step is up (ticket
+    order — the Toolbox (or the New Project form in its place), the save box (ticket 148), Beads needed, Saved
+    Projects. The first box is the form with no Project open or while a Convert image framing step is up (ticket
     58: the frame is sized by these very fields and follows them as they're edited, so taking them away mid-framing
     would freeze the frame at whatever it last read), the Toolbox otherwise.
   -->
   <AppDrawer :open="drawerOpen" :label="t.header.toolsButton" @close="drawerOpen = false">
   <aside class="app-shell__column" :aria-label="t.a11y.toolsLandmark" data-testid="app-main-panel">
-    <section v-if="!activePattern || framing" class="app-shell__new-pattern" data-testid="new-pattern-box">
-      <h2 class="app-shell__box-title">{{ t.patterns.newPatternButton }}</h2>
-      <NewPatternForm
+    <section v-if="!activeProject || framing" class="app-shell__new-project" data-testid="new-project-box">
+      <h2 class="app-shell__box-title">{{ t.projects.newProjectButton }}</h2>
+      <NewProjectForm
         :decode-image="decodeImage"
-        @submit="onCreatePattern"
-        @draft="onNewPatternDraft"
+        @submit="onCreateProject"
+        @draft="onNewProjectDraft"
         @convert-image="startConvertImage"
       />
     </section>
     <!--
-      Hidden while framing takes the canvas panel over (ticket 58): these are the open Pattern's editing tools, and a
-      Pattern nobody can see is not one to offer Undo, Rotate or Delete all against. Cancel brings both the
-      Pattern and its Toolbox straight back.
+      Hidden while framing takes the canvas panel over (ticket 58): these are the open Project's editing tools, and a
+      Project nobody can see is not one to offer Undo, Rotate or Delete all against. Cancel brings both the
+      Project and its Toolbox straight back.
     -->
     <Toolbox
-      v-else-if="activePattern"
+      v-else-if="activeProject"
       :ref="bindToolbox"
-      :pattern="activePattern"
+      :project="activeProject"
       :active-tool="activeTool"
       :selected-color-id="selectedColorId"
       :custom-color="customColor"
@@ -112,31 +112,31 @@ const {
       @bring-frame="onBringFrameIntoView"
       @remove-selected-line="onRemoveSelectedLine"
     />
-    <!-- The save box (ticket 148): the library's save state, Save Pattern and Export ▾, beside the open Pattern's tools. -->
+    <!-- The save box (ticket 148): the library's save state, Save Project and Export ▾, beside the open Project's tools. -->
     <SaveBox
-      v-if="activePattern && !framing"
-      :has-frame="activePattern.frame !== undefined"
+      v-if="activeProject && !framing"
+      :has-frame="activeProject.frame !== undefined"
       :save-failed="saveFailed"
       :qr-too-large="qrExport.tooLarge.value"
       :exporting="exporting"
-      :pattern-name="activePattern.name"
+      :project-name="activeProject.name"
       :maker-name="makerName"
       @edit-maker-name="nameOnExportsOpen = true"
       @save="onSave"
-      @export-pattern="onExportPatternFile"
+      @export-project="onExportProjectFile"
       @export-qr="qrExport.open"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @fit-frame="onFitFrame"
       @set-frame="onStartSetFrame"
     />
-    <BeadQuantities :pattern="settledPattern" />
-    <PatternList
-      :patterns="patterns"
-      :active-pattern-id="activePatternId"
+    <BeadQuantities :project="settledProject" />
+    <ProjectList
+      :projects="projects"
+      :active-project-id="activeProjectId"
       @select="onRequestSwitch"
       @remove="onRequestRemove"
-      @export-pattern="onExportPatternFile"
+      @export-project="onExportProjectFile"
       @export-library="onExportLibraryFile"
     />
   </aside>
@@ -171,8 +171,8 @@ const {
   width: auto;
 }
 
-/* The New Pattern form's box (ticket 149; NewPatternForm card): the Toolbox's panel, its title in the `title` role. */
-.app-shell__new-pattern {
+/* The New Project form's box (ticket 149; NewProjectForm card): the Toolbox's panel, its title in the `title` role. */
+.app-shell__new-project {
   display: flex;
   flex-direction: column;
   gap: var(--space-20);

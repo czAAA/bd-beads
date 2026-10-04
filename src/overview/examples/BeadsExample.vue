@@ -8,7 +8,7 @@ import { useI18n } from '../../i18n/useI18n'
 import BeadPicture from './BeadPicture.vue'
 import ExampleFrame from './ExampleFrame.vue'
 
-/** Beads needed (ticket 218): the Tour Pattern and its shopping list, counted off the Pattern and weighed as the exports weigh. */
+/** Beads needed (ticket 218): the Tour Project and its shopping list, counted off the Project and weighed as the exports weigh. */
 const { t, locale } = useI18n()
 const GRID = tourFinishedGrid()
 const BEAD = findBead('miyuki-delica-11-0')

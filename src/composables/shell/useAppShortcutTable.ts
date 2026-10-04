@@ -1,11 +1,11 @@
 import { PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { useKeyboardShortcuts, type KeyboardShortcut } from './useKeyboardShortcuts'
 
 /** What the shortcut table needs from the app shell: state read lazily, and the handlers each shortcut calls. */
 export interface AppShortcutTableDeps {
-  activePattern: () => Pattern | undefined
+  activeProject: () => Project | undefined
   activeTool: () => Tool
   hasSelection: () => boolean
   /** A menu or popover layer is open (useEscapeLayer). */
@@ -188,7 +188,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
     // Canvas group (v16): F starts Set Frame (and finishes it).
     {
       matches: (event) => isPlainLetterKey(event, 'f'),
-      guard: () => noModalOpen() && !!deps.activePattern(),
+      guard: () => noModalOpen() && !!deps.activeProject(),
       action: () => deps.onToggleFrame(),
     },
     // Canvas group (v16): R shows and hides the rulers. Rotate lost the key to it; the Edit group's button remains.
@@ -212,10 +212,10 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       guard: noModalOpen,
       action: deps.pasteAtPointer,
     },
-    // ticket 115: Ctrl/Cmd+S saves. Claimed from the browser only while a Pattern is open to save — with none, the browser's own dialog is left alone rather than swallowed for nothing.
+    // ticket 115: Ctrl/Cmd+S saves. Claimed from the browser only while a Project is open to save — with none, the browser's own dialog is left alone rather than swallowed for nothing.
     {
       matches: (event) => (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 's',
-      guard: () => noModalOpen() && !!deps.activePattern(),
+      guard: () => noModalOpen() && !!deps.activeProject(),
       allowWhileTyping: true,
       action: (event) => {
         event.preventDefault()
@@ -228,9 +228,9 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       matches: (event) => isPlainLetterKey(event, 'p'),
       guard: noModalOpen,
       action: () => {
-        const pattern = deps.activePattern()
-        if (pattern) {
-          deps.onToggleRowProgress(!pattern.rowProgress.enabled)
+        const project = deps.activeProject()
+        if (project) {
+          deps.onToggleRowProgress(!project.rowProgress.enabled)
         }
       },
     },
@@ -243,7 +243,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       matches: (event) => event.key === 'Enter' && !event.shiftKey && !isFocusedOnToolboxButton(event),
       guard: noModalOpen,
       action: () => {
-        if (deps.activePattern()?.rowProgress.enabled) {
+        if (deps.activeProject()?.rowProgress.enabled) {
           deps.onMoveRow(1)
         }
       },
@@ -252,7 +252,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       matches: (event) => event.key === 'Enter' && event.shiftKey && !isFocusedOnToolboxButton(event),
       guard: noModalOpen,
       action: () => {
-        if (deps.activePattern()?.rowProgress.enabled) {
+        if (deps.activeProject()?.rowProgress.enabled) {
           deps.onMoveRow(-1)
         }
       },
@@ -264,7 +264,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       matches: (event) => event.key === ' ' && !event.shiftKey && !isFocusedOnToolboxButton(event),
       guard: noModalOpen,
       action: () => {
-        if (deps.activePattern()?.rowProgress.enabled) {
+        if (deps.activeProject()?.rowProgress.enabled) {
           deps.onMoveRow(1)
         }
       },
@@ -273,7 +273,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       matches: (event) => event.key === ' ' && event.shiftKey && !isFocusedOnToolboxButton(event),
       guard: noModalOpen,
       action: () => {
-        if (deps.activePattern()?.rowProgress.enabled) {
+        if (deps.activeProject()?.rowProgress.enabled) {
           deps.onMoveRow(-1)
         }
       },

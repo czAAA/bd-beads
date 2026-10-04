@@ -1,15 +1,15 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
 import { MIN_ZOOM, ZOOM_STEP, clampZoom, type GridPosition } from '../../domain/grid'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 import { displayedBox, scrollAfterZoom, scrollToCentre, zoomToFit, type Scroll, type Size } from '../../rendering/canvasView'
 
-/** Room left clear round the Pattern at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and BeadBoard cards). */
+/** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and BeadBoard cards). */
 export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 
 /** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every bead, otherwise nothing. */
-export function fitBox(pattern: Pick<Pattern, 'frame' | 'beads'>): Frame | undefined {
-  return pattern.frame ?? beadBounds(pattern.beads)
+export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undefined {
+  return project.frame ?? beadBounds(project.beads)
 }
 
 /**
@@ -22,7 +22,7 @@ export function fitBox(pattern: Pick<Pattern, 'frame' | 'beads'>): Frame | undef
  * pointer (or the middle, for the zoom buttons) where it was.
  */
 export function useCanvasView(
-  currentPattern: () => Pattern | undefined,
+  currentProject: () => Project | undefined,
   viewport: Ref<Size>,
   /** The zoom-out floor (ticket 223): the smallest bead of the window's tier, as a zoom. Zooming out and Fit stop here. */
   floor: Ref<number> = ref(MIN_ZOOM),
@@ -38,11 +38,11 @@ export function useCanvasView(
 
   /** Puts the view at the fit: the Frame or the drawing whole, or the origin in the middle for an empty canvas. */
   function fit(): void {
-    const pattern = currentPattern()
-    if (!pattern) {
+    const project = currentProject()
+    if (!project) {
       return
     }
-    const box = fitBox(pattern)
+    const box = fitBox(project)
     if (!measured()) {
       // Nothing to fit to until the drawing area has a size: look at the origin at 100% and fit when it is measured.
       zoom.value = clampZoom(1, floor.value)
@@ -51,8 +51,8 @@ export function useCanvasView(
       zoom.value = clampZoom(1, floor.value)
       scroll.value = scrollToCentre({ x: 0, y: 0, width: 0, height: 0 }, viewport.value)
     } else {
-      zoom.value = clampZoom(zoomToFit(pattern.technique, pattern.rotation, box, viewport.value, FIT_MARGIN_PX), floor.value)
-      scroll.value = scrollToCentre(displayedBox(pattern.technique, pattern.rotation, box, zoom.value), viewport.value)
+      zoom.value = clampZoom(zoomToFit(project.technique, project.rotation, box, viewport.value, FIT_MARGIN_PX), floor.value)
+      scroll.value = scrollToCentre(displayedBox(project.technique, project.rotation, box, zoom.value), viewport.value)
     }
     isAtFit.value = true
   }
@@ -70,21 +70,21 @@ export function useCanvasView(
 
   /** Brings a block of beads into the middle of the view without changing the zoom. */
   function centreOn(box: Frame): void {
-    const pattern = currentPattern()
-    if (!pattern) {
+    const project = currentProject()
+    if (!project) {
       return
     }
-    scroll.value = scrollToCentre(displayedBox(pattern.technique, pattern.rotation, box, zoom.value), viewport.value)
+    scroll.value = scrollToCentre(displayedBox(project.technique, project.rotation, box, zoom.value), viewport.value)
     isAtFit.value = false
   }
 
   /** Scrolls only as far as it takes to bring a bead into view, `margin` px clear of the viewport's edges: what moving the keyboard cursor does. */
   function reveal(position: GridPosition, margin = 24): void {
-    const pattern = currentPattern()
-    if (!pattern || !measured()) {
+    const project = currentProject()
+    if (!project || !measured()) {
       return
     }
-    const bead = displayedBox(pattern.technique, pattern.rotation, { ...position, rows: 1, columns: 1 }, zoom.value)
+    const bead = displayedBox(project.technique, project.rotation, { ...position, rows: 1, columns: 1 }, zoom.value)
     const { x, y } = scroll.value
     const { width, height } = viewport.value
     let dx = 0
@@ -112,7 +112,7 @@ export function useCanvasView(
 
   watch(
     // Two sources, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on every bead drawn.
-    [() => currentPattern()?.id, () => currentPattern()?.rotation],
+    [() => currentProject()?.id, () => currentProject()?.rotation],
     () => {
       if (measured()) {
         fit()

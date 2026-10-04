@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { patternDimensions } from '../../domain/pattern'
+import { projectDimensions } from '../../domain/project'
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { maxAxisCount, type MirrorAxisCounts } from '../../domain/mirror'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 
@@ -14,7 +14,7 @@ import IconButton from '../ui/IconButton.vue'
  * two copies drifting apart.
  */
 const props = defineProps<{
-  pattern: Pattern
+  project: Project
   mirrorAxisCounts: MirrorAxisCounts
   /** Mirror's copy-mode switch (ticket 45). */
   mirrorCopyMode: boolean
@@ -31,18 +31,18 @@ const { t } = useI18n()
 
 /**
  * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
- * Pattern's current view-only rotation (see Pattern.rotation, kept for Patterns saved turned): a quarter turn either way
+ * Project's current view-only rotation (see Project.rotation, kept for Projects saved turned): a quarter turn either way
  * swaps the two (180° leaves them as they are), never a transform of the counts or grid data themselves.
  */
-const swapped = computed(() => rotationSwapsAxes(props.pattern.rotation))
+const swapped = computed(() => rotationSwapsAxes(props.project.rotation))
 const leftRightAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'rows' : 'columns'))
 const topBottomAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'columns' : 'rows'))
 
 const leftRightCount = computed(() => props.mirrorAxisCounts[leftRightAxis.value])
 const topBottomCount = computed(() => props.mirrorAxisCounts[topBottomAxis.value])
 
-const leftRightMax = computed(() => maxAxisCount(swapped.value ? patternDimensions(props.pattern).rows : patternDimensions(props.pattern).columns))
-const topBottomMax = computed(() => maxAxisCount(swapped.value ? patternDimensions(props.pattern).columns : patternDimensions(props.pattern).rows))
+const leftRightMax = computed(() => maxAxisCount(swapped.value ? projectDimensions(props.project).rows : projectDimensions(props.project).columns))
+const topBottomMax = computed(() => maxAxisCount(swapped.value ? projectDimensions(props.project).columns : projectDimensions(props.project).rows))
 </script>
 
 <template>

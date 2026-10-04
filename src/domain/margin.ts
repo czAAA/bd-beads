@@ -1,6 +1,6 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, positionKey, type GridPosition } from './grid'
-import { changedPositions, keepFinishedRows, type Pattern } from './pattern'
+import { changedPositions, keepFinishedRows, type Project } from './project'
 import { touching } from './pieces'
 
 /**
@@ -18,7 +18,7 @@ export function withMargin(frame: Frame): Frame {
 }
 
 /** What a drawing command did, minus what it did to finished rows (ticket 33) and what it painted in the margin; `before` itself when nothing is left. */
-export function keepAllowedEdits(before: Pattern, after: Pattern): Pattern {
+export function keepAllowedEdits(before: Project, after: Project): Project {
   return keepMarginClear(before, keepFinishedRows(before, after))
 }
 
@@ -31,7 +31,7 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
  * What an edit did, with every bead it newly painted in the margin taken back (erasing there stays). An edit left with
  * nothing to change hands back `before` itself, the same "unchanged" signal the drawing commands give.
  */
-export function keepMarginClear(before: Pattern, after: Pattern): Pattern {
+export function keepMarginClear(before: Project, after: Project): Project {
   const frame = before.frame
   if (!frame) {
     return after
@@ -54,7 +54,7 @@ export interface Cell extends GridPosition {
 }
 
 /** Every Piece's beads among the ones given: those that touch by a side or a corner, as lists of cells. */
-function groups(pattern: Pick<Pattern, 'technique'>, beads: BeadMap): Cell[][] {
+function groups(project: Pick<Project, 'technique'>, beads: BeadMap): Cell[][] {
   const unvisited = new Map<string, Cell>()
   forEachBead(beads, (row, column, color) => unvisited.set(positionKey({ row, column }), { row, column, color }))
   const found: Cell[][] = []
@@ -67,7 +67,7 @@ function groups(pattern: Pick<Pattern, 'technique'>, beads: BeadMap): Cell[][] {
     while (stack.length > 0) {
       const at = stack.pop()!
       cells.push(at)
-      for (const next of touching(pattern.technique, at)) {
+      for (const next of touching(project.technique, at)) {
         const neighbour = unvisited.get(positionKey(next))
         if (neighbour) {
           unvisited.delete(positionKey(next))
@@ -97,9 +97,9 @@ function overlaps(a: Frame, b: Frame): boolean {
  * so it neither lands on a bead nor joins another Piece. Rows alternate on peyote and brick stitch, so a Piece there
  * moves by whole pairs of rows and keeps its stagger.
  */
-function clearShift(pattern: Pick<Pattern, 'technique'>, cells: readonly Cell[], avoid: Frame, occupied: ReadonlySet<string>): GridPosition {
+function clearShift(project: Pick<Project, 'technique'>, cells: readonly Cell[], avoid: Frame, occupied: ReadonlySet<string>): GridPosition {
   const box = boundsOf(cells)
-  const rowStep = isOffsetTechnique(pattern.technique) ? 2 : 1
+  const rowStep = isOffsetTechnique(project.technique) ? 2 : 1
   const limit = avoid.rows + avoid.columns + box.rows + box.columns + 2 * MARGIN + 2
 
   const fits = (dRow: number, dColumn: number): boolean => {
@@ -109,7 +109,7 @@ function clearShift(pattern: Pick<Pattern, 'technique'>, cells: readonly Cell[],
     }
     return cells.every((cell) => {
       const at = { row: cell.row + dRow, column: cell.column + dColumn }
-      return !occupied.has(positionKey(at)) && touching(pattern.technique, at).every((next) => !occupied.has(positionKey(next)))
+      return !occupied.has(positionKey(at)) && touching(project.technique, at).every((next) => !occupied.has(positionKey(next)))
     })
   }
 
@@ -142,12 +142,12 @@ function clearShift(pattern: Pick<Pattern, 'technique'>, cells: readonly Cell[],
  * clear of the Frame and its margin; the rest stay. Returns the changes to vacate and place, and how many beads moved.
  */
 export function relocateFromMargin(
-  pattern: Pick<Pattern, 'technique'>,
+  project: Pick<Project, 'technique'>,
   outside: BeadMap,
   frame: Frame,
 ): { changes: BeadChange[]; placed: Cell[]; pieces: number } {
   const avoid = withMargin(frame)
-  const all = groups(pattern, outside)
+  const all = groups(project, outside)
   const inTheWay = all.filter((cells) => cells.some((cell) => frameContains(avoid, cell)))
   const occupied = new Set<string>()
   for (const cells of all) {
@@ -158,7 +158,7 @@ export function relocateFromMargin(
   const changes: BeadChange[] = []
   const placed: Cell[] = []
   for (const cells of inTheWay) {
-    const shift = clearShift(pattern, cells, avoid, occupied)
+    const shift = clearShift(project, cells, avoid, occupied)
     for (const cell of cells) {
       changes.push({ row: cell.row, column: cell.column, color: null })
       const moved = { row: cell.row + shift.row, column: cell.column + shift.column, color: cell.color }
@@ -169,23 +169,23 @@ export function relocateFromMargin(
   return { changes, placed, pieces: inTheWay.length }
 }
 
-/** The Pattern with every bead in the Frame's margin moved clear, and how many beads that was; the same Pattern when none was. */
-export function clearMargin(pattern: Pattern): { pattern: Pattern; moved: number } {
-  const frame = pattern.frame
+/** The Project with every bead in the Frame's margin moved clear, and how many beads that was; the same Project when none was. */
+export function clearMargin(project: Project): { project: Project; moved: number } {
+  const frame = project.frame
   if (!frame) {
-    return { pattern, moved: 0 }
+    return { project, moved: 0 }
   }
   const outside: BeadMap = {}
-  forEachBead(pattern.beads, (row, column, color) => {
+  forEachBead(project.beads, (row, column, color) => {
     if (!frameContains(frame, { row, column })) {
       outside[row] ??= {}
       outside[row][column] = color
     }
   })
-  const { changes, placed, pieces } = relocateFromMargin(pattern, outside, frame)
+  const { changes, placed, pieces } = relocateFromMargin(project, outside, frame)
   if (pieces === 0) {
-    return { pattern, moved: 0 }
+    return { project, moved: 0 }
   }
-  const beads = withColors(withColors(pattern.beads, changes), placed)
-  return { pattern: { ...pattern, beads, updatedAt: Date.now() }, moved: placed.length }
+  const beads = withColors(withColors(project.beads, changes), placed)
+  return { project: { ...project, beads, updatedAt: Date.now() }, moved: placed.length }
 }

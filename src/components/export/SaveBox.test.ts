@@ -31,7 +31,7 @@ describe('SaveBox (ticket 148)', () => {
     expect(state.classes()).toContain('save-box__state--failed')
   })
 
-  it('has Save Pattern as its primary action, naming its shortcut, and asks for a save', async () => {
+  it('has Save Project as its primary action, naming its shortcut, and asks for a save', async () => {
     const wrapper = mountBox()
     const save = wrapper.find('[data-testid="save-button"]')
 
@@ -73,7 +73,7 @@ describe('SaveBox (ticket 148)', () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })
 
-  it('turns QR code off for a Pattern too large for one, saying why in words', async () => {
+  it('turns QR code off for a Project too large for one, saying why in words', async () => {
     const wrapper = mountBox({ qrTooLarge: true })
     await openMenu(wrapper)
 
@@ -93,13 +93,13 @@ describe('SaveBox (ticket 148)', () => {
 })
 
 describe('SaveBox ways out (ticket 158)', () => {
-  it('offers Export Pattern under the QR reason when the Pattern is too large for a code', async () => {
+  it('offers Export Project under the QR reason when the Project is too large for a code', async () => {
     const wrapper = mountBox({ qrTooLarge: true })
     await openMenu(wrapper)
 
     await wrapper.find('[data-testid="export-qr-way-out"]').trigger('click')
 
-    expect(wrapper.emitted('export-pattern')).toHaveLength(1)
+    expect(wrapper.emitted('export-project')).toHaveLength(1)
   })
 })
 

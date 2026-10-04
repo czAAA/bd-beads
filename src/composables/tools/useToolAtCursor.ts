@@ -1,12 +1,12 @@
 import type { GridPosition } from '../../domain/grid'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
 /** What invoking a tool at a cursor needs from the app shell. Deps are read lazily. */
 export interface ToolAtCursorDeps {
   messages: () => Translations
-  currentPattern: () => Pattern | undefined
+  currentProject: () => Project | undefined
   activeTool: () => Tool
   selectedColorHex: () => string | null
   /** The pointer-press handler for the active tool on a bead. */
@@ -29,13 +29,13 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
 
   /** The current tool on the bead at `cursor`, through the same handlers as a pointer press and release. */
   function invokeToolAt(cursor: GridPosition) {
-    const pattern = deps.currentPattern()
-    if (!pattern) return
-    const before = pattern.beads
+    const project = deps.currentProject()
+    if (!project) return
+    const before = project.beads
     const color = deps.selectedColorHex()
     deps.pressCell(cursor.row, cursor.column)
     deps.endStroke()
-    if (deps.currentPattern()?.beads === before) return
+    if (deps.currentProject()?.beads === before) return
     const t = deps.messages()
     const tool = deps.activeTool()
     deps.announce(

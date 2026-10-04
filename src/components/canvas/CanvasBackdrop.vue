@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * The background highlight behind the board (ticket 143; BeadBoard card): the open Pattern's Technique as one large,
+ * The background highlight behind the board (ticket 143; BeadBoard card): the open Project's Technique as one large,
  * faint Instrument Serif word, anchored bottom-right and partly covered by the board, and one soft curve sweeping from
  * the lower left up to the upper right. Decoration only: hidden from assistive tech, never interactive, and not part of
- * any export (the exports draw the Pattern alone).
+ * any export (the exports draw the Project alone).
  */
 defineProps<{ word: string }>()
 </script>

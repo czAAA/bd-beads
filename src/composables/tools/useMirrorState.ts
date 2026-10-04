@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
 import { keepAllowedEdits } from '../../domain/margin'
-import { changedPositions, mirrorCurrent, type Pattern, patternDimensions } from '../../domain/pattern'
+import { changedPositions, mirrorCurrent, type Project, projectDimensions } from '../../domain/project'
 
 /** Which "Mirror current" button an interaction names -- grid-space-neutral, since screen left-right/top-bottom is a view-layer concern (Toolbox.vue) that swaps under rotation. */
 export type MirrorCurrentAxis = 'horizontal' | 'vertical'
@@ -15,16 +15,16 @@ function gridAxisOf(axis: MirrorCurrentAxis): 'columns' | 'rows' {
  * Mirror's own session state (ticket 62, architecture review): axis counts, copy mode, the hover state and derived
  * previews behind "Mirror current", and "Mirror current" itself -- moved out of App.vue as one piece, since "Mirror
  * current" is Mirror's own command over Mirror's own state (ADR 0006 amendment). None of it is saved with the
- * Pattern; it's an editing-session aid like the undo stack, reset through the app shell's existing single reset
- * point (see reset()) rather than watching the open Pattern itself.
+ * Project; it's an editing-session aid like the undo stack, reset through the app shell's existing single reset
+ * point (see reset()) rather than watching the open Project itself.
  *
- * `currentPattern` and `commitGridChange` are read from the app shell rather than owned here: axis-count clamping
- * needs the open Pattern's live size, and "Mirror current" commits through the shell's shared grid-change/undo path
+ * `currentProject` and `commitGridChange` are read from the app shell rather than owned here: axis-count clamping
+ * needs the open Project's live size, and "Mirror current" commits through the shell's shared grid-change/undo path
  * (the same one Fill uses) rather than a private copy of its own.
  */
 export function useMirrorState(
-  currentPattern: () => Pattern | undefined,
-  commitGridChange: (pattern: Pattern, updated: Pattern) => void,
+  currentProject: () => Project | undefined,
+  commitGridChange: (project: Project, updated: Project) => void,
 ) {
   /** Per-direction axis counts, in grid space (see domain/mirror.ts). */
   const axisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
@@ -51,30 +51,30 @@ export function useMirrorState(
 
   /** Cells a hovered "Mirror current" button would overwrite, dimmed on the canvas (ticket 47) -- computed by asking mirrorCurrent what it *would* do and diffing that against what's there now, through the same Row progress lock a real click would go through, so a locked cell that couldn't actually change is never dimmed. */
   const currentDimmedCells = computed<GridPosition[]>(() => {
-    const pattern = currentPattern()
+    const project = currentProject()
     const hovered = hoveredCurrentAxis.value
-    if (!pattern || !hovered) {
+    if (!project || !hovered) {
       return []
     }
 
     const axis = gridAxisOf(hovered)
-    const result = keepAllowedEdits(pattern, mirrorCurrent(pattern, axis, axisCounts.value[axis], copyMode.value))
+    const result = keepAllowedEdits(project, mirrorCurrent(project, axis, axisCounts.value[axis], copyMode.value))
 
-    return changedPositions(pattern.beads, result.beads)
+    return changedPositions(project.beads, result.beads)
   })
 
   function onHoverCurrent(axis: MirrorCurrentAxis | null) {
     hoveredCurrentAxis.value = axis
   }
 
-  /** Sets one direction's axis count (ticket 44), clamped to what the open Pattern's current size allows -- Toolbox.vue works out which grid-space field a screen direction maps to, since that's the piece that swaps under rotation. */
+  /** Sets one direction's axis count (ticket 44), clamped to what the open Project's current size allows -- Toolbox.vue works out which grid-space field a screen direction maps to, since that's the piece that swaps under rotation. */
   function setAxisCount(axis: 'columns' | 'rows', count: number) {
-    const pattern = currentPattern()
-    if (!pattern) {
+    const project = currentProject()
+    if (!project) {
       return
     }
 
-    const cellsAcross = axis === 'columns' ? patternDimensions(pattern).columns : patternDimensions(pattern).rows
+    const cellsAcross = axis === 'columns' ? projectDimensions(project).columns : projectDimensions(project).rows
     axisCounts.value = { ...axisCounts.value, [axis]: clampAxisCount(count, cellsAcross) }
   }
 
@@ -89,16 +89,16 @@ export function useMirrorState(
    * commitGridChange rather than a private copy, per the ticket 62 decision.
    */
   function mirrorCurrentAction(axis: MirrorCurrentAxis) {
-    const pattern = currentPattern()
-    if (!pattern) {
+    const project = currentProject()
+    if (!project) {
       return
     }
 
     const gridAxis = gridAxisOf(axis)
-    commitGridChange(pattern, mirrorCurrent(pattern, gridAxis, axisCounts.value[gridAxis], copyMode.value))
+    commitGridChange(project, mirrorCurrent(project, gridAxis, axisCounts.value[gridAxis], copyMode.value))
   }
 
-  /** Restores axis counts from an Undo/Redo snapshot (SizeSnapshot.mirrorAxisCounts) -- not a Pattern field, so restoreSnapshot alone can't apply it. */
+  /** Restores axis counts from an Undo/Redo snapshot (SizeSnapshot.mirrorAxisCounts) -- not a Project field, so restoreSnapshot alone can't apply it. */
   function restoreAxisCounts(counts: MirrorAxisCounts) {
     axisCounts.value = counts
   }
@@ -108,7 +108,7 @@ export function useMirrorState(
     axisCounts.value = { ...NO_MIRROR_AXES }
   }
 
-  /** Mirror's whole session state resets on a Pattern switch (ticket 44/45 decision), through the app shell's existing single reset point rather than a watcher of its own. */
+  /** Mirror's whole session state resets on a Project switch (ticket 44/45 decision), through the app shell's existing single reset point rather than a watcher of its own. */
   function reset() {
     axisCounts.value = { ...NO_MIRROR_AXES }
     copyMode.value = false

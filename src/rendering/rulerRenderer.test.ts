@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { createPattern } from '../domain/pattern'
+import { createProject } from '../domain/project'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers } from './rulerRenderer'
 
@@ -41,7 +41,7 @@ function fakeContext() {
   return { context, strokes, fills, texts }
 }
 
-const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const view = { technique: 'loom' as const, rotation: 0 as const, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 800, height: 600 }, fontPx: 11 }
 
 describe('drawRulers', () => {
@@ -50,14 +50,14 @@ describe('drawRulers', () => {
 
   it('draws a Piece\'s rectangle `muted` while it is being drawn, and the others `line-strong`', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { pattern: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false, activePiece: { row: 0, column: 0, rows: 1, columns: 1 } })
+    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false, activePiece: { row: 0, column: 0, rows: 1, columns: 1 } })
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLineActive, LIGHT_THEME.pieceLine])
   })
 
   it('draws the Frame\'s line in `ink` and no Piece rectangles once there is a Frame', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { pattern: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    drawRulers(context, { project: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
   })

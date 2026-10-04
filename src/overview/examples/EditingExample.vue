@@ -5,7 +5,7 @@ import BeadPicture from './BeadPicture.vue'
 import ExampleFrame from './ExampleFrame.vue'
 import { POPPY_PAINTING } from './exampleArt'
 
-/** Pattern editing (ticket 218): a poppy half painted, Paint active in the toolbar, a Selection frame round the bloom and the next bead of the stem under the brush. */
+/** Project editing (ticket 218): a poppy half painted, Paint active in the toolbar, a Selection frame round the bloom and the next bead of the stem under the brush. */
 const TOOLS: IconName[] = ['paint', 'fill', 'select', 'erase']
 const SELECTION = { top: 0, left: 2, rows: 9, columns: 9 }
 const NEXT_BEAD = { cells: [{ row: 11, column: 6 }], color: null }

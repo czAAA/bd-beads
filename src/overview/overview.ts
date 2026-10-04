@@ -7,7 +7,7 @@ import '../styles/contrast.css'
 import '../style.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
-import { loadPatterns } from '../services/libraryStore'
+import { loadProjects } from '../services/libraryStore'
 import { saveTourProgress, saveTourStatus } from '../services/tourStore'
 import { TOUR_ENABLED } from '../features'
 import { markEditorChosen, overviewUrl } from './overviewRoute'
@@ -27,9 +27,9 @@ function goToEditor() {
 createApp({
   render: () =>
     h(OverviewPage, {
-      patternCount: loadPatterns().length,
+      projectCount: loadProjects().length,
       overviewHref: overviewUrl(base),
-      onMakeFirstPattern: () => {
+      onMakeFirstProject: () => {
         if (TOUR_ENABLED) {
           saveTourStatus('running')
         }

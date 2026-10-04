@@ -1,17 +1,17 @@
 import { CELL_SIZE_PX } from '../domain/grid'
 import type { GridDimensions, GridPosition, Technique } from '../domain/grid'
 import {
-  patternExtentPx,
+  projectExtentPx,
   beadRoundness,
   rowPitchPx,
   rowShiftPx,
   rowTopPx,
-  type DrawnPattern,
-} from './patternRenderer'
+  type DrawnProject,
+} from './projectRenderer'
 
 /**
  * Which bead a point is on (ADR 0018): what "the element under the pointer" was when every bead was one. Worked out
- * from the Pattern's own geometry — the zoom, the rotation, the Technique's stagger and row packing — because a drawing
+ * from the Project's own geometry — the zoom, the rotation, the Technique's stagger and row packing — because a drawing
  * surface has no elements to ask.
  *
  * It answers as the DOM grid did, which is what the pointer tools were built against:
@@ -23,22 +23,22 @@ import {
  */
 
 /**
- * The bead at a point of the displayed Pattern: `point` is in the displayed Pattern's px (zoomed, and turned when the
- * Pattern is rotated) measured from its first bead's top-left, which is where a surface's own coordinates start.
+ * The bead at a point of the displayed Project: `point` is in the displayed Project's px (zoomed, and turned when the
+ * Project is rotated) measured from its first bead's top-left, which is where a surface's own coordinates start.
  */
 export function beadAt(
-  pattern: Pick<DrawnPattern, 'technique' | 'rotation'> & GridDimensions,
+  project: Pick<DrawnProject, 'technique' | 'rotation'> & GridDimensions,
   point: { x: number; y: number },
   zoom: number,
 ): GridPosition | undefined {
-  const { technique, columns, rows } = pattern
-  const extent = patternExtentPx(technique, columns, rows)
+  const { technique, columns, rows } = project
+  const extent = projectExtentPx(technique, columns, rows)
 
-  // Back into the Pattern's own space: undo whichever quarter turn is on (see gridToRegion's own forward version).
+  // Back into the Project's own space: undo whichever quarter turn is on (see gridToRegion's own forward version).
   const [gridX, gridY] = ((): [number, number] => {
     const x = point.x / zoom
     const y = point.y / zoom
-    switch (pattern.rotation) {
+    switch (project.rotation) {
       case 90:
         return [y, extent.height - x]
       case 180:
@@ -62,14 +62,14 @@ export function beadAt(
  * negative included, can be found.
  */
 export function beadAtOpen(
-  pattern: Pick<DrawnPattern, 'technique' | 'rotation'>,
+  project: Pick<DrawnProject, 'technique' | 'rotation'>,
   point: { x: number; y: number },
   zoom: number,
 ): GridPosition | undefined {
   const x = point.x / zoom
   const y = point.y / zoom
   const [gridX, gridY] = ((): [number, number] => {
-    switch (pattern.rotation) {
+    switch (project.rotation) {
       case 90:
         return [y, -x]
       case 180:
@@ -80,7 +80,7 @@ export function beadAtOpen(
         return [x, y]
     }
   })()
-  return beadInGrid(pattern.technique, gridX, gridY, {})
+  return beadInGrid(project.technique, gridX, gridY, {})
 }
 
 /**
@@ -88,14 +88,14 @@ export function beadAtOpen(
  * Frame needs, where a pointer between two beads still means one of them. Same point as beadAtOpen takes.
  */
 export function cellAtOpen(
-  pattern: Pick<DrawnPattern, 'technique' | 'rotation'>,
+  project: Pick<DrawnProject, 'technique' | 'rotation'>,
   point: { x: number; y: number },
   zoom: number,
 ): GridPosition {
   const x = point.x / zoom
   const y = point.y / zoom
   const [gridX, gridY] = ((): [number, number] => {
-    switch (pattern.rotation) {
+    switch (project.rotation) {
       case 90:
         return [y, -x]
       case 180:
@@ -106,8 +106,8 @@ export function cellAtOpen(
         return [x, y]
     }
   })()
-  const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(pattern.technique))
-  return { row, column: Math.floor((gridX - rowShiftPx(pattern.technique, row)) / CELL_SIZE_PX) }
+  const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(project.technique))
+  return { row, column: Math.floor((gridX - rowShiftPx(project.technique, row)) / CELL_SIZE_PX) }
 }
 
 /** Where a point in grid space falls: the row the bead is in and its column, or undefined in the gap or a rounded corner. A bound left out is no bound. */

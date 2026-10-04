@@ -51,7 +51,7 @@ describe('clampConvertZoom', () => {
 })
 
 describe('frameSizeMm', () => {
-  it('is the Pattern grid own real-world footprint, so the frame follows physical size rather than cell count', () => {
+  it('is the Project grid own real-world footprint, so the frame follows physical size rather than cell count', () => {
     const frame = frameSizeMm('loom', { columns: 10, rows: 20 }, delicaBead)
 
     expect(frame.widthMm).toBeCloseTo(16)
@@ -207,7 +207,7 @@ describe('previewLattice', () => {
 
   it('stays inside the cell budget however much picture hangs over the frame', () => {
     const huge = { width: 4000, height: 4000 }
-    // An ordinary big Pattern (60 x 90, the size ADR 0009 measures against), whose own cells are well inside the
+    // An ordinary big Project (60 x 90, the size ADR 0009 measures against), whose own cells are well inside the
     // budget — so what the budget has to trim here is the surround, not the frame.
     const big = { columns: 60, rows: 90 }
     const bigFrame = frameSizeMm('loom', big, cubeBead)
@@ -226,7 +226,7 @@ describe('previewLattice', () => {
     expect(lattice.rows).toBeGreaterThanOrEqual(big.rows)
   })
 
-  it('still renders the frame itself when the Pattern alone is past the budget', () => {
+  it('still renders the frame itself when the Project alone is past the budget', () => {
     const enormous = { columns: 400, rows: 400 }
     const enormousFrame = frameSizeMm('loom', enormous, cubeBead)
     const view = framingView({ width: 4000, height: 4000 }, enormousFrame, 2, CENTERED_PAN)

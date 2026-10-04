@@ -7,7 +7,7 @@
     .toolbox,
     .save-box,
     .expandable-panel,
-    .app-shell__new-pattern,
+    .app-shell__new-project,
     .app-shell__canvas,
     .theme-toggle
   ) {
@@ -39,19 +39,19 @@
 
 /*
  * Windows high contrast (forced-colors): system colors win; edges, focus and selected states stay visible. Bead colors
- * are the Pattern itself, so everything that shows one keeps its own colors; the background word and curve are
+ * are the Project itself, so everything that shows one keeps its own colors; the background word and curve are
  * decoration and step aside. `html:root` outweighs a component's scoped rule.
  */
 @media (forced-colors: active) {
   html:root :is(
-      .pattern-surface,
+      .project-surface,
       .palette-picker__swatch,
       .image-colors-picker__swatch,
       .custom-color-picker__swatch,
       .bead-quantities__swatch,
       .convert-image-frame__swatch,
       .convert-image-frame__box,
-      .pattern-thumbnail,
+      .project-thumbnail,
       .qr-code,
       .empty-canvas__board,
       .loading__bead
@@ -79,7 +79,7 @@
       .custom-color-picker,
       .image-colors-button__button,
       .app-switch,
-      .pattern-list__remove
+      .project-list__remove
     ) {
     border: 1px solid ButtonText;
   }
@@ -110,7 +110,7 @@
     outline-offset: 2px;
   }
 
-  html:root :is(.toolbox, .save-box, .expandable-panel, .app-shell__new-pattern, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
+  html:root :is(.toolbox, .save-box, .expandable-panel, .app-shell__new-project, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
     border: 1px solid CanvasText;
   }
 }

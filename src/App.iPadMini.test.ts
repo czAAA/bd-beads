@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { mountWithPattern } from './testUtils/seedPattern'
-import { drawnPattern, hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
+import { mountWithProject } from './testUtils/seedProject'
+import { drawnProject, hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 import { BEAD_CATALOG } from './domain/beads'
 import { findPaletteColor } from './domain/palette'
-import { serializeLibrary } from './domain/patternFile'
-import { createPattern, frameGrid } from './domain/pattern'
+import { serializeLibrary } from './domain/projectFile'
+import { createProject, frameGrid } from './domain/project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const DRAWER_QUERY = '(min-width: 744px) and (max-width: 1023px)'
@@ -35,7 +35,7 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
 describe('App at the iPad mini tier (ticket 168)', () => {
   describe('the Drawer', () => {
     it('is closed to start, opens from the header\'s Tools button, holds the left column\'s boxes, and closes again on a second press', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
 
       const drawer = wrapper.find('[data-testid="drawer"]')
       expect(wrapper.find('[data-testid="drawer-open-button"]').attributes('aria-pressed')).toBe('false')
@@ -51,7 +51,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('closes on Escape and on the scrim', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
 
       await wrapper.find('[data-testid="drawer-open-button"]').trigger('click')
       expect(wrapper.find('[data-testid="drawer-open-button"]').attributes('aria-pressed')).toBe('true')
@@ -68,7 +68,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
   describe('the BottomToolbar', () => {
     it('selects a tool the same way the Toolbox\'s own tabs do', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
 
       expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
       await wrapper.find('[data-testid="bottom-toolbar-erase"]').trigger('click')
@@ -77,7 +77,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('picks a Palette color from its own popover, without opening the Drawer, and paints with it', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
 
       await wrapper.find('[data-testid="bottom-toolbar-color"]').trigger('click')
       await wrapper.find('[data-testid="bottom-toolbar"] [data-color-id="red"]').trigger('click')
@@ -87,26 +87,26 @@ describe('App at the iPad mini tier (ticket 168)', () => {
 
       await pressBead(wrapper, 0)
       await wrapper.find('.app-shell').trigger('mouseup')
-      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBe(findPaletteColor('red')!.hex)
+      expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBe(findPaletteColor('red')!.hex)
     })
 
     it('undoes and redoes the same history the Toolbox\'s own buttons use', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
       await pressBead(wrapper, 0)
       await wrapper.find('.app-shell').trigger('mouseup')
-      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
+      expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
       await wrapper.find('[data-testid="bottom-toolbar-undo"]').trigger('click')
-      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).toBeNull()
+      expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBeNull()
 
       await wrapper.find('[data-testid="bottom-toolbar-redo"]').trigger('click')
-      expect(frameGrid(drawnPattern(wrapper))[0]![0]!.color).not.toBeNull()
+      expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
     })
   })
 
   describe('the header menu', () => {
     it('holds Import a file, Import QR code, Language, Theme and Name on exports', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
 
       await wrapper.find('[data-testid="header-menu"]').trigger('click')
       expect(wrapper.find('[data-testid="menu-import-file"]').exists()).toBe(true)
@@ -135,15 +135,15 @@ describe('App at the iPad mini tier (ticket 168)', () => {
       expect(wrapper.find('[data-testid="menu-item-name-on-exports"]').exists()).toBe(false)
     })
 
-    it('imports through its own PatternImport, which shows the result as a toast rather than inline', async () => {
+    it('imports through its own ProjectImport, which shows the result as a toast rather than inline', async () => {
       const wrapper = mount(App)
-      const patterns = [createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Fox' })]
+      const projects = [createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Fox' })]
 
       await wrapper.find('[data-testid="header-menu"]').trigger('click')
       const input = wrapper.find<HTMLInputElement>('[data-testid="menu-import-file"]')
       Object.defineProperty(input.element, 'files', {
         configurable: true,
-        value: [new File([serializeLibrary(patterns)], 'import.json', { type: 'application/json' })],
+        value: [new File([serializeLibrary(projects)], 'import.json', { type: 'application/json' })],
       })
       await input.trigger('change')
       await flushPromises()
@@ -151,13 +151,13 @@ describe('App at the iPad mini tier (ticket 168)', () => {
       expect(wrapper.find('[data-testid="import-result"]').exists()).toBe(false)
       const toast = wrapper.find('[data-testid="toast-region"] [data-testid="import-file"]')
       expect(toast.exists()).toBe(true)
-      expect(toast.text()).toContain('Patterns imported: 1')
+      expect(toast.text()).toContain('Projects imported: 1')
     })
   })
 
   describe('the ContextBar', () => {
     it('shows Copy, Rotate, Remove line and a clear x for a Selection, wired to the same actions as the Toolbox', async () => {
-      const wrapper = await mountWithPattern(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
+      const wrapper = await mountWithProject(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1]) // a 1x2 row selection
 
@@ -174,7 +174,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('removes the selected line through the same command Toolbox\'s Remove line link uses', async () => {
-      const wrapper = await mountWithPattern(3, 30)
+      const wrapper = await mountWithProject(3, 30)
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1])
 
@@ -187,7 +187,7 @@ describe('App at the iPad mini tier (ticket 168)', () => {
     })
 
     it('clears the Selection on the clear x without erasing anything', async () => {
-      const wrapper = await mountWithPattern(3, 30)
+      const wrapper = await mountWithProject(3, 30)
       await wrapper.find('[data-testid="tool-select"]').trigger('click')
       await drag(wrapper, [0, 1])
 

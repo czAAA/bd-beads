@@ -1,10 +1,10 @@
 import type { DrawingContext } from './beadLook'
 
 /**
- * Small pictures kept so they can be blitted instead of drawn again (ADR 0018): a Pattern has a handful of looks and
+ * Small pictures kept so they can be blitted instead of drawn again (ADR 0018): a Project has a handful of looks and
  * thousands of beads, and blitting a bitmap is many times cheaper than filling its shapes for every bead — filling a
  * path is the most expensive thing a canvas does. A bitmap is made at the size it is on the screen's own pixels, so it
- * stays crisp, and is blitted without smoothing (see renderPattern), so it is never blurred by landing between pixels.
+ * stays crisp, and is blitted without smoothing (see renderProject), so it is never blurred by landing between pixels.
  */
 export type Sprite = CanvasImageSource
 

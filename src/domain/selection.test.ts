@@ -9,7 +9,7 @@ import {
   selectionBetween,
   type CopiedBlock,
 } from './selection'
-import { createPattern, withFrameGrid, type Pattern, frameGrid } from './pattern'
+import { createProject, withFrameGrid, type Project, frameGrid } from './project'
 import { BEAD_CATALOG } from './beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -17,18 +17,18 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const RED = '#e63746'
 const BLUE = '#2f6fed'
 
-/** A loom Pattern of the given grid size, so a test can state "4x3" instead of a physical size that rounds to it. */
-function pattern(columns: number, rows: number): Pattern {
-  return createPattern({
+/** A loom Project of the given grid size, so a test can state "4x3" instead of a physical size that rounds to it. */
+function project(columns: number, rows: number): Project {
+  return createProject({
     technique: 'loom',
     beadId: cubeBead.id,
     size: { width: columns * cubeBead.widthMm, height: rows * cubeBead.heightMm, unit: 'mm' },
   })
 }
 
-/** Paints a Pattern from a picture of it: one string per row, one character per column, '.' for an empty cell. */
-function painted(rows: string[], colors: Record<string, string> = { r: RED, b: BLUE }): Pattern {
-  const base = pattern(rows[0]!.length, rows.length)
+/** Paints a Project from a picture of it: one string per row, one character per column, '.' for an empty cell. */
+function painted(rows: string[], colors: Record<string, string> = { r: RED, b: BLUE }): Project {
+  const base = project(rows[0]!.length, rows.length)
   return withFrameGrid(
     base,
     rows.map((row) => [...row].map((char) => ({ color: colors[char] ?? null }))),
@@ -36,7 +36,7 @@ function painted(rows: string[], colors: Record<string, string> = { r: RED, b: B
 }
 
 /** The inverse of `painted`, so an expectation can be written as the picture it should produce. */
-function picture(target: Pattern, colors: Record<string, string> = { r: RED, b: BLUE }): string[] {
+function picture(target: Project, colors: Record<string, string> = { r: RED, b: BLUE }): string[] {
   const chars = Object.entries(colors)
   return frameGrid(target).map((row) =>
     row.map((cell) => chars.find(([, hex]) => hex === cell.color)?.[0] ?? '.').join(''),
@@ -127,7 +127,7 @@ describe('copySelection', () => {
     ])
   })
 
-  it('does not alias the Pattern’s own grid, so later edits cannot change what was copied', () => {
+  it('does not alias the Project’s own grid, so later edits cannot change what was copied', () => {
     const source = painted(['rr', 'rr'])
     const block = copySelection(source, { top: 0, left: 0, rows: 2, columns: 2 })
 
@@ -250,7 +250,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     }
   })
 
-  it('returns the same Pattern, untouched, when every copy’s stamp would change nothing', () => {
+  it('returns the same Project, untouched, when every copy’s stamp would change nothing', () => {
     // 6-wide grid, 2 axes: a dot at column 0 lands on columns [0, 3, 4] (see mirror.test.ts's mirrorCounterparts
     // table for this exact dimension/axis-count) -- all three already red here.
     const target = painted(['r..rr.'])

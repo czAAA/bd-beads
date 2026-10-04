@@ -1,21 +1,21 @@
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { PALETTE } from '../../domain/palette'
-import { createPattern } from '../../domain/pattern'
+import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useA11yAnnouncer } from './useA11yAnnouncer'
 
 function setup(frame?: { row: number; column: number; rows: number; columns: number } | null, cursor = { row: 1, column: 2 }) {
-  const made = createPattern({
+  const made = createProject({
     technique: 'loom',
     beadId: 'toho-cube-1.5mm',
     size: { width: 3, height: 3, unit: 'beads' },
   })
   const { frame: _frame, ...open } = made
-  const pattern = frame === null ? (open as typeof made) : frame ? { ...made, frame } : made
+  const project = frame === null ? (open as typeof made) : frame ? { ...made, frame } : made
   return useA11yAnnouncer({
     messages: () => en,
-    currentPattern: () => pattern,
+    currentProject: () => project,
     beadCursor: () => cursor,
   })
 }

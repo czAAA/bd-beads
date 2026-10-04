@@ -1,10 +1,10 @@
-import { patternDimensions } from '../domain/pattern'
+import { projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation } from '../domain/grid'
-import type { Pattern } from '../domain/pattern'
+import type { Project } from '../domain/project'
 import { PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
-import { displayedExtentPx, renderPattern } from './patternRenderer'
+import { displayedExtentPx, renderProject } from './projectRenderer'
 import {
   PRINT_BOARD_PAD,
   PRINT_HEADER,
@@ -27,7 +27,7 @@ import { headerMaker, type PrintText } from './printText'
  * Drawing the printed pages (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards). The chart comes
  * first and the rest is small, in the margins. The accent stays light, so a black-and-white printer loses nothing: the
  * technique word at full strength, the background line at 38%, the marks at 7%, the maker's name at 14%. Everything
- * is on paper at 150 dpi; the beads are drawn by the Pattern renderer in the light print theme.
+ * is on paper at 150 dpi; the beads are drawn by the Project renderer in the light print theme.
  */
 
 export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
@@ -142,7 +142,7 @@ export function drawAccentLine(context: CanvasRenderingContext2D, page: PageSize
 
 /**
  * Large and pale under the board, its top tucked behind the board's lower edge; never cut. The maker's name, or, for
- * a Pattern with its own maker's name (ticket 182), that name alongside the Pattern's own (see PrintText.background).
+ * a Project with its own maker's name (ticket 182), that name alongside the Project's own (see PrintText.background).
  */
 export function drawBackgroundName(context: CanvasRenderingContext2D, background: string, x: number, boardBottom: number, align: CanvasTextAlign): void {
   if (!background) return
@@ -161,7 +161,7 @@ export interface Board {
 }
 
 /** The pale rounded board and the beads of `region` on it (the whole chart on page 1, a part on a chart page). */
-function drawBoard(context: CanvasRenderingContext2D, pattern: Pattern, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
+function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -172,7 +172,7 @@ function drawBoard(context: CanvasRenderingContext2D, pattern: Pattern, region: 
   tile.height = Math.max(1, Math.ceil(region.height))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  renderPattern(tileContext, { pattern, region, zoom, theme: PRINT_THEME })
+  renderProject(tileContext, { project, region, zoom, theme: PRINT_THEME })
   context.drawImage(tile, at.x, at.y)
 }
 
@@ -181,7 +181,7 @@ export interface Span {
   last: number
 }
 
-type RulerShape = Pick<Pattern, 'frame' | 'beads' | 'rotation'>
+type RulerShape = Pick<Project, 'frame' | 'beads' | 'rotation'>
 
 /**
  * Each quarter turn reverses one axis and swaps which of columns/rows is which (composing gridToRegion's own per-turn
@@ -195,25 +195,25 @@ function downReversed(rotation: Rotation): boolean {
   return rotation === 180 || rotation === 270
 }
 
-/** The Pattern's own number for a bead at this across-axis index (a turned Pattern's rows may run across), counted from its far end when the turn reverses this axis. */
-function acrossNumber(pattern: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(pattern.rotation) ? patternDimensions(pattern).rows : patternDimensions(pattern).columns
-  return acrossReversed(pattern.rotation) ? dimension - index : index + 1
+/** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted from its far end when the turn reverses this axis. */
+function acrossNumber(project: RulerShape, index: number): number {
+  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).rows : projectDimensions(project).columns
+  return acrossReversed(project.rotation) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
-function downNumber(pattern: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(pattern.rotation) ? patternDimensions(pattern).columns : patternDimensions(pattern).rows
-  return downReversed(pattern.rotation) ? dimension - index : index + 1
+function downNumber(project: RulerShape, index: number): number {
+  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).columns : projectDimensions(project).rows
+  return downReversed(project.rotation) ? dimension - index : index + 1
 }
 
 /**
- * The rulers on all four sides, in the Pattern's own numbers (a turned Pattern's rows run across, counted from its
+ * The rulers on all four sides, in the Project's own numbers (a turned Project's rows run across, counted from its
  * far end), and a hairline every 10 beads across the board. `every` is 10 on page 1; the chart pages label every 5th
  * bead in `muted` and every 10th bold.
  */
-export function drawRulers(context: CanvasRenderingContext2D, pattern: Pattern, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
-  const grid = displayedGrid(pattern)
+export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
+  const grid = displayedGrid(project)
   const bead = CELL_SIZE_PX * zoom
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
 
@@ -229,13 +229,13 @@ export function drawRulers(context: CanvasRenderingContext2D, pattern: Pattern, 
   }
   for (let index = across.first; index <= across.last; index += 1) {
     const x = at.x + (index - across.first) * grid.stepAcross * zoom + bead / 2
-    label(acrossNumber(pattern, index), x, at.y - gap)
-    label(acrossNumber(pattern, index), x, at.y + at.height + gap)
+    label(acrossNumber(project, index), x, at.y - gap)
+    label(acrossNumber(project, index), x, at.y + at.height + gap)
   }
   for (let index = down.first; index <= down.last; index += 1) {
     const y = at.y + (index - down.first) * grid.stepDown * zoom + bead / 2
-    label(downNumber(pattern, index), at.x - gap, y)
-    label(downNumber(pattern, index), at.x + at.width + gap, y)
+    label(downNumber(project, index), at.x - gap, y)
+    label(downNumber(project, index), at.x + at.width + gap, y)
   }
 
   // A hairline every 10 beads, in the gap between the 10th and the 11th.
@@ -267,7 +267,7 @@ function drawTopLine(context: CanvasRenderingContext2D, page: PageSize, words: P
   text(context, right, page.width - PRINT_MARGIN, y, font('400', 7.5, MONO), PRINT_COLORS.muted, 'right')
 }
 
-/** The technique word in the serif, in the accent, and the Pattern's name beside it; returns where the name ends. */
+/** The technique word in the serif, in the accent, and the Project's name beside it; returns where the name ends. */
 function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, wordSize: number, nameSize: number, maxWidth: number): void {
   const word = text(context, words.techniqueWord, x, y, font('italic 400', wordSize, SERIF), PRINT_COLORS.accent)
   text(context, words.name, x + word + mm(2.5), y, font('700', nameSize, SANS), PRINT_COLORS.ink, 'left', Math.max(mm(20), maxWidth - word - mm(2.5)))
@@ -276,14 +276,14 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
 // ---- Page 1 -------------------------------------------------------------------------------------------------------
 
 /**
- * How the whole Pattern sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed
- * column. Tried both ways and the one that draws the Pattern larger wins — a Pattern only a little wider than tall
+ * How the whole Project sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed
+ * column. Tried both ways and the one that draws the Project larger wins — a Project only a little wider than tall
  * (peyote and brick's rows sit closer than their columns, so even a square bead count comes out that way) fits the
  * side column's room far better than the fixed band left under a truly wide one, and picking by shape alone once
  * left it tiny with the rest of the sheet empty.
  */
-export function pageOneLayout(pattern: Pick<Pattern, 'technique' | 'frame' | 'beads' | 'rotation'>, page: PageSize) {
-  const wide = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, 1, pattern.rotation)
+export function pageOneLayout(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>, page: PageSize) {
+  const wide = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
   const top = PRINT_MARGIN + mm(30)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const maxZoom = mm(7) / CELL_SIZE_PX
@@ -384,10 +384,10 @@ function drawFacts(context: CanvasRenderingContext2D, words: PrintText, x: numbe
   return y
 }
 
-export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan): HTMLCanvasElement {
+export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page)
-  const layout = pageOneLayout(pattern, page)
+  const layout = pageOneLayout(project, page)
   const board: Board = {
     x: layout.room.x + (layout.columnBelow ? (layout.room.width - layout.extent.width) / 2 : 0),
     y: layout.room.y,
@@ -416,15 +416,15 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
     text(context, words.labels.readParts, PRINT_MARGIN, y, font('400', 7.5, SANS), PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
   }
 
-  // The whole Pattern, on its board, with rulers every 10, the 10-bead lines and the parts dashed and numbered.
-  const whole = displayedExtentPx(pattern.technique, patternDimensions(pattern).columns, patternDimensions(pattern).rows, layout.zoom, pattern.rotation)
-  drawBoard(context, pattern, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board)
-  const grid = displayedGrid(pattern)
-  drawRulers(context, pattern, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)
-  if (plan.parts.length > 1) drawParts(context, pattern, plan, layout.zoom, board)
+  // The whole Project, on its board, with rulers every 10, the 10-bead lines and the parts dashed and numbered.
+  const whole = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, project.rotation)
+  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board)
+  const grid = displayedGrid(project)
+  drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)
+  if (plan.parts.length > 1) drawParts(context, project, plan, layout.zoom, board)
 
   // Beads needed and the facts, each its own narrow column (ticket 186): beside the board, stacked one under the
-  // other; under it for a Pattern wider than tall, where there is width to spare, side by side instead.
+  // other; under it for a Project wider than tall, where there is width to spare, side by side instead.
   if (layout.columnBelow) {
     const y1 = boardBottom + PRINT_RULER + PRINT_NAME_BAND + mm(6) + pt(10)
     const beadsColumn = { x: PRINT_MARGIN, width: PRINT_LEGEND_WIDTH }
@@ -442,8 +442,8 @@ export function drawPageOne(pattern: Pattern, words: PrintText, plan: PrintPlan)
 }
 
 /** The chart parts on page 1: dashed, each numbered by the page it prints on. */
-function drawParts(context: CanvasRenderingContext2D, pattern: Pattern, plan: PrintPlan, zoom: number, board: Board): void {
-  const grid = displayedGrid(pattern)
+function drawParts(context: CanvasRenderingContext2D, project: Project, plan: PrintPlan, zoom: number, board: Board): void {
+  const grid = displayedGrid(project)
   context.save()
   context.setLineDash([mm(1.6), mm(1.2)])
   context.lineWidth = pt(0.9)
@@ -478,7 +478,7 @@ export interface MiniMapCell {
 
 /**
  * The locator's own layout (ticket 187): the block grid's own row/column shape up to `MINI_MAP_GRID_LIMIT` blocks,
- * or a single horizontal row past that, so a Pattern that splits tall doesn't add a tall locator under the header
+ * or a single horizontal row past that, so a Project that splits tall doesn't add a tall locator under the header
  * and push the chart down or off the page. Pure, so it can be checked without a canvas; `drawMiniMap` draws it.
  */
 export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number; width: number; cells: MiniMapCell[] } {
@@ -495,7 +495,7 @@ export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number;
   return { cell, width: cell * columns, cells }
 }
 
-/** A small map of the Pattern's blocks, drawn from `miniMapLayout`, the one on this page filled. */
+/** A small map of the Project's blocks, drawn from `miniMapLayout`, the one on this page filled. */
 function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: PrintPart, right: number, top: number): number {
   const layout = miniMapLayout(plan, part)
   const x = right - layout.width
@@ -513,11 +513,11 @@ function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: P
 }
 
 /** A chart page: one full-size part normally, or (PrintStrips) several small ones stacked on the same sheet. */
-export function drawChartPage(pattern: Pattern, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
-  return plan.strip ? drawStripSheet(pattern, words, plan, parts) : drawSinglePartPage(pattern, words, plan, parts[0]!)
+export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
+  return plan.strip ? drawStripSheet(project, words, plan, parts) : drawSinglePartPage(project, words, plan, parts[0]!)
 }
 
-function drawSinglePartPage(pattern: Pattern, words: PrintText, plan: PrintPlan, part: PrintPart): HTMLCanvasElement {
+function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan, part: PrintPart): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page)
   const { labels } = words
@@ -549,8 +549,8 @@ function drawSinglePartPage(pattern: Pattern, words: PrintText, plan: PrintPlan,
   text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
 
   // The part, filling the page, with its rulers.
-  drawBoard(context, pattern, part.region, plan.zoom, board)
-  drawRulers(context, pattern, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
+  drawBoard(context, project, part.region, plan.zoom, board)
+  drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
 
   // The 8 mm footer: the brand, and where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)
@@ -572,15 +572,15 @@ function drawSinglePartPage(pattern: Pattern, words: PrintText, plan: PrintPlan,
 // ---- Stacked strips (PrintStrips) ----------------------------------------------------------------------------------
 
 /** "Part 2 · columns 39–76": the raw axis being split (columns when not turned a quarter, rows when it is), lowest number first. */
-function stripLabel(pattern: Pattern, labels: PrintText['labels'], part: PrintPart): string {
-  const a = acrossNumber(pattern, part.firstAcross)
-  const b = acrossNumber(pattern, part.lastAcross)
-  const template = rotationSwapsAxes(pattern.rotation) ? labels.partRows : labels.partColumns
+function stripLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
+  const a = acrossNumber(project, part.firstAcross)
+  const b = acrossNumber(project, part.lastAcross)
+  const template = rotationSwapsAxes(project.rotation) ? labels.partRows : labels.partColumns
   return template.replace('{part}', String(part.across + 1)).replace('{from}', String(Math.min(a, b))).replace('{to}', String(Math.max(a, b)))
 }
 
 /** Several parts sharing one sheet, at the base bead size, each on its own board with rulers and a label, top to bottom. */
-function drawStripSheet(pattern: Pattern, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
+function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page)
   const { labels } = words
@@ -600,11 +600,11 @@ function drawStripSheet(pattern: Pattern, words: PrintText, plan: PrintPlan, par
   let y = PRINT_MARGIN + PRINT_HEADER
   let lastBoard: Board | undefined
   for (const part of parts) {
-    text(context, stripLabel(pattern, labels, part), PRINT_MARGIN, y + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
+    text(context, stripLabel(project, labels, part), PRINT_MARGIN, y + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
     y += PRINT_STRIP_LABEL + inset
     const board: Board = { x: PRINT_MARGIN + inset + (areaWidth - part.region.width) / 2, y, width: part.region.width, height: part.region.height }
-    drawBoard(context, pattern, part.region, plan.zoom, board)
-    drawRulers(context, pattern, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
+    drawBoard(context, project, part.region, plan.zoom, board)
+    drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
     y = board.y + board.height + inset + PRINT_STRIP_GAP
     lastBoard = board
   }

@@ -9,12 +9,12 @@ import BottomSheet from './BottomSheet.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
-import NewPatternForm from '../pattern/NewPatternForm.vue'
+import NewProjectForm from '../project/NewProjectForm.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
-import PatternImport from '../import/PatternImport.vue'
-import PatternList from '../pattern/PatternList.vue'
+import ProjectImport from '../import/ProjectImport.vue'
+import ProjectList from '../project/ProjectList.vue'
 import SaveBox from '../export/SaveBox.vue'
-import FrameControls from '../pattern/FrameControls.vue'
+import FrameControls from '../project/FrameControls.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
@@ -24,15 +24,15 @@ import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
 
 const {
   t,
-  patterns,
-  activePatternId,
-  activePattern,
+  projects,
+  activeProjectId,
+  activeProject,
   saveFailed,
   onRequestRemove,
   activeBeadLabel,
-  settledPattern,
-  onNewPatternDraft,
-  onCreatePattern,
+  settledProject,
+  onNewProjectDraft,
+  onCreateProject,
   startConvertImage,
   canUndo,
   canRedo,
@@ -59,21 +59,21 @@ const {
   onRemoveSelectedLine,
   replaceBeadCandidates,
   onPickReplaceBead,
-  onImportPatterns,
+  onImportProjects,
   decodeImage,
   qrExport,
   makerName,
   nameOnExportsOpen,
   exporting,
-  onExportPatternFile,
+  onExportProjectFile,
   onExportPng,
   onExportPdf,
   onSave,
   openPhoneSheet,
   themeSheetOpen,
-  phoneNewPatternOpen,
-  phoneSavedPatternsOpen,
-  onSelectPatternFromPhoneDrawer,
+  phoneNewProjectOpen,
+  phoneSavedProjectsOpen,
+  onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
 /** The phone Tool sheet's four tiles (ToolSheet card), same order and icons as everywhere else the four tools list themselves. */
@@ -85,7 +85,7 @@ function toolLabel(tool: Tool): string {
 </script>
 
 <template>
-  <BottomSheet v-if="openPhoneSheet === 'tool' && activePattern" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
+  <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
     <div class="phone-sheet__tiles">
       <ToolButton
         v-for="tool in phoneTools"
@@ -109,7 +109,7 @@ function toolLabel(tool: Tool): string {
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'color' && activePattern" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
+  <BottomSheet v-if="openPhoneSheet === 'color' && activeProject" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
     <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
     <div class="phone-sheet__color-buttons">
       <CustomColorPicker
@@ -117,11 +117,11 @@ function toolLabel(tool: Tool): string {
         :selected="!selectedColorId && !selectedImageColor && !!customColor"
         @select="onSelectCustomColor"
       />
-      <ImageColorsButton :colors="activePattern.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
+      <ImageColorsButton :colors="activeProject.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'edit' && activePattern" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
+  <BottomSheet v-if="openPhoneSheet === 'edit' && activeProject" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
     <div class="phone-sheet__edit">
       <IconButton icon="undo" variant="toolbox" size="lg" data-tour="undo" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
       <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
@@ -129,9 +129,9 @@ function toolLabel(tool: Tool): string {
         icon="rotate"
         variant="toolbox"
         size="lg"
-        :label="activePattern.frame ? t.palette.rotateButton : t.frame.rotateNeedsFrame"
-        :disabled="!activePattern.frame || activePattern.rowProgress.enabled"
-        :title="activePattern.frame && activePattern.rowProgress.enabled ? t.size.lockedReason : undefined"
+        :label="activeProject.frame ? t.palette.rotateButton : t.frame.rotateNeedsFrame"
+        :disabled="!activeProject.frame || activeProject.rowProgress.enabled"
+        :title="activeProject.frame && activeProject.rowProgress.enabled ? t.size.lockedReason : undefined"
         data-testid="sheet-rotate"
         @click="onRotate"
       />
@@ -148,9 +148,9 @@ function toolLabel(tool: Tool): string {
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'frame' && activePattern" :title="t.frame.title" @close="openPhoneSheet = null">
+  <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
     <FrameControls
-      :pattern="activePattern"
+      :project="activeProject"
       with-set-frame
       @set-frame="onStartSetFrame(); openPhoneSheet = null"
       @set-size="onSetFrameSize"
@@ -160,11 +160,11 @@ function toolLabel(tool: Tool): string {
   </BottomSheet>
 
   <!--
-    The Pattern sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
-    shouldn't lose the way back to New Pattern or Import, unlike the five light sheets above.
+    The Project sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
+    shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
-  <BottomSheet v-if="openPhoneSheet === 'pattern'" modal :title="t.header.patternSheetLabel" @close="openPhoneSheet = null; phoneSavedPatternsOpen = false">
-    <template v-if="activePattern">
+  <BottomSheet v-if="openPhoneSheet === 'project'" modal :title="t.header.projectSheetLabel" @close="openPhoneSheet = null; phoneSavedProjectsOpen = false">
+    <template v-if="activeProject">
       <p class="phone-sheet__bead-row">
         <BeadPill data-testid="phone-sheet-bead">{{ activeBeadLabel }}</BeadPill>
         <AppSelect
@@ -181,55 +181,55 @@ function toolLabel(tool: Tool): string {
         </AppSelect>
       </p>
       <SaveBox
-        :has-frame="activePattern.frame !== undefined"
+        :has-frame="activeProject.frame !== undefined"
         :save-failed="saveFailed"
         :qr-too-large="qrExport.tooLarge.value"
         :exporting="exporting"
-        :pattern-name="activePattern.name"
+        :project-name="activeProject.name"
         :maker-name="makerName"
         @edit-maker-name="nameOnExportsOpen = true"
         @save="onSave"
-        @export-pattern="onExportPatternFile"
+        @export-project="onExportProjectFile"
         @export-qr="qrExport.open"
         @export-png="onExportPng"
         @export-pdf="onExportPdf"
         @fit-frame="onFitFrame(); openPhoneSheet = null"
         @set-frame="onStartSetFrame(); openPhoneSheet = null"
       />
-      <BeadQuantities :pattern="settledPattern" />
+      <BeadQuantities :project="settledProject" />
     </template>
-    <div class="phone-sheet__pattern-actions">
-      <!-- New Pattern: never disabled -- with no Patterns yet this is the only way to reach the form (the wider tiers show it inline by default). -->
-      <AppButton variant="primary" icon="plus" data-testid="phone-new-pattern-button" @click="phoneNewPatternOpen = true">
-        {{ t.patterns.newPatternButton }}
+    <div class="phone-sheet__project-actions">
+      <!-- New Project: never disabled -- with no Projects yet this is the only way to reach the form (the wider tiers show it inline by default). -->
+      <AppButton variant="primary" icon="plus" data-testid="phone-new-project-button" @click="phoneNewProjectOpen = true">
+        {{ t.projects.newProjectButton }}
       </AppButton>
-      <PatternImport compact :decode-image="decodeImage" :patterns="patterns" testid-prefix="pattern-sheet-" @import="onImportPatterns" />
+      <ProjectImport compact :decode-image="decodeImage" :projects="projects" testid-prefix="project-sheet-" @import="onImportProjects" />
       <IconButton
         icon="library"
-        :label="t.patterns.heading"
-        :disabled="patterns.length === 0"
-        data-testid="phone-saved-patterns-button"
-        @click="phoneSavedPatternsOpen = true"
+        :label="t.projects.heading"
+        :disabled="projects.length === 0"
+        data-testid="phone-saved-projects-button"
+        @click="phoneSavedProjectsOpen = true"
       />
     </div>
   </BottomSheet>
 
-  <!-- New Pattern (PhoneForms card): its own full-height modal sheet from the Pattern sheet, the same form the wider tiers show inline. -->
-  <BottomSheet v-if="phoneNewPatternOpen" modal :title="t.patterns.newPatternButton" @close="phoneNewPatternOpen = false">
-    <NewPatternForm
+  <!-- New Project (PhoneForms card): its own full-height modal sheet from the Project sheet, the same form the wider tiers show inline. -->
+  <BottomSheet v-if="phoneNewProjectOpen" modal :title="t.projects.newProjectButton" @close="phoneNewProjectOpen = false">
+    <NewProjectForm
       :decode-image="decodeImage"
-      @submit="(payload) => { onCreatePattern(payload); phoneNewPatternOpen = false; openPhoneSheet = null }"
-      @draft="onNewPatternDraft"
-      @convert-image="(draft) => { startConvertImage(draft); phoneNewPatternOpen = false; openPhoneSheet = null }"
+      @submit="(payload) => { onCreateProject(payload); phoneNewProjectOpen = false; openPhoneSheet = null }"
+      @draft="onNewProjectDraft"
+      @convert-image="(draft) => { startConvertImage(draft); phoneNewProjectOpen = false; openPhoneSheet = null }"
     />
   </BottomSheet>
 
-  <!-- Saved Patterns: a non-modal sheet opened from the Pattern sheet's Saved Patterns icon. Selecting a pattern closes both this and the Pattern sheet. -->
-  <BottomSheet v-if="phoneSavedPatternsOpen" :title="t.patterns.heading" @close="phoneSavedPatternsOpen = false">
-    <PatternList
-      :patterns="patterns"
-      :active-pattern-id="activePatternId"
-      @select="onSelectPatternFromPhoneDrawer"
+  <!-- Saved Projects: a non-modal sheet opened from the Project sheet's Saved Projects icon. Selecting a project closes both this and the Project sheet. -->
+  <BottomSheet v-if="phoneSavedProjectsOpen" :title="t.projects.heading" @close="phoneSavedProjectsOpen = false">
+    <ProjectList
+      :projects="projects"
+      :active-project-id="activeProjectId"
+      @select="onSelectProjectFromPhoneDrawer"
       @remove="onRequestRemove"
     />
   </BottomSheet>
@@ -275,7 +275,7 @@ function toolLabel(tool: Tool): string {
   margin: 0 0 var(--space-16);
 }
 
-.phone-sheet__pattern-actions {
+.phone-sheet__project-actions {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -285,7 +285,7 @@ function toolLabel(tool: Tool): string {
   border-top: 1px solid var(--line-soft);
 }
 
-.phone-sheet__pattern-actions .app-button {
+.phone-sheet__project-actions .app-button {
   flex: 1 1 0;
 }
 </style>

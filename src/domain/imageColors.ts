@@ -5,8 +5,8 @@ import { PALETTE } from './palette'
  * actually buy, and how each reduced color is then quantized onto the Palette.
  *
  * Deliberately no dithering (ticket 58 decision). Every resolved color is snapped to its nearest Palette color
- * (ticket 177, amending ADR 0011): a converted Pattern's Image colors are always a subset of the same twelve
- * Palette colors every other Pattern paints with, rather than a closed set of picture-only hexes.
+ * (ticket 177, amending ADR 0011): a converted Project's Image colors are always a subset of the same twelve
+ * Palette colors every other Project paints with, rather than a closed set of picture-only hexes.
  */
 
 export interface Rgb {
@@ -31,7 +31,7 @@ export function fromHex(hex: string): Rgb {
 
 /**
  * Straight-line distance between two colors in RGB. Not a perceptual color space — this app's own pragmatism (a
- * Pattern cell is a plain hex, and every other color decision here is made on hexes) — which is good enough for the
+ * Project cell is a plain hex, and every other color decision here is made on hexes) — which is good enough for the
  * one judgement it is used for: "are these two the same color as far as an eye can tell".
  */
 export function colorDistance(a: Rgb, b: Rgb): number {

@@ -21,8 +21,8 @@ import type { IconName } from '../ui/icons'
 /**
  * The Tour's layers (ticket 80; TourStep card): a dim layer over the app with a hole for the control the step points at,
  * a gold ring round it, one dotted line to the step card, and the card. It draws over the real editor, which keeps
- * working underneath: the dim blocks every press except the hole's, the card's, and the Pattern's own scroll and zoom
- * (the Pattern is a hole for the pointer, and the app itself keeps it from drawing unless the step is about drawing).
+ * working underneath: the dim blocks every press except the hole's, the card's, and the Project's own scroll and zoom
+ * (the Project is a hole for the pointer, and the app itself keeps it from drawing unless the step is about drawing).
  *
  * Each control is found on the screen by its `data-tour` mark, so the same step works at every size: the same control is
  * in the Toolbox, the BottomToolbar or a sheet, and the first one showing is the one pointed at. A control that isn't
@@ -32,7 +32,7 @@ const { t, tour, announce } = useAppShell()
 
 /** For each control, the `data-tour` marks that can be it, the first showing wins; the later ones open it. */
 const CHAINS: Record<TourControl, string[]> = {
-  'new-pattern': ['new-pattern', 'phone-new-pattern', 'header-tools'],
+  'new-project': ['new-project', 'phone-new-project', 'header-tools'],
   'tool-paint': ['tool-paint', 'dock-tool'],
   'tool-fill': ['tool-fill', 'dock-tool'],
   'tool-select': ['tool-select', 'dock-tool'],
@@ -49,7 +49,7 @@ const CHAINS: Record<TourControl, string[]> = {
   'progress-switch': ['progress-switch'],
   'progress-next': ['progress-next'],
   'progress-previous': ['progress-previous'],
-  export: ['export', 'dock-pattern', 'header-tools'],
+  export: ['export', 'dock-project', 'header-tools'],
   board: ['board'],
 }
 
@@ -70,7 +70,7 @@ const STEP_TOOLS: Record<TourStepId | 'final', { icon: IconName; key?: string }>
 }
 
 const toolName = computed<Record<TourStepId | 'final', string>>(() => ({
-  create: t.value.patterns.newPatternButton,
+  create: t.value.projects.newProjectButton,
   fill: t.value.tools.fillLabel,
   outline: t.value.tools.paintLabel,
   rhombus: t.value.tools.fillLabel,
@@ -202,7 +202,7 @@ function measure() {
 
 const offScreen = computed(() => !!measured.value && !measured.value.hole)
 
-/** The hole, rounded like the preview's (9px; 16px for the Pattern). */
+/** The hole, rounded like the preview's (9px; 16px for the Project). */
 function roundedRectPath({ x, y, w, h }: Rect, radius: number): string {
   const r = Math.min(radius, w / 2, h / 2)
   return `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`
@@ -214,7 +214,7 @@ const holeRadius = computed(() => (tour.targets.value?.control === 'board' ? 16 
 /** What looks dimmed: everything but the hole. */
 const dimPath = computed(() => viewportPath.value + (measured.value?.hole ? roundedRectPath(measured.value.hole, holeRadius.value) : ''))
 
-/** What blocks presses: everything but the hole and the Pattern's own box, so it can still scroll and zoom. */
+/** What blocks presses: everything but the hole and the Project's own box, so it can still scroll and zoom. */
 const blockPath = computed(
   () =>
     viewportPath.value +
@@ -251,10 +251,10 @@ const showKey = computed(() => !!tool.value.key && !phone.value)
 const showLineHint = computed(() => step.value === 'remove-line' && tour.targets.value?.control === 'ruler')
 
 function controlWords(control: TourControl): { name: string; place: string } | undefined {
-  const { tools, toolbox, palette, colorNames, patterns, frame, a11y, rowProgress, saveBox, header } = t.value
+  const { tools, toolbox, palette, colorNames, projects, frame, a11y, rowProgress, saveBox, header } = t.value
   const groups = toolbox.groups
   const words: Partial<Record<TourControl, { name: string; place: string }>> = {
-    'new-pattern': { name: patterns.newPatternButton, place: header.patternSheetLabel },
+    'new-project': { name: projects.newProjectButton, place: header.projectSheetLabel },
     'tool-paint': { name: tools.paintLabel, place: groups.tools },
     'tool-fill': { name: tools.fillLabel, place: groups.tools },
     'tool-select': { name: tools.selectLabel, place: groups.tools },
@@ -269,7 +269,7 @@ function controlWords(control: TourControl): { name: string; place: string } | u
     'progress-switch': { name: rowProgress.enabledLabel, place: groups.rowProgress },
     'progress-next': { name: rowProgress.nextButton, place: groups.rowProgress },
     'progress-previous': { name: rowProgress.previousButton, place: groups.rowProgress },
-    export: { name: saveBox.exportButton, place: header.patternSheetLabel },
+    export: { name: saveBox.exportButton, place: header.projectSheetLabel },
   }
   return words[control]
 }
@@ -389,7 +389,7 @@ const strand = computed(() =>
 
 <template>
   <div v-if="tour.active.value" class="tour" data-testid="tour">
-    <!-- Presses outside the hole, the card and the Pattern's own box go nowhere. -->
+    <!-- Presses outside the hole, the card and the Project's own box go nowhere. -->
     <svg class="tour__block" :width="viewport.w" :height="viewport.h" aria-hidden="true">
       <path :d="blockPath" fill-rule="evenodd" fill="transparent" />
     </svg>

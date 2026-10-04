@@ -1,23 +1,23 @@
 import { colorAt, type Frame } from '../domain/canvas'
-import { patternDimensions, patternFrame } from '../domain/pattern'
+import { projectDimensions, projectFrame } from '../domain/project'
 import { CELL_SIZE_PX, type GridPosition, type PreviewCell } from '../domain/grid'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
-import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type PatternTheme } from './beadLook'
+import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { OPEN_EXTENT, viewArea } from './canvasRenderer'
 import { drawFrameEditing, drawRulers } from './rulerRenderer'
 import { cachedSprite } from './sprites'
 import {
-  patternExtentPx,
+  projectExtentPx,
   rowShiftPx,
   rowTopPx,
   beadRoundness,
   setGridTransform,
   visibleBeadsIn,
   visibleBeadsOpen,
-  type DrawnPattern,
+  type DrawnProject,
   type Region,
-} from './patternRenderer'
+} from './projectRenderer'
 
 /**
  * The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -25,11 +25,11 @@ import {
  * marker; the hover preview, Selection, paste preview, Mirror axes and the "Mirror current" dimming join it as they
  * move over from the grid that was one element per bead.
  *
- * Coordinates are the base layer's (see patternRenderer): a Pattern's own px, drawn through the same transform, so an
+ * Coordinates are the base layer's (see projectRenderer): a Project's own px, drawn through the same transform, so an
  * overlay lands on the bead it belongs to at every zoom and rotation.
  */
 
-/** The marker's thickness in the Pattern's own px (BeadBoard card: a 2px `marker` outline). */
+/** The marker's thickness in the Project's own px (BeadBoard card: a 2px `marker` outline). */
 const MARKER_PX = 2
 
 /** How far outside its row the current-row outline sits, and its corner radius (BeadBoard card). */
@@ -48,13 +48,13 @@ export interface HoverPreview {
 }
 
 export interface OverlayInput {
-  /** The Pattern whose overlay this is: its Row progress decides the marker. */
-  pattern: DrawnPattern
-  /** The part of the displayed Pattern the surface shows, as for renderPattern. */
+  /** The Project whose overlay this is: its Row progress decides the marker. */
+  project: DrawnProject
+  /** The part of the displayed Project the surface shows, as for renderProject. */
   region: Region
   zoom: number
   pixelRatio?: number
-  theme?: PatternTheme
+  theme?: ProjectTheme
   /** The hover preview to draw over the beads. */
   preview?: HoverPreview
   /** The rectangle the Select tool has marked out (ticket 31): a wash over its beads and an outline that reads as one rectangle. */
@@ -63,13 +63,13 @@ export interface OverlayInput {
   mirrorAxisCounts?: MirrorAxisCounts
   /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping back. */
   dimmedCells?: readonly GridPosition[]
-  /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Pattern has keyboard focus. */
+  /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Project has keyboard focus. */
   cursor?: GridPosition
-  /** What the Tour marks on the Pattern (ticket 80): beads to paint or erase, and frames to select or paste into. */
+  /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
   tourMarks?: TourMarks
   /**
    * Whether the region is a viewport onto the open canvas (ADR 0026), measured from the bead at row 0, column 0, with no
-   * edge: any position can carry a preview, a Selection or the cursor. Otherwise the Pattern is the Frame alone, drawn
+   * edge: any position can carry a preview, a Selection or the cursor. Otherwise the Project is the Frame alone, drawn
    * from its first bead, as an export or a picture shows it.
    */
   open?: boolean
@@ -82,7 +82,7 @@ export interface OverlayInput {
   frameEditing?: { touch: boolean; tooltip: string }
 }
 
-/** The Tour's marks on the Pattern, dashed. */
+/** The Tour's marks on the Project, dashed. */
 export interface TourMarks {
   cells: readonly GridPosition[]
   boxes: readonly Selection[]
@@ -90,7 +90,7 @@ export interface TourMarks {
 
 /**
  * Where an overlay's positions live. On the open canvas every position is real and the Frame, when there is one, sits
- * where it is; drawn on its own (an export, a picture) the Pattern is the Frame and its first bead is position (0, 0).
+ * where it is; drawn on its own (an export, a picture) the Project is the Frame and its first bead is position (0, 0).
  */
 interface Space {
   open: boolean
@@ -101,20 +101,20 @@ interface Space {
   hasFrame: boolean
 }
 
-function spaceOf(pattern: DrawnPattern, open: boolean): Space {
-  const { columns, rows } = patternDimensions(pattern)
-  const frame = patternFrame(pattern)
-  return { open, origin: open ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }, columns, rows, hasFrame: !open || pattern.frame !== undefined }
+function spaceOf(project: DrawnProject, open: boolean): Space {
+  const { columns, rows } = projectDimensions(project)
+  const frame = projectFrame(project)
+  return { open, origin: open ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }, columns, rows, hasFrame: !open || project.frame !== undefined }
 }
 
-/** Whether a position can be drawn on: anywhere on the open canvas, inside the Pattern otherwise. */
+/** Whether a position can be drawn on: anywhere on the open canvas, inside the Project otherwise. */
 function inSpace(space: Space, row: number, column: number): boolean {
   return space.open || (row >= 0 && row < space.rows && column >= 0 && column < space.columns)
 }
 
 /** The beads in view, with no edge on the open canvas. */
-function visibleIn(pattern: DrawnPattern, space: Space, region: Region, zoom: number): ReturnType<typeof visibleBeadsIn> {
-  return space.open ? visibleBeadsOpen(pattern.technique, viewArea(region, zoom, pattern.rotation)) : visibleBeadsIn(pattern, region, zoom)
+function visibleIn(project: DrawnProject, space: Space, region: Region, zoom: number): ReturnType<typeof visibleBeadsIn> {
+  return space.open ? visibleBeadsOpen(project.technique, viewArea(region, zoom, project.rotation)) : visibleBeadsIn(project, region, zoom)
 }
 
 /** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
@@ -128,24 +128,24 @@ function outlineRect(context: DrawingContext, x: number, y: number, width: numbe
 /**
  * The outline round the row being woven now, while Row progress is on and rows run along the grid's rows: the row's own
  * rectangle, 3px outside it with rounded corners, so on peyote and brick stitch it follows the row's half-bead shift.
- * It stays inside the Pattern's own extent, so the first and last rows' outlines aren't cut off at the surface's edge.
+ * It stays inside the Project's own extent, so the first and last rows' outlines aren't cut off at the surface's edge.
  */
-function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, space: Space, theme: PatternTheme): void {
-  const { technique } = pattern
+function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
+  const { technique } = project
   const { columns, rows } = space
-  const relative = pattern.rowProgress.currentRow
+  const relative = project.rowProgress.currentRow
   if (!space.hasFrame || relative < 0 || relative >= rows) {
     return
   }
 
   const row = space.origin.row + relative
   const first = space.origin.column * CELL_SIZE_PX
-  const extent = space.open ? undefined : patternExtentPx(technique, columns, rows)
+  const extent = space.open ? undefined : projectExtentPx(technique, columns, rows)
   const left = rowShiftPx(technique, row) + first - ROW_OUTLINE_OUTSET_PX
   const top = rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX
   const right = rowShiftPx(technique, row) + first + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
   const bottom = rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
-  // Drawn on its own the Pattern's surface ends at its extent, so the first and last rows' outlines stay inside it.
+  // Drawn on its own the Project's surface ends at its extent, so the first and last rows' outlines stay inside it.
   const clippedLeft = extent ? Math.max(0, left) : left
   const clippedTop = extent ? Math.max(0, top) : top
   const width = (extent ? Math.min(extent.width, right) : right) - clippedLeft
@@ -165,10 +165,10 @@ function drawCurrentRow(context: DrawingContext, pattern: DrawnPattern, space: S
  * at the top of the first bead and the bottom of the last, so it reads as one outlined strip; on peyote and brick stitch
  * every bead is outlined whole, which keeps the zigzag readable as one chain.
  */
-function drawCurrentColumn(context: DrawingContext, pattern: DrawnPattern, space: Space, theme: PatternTheme): void {
-  const { technique } = pattern
+function drawCurrentColumn(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
+  const { technique } = project
   const { columns, rows } = space
-  const relative = pattern.rowProgress.currentColumn
+  const relative = project.rowProgress.currentColumn
   if (!space.hasFrame || relative < 0 || relative >= columns) {
     return
   }
@@ -228,8 +228,8 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
  * holds (a pasted block in each bead's own colors), or, with no color to show, a 2px outline in the dark ink. Square
  * inside a peyote bead's rounded corners, as the DOM grid drew it.
  */
-function drawPreview(context: DrawingContext, pattern: DrawnPattern, space: Space, preview: HoverPreview, theme: PatternTheme): void {
-  const { technique } = pattern
+function drawPreview(context: DrawingContext, project: DrawnProject, space: Space, preview: HoverPreview, theme: ProjectTheme): void {
+  const { technique } = project
   const size = CELL_SIZE_PX - 2
   const roundness = beadRoundness(technique) * CELL_SIZE_PX - 1
 
@@ -259,11 +259,11 @@ function drawPreview(context: DrawingContext, pattern: DrawnPattern, space: Spac
 
 /** How much of a bead the Selection's wash covers: its inside, the rim left as it is. */
 const WASH_OPACITY = 0.3
-/** How thick, in the Pattern's own px, the Selection's outline is, inside each bead on the rectangle's edge. */
+/** How thick, in the Project's own px, the Selection's outline is, inside each bead on the rectangle's edge. */
 const OUTLINE_PX = 2
 
 /** The Selection's wash on a rounded bead, kept as a bitmap: a big Selection is thousands of these, and it is redrawn as it is dragged. */
-function washSprite(cornerRadius: number, deviceScale: number, theme: PatternTheme) {
+function washSprite(cornerRadius: number, deviceScale: number, theme: ProjectTheme) {
   const size = CELL_SIZE_PX - 2
   const pixels = Math.max(1, Math.round(size * deviceScale))
   return cachedSprite(['wash', pixels, cornerRadius, theme.marker].join('|'), pixels, size, (context) => {
@@ -283,16 +283,16 @@ function washSprite(cornerRadius: number, deviceScale: number, theme: PatternThe
  */
 function drawSelection(
   context: DrawingContext,
-  pattern: DrawnPattern,
+  project: DrawnProject,
   space: Space,
   selection: Selection,
   region: Region,
   zoom: number,
   pixelRatio: number,
-  theme: PatternTheme,
+  theme: ProjectTheme,
 ): void {
-  const { technique } = pattern
-  const visible = visibleIn(pattern, space, region, zoom)
+  const { technique } = project
+  const visible = visibleIn(project, space, region, zoom)
   const size = CELL_SIZE_PX - 2
   const rounded = technique === 'peyote'
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
@@ -361,16 +361,16 @@ function drawSelection(
  */
 function drawDimmed(
   context: DrawingContext,
-  pattern: DrawnPattern,
+  project: DrawnProject,
   space: Space,
   cells: readonly GridPosition[],
   region: Region,
   zoom: number,
   pixelRatio: number,
-  theme: PatternTheme,
+  theme: ProjectTheme,
 ): void {
-  const { technique, beads } = pattern
-  const visible = visibleIn(pattern, space, region, zoom)
+  const { technique, beads } = project
+  const visible = visibleIn(project, space, region, zoom)
   const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
 
   for (const { row, column } of cells) {
@@ -395,8 +395,8 @@ function drawDimmed(
  * The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px wide in
  * high contrast), following its corners. Drawn last, over everything, so it is never hidden.
  */
-function drawCursor(context: DrawingContext, pattern: DrawnPattern, space: Space, cursor: GridPosition, theme: PatternTheme): void {
-  const { technique } = pattern
+function drawCursor(context: DrawingContext, project: DrawnProject, space: Space, cursor: GridPosition, theme: ProjectTheme): void {
+  const { technique } = project
   if (!inSpace(space, cursor.row, cursor.column)) {
     return
   }
@@ -420,7 +420,7 @@ const TOUR_DASH_PX = [4, 3]
 const TOUR_MARK_PX = 2
 const TOUR_UNDERLAY_PX = 4.5
 
-function strokeTourMark(context: DrawingContext, theme: PatternTheme, draw: () => void): void {
+function strokeTourMark(context: DrawingContext, theme: ProjectTheme, draw: () => void): void {
   context.lineCap = 'butt'
   context.setLineDash([])
   context.strokeStyle = theme.outline
@@ -433,8 +433,8 @@ function strokeTourMark(context: DrawingContext, theme: PatternTheme, draw: () =
   context.setLineDash([])
 }
 
-function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, space: Space, marks: TourMarks, theme: PatternTheme): void {
-  const { technique } = pattern
+function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Space, marks: TourMarks, theme: ProjectTheme): void {
+  const { technique } = project
   const { columns, rows } = space
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
   const size = CELL_SIZE_PX - 2
@@ -467,17 +467,17 @@ function drawTourMarks(context: DrawingContext, pattern: DrawnPattern, space: Sp
   }
 }
 
-/** Mirror's axis lines (ticket 44): super-thin but clearly visible, drawn over the whole Pattern whatever the tool. */
+/** Mirror's axis lines (ticket 44): super-thin but clearly visible, drawn over the whole Project whatever the tool. */
 const AXIS_OPACITY = 0.65
 const AXIS_PX = 2
 
-function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, space: Space, counts: MirrorAxisCounts, theme: PatternTheme): void {
+function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: Space, counts: MirrorAxisCounts, theme: ProjectTheme): void {
   if (!space.hasFrame) {
     return
   }
-  const { width, height } = patternExtentPx(pattern.technique, space.columns, space.rows)
+  const { width, height } = projectExtentPx(project.technique, space.columns, space.rows)
   const left = space.origin.column * CELL_SIZE_PX
-  const top = rowTopPx(pattern.technique, space.origin.row)
+  const top = rowTopPx(project.technique, space.origin.row)
   context.globalAlpha = AXIS_OPACITY
   context.fillStyle = theme.marker
   for (const fraction of axisLinePositions(counts.columns)) {
@@ -489,61 +489,61 @@ function drawMirrorAxes(context: DrawingContext, pattern: DrawnPattern, space: S
   context.globalAlpha = 1
 }
 
-/** Draws the overlay for the part of the Pattern in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
+/** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
-  const { enabled, direction } = pattern.rowProgress
+  const { enabled, direction } = project.rowProgress
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
-  const ruled = open && rulers !== undefined && (pattern.frame !== undefined || Object.keys(pattern.beads).length > 0)
+  const ruled = open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
   if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing) {
     return
   }
 
-  const space = spaceOf(pattern, open)
-  const extent = open ? OPEN_EXTENT : patternExtentPx(pattern.technique, space.columns, space.rows)
-  setGridTransform(context, extent, region, zoom, pattern.rotation, pixelRatio)
+  const space = spaceOf(project, open)
+  const extent = open ? OPEN_EXTENT : projectExtentPx(project.technique, space.columns, space.rows)
+  setGridTransform(context, extent, region, zoom, project.rotation, pixelRatio)
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, the marker lifted above its row, and Mirror's axes above everything.
   if (dimmed) {
-    drawDimmed(context, pattern, space, dimmed, region, zoom, pixelRatio, theme)
+    drawDimmed(context, project, space, dimmed, region, zoom, pixelRatio, theme)
   }
   if (selection) {
-    drawSelection(context, pattern, space, selection, region, zoom, pixelRatio, theme)
+    drawSelection(context, project, space, selection, region, zoom, pixelRatio, theme)
   }
   if (preview) {
-    drawPreview(context, pattern, space, preview, theme)
+    drawPreview(context, project, space, preview, theme)
   }
   if (enabled) {
     if (direction === 'rows') {
-      drawCurrentRow(context, pattern, space, theme)
+      drawCurrentRow(context, project, space, theme)
     } else {
-      drawCurrentColumn(context, pattern, space, theme)
+      drawCurrentColumn(context, project, space, theme)
     }
   }
   if (axes) {
-    drawMirrorAxes(context, pattern, space, axes, theme)
+    drawMirrorAxes(context, project, space, axes, theme)
   }
   if (marks) {
-    drawTourMarks(context, pattern, space, marks, theme)
+    drawTourMarks(context, project, space, marks, theme)
   }
   if (cursor) {
-    drawCursor(context, pattern, space, cursor, theme)
+    drawCursor(context, project, space, cursor, theme)
   }
 
   // The rulers are laid out in the viewport's own px, over everything the grid-space drawing above made.
   if (ruled && rulers) {
     drawRulers(context, {
-      pattern,
-      view: { technique: pattern.technique, rotation: pattern.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      project,
+      view: { technique: project.technique, rotation: project.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
       pixelRatio,
       theme,
       showNumbers: rulers.numbers,
@@ -551,10 +551,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       activePiece: rulers.activePiece,
     })
   }
-  if (open && rulers && frameEditing && pattern.frame) {
+  if (open && rulers && frameEditing && project.frame) {
     drawFrameEditing(context, {
-      frame: pattern.frame,
-      view: { technique: pattern.technique, rotation: pattern.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      frame: project.frame,
+      view: { technique: project.technique, rotation: project.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
       pixelRatio,
       theme,
       touch: frameEditing.touch,

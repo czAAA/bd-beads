@@ -1,32 +1,32 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPattern } from '../../domain/pattern'
-import { libraryFileName, patternExportFileName, patternFileName } from '../../domain/patternFile'
+import { createProject } from '../../domain/project'
+import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { useExportFlow } from './useExportFlow'
 
-vi.mock('../../rendering/patternExport', () => ({
-  exportPatternPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
-  exportPatternPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
+vi.mock('../../rendering/projectExport', () => ({
+  exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+  exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
 }))
-import { exportPatternPdf, exportPatternPng } from '../../rendering/patternExport'
+import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 
-const pattern = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
+const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
 /** A fake for the file hand-over, so nothing here touches the DOM. */
 const downloadFile = vi.fn()
 
 beforeEach(() => {
   downloadFile.mockClear()
-  vi.mocked(exportPatternPng).mockClear()
-  vi.mocked(exportPatternPdf).mockClear()
+  vi.mocked(exportProjectPng).mockClear()
+  vi.mocked(exportProjectPdf).mockClear()
   localStorage.clear()
 })
 
 function setup(options: { open?: boolean } = {}) {
   const deps = {
-    currentPattern: () => (options.open === false ? undefined : pattern),
-    patterns: () => [pattern],
-    shareablePattern: () => (options.open === false ? undefined : pattern),
+    currentProject: () => (options.open === false ? undefined : project),
+    projects: () => [project],
+    shareableProject: () => (options.open === false ? undefined : project),
     messages: () => en,
     locale: () => 'en' as const,
     downloadFile,
@@ -36,11 +36,11 @@ function setup(options: { open?: boolean } = {}) {
 
 describe('useExportFlow with no Frame (ticket 233)', () => {
   it('exports no PNG or PDF, since they hold the Frame\'s beads', async () => {
-    const { frame: _frame, ...open } = pattern
+    const { frame: _frame, ...open } = project
     const flow = useExportFlow({
-      currentPattern: () => open,
-      patterns: () => [open],
-      shareablePattern: () => open,
+      currentProject: () => open,
+      projects: () => [open],
+      shareableProject: () => open,
       messages: () => en,
       locale: () => 'en' as const,
       downloadFile,
@@ -48,8 +48,8 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
     await flow.onExportPng()
     await flow.onExportPdf()
 
-    expect(exportPatternPng).not.toHaveBeenCalled()
-    expect(exportPatternPdf).not.toHaveBeenCalled()
+    expect(exportProjectPng).not.toHaveBeenCalled()
+    expect(exportProjectPdf).not.toHaveBeenCalled()
     expect(downloadFile).not.toHaveBeenCalled()
     expect(flow.qrExport.matrix.value).toBeUndefined()
     expect(flow.qrExport.tooLarge.value).toBe(false)
@@ -57,40 +57,40 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
 })
 
 describe('useExportFlow', () => {
-  describe('Pattern file', () => {
+  describe('Project file', () => {
     it('hands over the whole library as one file', () => {
       setup().onExportLibraryFile()
       expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(String))
     })
 
-    it('hands over the open Pattern as a Pattern file', () => {
-      setup().onExportPatternFile()
-      expect(downloadFile).toHaveBeenCalledWith(patternFileName(pattern), expect.any(String))
+    it('hands over the open Project as a Project file', () => {
+      setup().onExportProjectFile()
+      expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(String))
     })
 
-    it('hands over the whole library when no Pattern is open', () => {
-      setup({ open: false }).onExportPatternFile()
+    it('hands over the whole library when no Project is open', () => {
+      setup({ open: false }).onExportProjectFile()
       expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(String))
     })
   })
 
   describe('PNG and PDF', () => {
-    it('draws the open Pattern as a PNG, printing the maker’s name, and hands it over named for the Pattern', async () => {
+    it('draws the open Project as a PNG, printing the maker’s name, and hands it over named for the Project', async () => {
       const flow = setup()
       flow.onSaveMakerName('Ada')
       await flow.onExportPng()
 
-      expect(exportPatternPng).toHaveBeenCalledWith(
-        expect.objectContaining({ id: pattern.id }),
+      expect(exportProjectPng).toHaveBeenCalledWith(
+        expect.objectContaining({ id: project.id }),
         expect.objectContaining({ name: 'My scarf', labels: en.print, maker: 'Ada' }),
       )
-      expect(downloadFile).toHaveBeenCalledWith(patternExportFileName(pattern, 'png'), expect.any(Blob), 'image/png')
+      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
     })
 
-    it('draws the open Pattern as a PDF', async () => {
+    it('draws the open Project as a PDF', async () => {
       await setup().onExportPdf()
-      expect(exportPatternPdf).toHaveBeenCalled()
-      expect(downloadFile).toHaveBeenCalledWith(patternExportFileName(pattern, 'pdf'), expect.any(Blob), 'application/pdf')
+      expect(exportProjectPdf).toHaveBeenCalled()
+      expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'pdf'), expect.any(Blob), 'application/pdf')
     })
 
     it('says which export is being drawn until it is done, and refuses a second one meanwhile', async () => {
@@ -99,20 +99,20 @@ describe('useExportFlow', () => {
       expect(flow.exporting.value).toBe('png')
 
       await flow.onExportPdf()
-      expect(exportPatternPdf).not.toHaveBeenCalled()
+      expect(exportProjectPdf).not.toHaveBeenCalled()
 
       await first
       expect(flow.exporting.value).toBeUndefined()
     })
 
     it('stops saying so when drawing fails', async () => {
-      vi.mocked(exportPatternPng).mockRejectedValueOnce(new Error('no canvas'))
+      vi.mocked(exportProjectPng).mockRejectedValueOnce(new Error('no canvas'))
       const flow = setup()
       await expect(flow.onExportPng()).rejects.toThrow('no canvas')
       expect(flow.exporting.value).toBeUndefined()
     })
 
-    it('does nothing with no Pattern open', async () => {
+    it('does nothing with no Project open', async () => {
       const flow = setup({ open: false })
       await flow.onExportPng()
       await flow.onExportPdf()
@@ -133,7 +133,7 @@ describe('useExportFlow', () => {
   })
 
   describe('QR code', () => {
-    it('follows the settled Pattern and opens and closes its panel', () => {
+    it('follows the settled Project and opens and closes its panel', () => {
       const { qrExport } = setup()
       expect(qrExport.panelOpen.value).toBe(false)
       qrExport.open()

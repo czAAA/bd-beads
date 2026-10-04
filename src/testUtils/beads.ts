@@ -1,18 +1,18 @@
-import { beadColorAt, frameGrid, patternDimensions } from '../domain/pattern'
+import { beadColorAt, frameGrid, projectDimensions } from '../domain/project'
 import type { VueWrapper } from '@vue/test-utils'
 import { expect } from 'vitest'
-import PatternSurface from '../components/canvas/PatternSurface.vue'
+import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Selection } from '../domain/selection'
 import { gridToDisplayed } from '../rendering/canvasView'
 import { labelAt, visibleRulerLabels, type RulerLabel } from '../rendering/rulers'
-import { rowShiftPx, rowTopPx } from '../rendering/patternRenderer'
+import { rowShiftPx, rowTopPx } from '../rendering/projectRenderer'
 
 /**
  * Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109 and 110). The surface is one
  * element and jsdom does no layout, so a bead is found the way a person's pointer finds it: by where it is. These put a
  * pointer event at the coordinates of a bead, which the surface then hit-tests exactly as it does for a real pointer
- * (see rendering/hitTest.ts), and read what the app did from the state it draws from: the Pattern, the Selection, the
+ * (see rendering/hitTest.ts), and read what the app did from the state it draws from: the Project, the Selection, the
  * hover preview, Mirror's axes and the dimmed beads are the props the surface is handed.
  *
  * A bead is named by its row and column, or by its index counting along the rows (row-major), which is how a grid of
@@ -23,20 +23,20 @@ export type BeadAt = number | GridPosition
 type Anywhere = VueWrapper<never> | VueWrapper
 
 function surfaceRoot(wrapper: Anywhere) {
-  const root = wrapper.find('[data-testid="pattern-surface"]')
+  const root = wrapper.find('[data-testid="project-surface"]')
   if (!root.exists()) {
-    throw new Error('No Pattern is drawn: there is no surface to press')
+    throw new Error('No Project is drawn: there is no surface to press')
   }
   return root
 }
 
 function surface(wrapper: Anywhere) {
-  return wrapper.findComponent(PatternSurface)
+  return wrapper.findComponent(ProjectSurface)
 }
 
-/** What the open Pattern is, as the surface was handed it. */
-export function drawnPattern(wrapper: Anywhere) {
-  return surface(wrapper).props('pattern')
+/** What the open Project is, as the surface was handed it. */
+export function drawnProject(wrapper: Anywhere) {
+  return surface(wrapper).props('project')
 }
 
 /** A bead's row and column, from either way of naming it. */
@@ -44,7 +44,7 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
   if (typeof at !== 'number') {
     return at
   }
-  const { columns } = patternDimensions(drawnPattern(wrapper))
+  const { columns } = projectDimensions(drawnProject(wrapper))
   return { row: Math.floor(at / columns), column: at % columns }
 }
 
@@ -84,7 +84,7 @@ export async function hoverBead(wrapper: Anywhere, at: BeadAt, options: { button
   })
 }
 
-/** Moves the pointer off the Pattern. */
+/** Moves the pointer off the Project. */
 export async function leaveSurface(wrapper: Anywhere): Promise<void> {
   await surfaceRoot(wrapper).trigger('pointerleave')
 }
@@ -92,12 +92,12 @@ export async function leaveSurface(wrapper: Anywhere): Promise<void> {
 /** A bead's color as a `#rrggbb`, or null while it is empty. */
 export function beadColor(wrapper: Anywhere, at: BeadAt): string | null {
   const { row, column } = positionOf(wrapper, at)
-  return beadColorAt(drawnPattern(wrapper), row, column)
+  return beadColorAt(drawnProject(wrapper), row, column)
 }
 
 /** Every bead's color, row by row. */
 export function beadColors(wrapper: Anywhere): (string | null)[][] {
-  return frameGrid(drawnPattern(wrapper)).map((cells) => cells.map((cell) => cell.color))
+  return frameGrid(drawnProject(wrapper)).map((cells) => cells.map((cell) => cell.color))
 }
 
 /** The rectangle marked out with the Select tool, if there is one. */
@@ -111,7 +111,7 @@ export function selectedBeadCount(wrapper: Anywhere): number {
   if (!marked) {
     return 0
   }
-  const { rows, columns } = patternDimensions(drawnPattern(wrapper))
+  const { rows, columns } = projectDimensions(drawnProject(wrapper))
   return (
     Math.max(0, Math.min(marked.top + marked.rows, rows) - marked.top) *
     Math.max(0, Math.min(marked.left + marked.columns, columns) - marked.left)
@@ -140,7 +140,7 @@ export function dimmedBeads(wrapper: Anywhere): GridPosition[] {
 
 /** How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed; the one at it is outlined. */
 export function rowProgressView(wrapper: Anywhere) {
-  const { enabled, direction, currentRow, currentColumn } = drawnPattern(wrapper).rowProgress
+  const { enabled, direction, currentRow, currentColumn } = drawnProject(wrapper).rowProgress
   const current = direction === 'rows' ? currentRow : currentColumn
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
 }
@@ -148,7 +148,7 @@ export function rowProgressView(wrapper: Anywhere) {
 /** Every ruler number the open canvas lays out for the view the surface is in (a surface with no layout has no edge to cut them at). */
 export function rulerNumbers(wrapper: Anywhere): RulerLabel[] {
   const root = surfaceRoot(wrapper)
-  return visibleRulerLabels(drawnPattern(wrapper), {
+  return visibleRulerLabels(drawnProject(wrapper), {
     technique: root.attributes('data-technique') as 'loom' | 'peyote' | 'brick',
     rotation: Number(root.attributes('data-rotation')) as Rotation,
     zoom: Number(root.attributes('data-zoom')),

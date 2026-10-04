@@ -3,7 +3,7 @@
  * from here rather than writing the number into a component.
  */
 :root {
-  /* Button card: 34 default, 38 in the save box and Edit row, 32 in the Saved Patterns footer */
+  /* Button card: 34 default, 38 in the save box and Edit row, 32 in the Saved Projects footer */
   --control-height: 2.125rem;
   --control-height-lg: 2.375rem;
   --control-height-sm: 2rem;
@@ -34,13 +34,13 @@
   /* Menu card: the narrowest a menu gets, and an item */
   --menu-width: 12.5rem;
   --menu-item-height: 2.125rem;
-  /* BeadsNeeded and SavedPatterns cards: an expandable panel's header, a Beads needed row (three fill the collapsed
-     body), the Saved Patterns collapsed body, and a color's 12px dot */
+  /* BeadsNeeded and SavedProjects cards: an expandable panel's header, a Beads needed row (three fill the collapsed
+     body), the Saved Projects collapsed body, and a color's 12px dot */
   --panel-head-height: 1.75rem;
   --panel-row-height: 2rem;
   --panel-body-height: 6rem;
   --saved-body-height: 6.5rem;
-  /* The 24" and larger tier (ticket 83): five Beads needed rows, and two rows of Saved Patterns thumbnails */
+  /* The 24" and larger tier (ticket 83): five Beads needed rows, and two rows of Saved Projects thumbnails */
   --panel-body-height-desktop: 10rem;
   --saved-body-height-desktop: 12.5rem;
   --swatch-dot: 0.75rem;
@@ -48,7 +48,7 @@
   --grams-width: 3.5rem;
   /* A tooltip that holds a sentence or two (the estimated weight) wraps at this width */
   --tooltip-wide: 16rem;
-  /* SavedPatterns card: the 44px circle, the 36px thumbnail in it, the widest a name gets, and the 20px Remove × */
+  /* SavedProjects card: the 44px circle, the 36px thumbnail in it, the widest a name gets, and the 20px Remove × */
   --thumbnail-circle: 2.75rem;
   --thumbnail-size: 2.25rem;
   --thumbnail-name-width: 3.625rem;

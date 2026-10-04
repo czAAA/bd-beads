@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { withColors } from './domain/canvas'
-import { createPattern, type Pattern } from './domain/pattern'
-import { loadPatterns, savePatterns } from './services/libraryStore'
+import { createProject, type Project } from './domain/project'
+import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { beadColor, hoverBead, previewedBeads, pressBead, pressRulerNumber, rulerNumbers, selectedBeadCount } from './testUtils/beads'
 
 /**
- * The open canvas (ticket 233, ADR 0026) as the app shows it: a Pattern with no Frame is an endless field you draw on
+ * The open canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
  * anywhere, move with the wheel, the Hand tool and Space, and read through the rulers of its pieces.
  */
 
@@ -23,9 +23,9 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-/** A Pattern with no Frame and a few beads in two places. */
-function openCanvas(extra: Partial<Pattern> = {}): Pattern {
-  const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
+/** A Project with no Frame and a few beads in two places. */
+function openCanvas(extra: Partial<Project> = {}): Project {
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
   return {
     ...base,
     frame: undefined,
@@ -48,11 +48,11 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-const surface = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="pattern-surface"]')
+const surface = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="project-surface"]')
 
 describe('drawing anywhere', () => {
   it('paints far from the first bead, at positions the canvas never had a size for, and keeps it through a reload', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -63,7 +63,7 @@ describe('drawing anywhere', () => {
     await wrapper.trigger('mouseup')
 
     expect(beadColor(wrapper, { row: 4000, column: 9000 })).toBe(RED)
-    const saved = loadPatterns()[0]!
+    const saved = loadProjects()[0]!
     expect(saved.beads[4000]![9000]).toBe(RED)
     expect(saved.beads[-30]![-12]).toBe(RED)
     expect(saved.frame).toBeUndefined()
@@ -76,7 +76,7 @@ describe('drawing anywhere', () => {
   })
 
   it('undoes a stroke far from the start as one step', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -85,14 +85,14 @@ describe('drawing anywhere', () => {
     await hoverBead(wrapper, { row: 500, column: 501 }, { buttons: 1 })
     await hoverBead(wrapper, { row: 500, column: 502 }, { buttons: 1 })
     await wrapper.trigger('mouseup')
-    expect(loadPatterns()[0]!.beads[500]).toEqual({ 500: RED, 501: RED, 502: RED })
+    expect(loadProjects()[0]!.beads[500]).toEqual({ 500: RED, 501: RED, 502: RED })
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.beads[500]).toBeUndefined()
+    expect(loadProjects()[0]!.beads[500]).toBeUndefined()
   })
 
   it('reads "Canvas · 2 pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
 
@@ -115,7 +115,7 @@ describe('drawing anywhere', () => {
 
 describe('the rulers of pieces', () => {
   it('number each piece from 1 above and to the left, and nothing below or right of it', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
 
@@ -126,7 +126,7 @@ describe('the rulers of pieces', () => {
   })
 
   it('select the whole row of a piece when its number is pressed', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
 
@@ -135,7 +135,7 @@ describe('the rulers of pieces', () => {
   })
 
   it('are hidden by the Rulers toggle and by R, and come back', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     const toggle = wrapper.find('[data-testid="rulers-toggle"]')
@@ -150,7 +150,7 @@ describe('the rulers of pieces', () => {
 
 describe('moving the canvas', () => {
   it('scrolls with the wheel and zooms with Ctrl or ⌘ + wheel, about the pointer', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     const root = surface(wrapper)
@@ -170,7 +170,7 @@ describe('moving the canvas', () => {
   })
 
   it('has no edge: a long way off is just as reachable', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     const root = surface(wrapper)
@@ -185,7 +185,7 @@ describe('moving the canvas', () => {
 
 describe('the Hand tool', () => {
   it('is the fifth tool, picked by H, and drags the canvas without changing a bead or previewing one', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -194,7 +194,7 @@ describe('the Hand tool', () => {
     expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-button--active')
     expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(6)
 
-    const before = JSON.stringify(loadPatterns()[0]!.beads)
+    const before = JSON.stringify(loadProjects()[0]!.beads)
     const root = surface(wrapper)
     const startX = Number(root.attributes('data-scroll-x'))
     await root.trigger('pointerdown', { clientX: 100, clientY: 100, button: 0, buttons: 1 })
@@ -203,13 +203,13 @@ describe('the Hand tool', () => {
     await hoverBead(wrapper, { row: 3, column: 3 })
 
     expect(Number(root.attributes('data-scroll-x'))).toBe(startX + 30)
-    expect(JSON.stringify(loadPatterns()[0]!.beads)).toBe(before)
+    expect(JSON.stringify(loadProjects()[0]!.beads)).toBe(before)
     expect(previewedBeads(wrapper)).toEqual([])
     expect(wrapper.find('[data-testid="undo-button"]').attributes('disabled')).toBeDefined()
   })
 
   it('leaves the other tools alone: pressing a bead with Paint still paints', async () => {
-    savePatterns([openCanvas()])
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -224,8 +224,8 @@ describe('the Hand tool', () => {
 })
 
 describe('the canvas hint', () => {
-  it('names how to move, zoom and the shortcuts, in the bottom-left of the drawing area, while a Pattern is open', async () => {
-    savePatterns([openCanvas()])
+  it('names how to move, zoom and the shortcuts, in the bottom-left of the drawing area, while a Project is open', async () => {
+    saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
 
@@ -238,7 +238,7 @@ describe('the canvas hint', () => {
     expect(hint.text()).toContain('Ctrl') // jsdom is not an Apple device
   })
 
-  it('is not there with no Pattern open', async () => {
+  it('is not there with no Project open', async () => {
     const wrapper = mountApp()
     await flushPromises()
 

@@ -1,11 +1,11 @@
 import type { Locator, Page } from '@playwright/test'
-import { STORAGE_KEY, storedLibrary } from './patterns'
-import type { Pattern } from '../../src/domain/pattern'
+import { STORAGE_KEY, storedLibrary } from './projects'
+import type { Project } from '../../src/domain/project'
 
-/** Opens the app with these Patterns already in the library (the most recently updated one opens), or none at all. */
-export async function openApp(page: Page, patterns: Pattern[]): Promise<void> {
-  if (patterns.length > 0) {
-    const stored = storedLibrary(patterns)
+/** Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. */
+export async function openApp(page: Page, projects: Project[]): Promise<void> {
+  if (projects.length > 0) {
+    const stored = storedLibrary(projects)
     await page.addInitScript(
       ({ key, value }) => {
         // Only on the first load of this page: a reload should see whatever the app has saved since.
@@ -48,22 +48,22 @@ type Box = { x: number; y: number; width: number; height: number }
 
 /**
  * The surface's box moved back by how far the view is scrolled (the canvas opens centred on the Frame, so that is not
- * 0): the box `beadCentre` wants, whose corner is where the Pattern's own corner is on screen.
+ * 0): the box `beadCentre` wants, whose corner is where the Project's own corner is on screen.
  */
-export async function patternBox(page: Page, box: Box): Promise<Box> {
-  const grid = page.getByTestId('pattern-surface')
+export async function projectBox(page: Page, box: Box): Promise<Box> {
+  const grid = page.getByTestId('project-surface')
   const scrollX = Number(await grid.getAttribute('data-scroll-x')) || 0
   const scrollY = Number(await grid.getAttribute('data-scroll-y')) || 0
   return { ...box, x: box.x - scrollX, y: box.y - scrollY }
 }
 
-/** The Pattern's corner and the canvas's size on screen, scrolled into view first so the numbers are usable as pointer coordinates. */
+/** The Project's corner and the canvas's size on screen, scrolled into view first so the numbers are usable as pointer coordinates. */
 export async function gridBox(page: Page): Promise<Box> {
-  const grid: Locator = page.getByTestId('pattern-surface')
+  const grid: Locator = page.getByTestId('project-surface')
   await grid.scrollIntoViewIfNeeded()
   const box = await grid.boundingBox()
   if (!box) {
-    throw new Error('The Pattern grid has no box on screen')
+    throw new Error('The Project grid has no box on screen')
   }
-  return patternBox(page, box)
+  return projectBox(page, box)
 }

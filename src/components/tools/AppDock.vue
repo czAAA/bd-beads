@@ -39,7 +39,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
   { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame' },
-  { id: 'pattern', icon: 'save', label: t.value.header.patternSheetLabel, testid: 'dock-pattern' },
+  { id: 'project', icon: 'save', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
 ])
 </script>
 
@@ -117,7 +117,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 
 /*
  * Landscape (responsive.md, height up to bp-phone-landscape): a 64px rail on the left edge, below the header (its
- * own media query drops to 44px there) rather than under the Pattern -- position: fixed takes it out of the
+ * own media query drops to 44px there) rather than under the Project -- position: fixed takes it out of the
  * app shell's flex column entirely, since AppShell.vue only knows how to stack it below the body, not beside it.
  * AppShell.vue's own .app-shell__body padding leaves it room (its own matching media query).
  */

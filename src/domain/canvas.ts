@@ -11,7 +11,7 @@ import type { GridDimensions, GridPosition } from './grid'
  */
 export type BeadMap = Record<number, Record<number, string>>
 
-/** The rectangle of whole bead positions that marks which beads are the Pattern (CONTEXT.md's Frame). */
+/** The rectangle of whole bead positions that marks which beads are the Project (CONTEXT.md's Frame). */
 export interface Frame {
   /** The top row and left column the Frame covers; the Frame covers `rows` rows and `columns` columns from there. */
   row: number
@@ -111,7 +111,7 @@ export function frameContains(frame: Frame, { row, column }: GridPosition): bool
   return row >= frame.row && row < frame.row + frame.rows && column >= frame.column && column < frame.column + frame.columns
 }
 
-/** Something with a size in beads: plain dimensions, or a Pattern (a canvas with or without a Frame). */
+/** Something with a size in beads: plain dimensions, or a Project (a canvas with or without a Frame). */
 export type Sized = GridDimensions | { frame?: Frame; beads: BeadMap }
 
 /** A Frame's size, or — with no Frame — the size of the box round the beads, or 0 × 0 for an empty canvas. */

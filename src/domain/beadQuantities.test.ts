@@ -2,31 +2,31 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
-import { createPattern, paintCells, type Pattern } from './pattern'
+import { createProject, paintCells, type Project } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'
 
-function blankPattern(): Pattern {
-  return createPattern({
+function blankProject(): Project {
+  return createProject({
     technique: 'loom',
     beadId: cubeBead.id,
     size: { width: 15, height: 15, unit: 'mm' },
   })
 }
 
-function painted(cells: [row: number, column: number, color: string][]): Pattern {
+function painted(cells: [row: number, column: number, color: string][]): Project {
   return cells.reduce(
-    (pattern, [row, column, color]) => paintCells(pattern, [{ row: row, column: column }], color, { columns: 0, rows: 0 }),
-    blankPattern(),
+    (project, [row, column, color]) => paintCells(project, [{ row: row, column: column }], color, { columns: 0, rows: 0 }),
+    blankProject(),
   )
 }
 
 describe('computeColorQuantities', () => {
-  it('finds nothing to buy for an unpainted Pattern', () => {
-    expect(computeColorQuantities(blankPattern())).toEqual([])
+  it('finds nothing to buy for an unpainted Project', () => {
+    expect(computeColorQuantities(blankProject())).toEqual([])
   })
 
   it('counts how many beads each painted color needs', () => {

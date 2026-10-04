@@ -37,7 +37,7 @@ The design system's [README](docs/design/system/README.md) states these in full.
 
 - **The design system wins** for tokens, specs, copy and artwork. Don't copy a value from it into this file or into
   a ticket; link to it.
-- **This file wins only for its app-specific notes** (§4): the canvas renderer's `PatternTheme`, exports always drawn
+- **This file wins only for its app-specific notes** (§4): the canvas renderer's `ProjectTheme`, exports always drawn
   in light, the bundled fonts, the ADR links.
 - **A need neither covers** is added to the design system on claude.ai first, then copied in (§6). Don't invent it
   in a component, and don't patch `docs/design/system/` by hand.
@@ -125,13 +125,13 @@ What the design system doesn't carry, because it's about how this codebase uses 
   this device like the language (ticket 139).
 - `lang` on `<html>` follows the app language.
 
-### 4.2 The canvas renderer's `PatternTheme`
+### 4.2 The canvas renderer's `ProjectTheme`
 
-The Pattern renderer ([ADR 0018](docs/adr/0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md)) draws in a
-canvas, an export and a test, none of which can read CSS. So it takes its colors from a `PatternTheme` object
+The Project renderer ([ADR 0018](docs/adr/0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md)) draws in a
+canvas, an export and a test, none of which can read CSS. So it takes its colors from a `ProjectTheme` object
 (`src/rendering/beadLook.ts`), one per theme, whose values are copied from the tokens:
 
-| `PatternTheme` field | Token |
+| `ProjectTheme` field | Token |
 |---|---|
 | `background` | `board` (on screen) / `print-board` (PDF and PNG) |
 | `rim` | `bead-rim` |
@@ -141,7 +141,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `outline` | `bead-outline` |
 | `tourMark` | `tour-highlight` (the Tour's dashed marks on beads to paint and frames to select or paste into, drawn over a `bead-outline` underlay so they read on a gold bead too) |
 
-Ticket 140 adds a test that keeps each theme's `PatternTheme` equal to `tokens.json`, so a token refresh can't leave
+Ticket 140 adds a test that keeps each theme's `ProjectTheme` equal to `tokens.json`, so a token refresh can't leave
 the canvas behind.
 The board, bead shape, finished rows and current row are drawn as the `BeadBoard` card describes.
 
@@ -151,7 +151,7 @@ The `CanvasStrip` card still describes a "N pieces outside the Frame" count and 
 
 ### 4.3 Exports are always light
 
-PNG and PDF exports use the light `PatternTheme` with `print-board`, whichever theme the user works in, so a printed
+PNG and PDF exports use the light `ProjectTheme` with `print-board`, whichever theme the user works in, so a printed
 chart looks the same everywhere. Their layout is `printed-output.md` and the `print-*` tokens.
 
 Exports are drawn on a canvas, which does not wait for web fonts: the export code awaits `document.fonts.load()` for
@@ -190,7 +190,7 @@ them.
 - [ADR 0001](docs/adr/0001-local-only-persistence.md): no third-party requests (bundled fonts).
 - [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md): the save box reports the Pattern library's save state.
 - [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md): measured sizes are estimates.
-- [ADR 0018](docs/adr/0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md): one renderer draws the Pattern.
+- [ADR 0018](docs/adr/0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md): one renderer draws the Project.
 
 ---
 
@@ -205,7 +205,7 @@ A map for the implementation tickets (136–168, and 75–83).
 | Fonts | system UI | Inter, DM Mono, Instrument Serif, bundled | 136 |
 | Icons | Icons v1, 23 icons inline in components | Icons v2 with the bead signature, one `Icon` component | 137 |
 | Logo, favicon | a QR-style bead grid favicon, a generic bead glyph | the X1 mark, theme-aware favicon with `.ico`, PNG and Apple touch fallbacks | 138 |
-| Bead drawing | white background, paper rim, grey dimmed rows | the board, per-theme `PatternTheme`, light rows fade toward the board | 140 |
+| Bead drawing | white background, paper rim, grey dimmed rows | the board, per-theme `ProjectTheme`, light rows fade toward the board | 140 |
 | Layout | Toolbox rail or New Pattern form on the left; panels below the canvas; the page scrolls | one 326px left column of four boxes scrolling on its own; the canvas box fills the rest | 141 |
 | Header | ticket 02 header | brand, currently editing, Bead pill, Replace bead, imports, New Pattern, EN / RU, theme, shortcuts | 142 |
 | Canvas box | zoom cluster in the panel's corner | strip with zoom, board, background word and curve | 143 |
@@ -241,7 +241,7 @@ files without an account.
      (use `tokens.json` and `components/<Comp>/README.md`).
 3. Update the version line below, and any app-specific note (§4) the change touches, in the same commit.
 4. If `components/bundle.css` changed its non-token values, update `src/styles/design-values.css` to match (§4.6).
-5. Run the tests: once ticket 140 lands, the `PatternTheme` check (§4.2) fails if a canvas token changed without the
+5. Run the tests: once ticket 140 lands, the `ProjectTheme` check (§4.2) fails if a canvas token changed without the
    renderer.
 
 **Version in the repo:** design system **v16**, synced from claude.ai on 2026-10-03. See the Version section of

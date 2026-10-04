@@ -4,7 +4,7 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch, type Ref, type WatchS
  * Whether a row that must stay on one line has to take its first fitting step (ticket 142; `writing.md`, Fitting longer
  * text): true once its content is wider than the row. It remembers how wide the full content needed, and steps back
  * only when the row is at least that wide again, so the header doesn't flicker between the two. `watchSources` are what
- * can change the content's width (the language, whether a Pattern is open).
+ * can change the content's width (the language, whether a Project is open).
  */
 export function useFitByPriority(rowEl: Ref<HTMLElement | undefined>, watchSources: WatchSource[] = []): Ref<boolean> {
   const stepped = ref(false)

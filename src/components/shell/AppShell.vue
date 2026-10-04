@@ -12,21 +12,21 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
   t,
-  activePattern,
+  activeProject,
   saveFailed,
   announcement,
   framing,
-  focusPattern,
+  focusProject,
   endStroke,
-  onExportPatternFile,
+  onExportProjectFile,
 } = useAppShell()
 </script>
 
 <template>
   <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
-    <!-- Skip to Pattern (ticket 159): the first Tab stop, visible only while focused. -->
-    <a v-if="activePattern && !framing" class="app-shell__skip" href="#pattern" data-testid="skip-to-pattern" @click.prevent="focusPattern">
-      {{ t.a11y.skipToPattern }}
+    <!-- Skip to Project (ticket 159): the first Tab stop, visible only while focused. -->
+    <a v-if="activeProject && !framing" class="app-shell__skip" href="#project" data-testid="skip-to-project" @click.prevent="focusProject">
+      {{ t.a11y.skipToProject }}
     </a>
     <!-- One polite announcement per action (ticket 159): the bead cursor's place, what the key just did. -->
     <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
@@ -35,16 +35,16 @@ const {
     <!--
       The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
       space while there is nothing to say. A failed write to this device's storage (ticket 55, ADR 0012) is one: it's
-      about the whole Pattern library, not the open Pattern, and has to be visible whether or not one is open.
+      about the whole Project library, not the open Project, and has to be visible whether or not one is open.
       It is a danger Message (ticket 76), announced the moment it appears, and it stays up until a save gets through
-      (see usePatternLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
+      (see useProjectLibrary's saveFailed): there's nothing to close, since the edit really isn't saved yet.
     -->
     <div v-if="saveFailed" class="app-shell__notices" data-testid="app-notices">
       <AppMessage tone="danger" placement="notice" :closable="false">
         <span data-testid="save-failed-message">{{ t.storage.saveFailedMessage }}</span>
         <template #actions>
-          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportPatternFile">
-            {{ t.saveBox.exportPatternFile }}
+          <AppButton variant="in-box" size="sm" icon="export" data-testid="save-failed-export" @click="onExportProjectFile">
+            {{ t.saveBox.exportProjectFile }}
           </AppButton>
         </template>
       </AppMessage>
@@ -68,8 +68,8 @@ const {
 <style scoped>
 /*
  * The app shell (ticket 141, ADR 0021): header, notice row, then the body, filling the screen exactly. The page itself
- * never scrolls: the left column scrolls on its own, and the Pattern scrolls inside the canvas box, so the header, the
- * Toolbox's top and the canvas box's own top and bottom stay in view on a Pattern of any size.
+ * never scrolls: the left column scrolls on its own, and the Project scrolls inside the canvas box, so the header, the
+ * Toolbox's top and the canvas box's own top and bottom stay in view on a Project of any size.
  */
 .app-shell {
   display: flex;
@@ -167,7 +167,7 @@ const {
  * track entirely. 744-1023px, the Drawer wrapping it switches to `position: fixed` (AppDrawer.vue's own media query)
  * and floats over the canvas box instead; under 744px AppDrawer hides it altogether -- the phone tier's Dock and
  * ToolSheets reach the same controls through their own, separate markup instead (Toolbox/SaveBox/Beads
- * needed/Saved Patterns stay mounted inside the hidden Drawer, just not visibly). Either way the canvas box takes
+ * needed/Saved Projects stay mounted inside the hidden Drawer, just not visibly). Either way the canvas box takes
  * the whole row on its own.
  */
 @media (max-width: 1023px) {

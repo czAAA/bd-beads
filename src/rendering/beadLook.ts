@@ -1,10 +1,10 @@
 import { cachedSprite, type Sprite } from './sprites'
 
 /**
- * How a single bead looks (ADR 0018): the one part of the Pattern renderer that knows. The renderer decides where a
+ * How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
  * bead goes and how big it is; a `BeadDrawer` decides what is drawn there. Only one look exists — the design system's flat
  * square or rounded bead on the board — but a richer one (glossy, faceted) is a different function handed to
- * `renderPattern`, not a rewrite of it.
+ * `renderProject`, not a rewrite of it.
  */
 
 /** The drawing calls the renderer and the bead drawer use: the part of CanvasRenderingContext2D they need, so a test can stand in for a real canvas. */
@@ -43,11 +43,11 @@ export type DrawingContext = Pick<
 >
 
 /**
- * The colors a Pattern is drawn in, one set per theme (DESIGN.md §4.2). The values are copied from the design system's
+ * The colors a Project is drawn in, one set per theme (DESIGN.md §4.2). The values are copied from the design system's
  * tokens rather than read from CSS, so the renderer draws the same in a canvas, an export and a test, none of which have
- * a stylesheet to ask; patternThemes.test.ts keeps them equal to tokens.json.
+ * a stylesheet to ask; projectThemes.test.ts keeps them equal to tokens.json.
  */
-export interface PatternTheme {
+export interface ProjectTheme {
   /** The open canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
   canvas: string
   /** The 1.5px dots that mark empty bead positions on the open canvas (`bead-empty`). */
@@ -74,7 +74,7 @@ export interface PatternTheme {
   outline: string
   /**
    * How a bead in a finished row is drawn: its own color, or its grey, at `opacity` over the board. Light fades the
-   * color (28%), so a finished row still reads as the Pattern; dark greys it (45%).
+   * color (28%), so a finished row still reads as the Project; dark greys it (45%).
    */
   finished: { grey: boolean; opacity: number }
   /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
@@ -85,7 +85,7 @@ export interface PatternTheme {
 }
 
 /** The light theme (BeadBoard card). */
-export const LIGHT_THEME: PatternTheme = {
+export const LIGHT_THEME: ProjectTheme = {
   canvas: '#fafafa',
   dot: '#d8d2cc',
   pieceLine: '#c7c7c7',
@@ -106,7 +106,7 @@ export const LIGHT_THEME: PatternTheme = {
 }
 
 /** The dark theme: no rim, finished rows in grey. */
-export const DARK_THEME: PatternTheme = {
+export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
   dot: '#3c3c3c',
   pieceLine: '#3a3a3a',
@@ -127,7 +127,7 @@ export const DARK_THEME: PatternTheme = {
 }
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
-export const CONTRAST_THEME: PatternTheme = {
+export const CONTRAST_THEME: ProjectTheme = {
   canvas: '#ffffff',
   dot: '#b8b0a8',
   pieceLine: '#000000',
@@ -148,18 +148,18 @@ export const CONTRAST_THEME: PatternTheme = {
 }
 
 /** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */
-export const PRINT_THEME: PatternTheme = { ...LIGHT_THEME, background: '#f7f3ec' }
+export const PRINT_THEME: ProjectTheme = { ...LIGHT_THEME, background: '#f7f3ec' }
 
 /** The theme a renderer uses when it isn't told one. */
 export const DEFAULT_THEME = LIGHT_THEME
 
-export const PATTERN_THEMES: Readonly<Record<'light' | 'dark' | 'contrast', PatternTheme>> = {
+export const PROJECT_THEMES: Readonly<Record<'light' | 'dark' | 'contrast', ProjectTheme>> = {
   light: LIGHT_THEME,
   dark: DARK_THEME,
   contrast: CONTRAST_THEME,
 }
 
-/** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Pattern's own px at zoom 1: the renderer has already set the transform for zoom and rotation. */
+/** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Project's own px at zoom 1: the renderer has already set the transform for zoom and rotation. */
 export interface BeadShape {
   x: number
   y: number
@@ -178,15 +178,15 @@ export interface BeadShape {
   backdrop?: string
   /** Device pixels per px of the bead's own space (zoom times pixel ratio): how big the bead is on the screen's own grid of pixels, for a look that keeps bitmaps of its beads. */
   deviceScale: number
-  theme: PatternTheme
+  theme: ProjectTheme
 }
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
 
-/** The gap between two beads is twice this: each bead stands this far in from its cell on every side, in the Pattern's own px. */
+/** The gap between two beads is twice this: each bead stands this far in from its cell on every side, in the Project's own px. */
 export const GAP_PX = 1
 
-/** Width of the faint rim inside each bead's edge, in the Pattern's own px. */
+/** Width of the faint rim inside each bead's edge, in the Project's own px. */
 export const RIM_PX = 0.75
 
 /**
@@ -203,7 +203,7 @@ export function greyscale(color: string): string {
   return `rgb(${grey}, ${grey}, ${grey})`
 }
 
-/** Parses #rgb and #rrggbb, the forms a Pattern's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
+/** Parses #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
 function parseHex(color: string): [number, number, number] | undefined {
   const rgb = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(color.trim())
   if (rgb) {
@@ -268,7 +268,7 @@ export function fadeOver(color: string, backdrop: string, opacity: number): stri
 }
 
 /**
- * Blends worked out so far. Every square bead on screen asks for its rim over its own color, and a Pattern has only a
+ * Blends worked out so far. Every square bead on screen asks for its rim over its own color, and a Project has only a
  * handful of colors, so parsing them again for each of thousands of beads is what a scroll or a framing drag would pay.
  */
 const blends = new Map<string, string>()
@@ -295,7 +295,7 @@ function blendUncached(color: string, backdrop: string): string {
 }
 
 /** A finished row's bead: its color, or its grey, faded toward the board (or the backdrop it is drawn over). */
-export function finishedColor(color: string, theme: PatternTheme, backdrop = theme.background): string {
+export function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.background): string {
   return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
 }
 
@@ -332,7 +332,7 @@ function spriteFor(bead: BeadShape): Sprite | undefined {
  * The design system's bead (BeadBoard card): a square (or, for peyote, rounded) bead in its color on the board, a gap
  * from its neighbours, with a faint rim in light; a finished row's beads faded toward the board.
  *
- * A Pattern of thousands of beads is redrawn on every move of a drag in the Convert image preview, and on every scroll
+ * A Project of thousands of beads is redrawn on every move of a drag in the Convert image preview, and on every scroll
  * of the editor, so how cheaply a bead is drawn is what keeps those smooth. A square bead is two rectangles, the
  * cheapest fill there is; anything rounded or faded is a bitmap kept from the first time that look was drawn (batching
  * a row's beads into one path was tried, and is slower than either: a path with many subpaths costs more than the sum

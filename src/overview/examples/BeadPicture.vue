@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { framedGrid, type Grid, type RowProgress, type Technique } from '../../domain/pattern'
+import { framedGrid, type Grid, type RowProgress, type Technique } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
 import { renderOverlay } from '../../rendering/overlayRenderer'
-import { displayedExtentPx, renderPattern } from '../../rendering/patternRenderer'
-import { PATTERN_THEMES, PRINT_THEME } from '../../rendering/beadLook'
+import { displayedExtentPx, renderProject } from '../../rendering/projectRenderer'
+import { PROJECT_THEMES, PRINT_THEME } from '../../rendering/beadLook'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 /**
- * Beads on their board for the Overview carousel's examples (ticket 218; Overview card): a grid drawn by the real Pattern
+ * Beads on their board for the Overview carousel's examples (ticket 218; Overview card): a grid drawn by the real Project
  * renderer, so a bead and its Technique's geometry look as they do in the editor, with the editor's own marks (the
  * current row, a Selection, the Paint preview) from the overlay renderer. It takes only those two renderers and the
  * theme, not the editor. Decorative: hidden from screen readers.
@@ -18,7 +18,7 @@ const props = withDefaults(
   defineProps<{
     grid: Grid
     technique?: Technique
-    /** How much the Pattern is enlarged by; 1 is a bead 20px across. */
+    /** How much the Project is enlarged by; 1 is a bead 20px across. */
     zoom: number
     rowProgress?: RowProgress
     selection?: Selection
@@ -33,7 +33,7 @@ const theme = useResolvedTheme()
 const pictureEl = ref<HTMLCanvasElement>()
 const marksEl = ref<HTMLCanvasElement>()
 
-const pattern = computed(() => ({
+const project = computed(() => ({
   technique: props.technique,
   ...framedGrid(props.grid),
   rowProgress: props.rowProgress,
@@ -50,12 +50,12 @@ function size(canvas: HTMLCanvasElement, pixelRatio: number) {
 function draw() {
   const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1)
   const region = { x: 0, y: 0, width: extent.value.width, height: extent.value.height }
-  const input = { pattern: pattern.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PATTERN_THEMES[theme.value] }
+  const input = { project: project.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PROJECT_THEMES[theme.value] }
   const picture = pictureEl.value
   const pictureContext = picture?.getContext('2d')
   if (picture && pictureContext) {
     size(picture, pixelRatio)
-    renderPattern(pictureContext, input)
+    renderProject(pictureContext, input)
   }
   const marks = marksEl.value
   const marksContext = marks?.getContext('2d')
@@ -66,7 +66,7 @@ function draw() {
 }
 
 onMounted(draw)
-watch([theme, () => props.print, pattern, () => props.zoom, () => props.selection, () => props.preview], draw)
+watch([theme, () => props.print, project, () => props.zoom, () => props.selection, () => props.preview], draw)
 </script>
 
 <template>

@@ -3,12 +3,12 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import {
   frameGrid,
   moveToRow,
-  patternDimensions,
+  projectDimensions,
   setRowProgressEnabled,
   withFrameGrid,
-  type CreatePatternInput,
-  type Pattern,
-} from '../../domain/pattern'
+  type CreateProjectInput,
+  type Project,
+} from '../../domain/project'
 import type { TourMarks } from '../../rendering/overlayRenderer'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
@@ -31,34 +31,34 @@ import type { MessageTone } from '../ui/useToasts'
 /** What the Tour reads from and does to the app; every dep is read lazily, so the shell can wire it after the rest. */
 export interface TourDeps {
   store: TourStore
-  currentPattern: () => Pattern | undefined
-  hasPattern: (id: string) => boolean
-  openPattern: (id: string) => void
-  /** Brings up the New Pattern form (no Pattern open). */
-  openNewPatternForm: () => void
+  currentProject: () => Project | undefined
+  hasProject: (id: string) => boolean
+  openProject: (id: string) => void
+  /** Brings up the New Project form (no Project open). */
+  openNewProjectForm: () => void
   activeTool: () => Tool
   selectedColorId: () => string | undefined
   selection: () => Selection | undefined
   pasteArmed: () => boolean
-  commitGridChange: (pattern: Pattern, updated: Pattern) => void
-  replacePattern: (pattern: Pattern) => void
+  commitGridChange: (project: Project, updated: Project) => void
+  replaceProject: (project: Project) => void
   undo: () => void
   clearSelection: () => void
-  /** The Name the New Pattern form holds right now. */
+  /** The Name the New Project form holds right now. */
   draftName: () => string | undefined
-  createPattern: (input: CreatePatternInput) => void
+  createProject: (input: CreateProjectInput) => void
   showToast: (id: string, text: string, tone?: MessageTone) => void
   messages: () => Translations
 }
 
-/** The size, Technique and Bead every Tour Pattern is made with (TourPattern in the design system). */
-const TOUR_CREATE: Pick<CreatePatternInput, 'technique' | 'beadId' | 'size'> = {
+/** The size, Technique and Bead every Tour Project is made with (TourProject in the design system). */
+const TOUR_CREATE: Pick<CreateProjectInput, 'technique' | 'beadId' | 'size'> = {
   technique: 'loom',
   beadId: BEAD_CATALOG[0]!.id,
   size: { width: TOUR_COLUMNS, height: TOUR_ROWS, unit: 'beads' },
 }
 
-/** Bumped when the card's "Back to loom for your first Pattern" is pressed, so the New Pattern form sets itself back (Name kept). */
+/** Bumped when the card's "Back to loom for your first Project" is pressed, so the New Project form sets itself back (Name kept). */
 export const tourFormResetKey: InjectionKey<Ref<number>> = Symbol('tourFormReset')
 
 export function provideTourFormReset(tick: Ref<number>) {
@@ -89,18 +89,18 @@ export function useTour(deps: TourDeps) {
   const active = computed(() => !!step.value || finalCard.value)
 
   const snapshot = computed<TourSnapshot>(() => {
-    const pattern = deps.currentPattern()
+    const project = deps.currentProject()
     return {
-      patternId: pattern?.id,
-      // The Tour reads the Frame it made; a canvas with none (drawn anywhere) is not the Tour's Pattern.
-      columns: pattern?.frame?.columns ?? 0,
-      rows: pattern?.frame?.rows ?? 0,
-      grid: pattern?.frame ? frameGrid(pattern) : [],
+      projectId: project?.id,
+      // The Tour reads the Frame it made; a canvas with none (drawn anywhere) is not the Tour's Project.
+      columns: project?.frame?.columns ?? 0,
+      rows: project?.frame?.rows ?? 0,
+      grid: project?.frame ? frameGrid(project) : [],
       tool: deps.activeTool(),
       colorId: deps.selectedColorId(),
       selection: deps.selection(),
       pasteArmed: deps.pasteArmed(),
-      rowProgress: pattern?.rowProgress ?? { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+      rowProgress: project?.rowProgress ?? { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
     }
   })
 
@@ -111,7 +111,7 @@ export function useTour(deps: TourDeps) {
     return step.value ? tourTargets(step.value, snapshot.value, memo.value) : undefined
   })
 
-  /** What to outline on the Pattern: beads still to paint or erase, and the frames to select and paste into. */
+  /** What to outline on the Project: beads still to paint or erase, and the frames to select and paste into. */
   const marks = computed<TourMarks | undefined>(() => {
     const current = targets.value
     if (!current || !active.value) {
@@ -120,7 +120,7 @@ export function useTour(deps: TourDeps) {
     return { cells: current.cells ?? [], boxes: [...(current.box ? [current.box] : []), ...(current.pasteBoxes ?? [])] }
   })
 
-  /** The Pattern is for looking at, not drawing on, unless the step is about drawing on it. */
+  /** The Project is for looking at, not drawing on, unless the step is about drawing on it. */
   const canvasLocked = computed(() => active.value && targets.value?.control !== 'board')
 
   function setStatus(next: TourStatus) {
@@ -137,8 +137,8 @@ export function useTour(deps: TourDeps) {
     if (progress.value.done.includes(id)) {
       return
     }
-    const patternId = id === 'create' ? snapshot.value.patternId : progress.value.patternId
-    setProgress({ done: [...progress.value.done, id], ...(patternId ? { patternId } : {}) })
+    const projectId = id === 'create' ? snapshot.value.projectId : progress.value.projectId
+    setProgress({ done: [...progress.value.done, id], ...(projectId ? { projectId } : {}) })
     memo.value = {}
     if (TOUR_STEPS.every((candidate) => progress.value.done.includes(candidate))) {
       setStatus('finished')
@@ -146,10 +146,10 @@ export function useTour(deps: TourDeps) {
     }
   }
 
-  /** Step 1 works in the New Pattern form, so a Pattern left open (an earlier session's, say) steps aside. */
+  /** Step 1 works in the New Project form, so a Project left open (an earlier session's, say) steps aside. */
   function enterFirstStep() {
-    if (deps.currentPattern()) {
-      deps.openNewPatternForm()
+    if (deps.currentProject()) {
+      deps.openNewProjectForm()
     }
   }
 
@@ -161,12 +161,12 @@ export function useTour(deps: TourDeps) {
     enterFirstStep()
   }
 
-  /** A Tour whose Pattern is gone can't carry on from the middle, so it starts over at step 1. */
-  function restartIfPatternGone(pattern: string | undefined) {
-    const built = progress.value.patternId
-    if (built && pattern !== built) {
-      if (deps.hasPattern(built)) {
-        deps.openPattern(built)
+  /** A Tour whose Project is gone can't carry on from the middle, so it starts over at step 1. */
+  function restartIfProjectGone(project: string | undefined) {
+    const built = progress.value.projectId
+    if (built && project !== built) {
+      if (deps.hasProject(built)) {
+        deps.openProject(built)
       } else {
         start()
       }
@@ -186,7 +186,7 @@ export function useTour(deps: TourDeps) {
       if (!current) {
         return
       }
-      if (current !== 'create' && restartIfPatternGone(snapshot.value.patternId)) {
+      if (current !== 'create' && restartIfProjectGone(snapshot.value.projectId)) {
         return
       }
       const result = evaluateStep(current, snapshot.value, memo.value)
@@ -200,38 +200,38 @@ export function useTour(deps: TourDeps) {
     { immediate: true },
   )
 
-  /** Next does the step if it isn't done, so the Pattern always comes out whole. */
+  /** Next does the step if it isn't done, so the Project always comes out whole. */
   function next() {
     const current = step.value
     if (!current) {
       return
     }
-    const pattern = deps.currentPattern()
+    const project = deps.currentProject()
 
     switch (current) {
       case 'create':
-        if (!pattern || patternDimensions(pattern).columns !== TOUR_COLUMNS || patternDimensions(pattern).rows !== TOUR_ROWS) {
-          deps.createPattern({ name: deps.draftName(), ...TOUR_CREATE })
+        if (!project || projectDimensions(project).columns !== TOUR_COLUMNS || projectDimensions(project).rows !== TOUR_ROWS) {
+          deps.createProject({ name: deps.draftName(), ...TOUR_CREATE })
         }
         return
       case 'remove-line':
       case 'size':
-        if (pattern && (patternDimensions(pattern).columns !== TOUR_COLUMNS || patternDimensions(pattern).rows !== TOUR_ROWS)) {
+        if (project && (projectDimensions(project).columns !== TOUR_COLUMNS || projectDimensions(project).rows !== TOUR_ROWS)) {
           deps.undo()
         }
         markDone(current)
         return
       case 'rows':
-        if (pattern) {
-          deps.replacePattern(moveToRow(setRowProgressEnabled(pattern, true), 2))
+        if (project) {
+          deps.replaceProject(moveToRow(setRowProgressEnabled(project, true), 2))
         }
         markDone(current)
         return
       default: {
         const stepIndex = { fill: 2, outline: 3, rhombus: 4, eye: 5, copy: 6, finish: 7, erase: 8 }[current]
-        if (pattern && stepIndex) {
+        if (project && stepIndex) {
           deps.clearSelection()
-          deps.commitGridChange(pattern, withFrameGrid(pattern, afterStep(stepIndex)))
+          deps.commitGridChange(project, withFrameGrid(project, afterStep(stepIndex)))
         }
         markDone(current)
       }
@@ -250,8 +250,8 @@ export function useTour(deps: TourDeps) {
     finalCard.value = false
   }
 
-  /** Creating a Pattern in step 1 always makes the Tour's own: Loom, the default Bead and 10×75, with the Name kept. */
-  function normalizeCreate(input: CreatePatternInput): CreatePatternInput {
+  /** Creating a Project in step 1 always makes the Tour's own: Loom, the default Bead and 10×75, with the Name kept. */
+  function normalizeCreate(input: CreateProjectInput): CreateProjectInput {
     return step.value === 'create' ? { ...input, ...TOUR_CREATE } : input
   }
 

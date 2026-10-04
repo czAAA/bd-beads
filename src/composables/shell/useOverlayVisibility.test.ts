@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { useOverlayVisibility } from './useOverlayVisibility'
 
 function setup() {
-  const selectPattern = vi.fn()
-  return { selectPattern, ...useOverlayVisibility({ selectPattern }) }
+  const selectProject = vi.fn()
+  return { selectProject, ...useOverlayVisibility({ selectProject }) }
 }
 
 describe('useOverlayVisibility', () => {
@@ -12,8 +12,8 @@ describe('useOverlayVisibility', () => {
     expect(overlays.drawerOpen.value).toBe(false)
     expect(overlays.openPhoneSheet.value).toBeNull()
     expect(overlays.themeSheetOpen.value).toBe(false)
-    expect(overlays.phoneNewPatternOpen.value).toBe(false)
-    expect(overlays.phoneSavedPatternsOpen.value).toBe(false)
+    expect(overlays.phoneNewProjectOpen.value).toBe(false)
+    expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })
 
   it('opens a phone sheet from its Dock button, and closes it on the same button again', () => {
@@ -31,18 +31,18 @@ describe('useOverlayVisibility', () => {
     expect(openPhoneSheet.value).toBe('color')
   })
 
-  it('opens the picked Pattern and closes both the Saved Patterns sheet and the Pattern sheet', () => {
-    const { selectPattern, openPhoneSheet, phoneSavedPatternsOpen, onSelectPatternFromPhoneDrawer } = setup()
-    openPhoneSheet.value = 'pattern'
-    phoneSavedPatternsOpen.value = true
+  it('opens the picked Project and closes both the Saved Projects sheet and the Project sheet', () => {
+    const { selectProject, openPhoneSheet, phoneSavedProjectsOpen, onSelectProjectFromPhoneDrawer } = setup()
+    openPhoneSheet.value = 'project'
+    phoneSavedProjectsOpen.value = true
 
-    onSelectPatternFromPhoneDrawer('abc')
+    onSelectProjectFromPhoneDrawer('abc')
 
-    expect(selectPattern).toHaveBeenCalledWith('abc', expect.any(Function))
+    expect(selectProject).toHaveBeenCalledWith('abc', expect.any(Function))
     // The sheets stay until the selection lands (a confirmation may come first, ticket 232).
-    expect(phoneSavedPatternsOpen.value).toBe(true)
-    selectPattern.mock.calls[0]![1]!()
-    expect(phoneSavedPatternsOpen.value).toBe(false)
+    expect(phoneSavedProjectsOpen.value).toBe(true)
+    selectProject.mock.calls[0]![1]!()
+    expect(phoneSavedProjectsOpen.value).toBe(false)
     expect(openPhoneSheet.value).toBeNull()
   })
 })

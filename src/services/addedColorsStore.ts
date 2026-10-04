@@ -2,8 +2,8 @@ import { MAX_ADDED_COLORS, normalizeHex } from '../domain/palette'
 
 /**
  * The Custom colors that joined the Palette (CONTEXT.md, ticket 227): they belong to the person using this device, not
- * to a Pattern, so they are kept on the device like the theme and the maker name and never sent anywhere (ADR 0001).
- * Cells store the hex, so a Pattern painted with them opens fine on a device that lacks them.
+ * to a Project, so they are kept on the device like the theme and the maker name and never sent anywhere (ADR 0001).
+ * Cells store the hex, so a Project painted with them opens fine on a device that lacks them.
  */
 export const ADDED_COLORS_KEY = 'bd-beads:added-colors'
 

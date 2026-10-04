@@ -1,5 +1,5 @@
 /**
- * The maker's name (CONTEXT.md, ticket 161): who made a Pattern, printed on its PDF and PNG exports. Keeping it on the
+ * The maker's name (CONTEXT.md, ticket 161): who made a Project, printed on its PDF and PNG exports. Keeping it on the
  * device is services/makerNameStore's job; what a name may be is here.
  */
 

@@ -75,7 +75,7 @@ describe('ConvertImageFrame', () => {
     expect(canvas.latest().slice(0, 4).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [40, 0], [60, 0]])
   })
 
-  it('draws the frame over exactly the Pattern own cells', () => {
+  it('draws the frame over exactly the Project own cells', () => {
     const wrapper = mountFrame({ dimensions: { columns: 4, rows: 6 } })
 
     const outline = wrapper.find('[data-testid="convert-image-frame-outline"]')
@@ -111,7 +111,7 @@ describe('ConvertImageFrame', () => {
     mountFrame({ technique: 'peyote' })
 
     const beads = canvas.latest()
-    // Row 1 is half a bead across and tucked up under row 0, as in the Pattern itself.
+    // Row 1 is half a bead across and tucked up under row 0, as in the Project itself.
     expect(beads.filter(({ y }) => y === 0).map(({ x }) => x)).toEqual([0, 20, 40, 60])
     expect(beads.filter(({ y }) => y === 15).map(({ x }) => x)).toEqual([10, 30, 50, 70])
     expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
@@ -132,7 +132,7 @@ describe('ConvertImageFrame', () => {
     expect(rowTops).toContain(top)
   })
 
-  it('emits the converted Pattern when Create is pressed', async () => {
+  it('emits the converted Project when Create is pressed', async () => {
     const wrapper = mountFrame()
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
@@ -147,13 +147,13 @@ describe('ConvertImageFrame', () => {
     expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
   })
 
-  it('shows what is inside the frame, so the beads on screen are the Pattern that Create makes', async () => {
+  it('shows what is inside the frame, so the beads on screen are the Project that Create makes', async () => {
     const wrapper = mountFrame()
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
     const converted = wrapper.emitted('create')![0]![0] as { grid: { color: string | null }[][] }
 
-    // The frame is the whole 4 × 4 lattice here: the first row of beads on screen is the first row of the Pattern.
+    // The frame is the whole 4 × 4 lattice here: the first row of beads on screen is the first row of the Project.
     expect(canvas.latest().slice(0, 4).map(({ color }) => color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
     expect(converted.grid[0]!.map((cell) => cell.color)).toEqual(['#e63746', '#e63746', '#2f6fed', '#2f6fed'])
   })

@@ -13,7 +13,7 @@ import {
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010): which picture is being framed, and how it sits under the
- * frame. Deliberately independent of which Pattern is open — conversion creates a Pattern, it never converts into one
+ * frame. Deliberately independent of which Project is open — conversion creates a Project, it never converts into one
  * (ADR 0010), so this answers to nothing in the editor and the editor answers to nothing here.
  *
  * Nothing survives leaving: Cancel discards the picture along with the zoom, the pan and the colour count (ticket 58
@@ -21,7 +21,7 @@ import {
  * a second try at different settings.
  *
  * Holds the picture and nothing about the frame. Whether framing is actually *running* is a question only App.vue can
- * answer, since it also needs the frame the New Pattern form's fields imply — see its `framing` computed, the one gate
+ * answer, since it also needs the frame the New Project form's fields imply — see its `framing` computed, the one gate
  * for every piece of framing UI.
  */
 export function useConvertImage() {

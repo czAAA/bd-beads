@@ -1,18 +1,18 @@
 import type { Page } from '@playwright/test'
 import type { Technique } from '../../src/domain/grid'
-import type { Pattern, RowProgress } from '../../src/domain/pattern'
+import type { Project, RowProgress } from '../../src/domain/project'
 import { gridBox, settle } from '../support/app'
-import { beadCentre } from '../support/patterns'
+import { beadCentre } from '../support/projects'
 
-/** What a scenario's steps are working on: the Pattern as seeded, and the zoom the page is at right now, in percent. */
+/** What a scenario's steps are working on: the Project as seeded, and the zoom the page is at right now, in percent. */
 export interface Context {
-  pattern: Pattern
+  project: Project
   zoom: number
 }
 
 /**
- * One thing the visual check looks at (ticket 103): a Pattern in some state, drawn at every zoom and both ways round.
- * Each is a state of the drawn Pattern that a bead-by-bead reference has to keep right — a Technique's geometry, the
+ * One thing the visual check looks at (ticket 103): a Project in some state, drawn at every zoom and both ways round.
+ * Each is a state of the drawn Project that a bead-by-bead reference has to keep right — a Technique's geometry, the
  * Row progress overlay in either direction, or one of the pointer-driven overlays.
  */
 export interface Scenario {
@@ -42,8 +42,8 @@ async function pointerAway(page: Page): Promise<void> {
   await settle(page)
 }
 
-async function pointerOnBead(page: Page, { pattern, zoom }: Context, row: number, column: number): Promise<void> {
-  const centre = beadCentre(pattern, await gridBox(page), zoom / 100, { row, column })
+async function pointerOnBead(page: Page, { project, zoom }: Context, row: number, column: number): Promise<void> {
+  const centre = beadCentre(project, await gridBox(page), zoom / 100, { row, column })
   await page.mouse.move(centre.x, centre.y)
   await settle(page)
 }
@@ -52,8 +52,8 @@ async function pointerOnBead(page: Page, { pattern, zoom }: Context, row: number
 async function dragSelection(page: Page, context: Context, from: [number, number], to: [number, number]): Promise<void> {
   await page.getByTestId('tool-select').click()
   const box = await gridBox(page)
-  const start = beadCentre(context.pattern, box, context.zoom / 100, { row: from[0], column: from[1] })
-  const end = beadCentre(context.pattern, box, context.zoom / 100, { row: to[0], column: to[1] })
+  const start = beadCentre(context.project, box, context.zoom / 100, { row: from[0], column: from[1] })
+  const end = beadCentre(context.project, box, context.zoom / 100, { row: to[0], column: to[1] })
   await page.mouse.move(start.x, start.y)
   await page.mouse.down()
   await page.mouse.move(end.x, end.y, { steps: 12 })

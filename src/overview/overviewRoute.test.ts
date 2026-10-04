@@ -11,7 +11,7 @@ describe('shouldOpenOverview', () => {
     expect(shouldOpenOverview(true, tour, false)).toBe(expected)
   })
 
-  it('never opens it once Patterns are saved', () => {
+  it('never opens it once Projects are saved', () => {
     expect(shouldOpenOverview(false, 'untouched', false)).toBe(false)
   })
 

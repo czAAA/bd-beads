@@ -84,7 +84,7 @@ describe('useToolAndColor', () => {
     })
   })
 
-  describe('a Pattern switch', () => {
+  describe('a Project switch', () => {
     it('drops an Image color for the Palette default', () => {
       const { selectedImageColor, selectedColorId, onSelectImageColor, resetImageColor } = setup()
       onSelectImageColor('#abcdef')

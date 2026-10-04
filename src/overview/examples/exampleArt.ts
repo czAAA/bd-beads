@@ -1,10 +1,10 @@
-import type { Grid } from '../../domain/pattern'
+import type { Grid } from '../../domain/project'
 import { tourFinishedGrid } from '../../domain/tour'
 
 /**
  * The small bead drawings the Overview carousel's examples are made of (ticket 218; Overview card): a heart, a poppy, a
  * landscape, stripes and checks, written as letters so the picture can be read in the source. They are artwork, not
- * Patterns the app keeps, and use the colors the design system's preview gives them.
+ * Projects the app keeps, and use the colors the design system's preview gives them.
  */
 export const ART_COLORS: Readonly<Record<string, string>> = {
   Y: '#f2c94c',
@@ -84,5 +84,5 @@ export const STRIPES: Grid = gridFrom(12, 12, (column, row) => ((column + row) %
 
 export const CHECKS: Grid = gridFrom(12, 12, (column, row) => ((Math.floor(column / 2) + Math.floor(row / 2)) % 2 ? 'K' : 'I'))
 
-/** The first 30 rows of the Tour Pattern: the Gold strip's thumbnail. */
+/** The first 30 rows of the Tour Project: the Gold strip's thumbnail. */
 export const GOLD_STRIP: Grid = tourFinishedGrid().slice(0, 30)

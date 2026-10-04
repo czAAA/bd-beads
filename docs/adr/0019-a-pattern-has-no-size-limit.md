@@ -1,5 +1,7 @@
 # A Pattern has no size limit: the device is the limit
 
+> Since [ADR 0028](0028-a-canvas-is-a-project-a-pattern-is-what-the-frame-holds.md) the saved thing is called a Project; "Pattern" below means that, and the text keeps its original words.
+
 Supersedes the total-cell cap in [ADR 0017](0017-grid-is-the-size-mm-is-an-estimate.md). Follows from [ADR 0018](0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md), whose consequences said the cap would go once the editor drew on the renderer.
 
 ADR 0017 capped a Pattern at 10,000 cells (columns × rows) when it was created, converted from a picture or grown by Resize, because every cell was a DOM element and a paint or hover step cost about 3.4µs per cell: 34ms at 100 × 100 and 300ms at 250 × 250. That cost is gone. The Pattern is drawn by one renderer onto a surface as big as the screen, an edit redraws the few rows it touched, and what a paint or hover step costs no longer depends on how big the Pattern is. So the cap is removed everywhere it applied: the New Pattern form (in beads, mm or cm), Convert image, and Resize, along with the refusal messages and their translations. A Pattern of 70 × 250 (a bracelet: 17,500 cells) or 250 × 250 (62,500) is now created, edited, saved, reloaded, exported as a Pattern file and undone like any other, and Convert image can frame a picture at either size. Patterns already over the old cap (imported ones, say) were never blocked and are unchanged.

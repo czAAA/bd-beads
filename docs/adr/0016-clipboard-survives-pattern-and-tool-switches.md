@@ -1,5 +1,7 @@
 # The clipboard survives a Pattern switch, a tool switch, and cancelling — only a new Copy or Selection clears it
 
+> Since [ADR 0028](0028-a-canvas-is-a-project-a-pattern-is-what-the-frame-holds.md) the saved thing is called a Project; "Pattern" below means that, and the text keeps its original words.
+
 Undo/Redo history and the Selection both reset on a Pattern switch (see CONTEXT.md's Undo and Selection entries), and until ticket 92 the clipboard (CONTEXT.md's Copy) followed the same rule, plus its own extra ones: leaving the Select tool or cancelling out of Paste (Escape/right-click) also dropped it. Ticket 92 (`?` keyboard paste, Ctrl/Cmd+V) breaks the clipboard away from that shared rule on purpose: it now clears only when a new Copy replaces it or a new Selection is made, and survives a Pattern switch, a tool switch, and a cancel.
 
 The reason is what Ctrl/Cmd+V is for. It pastes at the cell under the pointer from whichever tool is active — Paint, Fill, Select or Erase — precisely so a copied motif can be carried into a different editing context without re-copying it. If leaving Select still dropped the clipboard, Ctrl/Cmd+V could never actually be used from Paint/Fill/Erase: the moment you switched tools to use it, there would be nothing left to paste. The same argument extends to a Pattern switch — copying a motif in one Pattern and pasting it into another is exactly the kind of thing a keyboard shortcut should make easy, not something the tool-switch or Pattern-switch reset should quietly forbid.

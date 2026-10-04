@@ -45,7 +45,7 @@ describe('drawingWindow', () => {
     })
   })
 
-  it('stays inside the Pattern, so a margin never reaches past its edges', () => {
+  it('stays inside the Project, so a margin never reaches past its edges', () => {
     expect(drawingWindow({ x: 10, y: 20, width: 100, height: 100 }, { width: 200, height: 180 }, 160)).toEqual({
       x: 0,
       y: 0,
@@ -54,7 +54,7 @@ describe('drawingWindow', () => {
     })
   })
 
-  it('costs what the screen does, not what the Pattern does', () => {
+  it('costs what the screen does, not what the Project does', () => {
     const visible = { x: 5000, y: 5000, width: 1900, height: 1200 }
 
     const small = drawingWindow(visible, { width: 8000, height: 8000 }, 160)

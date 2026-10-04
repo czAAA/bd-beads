@@ -2,28 +2,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createProject, paintCells, type Project } from '../../domain/project'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
-function pattern(): Pattern {
-  return createPattern({
+function project(): Project {
+  return createProject({
     technique: 'loom',
     beadId: cubeBead.id,
     size: { width: 15, height: 15, unit: 'mm' },
   })
 }
 
-function mountQuantities(pattern: Pattern | undefined) {
-  return mount(BeadQuantities, { props: { pattern } })
+function mountQuantities(project: Project | undefined) {
+  return mount(BeadQuantities, { props: { project } })
 }
 
 describe('BeadQuantities', () => {
   it('has three columns: a color swatch, a bead count and its estimated weight', () => {
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
+    const wrapper = mountQuantities(paintCells(project(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
 
     expect(wrapper.findAll('thead th')).toHaveLength(3)
     const row = wrapper.find('[data-testid="quantity-row"]')
@@ -32,7 +32,7 @@ describe('BeadQuantities', () => {
   })
 
   it('reports how many beads each painted color needs', () => {
-    const withTwoColors = paintCells(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), [{ row: 0, column: 1 }], '#2f6fed', { columns: 0, rows: 0 })
+    const withTwoColors = paintCells(paintCells(project(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), [{ row: 0, column: 1 }], '#2f6fed', { columns: 0, rows: 0 })
     const wrapper = mountQuantities(withTwoColors)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('1')
@@ -40,36 +40,36 @@ describe('BeadQuantities', () => {
   })
 
   it('lists only colors painted at least once, most-needed first', () => {
-    const wrapper = mountQuantities(pattern())
+    const wrapper = mountQuantities(project())
 
     expect(wrapper.findAll('[data-testid="quantity-row"]')).toHaveLength(0)
   })
 
   it('reports a color painted from outside the Palette, with its swatch and count', () => {
     // Only reachable from an imported file: the app's own painting is Palette-only.
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#123456', { columns: 0, rows: 0 }))
+    const wrapper = mountQuantities(paintCells(project(), [{ row: 0, column: 0 }], '#123456', { columns: 0, rows: 0 }))
 
     expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
   })
 
   it('shows no bead pickers or bead names', () => {
-    const wrapper = mountQuantities(paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
+    const wrapper = mountQuantities(paintCells(project(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }))
 
     expect(wrapper.find('select').exists()).toBe(false)
   })
 
-  it('shows the "open a Pattern" message with no Pattern open', () => {
+  it('shows the "open a Project" message with no Project open', () => {
     const wrapper = mountQuantities(undefined)
 
-    expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quantities-no-project"]').exists()).toBe(true)
     expect(wrapper.find('table').exists()).toBe(false)
   })
 
-  it('shows a "nothing painted yet" message for an unpainted Pattern', () => {
-    const wrapper = mountQuantities(pattern())
+  it('shows a "nothing painted yet" message for an unpainted Project', () => {
+    const wrapper = mountQuantities(project())
 
     expect(wrapper.find('[data-testid="quantities-empty"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-no-project"]').exists()).toBe(false)
     expect(wrapper.find('table').exists()).toBe(false)
   })
 })
@@ -78,8 +78,8 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   const cells = (count: number) => Array.from({ length: count }, (_, column) => ({ row: 0, column }))
   const noMirror = { columns: 0, rows: 0 }
 
-  function wide(beadId: string, painted: number, color = '#e63746'): Pattern {
-    const base = createPattern({ technique: 'loom', beadId, size: { width: 1000, height: 5, unit: 'beads' } })
+  function wide(beadId: string, painted: number, color = '#e63746'): Project {
+    const base = createProject({ technique: 'loom', beadId, size: { width: 1000, height: 5, unit: 'beads' } })
     return paintCells(base, cells(painted), color, noMirror)
   }
 
@@ -134,7 +134,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(tiny.find('[data-testid="quantity-weight-red"]').text()).toBe('< 0.01 g')
   })
 
-  it('hides the weights, not shows zeros, when the Pattern\'s Bead has no weight', () => {
+  it('hides the weights, not shows zeros, when the Project\'s Bead has no weight', () => {
     const unknown = { ...wide('toho-cube-1.5mm', 10), beadId: 'a-bead-this-device-never-had' }
     const wrapper = mountQuantities(unknown)
 
@@ -144,8 +144,8 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
   })
 
-  it('shows no weight for a Pattern with no colors painted', () => {
-    const wrapper = mountQuantities(pattern())
+  it('shows no weight for a Project with no colors painted', () => {
+    const wrapper = mountQuantities(project())
 
     expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
@@ -175,11 +175,11 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   describe('at the 24″ and larger tier (ticket 83; responsive.md, bp-desktop)', () => {
     afterEach(() => vi.unstubAllGlobals())
 
-    function withColors(count: number): Pattern {
+    function withColors(count: number): Project {
       const hexes = ['#e63746', '#2f6fed', '#22aa55', '#f5c518', '#8e44ad', '#ff8800', '#00bcd4']
       return hexes
         .slice(0, count)
-        .reduce((p, hex, column) => paintCells(p, [{ row: 0, column }], hex, { columns: 0, rows: 0 }), pattern())
+        .reduce((p, hex, column) => paintCells(p, [{ row: 0, column }], hex, { columns: 0, rows: 0 }), project())
     }
 
     it('holds five color rows before it needs expanding: four colors are not expandable, six are', () => {
@@ -201,7 +201,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 
 describe('BeadQuantities and the Frame (ticket 233)', () => {
   it('counts the Frame only, leaving out beads that lie outside it', () => {
-    const framed = paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const framed = paintCells(project(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     const withOutsider = { ...framed, beads: { ...framed.beads, 40: { 40: '#e63746' } } }
     const wrapper = mountQuantities(withOutsider)
 
@@ -209,7 +209,7 @@ describe('BeadQuantities and the Frame (ticket 233)', () => {
   })
 
   it('keeps its header and says "Set Frame to count beads." with no Frame', () => {
-    const { frame: _frame, ...open } = paintCells(pattern(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const { frame: _frame, ...open } = paintCells(project(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     const wrapper = mountQuantities(open)
 
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe('Set Frame to count beads.')

@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { beadColor, drawnPattern, hoverBead, pressBead, rulerNumbers } from './testUtils/beads'
+import { beadColor, drawnProject, hoverBead, pressBead, rulerNumbers } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { createPattern, type Pattern, frameGrid } from './domain/pattern'
-import { loadPatterns, savePatterns } from './services/libraryStore'
-import { serializePatternForQr } from './domain/qrExport'
+import { createProject, type Project, frameGrid } from './domain/project'
+import { loadProjects, saveProjects } from './services/libraryStore'
+import { serializeProjectForQr } from './domain/qrExport'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
-import { mountWithPattern, createPatternViaForm } from './testUtils/seedPattern'
+import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -23,36 +23,36 @@ describe('App opened from a scanned QR link', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  function sharedPattern(): Pattern {
-    return createPattern({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Shared' })
+  function sharedProject(): Project {
+    return createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Shared' })
   }
 
-  it('imports the Pattern in the URL, opens it and clears the fragment', async () => {
-    const shared = sharedPattern()
-    const link = serializePatternForQr(shared, 'http://localhost:3000/')
+  it('imports the Project in the URL, opens it and clears the fragment', async () => {
+    const shared = sharedProject()
+    const link = serializeProjectForQr(shared, 'http://localhost:3000/')
     window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
 
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Shared')
-    expect(loadPatterns()).toEqual([{ ...shared, savedAt: expect.any(Number) }])
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('Shared')
+    expect(loadProjects()).toEqual([{ ...shared, savedAt: expect.any(Number) }])
     expect(window.location.hash).toBe('')
   })
 
-  it('opens it even when another Pattern is already open, keeping both', async () => {
-    const existing = { ...sharedPattern(), id: 'existing', name: 'Mine' }
-    savePatterns([existing])
-    const shared = sharedPattern()
-    const link = serializePatternForQr(shared, 'http://localhost:3000/')
+  it('opens it even when another Project is already open, keeping both', async () => {
+    const existing = { ...sharedProject(), id: 'existing', name: 'Mine' }
+    saveProjects([existing])
+    const shared = sharedProject()
+    const link = serializeProjectForQr(shared, 'http://localhost:3000/')
     window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
 
     const wrapper = mount(App)
     await flushPromises()
 
     // The library is most recently saved first (ticket 145).
-    expect(loadPatterns().map((pattern) => pattern.name)).toEqual(['Shared', 'Mine'])
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Shared')
+    expect(loadProjects().map((project) => project.name)).toEqual(['Shared', 'Mine'])
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('Shared')
   })
 
   it('ignores a broken link and shows the library as it was', async () => {
@@ -61,118 +61,118 @@ describe('App opened from a scanned QR link', () => {
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(loadPatterns()).toEqual([])
+    expect(loadProjects()).toEqual([])
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(window.location.hash).toBe('')
   })
 })
 
 describe('App', () => {
-  it('shows the new pattern form when nothing has been saved yet', () => {
+  it('shows the new project form when nothing has been saved yet', () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(false)
   })
 
-  it('disables the new pattern button until at least one pattern exists', async () => {
+  it('disables the new project button until at least one project exists', async () => {
     const wrapper = mount(App)
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').element.disabled,
     ).toBe(true)
 
-    await createPatternViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper, '15', '30')
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="new-pattern-button"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').element.disabled,
     ).toBe(false)
   })
 
-  it('creates a pattern, renders its grid, and autosaves it without an explicit save action', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('creates a project, renders its grid, and autosaves it without an explicit save action', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
 
-    const saved = loadPatterns()
+    const saved = loadProjects()
     expect(saved).toHaveLength(1)
     expect(saved[0]!.beadId).toBe(cubeBead.id)
     expect(saved[0]!.frame!.columns).toBe(10)
     expect(saved[0]!.frame!.rows).toBe(20)
   })
 
-  it('shows the previously created pattern unchanged after a reload', async () => {
-    const first = await mountWithPattern(15, 30)
+  it('shows the previously created project unchanged after a reload', async () => {
+    const first = await mountWithProject(15, 30)
     first.unmount()
 
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(drawnPattern(afterReload)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(afterReload)).toMatchObject({ frame: { rows: 20, columns: 10 } })
   })
 
-  it('shows a summary of the currently open pattern', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('shows a summary of the currently open project', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('10×20')
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('10×20')
   })
 
-  it('lists a newly created pattern below the canvas and lets a second one be started alongside it', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(1)
+  it('lists a newly created project below the canvas and lets a second one be started alongside it', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(1)
+    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
 
-    await createPatternViaForm(wrapper, '30', '30')
-    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(2)
-    expect(loadPatterns()).toHaveLength(2)
+    await createProjectViaForm(wrapper, '30', '30')
+    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(2)
+    expect(loadProjects()).toHaveLength(2)
   })
 
-  it('switches the open pattern when a different one is selected from the list', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const firstId = loadPatterns()[0]!.id
+  it('switches the open project when a different one is selected from the list', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const firstId = loadProjects()[0]!.id
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await createPatternViaForm(wrapper, '30', '30')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
+    await createProjectViaForm(wrapper, '30', '30')
 
-    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(drawnPattern(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
   })
 
-  it('removing the open pattern switches to another remaining one', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const firstId = loadPatterns()[0]!.id
+  it('removing the open project switches to another remaining one', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const firstId = loadProjects()[0]!.id
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await createPatternViaForm(wrapper, '30', '30')
-    const secondId = loadPatterns().find((pattern) => pattern.id !== firstId)!.id
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
+    await createProjectViaForm(wrapper, '30', '30')
+    const secondId = loadProjects().find((project) => project.id !== firstId)!.id
 
-    await wrapper.find(`[data-testid="select-pattern-${secondId}"]`).trigger('click')
-    await wrapper.find(`[data-testid="remove-pattern-${secondId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="select-project-${secondId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="remove-project-${secondId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(1)
-    expect(loadPatterns()).toHaveLength(1)
-    expect(loadPatterns()[0]!.id).toBe(firstId)
+    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
+    expect(loadProjects()).toHaveLength(1)
+    expect(loadProjects()[0]!.id).toBe(firstId)
   })
 
-  it('removing the last remaining pattern falls back to the empty home screen', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const patternId = loadPatterns()[0]!.id
+  it('removing the last remaining project falls back to the empty home screen', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const projectId = loadProjects()[0]!.id
 
-    await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="remove-project-${projectId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    // Saved Patterns keeps its box (ticket 39: always one of the three below-canvas boxes), now showing its
+    // Saved Projects keeps its box (ticket 39: always one of the three below-canvas boxes), now showing its
     // own empty message rather than disappearing.
-    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
-    expect(loadPatterns()).toHaveLength(0)
+    expect(wrapper.find('[data-testid="project-list-empty"]').exists()).toBe(true)
+    expect(loadProjects()).toHaveLength(0)
   })
 
   it('lays out the app shell as a header, one left column and the canvas box, with nothing below the canvas (ticket 141)', async () => {
@@ -191,31 +191,31 @@ describe('App', () => {
     expect(topBar.find('h1').exists()).toBe(true)
     expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
     expect(column.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(topBar.find('[data-testid="new-pattern-button"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="new-project-button"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
-    await createPatternViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper, '15', '30')
 
-    expect(topBar.find('[data-testid="current-pattern-summary"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="current-project-summary"]').exists()).toBe(true)
     expect(column.find('[data-testid="bead-select"]').exists()).toBe(false)
     expect(column.find('[data-testid="palette-picker"]').exists()).toBe(true)
-    expect(canvas.find('[data-testid="pattern-surface"]').exists()).toBe(true)
+    expect(canvas.find('[data-testid="project-surface"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
-    expect(column.find('[data-testid="pattern-list"]').exists()).toBe(true)
+    expect(column.find('[data-testid="project-list"]').exists()).toBe(true)
   })
 
-  it('holds the left column\'s boxes in a fixed order, whether or not a Pattern is open (ticket 141)', async () => {
+  it('holds the left column\'s boxes in a fixed order, whether or not a Project is open (ticket 141)', async () => {
     const wrapper = mount(App)
     const column = wrapper.find('[data-testid="app-main-panel"]')
     const boxOrder = () => [...column.element.children].map((box) => box.getAttribute('data-testid'))
 
-    expect(boxOrder()).toEqual(['new-pattern-box', 'bead-quantities', 'pattern-list'])
+    expect(boxOrder()).toEqual(['new-project-box', 'bead-quantities', 'project-list'])
 
-    await createPatternViaForm(wrapper, '15', '30')
-    expect(boxOrder()).toEqual(['toolbox', 'save-box', 'bead-quantities', 'pattern-list'])
+    await createProjectViaForm(wrapper, '15', '30')
+    expect(boxOrder()).toEqual(['toolbox', 'save-box', 'bead-quantities', 'project-list'])
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click') // back to no Pattern open, but one is saved
-    expect(boxOrder()).toEqual(['new-pattern-box', 'bead-quantities', 'pattern-list'])
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click') // back to no Project open, but one is saved
+    expect(boxOrder()).toEqual(['new-project-box', 'bead-quantities', 'project-list'])
   })
 
   it('puts the notice row under the header only while there is something to say (ticket 141)', () => {
@@ -225,8 +225,8 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="app-topbar"]').element.nextElementSibling?.classList.contains('app-shell__body')).toBe(true)
   })
 
-  it('puts the Toolbox first in the left column while a Pattern is open, in place of the New Pattern form (tickets 114, 141)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('puts the Toolbox first in the left column while a Project is open, in place of the New Project form (tickets 114, 141)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
     const toolbox = wrapper.find('[data-testid="toolbox"]')
@@ -245,21 +245,21 @@ describe('App', () => {
     }
   })
 
-  it('shows the New Pattern form in the left column, and no Toolbox, with no Pattern open (ticket 114)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('shows the New Project form in the left column, and no Toolbox, with no Project open (ticket 114)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
 
     const mainPanel = wrapper.find('[data-testid="app-main-panel"]')
     expect(mainPanel.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="toolbox"]').exists()).toBe(false)
   })
 
-  it('puts the open Pattern\'s Technique behind the board, and the strip above it, in the canvas box (ticket 143)', async () => {
+  it('puts the open Project\'s Technique behind the board, and the strip above it, in the canvas box (ticket 143)', async () => {
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="canvas-backdrop"]').exists()).toBe(false)
 
-    await createPatternViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper, '15', '30')
 
     const canvas = wrapper.find('[data-testid="app-canvas"]')
     expect(canvas.element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
@@ -269,7 +269,7 @@ describe('App', () => {
   })
 
   it('keeps the canvas box outside the left column, side by side in the body (ticket 141)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const column = wrapper.find('[data-testid="app-main-panel"]').element
     expect(column.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
@@ -278,7 +278,7 @@ describe('App', () => {
   })
 
   it('paints a cell with the selected palette color', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -287,10 +287,10 @@ describe('App', () => {
 
     // Releasing the button ends the stroke, which is when a stroke reaches storage (ticket 55).
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('paints a cell regardless of the Pattern\'s Technique', async () => {
+  it('paints a cell regardless of the Project\'s Technique', async () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
     await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
@@ -303,11 +303,11 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('fills a contiguous same-colored region with the fill tool', async () => {
-    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
+    const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
@@ -320,7 +320,7 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0)
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#2f6fed')
     expect(grid[1]![0]!.color).toBe('#2f6fed')
@@ -330,7 +330,7 @@ describe('App', () => {
   })
 
   it('undoes a fill as a single action, restoring every cell it repainted', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -340,17 +340,17 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0)
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#2f6fed')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
   it('redoes an undone fill as a single action, re-repainting every cell it had touched', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -363,89 +363,89 @@ describe('App', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#2f6fed')
   })
 
   it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
-    const wrapper = await mountWithPattern(5, 3) // 3 columns x 2 rows
+    const wrapper = await mountWithProject(5, 3) // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // paint (0,0), the top-left bead
     await wrapper.trigger('mouseup')
-    const beforeRotate = loadPatterns()[0]!
+    const beforeRotate = loadProjects()[0]!
 
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
 
-    const afterRotate = loadPatterns()[0]!
-    // A data turn, not a view one: the Pattern is not left turned, its Frame and beads are.
+    const afterRotate = loadProjects()[0]!
+    // A data turn, not a view one: the Project is not left turned, its Frame and beads are.
     expect(afterRotate.rotation).toBe(0)
     expect(afterRotate.technique).toBe(beforeRotate.technique)
     expect(afterRotate.frame).toMatchObject({ columns: beforeRotate.frame!.rows, rows: beforeRotate.frame!.columns })
     // The top-left bead of a quarter turn clockwise is the top-right one.
     expect(frameGrid(afterRotate)[0]![1]!.color).toBe('#e63746')
     expect(frameGrid(afterRotate).flat().filter((cell) => cell.color).length).toBe(1)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('2×3')
   })
 
   it('comes back to upright after four turns (ticket 233)', async () => {
-    const wrapper = await mountWithPattern(5, 3)
+    const wrapper = await mountWithProject(5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    const before = loadPatterns()[0]!
+    const before = loadProjects()[0]!
 
     for (const summary of ['2×3', '3×2', '2×3', '3×2']) {
       await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-      expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain(summary)
+      expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain(summary)
     }
 
-    const after = loadPatterns()[0]!
+    const after = loadProjects()[0]!
     expect(after.frame).toEqual(before.frame)
     expect(frameGrid(after)).toEqual(frameGrid(before))
   })
 
   it('is one undo step: Undo turns it back and Redo turns it again', async () => {
-    const wrapper = await mountWithPattern(5, 3)
+    const wrapper = await mountWithProject(5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    const turned = loadPatterns()[0]!
+    const turned = loadProjects()[0]!
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.frame).toMatchObject({ columns: 3, rows: 2 })
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(loadProjects()[0]!.frame).toMatchObject({ columns: 3, rows: 2 })
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadPatterns()[0]!.frame).toEqual(turned.frame)
-    expect(frameGrid(loadPatterns()[0]!)).toEqual(frameGrid(turned))
+    expect(loadProjects()[0]!.frame).toEqual(turned.frame)
+    expect(frameGrid(loadProjects()[0]!)).toEqual(frameGrid(turned))
   })
 
-  it('keeps a Pattern saved turned (the legacy view) turned, and Rotate turns the data on top of it', async () => {
-    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-    savePatterns([{ ...saved, rotation: 90 }])
+  it('keeps a Project saved turned (the legacy view) turned, and Rotate turns the data on top of it', async () => {
+    const saved = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+    saveProjects([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
     await flushPromises()
 
-    expect(loadPatterns()[0]!.rotation).toBe(90)
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('2×3')
+    expect(loadProjects()[0]!.rotation).toBe(90)
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('2×3')
   })
 
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
 
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -454,11 +454,11 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#123456')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#123456')
   })
 
   it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -469,7 +469,7 @@ describe('App', () => {
   })
 
   it('deselects the Custom color slot when a Palette swatch is picked afterwards, and vice versa', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -487,7 +487,7 @@ describe('App', () => {
   })
 
   it('replaces the previous Custom color when another one is chosen, and only the one that paints joins the Palette (ticket 227)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
@@ -499,12 +499,12 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#abcdef')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#abcdef')
     expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 1)
   })
 
   it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
@@ -516,7 +516,7 @@ describe('App', () => {
   })
 
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
-    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
+    const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -524,7 +524,7 @@ describe('App', () => {
     await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -533,7 +533,7 @@ describe('App', () => {
   })
 
   it('undoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -543,7 +543,7 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
@@ -553,7 +553,7 @@ describe('App', () => {
   })
 
   it('redoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
@@ -564,7 +564,7 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -574,7 +574,7 @@ describe('App', () => {
   })
 
   it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     // Isolate cell 5 from cell 6 with different colors, so flood-fill's own same-color spread can't
     // explain either cell's result — only a (nonexistent) drag continuation could paint cell 6 green.
@@ -591,27 +591,27 @@ describe('App', () => {
     await hoverBead(wrapper, 6, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![5]!.color).toBe('#27ae60')
     expect(grid[0]![6]!.color).toBe('#2f6fed')
   })
 
   it('right-clicks a single cell to erase it with the Paint tool', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await pressBead(wrapper, 0, { button: 2 })
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -624,21 +624,21 @@ describe('App', () => {
     await hoverBead(wrapper, 2, { buttons: 2 })
     await wrapper.trigger('mouseup')
 
-    let grid = frameGrid(loadPatterns()[0]!)
+    let grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    grid = frameGrid(loadPatterns()[0]!)
+    grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
   })
 
   it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -651,7 +651,7 @@ describe('App', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0, { button: 2 })
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[1]![0]!.color).toBeNull()
@@ -661,7 +661,7 @@ describe('App', () => {
   })
 
   it('undoes a single-click flood-erase as one step', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -670,26 +670,26 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     await pressBead(wrapper, 0, { button: 2 })
-    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
   it('suppresses the native context menu when right-clicking the canvas', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    wrapper.find('[data-testid="pattern-surface"]').element.dispatchEvent(event)
+    wrapper.find('[data-testid="project-surface"]').element.dispatchEvent(event)
 
     expect(event.defaultPrevented).toBe(true)
   })
 
   it('undoes the most recent paint action, and repeated undo steps back further', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -698,17 +698,17 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#2f6fed')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('disables undo when there is nothing to undo', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
       true,
@@ -724,7 +724,7 @@ describe('App', () => {
   })
 
   it('redoes the most recently undone change, and repeated redo steps forward through every undone change in order', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -735,17 +735,17 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#2f6fed')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#2f6fed')
   })
 
   it('alternates undo and redo freely without losing or duplicating a step', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -758,14 +758,14 @@ describe('App', () => {
     await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to blue
     await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
     await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to empty
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to red
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
@@ -782,7 +782,7 @@ describe('App', () => {
   })
 
   it('clears the redo history once a new edit actually changes the grid', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -797,9 +797,9 @@ describe('App', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
 
-  it('switching or creating a Pattern clears the redo history, the same as the undo stack', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const firstId = loadPatterns()[0]!.id
+  it('switching or creating a Project clears the redo history, the same as the undo stack', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const firstId = loadProjects()[0]!.id
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -807,19 +807,19 @@ describe('App', () => {
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await createPatternViaForm(wrapper, '6', '6')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
+    await createProjectViaForm(wrapper, '6', '6')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
 
-    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
   })
 
   it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const undoButton = wrapper.find('[data-testid="undo-button"]')
     expect(undoButton.text()).toBe('')
@@ -828,7 +828,7 @@ describe('App', () => {
   })
 
   it('persists painted cells across a reload', async () => {
-    const first = await mountWithPattern(15, 30)
+    const first = await mountWithProject(15, 30)
 
     await first.find('[data-color-id="red"]').trigger('click')
     await pressBead(first, 0)
@@ -846,7 +846,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="bead-catalog"]').exists()).toBe(false)
   })
 
-  it('offers exactly the three built-in Beads when creating a Pattern, even with custom-bead data left over from before ticket 38', () => {
+  it('offers exactly the three built-in Beads when creating a Project, even with custom-bead data left over from before ticket 38', () => {
     localStorage.setItem(
       'bd-beads:custom-beads',
       JSON.stringify([
@@ -870,28 +870,28 @@ describe('App', () => {
     expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
   })
 
-  it('still opens, paints, and exports a Pattern created with a since-removed custom Bead', async () => {
-    const pattern = createPattern({
+  it('still opens, paints, and exports a Project created with a since-removed custom Bead', async () => {
+    const project = createProject({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    savePatterns([{ ...pattern, beadId: 'acme-fancy-8-0' }])
+    saveProjects([{ ...project, beadId: 'acme-fancy-8-0' }])
 
     const wrapper = mount(App)
 
-    expect(wrapper.find('[data-testid="pattern-surface"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
-    // Export/import round-tripping an unresolved beadId is covered directly in patternFile.test.ts; here it's
-    // enough that the button (disabled only while no Pattern is open) is live for this one.
-    await wrapper.find('[data-testid="pattern-list"] [data-testid="panel-expand"]').trigger('click')
+    // Export/import round-tripping an unresolved beadId is covered directly in projectFile.test.ts; here it's
+    // enough that the button (disabled only while no Project is open) is live for this one.
+    await wrapper.find('[data-testid="project-list"] [data-testid="panel-expand"]').trigger('click')
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="export-pattern"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="export-project"]').element.disabled,
     ).toBe(false)
   })
 
@@ -917,33 +917,33 @@ describe('App', () => {
   })
 
   it('reserves red for destructive actions, leaving every other button in the default style', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const patternId = loadPatterns()[0]!.id
+    const wrapper = await mountWithProject(15, 30)
+    const projectId = loadProjects()[0]!.id
 
-    // Remove is the Saved Patterns card's small neutral × (ticket 147); nothing outside a confirmation is red.
-    expect(wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).classes()).not.toContain('button--danger')
+    // Remove is the Saved Projects card's small neutral × (ticket 147); nothing outside a confirmation is red.
+    expect(wrapper.find(`[data-testid="remove-project-${projectId}"]`).classes()).not.toContain('button--danger')
 
-    for (const testId of ['new-pattern-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button', 'redo-button']) {
+    for (const testId of ['new-project-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button', 'redo-button']) {
       expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
     }
   })
 
-  it('floats the zoom controls in the canvas panel, fixed to its corner rather than the Pattern\'s own box (ticket 57)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('floats the zoom controls in the canvas panel, fixed to its corner rather than the Project\'s own box (ticket 57)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find('[data-testid="app-main-panel"]').find('[data-testid="zoom-controls"]').exists()).toBe(false)
 
     const appCanvas = wrapper.find('[data-testid="app-canvas"]')
     expect(appCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
-    // Fixed to the canvas panel itself, not to the Pattern's own bordered box inside it (ticket 51 anchored it there;
+    // Fixed to the canvas panel itself, not to the Project's own bordered box inside it (ticket 51 anchored it there;
     // ticket 57 moved it one level up).
     expect(
-      wrapper.find('[data-testid="pattern-surface"]').find('[data-testid="zoom-controls"]').exists(),
+      wrapper.find('[data-testid="project-surface"]').find('[data-testid="zoom-controls"]').exists(),
     ).toBe(false)
   })
 
-  it('zooms the open Pattern from the floating canvas-box controls', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('zooms the open Project from the floating canvas-box controls', async () => {
+    const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
 
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
@@ -953,7 +953,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
   })
 
-  it('lays the header out in the Header card\'s order, with the Pattern info only while one is open (ticket 142)', async () => {
+  it('lays the header out in the Header card\'s order, with the Project info only while one is open (ticket 142)', async () => {
     const wrapper = mount(App)
     const order = () =>
       [...wrapper.find('[data-testid="app-topbar"]').element.children].map(
@@ -968,29 +968,29 @@ describe('App', () => {
       'app-header__brand',
       'app-header__phone-only', // phone brand icon (ticket 188): the bead icon, apart from the <h1> wordmark
       'app-header__menu', // the header menu (ticket 210), next to the logo
-      'app-header__phone-only', // phone theme icon: shown whether or not a Pattern is open
+      'app-header__phone-only', // phone theme icon: shown whether or not a Project is open
       'app-header__gap',
-      'pattern-actions',
-      'app-header__phone-hide', // New Pattern's wrapper (ticket 79: hidden at the phone tier)
+      'project-actions',
+      'app-header__phone-hide', // New Project's wrapper (ticket 79: hidden at the phone tier)
       'app-header__wide-only',
       'app-header__wide-only',
       'app-header__shortcuts',
     ])
 
-    await createPatternViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper, '15', '30')
 
     expect(order()).toEqual([
       'app-header__tools',
       'app-header__brand',
       'app-header__phone-only', // phone brand icon
       'app-header__menu',
-      'app-header__phone-only', // phone bead/technique icon (ticket 188), opens the Pattern sheet's Bead pill row
+      'app-header__phone-only', // phone bead/technique icon (ticket 188), opens the Project sheet's Bead pill row
       'app-header__phone-only', // phone theme icon
-      'pattern-info',
+      'project-info',
       'app-header__phone-hide', // Replace bead's wrapper
       'app-header__gap',
-      'pattern-actions',
-      'app-header__phone-hide', // New Pattern's wrapper
+      'project-actions',
+      'app-header__phone-hide', // New Project's wrapper
       'app-header__phone-only', // phone Undo
       'app-header__phone-only', // phone Redo
       'app-header__wide-only',
@@ -1000,15 +1000,15 @@ describe('App', () => {
     const header = wrapper.find('[data-testid="app-topbar"]')
     expect(header.find('h1').text()).toBe('bd-beads')
     expect(header.find('h1 [data-testid="app-logo"]').exists()).toBe(true)
-    expect(header.find('[data-testid="current-pattern-summary"]').text()).toBe('Pattern 1 · 10×20'.replace('Pattern 1', loadPatterns()[0]!.name))
+    expect(header.find('[data-testid="current-project-summary"]').text()).toBe('Project 1 · 10×20'.replace('Project 1', loadProjects()[0]!.name))
   })
 
-  it('keeps the two primary actions apart: Replace bead and New Pattern never sit side by side (ticket 142)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('keeps the two primary actions apart: Replace bead and New Project never sit side by side (ticket 142)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
     const select = wrapper.find('[data-testid="replace-bead-select"]').element.closest('.app-select')!
-    expect(select.nextElementSibling?.getAttribute('data-testid')).not.toBe('new-pattern-button')
-    expect(wrapper.find('[data-testid="new-pattern-button"]').classes()).toContain('app-button--primary')
+    expect(select.nextElementSibling?.getAttribute('data-testid')).not.toBe('new-project-button')
+    expect(wrapper.find('[data-testid="new-project-button"]').classes()).toContain('app-button--primary')
     expect(select.classList).toContain('app-select--primary')
   })
 
@@ -1020,28 +1020,28 @@ describe('App', () => {
     expect(wrapper.findComponent({ name: 'ShortcutsHelp' }).exists()).toBe(true)
   })
 
-  it('has New Pattern and the Imports only in the header, not in the Saved Patterns box (tickets 117, 142)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('has New Project and the Imports only in the header, not in the Saved Projects box (tickets 117, 142)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    const patternList = wrapper.find('[data-testid="pattern-list"]')
-    for (const testId of ['new-pattern-button', 'import-file', 'import-qr']) {
-      expect(patternList.find(`[data-testid="${testId}"]`).exists()).toBe(false)
+    const projectList = wrapper.find('[data-testid="project-list"]')
+    for (const testId of ['new-project-button', 'import-file', 'import-qr']) {
+      expect(projectList.find(`[data-testid="${testId}"]`).exists()).toBe(false)
     }
   })
 
-  it('keeps the two file exports in the Saved Patterns box, with no Export and import box (ticket 118)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('keeps the two file exports in the Saved Projects box, with no Export and import box (ticket 118)', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    const patternList = wrapper.find('[data-testid="pattern-list"]')
+    const projectList = wrapper.find('[data-testid="project-list"]')
     // They sit in the footer the box shows once expanded (ticket 147).
-    await patternList.find('[data-testid="panel-expand"]').trigger('click')
-    expect(patternList.find('[data-testid="export-pattern"]').exists()).toBe(true)
-    expect(patternList.find('[data-testid="export-library"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="pattern-transfer"]').exists()).toBe(false)
+    await projectList.find('[data-testid="panel-expand"]').trigger('click')
+    expect(projectList.find('[data-testid="export-project"]').exists()).toBe(true)
+    expect(projectList.find('[data-testid="export-library"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-transfer"]').exists()).toBe(false)
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const numbers = rulerNumbers(wrapper)
     // 10 columns above and below, 20 rows left and right (15 × 30 mm of 1.5 mm cubes): every number drawn, 1 upwards, on all four sides of the Frame.
@@ -1061,21 +1061,21 @@ describe('App', () => {
   })
 })
 
-/** Ticket 55: saving follows the Pattern library instead of sitting on the per-cell edit path. */
+/** Ticket 55: saving follows the Project library instead of sitting on the per-cell edit path. */
 describe('App storage writes', () => {
-  /** The Pattern library's own key: the counting and refusing below are scoped to it, so the saved language's writes
+  /** The Project library's own key: the counting and refusing below are scoped to it, so the saved language's writes
    *  (a click on the language switcher) neither show up as noise nor get refused along with it. */
-  const PATTERNS_KEY = 'bd-beads:patterns'
+  const PROJECTS_KEY = 'bd-beads:patterns'
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
   it('writes a dragged paint stroke once, when the stroke ends, rather than once per cell', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    const writes = spyOnStorageWrites(PATTERNS_KEY)
+    const writes = spyOnStorageWrites(PROJECTS_KEY)
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await hoverBead(wrapper, 2, { buttons: 1 })
@@ -1085,7 +1085,7 @@ describe('App storage writes', () => {
     await wrapper.trigger('mouseup')
 
     expect(writes.count).toBe(1)
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[0]![2]!.color]).toEqual([
       '#e63746',
       '#e63746',
@@ -1094,13 +1094,13 @@ describe('App storage writes', () => {
   })
 
   it('writes a dragged erase stroke once too', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    const writes = spyOnStorageWrites(PATTERNS_KEY)
+    const writes = spyOnStorageWrites(PROJECTS_KEY)
     await pressBead(wrapper, 0, { button: 2 })
     await hoverBead(wrapper, 1, { buttons: 2 })
     expect(writes.count).toBe(0)
@@ -1108,68 +1108,68 @@ describe('App storage writes', () => {
     await wrapper.trigger('mouseup')
 
     expect(writes.count).toBe(1)
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
-    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBeNull()
   })
 
   it('writes a stroke whose mouseup never arrived when the page goes away', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
     // stroke is still only in memory.
     await pressBead(wrapper, 0)
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
 
     window.dispatchEvent(new Event('pagehide'))
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('writes a stroke whose mouseup never arrived when the editor is torn down', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
 
     wrapper.unmount()
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('ends a touch/pen stroke the OS cancels mid-drag (ticket 60), instead of leaving it stuck in progress', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0, { pointerType: 'touch' })
     await hoverBead(wrapper, 1, { buttons: 1, pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointercancel')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#e63746')
 
     // The cancelled stroke really ended: painting a third cell starts a fresh one rather than continuing the old.
     await pressBead(wrapper, 2, { pointerType: 'touch' })
     await wrapper.find('.app-shell').trigger('pointerup')
-    expect(frameGrid(loadPatterns()[0]!)[0]![2]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![2]!.color).toBe('#e63746')
   })
 
   it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
-    const writes = spyOnStorageWrites(PATTERNS_KEY)
+    const writes = spyOnStorageWrites(PROJECTS_KEY)
     await pressBead(wrapper, 0)
 
     expect(writes.count).toBe(1)
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('says so, in the current language, when a write to storage is refused', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
 
-    refuseStorageWrites(PATTERNS_KEY)
+    refuseStorageWrites(PROJECTS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -1182,9 +1182,9 @@ describe('App storage writes', () => {
   })
 
   it('keeps the refused edit on screen, and takes the message down once a save gets through', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
-    const refusing = refuseStorageWrites(PATTERNS_KEY)
+    const refusing = refuseStorageWrites(PROJECTS_KEY)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -1198,7 +1198,7 @@ describe('App storage writes', () => {
 
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
     // The retry carries the refused cell too, since a save writes the whole library from memory.
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(loadPatterns()[0]!)[0]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#e63746')
   })
 })

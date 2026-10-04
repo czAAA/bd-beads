@@ -29,7 +29,7 @@ describe('ExpandablePanel', () => {
     expect(wrapper.find('[data-testid="body"]').exists()).toBe(true)
   })
 
-  it('shows no icon by default, and the given one when passed (ticket 188: Saved Patterns\' library icon)', () => {
+  it('shows no icon by default, and the given one when passed (ticket 188: Saved Projects\' library icon)', () => {
     expect(mountPanel().find('.expandable-panel__icon').exists()).toBe(false)
 
     const withIcon = mountPanel({ icon: 'library' })
@@ -96,7 +96,7 @@ describe('ExpandablePanel', () => {
     expect(mountPanel({ empty: true }).find('.expandable-panel__body').classes()).not.toContain('expandable-panel__body--fixed')
   })
 
-  it('clips the collapsed body by default, letting a caller with its own summary count (Saved Patterns, ticket 175) turn it off so a hover tooltip below a row is never cut off', () => {
+  it('clips the collapsed body by default, letting a caller with its own summary count (Saved Projects, ticket 175) turn it off so a hover tooltip below a row is never cut off', () => {
     expect(mountPanel().find('.expandable-panel__body').classes()).not.toContain('expandable-panel__body--no-clip')
     expect(mountPanel({ clipOverflow: false }).find('.expandable-panel__body').classes()).toContain(
       'expandable-panel__body--no-clip',

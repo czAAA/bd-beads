@@ -1,7 +1,7 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { snapRow } from './frame'
 import { relocateFromMargin, type Cell } from './margin'
-import type { Pattern } from './pattern'
+import type { Project } from './project'
 
 /**
  * Rotate (CONTEXT.md, ADR 0026): a quarter turn clockwise of the Frame and the beads in it, about the Frame's centre. It
@@ -11,32 +11,32 @@ import type { Pattern } from './pattern'
  */
 
 export interface Rotated {
-  pattern: Pattern
+  project: Project
   /** How many Pieces were in the way and moved outside the Frame. */
   moved: number
 }
 
 /** The Frame turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it starts on an even row. */
-export function rotatedFrame(pattern: Pick<Pattern, 'technique'>, frame: Frame): Frame {
+export function rotatedFrame(project: Pick<Project, 'technique'>, frame: Frame): Frame {
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
   const difference = frame.rows - frame.columns
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
-  return { row: snapRow(pattern.technique, frame.row + rowShift), column: frame.column + columnShift, rows: frame.columns, columns: frame.rows }
+  return { row: snapRow(project.technique, frame.row + rowShift), column: frame.column + columnShift, rows: frame.columns, columns: frame.rows }
 }
 
-/** The Pattern with its Frame and beads turned a quarter clockwise, or undefined with no Frame to turn. */
-export function rotatePattern(pattern: Pattern): Rotated | undefined {
-  const frame = pattern.frame
+/** The Project with its Frame and beads turned a quarter clockwise, or undefined with no Frame to turn. */
+export function rotateProject(project: Project): Rotated | undefined {
+  const frame = project.frame
   if (!frame) {
     return undefined
   }
-  const turned = rotatedFrame(pattern, frame)
+  const turned = rotatedFrame(project, frame)
 
   const inside: Cell[] = []
   const outside: BeadMap = {}
-  forEachBead(pattern.beads, (row, column, color) => {
+  forEachBead(project.beads, (row, column, color) => {
     if (frameContains(frame, { row, column })) {
       inside.push({ row, column, color })
     } else {
@@ -53,12 +53,12 @@ export function rotatePattern(pattern: Pattern): Rotated | undefined {
   }))
 
   // Pieces outside the old Frame that reach the turned one or its margin are in the way; the rest stay where they are.
-  const moving = relocateFromMargin(pattern, outside, turned)
+  const moving = relocateFromMargin(project, outside, turned)
   const changes: BeadChange[] = [...inside.map(({ row, column }) => ({ row, column, color: null })), ...moving.changes]
   const placed = moving.placed
   // Vacate first, then place, so a Piece that moves onto where another left (or where the Frame was) is drawn.
-  const cleared = withColors(pattern.beads, changes)
+  const cleared = withColors(project.beads, changes)
   const beads = withColors(cleared, [...placed, ...rotated])
 
-  return { pattern: { ...pattern, beads, frame: turned, updatedAt: Date.now() }, moved: moving.pieces }
+  return { project: { ...project, beads, frame: turned, updatedAt: Date.now() }, moved: moving.pieces }
 }

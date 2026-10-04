@@ -32,11 +32,11 @@ export interface Translations {
     decreaseHeightButton: string
     increaseHeightButton: string
     unitLabel: string
-    /** The unit a Pattern's size can be stated in when it is a count of beads (ADR 0017) — the default. */
+    /** The unit a Project's size can be stated in when it is a count of beads (ADR 0017) — the default. */
     unitBeads: string
     unitMm: string
     unitCm: string
-    /** This Pattern's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
+    /** This Project's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
     makerNameLabel: string
     makerNamePlaceholder: string
     submit: string
@@ -50,7 +50,7 @@ export interface Translations {
     frameLabel: string
     frameHint: string
     convertNeedsFrame: string
-    /** Between Create Pattern and Convert image. */
+    /** Between Create Project and Convert image. */
     or: string
     /** Beside Unit: the stated size in the other unit, "≈ 40×30 beads". */
     estimateBeads: string
@@ -61,7 +61,7 @@ export interface Translations {
   }
   /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
-    skipToPattern: string
+    skipToProject: string
     toolsLandmark: string
     /** Announced as the bead cursor moves. */
     cursorPosition: string
@@ -70,17 +70,17 @@ export interface Translations {
     filled: string
     erased: string
     emptyBead: string
-    /** The Pattern's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
-    patternLabel: string
-    /** The Pattern's name for a screen reader while it has no Frame: an open canvas, with no size to state. */
+    /** The Project's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
+    projectLabel: string
+    /** The Project's name for a screen reader while it has no Frame: an open canvas, with no size to state. */
     canvasLabel: string
     colorsCount: PluralForms
     progressDone: string
-    /** Shown in the canvas strip while the Pattern has keyboard focus. */
+    /** Shown in the canvas strip while the Project has keyboard focus. */
     keyboardHint: string
     /** A message's close ×. */
     closeMessage: string
-    /** An expandable panel's expand button (BeadsNeeded, SavedPatterns cards). */
+    /** An expandable panel's expand button (BeadsNeeded, SavedProjects cards). */
     expandPanel: string
     collapsePanel: string
   }
@@ -99,13 +99,13 @@ export interface Translations {
     /** EN / RU's accessible name: what pressing it does, in the language it switches from. */
     switchLabel: string
   }
-  patterns: {
+  projects: {
     heading: string
-    newPatternButton: string
+    newProjectButton: string
     removeButton: string
     unknownBeadLabel: string
-    noSavedPatternsMessage: string
-    /** Saved Patterns' meta: how many of the library the box shows ("5 of 12"). */
+    noSavedProjectsMessage: string
+    /** Saved Projects' meta: how many of the library the box shows ("5 of 12"). */
     shownOf: string
   }
   canvas: {
@@ -145,7 +145,7 @@ export interface Translations {
     }
   }
   shell: {
-    /** Under 'No Pattern open yet': what to do (EmptyCanvas card). */
+    /** Under 'No Project open yet': what to do (EmptyCanvas card). */
     canvasPlaceholderHint: string
     canvasPlaceholder: string
   }
@@ -159,9 +159,9 @@ export interface Translations {
     menuButton: string
     overviewItem: string
     tourItem: string
-    /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Patterns, New Pattern, Import. */
-    patternSheetLabel: string
-    newPatternSheetTitle: string
+    /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Projects, New Project, Import. */
+    projectSheetLabel: string
+    newProjectSheetTitle: string
   }
   /** The Tour (ticket 80; TourStep card): the step card's words, step by step, and what it says when it moves. */
   tour: {
@@ -188,9 +188,9 @@ export interface Translations {
     sloganLead: string
     sloganLast: string
     tagline: string
-    makeFirstPattern: string
+    makeFirstProject: string
     openEditor: string
-    patternsSaved: string
+    projectsSaved: string
     whatsInside: string
     /** The carousel's ‹ › buttons. */
     previousFeature: string
@@ -209,12 +209,12 @@ export interface Translations {
     }
     features: {
       techniques: FeatureCopy
-      patternEditing: FeatureCopy
+      projectEditing: FeatureCopy
       convertImage: FeatureCopy
       rowProgress: FeatureCopy
       beadsNeeded: FeatureCopy
       exports: FeatureCopy
-      savedPatterns: FeatureCopy
+      savedProjects: FeatureCopy
     }
     /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen readers with them. */
     examples: {
@@ -232,8 +232,8 @@ export interface Translations {
       page: string
       by: string
       maker: string
-      patternFile: string
-      /** The Saved Patterns gallery's six names: Gold strip, Poppy, Heart, Hills, Stripes, Checks. */
+      projectFile: string
+      /** The Saved Projects gallery's six names: Gold strip, Poppy, Heart, Hills, Stripes, Checks. */
       names: [string, string, string, string, string, string]
     }
   }
@@ -304,7 +304,7 @@ export interface Translations {
   }
   quantities: {
     heading: string
-    noPatternMessage: string
+    noProjectMessage: string
     noColorsMessage: string
     colorHeading: string
     countHeading: string
@@ -317,7 +317,7 @@ export interface Translations {
     /** The Estimated weight tooltip (ticket 155); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
   }
-  /** Export/import (CONTEXT.md's Pattern file), plus QR export/import (ticket 68, ADR 0015). */
+  /** Export/import (CONTEXT.md's Project file), plus QR export/import (ticket 68, ADR 0015). */
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
     /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */
@@ -361,11 +361,11 @@ export interface Translations {
     menuPng: string
     menuPdf: string
     formatsHint: string
-    /** While an export is drawn (Loading card): what is happening, to which Pattern. */
+    /** While an export is drawn (Loading card): what is happening, to which Project. */
     makingPng: string
     makingPdf: string
-    /** The way out when a Pattern is too large for a QR code, or a save fails: the Pattern as a file. */
-    exportPatternFile: string
+    /** The way out when a Project is too large for a QR code, or a save fails: the Project as a file. */
+    exportProjectFile: string
     /** The Export menu's last row and its modal (NameOnExports card). */
     nameOnExports: string
     nameNotSet: string
@@ -379,16 +379,16 @@ export interface Translations {
   transfer: {
     /** Under the QR code: how to use it (QrExport card). */
     qrScanHint: string
-    exportPatternButton: string
+    exportProjectButton: string
     exportLibraryButton: string
     importLabel: string
     importedLabel: string
     importErrorLabel: string
-    /** Encodes the open Pattern as a single scannable QR code (compact encoding, ADR 0009), shown inline below. */
+    /** Encodes the open Project as a single scannable QR code (compact encoding, ADR 0009), shown inline below. */
     exportQrButton: string
-    /** Shown instead of the code when the Pattern doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Pattern above as the fallback rather than duplicating a download of its own. */
+    /** Shown instead of the code when the Project doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Project above as the fallback rather than duplicating a download of its own. */
     qrTooLargeMessage: string
-    /** Picture and print exports of the open Pattern (tickets 73, 74). */
+    /** Picture and print exports of the open Project (tickets 73, 74). */
     exportPngButton: string
     exportPdfButton: string
     /** With {page} and {pages}. */
@@ -402,7 +402,7 @@ export interface Translations {
   mirror: {
     mirrorCurrentHorizontalButton: string
     mirrorCurrentVerticalButton: string
-    /** The two per-direction axis counters (ticket 44), named for what they do on screen -- rotating the Pattern
+    /** The two per-direction axis counters (ticket 44), named for what they do on screen -- rotating the Project
      * swaps which grid axis each shows. */
     leftRightLabel: string
     topBottomLabel: string
@@ -477,30 +477,30 @@ export interface Translations {
     /** Hover/focus text on the Frame's controls while Row progress is on and they are disabled. */
     lockedReason: string
   }
-  /** Importing while a Pattern is open asks first whether to switch to what came in (ticket 154). */
+  /** Importing while a Project is open asks first whether to switch to what came in (ticket 154). */
   importSwitch: {
     title: string
-    /** `{current}` and `{imported}` are Pattern names. */
+    /** `{current}` and `{imported}` are Project names. */
     messageOne: string
-    /** `{count}` Patterns came in, and `{imported}` is the one that would open. */
+    /** `{count}` Projects came in, and `{imported}` is the one that would open. */
     messageMany: string
-    /** The open Pattern's last save didn't get through. */
+    /** The open Project's last save didn't get through. */
     unsavedMessage: string
     switchButton: string
     switchAnywayButton: string
     keepButton: string
     saveButton: string
   }
-  removePattern: {
+  removeProject: {
     title: string
-    /** `{name}` is the Pattern's name. */
+    /** `{name}` is the Project's name. */
     message: string
     confirmButton: string
     cancelButton: string
   }
-  switchPattern: {
+  switchProject: {
     title: string
-    /** `{current}` is the open Pattern and `{picked}` the one being opened. */
+    /** `{current}` is the open Project and `{picked}` the one being opened. */
     message: string
     confirmButton: string
     cancelButton: string
@@ -514,7 +514,7 @@ export interface Translations {
     cancelButton: string
   }
   /**
-   * Convert image (CONTEXT.md, ADR 0010/0011): the file input in the New Pattern form, the framing step that takes the
+   * Convert image (CONTEXT.md, ADR 0010/0011): the file input in the New Project form, the framing step that takes the
    * canvas panel over, and Image colors in the Colors group.
    *
    * Every string here holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` is filled in by formatImageLimits (see
@@ -524,7 +524,7 @@ export interface Translations {
   convertImage: {
     /** While a chosen picture is read (Loading card). */
     readingPicture: string
-    /** The file input's own label in the New Pattern form. */
+    /** The file input's own label in the New Project form. */
     fileLabel: string
     fileName: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
@@ -550,7 +550,7 @@ export interface Translations {
     /** Names the Image colors swatches in the Colors group (CONTEXT.md's Image colors). */
     imageColorsLabel: string
     imageColorsShort: string
-    /** Why Image colors is off: the Pattern wasn't made from a picture (ColorPickers card). */
+    /** Why Image colors is off: the Project wasn't made from a picture (ColorPickers card). */
     noImageColors: string
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
@@ -562,7 +562,7 @@ export interface Translations {
       decodeFailed: string
     }
   }
-  /** The Replace Bead control (CONTEXT.md, ADR 0017) next to the open Pattern's Bead, and its confirmation modal (ticket 48). */
+  /** The Replace Bead control (CONTEXT.md, ADR 0017) next to the open Project's Bead, and its confirmation modal (ticket 48). */
   replaceBead: {
     selectLabel: string
     confirmTitle: string

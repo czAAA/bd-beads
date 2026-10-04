@@ -1,8 +1,8 @@
 import { colorAt, frameContains, type Frame } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
-import { isInFinishedRow } from '../domain/pattern'
-import { DEFAULT_THEME, drawFlatBead, type BeadDrawer, type DrawingContext, type PatternTheme } from './beadLook'
+import { isInFinishedRow } from '../domain/project'
+import { DEFAULT_THEME, drawFlatBead, type BeadDrawer, type DrawingContext, type ProjectTheme } from './beadLook'
 import {
   beadRoundness,
   drawSeam,
@@ -13,18 +13,18 @@ import {
   setGridTransform,
   SEAM_PX,
   visibleBeadsOpen,
-  type DrawnPattern,
+  type DrawnProject,
   type Extent,
   type Region,
-} from './patternRenderer'
+} from './projectRenderer'
 
 /**
  * The open canvas renderer (ADR 0026): draws the part of an endless field of bead positions that a viewport shows.
  *
- * It speaks the Pattern renderer's language of grid space (px at zoom 1, a bead's own row and column) and displayed
- * space (turned by the Pattern's rotation, then zoomed), with one difference: an open canvas has no first bead to
+ * It speaks the Project renderer's language of grid space (px at zoom 1, a bead's own row and column) and displayed
+ * space (turned by the Project's rotation, then zoomed), with one difference: an open canvas has no first bead to
  * measure from, so displayed space is measured from the bead at row 0, column 0 and its region may reach into the
- * negative. That is the Pattern renderer's own transform with an extent of nothing, which turns a quarter about the
+ * negative. That is the Project renderer's own transform with an extent of nothing, which turns a quarter about the
  * origin instead of about a box.
  */
 export const OPEN_EXTENT: Extent = { width: 0, height: 0 }
@@ -40,13 +40,13 @@ export function setViewTransform(context: DrawingContext, region: Region, zoom: 
 }
 
 export interface CanvasRenderInput {
-  /** The Pattern whose beads are drawn; its Frame decides where empty positions draw as full beads. */
-  pattern: DrawnPattern
+  /** The Project whose beads are drawn; its Frame decides where empty positions draw as full beads. */
+  project: DrawnProject
   /** The viewport, in displayed px: x and y are how far the canvas has been moved, width and height the size of the surface. */
   region: Region
   zoom: number
   pixelRatio?: number
-  theme?: PatternTheme
+  theme?: ProjectTheme
   /** Draw only these rows again (an edit that changed a few); everything in their band is cleared and drawn afresh. */
   rows?: { first: number; last: number }
   drawBead?: BeadDrawer
@@ -57,7 +57,7 @@ const DOT_DIAMETER_PX = 1.5
 
 /**
  * The band of the surface, in device px on whole pixels, that rows `first` to `last` occupy across the whole viewport:
- * the open canvas version of the Pattern renderer's own band.
+ * the open canvas version of the Project renderer's own band.
  */
 function bandOnSurface(
   region: Region,
@@ -87,7 +87,7 @@ function bandOnSurface(
 }
 
 /** The faint shade over the Frame's keep-out margin (ticket 261): the dot's color at half strength, drawn under the beads and dots, one row at a time so it follows each row's own stagger. */
-function drawMarginBand(context: DrawingContext, frame: Frame, row: number, shift: number, top: number, theme: PatternTheme): void {
+function drawMarginBand(context: DrawingContext, frame: Frame, row: number, shift: number, top: number, theme: ProjectTheme): void {
   const outer = withMargin(frame)
   if (row < outer.row || row >= outer.row + outer.rows) {
     return
@@ -110,10 +110,10 @@ function drawMarginBand(context: DrawingContext, frame: Frame, row: number, shif
 
 /** Draws the beads of the open canvas in view, the dots of the empty positions round them, and the Frame's empty beads. Clears what was there first, leaving it transparent for the technique word behind. */
 export function renderCanvas(context: DrawingContext, input: CanvasRenderInput): void {
-  const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band } = input
-  const { technique, beads, frame, rotation } = pattern
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band } = input
+  const { technique, beads, frame, rotation } = project
   // A finished row fades toward what is behind it, which on the open canvas is the drawing area, not a board.
-  const look: PatternTheme = { ...theme, background: theme.canvas }
+  const look: ProjectTheme = { ...theme, background: theme.canvas }
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   const cleared = band
@@ -143,7 +143,7 @@ export function renderCanvas(context: DrawingContext, input: CanvasRenderInput):
     const shift = rowShiftPx(technique, row)
 
     if (technique === 'brick' && frame && row > frame.row && row < frame.row + frame.rows) {
-      drawSeam(context, shift + frame.column * CELL_SIZE_PX, top - SEAM_PX, frame.columns * CELL_SIZE_PX, pattern.rowProgress.direction === 'rows' && isInFinishedRow(pattern, { row, column: frame.column }), look)
+      drawSeam(context, shift + frame.column * CELL_SIZE_PX, top - SEAM_PX, frame.columns * CELL_SIZE_PX, project.rowProgress.direction === 'rows' && isInFinishedRow(project, { row, column: frame.column }), look)
     }
 
     if (frame) {
@@ -163,7 +163,7 @@ export function renderCanvas(context: DrawingContext, input: CanvasRenderInput):
         size: CELL_SIZE_PX,
         cornerRadius,
         color,
-        dimmed: isInFinishedRow(pattern, { row, column }),
+        dimmed: isInFinishedRow(project, { row, column }),
         deviceScale: zoom * pixelRatio,
         theme: look,
       })

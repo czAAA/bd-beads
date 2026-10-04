@@ -5,10 +5,10 @@ import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
 vi.mock('../features', () => ({ TOUR_ENABLED: true }))
 
-const FEATURES = ['techniques', 'patternEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedPatterns']
+const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 
-function page(patternCount = 0) {
-  return mount(OverviewPage, { props: { patternCount, overviewHref: '/bd-beads/overview/' } })
+function page(projectCount = 0) {
+  return mount(OverviewPage, { props: { projectCount, overviewHref: '/bd-beads/overview/' } })
 }
 
 afterEach(() => vi.unstubAllGlobals())
@@ -20,22 +20,22 @@ beforeEach(() => {
 
 describe('OverviewPage', () => {
   describe('for a new visitor', () => {
-    it('offers "Make your first Pattern" as the primary button and "Open the editor" beside it', async () => {
+    it('offers "Make your first Project" as the primary button and "Open the editor" beside it', async () => {
       const wrapper = page()
       const make = wrapper.find('[data-testid="overview-make-first"]')
-      expect(make.text()).toBe('Make your first Pattern')
+      expect(make.text()).toBe('Make your first Project')
       expect(make.classes()).toContain('app-button--primary')
       expect(wrapper.find('[data-testid="overview-open-editor"]').text()).toBe('Open the editor')
 
       await make.trigger('click')
       await wrapper.find('[data-testid="overview-open-editor"]').trigger('click')
-      expect(wrapper.emitted('makeFirstPattern')).toHaveLength(1)
+      expect(wrapper.emitted('makeFirstProject')).toHaveLength(1)
       expect(wrapper.emitted('openEditor')).toHaveLength(1)
     })
   })
 
   describe('the hero band and notes', () => {
-    it('shows the Tour Pattern band and the notes to a new visitor, all hidden from screen readers', () => {
+    it('shows the Tour Project band and the notes to a new visitor, all hidden from screen readers', () => {
       const wrapper = page()
       expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="tour-band"]').attributes('aria-hidden')).toBe('true')
@@ -64,7 +64,7 @@ describe('OverviewPage', () => {
       expect(wrapper.find('[data-testid="overview-note-steps"]').text()).toBe('одиннадцать коротких шагов')
     })
 
-    it('shows neither the band nor the notes once Patterns are saved', () => {
+    it('shows neither the band nor the notes once Projects are saved', () => {
       const wrapper = page(2)
       expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
       expect(wrapper.findAll('.overview__note')).toHaveLength(0)
@@ -72,12 +72,12 @@ describe('OverviewPage', () => {
     })
   })
 
-  describe('with Patterns saved', () => {
+  describe('with Projects saved', () => {
     it('offers only "Open the editor", as the primary button, and the count', () => {
       const wrapper = page(3)
       expect(wrapper.find('[data-testid="overview-make-first"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="overview-open-editor"]').classes()).toContain('app-button--primary')
-      expect(wrapper.find('[data-testid="overview-saved"]').text()).toBe('Patterns saved: 3')
+      expect(wrapper.find('[data-testid="overview-saved"]').text()).toBe('Projects saved: 3')
     })
   })
 
@@ -100,14 +100,14 @@ describe('OverviewPage', () => {
   it('switches to Russian with the language switcher, and remembers it', async () => {
     const wrapper = page()
     await wrapper.find('[data-testid="language-switcher"]').trigger('click')
-    expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первую схему')
+    expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первый проект')
     expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
     expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
   })
 
   it('starts in English on a device with no saved language', () => {
     localStorage.clear()
-    expect(page().find('[data-testid="overview-make-first"]').text()).toBe('Make your first Pattern')
+    expect(page().find('[data-testid="overview-make-first"]').text()).toBe('Make your first Project')
   })
 })
 
@@ -115,7 +115,7 @@ describe('the features carousel', () => {
   const wideQuery = '(min-width: 1024px)'
   const mountWide = () => {
     vi.stubGlobal('matchMedia', fakeMatchMedia({ [wideQuery]: true }).matchMedia)
-    return mount(OverviewPage, { props: { patternCount: 0, overviewHref: '/' }, attachTo: document.body })
+    return mount(OverviewPage, { props: { projectCount: 0, overviewHref: '/' }, attachTo: document.body })
   }
 
   it('is a named tablist of the seven features in order, each with an icon, and no Mirror (from 1024)', () => {

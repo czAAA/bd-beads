@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { piecesOf } from '../../domain/pieces'
-import { resolvePatternBead, type Pattern } from '../../domain/pattern'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
+import { resolveProjectBead, type Project } from '../../domain/project'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -13,24 +13,24 @@ import ZoomControls from './ZoomControls.vue'
 /**
  * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the canvas, whether rulers show, and how far
  * it is zoomed. With no Frame it reads "Canvas · 3 pieces · no Frame" ("setting Frame" while one is being drawn); with a
- * Frame, "Pattern · 21 columns · 19 rows · 3.4 × 3.0 cm" While a picture
- * is being framed it shows the Pattern that picture will make instead; with nothing to show it holds just the title.
+ * Frame, "Project · 21 columns · 19 rows · 3.4 × 3.0 cm" While a picture
+ * is being framed it shows the Project that picture will make instead; with nothing to show it holds just the title.
  */
 const props = defineProps<{
-  /** The open Pattern, whose pieces and Frame the strip describes. */
-  pattern?: Pattern
-  /** The size of the Pattern a framed picture will make (Convert image), shown in place of the Pattern's own. */
+  /** The open Project, whose pieces and Frame the strip describes. */
+  project?: Project
+  /** The size of the Project a framed picture will make (Convert image), shown in place of the Project's own. */
   size?: { columns: number; rows: number }
   zoomPercent?: number
-  /** Shown while the Pattern has keyboard focus: "arrows move · space paints · esc leaves" (BeadCursor card). */
+  /** Shown while the Project has keyboard focus: "arrows move · space paints · esc leaves" (BeadCursor card). */
   hint?: string
-  /** What is on the board, when it isn't the Pattern: the framing step names itself here (ConvertImage card). */
+  /** What is on the board, when it isn't the Project: the framing step names itself here (ConvertImage card). */
   title?: string
   /** Whether the Frame is being set right now ("3 pieces · setting Frame"). */
   settingFrame?: boolean
   /** Whether ruler numbers show (the Rulers toggle); undefined hides the button. */
   rulers?: boolean
-  /** Whether the Canvas color button shows (ticket 252): with a Pattern open on the drawing area. Hidden in high contrast either way. */
+  /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Hidden in high contrast either way. */
   canvasColor?: boolean
 }>()
 const emit = defineEmits<{
@@ -45,25 +45,25 @@ const { t, locale } = useI18n()
 const sizeText = (size: { columns: number; rows: number }) =>
   `${plural(locale.value, size.columns, t.value.canvas.columnsCount)} · ${plural(locale.value, size.rows, t.value.canvas.rowsCount)}`
 
-const pieces = computed(() => (props.pattern ? piecesOf(props.pattern.beads, props.pattern.technique) : []))
+const pieces = computed(() => (props.project ? piecesOf(props.project.beads, props.project.technique) : []))
 
-/** The Pattern's measured size, "3.4 × 3.0 cm": an estimate from the Frame and the Bead (Estimated size). */
+/** The Project's measured size, "3.4 × 3.0 cm": an estimate from the Frame and the Bead (Estimated size). */
 const estimate = computed(() => {
-  const pattern = props.pattern
-  const bead = pattern ? resolvePatternBead(pattern) : undefined
-  if (!pattern?.frame || !bead) return undefined
-  return formatSizeMm(estimatedSizeMm(pattern, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
+  const project = props.project
+  const bead = project ? resolveProjectBead(project) : undefined
+  if (!project?.frame || !bead) return undefined
+  return formatSizeMm(estimatedSizeMm(project, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
 })
 
-const framed = computed(() => !props.title && props.pattern?.frame !== undefined)
+const framed = computed(() => !props.title && props.project?.frame !== undefined)
 
-const heading = computed(() => props.title ?? (props.pattern ? (framed.value ? t.value.canvas.stripTitle : t.value.canvas.canvasTitle) : t.value.canvas.stripTitle))
+const heading = computed(() => props.title ?? (props.project ? (framed.value ? t.value.canvas.stripTitle : t.value.canvas.canvasTitle) : t.value.canvas.stripTitle))
 
 const sizeMeta = computed(() => {
   if (props.size) return sizeText(props.size)
-  const pattern = props.pattern
-  if (!pattern) return undefined
-  if (pattern.frame) return [sizeText(pattern.frame), estimate.value].filter(Boolean).join(' · ')
+  const project = props.project
+  if (!project) return undefined
+  if (project.frame) return [sizeText(project.frame), estimate.value].filter(Boolean).join(' · ')
   return `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}`
 })
 </script>

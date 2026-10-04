@@ -1,15 +1,15 @@
-import { frameGrid } from '../../src/domain/pattern'
+import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Technique } from '../../src/domain/grid'
-import { normalizePattern } from '../../src/domain/pattern'
-import { decodePattern } from '../../src/domain/patternEncoding'
-import type { EncodedPattern } from '../../src/domain/patternEncoding'
+import { normalizeProject } from '../../src/domain/project'
+import { decodeProject } from '../../src/domain/projectEncoding'
+import type { EncodedProject } from '../../src/domain/projectEncoding'
 import { PALETTE } from '../../src/domain/palette'
-import { gridBox, openApp, patternBox, setZoom, settle } from '../support/app'
-import { beadCentre, fixturePattern } from '../support/patterns'
+import { gridBox, openApp, projectBox, setZoom, settle } from '../support/app'
+import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 /**
@@ -20,12 +20,12 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
-/** The Pattern the app has saved, read back the way it is stored. */
-async function savedPattern(page: Page) {
+/** The Project the app has saved, read back the way it is stored. */
+async function savedProject(page: Page) {
   await page.getByTestId('save-button').click()
   const stored = await page.evaluate(() => localStorage.getItem('bd-beads:patterns'))
-  const library = JSON.parse(stored!) as { patterns: EncodedPattern[] }
-  return normalizePattern(decodePattern(library.patterns[0]!))
+  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
+  return normalizeProject(decodeProject(library.patterns[0]!))
 }
 
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
@@ -33,7 +33,7 @@ async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomP
   return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
-const colorAt = (pattern: Awaited<ReturnType<typeof savedPattern>>, row: number, column: number) => frameGrid(pattern)[row]![column]!.color
+const colorAt = (project: Awaited<ReturnType<typeof savedProject>>, row: number, column: number) => frameGrid(project)[row]![column]!.color
 
 test.describe('the hover preview', () => {
   const scenarios = [
@@ -48,8 +48,8 @@ test.describe('the hover preview', () => {
       const orientation = rotated ? 'rotated' : 'upright'
 
       test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-        const pattern = fixturePattern({ technique: scenario.technique, rotation: rotated ? 90 : 0 })
-        await openApp(page, [pattern])
+        const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0 })
+        await openApp(page, [project])
         if (scenario.tool) {
           await page.getByTestId(scenario.tool).click()
         }
@@ -60,18 +60,18 @@ test.describe('the hover preview', () => {
           await page.mouse.move(at.x, at.y)
           await settle(page)
 
-          const box = (await page.getByTestId('pattern-surface').boundingBox())!
+          const box = (await page.getByTestId('project-surface').boundingBox())!
           const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-          const corner = await patternBox(page, box)
-          if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
+          const corner = await projectBox(page, box)
+          if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, project, zoom / 100))
           const expected = readFileSync(reference)
           const { width, height } = PNG.sync.read(expected)
-          const origin = shownRegion(corner, pattern, zoom / 100)
+          const origin = shownRegion(corner, project, zoom / 100)
           const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
           const label = `${scenario.name}, ${orientation}, ${zoom}%`
           // The hovered bead's centre carries the preview, which is what is being looked at, not a wrong color.
-          const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin, new Set(['(3, 5)']))
+          const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin, new Set(['(3, 5)']))
           expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
           expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
         }
@@ -81,11 +81,11 @@ test.describe('the hover preview', () => {
 })
 
 test.describe('the pointer tools', () => {
-  async function openBlank(page: Page, technique: Technique = 'loom', rotated = false, extra: Parameters<typeof fixturePattern>[0] = { technique }) {
-    const pattern = fixturePattern({ ...extra, technique, rotation: rotated ? 90 : 0, blank: true })
-    await openApp(page, [pattern])
+  async function openBlank(page: Page, technique: Technique = 'loom', rotated = false, extra: Parameters<typeof fixtureProject>[0] = { technique }) {
+    const project = fixtureProject({ ...extra, technique, rotation: rotated ? 90 : 0, blank: true })
+    await openApp(page, [project])
     await setZoom(page, 100)
-    return pattern
+    return project
   }
 
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
@@ -96,7 +96,7 @@ test.describe('the pointer tools', () => {
         const at = await pointOn(page, technique, rotated, 100, 4, 7)
         await page.mouse.click(at.x, at.y)
 
-        const saved = await savedPattern(page)
+        const saved = await savedProject(page)
         expect(colorAt(saved, 4, 7)).toBe(DEFAULT_COLOR)
         expect(frameGrid(saved).flat().filter((cell) => cell.color !== null)).toHaveLength(1)
       })
@@ -113,17 +113,17 @@ test.describe('the pointer tools', () => {
     await page.mouse.move(end.x, end.y, { steps: 20 })
     await page.mouse.up()
 
-    const saved = await savedPattern(page)
+    const saved = await savedProject(page)
     expect([1, 2, 3, 4, 5, 6].map((column) => colorAt(saved, 2, column))).toEqual(Array(6).fill(DEFAULT_COLOR))
     expect(colorAt(saved, 2, 0)).toBeNull()
 
     await page.getByTestId('undo-button').click()
-    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 
   test('a right click erases, and a right-button drag erases a stroke', async ({ page }) => {
-    const pattern = fixturePattern({ technique: 'loom' })
-    await openApp(page, [pattern])
+    const project = fixtureProject({ technique: 'loom' })
+    await openApp(page, [project])
     await setZoom(page, 100)
 
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
@@ -135,10 +135,10 @@ test.describe('the pointer tools', () => {
     await page.mouse.move(end.x, end.y, { steps: 12 })
     await page.mouse.up({ button: 'right' })
 
-    const saved = await savedPattern(page)
+    const saved = await savedProject(page)
     expect([7, 10, 11, 12, 13].map((column) => colorAt(saved, 4, column))).toEqual(Array(5).fill(null))
     // What was not touched is as it was.
-    expect(colorAt(saved, 4, 8)).toBe(frameGrid(pattern)[4]![8]!.color)
+    expect(colorAt(saved, 4, 8)).toBe(frameGrid(project)[4]![8]!.color)
   })
 
   test('the Fill tool fills the area under a click', async ({ page }) => {
@@ -148,23 +148,23 @@ test.describe('the pointer tools', () => {
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y)
 
-    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === DEFAULT_COLOR)).toBe(true)
+    expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === DEFAULT_COLOR)).toBe(true)
   })
 
   test('the Erase tool erases with the left button', async ({ page }) => {
-    const pattern = fixturePattern({ technique: 'peyote' })
-    await openApp(page, [pattern])
+    const project = fixtureProject({ technique: 'peyote' })
+    await openApp(page, [project])
     await setZoom(page, 100)
     await page.getByTestId('tool-erase').click()
 
     const at = await pointOn(page, 'peyote', false, 100, 3, 5)
     await page.mouse.click(at.x, at.y)
 
-    expect(colorAt(await savedPattern(page), 3, 5)).toBeNull()
+    expect(colorAt(await savedProject(page), 3, 5)).toBeNull()
   })
 
   test('finished rows are never touched, and the row being woven is', async ({ page }) => {
-    const pattern = await openBlank(page, 'loom', false, {
+    const project = await openBlank(page, 'loom', false, {
       technique: 'loom',
       rowProgress: { enabled: true, direction: 'rows', currentRow: 4 },
     })
@@ -174,10 +174,10 @@ test.describe('the pointer tools', () => {
       await page.mouse.click(at.x, at.y)
     }
 
-    const saved = await savedPattern(page)
+    const saved = await savedProject(page)
     expect(colorAt(saved, 1, 3)).toBeNull()
     expect(colorAt(saved, 4, 3)).toBe(DEFAULT_COLOR)
-    expect(frameGrid(pattern)[1]![3]!.color).toBeNull()
+    expect(frameGrid(project)[1]![3]!.color).toBeNull()
   })
 
   test('holding Space and dragging pans instead of painting', async ({ page }) => {
@@ -192,7 +192,7 @@ test.describe('the pointer tools', () => {
     await page.mouse.up()
     await page.keyboard.up('Space')
 
-    expect(frameGrid((await savedPattern(page))).flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 })
 
@@ -202,8 +202,8 @@ test.describe('touch', () => {
   test('a touch stroke paints the beads it crosses and does not scroll the page', async ({ page }) => {
     // The page itself never scrolls (ticket 141), so a stroke that scrolled it instead would be seen at once. 40 rows fit
     // the drawing area at 100%, the level this test strokes at.
-    const pattern = fixturePattern({ technique: 'loom', rows: 40, blank: true })
-    await openApp(page, [pattern])
+    const project = fixtureProject({ technique: 'loom', rows: 40, blank: true })
+    await openApp(page, [project])
     await setZoom(page, 100)
     const cdp = await page.context().newCDPSession(page)
 
@@ -217,7 +217,7 @@ test.describe('touch', () => {
     }
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 
-    const saved = await savedPattern(page)
+    const saved = await savedProject(page)
     expect([3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((row) => colorAt(saved, row, 4))).toEqual(Array(10).fill(DEFAULT_COLOR))
     expect(await page.evaluate(() => window.scrollY)).toBe(scrolledBefore)
   })

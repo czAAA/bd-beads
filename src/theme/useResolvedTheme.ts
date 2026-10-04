@@ -3,7 +3,7 @@ import type { ResolvedTheme } from './theme'
 
 /**
  * The theme <html> is drawn in right now, as a ref, for what can't follow CSS: the canvas renderer takes its colors
- * from a PatternTheme (DESIGN.md §4.2) and has to redraw when the theme changes. It watches `data-theme`, which
+ * from a ProjectTheme (DESIGN.md §4.2) and has to redraw when the theme changes. It watches `data-theme`, which
  * theme.ts and index.html's pre-paint script write, so whoever changes the theme doesn't have to know who draws.
  */
 function current(): ResolvedTheme {

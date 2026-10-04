@@ -2,12 +2,12 @@
 import { useI18n } from '../../i18n/useI18n'
 
 /**
- * The open Pattern's Image colors (CONTEXT.md, ADR 0011) as swatches in the Colors group, alongside the Palette: the
- * colors one Convert image found, so a converted Pattern can actually be touched up instead of offering only twelve
+ * The open Project's Image colors (CONTEXT.md, ADR 0011) as swatches in the Colors group, alongside the Palette: the
+ * colors one Convert image found, so a converted Project can actually be touched up instead of offering only twelve
  * Palette colors none of its beads are.
  *
  * Deliberately the same shape and selection behaviour as PalettePicker, just keyed by hex rather than by a Palette
- * color id — a converted color has no id, it is only ever the hex the conversion produced. A Pattern created any other
+ * color id — a converted color has no id, it is only ever the hex the conversion produced. A Project created any other
  * way has no Image colors and this isn't rendered at all.
  */
 defineProps<{

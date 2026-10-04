@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPattern, type Pattern } from '../../domain/pattern'
+import { createProject, type Project } from '../../domain/project'
 import { useImportSwitchFlow } from './useImportSwitchFlow'
 
-function make(id: string, updatedAt: number): Pattern {
-  return { ...createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), id, updatedAt }
+function make(id: string, updatedAt: number): Project {
+  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), id, updatedAt }
 }
 
 const open = make('open', 1000)
@@ -12,9 +12,9 @@ const newer = make('newer', 3000)
 
 function setup(options: { open?: boolean; saved?: boolean } = {}) {
   const deps = {
-    currentPattern: () => (options.open === false ? undefined : open),
-    addPatterns: vi.fn(),
-    openPattern: vi.fn(),
+    currentProject: () => (options.open === false ? undefined : open),
+    addProjects: vi.fn(),
+    openProject: vi.fn(),
     saveNow: vi.fn(() => options.saved ?? true),
     showToast: vi.fn(),
   }
@@ -22,43 +22,43 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
 }
 
 describe('useImportSwitchFlow', () => {
-  it('joins the library straight away with no Pattern open', () => {
-    const { deps, pendingImport, onImportPatterns } = setup({ open: false })
-    onImportPatterns([older])
-    expect(deps.addPatterns).toHaveBeenCalledWith([older])
+  it('joins the library straight away with no Project open', () => {
+    const { deps, pendingImport, onImportProjects } = setup({ open: false })
+    onImportProjects([older])
+    expect(deps.addProjects).toHaveBeenCalledWith([older])
     expect(pendingImport.value).toBeUndefined()
   })
 
   it('joins the library straight away when nothing came in', () => {
-    const { deps, pendingImport, onImportPatterns } = setup()
-    onImportPatterns([])
-    expect(deps.addPatterns).toHaveBeenCalledWith([])
+    const { deps, pendingImport, onImportProjects } = setup()
+    onImportProjects([])
+    expect(deps.addProjects).toHaveBeenCalledWith([])
     expect(pendingImport.value).toBeUndefined()
   })
 
-  it('holds the import back while a Pattern is open, and offers the most recently updated one', () => {
-    const { deps, pendingImport, pendingImportOpens, onImportPatterns } = setup()
-    onImportPatterns([older, newer])
-    expect(deps.addPatterns).not.toHaveBeenCalled()
+  it('holds the import back while a Project is open, and offers the most recently updated one', () => {
+    const { deps, pendingImport, pendingImportOpens, onImportProjects } = setup()
+    onImportProjects([older, newer])
+    expect(deps.addProjects).not.toHaveBeenCalled()
     expect(pendingImport.value).toEqual([older, newer])
     expect(pendingImportOpens.value?.id).toBe('newer')
   })
 
   it('keep current adds the import and opens nothing', () => {
-    const { deps, pendingImport, onImportPatterns, onKeepCurrentAfterImport } = setup()
-    onImportPatterns([older])
+    const { deps, pendingImport, onImportProjects, onKeepCurrentAfterImport } = setup()
+    onImportProjects([older])
     onKeepCurrentAfterImport()
-    expect(deps.addPatterns).toHaveBeenCalledWith([older])
-    expect(deps.openPattern).not.toHaveBeenCalled()
+    expect(deps.addProjects).toHaveBeenCalledWith([older])
+    expect(deps.openProject).not.toHaveBeenCalled()
     expect(pendingImport.value).toBeUndefined()
   })
 
-  it('switch adds the import and opens its most recent Pattern', () => {
-    const { deps, pendingImport, onImportPatterns, onSwitchToImported } = setup()
-    onImportPatterns([older, newer])
+  it('switch adds the import and opens its most recent Project', () => {
+    const { deps, pendingImport, onImportProjects, onSwitchToImported } = setup()
+    onImportProjects([older, newer])
     onSwitchToImported()
-    expect(deps.addPatterns).toHaveBeenCalledWith([older, newer])
-    expect(deps.openPattern).toHaveBeenCalledWith('newer')
+    expect(deps.addProjects).toHaveBeenCalledWith([older, newer])
+    expect(deps.openProject).toHaveBeenCalledWith('newer')
     expect(pendingImport.value).toBeUndefined()
   })
 
@@ -66,16 +66,16 @@ describe('useImportSwitchFlow', () => {
     const { deps, onKeepCurrentAfterImport, onSwitchToImported } = setup()
     onKeepCurrentAfterImport()
     onSwitchToImported()
-    expect(deps.addPatterns).not.toHaveBeenCalled()
-    expect(deps.openPattern).not.toHaveBeenCalled()
+    expect(deps.addProjects).not.toHaveBeenCalled()
+    expect(deps.openProject).not.toHaveBeenCalled()
   })
 
   it('remembers when Save current was refused, and forgets it on the next import', () => {
-    const { importSaveRefused, onImportPatterns, onSaveBeforeImportSwitch } = setup({ saved: false })
-    onImportPatterns([older])
+    const { importSaveRefused, onImportProjects, onSaveBeforeImportSwitch } = setup({ saved: false })
+    onImportProjects([older])
     onSaveBeforeImportSwitch()
     expect(importSaveRefused.value).toBe(true)
-    onImportPatterns([newer])
+    onImportProjects([newer])
     expect(importSaveRefused.value).toBe(false)
   })
 

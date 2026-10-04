@@ -11,7 +11,7 @@ import {
   tourTargets,
   type TourSnapshot,
 } from './tour'
-import type { Grid } from './pattern'
+import type { Grid } from './project'
 
 function count(grid: Grid, color: string | null) {
   return grid.flat().filter((cell) => cell.color === color).length
@@ -22,7 +22,7 @@ const BLACK = '#1a1a1a'
 
 function snapshot(overrides: Partial<TourSnapshot> = {}): TourSnapshot {
   return {
-    patternId: 'p',
+    projectId: 'p',
     columns: TOUR_COLUMNS,
     rows: TOUR_ROWS,
     grid: afterStep(1),
@@ -35,10 +35,10 @@ function snapshot(overrides: Partial<TourSnapshot> = {}): TourSnapshot {
   }
 }
 
-describe('the Tour Pattern', () => {
+describe('the Tour Project', () => {
   it('is the design system\'s artwork, copied', () => {
     const design = readFileSync(resolve(__dirname, '../../docs/design/system/components/TourPattern/tour-pattern.json'), 'utf8')
-    expect(JSON.parse(readFileSync(resolve(__dirname, 'tourPatternData.json'), 'utf8'))).toEqual(JSON.parse(design))
+    expect(JSON.parse(readFileSync(resolve(__dirname, 'tourProjectData.json'), 'utf8'))).toEqual(JSON.parse(design))
   })
 
   it('has eleven steps', () => {
@@ -73,8 +73,8 @@ describe('the Tour Pattern', () => {
 })
 
 describe('evaluateStep', () => {
-  it('step 1 is done once a Pattern is open', () => {
-    expect(evaluateStep('create', snapshot({ patternId: undefined }), {}).done).toBe(false)
+  it('step 1 is done once a Project is open', () => {
+    expect(evaluateStep('create', snapshot({ projectId: undefined }), {}).done).toBe(false)
     expect(evaluateStep('create', snapshot(), {}).done).toBe(true)
     expect(evaluateStep('create', snapshot({ columns: 5, rows: 5, grid: afterStep(1).slice(0, 5).map((row) => row.slice(0, 5)) }), {}).done).toBe(false)
   })

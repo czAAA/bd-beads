@@ -1,5 +1,7 @@
 # Saving follows the Pattern library instead of sitting on the edit path
 
+> Since [ADR 0028](0028-a-canvas-is-a-project-a-pattern-is-what-the-frame-holds.md) the saved thing is called a Project; "Pattern" below means that, and the text keeps its original words.
+
 _Amended by ticket 115: the Toolbox's Edit group gains a **Save** control (and Ctrl/Cmd+S). It does not change when saving happens — every edit still persists as it lands — it is reassurance: `saveNow()` in the Pattern library writes the whole library immediately (pending change or not, so the answer never rests on the pending flag) and reports whether storage took it. On success the editor shows a brief "Saved"; on a refused write the top bar's existing "couldn't save" notice shows and "Saved" does not._
 
 _Amended by ticket 119: Save also downloads the open Pattern as a Pattern file (on iPhone and iPad, offers it to the share sheet, since in-app browsers such as Telegram's often ignore download links). It still says nothing new about when the library is written; the file goes out even if the device refuses the write, since it is then the only copy._

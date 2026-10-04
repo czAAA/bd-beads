@@ -5,15 +5,15 @@ import type { PrintText } from './printText'
 
 /**
  * The PNG's story column (ticket 164; printed-output.md's PNG image section, the PngExport and PrintStrips cards): the
- * chart is drawn straight onto the same canvas the picture streams from (patternExport.ts); this is the rest — the
- * words, in a column beside a typical Pattern or under a wide one, told in the shared print pieces from ticket 162 so
+ * chart is drawn straight onto the same canvas the picture streams from (projectExport.ts); this is the rest — the
+ * words, in a column beside a typical Project or under a wide one, told in the shared print pieces from ticket 162 so
  * the picture and the PDF read alike. Reused for layout (a throwaway context, to find how tall it needs to be) and for
  * drawing (the real one, offset for the band being streamed): both calls go through `drawStory`, so they can't drift.
  */
 
 /** The gap between the chart and the story, and between the story's own blocks. */
 export const PNG_GUTTER = mm(8)
-/** The story column's width beside a typical Pattern. */
+/** The story column's width beside a typical Project. */
 export const PNG_STORY_WIDTH = mm(58)
 const ROW = mm(6.5)
 const SWATCH = mm(3.2)
@@ -28,7 +28,7 @@ export interface PngLayout {
   storyWidth: number
 }
 
-/** Where the chart and the story column sit: beside a typical Pattern, under a wide one (printed-output.md). Whole px throughout: the streamed encoder needs an exact pixel height, and mm()/pt() math isn't naturally whole. */
+/** Where the chart and the story column sit: beside a typical Project, under a wide one (printed-output.md). Whole px throughout: the streamed encoder needs an exact pixel height, and mm()/pt() math isn't naturally whole. */
 export function pngLayout(chart: { width: number; height: number }, words: PrintText): PngLayout {
   const wide = chart.width > chart.height
   const scratch = document.createElement('canvas').getContext('2d')!
@@ -133,7 +133,7 @@ function drawStoryColors(context: CanvasRenderingContext2D, words: PrintText, x:
   return bottom + mm(3)
 }
 
-/** The whole story, beside (one column) or under (two) a Pattern; returns where it ends. */
+/** The whole story, beside (one column) or under (two) a Project; returns where it ends. */
 function drawStory(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number, wide: boolean): number {
   if (!wide) {
     const afterHeader = drawStoryHeader(context, words, x, y, width)

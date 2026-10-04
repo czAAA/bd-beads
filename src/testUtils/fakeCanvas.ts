@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import type { BeadDrawer, BeadShape, DrawingContext } from '../rendering/beadLook'
 
 /**
- * A stand-in for a canvas, for tests of components that draw with the Pattern renderer: jsdom has no real canvas, so
+ * A stand-in for a canvas, for tests of components that draw with the Project renderer: jsdom has no real canvas, so
  * they would otherwise draw nothing at all. Installs a fake 2D context on every canvas, and hands back a bead drawer to
  * give the component as its `drawBead` prop — what a test asserts on is which beads were drawn, and it is the drawer
  * that is told (see the renderer's BeadDrawer). Each render starts with the renderer clearing the surface, which is how

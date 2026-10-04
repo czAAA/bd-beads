@@ -1,7 +1,7 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { frameContains } from '../../domain/canvas'
 import { piecesOf } from '../../domain/pieces'
-import type { CreatePatternInput } from '../../domain/pattern'
+import type { CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -10,36 +10,36 @@ import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
 import { useConvertImage } from '../import/useConvertImage'
-import { useDeleteAllFlow } from '../pattern/useDeleteAllFlow'
-import { useFrameFlow } from '../pattern/useFrameFlow'
-import { useRemoveLineFlow } from '../pattern/useRemoveLineFlow'
-import { useRotateFlow } from '../pattern/useRotateFlow'
+import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
+import { useFrameFlow } from '../project/useFrameFlow'
+import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
+import { useRotateFlow } from '../project/useRotateFlow'
 import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useRulers } from '../canvas/useRulers'
 import { useMirrorState } from '../tools/useMirrorState'
-import { useNewPatternFlow } from '../pattern/useNewPatternFlow'
+import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
-import { usePatternLabels } from '../pattern/usePatternLabels'
-import { usePatternLibrary } from '../pattern/usePatternLibrary'
-import { useSavedPatternConfirms } from '../pattern/useSavedPatternConfirms'
+import { useProjectLabels } from '../project/useProjectLabels'
+import { useProjectLibrary } from '../project/useProjectLibrary'
+import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
-import { useRowOps } from '../pattern/useRowOps'
+import { useRowOps } from '../project/useRowOps'
 import { useSaveFlow } from '../export/useSaveFlow'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
-import { useSettledPattern } from '../pattern/useSettledPattern'
-import { useSharedPatternLink } from '../pattern/useSharedPatternLink'
+import { useSettledProject } from '../project/useSettledProject'
+import { useSharedProjectLink } from '../project/useSharedProjectLink'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
 import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
-import { useUndoHistory } from '../pattern/useUndoHistory'
+import { useUndoHistory } from '../project/useUndoHistory'
 
 /**
  * The app's composition root (ADR 0023): every composable App.vue's shell components draw on, wired to each other and
@@ -53,36 +53,36 @@ function wireAppShell(services: Services) {
   useThemePick(services.themePickStore)
 
   /**
-   * The Pattern library, which one is open, and persistence (ticket 55, ADR 0012) — every Pattern change goes through
-   * one of these mutators, and nothing here touches storage directly. replacePattern is the single commit point for a
-   * change to the open Pattern, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
+   * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
+   * one of these mutators, and nothing here touches storage directly. replaceProject is the single commit point for a
+   * change to the open Project, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
    * save to be deferred per cell and writing once when the stroke ends (see usePaintStroke).
    */
   const {
-    patterns,
-    activePatternId,
-    activePattern,
+    projects,
+    activeProjectId,
+    activeProject,
     saveFailed,
-    addPattern,
-    addPatterns,
-    replacePattern,
-    removePattern,
+    addProject,
+    addProjects,
+    replaceProject,
+    removeProject,
     flushPendingSave,
     saveNow,
-  } = usePatternLibrary(services.libraryStore)
+  } = useProjectLibrary(services.libraryStore)
 
-  const currentPattern = () => activePattern.value
+  const currentProject = () => activeProject.value
   const messages = () => t.value
   const currentLocale = () => locale.value
 
-  const { activeBeadLabel, patternLabel } = usePatternLabels({ currentPattern, messages, locale: currentLocale })
+  const { activeBeadLabel, projectLabel } = useProjectLabels({ currentProject, messages, locale: currentLocale })
 
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
   /** Save and its "Saved" confirmation (tickets 115, 119, 195). */
   const { onSave, clearSavedConfirmation } = useSaveFlow({
-    currentPattern,
+    currentProject,
     saveNow,
     messages,
     showToast,
@@ -92,9 +92,9 @@ function wireAppShell(services: Services) {
 
   /**
    * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
-   * own state, deliberately independent of which Pattern is open — conversion creates a Pattern rather than converting
-   * into one, so nothing here goes through replacePattern, the undo stack, Mirror or the Row progress lock, and entering
-   * framing with a Pattern already open simply takes the canvas panel over until Cancel gives it back.
+   * own state, deliberately independent of which Project is open — conversion creates a Project rather than converting
+   * into one, so nothing here goes through replaceProject, the undo stack, Mirror or the Row progress lock, and entering
+   * framing with a Project already open simply takes the canvas panel over until Cancel gives it back.
    */
   const {
     image: convertImageSource,
@@ -111,9 +111,9 @@ function wireAppShell(services: Services) {
     setMaxColors: setConvertMaxColors,
   } = useConvertImage()
 
-  /** New-Pattern creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
-  const { framing, newPatternDraft, onNewPatternDraft, onCreatePattern, onConvertImageCreate } = useNewPatternFlow({
-    addPattern,
+  /** New-Project creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
+  const { framing, newProjectDraft, onNewProjectDraft, onCreateProject, onConvertImageCreate } = useNewProjectFlow({
+    addProject,
     convertImage: () => convertImageSource.value,
     cancelConvertImage,
   })
@@ -124,7 +124,7 @@ function wireAppShell(services: Services) {
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
     useCanvasFraming({
-      currentPattern,
+      currentProject,
       framing: () => framing.value,
       convertZoomPercent: () => convertZoomPercent.value,
     })
@@ -139,8 +139,8 @@ function wireAppShell(services: Services) {
     onUndo,
     onRedo,
   } = useUndoHistory({
-    currentPattern,
-    replacePattern,
+    currentProject,
+    replaceProject,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     restoreMirrorAxisCounts: (counts) => restoreMirrorAxisCounts(counts),
     clearSelectionAndHover,
@@ -148,7 +148,7 @@ function wireAppShell(services: Services) {
 
   /**
    * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations. Ticket 174 hid
-   * Mirror's UI pending its own redesign, so only the bookkeeping a Frame change and a Pattern switch still need is pulled
+   * Mirror's UI pending its own redesign, so only the bookkeeping a Frame change and a Project switch still need is pulled
    * out here; the axis counts stay forever at their NO_MIRROR_AXES default, which is exactly what leaves paint/fill/
    * erase's own live-mirror calls inert without deleting them.
    */
@@ -160,7 +160,7 @@ function wireAppShell(services: Services) {
     restoreAxisCounts: restoreMirrorAxisCounts,
     clearAxisCounts: clearMirrorAxisCounts,
     reset: resetMirrorState,
-  } = useMirrorState(currentPattern, commitGridChange)
+  } = useMirrorState(currentProject, commitGridChange)
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that isn't tied to a tool. */
   const {
@@ -177,7 +177,7 @@ function wireAppShell(services: Services) {
     pastePreviewCells,
     clearSelection: resetSelection,
     pasteProjectionActive,
-  } = useSelectionGesture(currentPattern, commitGridChange, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
+  } = useSelectionGesture(currentProject, commitGridChange, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
 
   /** A Selection (or hover) that no longer fits after a step or a size change changed the grid. */
   function clearSelectionAndHover() {
@@ -239,8 +239,8 @@ function wireAppShell(services: Services) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
   const { strokeMode, endStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
-    currentPattern,
-    replacePattern,
+    currentProject,
+    replaceProject,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     mirrorCopyMode: () => mirrorCopyMode.value,
     activeTool: () => activeTool.value,
@@ -252,19 +252,19 @@ function wireAppShell(services: Services) {
 
   /** The Piece being drawn right now (its rectangle is drawn `muted`, ADR 0026): the one under the pointer while a stroke is going, with no Frame to take the rulers over. */
   const activePiece = computed(() => {
-    const pattern = currentPattern()
+    const project = currentProject()
     const hovered = hoveredCell.value
-    if (!pattern || pattern.frame || strokeMode.value === null || !hovered) {
+    if (!project || project.frame || strokeMode.value === null || !hovered) {
       return undefined
     }
-    return piecesOf(pattern.beads, pattern.technique).find((piece) => frameContains(piece, hovered))
+    return piecesOf(project.beads, project.technique).find((piece) => frameContains(piece, hovered))
   })
 
-  /** The open Pattern for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
-  const settledPattern = useSettledPattern(currentPattern, () => strokeMode.value !== null)
+  /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
+  const settledProject = useSettledProject(currentProject, () => strokeMode.value !== null)
 
-  /** The open Pattern for the code that shares it, which nobody watches change: it waits for the stroke to end. */
-  const shareablePattern = useSettledPattern(currentPattern, () => strokeMode.value !== null, Number.POSITIVE_INFINITY)
+  /** The open Project for the code that shares it, which nobody watches change: it waits for the stroke to end. */
+  const shareableProject = useSettledProject(currentProject, () => strokeMode.value !== null, Number.POSITIVE_INFINITY)
 
   /**
    * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
@@ -278,10 +278,10 @@ function wireAppShell(services: Services) {
     canvasScrollEl.value = el instanceof HTMLElement ? el : null
   }
 
-  /** Two fingers on the Pattern pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress ends when the second lands. */
+  /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress ends when the second lands. */
   usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, endStroke: () => endStroke() })
 
-  /** Mouse, touch and pen input on the Pattern (tickets 22-25, 31, 33, 92, 95, 176, 206). */
+  /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
     hoveredCell,
     previewCells,
@@ -293,7 +293,7 @@ function wireAppShell(services: Services) {
     onCellSecondaryDown,
     onCellSecondaryMove,
   } = useCanvasPointer({
-    currentPattern,
+    currentProject,
     activeTool: () => activeTool.value,
     spaceHeld: () => spaceHeld.value,
     strokeMode: () => strokeMode.value,
@@ -315,13 +315,13 @@ function wireAppShell(services: Services) {
   /** Painting with the keyboard (tickets 159, 194): the announcer needs the cursor and the cursor the announcer, so the announcer reads the cursor lazily. */
   const { announcement, announce, announceCursor, colorWords } = useA11yAnnouncer({
     messages,
-    currentPattern,
+    currentProject,
     beadCursor: () => beadCursor.value,
   })
 
   const { invokeToolAt, extendSelectionTo, finishExtending } = useToolAtCursor({
     messages,
-    currentPattern,
+    currentProject,
     activeTool: () => activeTool.value,
     selectedColorHex,
     pressCell: onCellPrimaryDown,
@@ -332,8 +332,8 @@ function wireAppShell(services: Services) {
     colorWords,
   })
 
-  const { beadCursor, keyboardOnPattern, onPatternKeyboardFocus, onPatternKey, onPatternKeyUp } = useKeyboardCursor({
-    currentPattern,
+  const { beadCursor, keyboardOnProject, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
+    currentProject,
     reveal,
     hasSelection: () => !!selection.value,
     onCellHover,
@@ -346,12 +346,12 @@ function wireAppShell(services: Services) {
   })
 
   /** Delete all and its confirmation (tickets 42, 198). */
-  const deleteAll = useDeleteAllFlow({ currentPattern, replacePattern, recordHistory })
+  const deleteAll = useDeleteAllFlow({ currentProject, replaceProject, recordHistory })
 
   /** Set Frame and the Toolbox's Frame row: drawing, moving and resizing the Frame, Fit to drawing and Remove Frame (ticket 233). */
   const frameFlow = useFrameFlow({
-    currentPattern,
-    replacePattern,
+    currentProject,
+    replaceProject,
     recordHistory,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     clearMirrorAxisCounts,
@@ -366,8 +366,8 @@ function wireAppShell(services: Services) {
 
   /** Rotate: the Frame and its beads a quarter turn, with a Message when a Piece had to move (ticket 233). */
   const rotateFlow = useRotateFlow({
-    currentPattern,
-    replacePattern,
+    currentProject,
+    replaceProject,
     recordHistory,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     clearMirrorAxisCounts,
@@ -381,8 +381,8 @@ function wireAppShell(services: Services) {
 
   /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */
   const removeLine = useRemoveLineFlow({
-    currentPattern,
-    replacePattern,
+    currentProject,
+    replaceProject,
     recordHistory,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     clearMirrorAxisCounts,
@@ -391,14 +391,14 @@ function wireAppShell(services: Services) {
   })
 
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
-  const replaceBead = useReplaceBeadFlow({ currentPattern, replacePattern, recordHistory, messages, locale: currentLocale })
+  const replaceBead = useReplaceBeadFlow({ currentProject, replaceProject, recordHistory, messages, locale: currentLocale })
 
-  /** Pattern import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
+  /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
   const importSwitch = useImportSwitchFlow({
-    currentPattern,
-    addPatterns,
-    openPattern: (id) => {
-      activePatternId.value = id
+    currentProject,
+    addProjects,
+    openProject: (id) => {
+      activeProjectId.value = id
     },
     saveNow,
     showToast,
@@ -406,9 +406,9 @@ function wireAppShell(services: Services) {
 
   /** Exporting as a file, PNG, PDF or QR code, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
   const exportFlow = useExportFlow({
-    currentPattern,
-    patterns: () => patterns.value,
-    shareablePattern: () => shareablePattern.value,
+    currentProject,
+    projects: () => projects.value,
+    shareableProject: () => shareableProject.value,
     messages,
     locale: currentLocale,
     downloadFile: services.downloadFile,
@@ -416,30 +416,30 @@ function wireAppShell(services: Services) {
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentPattern, replacePattern })
+  const rowOps = useRowOps({ currentProject, replaceProject })
 
   /** Opening a scanned QR export's link, and the page-hide and unmount saves (tickets 55, 68, 203). */
-  useSharedPatternLink({ patterns: () => patterns.value, addPattern, flushPendingSave })
+  useSharedProjectLink({ projects: () => projects.value, addProject, flushPendingSave })
 
-  function onSelectPattern(id: string) {
-    activePatternId.value = id
+  function onSelectProject(id: string) {
+    activeProjectId.value = id
   }
 
-  function onNewPattern() {
-    activePatternId.value = undefined
+  function onNewProject() {
+    activeProjectId.value = undefined
   }
 
-  /** Saved Patterns asks before removing a thumbnail's Pattern or switching to it (ticket 232). */
-  const savedPatternConfirms = useSavedPatternConfirms({
-    currentPattern,
-    findPattern: (id) => patterns.value.find((pattern) => pattern.id === id),
-    openPattern: onSelectPattern,
-    removePattern,
+  /** Saved Projects asks before removing a thumbnail's Project or switching to it (ticket 232). */
+  const savedProjectConfirms = useSavedProjectConfirms({
+    currentProject,
+    findProject: (id) => projects.value.find((project) => project.id === id),
+    openProject: onSelectProject,
+    removeProject,
     saveNow,
   })
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
-  const overlays = useOverlayVisibility({ selectPattern: savedPatternConfirms.onRequestSwitch })
+  const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
@@ -454,31 +454,31 @@ function wireAppShell(services: Services) {
 
   /**
    * The Tour (ticket 80): a walk through this same editor, reading the state above and making its edits through the same
-   * commit paths. Its dim layer is drawn by TourLayer; what it needs from the wiring is whether the Pattern is open to
+   * commit paths. Its dim layer is drawn by TourLayer; what it needs from the wiring is whether the Project is open to
    * drawing right now, and Create's hand-off in its first step.
    */
   const tour = useTour({
     store: services.tourStore,
-    currentPattern,
-    hasPattern: (id) => patterns.value.some((pattern) => pattern.id === id),
-    openPattern: onSelectPattern,
-    openNewPatternForm: onNewPattern,
+    currentProject,
+    hasProject: (id) => projects.value.some((project) => project.id === id),
+    openProject: onSelectProject,
+    openNewProjectForm: onNewProject,
     activeTool: () => activeTool.value,
     selectedColorId: () => selectedColorId.value,
     selection: () => selection.value,
     pasteArmed: () => pasteProjectionActive.value,
     commitGridChange,
-    replacePattern,
+    replaceProject,
     undo: onUndo,
     clearSelection: clearSelectionAndHover,
-    draftName: () => newPatternDraft.value?.name,
-    createPattern: onCreatePattern,
+    draftName: () => newProjectDraft.value?.name,
+    createProject: onCreateProject,
     showToast,
     messages,
   })
   provideTourFormReset(tour.formResetTick)
 
-  /** While the Tour points somewhere other than the Pattern, the Pattern only scrolls and zooms: nothing on it draws. */
+  /** While the Tour points somewhere other than the Project, the Project only scrolls and zooms: nothing on it draws. */
   function unlessTourLocks<Args extends unknown[]>(handler: (...args: Args) => void) {
     return (...args: Args) => {
       if (!tour.canvasLocked.value) {
@@ -488,7 +488,7 @@ function wireAppShell(services: Services) {
   }
 
   useAppShortcutTable({
-    activePattern: currentPattern,
+    activeProject: currentProject,
     activeTool: () => activeTool.value,
     hasSelection: () => !!selection.value,
     hasOpenLayer,
@@ -496,8 +496,8 @@ function wireAppShell(services: Services) {
       deleteAll.deleteAllConfirmOpen.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
-      !!savedPatternConfirms.pendingRemove.value ||
-      !!savedPatternConfirms.pendingSwitch.value ||
+      !!savedProjectConfirms.pendingRemove.value ||
+      !!savedProjectConfirms.pendingSwitch.value ||
       exportFlow.qrExport.panelOpen.value ||
       shortcutsHelpOpen.value,
     collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
@@ -510,8 +510,8 @@ function wireAppShell(services: Services) {
     onToggleRulers: toggleRulers,
     onToggleFrame: () => {
       frameFlow.toggle()
-      // The keyboard's Set Frame works from the Pattern, so focus goes there.
-      if (frameFlow.settingFrame.value) focusPattern()
+      // The keyboard's Set Frame works from the Project, so focus goes there.
+      if (frameFlow.settingFrame.value) focusProject()
     },
     settingFrame: () => frameFlow.settingFrame.value,
     finishFrame: frameFlow.done,
@@ -526,17 +526,17 @@ function wireAppShell(services: Services) {
     },
   })
 
-  /** Skip to Pattern: moves keyboard focus straight onto the Pattern. */
-  function focusPattern() {
-    canvasScrollEl.value?.querySelector<HTMLElement>('[data-testid="pattern-surface"]')?.focus()
+  /** Skip to Project: moves keyboard focus straight onto the Project. */
+  function focusProject() {
+    canvasScrollEl.value?.querySelector<HTMLElement>('[data-testid="project-surface"]')?.focus()
   }
 
-  watch(activePatternId, () => {
+  watch(activeProjectId, () => {
     resetHistory()
-    // Selection resets here through the module's reset(); the clipboard deliberately survives a Pattern switch
+    // Selection resets here through the module's reset(); the clipboard deliberately survives a Project switch
     // (ticket 92, ADR 0016), unlike Undo/Redo history and Selection.
     resetSelection()
-    // Mirror's session state is an editing-session setting, reset on a Pattern switch (ticket 44/45 decision) --
+    // Mirror's session state is an editing-session setting, reset on a Project switch (ticket 44/45 decision) --
     // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
     resetMirrorState()
     deleteAll.onCancelDeleteAll()
@@ -550,24 +550,24 @@ function wireAppShell(services: Services) {
     t,
     locale,
     // The library
-    patterns,
-    activePatternId,
-    activePattern,
+    projects,
+    activeProjectId,
+    activeProject,
     saveFailed,
-    ...savedPatternConfirms,
-    onNewPattern,
+    ...savedProjectConfirms,
+    onNewProject,
     activeBeadLabel,
-    patternLabel,
-    settledPattern,
+    projectLabel,
+    settledProject,
     // Notices
     toasts,
     dismissToast,
     announcement,
     announce,
-    // Creating a Pattern, and framing a picture for one
+    // Creating a Project, and framing a picture for one
     framing,
-    onNewPatternDraft,
-    onCreatePattern: (payload: CreatePatternInput) => onCreatePattern(tour.normalizeCreate(payload)),
+    onNewProjectDraft,
+    onCreateProject: (payload: CreateProjectInput) => onCreateProject(tour.normalizeCreate(payload)),
     onConvertImageCreate,
     startConvertImage,
     cancelConvertImage,
@@ -598,7 +598,7 @@ function wireAppShell(services: Services) {
     stripZoomPercent,
     spaceHeld,
     spacePanning,
-    focusPattern,
+    focusProject,
     // Editing
     canUndo,
     canRedo,
@@ -629,10 +629,10 @@ function wireAppShell(services: Services) {
     onCellHover,
     onHoverEnd,
     beadCursor,
-    keyboardOnPattern,
-    onPatternKeyboardFocus,
-    onPatternKey: unlessTourLocks(onPatternKey),
-    onPatternKeyUp,
+    keyboardOnProject,
+    onProjectKeyboardFocus,
+    onProjectKey: unlessTourLocks(onProjectKey),
+    onProjectKeyUp,
     bindToolbox,
     tour,
     ...rowOps,

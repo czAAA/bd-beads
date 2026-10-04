@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import { createPattern, paintCells, type Pattern } from '../../domain/pattern'
+import { createProject, paintCells, type Project } from '../../domain/project'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 
 const NO_MIRROR = { columns: 0, rows: 0 }
 
-function patternOf(columns: number, rows: number, extra: Partial<Pattern> = {}): Pattern {
-  return { ...createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
+function projectOf(columns: number, rows: number, extra: Partial<Project> = {}): Project {
+  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
 }
 
-function setup(pattern: Pattern | undefined, size = { width: 1000, height: 800 }) {
-  const current = ref(pattern)
+function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {
+  const current = ref(project)
   const viewport = ref(size)
   const view = effectScope().run(() => useCanvasView(() => current.value, viewport))!
   return { current, viewport, view }
@@ -18,7 +18,7 @@ function setup(pattern: Pattern | undefined, size = { width: 1000, height: 800 }
 
 describe('useCanvasView', () => {
   it('fits the Frame whole in the viewport, never zooming in past 100%, with the Frame in the middle', async () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
 
     expect(view.zoom.value).toBe(1)
@@ -27,33 +27,33 @@ describe('useCanvasView', () => {
   })
 
   it('zooms out to fit a Frame bigger than the viewport', () => {
-    const { view } = setup(patternOf(80, 40))
+    const { view } = setup(projectOf(80, 40))
     view.fit()
 
     expect(view.zoom.value).toBe(0.54)
     expect(view.zoom.value * 1600 + FIT_MARGIN_PX.width * 2).toBeLessThanOrEqual(1000)
   })
 
-  it('stops at the zoom-out floor: a wider Pattern is panned, not shrunk', () => {
-    const { view } = setup(patternOf(200, 100))
+  it('stops at the zoom-out floor: a wider Project is panned, not shrunk', () => {
+    const { view } = setup(projectOf(200, 100))
     view.fit()
 
     expect(view.zoom.value).toBe(0.5)
   })
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {
-    const painted = paintCells({ ...patternOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    const painted = paintCells({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
     expect(fitBox(painted)).toEqual({ row: 50, column: 80, rows: 1, columns: 1 })
-    expect(fitBox({ ...patternOf(2, 2), frame: undefined })).toBeUndefined()
+    expect(fitBox({ ...projectOf(2, 2), frame: undefined })).toBeUndefined()
 
-    const { view } = setup({ ...patternOf(2, 2), frame: undefined })
+    const { view } = setup({ ...projectOf(2, 2), frame: undefined })
     view.fit()
     expect(view.zoom.value).toBe(1)
     expect(view.scroll.value).toEqual({ x: -500, y: -400 })
   })
 
   it('moves with a drag the way the content moves, with a wheel the way the wheel turns, and stops following the fit', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
     const start = { ...view.scroll.value }
 
@@ -65,7 +65,7 @@ describe('useCanvasView', () => {
   })
 
   it('has no edge: it can be moved a long way in any direction', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.panBy(-1_000_000, 1_000_000)
 
     expect(view.scroll.value.x).toBeGreaterThan(900_000)
@@ -73,7 +73,7 @@ describe('useCanvasView', () => {
   })
 
   it('keeps the point under the anchor still while zooming', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
     const anchor = { x: 200, y: 100 }
     const before = { x: view.scroll.value.x + anchor.x, y: view.scroll.value.y + anchor.y }
@@ -86,7 +86,7 @@ describe('useCanvasView', () => {
   })
 
   it('zooms about the middle of the viewport for the buttons, in steps, within the usable range', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
     view.zoomIn()
     expect(view.zoom.value).toBe(1.25)
@@ -96,8 +96,8 @@ describe('useCanvasView', () => {
     expect(view.zoom.value).toBe(0.5)
   })
 
-  it('fits again when the Pattern changes or the viewport is measured, until the person moves it', async () => {
-    const { current, viewport, view } = setup(patternOf(20, 10), { width: 0, height: 0 })
+  it('fits again when the Project changes or the viewport is measured, until the person moves it', async () => {
+    const { current, viewport, view } = setup(projectOf(20, 10), { width: 0, height: 0 })
     viewport.value = { width: 1000, height: 800 }
     await nextTick()
     expect(view.scroll.value).toEqual({ x: -300, y: -300 })
@@ -107,14 +107,14 @@ describe('useCanvasView', () => {
     await nextTick()
     expect(view.scroll.value).toEqual({ x: -310, y: -310 })
 
-    current.value = patternOf(6, 6)
+    current.value = projectOf(6, 6)
     await nextTick()
     expect(view.isAtFit.value).toBe(true)
     expect(view.scroll.value).toEqual({ x: 60 - 600, y: 60 - 400 })
   })
 
-  it('stays where it is when the same Pattern is edited, even while it still follows the fit', async () => {
-    const empty = { ...patternOf(2, 2), frame: undefined }
+  it('stays where it is when the same Project is edited, even while it still follows the fit', async () => {
+    const empty = { ...projectOf(2, 2), frame: undefined }
     const { current, view } = setup(empty)
     view.fit()
     const before = { ...view.scroll.value }
@@ -127,7 +127,7 @@ describe('useCanvasView', () => {
   })
 
   it('scrolls only as far as it takes to bring a bead into view', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
     const before = { ...view.scroll.value }
 
@@ -141,7 +141,7 @@ describe('useCanvasView', () => {
   })
 
   it('centres on a block of beads without changing the zoom', () => {
-    const { view } = setup(patternOf(20, 10))
+    const { view } = setup(projectOf(20, 10))
     view.fit()
     view.centreOn({ row: 100, column: 100, rows: 2, columns: 2 })
 

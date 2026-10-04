@@ -7,18 +7,18 @@ import IconButton from '../ui/IconButton.vue'
 import type { IconName } from '../ui/icons'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
-import FrameControls from '../pattern/FrameControls.vue'
+import FrameControls from '../project/FrameControls.vue'
 import ToolButton from './ToolButton.vue'
 import ToolGroup from './ToolGroup.vue'
 import { TOOL_HOTKEYS } from './toolIcons'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Tool } from '../../domain/tool'
-import { resolvePatternBead, type Pattern } from '../../domain/pattern'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
+import { resolveProjectBead, type Project } from '../../domain/project'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
 const props = defineProps<{
-  pattern: Pattern
+  project: Project
   activeTool: Tool
   selectedColorId?: string
   /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
@@ -86,7 +86,7 @@ const frameOpen = ref(false)
 /** Opening the Frame row with no Frame starts Set Frame as well (Frame card); the row still opens, to say what a Frame is. */
 function onFrameOpenChange(open: boolean) {
   frameOpen.value = open
-  if (open && !props.pattern.frame) emit('start-frame')
+  if (open && !props.project.frame) emit('start-frame')
 }
 
 /**
@@ -107,17 +107,17 @@ function collapseExpandedGroup(): boolean {
 defineExpose({ collapseExpandedGroup })
 
 /** Rotate turns the Frame, so it needs one, and waits while Row progress holds the Frame's rows still (Toolbox card). */
-const rotateAvailable = computed(() => props.pattern.frame !== undefined && !props.pattern.rowProgress.enabled)
+const rotateAvailable = computed(() => props.project.frame !== undefined && !props.project.rowProgress.enabled)
 const rotateName = computed(() => {
-  if (!props.pattern.frame) return t.value.frame.rotateNeedsFrame
-  return props.pattern.rowProgress.enabled ? t.value.size.lockedReason : t.value.palette.rotateButton
+  if (!props.project.frame) return t.value.frame.rotateNeedsFrame
+  return props.project.rowProgress.enabled ? t.value.size.lockedReason : t.value.palette.rotateButton
 })
 
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
 const frameSummary = computed(() => {
-  const frame = props.pattern.frame
+  const frame = props.project.frame
   if (!frame) return t.value.frame.notSet
-  const bead = resolvePatternBead(props.pattern)
+  const bead = resolveProjectBead(props.project)
   if (!bead) return undefined
   return formatSizeMm(
     estimatedSizeMm(frame, bead),
@@ -163,12 +163,12 @@ const frameSummary = computed(() => {
           @click="emit('start-frame')"
         />
       </div>
-      <div v-if="pattern.frame" class="toolbox__links">
+      <div v-if="project.frame" class="toolbox__links">
         <AppLink
           icon="close"
           data-testid="tool-remove-frame"
-          :disabled="pattern.rowProgress.enabled"
-          :title="pattern.rowProgress.enabled ? t.size.lockedReason : undefined"
+          :disabled="project.rowProgress.enabled"
+          :title="project.rowProgress.enabled ? t.size.lockedReason : undefined"
           @click="emit('remove-frame')"
         >
           {{ t.frame.removeFrame }}
@@ -201,12 +201,12 @@ const frameSummary = computed(() => {
           @select="(hex) => emit('select-custom-color', hex)"
         />
         <!--
-          The open Pattern's Image colors (ADR 0011), alongside the Palette rather than instead of it: a converted
-          Pattern is touched up with its own colors from this button's popover; any other Pattern has none, and the
+          The open Project's Image colors (ADR 0011), alongside the Palette rather than instead of it: a converted
+          Project is touched up with its own colors from this button's popover; any other Project has none, and the
           button says why.
         -->
         <ImageColorsButton
-          :colors="pattern.imageColors"
+          :colors="project.imageColors"
           :selected-color="selectedImageColor"
           @select="(hex) => emit('select-image-color', hex)"
         />
@@ -243,13 +243,13 @@ const frameSummary = computed(() => {
     </ToolGroup>
 
     <div class="toolbox__rows">
-      <!-- The Frame (CONTEXT.md, ADR 0026): which beads are the Pattern, and what it measures. -->
+      <!-- The Frame (CONTEXT.md, ADR 0026): which beads are the Project, and what it measures. -->
       <DisclosureRow
         :open="frameOpen"
         icon="frame"
         :label="t.frame.title"
         :summary="frameSummary"
-        :chip="pattern.frame ? '1' : undefined"
+        :chip="project.frame ? '1' : undefined"
         :chip-label="t.frame.numberLabel.replace('{number}', '1')"
         data-testid="tool-group-frame"
         data-tour="frame-row"
@@ -257,7 +257,7 @@ const frameSummary = computed(() => {
         @chip="emit('bring-frame')"
       >
         <FrameControls
-          :pattern="pattern"
+          :project="project"
           @set-size="(columns, rows) => emit('set-frame-size', columns, rows)"
           @fit="emit('fit-frame')"
           @remove="emit('remove-frame')"

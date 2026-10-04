@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { rowProgressPosition, type Pattern } from '../../domain/pattern'
+import { rowProgressPosition, type Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from './AppButton.vue'
 import AppSwitch from './AppSwitch.vue'
@@ -8,13 +8,13 @@ import IconButton from './IconButton.vue'
 
 /**
  * Progress bar (CONTEXT.md; ticket 144, ProgressBar card): every Row progress control, in one 56px bar along the canvas
- * box's bottom edge, always shown whatever the Pattern's shape. The switch that turns Row progress on comes first, so
+ * box's bottom edge, always shown whatever the Project's shape. The switch that turns Row progress on comes first, so
  * the bar has to be there while it is off: then only the switch and its label show, and the bar keeps its height so the
  * canvas doesn't jump. On, it reads out the current row, shows the finished share, and holds Turn row direction, Row
  * not done and Row done, which move the current-row pointer exactly as the hotkeys do (D, Shift+Enter/Shift+Space,
  * Enter/Space (ticket 178); P toggles the switch).
  */
-const props = defineProps<{ pattern: Pattern }>()
+const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{
   'move-row': [delta: number]
@@ -27,20 +27,20 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const enabled = computed({
-  get: () => props.pattern.rowProgress.enabled && props.pattern.frame !== undefined,
+  get: () => props.project.rowProgress.enabled && props.project.frame !== undefined,
   set: (on: boolean) => emit('toggle-row-progress', on),
 })
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
-const hasFrame = computed(() => props.pattern.frame !== undefined)
+const hasFrame = computed(() => props.project.frame !== undefined)
 
-const position = computed(() => rowProgressPosition(props.pattern))
+const position = computed(() => rowProgressPosition(props.project))
 
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
 
 const directionLabel = computed(() =>
-  props.pattern.rowProgress.direction === 'rows' ? t.value.rowProgress.topToBottom : t.value.rowProgress.leftToRight,
+  props.project.rowProgress.direction === 'rows' ? t.value.rowProgress.topToBottom : t.value.rowProgress.leftToRight,
 )
 </script>
 
@@ -84,7 +84,7 @@ const directionLabel = computed(() =>
         icon="turn-row-direction"
         variant="box"
         :label="t.rowProgress.directionButton"
-        :selected="pattern.rowProgress.direction === 'columns'"
+        :selected="project.rowProgress.direction === 'columns'"
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
       />

@@ -1,11 +1,11 @@
 import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
 import { colorAt, withColors, type BeadChange, type Frame } from './canvas'
-import { restoreBeads, type Pattern } from './pattern'
+import { restoreBeads, type Project } from './project'
 
 /**
- * A rectangular area of a Pattern's grid, marked out with the Select tool (see CONTEXT.md's Selection entry).
- * Addressed by its top-left corner and its size in cells, so it reads the same way a Pattern's own grid does.
+ * A rectangular area of a Project's grid, marked out with the Select tool (see CONTEXT.md's Selection entry).
+ * Addressed by its top-left corner and its size in cells, so it reads the same way a Project's own grid does.
  */
 export interface Selection {
   top: number
@@ -64,12 +64,12 @@ export function isWithinSelection(selection: Selection, position: GridPosition):
 }
 
 /** Snapshots a Selection's cells — the empty ones included, as holes — into a block Paste can stamp anywhere. */
-export function copySelection(pattern: Pattern, selection: Selection): CopiedBlock {
+export function copySelection(project: Project, selection: Selection): CopiedBlock {
   const colors = Array.from({ length: selection.rows }, (_row, rowOffset) =>
     Array.from(
       { length: selection.columns },
       (_column, columnOffset) =>
-        colorAt(pattern.beads, selection.top + rowOffset, selection.left + columnOffset),
+        colorAt(project.beads, selection.top + rowOffset, selection.left + columnOffset),
     ),
   )
 
@@ -156,19 +156,19 @@ export function mirroredPastedCells(
 
 /**
  * The Mirror-aware form of a single unmirrored paste stamp (ticket 50): stamps `block` at `at` plus every copy Mirror projects it onto
- * (see mirroredPastedCells), all as one Pattern edit so the whole click — original placement and every mirrored one
- * — undoes in a single step, same as a mirrored Paint stroke. Returns the same Pattern instance, unchanged, when the
+ * (see mirroredPastedCells), all as one Project edit so the whole click — original placement and every mirrored one
+ * — undoes in a single step, same as a mirrored Paint stroke. Returns the same Project instance, unchanged, when the
  * stamp would leave every cell as it already is.
  */
 export function mirroredPasteBlock(
-  pattern: Pattern,
+  project: Project,
   block: CopiedBlock,
   at: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
-): Pattern {
-  const cells = mirroredPastedCells(pattern.frame, block, at, axes, copyMode)
+): Project {
+  const cells = mirroredPastedCells(project.frame, block, at, axes, copyMode)
   const changes: BeadChange[] = cells.map(({ row, column, color }) => ({ row, column, color }))
-  const beads = withColors(pattern.beads, changes)
-  return beads === pattern.beads ? pattern : restoreBeads(pattern, beads)
+  const beads = withColors(project.beads, changes)
+  return beads === project.beads ? project : restoreBeads(project, beads)
 }

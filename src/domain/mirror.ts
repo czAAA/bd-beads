@@ -2,8 +2,8 @@
  * The strip-splitting math behind rich Mirror (ticket 44, ADR 0006 amendment): N axes split a dimension's cells
  * into N+1 strips "as equal as possible", neighbouring strips reading as mirror images of each other
  * (A | A' | A | A' ...). Grid-space only -- `columns`/`rows` here are never "left-right"/"top-bottom": which
- * screen direction each maps to is a view-layer concern (Toolbox.vue), swapped when the Pattern is rotated, exactly
- * like the rest of this codebase's view-only rotation (see Pattern.rotation) -- never a transform of this math or
+ * screen direction each maps to is a view-layer concern (Toolbox.vue), swapped when the Project is rotated, exactly
+ * like the rest of this codebase's view-only rotation (see Project.rotation) -- never a transform of this math or
  * the grid data itself.
  */
 
@@ -22,7 +22,7 @@ export function maxAxisCount(cellsAcross: number): number {
   return Math.max(0, cellsAcross - 1)
 }
 
-/** Keeps an axis count inside [0, maxAxisCount(cellsAcross)], e.g. after the Pattern's size changes. */
+/** Keeps an axis count inside [0, maxAxisCount(cellsAcross)], e.g. after the Project's size changes. */
 export function clampAxisCount(count: number, cellsAcross: number): number {
   return Math.min(maxAxisCount(cellsAcross), Math.max(0, count))
 }

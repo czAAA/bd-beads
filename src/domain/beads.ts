@@ -9,7 +9,7 @@ export interface Bead {
   /** The bead's own color, e.g. a PALETTE hex value; null for the seeded catalog entries, which predate this field. */
   color: string | null
   /**
-   * Bead footprint in millimeters, used to convert a physical pattern size into a grid. `widthMm` runs along the
+   * Bead footprint in millimeters, used to convert a physical project size into a grid. `widthMm` runs along the
    * thread (the bead's length through its hole), `heightMm` across it (the bead's diameter): on a loom, and in peyote
    * and brick stitch, the thread passes through the holes along a row, so beads sit side by side hole to hole.
    */
@@ -22,7 +22,7 @@ export interface Bead {
   widthCorrectionMm?: number
   /**
    * Average weight of one bead in grams, used only for the Beads needed box's Estimated weight (never stored on a
-   * Pattern). PROVISIONAL: taken from public seller listings' counts per gram, not measured and not yet confirmed with
+   * Project). PROVISIONAL: taken from public seller listings' counts per gram, not measured and not yet confirmed with
    * a dealer (ticket 155). Real beads vary by color and finish, so this is an average.
    */
   gramsPerBead?: number
@@ -78,9 +78,9 @@ export function beadLabel(bead: Bead): string {
 
 /**
  * Finds a Bead by id in the fixed built-in catalog (ADR 0007 / ticket 38 — the catalog is no longer user-editable).
- * Used wherever a Pattern references a Bead by id. Returns undefined for an id the catalog doesn't have: a custom
+ * Used wherever a Project references a Bead by id. Returns undefined for an id the catalog doesn't have: a custom
  * Bead saved before this change, or one an imported file names that this device never had — callers show a neutral
- * "unknown bead" placeholder for that case (see resolvePatternBead in pattern.ts) rather than breaking.
+ * "unknown bead" placeholder for that case (see resolveProjectBead in project.ts) rather than breaking.
  */
 export function findBead(id: string): Bead | undefined {
   return BEAD_CATALOG.find((bead) => bead.id === id)

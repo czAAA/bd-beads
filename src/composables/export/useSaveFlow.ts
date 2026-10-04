@@ -1,16 +1,16 @@
-import type { Pattern } from '../../domain/pattern'
-import { patternFileName, serializePattern } from '../../domain/patternFile'
+import type { Project } from '../../domain/project'
+import { projectFileName, serializeProject } from '../../domain/projectFile'
 import type { Translations } from '../../i18n/translations'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 
-/** What saving needs from the app shell: the open Pattern, the library's write, the language and the toasts. */
+/** What saving needs from the app shell: the open Project, the library's write, the language and the toasts. */
 export interface SaveFlowDeps {
-  currentPattern: () => Pattern | undefined
+  currentProject: () => Project | undefined
   saveNow: () => boolean
   messages: () => Translations
   showToast: (id: string, text: string) => void
   dismissToast: (id: string) => void
-  /** How the Pattern file is handed over (ADR 0020); the browser's by default. */
+  /** How the Project file is handed over (ADR 0020); the browser's by default. */
   downloadFile?: DownloadFile
 }
 
@@ -34,19 +34,19 @@ export function useSaveFlow(deps: SaveFlowDeps) {
    * claimed once the write got through; if the device refuses it the library's own "couldn't save" notice shows instead
    * (saveFailed). A second press starts the confirmation's clock over.
    *
-   * Save also hands over the open Pattern as a Pattern file (ticket 119), so it can be opened on another device. The
+   * Save also hands over the open Project as a Project file (ticket 119), so it can be opened on another device. The
    * file goes out even when the device refuses the write: it is then the only copy that survives.
    */
   function onSave() {
     clearSavedConfirmation()
-    if (!deps.currentPattern()) {
+    if (!deps.currentProject()) {
       return
     }
 
     const saveSucceeded = deps.saveNow()
-    // Read again: the write stamps the Pattern's savedAt, and the file carries it.
-    const pattern = deps.currentPattern()!
-    downloadFile(patternFileName(pattern), serializePattern(pattern))
+    // Read again: the write stamps the Project's savedAt, and the file carries it.
+    const project = deps.currentProject()!
+    downloadFile(projectFileName(project), serializeProject(project))
     if (!saveSucceeded) {
       return
     }

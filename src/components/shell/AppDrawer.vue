@@ -7,7 +7,7 @@ import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 /**
  * The design system's Drawer (ticket 168; Drawer card): the iPad mini tier's left column, sliding in over the canvas
  * from the left when the header's Tools button is pressed. Always mounted -- the same Toolbox/save box/Beads
- * needed/Saved Patterns instances the wider tiers show as a plain docked sidebar live in its slot at every tier, so
+ * needed/Saved Projects instances the wider tiers show as a plain docked sidebar live in its slot at every tier, so
  * their own state (an expanded panel, a roving tab stop) isn't duplicated across two copies. CSS alone repositions
  * it: `display: contents` at 1024px and up leaves the slot as an ordinary grid child of `.app-shell__body`, and only
  * `@media (min-width: 744px) and (max-width: 1023px)` turns it into a fixed, scrimmed overlay that slides with
@@ -152,7 +152,7 @@ useEscapeLayer(() => trapActive.value, () => emit('close'))
     transform: translateX(0);
   }
 
-  /* Dark and high contrast use a border instead of relying on the shadow token alone (Modal card's own pattern). */
+  /* Dark and high contrast use a border instead of relying on the shadow token alone (Modal card's own project). */
   :root[data-theme='dark'] .drawer {
     border-right: 1px solid var(--line-strong);
   }

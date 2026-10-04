@@ -1,8 +1,8 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
 import { rotationSwapsAxes } from '../domain/grid'
-import { resolvePatternBead, type Pattern, patternDimensions } from '../domain/pattern'
-import { estimatedSizeMm, formatSizeMm } from '../domain/patternSize'
+import { resolveProjectBead, type Project, projectDimensions } from '../domain/project'
+import { estimatedSizeMm, formatSizeMm } from '../domain/projectSize'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
 import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
@@ -26,9 +26,9 @@ export interface PrintText {
   techniqueWord: string
   maker: string
   /**
-   * What the background watermark reads (ticket 182): the maker's name alone, same as `maker` — unless this Pattern
+   * What the background watermark reads (ticket 182): the maker's name alone, same as `maker` — unless this Project
    * overrides the device-wide maker's name, in which case its own name joins it, since a name set just for this
-   * Pattern is worth telling apart from the rest of the maker's exports.
+   * Project is worth telling apart from the rest of the maker's exports.
    */
   background: string
   /** "Sep 26, 2026 · 14:32" */
@@ -51,25 +51,25 @@ export function headerMaker(maker: string): string {
 }
 
 /**
- * `deviceMaker` is the name kept on this device (domain/makerName.ts); a Pattern with its own maker's name (ticket
+ * `deviceMaker` is the name kept on this device (domain/makerName.ts); a Project with its own maker's name (ticket
  * 182) overrides it here, so every caller downstream reads one already-resolved `maker` and need not know which one
  * applied.
  */
-export function printText(pattern: Pattern, t: Translations, locale: Locale, deviceMaker: string, at: Date): PrintText {
-  const bead = resolvePatternBead(pattern)
-  const maker = (pattern.makerName || deviceMaker).trim()
-  const { columns, rows } = patternDimensions(pattern)
-  const [across, down] = rotationSwapsAxes(pattern.rotation) ? [rows, columns] : [columns, rows]
+export function printText(project: Project, t: Translations, locale: Locale, deviceMaker: string, at: Date): PrintText {
+  const bead = resolveProjectBead(project)
+  const maker = (project.makerName || deviceMaker).trim()
+  const { columns, rows } = projectDimensions(project)
+  const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
-  const estimate = bead ? formatSizeMm(estimatedSizeMm(pattern, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
-  const beadName = bead ? beadLabel(bead) : t.patterns.unknownBeadLabel
-  const technique = { loom: t.form.techniqueLoom, peyote: t.form.techniquePeyote, brick: t.form.techniqueBrick }[pattern.technique]
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
+  const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel
+  const technique = { loom: t.form.techniqueLoom, peyote: t.form.techniquePeyote, brick: t.form.techniqueBrick }[project.technique]
   const grams = (count: number) => {
     const weight = printedGrams(count, bead)
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const quantities = computeColorQuantities(pattern)
+  const quantities = computeColorQuantities(project)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)
   const perGram = bead && beadsPerGram(bead)
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(at)
@@ -77,10 +77,10 @@ export function printText(pattern: Pattern, t: Translations, locale: Locale, dev
 
   return {
     locale,
-    name: pattern.name,
+    name: project.name,
     techniqueWord: technique,
     maker,
-    background: pattern.makerName ? `${pattern.name} · ${maker}` : maker,
+    background: project.makerName ? `${project.name} · ${maker}` : maker,
     exportedAt: `${date} · ${time}`,
     metaLine: t.print.metaLine
       .replace('{size}', size)

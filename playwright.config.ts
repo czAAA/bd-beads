@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test'
 import { baseURL, webServer } from './e2e/support/server'
 
 /**
- * The visual check (ticket 103): fixture Patterns rendered in a real browser and compared with committed reference
+ * The visual check (ticket 103): fixture Projects rendered in a real browser and compared with committed reference
  * screenshots. `npm run visual` runs it; `npm run visual:update` rewrites the references, which is only right when the
  * look is meant to change. The performance check has its own config (playwright.perf.config.ts).
  */

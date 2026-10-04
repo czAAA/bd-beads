@@ -24,7 +24,7 @@ describe('the Tour is switched off (ticket 247)', () => {
   })
 
   it('leaves the Tour out of the Overview', () => {
-    const wrapper = mount(OverviewPage, { props: { patternCount: 0, overviewHref: '/bd-beads/overview/' } })
+    const wrapper = mount(OverviewPage, { props: { projectCount: 0, overviewHref: '/bd-beads/overview/' } })
     expect(wrapper.find('[data-testid="menu-item-tour"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
   })

@@ -1,6 +1,6 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { openApp, patternBox, settle } from '../support/app'
-import { beadCentre, fixturePattern } from '../support/patterns'
+import { openApp, projectBox, settle } from '../support/app'
+import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
 /**
@@ -10,7 +10,7 @@ import { fixturePicture } from '../support/picture'
  *
  *   PERF_SLOWDOWNS=4,6   the CPU slowdown factors to report at (default 4,6; 4 is a midrange Android tablet or a Core i3
  *                        laptop, "the floor"; 6 is a rougher one)
- *   PERF_SIZES=60x90,... limit the Pattern sizes (default 60x90,70x250,250x250)
+ *   PERF_SIZES=60x90,... limit the Project sizes (default 60x90,70x250,250x250)
  *   PERF_ONLY=hover,...  limit the interactions (open, hover, paint, select, paste, scroll, zoom, framing)
  *   PERF_TECHNIQUES=...  the Techniques the framing drag is measured in (default loom; loom,peyote,brick for all)
  *
@@ -110,35 +110,35 @@ function label({ columns, rows }: { columns: number; rows: number }): string {
   return `${columns}×${rows}`
 }
 
-/** A painted Pattern of this size to open, plus a tiny one to come from, so "open" starts from somewhere else. */
+/** A painted Project of this size to open, plus a tiny one to come from, so "open" starts from somewhere else. */
 function libraryFor(columns: number, rows: number) {
   return [
-    { ...fixturePattern({ technique: 'loom', columns: 4, rows: 4 }), id: 'small', updatedAt: 1_700_000_000_000 },
-    { ...fixturePattern({ technique: 'loom', columns, rows }), id: 'big', name: 'Big', updatedAt: 1_600_000_000_000 },
+    { ...fixtureProject({ technique: 'loom', columns: 4, rows: 4 }), id: 'small', updatedAt: 1_700_000_000_000 },
+    { ...fixtureProject({ technique: 'loom', columns, rows }), id: 'big', name: 'Big', updatedAt: 1_600_000_000_000 },
   ]
 }
 
-async function openPattern(page: Page, id: string): Promise<void> {
-  await page.getByTestId(`select-pattern-${id}`).click()
+async function openProject(page: Page, id: string): Promise<void> {
+  await page.getByTestId(`select-project-${id}`).click()
   await page.getByTestId('confirm-modal-confirm').click()
   await settle(page)
 }
 
 /**
  * The centres of the beads that are on screen right now, in the order a pointer sweeping the page would meet them
- * (row by row): only beads a person could actually point at count, however big the Pattern is.
+ * (row by row): only beads a person could actually point at count, however big the Project is.
  */
 function onScreenBeads(
-  pattern: ReturnType<typeof fixturePattern>,
+  project: ReturnType<typeof fixtureProject>,
   box: { x: number; y: number; width: number; height: number },
   zoom: number,
   viewport: { width: number; height: number },
 ): { x: number; y: number }[] {
   const margin = 40
   const beads: { x: number; y: number }[] = []
-  for (let row = 0; row < pattern.frame!.rows; row += 1) {
-    for (let column = 0; column < pattern.frame!.columns; column += 1) {
-      const centre = beadCentre(pattern, box, zoom, { row, column })
+  for (let row = 0; row < project.frame!.rows; row += 1) {
+    for (let column = 0; column < project.frame!.columns; column += 1) {
+      const centre = beadCentre(project, box, zoom, { row, column })
       if (centre.x > margin && centre.x < viewport.width - margin && centre.y > margin && centre.y < viewport.height - margin) {
         beads.push(centre)
       }
@@ -166,24 +166,24 @@ for (const slowdown of SLOWDOWNS) {
       const cdp = await throttle(page, slowdown)
 
       if (wanted('open')) {
-        await openPattern(page, 'small')
+        await openProject(page, 'small')
         const busyBefore = await busyMs(cdp)
         const started = Date.now()
-        await openPattern(page, 'big')
+        await openProject(page, 'big')
         results.push({ slowdown, size: name, what: 'open', ms: Date.now() - started, note: `busy ${Math.round((await busyMs(cdp)) - busyBefore)} ms` })
       } else {
-        await openPattern(page, 'big')
+        await openProject(page, 'big')
       }
 
-      // The zoom a Pattern opens at: fit for a big one, 100% for a small one. Hover and paint are measured on the beads
+      // The zoom a Project opens at: fit for a big one, 100% for a small one. Hover and paint are measured on the beads
       // that are on screen at that zoom, with the top of the grid brought to the top of the window.
       await page.getByTestId('zoom-reset').click()
-      const grid = page.getByTestId('pattern-surface')
+      const grid = page.getByTestId('project-surface')
       await grid.evaluate((element) => window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 120))
       await settle(page)
       const zoomPercent = Number.parseInt((await page.getByTestId('zoom-level').textContent()) ?? '100', 10)
       const zoom = zoomPercent / 100
-      const box = await patternBox(page, (await grid.boundingBox())!)
+      const box = await projectBox(page, (await grid.boundingBox())!)
       const beads = onScreenBeads(big, box, zoom, page.viewportSize()!)
 
       if (wanted('hover')) {

@@ -47,7 +47,7 @@ function decodeViaImageElement(file: Blob): Promise<DecodedSource> {
 /**
  * An animated GIF decodes as its first frame here, whichever path runs: createImageBitmap produces one bitmap, and an
  * `<img>` drawn to a canvas paints whatever frame it is showing, which is the first one at load. That is deliberate —
- * a Pattern is a still picture, so there is nothing an animation's later frames could become.
+ * a Project is a still picture, so there is nothing an animation's later frames could become.
  */
 async function decodeSource(file: Blob): Promise<DecodedSource> {
   if (typeof createImageBitmap === 'function') {

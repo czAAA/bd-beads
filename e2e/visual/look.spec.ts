@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { openApp, patternBox, setZoom } from '../support/app'
-import { fixturePattern } from '../support/patterns'
+import { openApp, projectBox, setZoom } from '../support/app'
+import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 /**
- * The look of a Pattern in the app, held to the reference screenshots (support/referenceCheck.ts says how the
+ * The look of a Project in the app, held to the reference screenshots (support/referenceCheck.ts says how the
  * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300% upright and at 100%
  * rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
  * the overlays that come with a tool in overlays.spec.ts.
@@ -35,25 +35,25 @@ for (const scenario of scenarios) {
     const orientation = rotated ? 'rotated' : 'upright'
 
     test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-      const pattern = fixturePattern({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
-      await openApp(page, [pattern])
-      await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
+      const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
+      await openApp(page, [project])
+      await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
 
       for (const zoom of zoomsFor(rotated)) {
         await setZoom(page, zoom)
         await page.mouse.move(5, 5)
 
-        const box = (await page.getByTestId('pattern-surface').boundingBox())!
+        const box = (await page.getByTestId('project-surface').boundingBox())!
         const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-        const corner = await patternBox(page, box)
-        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
+        const corner = await projectBox(page, box)
+        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, project, zoom / 100))
         const expected = readFileSync(reference)
         const { width, height } = PNG.sync.read(expected)
-        const origin = shownRegion(corner, pattern, zoom / 100)
+        const origin = shownRegion(corner, project, zoom / 100)
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
         const label = `${scenario.name}, ${orientation}, ${zoom}%`
-        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin)
+        const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin)
         expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
         expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
       }
@@ -62,16 +62,16 @@ for (const scenario of scenarios) {
 }
 
 /**
- * The comparisons have to fail when the picture is wrong, or a pass means nothing. Each of these draws a Pattern that
+ * The comparisons have to fail when the picture is wrong, or a pass means nothing. Each of these draws a Project that
  * differs from the one the reference shows in one small way, at every zoom (100% is where a bead is smallest), and expects
  * the check to notice.
  */
 test.describe('the check notices a wrong picture', () => {
-  const reference = fixturePattern({ technique: 'loom' })
+  const reference = fixtureProject({ technique: 'loom' })
 
   const wrongPictures = {
-    'a bead in another color': fixturePattern({ technique: 'loom', override: [{ row: 4, column: 7, color: '#2f6fed' }] }),
-    'a bead left empty': fixturePattern({ technique: 'loom', override: [{ row: 4, column: 7, color: null }] }),
+    'a bead in another color': fixtureProject({ technique: 'loom', override: [{ row: 4, column: 7, color: '#2f6fed' }] }),
+    'a bead left empty': fixtureProject({ technique: 'loom', override: [{ row: 4, column: 7, color: null }] }),
   }
 
   for (const [description, wrongPicture] of Object.entries(wrongPictures)) {
@@ -82,28 +82,28 @@ test.describe('the check notices a wrong picture', () => {
         await setZoom(page, zoom)
         await page.mouse.move(5, 5)
 
-        const box = (await page.getByTestId('pattern-surface').boundingBox())!
+        const box = (await page.getByTestId('project-surface').boundingBox())!
         const expected = readFileSync(`${REFERENCES}loom-plain-upright-${zoom}.png`)
         const { width, height } = PNG.sync.read(expected)
-        const corner = await patternBox(page, box)
+        const corner = await projectBox(page, box)
         const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
-        // Judged against the Pattern the reference shows, the one bead is found and nothing else is.
+        // Judged against the Project the reference shows, the one bead is found and nothing else is.
         expect(compareToReference(actual, expected, reference, zoom, corner, origin).wrong, `${zoom}%`).toEqual(['(4, 7)'])
       }
     })
   }
 
   test('a Row progress marker the reference does not have', async ({ page }) => {
-    await openApp(page, [fixturePattern({ technique: 'loom', rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } })])
+    await openApp(page, [fixtureProject({ technique: 'loom', rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } })])
     await setZoom(page, 100)
     await page.mouse.move(5, 5)
 
-    const box = (await page.getByTestId('pattern-surface').boundingBox())!
+    const box = (await page.getByTestId('project-surface').boundingBox())!
     const expected = readFileSync(`${REFERENCES}loom-plain-upright-100.png`)
     const { width, height } = PNG.sync.read(expected)
-    const corner = await patternBox(page, box)
+    const corner = await projectBox(page, box)
     const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
     const actual = await page.screenshot({ clip: { ...origin, width, height } })
 

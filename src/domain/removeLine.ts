@@ -1,5 +1,5 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
-import { withFrame, type Pattern } from './pattern'
+import { withFrame, type Project } from './project'
 import type { Selection } from './selection'
 
 /**
@@ -40,30 +40,30 @@ export type RemoveLineRefusal =
   /** The Frame has only the one row or column the Selection names, and a Frame is never empty. */
   | 'only-line'
 
-export function removeLineRefusal(pattern: Pattern, selection: Selection | undefined): RemoveLineRefusal | undefined {
-  const line = selectedFrameLine(pattern.frame, selection)
-  if (!line || !pattern.frame) {
+export function removeLineRefusal(project: Project, selection: Selection | undefined): RemoveLineRefusal | undefined {
+  const line = selectedFrameLine(project.frame, selection)
+  if (!line || !project.frame) {
     return 'no-line'
   }
-  if (pattern.rowProgress.enabled) {
+  if (project.rowProgress.enabled) {
     return 'locked'
   }
-  if ((line.axis === 'row' ? pattern.frame.rows : pattern.frame.columns) <= 1) {
+  if ((line.axis === 'row' ? project.frame.rows : project.frame.columns) <= 1) {
     return 'only-line'
   }
   return undefined
 }
 
-/** The Pattern without the line the Selection marks out, or the same Pattern, unchanged, when that is refused. */
-export function removeSelectedLine(pattern: Pattern, selection: Selection | undefined): Pattern {
-  const line = selectedFrameLine(pattern.frame, selection)
-  const frame = pattern.frame
-  if (!line || !frame || removeLineRefusal(pattern, selection)) {
-    return pattern
+/** The Project without the line the Selection marks out, or the same Project, unchanged, when that is refused. */
+export function removeSelectedLine(project: Project, selection: Selection | undefined): Project {
+  const line = selectedFrameLine(project.frame, selection)
+  const frame = project.frame
+  if (!line || !frame || removeLineRefusal(project, selection)) {
+    return project
   }
 
   const beads: BeadMap = {}
-  forEachBead(pattern.beads, (row, column, color) => {
+  forEachBead(project.beads, (row, column, color) => {
     let newRow = row
     let newColumn = column
     if (frameContains(frame, { row, column })) {
@@ -81,5 +81,5 @@ export function removeSelectedLine(pattern: Pattern, selection: Selection | unde
   })
 
   const smaller = { ...frame, rows: line.axis === 'row' ? frame.rows - 1 : frame.rows, columns: line.axis === 'column' ? frame.columns - 1 : frame.columns }
-  return { ...withFrame(pattern, smaller), beads }
+  return { ...withFrame(project, smaller), beads }
 }

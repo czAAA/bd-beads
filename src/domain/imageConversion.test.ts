@@ -335,7 +335,7 @@ describe('convertImage', () => {
     ])
   })
 
-  it('produces a grid of exactly the Pattern dimensions', () => {
+  it('produces a grid of exactly the Project dimensions', () => {
     const { grid, dimensions } = convert(coordinateImage(20, 20), 'loom', { widthMm: 15, heightMm: 30 })
 
     expect(dimensions).toEqual({ columns: 10, rows: 20 })
@@ -479,7 +479,7 @@ describe('convertImage', () => {
 })
 
 describe('convertPackedFrame', () => {
-  it('makes the same Pattern convertSampledFrame does from the same lattice', () => {
+  it('makes the same Project convertSampledFrame does from the same lattice', () => {
     const image = {
       width: 40,
       height: 30,

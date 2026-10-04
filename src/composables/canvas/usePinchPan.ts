@@ -24,14 +24,14 @@ function distance(a: Point, b: Point): number {
 }
 
 /**
- * Two fingers on the Pattern pinch it to zoom and pan it (ticket 79; responsive.md's phone tier). One finger stays
+ * Two fingers on the Project pinch it to zoom and pan it (ticket 79; responsive.md's phone tier). One finger stays
  * a paint stroke: the drawing surface keeps `touch-action: none` (ticket 60), so the browser never zooms or scrolls
  * for us and this is the whole gesture recognizer.
  *
  * It listens in the capture phase on the canvas panel's scroller, above the drawing surface. The second finger
  * landing ends the stroke the first began, and from then until every finger is up the surface hears nothing, so
  * neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
- * and the point between them stays under them as the zoom changes; moving them together scrolls the Pattern.
+ * and the point between them stays under them as the zoom changes; moving them together scrolls the Project.
  * Only touch takes part: a mouse or pen has no second contact, and the zoom pill and keys cover them.
  */
 export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDeps) {

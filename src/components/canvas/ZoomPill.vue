@@ -3,9 +3,9 @@ import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 
 /**
- * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating in the Pattern's
+ * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating in the Project's
  * bottom-right corner (out · level · in · fit) -- pinch zooms and two fingers pan, so this is for a fit or an exact
- * step. Same zoom (usePatternZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
+ * step. Same zoom (useProjectZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  */
 defineProps<{ zoomPercent: number; rulers?: boolean }>()

@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { framedGrid, type Grid } from '../../domain/pattern'
+import { framedGrid, type Grid } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
-import { thumbnailPixels } from '../../rendering/patternThumbnail'
+import { thumbnailPixels } from '../../rendering/projectThumbnail'
 import ExampleFrame from './ExampleFrame.vue'
 import { CHECKS, GOLD_STRIP, HEART, HILLS, POPPY, STRIPES } from './exampleArt'
 
-/** Saved Patterns (ticket 218): the gallery as the library shows it, six round thumbnails drawn the way the real ones are, the first one open. */
+/** Saved Projects (ticket 218): the gallery as the library shows it, six round thumbnails drawn the way the real ones are, the first one open. */
 const { t } = useI18n()
 const SIZE = 176
 const GALLERY: Grid[] = [GOLD_STRIP, POPPY, HEART, HILLS, STRIPES, CHECKS]
 
 const ITEMS = GALLERY.map((grid) => ({ grid, size: `${grid[0]!.length}×${grid.length}` }))
 
-/** Draws one thumbnail the way PatternThumbnail does: the whole Pattern fitted into the circle, empty beads left clear. */
+/** Draws one thumbnail the way ProjectThumbnail does: the whole Project fitted into the circle, empty beads left clear. */
 function draw(canvas: unknown, grid: Grid) {
   if (!(canvas instanceof HTMLCanvasElement)) return
   const context = canvas.getContext('2d')

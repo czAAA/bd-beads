@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPattern } from '../../domain/pattern'
+import { createProject } from '../../domain/project'
 import { useKeyboardCursor } from './useKeyboardCursor'
 
 function setup(hasSelection = false) {
-  const pattern = createPattern({
+  const project = createProject({
     technique: 'loom',
     beadId: 'toho-cube-1.5mm',
     size: { width: 5, height: 4, unit: 'beads' },
   })
   const deps = {
-    currentPattern: () => pattern,
+    currentProject: () => project,
     reveal: vi.fn(),
     hasSelection: () => hasSelection,
     onCellHover: vi.fn(),
@@ -19,7 +19,7 @@ function setup(hasSelection = false) {
     extendSelectionTo: vi.fn(),
     finishExtending: vi.fn(),
   }
-  return { pattern, deps, ...useKeyboardCursor(deps) }
+  return { project, deps, ...useKeyboardCursor(deps) }
 }
 
 function press(key: string, init: KeyboardEventInit = {}) {
@@ -31,12 +31,12 @@ function press(key: string, init: KeyboardEventInit = {}) {
 
 describe('useKeyboardCursor', () => {
   it('moves with the arrows, past the Frame and into the negative, keeps itself in view, and announces', () => {
-    const { beadCursor, deps, onPatternKey } = setup()
-    onPatternKey(press('ArrowRight'))
-    onPatternKey(press('ArrowDown'))
+    const { beadCursor, deps, onProjectKey } = setup()
+    onProjectKey(press('ArrowRight'))
+    onProjectKey(press('ArrowDown'))
     expect(beadCursor.value).toEqual({ row: 1, column: 1 })
-    onPatternKey(press('ArrowUp'))
-    onPatternKey(press('ArrowUp'))
+    onProjectKey(press('ArrowUp'))
+    onProjectKey(press('ArrowUp'))
     expect(beadCursor.value).toEqual({ row: -1, column: 1 })
     expect(deps.onCellHover).toHaveBeenLastCalledWith(-1, 1)
     expect(deps.reveal).toHaveBeenLastCalledWith({ row: -1, column: 1 })
@@ -44,66 +44,66 @@ describe('useKeyboardCursor', () => {
   })
 
   it('jumps with Home, End and Page Up / Down', () => {
-    const { beadCursor, onPatternKey } = setup()
-    onPatternKey(press('End'))
+    const { beadCursor, onProjectKey } = setup()
+    onProjectKey(press('End'))
     expect(beadCursor.value.column).toBe(4)
-    onPatternKey(press('PageDown'))
+    onProjectKey(press('PageDown'))
     expect(beadCursor.value.row).toBe(10)
-    onPatternKey(press('Home'))
-    onPatternKey(press('PageUp'))
+    onProjectKey(press('Home'))
+    onProjectKey(press('PageUp'))
     expect(beadCursor.value).toEqual({ row: 0, column: 0 })
   })
 
-  it('remaps the arrows for a rotated Pattern', () => {
-    const { pattern, beadCursor, onPatternKey } = setup()
-    pattern.rotation = 90
-    onPatternKey(press('ArrowLeft'))
+  it('remaps the arrows for a rotated Project', () => {
+    const { project, beadCursor, onProjectKey } = setup()
+    project.rotation = 90
+    onProjectKey(press('ArrowLeft'))
     expect(beadCursor.value).toEqual({ row: 1, column: 0 })
   })
 
   it('uses the tool on Space and Enter and swallows the key', () => {
-    const { deps, onPatternKey } = setup()
+    const { deps, onProjectKey } = setup()
     const event = press(' ')
-    onPatternKey(event)
-    onPatternKey(press('Enter'))
+    onProjectKey(event)
+    onProjectKey(press('Enter'))
     expect(deps.invokeToolAt).toHaveBeenCalledTimes(2)
     expect(event.defaultPrevented).toBe(true)
   })
 
   it('extends a Selection with Shift + arrows and finishes on Shift release', () => {
-    const { deps, onPatternKey, onPatternKeyUp } = setup()
-    onPatternKey(press('ArrowRight', { shiftKey: true }))
+    const { deps, onProjectKey, onProjectKeyUp } = setup()
+    onProjectKey(press('ArrowRight', { shiftKey: true }))
     expect(deps.extendSelectionTo).toHaveBeenCalledWith({ row: 0, column: 0 }, { row: 0, column: 1 })
-    onPatternKeyUp(new KeyboardEvent('keyup', { key: 'Shift' }))
+    onProjectKeyUp(new KeyboardEvent('keyup', { key: 'Shift' }))
     expect(deps.finishExtending).toHaveBeenCalled()
   })
 
-  it('leaves the Pattern on Escape, unless a Selection is up', () => {
+  it('leaves the Project on Escape, unless a Selection is up', () => {
     const free = setup()
     const event = press('Escape')
-    free.onPatternKey(event)
+    free.onProjectKey(event)
     expect(event.defaultPrevented).toBe(true)
     const held = setup(true)
     const kept = press('Escape')
-    held.onPatternKey(kept)
+    held.onProjectKey(kept)
     expect(kept.defaultPrevented).toBe(false)
   })
 
   it('ignores other keys', () => {
-    const { deps, onPatternKey } = setup()
+    const { deps, onProjectKey } = setup()
     const event = press('a')
-    onPatternKey(event)
+    onProjectKey(event)
     expect(event.defaultPrevented).toBe(false)
     expect(deps.announceCursor).not.toHaveBeenCalled()
   })
 
   it('shows the cursor on keyboard focus and announces it; hides it on blur', () => {
-    const { keyboardOnPattern, deps, onPatternKeyboardFocus } = setup()
-    onPatternKeyboardFocus(true)
-    expect(keyboardOnPattern.value).toBe(true)
+    const { keyboardOnProject, deps, onProjectKeyboardFocus } = setup()
+    onProjectKeyboardFocus(true)
+    expect(keyboardOnProject.value).toBe(true)
     expect(deps.announceCursor).toHaveBeenCalled()
-    onPatternKeyboardFocus(false)
-    expect(keyboardOnPattern.value).toBe(false)
+    onProjectKeyboardFocus(false)
+    expect(keyboardOnProject.value).toBe(false)
     expect(deps.finishExtending).toHaveBeenCalled()
     expect(deps.onHoverEnd).toHaveBeenCalled()
   })

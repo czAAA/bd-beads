@@ -27,10 +27,10 @@ export function saveTourStatus(status: TourStatus): void {
 
 const PROGRESS_KEY = 'bd-beads:tour-progress'
 
-/** Which steps of the Tour are done on this device, and which Pattern the Tour is building (ticket 80). */
+/** Which steps of the Tour are done on this device, and which Project the Tour is building (ticket 80). */
 export interface TourProgress {
   done: TourStepId[]
-  patternId?: string
+  projectId?: string
 }
 
 export function loadTourProgress(): TourProgress {
@@ -39,9 +39,9 @@ export function loadTourProgress(): TourProgress {
     if (typeof parsed !== 'object' || parsed === null) {
       return { done: [] }
     }
-    const { done, patternId } = parsed as { done?: unknown; patternId?: unknown }
+    const { done, projectId } = parsed as { done?: unknown; projectId?: unknown }
     const steps = Array.isArray(done) ? done.filter((step): step is TourStepId => TOUR_STEPS.includes(step as TourStepId)) : []
-    return typeof patternId === 'string' ? { done: steps, patternId } : { done: steps }
+    return typeof projectId === 'string' ? { done: steps, projectId } : { done: steps }
   } catch {
     return { done: [] }
   }

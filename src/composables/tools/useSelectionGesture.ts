@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { paintCells, type Pattern } from '../../domain/pattern'
+import { paintCells, type Project } from '../../domain/project'
 import {
   copySelection,
   mirroredPasteBlock,
@@ -19,15 +19,15 @@ import {
  * tool is active -- see leaveSelectTool), and Escape/right-click precedence against confirmation modals and an
  * expanded Tool group stays in the app shell, which calls this module's cancel() last.
  *
- * `currentPattern` and `commitGridChange` are read from the app shell for the same reason useMirrorState reads
+ * `currentProject` and `commitGridChange` are read from the app shell for the same reason useMirrorState reads
  * them: Paste commits through the shell's shared grid-change/undo path (the same one Fill and "Mirror current"
  * use) rather than a private copy of its own. `mirrorAxisCounts`/`mirrorCopyMode` come from ticket 62's own module
  * (useMirrorState) rather than from the app shell directly, per the ticket 63 decision -- this module doesn't need
  * to know useMirrorState exists, only that something supplies its current axis counts and copy mode.
  */
 export function useSelectionGesture(
-  currentPattern: () => Pattern | undefined,
-  commitGridChange: (pattern: Pattern, updated: Pattern) => void,
+  currentProject: () => Project | undefined,
+  commitGridChange: (project: Project, updated: Project) => void,
   mirrorAxisCounts: () => MirrorAxisCounts,
   mirrorCopyMode: () => boolean,
 ) {
@@ -36,9 +36,9 @@ export function useSelectionGesture(
 
   /**
    * What Copy last snapshotted, ready to stamp (ticket 92 revised its lifecycle, ADR 0016): it clears only when a
-   * new Copy replaces it or a new Selection is made (see copy/extendPress) -- not on a tool switch, a Pattern
+   * new Copy replaces it or a new Selection is made (see copy/extendPress) -- not on a tool switch, a Project
    * switch, or cancelling. Like the undo stack it's an editing-session aid, but unlike the undo stack it survives a
-   * Pattern switch (see clearSelection()).
+   * Project switch (see clearSelection()).
    */
   const copiedBlock = ref<CopiedBlock | undefined>()
   /**
@@ -59,8 +59,8 @@ export function useSelectionGesture(
   const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
 
   function beginPress(row: number, column: number) {
-    const pattern = currentPattern()
-    if (!pattern) {
+    const project = currentProject()
+    if (!project) {
       return
     }
 
@@ -77,9 +77,9 @@ export function useSelectionGesture(
 
   /** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one (ticket 92: a new Selection is one of the two things that actually clears the clipboard). */
   function extendPress(row: number, column: number) {
-    const pattern = currentPattern()
+    const project = currentProject()
     const press = selectPress.value
-    if (!pattern || !press) {
+    if (!project || !press) {
       return
     }
 
@@ -90,17 +90,17 @@ export function useSelectionGesture(
 
   /** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
   function endPress() {
-    const pattern = currentPattern()
+    const project = currentProject()
     const press = selectPress.value
     selectPress.value = null
 
-    if (!pattern || !press || press.moved || !pasteProjectionActive.value) {
+    if (!project || !press || press.moved || !pasteProjectionActive.value) {
       return
     }
 
     commitGridChange(
-      pattern,
-      mirroredPasteBlock(pattern, copiedBlock.value!, press.anchor, mirrorAxisCounts(), mirrorCopyMode()),
+      project,
+      mirroredPasteBlock(project, copiedBlock.value!, press.anchor, mirrorAxisCounts(), mirrorCopyMode()),
     )
   }
 
@@ -155,12 +155,12 @@ export function useSelectionGesture(
    * copied (ticket 49) -- copying the same block again means dragging a new Selection over it first.
    */
   function copy() {
-    const pattern = currentPattern()
-    if (!pattern || !selection.value) {
+    const project = currentProject()
+    if (!project || !selection.value) {
       return
     }
 
-    copiedBlock.value = copySelection(pattern, selection.value)
+    copiedBlock.value = copySelection(project, selection.value)
     pasteDismissed.value = false
     selection.value = undefined
   }
@@ -173,14 +173,14 @@ export function useSelectionGesture(
    * handling of the chord. A no-op with nothing copied or with `cell` undefined (pointer off the grid).
    */
   function pasteAt(cell: GridPosition | undefined): boolean {
-    const pattern = currentPattern()
-    if (!pattern || !cell || !copiedBlock.value) {
+    const project = currentProject()
+    if (!project || !cell || !copiedBlock.value) {
       return false
     }
 
     commitGridChange(
-      pattern,
-      mirroredPasteBlock(pattern, copiedBlock.value, cell, mirrorAxisCounts(), mirrorCopyMode()),
+      project,
+      mirroredPasteBlock(project, copiedBlock.value, cell, mirrorAxisCounts(), mirrorCopyMode()),
     )
     return true
   }
@@ -192,9 +192,9 @@ export function useSelectionGesture(
    * is left alone; only its contents change.
    */
   function deleteSelection() {
-    const pattern = currentPattern()
+    const project = currentProject()
     const sel = selection.value
-    if (!pattern || !sel) {
+    if (!project || !sel) {
       return
     }
 
@@ -205,7 +205,7 @@ export function useSelectionGesture(
       }
     }
 
-    commitGridChange(pattern, paintCells(pattern, positions, null, mirrorAxisCounts(), mirrorCopyMode()))
+    commitGridChange(project, paintCells(project, positions, null, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /**
@@ -223,15 +223,15 @@ export function useSelectionGesture(
    * preview shows while Select is active -- empty with no active (undismissed) projection, since there's then
    * nothing a click would put down.
    */
-  function pastePreviewCells(pattern: Pattern, hovered: GridPosition): PreviewCell[] {
+  function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
     return pasteProjectionActive.value
-      ? mirroredPastedCells(pattern.frame, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
+      ? mirroredPastedCells(project.frame, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
       : []
   }
 
   /**
    * Clears just the Selection -- not the clipboard, which survives (ADR 0016): a copied block is colors, not a
-   * place, so nothing about the grid changing or the open Pattern switching invalidates it. Called from the app shell's single Pattern-switch reset point, and equally from
+   * place, so nothing about the grid changing or the open Project switching invalidates it. Called from the app shell's single Project-switch reset point, and equally from
    * any command that changes the grid's own dimensions (a change of the Frame, "remove selected row/column", an Undo/Redo that
    * crosses a Frame change) -- a Selection may no longer fit, or no longer name a whole line, once those land.
    */

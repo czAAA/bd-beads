@@ -2,14 +2,14 @@
 import AppButton from '../ui/AppButton.vue'
 import AppDock from '../tools/AppDock.vue'
 import BottomToolbar from './BottomToolbar.vue'
-import PatternImport from '../import/PatternImport.vue'
+import ProjectImport from '../import/ProjectImport.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
   t,
   settingFrame,
-  patterns,
-  activePattern,
+  projects,
+  activeProject,
   framing,
   canUndo,
   canRedo,
@@ -19,12 +19,12 @@ const {
   selectedColorId,
   onSelectTool,
   onSelectColor,
-  onImportPatterns,
+  onImportProjects,
   decodeImage,
   onImportToast,
   openPhoneSheet,
   onSelectPhoneSheet,
-  phoneNewPatternOpen,
+  phoneNewProjectOpen,
 } = useAppShell()
 </script>
 
@@ -36,7 +36,7 @@ const {
     (ADR 0018: the canvas resizes once, when this shows or hides with the tier, not per frame).
   -->
   <BottomToolbar
-    v-if="activePattern && !framing"
+    v-if="activeProject && !framing"
     class="app-shell__bottom-toolbar"
     :active-tool="activeTool"
     :selected-color-id="selectedColorId"
@@ -49,18 +49,18 @@ const {
   />
 
   <!--
-    Phone tier bottom: two states. With no Pattern open, a focused pattern-management bar (New Pattern + Import +
-    Import QR) replaces the Dock so the first action is immediately obvious. Once a Pattern is open the Dock appears
+    Phone tier bottom: two states. With no Project open, a focused project-management bar (New Project + Import +
+    Import QR) replaces the Dock so the first action is immediately obvious. Once a Project is open the Dock appears
     with the drawing tools. The BottomToolbar (iPad mini) is always rendered independently.
   -->
-  <div v-if="!framing && !activePattern" class="app-shell__phone-pattern-bar" data-testid="phone-pattern-bar">
-    <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-pattern" data-tour="phone-new-pattern" @click="phoneNewPatternOpen = true">
-      {{ t.patterns.newPatternButton }}
+  <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
+    <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true">
+      {{ t.projects.newProjectButton }}
     </AppButton>
-    <PatternImport :decode-image="decodeImage" compact toast-results :patterns="patterns" testid-prefix="phone-bar-" @import="onImportPatterns" @import-result="onImportToast" />
+    <ProjectImport :decode-image="decodeImage" compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
   </div>
   <AppDock
-    v-else-if="!framing && !!activePattern"
+    v-else-if="!framing && !!activeProject"
     class="app-shell__dock"
     :active-tool="activeTool"
     :selected-color-id="selectedColorId"
@@ -88,8 +88,8 @@ const {
   display: none;
 }
 
-/* Phone pattern-management bar: shown instead of the Dock when no Pattern is open. */
-.app-shell__phone-pattern-bar {
+/* Phone project-management bar: shown instead of the Dock when no Project is open. */
+.app-shell__phone-project-bar {
   display: none;
 }
 
@@ -99,7 +99,7 @@ const {
     flex: none;
   }
 
-  .app-shell__phone-pattern-bar {
+  .app-shell__phone-project-bar {
     display: flex;
     flex: none;
     align-items: center;
@@ -111,8 +111,8 @@ const {
     border-top: 1px solid var(--line-soft);
   }
 
-  /* New Pattern grows to take the remaining width; the two import icons sit at a fixed square size beside it. */
-  .app-shell__phone-pattern-bar :deep(.app-button) {
+  /* New Project grows to take the remaining width; the two import icons sit at a fixed square size beside it. */
+  .app-shell__phone-project-bar :deep(.app-button) {
     flex: 1 1 0;
   }
 }

@@ -10,7 +10,7 @@ import ImageColorsPicker from './ImageColorsPicker.vue'
 /**
  * The Image colors button (ticket 151; ColorPickers card): opens a popover under it, on the popover layer, with the
  * colors Convert image found as a 7-column grid. Choosing one, Escape or a press outside closes it, and Escape hands
- * focus back to the button. A Pattern with no Image colors leaves the button `faint`, saying why in its tooltip; it
+ * focus back to the button. A Project with no Image colors leaves the button `faint`, saying why in its tooltip; it
  * stays focusable so that reason can be read.
  */
 const props = defineProps<{
@@ -85,7 +85,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
         </button>
       </template>
     </AppTooltip>
-    <!-- Kept in the page while closed, hidden, so the Pattern's Image colors are always the same swatches. -->
+    <!-- Kept in the page while closed, hidden, so the Project's Image colors are always the same swatches. -->
     <div
       v-if="colors?.length"
       v-show="open"

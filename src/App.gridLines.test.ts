@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
-import { beadColors, drawnPattern, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
-import type { Technique } from './domain/pattern'
-import { loadPatterns } from './services/libraryStore'
+import { beadColors, drawnProject, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
+import type { Technique } from './domain/project'
+import { loadProjects } from './services/libraryStore'
 
 /**
  * The ruler-click Selection and "remove selected row/column" Tool (ticket 123): clicking a ruler number selects
@@ -33,7 +33,7 @@ async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId =
   await wrapper.find('.app-shell').trigger('mouseup')
 }
 
-const stored = () => loadPatterns()[0]!
+const stored = () => loadProjects()[0]!
 
 const removeLineButton = (wrapper: ReturnType<typeof mount>) =>
   wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]')
@@ -184,6 +184,6 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
 
     await removeLineButton(wrapper).trigger('click')
 
-    expect(drawnPattern(wrapper)).toMatchObject({ frame: { columns: 3, rows: 3 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { columns: 3, rows: 3 } })
   })
 })

@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 import { beadBounds } from '../../domain/canvas'
 import type { GridPosition } from '../../domain/grid'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 
 /** What the keyboard cursor needs from the app shell. Deps are read lazily. */
 export interface KeyboardCursorDeps {
-  currentPattern: () => Pattern | undefined
+  currentProject: () => Project | undefined
   /** Scrolls the open canvas just far enough to show a bead (the cursor never leaves the view). */
   reveal: (position: GridPosition) => void
   hasSelection: () => boolean
@@ -20,25 +20,25 @@ export interface KeyboardCursorDeps {
 }
 
 /**
- * Painting with the keyboard (tickets 159, 194; ADR 0023; BeadCursor card). The Pattern is one Tab stop with a bead
+ * Painting with the keyboard (tickets 159, 194; ADR 0023; BeadCursor card). The Project is one Tab stop with a bead
  * cursor: arrows move it, Shift + arrows extend a Selection, Home / End go to the row's ends, Page Up / Down move ten
  * rows, Space or Enter uses the current tool through the same handlers (and undo history) as a pointer press, and Escape
  * leaves. The cursor shows only after keyboard focus, and one polite announcement follows each action.
  */
 export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
-  const keyboardOnPattern = ref(false)
-  let cursorPatternId: string | undefined
+  const keyboardOnProject = ref(false)
+  let cursorProjectId: string | undefined
 
-  /** Keyboard focus arriving on (or leaving) the Pattern. */
-  function onPatternKeyboardFocus(focused: boolean) {
-    keyboardOnPattern.value = focused
-    const pattern = deps.currentPattern()
-    if (focused && pattern) {
-      // A new Pattern starts the cursor at the top-left of the Frame, or of what is drawn, or at the first bead.
-      if (cursorPatternId !== pattern.id) {
-        cursorPatternId = pattern.id
-        const start = pattern.frame ?? beadBounds(pattern.beads)
+  /** Keyboard focus arriving on (or leaving) the Project. */
+  function onProjectKeyboardFocus(focused: boolean) {
+    keyboardOnProject.value = focused
+    const project = deps.currentProject()
+    if (focused && project) {
+      // A new Project starts the cursor at the top-left of the Frame, or of what is drawn, or at the first bead.
+      if (cursorProjectId !== project.id) {
+        cursorProjectId = project.id
+        const start = project.frame ?? beadBounds(project.beads)
         beadCursor.value = { row: start?.row ?? 0, column: start?.column ?? 0 }
       }
       deps.reveal(beadCursor.value)
@@ -51,8 +51,8 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   }
 
     function moveCursor(row: number, column: number, extend: boolean) {
-    const pattern = deps.currentPattern()
-    if (!pattern) return
+    const project = deps.currentProject()
+    if (!project) return
     const next = { row, column }
     if (extend) {
       deps.extendSelectionTo(beadCursor.value, next)
@@ -66,20 +66,20 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   }
 
   /** Where a row begins and ends for Home and End: across the Frame when there is one, otherwise from its first bead to its last (the cursor stays put on an empty row). */
-  function rowEnds(pattern: Pattern, row: number): { first: number; last: number } {
-    if (pattern.frame) {
-      return { first: pattern.frame.column, last: pattern.frame.column + pattern.frame.columns - 1 }
+  function rowEnds(project: Project, row: number): { first: number; last: number } {
+    if (project.frame) {
+      return { first: project.frame.column, last: project.frame.column + project.frame.columns - 1 }
     }
-    const columns = Object.keys(pattern.beads[row] ?? {}).map(Number)
+    const columns = Object.keys(project.beads[row] ?? {}).map(Number)
     return columns.length > 0
       ? { first: Math.min(...columns), last: Math.max(...columns) }
       : { first: beadCursor.value.column, last: beadCursor.value.column }
   }
 
-  function onPatternKey(event: KeyboardEvent) {
+  function onProjectKey(event: KeyboardEvent) {
     const { row, column } = beadCursor.value
-    const pattern = deps.currentPattern()
-    if (!pattern) return
+    const project = deps.currentProject()
+    if (!project) return
     if (deps.onFrameKey?.(event)) {
       event.preventDefault()
       event.stopPropagation()
@@ -88,7 +88,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     // Rotated, the picture is turned clockwise: on-screen arrows move along whichever grid axis now points that way
     // (ticket 171) -- undoing the same turn gridToRegion's forward mapping applies to the picture itself.
     const turn = (dRow: number, dColumn: number): [number, number] => {
-      switch (pattern.rotation) {
+      switch (project.rotation) {
         case 90:
           return [-dColumn, dRow]
         case 180:
@@ -109,9 +109,9 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (step) {
       moveCursor(row + step[0], column + step[1], event.shiftKey)
     } else if (event.key === 'Home') {
-      moveCursor(row, rowEnds(pattern, row).first, false)
+      moveCursor(row, rowEnds(project, row).first, false)
     } else if (event.key === 'End') {
-      moveCursor(row, rowEnds(pattern, row).last, false)
+      moveCursor(row, rowEnds(project, row).last, false)
     } else if (event.key === 'PageUp') {
       moveCursor(row - 10, column, false)
     } else if (event.key === 'PageDown') {
@@ -119,7 +119,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     } else if (event.key === ' ' || event.key === 'Enter') {
       deps.invokeToolAt(beadCursor.value)
     } else if (event.key === 'Escape' && !deps.hasSelection()) {
-      // Leaves the Pattern; with a Selection up, Escape clears that first (the app's own Escape order).
+      // Leaves the Project; with a Selection up, Escape clears that first (the app's own Escape order).
       ;(event.target as HTMLElement).blur()
     } else {
       return
@@ -129,9 +129,9 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     event.stopPropagation()
   }
 
-  function onPatternKeyUp(event: KeyboardEvent) {
+  function onProjectKeyUp(event: KeyboardEvent) {
     if (event.key === 'Shift') deps.finishExtending()
   }
 
-  return { beadCursor, keyboardOnPattern, onPatternKeyboardFocus, onPatternKey, onPatternKeyUp }
+  return { beadCursor, keyboardOnProject, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp }
 }

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import Toolbox from './Toolbox.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, setRowProgressEnabled, withFrame, type Pattern } from '../../domain/pattern'
+import { createProject, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 
@@ -12,8 +12,8 @@ beforeEach(() => {
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
-function makePattern(): Pattern {
-  return createPattern({
+function makeProject(): Project {
+  return createProject({
     technique: 'loom',
     beadId: cubeBead.id,
     size: { width: 15, height: 30, unit: 'mm' },
@@ -23,7 +23,7 @@ function makePattern(): Pattern {
 function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']> = {}) {
   return mount(Toolbox, {
     props: {
-      pattern: makePattern(),
+      project: makeProject(),
       activeTool: 'paint',
       canUndo: false,
       canRedo: false,
@@ -260,12 +260,12 @@ describe('Toolbox', () => {
 })
 
 describe('Toolbox Image colors (ticket 58)', () => {
-  function convertedPattern(): Pattern {
-    return { ...makePattern(), imageColors: ['#ff0000', '#00ff00'] }
+  function convertedProject(): Project {
+    return { ...makeProject(), imageColors: ['#ff0000', '#00ff00'] }
   }
 
-  it('shows the open Pattern Image colors in the Colors group, alongside the Palette', () => {
-    const wrapper = mountToolbox({ pattern: convertedPattern() })
+  it('shows the open Project Image colors in the Colors group, alongside the Palette', () => {
+    const wrapper = mountToolbox({ project: convertedProject() })
 
     const colorsGroup = wrapper.findAll('.tool-group')[1]!
     expect(colorsGroup.find('[data-testid="palette-picker"]').exists()).toBe(true)
@@ -273,20 +273,20 @@ describe('Toolbox Image colors (ticket 58)', () => {
     expect(colorsGroup.findAll('[data-testid="image-color-swatch"]')).toHaveLength(2)
   })
 
-  it('shows nothing for a Pattern created any other way', () => {
+  it('shows nothing for a Project created any other way', () => {
     const wrapper = mountToolbox()
 
     expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
   })
 
   it('shows nothing for a conversion that found no colors at all', () => {
-    const wrapper = mountToolbox({ pattern: { ...makePattern(), imageColors: [] } })
+    const wrapper = mountToolbox({ project: { ...makeProject(), imageColors: [] } })
 
     expect(wrapper.find('[data-testid="image-colors-picker"]').exists()).toBe(false)
   })
 
   it('emits select-image-color with the clicked hex', async () => {
-    const wrapper = mountToolbox({ pattern: convertedPattern() })
+    const wrapper = mountToolbox({ project: convertedProject() })
 
     await wrapper.find('[data-color-hex="#00ff00"]').trigger('click')
 
@@ -294,7 +294,7 @@ describe('Toolbox Image colors (ticket 58)', () => {
   })
 
   it('shows which Image color is being painted with', () => {
-    const wrapper = mountToolbox({ pattern: convertedPattern(), selectedImageColor: '#ff0000' })
+    const wrapper = mountToolbox({ project: convertedProject(), selectedImageColor: '#ff0000' })
 
     expect(wrapper.find('[data-color-hex="#ff0000"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-color-hex="#00ff00"]').attributes('aria-pressed')).toBe('false')
@@ -302,7 +302,7 @@ describe('Toolbox Image colors (ticket 58)', () => {
 
   it('leaves the Custom color slot unselected while an Image color is the paint color', () => {
     const wrapper = mountToolbox({
-      pattern: convertedPattern(),
+      project: convertedProject(),
       customColor: '#abcdef',
       selectedColorId: undefined,
       selectedImageColor: '#ff0000',
@@ -312,7 +312,7 @@ describe('Toolbox Image colors (ticket 58)', () => {
   })
 
   it('takes its own line rather than counting toward the group control cap', () => {
-    const wrapper = mountToolbox({ pattern: convertedPattern() })
+    const wrapper = mountToolbox({ project: convertedProject() })
 
     expect(wrapper.find('[data-testid="tool-group-colors"] [data-testid="image-colors-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
@@ -334,7 +334,7 @@ describe('Toolbox without Save or Export (ticket 148)', () => {
 describe('Toolbox rail (ticket 114)', () => {
   it('shows every control of every Tool group without any group expanding, even with Image colors', () => {
     const wrapper = mountToolbox({
-      pattern: { ...makePattern(), imageColors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'] },
+      project: { ...makeProject(), imageColors: ['#ff0000', '#00ff00', '#0000ff', '#ffff00'] },
     })
 
     expect(wrapper.findAll('[data-testid="tool-group-chevron"]')).toHaveLength(0)
@@ -378,8 +378,8 @@ describe('Toolbox Rotate (ticket 233)', () => {
   const rotate = (wrapper: ReturnType<typeof mountToolbox>) => wrapper.find('[data-testid="rotate-button"]')
 
   it('is disabled and named "Rotate, Set Frame first" with no Frame', async () => {
-    const { frame: _frame, ...open } = makePattern()
-    const wrapper = mountToolbox({ pattern: open })
+    const { frame: _frame, ...open } = makeProject()
+    const wrapper = mountToolbox({ project: open })
     expect(rotate(wrapper).attributes('disabled')).toBeDefined()
     expect(rotate(wrapper).attributes('aria-label')).toBe(ru.frame.rotateNeedsFrame)
     await rotate(wrapper).trigger('click')
@@ -387,7 +387,7 @@ describe('Toolbox Rotate (ticket 233)', () => {
   })
 
   it('waits while Row progress is on, saying why', () => {
-    const wrapper = mountToolbox({ pattern: setRowProgressEnabled(makePattern(), true) })
+    const wrapper = mountToolbox({ project: setRowProgressEnabled(makeProject(), true) })
     expect(rotate(wrapper).attributes('disabled')).toBeDefined()
     expect(rotate(wrapper).attributes('aria-label')).toBe(ru.size.lockedReason)
   })
@@ -401,19 +401,19 @@ describe('Toolbox Rotate (ticket 233)', () => {
 
 describe('Toolbox Frame row (ticket 233)', () => {
   const frameRow = (wrapper: ReturnType<typeof mountToolbox>) => wrapper.find('[data-testid="tool-group-frame"]')
-  const withoutFrame = (): Pattern => {
-    const { frame: _frame, ...rest } = makePattern()
+  const withoutFrame = (): Project => {
+    const { frame: _frame, ...rest } = makeProject()
     return rest
   }
 
   it('reads "not set" with no Frame, and has no number to press', () => {
-    const wrapper = mountToolbox({ pattern: withoutFrame() })
+    const wrapper = mountToolbox({ project: withoutFrame() })
     expect(frameRow(wrapper).find('.disclosure-row__summary').text()).toBe(ru.frame.notSet)
     expect(frameRow(wrapper).find('.disclosure-row__chip').exists()).toBe(false)
   })
 
   it('starts Set Frame when opened with no Frame, and says what a Frame is', async () => {
-    const wrapper = mountToolbox({ pattern: withoutFrame() })
+    const wrapper = mountToolbox({ project: withoutFrame() })
     await frameRow(wrapper).find('button').trigger('click')
     expect(wrapper.emitted('start-frame')).toHaveLength(1)
     expect(frameRow(wrapper).find('[data-testid="frame-explainer"]').text()).toBe(ru.frame.explainer)
@@ -437,7 +437,7 @@ describe('Toolbox Frame row (ticket 233)', () => {
 
   it('steps the Columns and Rows, Fits to drawing and Removes the Frame', async () => {
     const wrapper = mountToolbox()
-    const frame = makePattern().frame!
+    const frame = makeProject().frame!
     await frameRow(wrapper).find('button').trigger('click')
 
     expect(frameRow(wrapper).find('[data-testid="frame-columns"]').text()).toBe(String(frame.columns))
@@ -464,13 +464,13 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(wrapper.get('[data-testid="tool-frame"]').attributes('tabindex')).toBe('0')
     expect(wrapper.get('[data-testid="tool-paint"]').attributes('tabindex')).toBe('-1')
 
-    await wrapper.setProps({ pattern: withFrame(makePattern(), undefined) })
+    await wrapper.setProps({ project: withFrame(makeProject(), undefined) })
     expect(wrapper.find('[data-testid="tool-remove-frame"]').exists()).toBe(false)
   })
 
   it('locks the size while Row progress is on, and writes why', async () => {
-    const pattern = setRowProgressEnabled(makePattern(), true)
-    const wrapper = mountToolbox({ pattern })
+    const project = setRowProgressEnabled(makeProject(), true)
+    const wrapper = mountToolbox({ project })
     await frameRow(wrapper).find('button').trigger('click')
 
     for (const id of ['frame-columns-increase', 'frame-rows-decrease', 'frame-fit', 'frame-remove']) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The Bead pill (BeadPill card): a read-only pill naming the open Pattern's Bead, in the header and at the top of the
- * phone's Pattern sheet. The class name stays `app-header__pill` because styles/contrast.css targets it by that name.
+ * The Bead pill (BeadPill card): a read-only pill naming the open Project's Bead, in the header and at the top of the
+ * phone's Project sheet. The class name stays `app-header__pill` because styles/contrast.css targets it by that name.
  */
 </script>
 

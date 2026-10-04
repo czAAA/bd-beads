@@ -8,7 +8,7 @@ const EDITOR_CHOSEN_KEY = 'bd-beads:editor-chosen'
 
 /**
  * Whether the main address sends the visitor to the Overview instead of the editor (ticket 77): only when this
- * device's Pattern library is empty and the Tour has been neither finished nor turned off, and they haven't just
+ * device's Project library is empty and the Tour has been neither finished nor turned off, and they haven't just
  * chosen the editor from the Overview.
  */
 export function shouldOpenOverview(libraryEmpty: boolean, tour: TourStatus, editorChosen: boolean): boolean {

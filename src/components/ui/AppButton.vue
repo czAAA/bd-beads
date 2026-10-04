@@ -5,7 +5,7 @@ import type { IconName } from './icons'
 /**
  * The design system's Button (ticket 157; Button, InteractionStates and Motion cards). One per action: `primary` for
  * the single most likely next action in a region (two never sit side by side), `secondary` on the page, `in-box`
- * inside the save box and Saved Patterns, `toolbox` for the Toolbox's own buttons, `box` in the canvas box's Progress
+ * inside the save box and Saved Projects, `toolbox` for the Toolbox's own buttons, `box` in the canvas box's Progress
  * bar, `text` for Import a file and
  * Import QR code, `danger` only for a destructive modal's confirm. `selected` is the segment look (an `ink` fill) and
  * is announced with aria-pressed.

@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { withColors } from './domain/canvas'
-import { createPattern, type Pattern } from './domain/pattern'
-import { loadPatterns, savePatterns } from './services/libraryStore'
+import { createProject, type Project } from './domain/project'
+import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { beadColor, drawnPattern, hoverBead, pressBead } from './testUtils/beads'
+import { beadColor, drawnProject, hoverBead, pressBead } from './testUtils/beads'
 
 /** Set Frame (ticket 233, ADR 0026) as the app shows it: drawing, moving and resizing the Frame, its Toolbox row and its keys. */
 
@@ -20,8 +20,8 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function openCanvas(): Pattern {
-  const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
+function openCanvas(): Project {
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
   return {
     ...base,
     frame: undefined,
@@ -33,8 +33,8 @@ function openCanvas(): Pattern {
   }
 }
 
-async function mountOpen(pattern = openCanvas()) {
-  savePatterns([pattern])
+async function mountOpen(project = openCanvas()) {
+  saveProjects([project])
   const wrapper = mount(App, { attachTo: document.body })
   await flushPromises()
   return wrapper
@@ -45,8 +45,8 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="pattern-surface"]')
-const savedFrame = () => loadPatterns()[0]!.frame
+const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
+const savedFrame = () => loadProjects()[0]!.frame
 
 /** Drags from one bead to another with the pointer, as one gesture. */
 async function drag(wrapper: Awaited<ReturnType<typeof mountOpen>>, from: { row: number; column: number }, to: { row: number; column: number }) {
@@ -78,7 +78,7 @@ describe('Set Frame', () => {
     await pressBead(wrapper, { row: 1, column: 1 })
     await hoverBead(wrapper, { row: 3, column: 4 }, { buttons: 1 })
     await flushPromises()
-    expect(drawnPattern(wrapper).frame).toEqual({ row: 1, column: 1, rows: 3, columns: 4 })
+    expect(drawnProject(wrapper).frame).toEqual({ row: 1, column: 1, rows: 3, columns: 4 })
     expect(savedFrame()).toBeUndefined()
 
     await surface(wrapper).trigger('pointerup')
@@ -129,11 +129,11 @@ describe('Set Frame', () => {
   })
 
   it('is refused while Row progress is on', async () => {
-    const pattern = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const wrapper = await mountOpen({ ...pattern, rowProgress: { ...pattern.rowProgress, enabled: true } })
+    const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+    const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
     await key({ key: 'f' })
     await drag(wrapper, { row: 5, column: 5 }, { row: 7, column: 8 })
-    expect(savedFrame()).toEqual(pattern.frame)
+    expect(savedFrame()).toEqual(project.frame)
   })
 })
 
@@ -169,7 +169,7 @@ describe('the Frame row', () => {
 })
 
 describe('Rotate, Export and Row progress on the Frame', () => {
-  const framed = (): Pattern => ({
+  const framed = (): Project => ({
     ...openCanvas(),
     frame: { row: 2, column: 3, rows: 2, columns: 3 },
   })
@@ -186,14 +186,14 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   })
 
   it('moves a Piece out of the way with a Message, and Undo brings it and the turn back', async () => {
-    const pattern = framed()
+    const project = framed()
     // A piece below the Frame, where the taller turned Frame reaches.
-    const withPiece = { ...pattern, beads: withColors(pattern.beads, [{ row: 4, column: 5, color: RED }]) }
+    const withPiece = { ...project, beads: withColors(project.beads, [{ row: 4, column: 5, color: RED }]) }
     const wrapper = await mountOpen(withPiece)
     await wrapper.find('[data-testid="rotate-button"]').trigger('click')
     await flushPromises()
 
-    const message = wrapper.find('[data-testid="pattern-rotated"]')
+    const message = wrapper.find('[data-testid="project-rotated"]')
     expect(message.text()).toContain(en.palette.undoButton)
     expect(message.text()).toContain('Pattern rotated. 1 piece was in the way and moved outside the Frame.')
     expect(beadColor(wrapper, { row: 4, column: 5 })).toBeNull()
@@ -201,7 +201,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await message.find('[data-testid="toast-action"]').trigger('click')
     await flushPromises()
     expect(beadColor(wrapper, { row: 4, column: 5 })).toBe(RED)
-    expect(savedFrame()).toEqual(pattern.frame)
+    expect(savedFrame()).toEqual(project.frame)
   })
 
   it('disables Rotate with no Frame, naming why', async () => {
@@ -242,26 +242,26 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   })
 })
 
-describe('New Pattern with the Frame optional', () => {
+describe('New Project with the Frame optional', () => {
   it('creates an open canvas from the empty form, and lists it in the library', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
-    await wrapper.find('form.new-pattern-form').trigger('submit')
+    await wrapper.find('form.new-project-form').trigger('submit')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('0 pieces · no Frame')
     expect(savedFrame()).toBeUndefined()
-    expect(loadPatterns()).toHaveLength(1)
-    expect(wrapper.find('[data-testid="pattern-list"]').exists() || wrapper.text().includes(loadPatterns()[0]!.name)).toBe(true)
+    expect(loadProjects()).toHaveLength(1)
+    expect(wrapper.find('[data-testid="project-list"]').exists() || wrapper.text().includes(loadProjects()[0]!.name)).toBe(true)
   })
 
-  it('creates a Pattern with a Frame of the stated size when one is given', async () => {
+  it('creates a Project with a Frame of the stated size when one is given', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     await wrapper.find('[data-testid="width-input"]').setValue('6')
     await wrapper.find('[data-testid="height-input"]').setValue('4')
-    await wrapper.find('form.new-pattern-form').trigger('submit')
+    await wrapper.find('form.new-project-form').trigger('submit')
     await flushPromises()
 
     expect(savedFrame()).toEqual({ row: 0, column: 0, columns: 6, rows: 4 })

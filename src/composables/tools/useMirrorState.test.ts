@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 import { useMirrorState } from './useMirrorState'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createPattern, frameGrid, paintCells, type Pattern } from '../../domain/pattern'
+import { createProject, frameGrid, paintCells, type Project } from '../../domain/project'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 
 /** 4 columns x 4 rows, loom. */
-function makePattern(): Pattern {
-  return createPattern({ technique: 'loom', beadId: cubeBeadId, size: { width: 6, height: 6, unit: 'mm' } })
+function makeProject(): Project {
+  return createProject({ technique: 'loom', beadId: cubeBeadId, size: { width: 6, height: 6, unit: 'mm' } })
 }
 
 describe('useMirrorState', () => {
@@ -22,9 +22,9 @@ describe('useMirrorState', () => {
   })
 
   describe('setAxisCount', () => {
-    it('clamps to the open Pattern current size', () => {
-      const pattern = makePattern() // maxAxisCount(4) === 3
-      const mirror = useMirrorState(() => pattern, vi.fn())
+    it('clamps to the open Project current size', () => {
+      const project = makeProject() // maxAxisCount(4) === 3
+      const mirror = useMirrorState(() => project, vi.fn())
 
       mirror.setAxisCount('columns', 99)
       expect(mirror.axisCounts.value.columns).toBe(3)
@@ -33,7 +33,7 @@ describe('useMirrorState', () => {
       expect(mirror.axisCounts.value.columns).toBe(0)
     })
 
-    it('does nothing with no Pattern open', () => {
+    it('does nothing with no Project open', () => {
       const mirror = useMirrorState(() => undefined, vi.fn())
 
       mirror.setAxisCount('columns', 2)
@@ -42,8 +42,8 @@ describe('useMirrorState', () => {
     })
 
     it('changes one direction without touching the other', () => {
-      const pattern = makePattern()
-      const mirror = useMirrorState(() => pattern, vi.fn())
+      const project = makeProject()
+      const mirror = useMirrorState(() => project, vi.fn())
 
       mirror.setAxisCount('columns', 2)
       mirror.setAxisCount('rows', 1)
@@ -64,16 +64,16 @@ describe('useMirrorState', () => {
 
   describe('previewedAxisCounts (ticket 47 hover preview)', () => {
     it('is exactly axisCounts with nothing hovered', () => {
-      const pattern = makePattern()
-      const mirror = useMirrorState(() => pattern, vi.fn())
+      const project = makeProject()
+      const mirror = useMirrorState(() => project, vi.fn())
       mirror.setAxisCount('columns', 2)
 
       expect(mirror.previewedAxisCounts.value).toEqual({ columns: 2, rows: 0 })
     })
 
     it('previews the hovered direction at its effective count (0 acts as 1), leaving the other alone', () => {
-      const pattern = makePattern()
-      const mirror = useMirrorState(() => pattern, vi.fn())
+      const project = makeProject()
+      const mirror = useMirrorState(() => project, vi.fn())
       mirror.setAxisCount('columns', 2)
 
       mirror.onHoverCurrent('vertical')
@@ -82,8 +82,8 @@ describe('useMirrorState', () => {
     })
 
     it('goes back to the stored counts once the pointer leaves', () => {
-      const pattern = makePattern()
-      const mirror = useMirrorState(() => pattern, vi.fn())
+      const project = makeProject()
+      const mirror = useMirrorState(() => project, vi.fn())
 
       mirror.onHoverCurrent('horizontal')
       mirror.onHoverCurrent(null)
@@ -93,17 +93,17 @@ describe('useMirrorState', () => {
   })
 
   describe('currentDimmedCells (ticket 47 hover preview)', () => {
-    it('is empty with nothing hovered or no Pattern open', () => {
-      const pattern = makePattern()
-      const mirror = useMirrorState(() => pattern, vi.fn())
+    it('is empty with nothing hovered or no Project open', () => {
+      const project = makeProject()
+      const mirror = useMirrorState(() => project, vi.fn())
 
       expect(mirror.currentDimmedCells.value).toEqual([])
     })
 
     it('is what a "Mirror current" click on the hovered axis would actually change', () => {
-      let pattern = makePattern()
-      pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-      const mirror = useMirrorState(() => pattern, vi.fn())
+      let project = makeProject()
+      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      const mirror = useMirrorState(() => project, vi.fn())
 
       mirror.onHoverCurrent('horizontal')
 
@@ -114,16 +114,16 @@ describe('useMirrorState', () => {
 
   describe('mirrorCurrent', () => {
     it('commits through the given commitGridChange, not a private copy', () => {
-      let pattern = makePattern()
-      pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      let project = makeProject()
+      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
       const commitGridChange = vi.fn()
-      const mirror = useMirrorState(() => pattern, commitGridChange)
+      const mirror = useMirrorState(() => project, commitGridChange)
 
       mirror.mirrorCurrent('horizontal')
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
-      const [committedPattern, updated] = commitGridChange.mock.calls[0]!
-      expect(committedPattern).toBe(pattern)
+      const [committedProject, updated] = commitGridChange.mock.calls[0]!
+      expect(committedProject).toBe(project)
       expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
         '#e63746',
         null,
@@ -133,10 +133,10 @@ describe('useMirrorState', () => {
     })
 
     it('uses that direction own axis count and copy mode', () => {
-      let pattern = makePattern()
-      pattern = paintCells(pattern, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      let project = makeProject()
+      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
       const commitGridChange = vi.fn()
-      const mirror = useMirrorState(() => pattern, commitGridChange)
+      const mirror = useMirrorState(() => project, commitGridChange)
       mirror.setAxisCount('columns', 1)
       mirror.toggleCopyMode()
 
@@ -152,7 +152,7 @@ describe('useMirrorState', () => {
       ])
     })
 
-    it('does nothing with no Pattern open', () => {
+    it('does nothing with no Project open', () => {
       const commitGridChange = vi.fn()
       const mirror = useMirrorState(() => undefined, commitGridChange)
 
@@ -171,8 +171,8 @@ describe('useMirrorState', () => {
   })
 
   it('clearAxisCounts resets just the axis counts, leaving copy mode and hover alone', () => {
-    const pattern = makePattern()
-    const mirror = useMirrorState(() => pattern, vi.fn())
+    const project = makeProject()
+    const mirror = useMirrorState(() => project, vi.fn())
     mirror.setAxisCount('columns', 2)
     mirror.toggleCopyMode()
     mirror.onHoverCurrent('horizontal')
@@ -184,9 +184,9 @@ describe('useMirrorState', () => {
     expect(mirror.previewedAxisCounts.value).toEqual({ columns: 1, rows: 0 }) // still hovering horizontal
   })
 
-  it('reset clears axis counts, copy mode and hover state together, on a Pattern switch', () => {
-    const pattern = makePattern()
-    const mirror = useMirrorState(() => pattern, vi.fn())
+  it('reset clears axis counts, copy mode and hover state together, on a Project switch', () => {
+    const project = makeProject()
+    const mirror = useMirrorState(() => project, vi.fn())
     mirror.setAxisCount('columns', 2)
     mirror.toggleCopyMode()
     mirror.onHoverCurrent('horizontal')

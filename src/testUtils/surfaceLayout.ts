@@ -13,7 +13,7 @@ const original = typeof Element === 'undefined' ? undefined : Element.prototype.
 
 export function installSurfaceLayout(): void {
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    if (this.classList.contains('pattern-surface')) {
+    if (this.classList.contains('project-surface')) {
       const style = (this as HTMLElement).style
       const width = Number.parseFloat(style.width)
       const height = Number.parseFloat(style.height)

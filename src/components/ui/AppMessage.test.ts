@@ -37,9 +37,9 @@ describe('AppMessage', () => {
   })
 
   it('shows its actions', () => {
-    const wrapper = mount(AppMessage, { slots: { default: 'Couldn’t save', actions: '<button>Export Pattern</button>' } })
+    const wrapper = mount(AppMessage, { slots: { default: 'Couldn’t save', actions: '<button>Export Project</button>' } })
 
-    expect(wrapper.find('.app-message__actions').text()).toBe('Export Pattern')
+    expect(wrapper.find('.app-message__actions').text()).toBe('Export Project')
   })
 
   it('goes by itself after its timeout', async () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, useId } from 'vue'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
-import { resolvePatternBead, type Pattern } from '../../domain/pattern'
+import { resolveProjectBead, type Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -16,15 +16,15 @@ import { useMediaQuery } from '../../composables/ui/useMediaQuery'
  * expanded, every color. The rows stay a table, with its column headings for screen readers only.
  */
 const props = defineProps<{
-  /** The Pattern whose bead counts are shown; without one the box just asks for a Pattern to be opened. */
-  pattern?: Pattern
+  /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
+  project?: Project
 }>()
 
 const { t, locale } = useI18n()
 
-// Read from the Pattern itself, not through the library's reactive wrapper: a Pattern is replaced whole by every edit, so
+// Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit, so
 // its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is slow.
-const quantities = computed(() => (props.pattern ? computeColorQuantities(toRaw(props.pattern)) : []))
+const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project)) : []))
 
 /** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before expanding. */
 const isDesktop = useMediaQuery('(min-width: 1920px)')
@@ -35,9 +35,9 @@ const collapsedHeight = computed(() => (isDesktop.value ? 'var(--panel-body-heig
 
 /**
  * Estimated weight (ticket 155, CONTEXT.md): count × the Bead's average weight of one bead, worked out here and never
- * stored. A Pattern whose Bead is unknown or has no weight gets no weight column at all, rather than zeros.
+ * stored. A Project whose Bead is unknown or has no weight gets no weight column at all, rather than zeros.
  */
-const gramsPerBead = computed(() => (props.pattern ? resolvePatternBead(props.pattern)?.gramsPerBead : undefined))
+const gramsPerBead = computed(() => (props.project ? resolveProjectBead(props.project)?.gramsPerBead : undefined))
 
 function weightOf(count: number): string | undefined {
   const grams = estimatedGrams(count, { gramsPerBead: gramsPerBead.value })
@@ -114,10 +114,10 @@ const tipOpen = ref(false)
       </span>
     </template>
 
-    <p v-if="!pattern" class="bead-quantities__empty" data-testid="quantities-no-pattern">
-      {{ t.quantities.noPatternMessage }}
+    <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
+      {{ t.quantities.noProjectMessage }}
     </p>
-    <p v-else-if="!pattern.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
+    <p v-else-if="!project.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
       {{ t.frame.countNeedsFrame }}
     </p>
     <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">

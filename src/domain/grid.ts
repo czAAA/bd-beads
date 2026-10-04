@@ -3,10 +3,10 @@ import { beadPitchMm, type Bead } from './beads'
 /** A real-world length unit. */
 export type PhysicalUnit = 'mm' | 'cm'
 
-/** What a New Pattern's size can be stated in: a count of beads, or a real-world length converted to beads once (ADR 0017). */
+/** What a New Project's size can be stated in: a count of beads, or a real-world length converted to beads once (ADR 0017). */
 export type SizeUnit = 'beads' | PhysicalUnit
 
-/** The weaving method, which determines a Pattern's grid geometry. */
+/** The weaving method, which determines a Project's grid geometry. */
 export type Technique = 'loom' | 'peyote' | 'brick'
 
 /** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06 — every other row sits half a bead across. */
@@ -16,7 +16,7 @@ export function isOffsetTechnique(technique: Technique): boolean {
 
 /**
  * A view-only quarter-turn (ticket 171, extending ticket 28's 0°/90° to all four): clockwise, in degrees. Purely
- * cosmetic, like Pattern.rotation itself — the grid never turns, only its on-screen (and printed/exported)
+ * cosmetic, like Project.rotation itself — the grid never turns, only its on-screen (and printed/exported)
  * presentation.
  */
 export type Rotation = 0 | 90 | 180 | 270
@@ -61,17 +61,17 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
   return { columns, rows }
 }
 
-/** The pixel size a bead is drawn at, at zoom 1 (the Pattern renderer's own size), so fit-zoom math lines up with what is drawn. */
+/** The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so fit-zoom math lines up with what is drawn. */
 export const CELL_SIZE_PX = 20
 
 /**
- * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Pattern that needs less gets a
+ * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Project that needs less gets a
  * box its own shape rather than empty bands inside a fixed square (ticket 18). Raised twice from the original 480:
  * once when the editing tools left the left panel (ADR 0005) and the canvas became what reclaims that width, and
- * again here because 640 was still forcing ordinary-sized Patterns (a few dozen columns/rows) to open zoomed below
+ * again here because 640 was still forcing ordinary-sized Projects (a few dozen columns/rows) to open zoomed below
  * 100% for no reason — the box simply wasn't big enough to show them at their natural 1:1 bead size. 900 covers a
- * Pattern well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header take
- * their share; a Pattern past that still opens fit-to-box and zooms/scrolls from there as designed.
+ * Project well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header take
+ * their share; a Project past that still opens fit-to-box and zooms/scrolls from there as designed.
  */
 export const CANVAS_MAX_PX = 900
 
@@ -164,7 +164,7 @@ function overlappingColumns(technique: Technique, fromRow: number, toRow: number
   return [column]
 }
 
-/** The cells adjacent to (row, column) given the Pattern's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. Only positions inside `bounds` come back; with no bounds the canvas is open and every neighbour does. */
+/** The cells adjacent to (row, column) given the Project's grid geometry: same-row left/right, plus the row above/below's overlapping cell(s) per the Technique's offset (ticket 06). Used by the fill tool so it respects each Technique's real adjacency instead of assuming a straight grid. Only positions inside `bounds` come back; with no bounds the canvas is open and every neighbour does. */
 export function neighborsOf(
   technique: Technique,
   bounds: GridBounds | undefined,

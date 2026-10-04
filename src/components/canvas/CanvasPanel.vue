@@ -6,20 +6,20 @@ import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
-import PatternSurface from './PatternSurface.vue'
+import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from '../ui/ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
-import { resolvePatternBead } from '../../domain/pattern'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
+import { resolveProjectBead } from '../../domain/project'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
 const {
   t,
-  activePattern,
-  patternLabel,
+  activeProject,
+  projectLabel,
   toasts,
   dismissToast,
   framing,
@@ -69,10 +69,10 @@ const {
   onCellHover,
   onHoverEnd,
   beadCursor,
-  keyboardOnPattern,
-  onPatternKeyboardFocus,
-  onPatternKey,
-  onPatternKeyUp,
+  keyboardOnProject,
+  onProjectKeyboardFocus,
+  onProjectKey,
+  onProjectKeyUp,
   onRotate,
   onToggleRowProgress,
   onToggleRowDirection,
@@ -81,7 +81,7 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
-  settledPattern,
+  settledProject,
   activePiece,
   onStartSetFrame,
   onDoneSetFrame,
@@ -94,23 +94,23 @@ const {
   onFrameCancel,
 } = useAppShell()
 
-/** The Pattern as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
-const shownPattern = computed(() => (activePattern.value && frameDraft.value ? { ...activePattern.value, frame: frameDraft.value } : activePattern.value))
+/** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
+const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
 /** Why Rotate is off, if it is: no Frame to turn, or Row progress holding the Frame's rows still. */
 const rotateOff = computed(() => {
-  const pattern = activePattern.value
-  if (!pattern) return undefined
-  if (!pattern.frame) return t.value.frame.rotateNeedsFrame
-  return pattern.rowProgress.enabled ? t.value.size.lockedReason : undefined
+  const project = activeProject.value
+  if (!project) return undefined
+  if (!project.frame) return t.value.frame.rotateNeedsFrame
+  return project.rowProgress.enabled ? t.value.size.lockedReason : undefined
 })
 
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
-  const pattern = shownPattern.value
-  const frame = pattern?.frame
-  if (!pattern || !frame) return ''
-  const bead = resolvePatternBead(pattern)
+  const project = shownProject.value
+  const frame = project?.frame
+  if (!project || !frame) return ''
+  const bead = resolveProjectBead(project)
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
@@ -137,7 +137,7 @@ function techniqueWord(technique: Technique): string {
 <template>
   <!--
     The canvas box (ticket 141): all the width right of the left column and the full height of the main area. The
-    page never scrolls; the Pattern scrolls inside the box.
+    page never scrolls; the Project scrolls inside the box.
   -->
   <main class="app-shell__canvas-column">
     <div
@@ -148,35 +148,35 @@ function techniqueWord(technique: Technique): string {
       <!--
         The canvas box's header strip (ticket 143): what is on the board and its zoom. While a picture is being
         framed (ticket 58) its zoom is the framing step's own, over its own 100–800% range (domain/imageFraming),
-        since that zoom moves the picture under a fixed frame rather than scaling the Pattern on screen. The strip
-        never scrolls, zooms or rotates with the Pattern below it.
+        since that zoom moves the picture under a fixed frame rather than scaling the Project on screen. The strip
+        never scrolls, zooms or rotates with the Project below it.
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
-        :pattern="settledPattern"
+        :project="settledProject"
         :size="stripSize"
         :zoom-percent="stripZoomPercent"
-        :hint="keyboardOnPattern ? t.a11y.keyboardHint : undefined"
+        :hint="keyboardOnProject ? t.a11y.keyboardHint : undefined"
         :title="framing ? t.convertImage.heading : undefined"
-        :rulers="activePattern && !framing ? showRulers : undefined"
+        :rulers="activeProject && !framing ? showRulers : undefined"
         :setting-frame="settingFrame"
-        :canvas-color="activePattern && !framing"
+        :canvas-color="activeProject && !framing"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
         @zoom-out="framing ? convertZoomOut() : zoomOut()"
         @reset="framing ? convertResetZoom() : resetZoom()"
         @toggle-rulers="toggleRulers"
       />
 
-      <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Pattern). -->
+      <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
       <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
-        <CanvasBackdrop v-if="activePattern && !framing" :word="techniqueWord(activePattern.technique)" />
+        <CanvasBackdrop v-if="activeProject && !framing" :word="techniqueWord(activeProject.technique)" />
 
         <!-- How to move the canvas and its shortcuts: always, from the iPad mini up (CanvasHint card). -->
-        <CanvasHint v-if="activePattern && !framing" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="activeProject && !framing" class="app-shell__canvas-hint" />
 
-        <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Pattern's bottom-right corner instead. -->
+        <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Project's bottom-right corner instead. -->
         <ZoomPill
-          v-if="activePattern && !framing"
+          v-if="activeProject && !framing"
           class="app-shell__zoom-pill"
           :zoom-percent="zoomPercent"
           :rulers="showRulers"
@@ -187,10 +187,10 @@ function techniqueWord(technique: Technique): string {
         />
 
         <div class="app-shell__canvas-row">
-          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-tour="canvas" :class="{ 'app-shell__canvas-scroll--empty': !activePattern && !framing }">
+          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-tour="canvas" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
             <!--
-              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Pattern
-              open yet" placeholder otherwise occupies — and ahead of the open Pattern too, since framing can be
+              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Project
+              open yet" placeholder otherwise occupies — and ahead of the open Project too, since framing can be
               entered with one open. Cancel hands the panel straight back.
             -->
             <ConvertImageFrame
@@ -209,9 +209,9 @@ function techniqueWord(technique: Technique): string {
               @create="onConvertImageCreate"
               @cancel="cancelConvertImage"
             />
-            <PatternSurface
-              v-else-if="activePattern"
-              :pattern="shownPattern!"
+            <ProjectSurface
+              v-else-if="activeProject"
+              :project="shownProject!"
               :active-piece="activePiece"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
@@ -224,12 +224,12 @@ function techniqueWord(technique: Technique): string {
               :selection="selection"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
-              :cursor="keyboardOnPattern ? beadCursor : undefined"
+              :cursor="keyboardOnProject ? beadCursor : undefined"
               :tour-marks="tour.marks.value"
-              :label="patternLabel"
-              @cursor-key="onPatternKey"
-              @keyup="onPatternKeyUp"
-              @keyboard-focus="onPatternKeyboardFocus"
+              :label="projectLabel"
+              @cursor-key="onProjectKey"
+              @keyup="onProjectKeyUp"
+              @keyboard-focus="onProjectKeyboardFocus"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
               @cell-secondary-down="onCellSecondaryDown"
@@ -253,7 +253,7 @@ function techniqueWord(technique: Technique): string {
 
       <!-- Short-lived results (ticket 76): bottom-right of the canvas box, above the Progress bar. -->
       <ToastRegion
-        :class="{ 'app-shell__toasts--above-progress': activePattern && !framing }"
+        :class="{ 'app-shell__toasts--above-progress': activeProject && !framing }"
         :toasts="toasts"
         @dismiss="dismissToast"
       />
@@ -267,7 +267,7 @@ function techniqueWord(technique: Technique): string {
         up, where the Toolbox's own Remove line/Copy already cover this.
       -->
       <ContextBar
-        v-if="activePattern && !framing"
+        v-if="activeProject && !framing"
         class="app-shell__context-bar"
         :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
         :paste-armed="pasteProjectionActive"
@@ -275,7 +275,7 @@ function techniqueWord(technique: Technique): string {
         :setting-frame="settingFrame"
         :frame-summary="frameTooltip"
         :rotate-off="rotateOff"
-        :has-frame="!!activePattern?.frame && !activePattern.rowProgress.enabled"
+        :has-frame="!!activeProject?.frame && !activeProject.rowProgress.enabled"
         @fit-frame="onFitFrame"
         @remove-frame="onRemoveFrame"
         @done-frame="onDoneSetFrame"
@@ -286,12 +286,12 @@ function techniqueWord(technique: Technique): string {
       />
 
       <!--
-        Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Pattern is open (not
+        Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open (not
         while a picture is being framed), since its first control is the switch that turns Row progress on.
       -->
       <ProgressBar
-        v-if="activePattern && !framing"
-        :pattern="activePattern"
+        v-if="activeProject && !framing"
+        :project="activeProject"
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
         @toggle-row-direction="onToggleRowDirection"
@@ -310,7 +310,7 @@ function techniqueWord(technique: Technique): string {
 /*
  * The Selection context bar (ticket 168; ContextBar card): floats 10px from the canvas box's own edges, just above
  * the Progress bar, on phone and iPad mini only -- the Toolbox's own Remove line/Copy links cover this at 1024px and
- * up, where there's no need for it to float over the Pattern.
+ * up, where there's no need for it to float over the Project.
  */
 .app-shell__context-bar {
   display: none;
@@ -353,13 +353,13 @@ function techniqueWord(technique: Technique): string {
 /*
  * The canvas box (ticket 141): all the width right of the left column and the full height of the body, on the same
  * dot-grid notepad texture as the Toolbox until ticket 143 restyles it. Its rows stack top to bottom (the zoom cluster,
- * a horizontal Progress bar, then the Pattern), and the Pattern's own row takes the rest of the height.
+ * a horizontal Progress bar, then the Project), and the Project's own row takes the rest of the height.
  *
  * The canvas is a surface that fills .app-shell__canvas-scroll edge to edge and moves under its own view (zoom and
  * scroll, ADR 0026), so nothing scrolls natively: the page never does either.
  *
  * The zoom cluster is a sibling of the scroller, not a descendant, so it never scrolls, zooms or rotates along with the
- * Pattern below it.
+ * Project below it.
  */
 .app-shell__canvas {
   position: relative;
@@ -376,7 +376,7 @@ function techniqueWord(technique: Technique): string {
 
 /*
  * The drawing area (ticket 143): the rest of the canvas box under the strip. Its size is measured for the fit zoom,
- * so it takes a share of the box (flex-basis 0), never the Pattern's size. The background highlight fills it behind
+ * so it takes a share of the box (flex-basis 0), never the Project's size. The background highlight fills it behind
  * everything; what follows it is positioned too, so it paints over the highlight.
  */
 .app-shell__drawing {
@@ -390,7 +390,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /*
- * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Pattern
+ * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Project
  * (below), and this broader rule's `relative` used to outrank that in specificity -- `.app-shell__drawing > :not(x)`
  * beats a plain `.app-shell__zoom-pill`, stretching the pill across the top of the canvas box instead of floating it.
  * CanvasHint is excluded for the same reason: it floats over the bottom-left corner.
@@ -432,7 +432,7 @@ function techniqueWord(technique: Technique): string {
   overflow: auto;
 }
 
-/* When no Pattern is open the scroll panel stretches to fill the whole row so the dot board covers it edge to edge. */
+/* When no Project is open the scroll panel stretches to fill the whole row so the dot board covers it edge to edge. */
 .app-shell__canvas-scroll--empty {
   align-self: stretch;
   width: 100%;
@@ -446,7 +446,7 @@ function techniqueWord(technique: Technique): string {
   }
 }
 
-/* No canvas strip on phone (responsive.md): ZoomPill floats over the Pattern instead. */
+/* No canvas strip on phone (responsive.md): ZoomPill floats over the Project instead. */
 @media (max-width: 743px) {
   .app-shell__canvas-strip {
     display: none;

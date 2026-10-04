@@ -67,7 +67,7 @@ describe('nearestColorLookup', () => {
 
 describe('exactPreviewColors', () => {
   it.each(['loom', 'peyote', 'brick'] as const)(
-    'is what the preview showed before it was drawn by the renderer: the Pattern inside the frame, the nearest Image color around it (%s)',
+    'is what the preview showed before it was drawn by the renderer: the Project inside the frame, the nearest Image color around it (%s)',
     (technique: Technique) => {
       const image = busyImage(60, 45)
       const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)

@@ -3,8 +3,8 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { MAKER_NAME_KEY } from './services/makerNameStore'
-import { createPattern } from './domain/pattern'
-import { savePatterns } from './services/libraryStore'
+import { createProject } from './domain/project'
+import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 
@@ -13,7 +13,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
-  savePatterns([createPattern({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })])
+  saveProjects([createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })])
 })
 
 function mountApp() {

@@ -26,13 +26,13 @@ describe('tour progress', () => {
     expect(loadTourProgress()).toEqual({ done: [] })
   })
 
-  it('remembers which steps are done and the Pattern the Tour builds', () => {
-    saveTourProgress({ done: ['create', 'fill'], patternId: 'abc' })
-    expect(loadTourProgress()).toEqual({ done: ['create', 'fill'], patternId: 'abc' })
+  it('remembers which steps are done and the Project the Tour builds', () => {
+    saveTourProgress({ done: ['create', 'fill'], projectId: 'abc' })
+    expect(loadTourProgress()).toEqual({ done: ['create', 'fill'], projectId: 'abc' })
   })
 
   it('ignores steps it does not know and anything unreadable', () => {
-    localStorage.setItem('bd-beads:tour-progress', JSON.stringify({ done: ['create', 'nonsense', 7], patternId: 5 }))
+    localStorage.setItem('bd-beads:tour-progress', JSON.stringify({ done: ['create', 'nonsense', 7], projectId: 5 }))
     expect(loadTourProgress()).toEqual({ done: ['create'] })
     localStorage.setItem('bd-beads:tour-progress', '{')
     expect(loadTourProgress()).toEqual({ done: [] })

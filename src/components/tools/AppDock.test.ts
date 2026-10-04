@@ -18,10 +18,10 @@ describe('AppDock', () => {
     expect(wrapper.get('[data-testid="dock-frame"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
 
-    for (const id of ['tool', 'color', 'edit', 'frame', 'pattern']) {
+    for (const id of ['tool', 'color', 'edit', 'frame', 'project']) {
       await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['frame'], ['pattern']])
+    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['frame'], ['project']])
   })
 
   it('has no Mirror sheet button left (ticket 174, pending its own redesign)', () => {

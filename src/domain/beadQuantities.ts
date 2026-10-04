@@ -3,9 +3,9 @@ import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import { findPaletteColorByHex } from './palette'
 import { beadsInFrame, forEachBead } from './canvas'
-import type { Pattern } from './pattern'
+import type { Project } from './project'
 
-/** One line of a Pattern's shopping list: a painted color and how many beads of it the Pattern needs. */
+/** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
   /** The Palette color this is, or null for a hex the Palette doesn't know (e.g. from an older imported file). */
   colorId: string | null
@@ -14,17 +14,17 @@ export interface ColorQuantity {
 }
 
 /**
- * How many beads of each color the Pattern needs, counted straight off its painted cells and ordered most-needed
+ * How many beads of each color the Project needs, counted straight off its painted cells and ordered most-needed
  * first. Unpainted cells don't count; a color painted nowhere isn't listed at all. Only the Frame's beads are counted
  * (ADR 0026): with no Frame there is nothing to count.
  */
-export function computeColorQuantities(pattern: Pattern): ColorQuantity[] {
+export function computeColorQuantities(project: Project): ColorQuantity[] {
   const counts = new Map<string, number>()
-  if (!pattern.frame) {
+  if (!project.frame) {
     return []
   }
 
-  forEachBead(beadsInFrame(pattern.beads, pattern.frame), (_row, _column, color) => {
+  forEachBead(beadsInFrame(project.beads, project.frame), (_row, _column, color) => {
     counts.set(color, (counts.get(color) ?? 0) + 1)
   })
 

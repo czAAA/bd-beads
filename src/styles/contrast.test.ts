@@ -28,10 +28,10 @@ describe('contrast.css', () => {
     expect(templates).toMatch(new RegExp(`['"\\s\`{]${name}(?![a-z0-9_-])`))
   })
 
-  it('keeps every bead color in forced colors: the Pattern, the swatches and the thumbnails', () => {
+  it('keeps every bead color in forced colors: the Project, the swatches and the thumbnails', () => {
     const forced = sheet.slice(sheet.indexOf('@media (forced-colors: active)'))
     const keep = forced.slice(0, forced.indexOf('forced-color-adjust: none'))
-    for (const name of ['pattern-surface', 'palette-picker__swatch', 'bead-quantities__swatch', 'pattern-thumbnail', 'qr-code']) {
+    for (const name of ['project-surface', 'palette-picker__swatch', 'bead-quantities__swatch', 'project-thumbnail', 'qr-code']) {
       expect(keep).toContain(`.${name}`)
     }
   })

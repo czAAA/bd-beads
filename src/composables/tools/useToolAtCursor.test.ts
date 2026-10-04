@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPattern } from '../../domain/pattern'
+import { createProject } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { en } from '../../i18n/en'
 import { useToolAtCursor } from './useToolAtCursor'
 
 function setup(tool: Tool = 'paint', changesGrid = true) {
-  let pattern = createPattern({
+  let project = createProject({
     technique: 'loom',
     beadId: 'toho-cube-1.5mm',
     size: { width: 3, height: 3, unit: 'beads' },
   })
   const deps = {
     messages: () => en,
-    currentPattern: () => pattern,
+    currentProject: () => project,
     activeTool: () => tool,
     selectedColorHex: () => '#123457',
     pressCell: vi.fn(() => {
-      if (changesGrid) pattern = { ...pattern, beads: { ...pattern.beads } }
+      if (changesGrid) project = { ...project, beads: { ...project.beads } }
     }),
     endStroke: vi.fn(),
     beginSelectPress: vi.fn(),

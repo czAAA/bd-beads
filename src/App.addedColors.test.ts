@@ -3,10 +3,10 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { MAX_ADDED_COLORS, PALETTE } from './domain/palette'
-import { createPattern } from './domain/pattern'
+import { createProject } from './domain/project'
 import { en } from './i18n/en'
 import { ADDED_COLORS_KEY } from './services/addedColorsStore'
-import { savePatterns } from './services/libraryStore'
+import { saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -14,7 +14,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
-  savePatterns([createPattern({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })])
+  saveProjects([createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })])
 })
 
 const swatches = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-testid="palette-swatch"]')

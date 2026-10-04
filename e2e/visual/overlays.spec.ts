@@ -1,10 +1,10 @@
-import { frameGrid } from '../../src/domain/pattern'
+import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { openApp, patternBox, setZoom } from '../support/app'
-import { fixturePattern } from '../support/patterns'
+import { openApp, projectBox, setZoom } from '../support/app'
+import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 import { SCENARIOS } from './scenarios'
 
@@ -23,28 +23,28 @@ for (const scenario of SCENARIOS.filter(({ name }) => COVERED.test(name))) {
     const orientation = rotated ? 'rotated' : 'upright'
 
     test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-      const pattern = fixturePattern({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
-      await openApp(page, [pattern])
+      const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
+      await openApp(page, [project])
 
       await setZoom(page, 100)
-      await scenario.prepare?.(page, { pattern, zoom: 100 })
+      await scenario.prepare?.(page, { project, zoom: 100 })
 
       for (const zoom of zoomsFor(rotated)) {
         await setZoom(page, zoom)
-        await scenario.place?.(page, { pattern, zoom })
+        await scenario.place?.(page, { project, zoom })
 
-        const box = (await page.getByTestId('pattern-surface').boundingBox())!
+        const box = (await page.getByTestId('project-surface').boundingBox())!
         const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
-        const corner = await patternBox(page, box)
-        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, pattern, zoom / 100))
+        const corner = await projectBox(page, box)
+        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, project, zoom / 100))
         const expected = readFileSync(reference)
         const { width, height } = PNG.sync.read(expected)
-        const origin = shownRegion(corner, pattern, zoom / 100)
+        const origin = shownRegion(corner, project, zoom / 100)
         const actual = await page.screenshot({ clip: { ...origin, width, height } })
 
         const label = `${scenario.name}, ${orientation}, ${zoom}%`
-        const ignore = scenario.overlaid === 'all' ? new Set(frameGrid(pattern).flatMap((cells, row) => cells.map((_cell, column) => `(${row}, ${column})`))) : new Set(scenario.overlaid)
-        const { look, wrong } = compareToReference(actual, expected, pattern, zoom, corner, origin, ignore)
+        const ignore = scenario.overlaid === 'all' ? new Set(frameGrid(project).flatMap((cells, row) => cells.map((_cell, column) => `(${row}, ${column})`))) : new Set(scenario.overlaid)
+        const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin, ignore)
         expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
         expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
       }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PATTERN_THEMES, PRINT_THEME } from './beadLook'
+import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
 import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, canvasWordColor, shownChoice } from './canvasBackgrounds'
 
 function luminance(hex: string): number {
@@ -23,8 +23,8 @@ describe('Canvas color backgrounds', () => {
   })
 
   it('makes the defaults the canvas the theme has today (dark with ruler numbers a shade lighter, to reach 4.8:1)', () => {
-    expect(canvasTheme('light', 1)).toEqual({ ...PATTERN_THEMES.light, background: PATTERN_THEMES.light.canvas })
-    expect(canvasTheme('dark', 1)).toEqual({ ...PATTERN_THEMES.dark, background: PATTERN_THEMES.dark.canvas, ruler: '#8c8c8c' })
+    expect(canvasTheme('light', 1)).toEqual({ ...PROJECT_THEMES.light, background: PROJECT_THEMES.light.canvas })
+    expect(canvasTheme('dark', 1)).toEqual({ ...PROJECT_THEMES.dark, background: PROJECT_THEMES.dark.canvas, ruler: '#8c8c8c' })
   })
 
   it('keeps the position when the theme changes, and shows Studio for a stored 6 in light', () => {
@@ -36,7 +36,7 @@ describe('Canvas color backgrounds', () => {
   })
 
   it('draws high contrast white whatever is stored', () => {
-    expect(canvasTheme('contrast', 4)).toBe(PATTERN_THEMES.contrast)
+    expect(canvasTheme('contrast', 4)).toBe(PROJECT_THEMES.contrast)
   })
 
   it('gives Ash its own greys, and no other background', () => {
@@ -60,6 +60,6 @@ describe('Canvas color backgrounds', () => {
 
   it('never changes the print board that exports use', () => {
     expect(PRINT_THEME.background).toBe('#f7f3ec')
-    expect(PRINT_THEME).toEqual({ ...PATTERN_THEMES.light, background: '#f7f3ec' })
+    expect(PRINT_THEME).toEqual({ ...PROJECT_THEMES.light, background: '#f7f3ec' })
   })
 })

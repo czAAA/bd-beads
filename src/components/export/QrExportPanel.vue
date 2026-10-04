@@ -6,13 +6,13 @@ import type { QrMatrix } from '../../domain/qrExport'
 import { useI18n } from '../../i18n/useI18n'
 
 /**
- * The QR export panel (tickets 68, 151; QrExport card, ADR 0015): the open Pattern's code in a narrow Modal, with the
- * Pattern's name and size under it, one line on how to use it, and Close. The code sits on white with dark modules in
+ * The QR export panel (tickets 68, 151; QrExport card, ADR 0015): the open Project's code in a narrow Modal, with the
+ * Project's name and size under it, one line on how to use it, and Close. The code sits on white with dark modules in
  * every theme, since scanners need the contrast; Escape and the scrim close it, like the app's other dialogs.
  */
 defineProps<{
   matrix: QrMatrix
-  /** The Pattern's name and size, "Fox · 40×30". */
+  /** The Project's name and size, "Fox · 40×30". */
   summary: string
 }>()
 

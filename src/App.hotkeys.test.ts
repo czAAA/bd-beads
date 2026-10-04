@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
 import { PALETTE } from './domain/palette'
-import { frameGrid } from './domain/pattern'
-import { loadPatterns } from './services/libraryStore'
+import { frameGrid } from './domain/project'
+import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
-import { mountWithPattern } from './testUtils/seedPattern'
+import { mountWithProject } from './testUtils/seedProject'
 
 beforeEach(() => {
   localStorage.clear()
@@ -37,7 +37,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   ]
 
   it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const tab = wrapper.find(`[data-testid="${testId}"]`)
@@ -52,7 +52,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const button = wrapper.find(`[data-testid="${testId}"]`)
@@ -68,7 +68,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('puts Remove line and Delete all under the tabs as links, Delete all in the danger color', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
     const removeLine = wrapper.find('[data-testid="tool-remove-line"]')
@@ -80,7 +80,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('gives the three always-open groups a label and makes Frame a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
     expect(wrapper.findAll('.tool-group__title').map((title) => title.text())).toEqual([
@@ -92,7 +92,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   })
 
   it('shows which tool is active', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
@@ -101,7 +101,7 @@ describe('App Toolbox controls (ticket 75)', () => {
 
 /*
  * Progress bar (ticket 144): every Row progress control in one bar along the canvas box's bottom edge, always there
- * while a Pattern is open, since its first control is the switch that turns Row progress on.
+ * while a Project is open, since its first control is the switch that turns Row progress on.
  */
 describe('App Progress bar', () => {
   async function enableRowProgress(wrapper: ReturnType<typeof mount>) {
@@ -109,7 +109,7 @@ describe('App Progress bar', () => {
   }
 
   it('is always there under the drawing area, with just its switch while Row progress is off', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     const bar = wrapper.find('[data-testid="progress-bar"]')
     expect(bar.exists()).toBe(true)
@@ -120,11 +120,11 @@ describe('App Progress bar', () => {
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     expect(bar.find('[data-testid="progress-bar-switch"]').attributes('aria-checked')).toBe('true')
     expect(bar.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
-    expect(loadPatterns()[0]!.rowProgress.enabled).toBe(true)
+    expect(loadProjects()[0]!.rowProgress.enabled).toBe(true)
   })
 
-  it('is the same bar whatever the Pattern\'s shape or direction', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('is the same bar whatever the Project\'s shape or direction', async () => {
+    const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper)
     const classes = wrapper.find('[data-testid="progress-bar"]').classes()
 
@@ -134,7 +134,7 @@ describe('App Progress bar', () => {
   })
 
   it('names Row not done and Row done in words, in both languages, with their icons', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -149,7 +149,7 @@ describe('App Progress bar', () => {
   })
 
   it('makes Row done the primary action and names the switch for screen readers', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
 
@@ -161,7 +161,7 @@ describe('App Progress bar', () => {
   })
 
   it('fills the track with the finished share of the rows', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper) // 20 rows
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -188,32 +188,32 @@ describe('App keyboard shortcuts', () => {
   }
 
   it.each([{ ctrlKey: true }, { metaKey: true }])('undoes on %s+Z', async (modifier) => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await paintFirstCell(wrapper)
 
     await pressKey({ key: 'z', ...modifier })
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it.each([{ ctrlKey: true, shiftKey: true }, { metaKey: true, shiftKey: true }, { ctrlKey: true, key: 'y' }])(
     'redoes on %s',
     async (modifier) => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
       await paintFirstCell(wrapper)
       await pressKey({ key: 'z', ctrlKey: true })
-      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+      expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
 
       await pressKey({ key: modifier.key ?? 'z', ...modifier })
 
-      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     },
   )
 
   it.each(['text', 'number'] as const)(
     'does not undo or redo while typing in a %s form field',
     async (type) => {
-      // No text/number field ships alongside an active, painted Pattern in this app (ticket 38 removed the last
+      // No text/number field ships alongside an active, painted Project in this app (ticket 38 removed the last
       // one, the Bead catalog's add-bead form) — a standalone field, attached to the document so the keydown still
       // bubbles to App.vue's window listener, is what isTypingInFormField actually cares about regardless of it
       // belonging to any real feature.
@@ -222,17 +222,17 @@ describe('App keyboard shortcuts', () => {
       document.body.appendChild(field)
 
       try {
-        const wrapper = await mountWithPattern(15, 30)
+        const wrapper = await mountWithProject(15, 30)
         await paintFirstCell(wrapper)
 
         await pressKey({ key: 'z', ctrlKey: true }, field)
 
-        expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+        expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
         await wrapper.find('[data-testid="undo-button"]').trigger('click')
         await pressKey({ key: 'z', ctrlKey: true, shiftKey: true }, field)
 
-        expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+        expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
       } finally {
         field.remove()
       }
@@ -251,12 +251,12 @@ describe('App keyboard shortcuts', () => {
   })
 
   it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await paintFirstCell(wrapper)
 
     await pressKey({ key: 'z', ctrlKey: true })
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 })
 
@@ -274,7 +274,7 @@ async function pressKey(init: KeyboardEventInit, target: EventTarget = window) {
  */
 const mountedAppsForCleanup: ReturnType<typeof mount>[] = []
 async function mountAppForCleanup(widthMm: number, heightMm: number) {
-  const wrapper = await mountWithPattern(widthMm, heightMm)
+  const wrapper = await mountWithProject(widthMm, heightMm)
   mountedAppsForCleanup.push(wrapper)
   return wrapper
 }
@@ -351,7 +351,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await wrapper.trigger('mouseup')
     }
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(PALETTE.map((_color, index) => grid[Math.floor(index / 10)]![index % 10]!.color)).toEqual(PALETTE.map((color) => color.hex))
   })
 
@@ -366,7 +366,7 @@ describe('App Colors group hotkeys — Shift+1..9,0,Q,W (ticket 88)', () => {
       await wrapper.trigger('mouseup')
 
       // Red is still the default selected color (ticket 27); Shift+2 (orange) never landed.
-      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     } finally {
       field.remove()
     }
@@ -379,8 +379,8 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
     await wrapper.trigger('mouseup')
   }
 
-  /** A 2x2 Pattern (from a 3mm x 3mm cube-bead Pattern), fully painted red. */
-  async function paintedSmallPattern(wrapper: ReturnType<typeof mount>) {
+  /** A 2x2 Project (from a 3mm x 3mm cube-bead Project), fully painted red. */
+  async function paintedSmallProject(wrapper: ReturnType<typeof mount>) {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     for (let index = 0; index < 4; index++) {
       await click(wrapper, index)
@@ -389,19 +389,19 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
   it('erases just the clicked bead, not its connected same-color region, as one undo step', async () => {
     const wrapper = await mountAppForCleanup(3, 3)
-    await paintedSmallPattern(wrapper)
+    await paintedSmallProject(wrapper)
     await wrapper.find('[data-testid="tool-erase"]').trigger('click')
 
     await click(wrapper, 0)
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[1]![0]!.color).toBe('#e63746')
     expect(grid[1]![1]!.color).toBe('#e63746')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
+    expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
 
   it('erases every cell dragged over, as one undo step, on the primary press -- no right-click needed', async () => {
@@ -418,13 +418,13 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
     await hoverBead(wrapper, 2, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
-    let grid = frameGrid(loadPatterns()[0]!)
+    let grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    grid = frameGrid(loadPatterns()[0]!)
+    grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
@@ -443,17 +443,17 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
 
     await click(wrapper, 0) // (0,0), in the finished row
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('leaves right-click erase under Paint and Fill unaffected by the new default behavior', async () => {
     const wrapper = await mountAppForCleanup(3, 3)
-    await paintedSmallPattern(wrapper)
+    await paintedSmallProject(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressBead(wrapper, 0, { button: 2 })
 
-    expect(frameGrid(loadPatterns()[0]!).flat().every((cell) => cell.color === null)).toBe(true)
+    expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === null)).toBe(true)
   })
 })
 
@@ -507,7 +507,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
     // The tool switched to Paint; a press now paints one bead rather than flood-filling.
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
@@ -538,7 +538,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
 
     await pressKey({ key: 'Delete' })
 
-    const grid = frameGrid(loadPatterns()[0]!)
+    const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBeNull()
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[1]![0]!.color).toBeNull()
@@ -548,7 +548,7 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
     expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('activates Erase when Select is active with no Selection', async () => {
@@ -593,7 +593,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
     await pressKey({ key: 'r' })
     expect(toggle().attributes('aria-pressed')).toBe('false')
     expect(localStorage.getItem('bd-beads:rulers')).toBe('off')
-    expect(loadPatterns()[0]!.rotation).toBe(0)
+    expect(loadProjects()[0]!.rotation).toBe(0)
 
     await toggle().trigger('click')
     expect(toggle().attributes('aria-pressed')).toBe('true')
@@ -630,7 +630,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
 
       await pressKey({ key: 'r' }, field)
 
-      expect(loadPatterns()[0]!.rotation).toBe(0)
+      expect(loadProjects()[0]!.rotation).toBe(0)
     } finally {
       field.remove()
     }
@@ -643,13 +643,13 @@ describe('App Mirror group hotkeys removed (ticket 174, pending its own redesign
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    const before = frameGrid(loadPatterns()[0]!)
+    const before = frameGrid(loadProjects()[0]!)
 
     for (const key of ['-', '=', '[', ']', 'm', 'h', 'v']) {
       await pressKey({ key })
     }
 
-    expect(frameGrid(loadPatterns()[0]!)).toEqual(before)
+    expect(frameGrid(loadProjects()[0]!)).toEqual(before)
   })
 })
 
@@ -666,7 +666,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
     const wrapper = await mountAppForCleanup(15, 30)
 
     await pressKey({ key: 'd' })
-    expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
+    expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
 
     // The direction button shows once Row progress is on, already turned.
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -699,7 +699,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
 
     await pressKey({ key: 'Enter' })
 
-    expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+    expect(loadProjects()[0]!.rowProgress.currentRow).toBe(0)
   })
 
   it('suppresses Enter/Shift+Enter when a Toolbox button has focus, so Tab+Enter does not also move the row', async () => {
@@ -742,7 +742,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
     await pressKey({ key: ' ' })
     await pressKey({ key: ' ', shiftKey: true })
 
-    expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+    expect(loadProjects()[0]!.rowProgress.currentRow).toBe(0)
   })
 
   it('suppresses Space/Shift+Space when a Toolbox or Progress bar button has focus, so it activates the button rather than double-moving the row', async () => {
@@ -772,7 +772,7 @@ describe('App Row progress group hotkeys (ticket 94)', () => {
       await pressKey({ key: ' ' }, field)
       await pressKey({ key: ' ', shiftKey: true }, field)
 
-      expect(loadPatterns()[0]!.rowProgress.currentRow).toBe(0)
+      expect(loadProjects()[0]!.rowProgress.currentRow).toBe(0)
     } finally {
       field.remove()
     }
@@ -793,7 +793,7 @@ describe('App Space+drag pan (ticket 95)', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 
   it('shows a grab cursor while Space is held', async () => {
@@ -870,7 +870,7 @@ describe('App shortcuts help overlay (ticket 96)', () => {
 
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await hoverBead(wrapper, 5)
@@ -882,6 +882,6 @@ describe('App hover preview', () => {
 
   // The neutral (no color selected) preview is the overlay renderer's own concern and is covered directly in
   // overlayRenderer.test.ts; since ticket 27 made red App's default selection, nothing is never actually selected
-  // while a Pattern is open here, so there's no reachable App-level scenario left to exercise it through.
+  // while a Project is open here, so there's no reachable App-level scenario left to exercise it through.
 
 })

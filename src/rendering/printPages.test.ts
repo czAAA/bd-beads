@@ -32,37 +32,37 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
   })
 })
 
-describe('pageOneLayout: fills the sheet even for a huge Pattern (ticket 184)', () => {
+describe('pageOneLayout: fills the sheet even for a huge Project (ticket 184)', () => {
   it.each<[Technique, number, number]>([
     ['peyote', 250, 250],
     ['brick', 250, 250],
     ['loom', 250, 250],
     ['loom', 60, 80],
     ['loom', 20, 20],
-  ])('draws a %s %s×%s Pattern as large as the better of the two legend placements allows', (technique, columns, rows) => {
-    const pattern = shape(technique, columns, rows)
-    const page = orientedPage(pattern)
-    const layout = pageOneLayout(pattern, page)
+  ])('draws a %s %s×%s Project as large as the better of the two legend placements allows', (technique, columns, rows) => {
+    const project = shape(technique, columns, rows)
+    const page = orientedPage(project)
+    const layout = pageOneLayout(project, page)
 
-    // Whichever side the legend sits on, the Pattern reaches that layout's own room on at least one axis: nothing
+    // Whichever side the legend sits on, the Project reaches that layout's own room on at least one axis: nothing
     // is left small in a box it doesn't fill.
     expect(Math.max(layout.extent.width / layout.room.width, layout.extent.height / layout.room.height)).toBeGreaterThan(0.99)
   })
 
-  it('picks the side legend over the previously-forced below-legend band for a peyote 250×250 Pattern', () => {
+  it('picks the side legend over the previously-forced below-legend band for a peyote 250×250 Project', () => {
     // Peyote's rows sit closer than its columns (rowPitchPx), so a square 250×250 bead count is technically wider
     // than tall and used to be forced into the below-legend layout, whose fixed mm(78) band fit it at zoom ≈ 0.08
     // versus ≈ 0.20 beside the legend — a small, centered chart on an otherwise empty page.
-    const pattern = shape('peyote', 250, 250)
-    const layout = pageOneLayout(pattern, orientedPage(pattern))
+    const project = shape('peyote', 250, 250)
+    const layout = pageOneLayout(project, orientedPage(project))
 
     expect(layout.columnBelow).toBe(false)
     expect(layout.zoom).toBeGreaterThan(0.15)
   })
 
-  it('still uses the below-legend layout for a Pattern that is genuinely much wider than tall', () => {
-    const pattern = shape('loom', 300, 24)
-    const layout = pageOneLayout(pattern, orientedPage(pattern))
+  it('still uses the below-legend layout for a Project that is genuinely much wider than tall', () => {
+    const project = shape('loom', 300, 24)
+    const layout = pageOneLayout(project, orientedPage(project))
 
     expect(layout.columnBelow).toBe(true)
   })
@@ -70,8 +70,8 @@ describe('pageOneLayout: fills the sheet even for a huge Pattern (ticket 184)', 
 
 describe('miniMapLayout: the chart-page locator (ticket 187)', () => {
   it('keeps the block grid’s own row/column shape at 16 blocks or fewer', () => {
-    const pattern = shape('loom', 150, 220) // 2 × 3 = 6 blocks
-    const plan = planPrint(pattern)
+    const project = shape('loom', 150, 220) // 2 × 3 = 6 blocks
+    const plan = planPrint(project)
     const layout = miniMapLayout(plan, plan.parts[2]!) // across 0, down 1
 
     expect(plan.partsAcross * plan.partsDown).toBeLessThanOrEqual(MINI_MAP_GRID_LIMIT)

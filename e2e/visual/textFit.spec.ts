@@ -3,7 +3,7 @@ import { TOUR_ENABLED } from '../../src/features'
 import type { Locale } from '../../src/i18n/translations'
 import { openApp } from '../support/app'
 import { fixturePicture } from '../support/picture'
-import { fixturePattern, STORAGE_KEY, storedLibrary } from '../support/patterns'
+import { fixtureProject, STORAGE_KEY, storedLibrary } from '../support/projects'
 import { findTextMisfits } from '../support/textFit'
 import { unexplained, type Found } from '../support/textFitPending'
 
@@ -13,7 +13,7 @@ const LOCALES = Object.keys({ en: 0, ru: 0 } satisfies Record<Locale, 0>) as Loc
 const WIDTHS = [1900, 1280, 1024, 768, 390, 360, 320]
 /** A typical screen height at each width, so that what is tall or short is as a person would meet it. */
 const HEIGHTS: Record<number, number> = { 1900: 1000, 1280: 800, 1024: 768, 768: 1024, 390: 844, 360: 740, 320: 640 }
-const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-frame', 'dock-pattern']
+const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-frame', 'dock-project']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -171,7 +171,7 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'Clear pattern',
+    name: 'Clear project',
     visit: async (page, measure) => {
       const id = (await reveal(page, 'delete-all-button')) ? 'delete-all-button' : (await reveal(page, 'sheet-delete-all')) ? 'sheet-delete-all' : null
       if (!id) return false
@@ -180,16 +180,16 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'New Pattern',
+    name: 'New Project',
     visit: async (page, measure) => {
-      if (!(await openNewPattern(page))) return false
+      if (!(await openNewProject(page))) return false
       await measure()
     },
   },
   {
-    name: 'New Pattern: Convert image',
+    name: 'New Project: Convert image',
     visit: async (page, measure) => {
-      if (!(await openNewPattern(page))) return false
+      if (!(await openNewProject(page))) return false
       await page.locator('[data-testid="convert-image-field"]:visible input[type="file"]').first().setInputFiles({ name: 'picture.png', mimeType: 'image/png', buffer: fixturePicture() })
       await vis(page, 'convert-image-box').waitFor()
       await settle(page)
@@ -206,17 +206,17 @@ const SCREENS: Screen[] = [
     },
   })),
   {
-    name: 'info popover: new-pattern-estimate-info',
+    name: 'info popover: new-project-estimate-info',
     visit: async (page, measure) => {
-      if (!(await openNewPattern(page)) || !(await shown(page, 'new-pattern-estimate-info'))) return false
-      await click(page, 'new-pattern-estimate-info')
-      await vis(page, 'new-pattern-estimate-tooltip').waitFor()
+      if (!(await openNewProject(page)) || !(await shown(page, 'new-project-estimate-info'))) return false
+      await click(page, 'new-project-estimate-info')
+      await vis(page, 'new-project-estimate-tooltip').waitFor()
       await measure()
     },
   },
   ...[
     ['Beads needed', 'bead-quantities'],
-    ['Saved Patterns', 'pattern-list'],
+    ['Saved Projects', 'project-list'],
   ].map(([name, testid]): Screen => ({
     name: `${name} expanded`,
     visit: async (page, measure) => {
@@ -253,14 +253,14 @@ const SCREENS: Screen[] = [
   },
 ]
 
-/** The New Pattern form as a first-time visitor has it (no Pattern open, so it is in place of the Toolbox), filled in with a size. */
-async function openNewPattern(page: Page): Promise<boolean> {
+/** The New Project form as a first-time visitor has it (no Project open, so it is in place of the Toolbox), filled in with a size. */
+async function openNewProject(page: Page): Promise<boolean> {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
   await page.reload()
   await page.getByTestId('app-topbar').waitFor()
   if (!(await reveal(page, 'width-input'))) {
-    if (!(await shown(page, 'phone-bar-new-pattern'))) return false
-    await click(page, 'phone-bar-new-pattern')
+    if (!(await shown(page, 'phone-bar-new-project'))) return false
+    await click(page, 'phone-bar-new-project')
   }
   await vis(page, 'width-input').fill('16')
   await vis(page, 'height-input').fill('10')
@@ -275,12 +275,12 @@ for (const locale of LOCALES) {
       page.setDefaultTimeout(4000)
       await page.setViewportSize({ width, height: HEIGHTS[width] })
       await page.addInitScript((value) => localStorage.setItem('bd-beads:locale', value), locale)
-      await openApp(page, [fixturePattern({ technique: 'loom' })])
+      await openApp(page, [fixtureProject({ technique: 'loom' })])
       const found: Found[] = []
       const seen = new Set<string>()
-      const library = storedLibrary([fixturePattern({ technique: 'loom' })])
+      const library = storedLibrary([fixtureProject({ technique: 'loom' })])
       for (const screen of SCREENS) {
-        // Some screens start from an empty library; each begins with the Pattern open.
+        // Some screens start from an empty library; each begins with the Project open.
         await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, library])
         if (screen.overview) await page.goto('./overview/')
         else await page.goto('./')

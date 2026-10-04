@@ -2,8 +2,8 @@ import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import type { DrawingContext } from './beadLook'
 import { boxOnScreen, visibleRulerLabels, ruledBoxes, type RulerLabel, type RulerView, type RuledBox } from './rulers'
-import type { PatternTheme } from './beadLook'
-import type { DrawnPattern } from './patternRenderer'
+import type { ProjectTheme } from './beadLook'
+import type { DrawnProject } from './projectRenderer'
 import { frameHandles, frameLineBox } from './frameHandles'
 
 /** The corner radius of a piece's rectangle and of the Frame's line (BeadBoard and Frame cards). */
@@ -15,10 +15,10 @@ const FRAME_LINE_PX = 1.5
 const CURSOR_LINE_PX = 2
 
 export interface RulerDrawInput {
-  pattern: DrawnPattern
+  project: DrawnProject
   view: RulerView
   pixelRatio: number
-  theme: PatternTheme
+  theme: ProjectTheme
   /** Whether the numbers are drawn (the Rulers toggle); the lines are drawn either way. */
   showNumbers: boolean
   /** The keyboard's bead cursor: its row and column numbers are marked. */
@@ -32,7 +32,7 @@ function sameBox(a: Frame, b: Frame | undefined): boolean {
 }
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
-function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, theme: PatternTheme, active: boolean): void {
+function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, theme: ProjectTheme, active: boolean): void {
   const shown = boxOnScreen(box, view)
   const outset = box.outset
   const isFrame = box.kind === 'frame'
@@ -45,9 +45,9 @@ function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, 
 }
 
 /** One ruler number, in the style its role asks for (Rulers card). */
-function drawLabel(context: DrawingContext, label: RulerLabel, view: RulerView, pattern: DrawnPattern, theme: PatternTheme, cursor: GridPosition | undefined): void {
-  const { enabled, direction, currentRow, currentColumn } = pattern.rowProgress
-  const frame = pattern.frame
+function drawLabel(context: DrawingContext, label: RulerLabel, view: RulerView, project: DrawnProject, theme: ProjectTheme, cursor: GridPosition | undefined): void {
+  const { enabled, direction, currentRow, currentColumn } = project.rowProgress
+  const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
   const current = enabled && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentRow) || (label.axis === 'column' && direction === 'columns' && relative === currentColumn))
   const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
@@ -79,11 +79,11 @@ function drawLabel(context: DrawingContext, label: RulerLabel, view: RulerView, 
  * viewport's own px over whatever is drawn, and gives back the numbers it drew so a click can be tested against them.
  */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): RulerLabel[] {
-  const { pattern, view, pixelRatio, theme, showNumbers, cursor, activePiece } = input
+  const { project, view, pixelRatio, theme, showNumbers, cursor, activePiece } = input
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
   const reach = view.fontPx * 4 + 40
-  for (const box of ruledBoxes(pattern)) {
+  for (const box of ruledBoxes(project)) {
     const shown = boxOnScreen(box, view)
     if (shown.x + shown.width > -reach && shown.x < view.viewport.width + reach && shown.y + shown.height > -reach && shown.y < view.viewport.height + reach) {
       strokeBoxLine(context, box, view, theme, sameBox(box, activePiece))
@@ -93,9 +93,9 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): Rule
   if (!showNumbers) {
     return []
   }
-  const labels = visibleRulerLabels(pattern, view)
+  const labels = visibleRulerLabels(project, view)
   for (const label of labels) {
-    drawLabel(context, label, view, pattern, theme, cursor)
+    drawLabel(context, label, view, project, theme, cursor)
   }
   return labels
 }
@@ -111,7 +111,7 @@ const TOOLTIP_GAP = 10
  * 1.5px `ink` line, filled with the canvas, and the size tooltip hanging off its bottom-right corner (none when the tooltip is empty). In the viewport's
  * own px, over everything else.
  */
-export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; view: RulerView; pixelRatio: number; theme: PatternTheme; touch: boolean; tooltip: string }): void {
+export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; view: RulerView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
   const { frame, view, pixelRatio, theme, touch, tooltip } = input
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   const box = frameLineBox(frame, view)

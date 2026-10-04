@@ -54,7 +54,7 @@ export function nearestColorLookup(colors: readonly string[]): (packed: number) 
 }
 
 /**
- * The exact colors of a lattice at rest: inside the frame, the Pattern a Create would make (its grid, reduced to the
+ * The exact colors of a lattice at rest: inside the frame, the Project a Create would make (its grid, reduced to the
  * count of colors asked for); around it, the nearest of the Image colors that conversion found, so the surround reads
  * as part of the same bead picture rather than as unquantized pixels.
  */

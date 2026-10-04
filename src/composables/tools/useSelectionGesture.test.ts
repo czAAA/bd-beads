@@ -2,27 +2,27 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { createPattern, frameGrid, paintCells, type Pattern } from '../../domain/pattern'
+import { createProject, frameGrid, paintCells, type Project } from '../../domain/project'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
 
 /** 4 columns x 4 rows, loom. */
-function makePattern(): Pattern {
-  return createPattern({ technique: 'loom', beadId: cubeBeadId, size: { width: 6, height: 6, unit: 'mm' } })
+function makeProject(): Project {
+  return createProject({ technique: 'loom', beadId: cubeBeadId, size: { width: 6, height: 6, unit: 'mm' } })
 }
 
-function paintedPattern(): Pattern {
-  return paintCells(makePattern(), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES)
+function paintedProject(): Project {
+  return paintCells(makeProject(), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES)
 }
 
 function setup(
-  pattern: Pattern | null = makePattern(),
+  project: Project | null = makeProject(),
   { axes = NO_MIRROR_AXES, copyMode = false }: { axes?: MirrorAxisCounts; copyMode?: boolean } = {},
 ) {
   const commitGridChange = vi.fn()
   const gesture = useSelectionGesture(
-    () => pattern ?? undefined,
+    () => project ?? undefined,
     commitGridChange,
     () => axes,
     () => copyMode,
@@ -61,7 +61,7 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toEqual({ top: 0, left: 1, rows: 3, columns: 2 })
     })
 
-    it('does nothing with no Pattern open', () => {
+    it('does nothing with no Project open', () => {
       const { gesture } = setup(null)
 
       gesture.beginPress(0, 0)
@@ -93,8 +93,8 @@ describe('useSelectionGesture', () => {
 
   describe('Copy and Paste by click', () => {
     it('Copy clears the Selection marquee straight away and arms a paste preview', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern)
+      const project = paintedProject()
+      const { gesture } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(0, 0)
       gesture.endPress()
@@ -102,23 +102,23 @@ describe('useSelectionGesture', () => {
       gesture.copy()
 
       expect(gesture.selection.value).toBeUndefined()
-      expect(gesture.pastePreviewCells(pattern, { row: 2, column: 2 })).toEqual([
+      expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([
         { row: 2, column: 2, color: RED },
       ])
     })
 
     it('Copy with no Selection does nothing', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern)
+      const project = paintedProject()
+      const { gesture } = setup(project)
 
       gesture.copy()
 
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
     })
 
     it('a click that never moved stamps the copied block through the shared commitGridChange', () => {
-      const pattern = paintedPattern()
-      const { gesture, commitGridChange } = setup(pattern)
+      const project = paintedProject()
+      const { gesture, commitGridChange } = setup(project)
       copyTopLeft(gesture)
 
       gesture.beginPress(2, 3)
@@ -126,12 +126,12 @@ describe('useSelectionGesture', () => {
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(pattern)
+      expect(committed).toBe(project)
       expect(frameGrid(updated)[2]![3]!.color).toBe(RED)
     })
 
     it('does not start a Selection on a click while a projection is armed', () => {
-      const { gesture } = setup(paintedPattern())
+      const { gesture } = setup(paintedProject())
       copyTopLeft(gesture)
 
       gesture.beginPress(1, 1)
@@ -140,8 +140,8 @@ describe('useSelectionGesture', () => {
     })
 
     it('a drag drops the clipboard, so the click that ends it stamps nothing', () => {
-      const pattern = paintedPattern()
-      const { gesture, commitGridChange } = setup(pattern)
+      const project = paintedProject()
+      const { gesture, commitGridChange } = setup(project)
       copyTopLeft(gesture)
 
       gesture.beginPress(1, 1)
@@ -149,11 +149,11 @@ describe('useSelectionGesture', () => {
       gesture.endPress()
 
       expect(commitGridChange).not.toHaveBeenCalled()
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
     })
 
     it('can stamp the same block again without copying again', () => {
-      const { gesture, commitGridChange } = setup(paintedPattern())
+      const { gesture, commitGridChange } = setup(paintedProject())
       copyTopLeft(gesture)
 
       gesture.beginPress(1, 1)
@@ -165,8 +165,8 @@ describe('useSelectionGesture', () => {
     })
 
     it('stamps every Mirror copy of the block as one commit, using the supplied axis counts and copy mode', () => {
-      const pattern = paintedPattern()
-      const { gesture, commitGridChange } = setup(pattern, { axes: { columns: 1, rows: 0 }, copyMode: false })
+      const project = paintedProject()
+      const { gesture, commitGridChange } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: false })
       copyTopLeft(gesture)
 
       gesture.beginPress(0, 0)
@@ -180,18 +180,18 @@ describe('useSelectionGesture', () => {
 
   describe('pastePreviewCells', () => {
     it('is empty with nothing copied', () => {
-      const pattern = makePattern()
-      const { gesture } = setup(pattern)
+      const project = makeProject()
+      const { gesture } = setup(project)
 
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
     })
 
     it('shows every Mirror copy, honouring copy mode', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern, { axes: { columns: 1, rows: 0 }, copyMode: true })
+      const project = paintedProject()
+      const { gesture } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: true })
       copyTopLeft(gesture)
 
-      const cells = gesture.pastePreviewCells(pattern, { row: 0, column: 0 })
+      const cells = gesture.pastePreviewCells(project, { row: 0, column: 0 })
 
       expect(cells).toEqual(
         expect.arrayContaining([
@@ -205,20 +205,20 @@ describe('useSelectionGesture', () => {
 
   describe('cancel (Escape / right-click, once the app shell has given precedence to nothing else)', () => {
     it('dismisses an armed paste projection first, leaving the block pasteable by keyboard', () => {
-      const pattern = paintedPattern()
-      const { gesture, commitGridChange } = setup(pattern)
+      const project = paintedProject()
+      const { gesture, commitGridChange } = setup(project)
       copyTopLeft(gesture)
 
       expect(gesture.cancel()).toBe(true)
       expect(gesture.cancel()).toBe(false)
 
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
       expect(gesture.pasteAt({ row: 1, column: 1 })).toBe(true)
       expect(commitGridChange).toHaveBeenCalledTimes(1)
     })
 
     it('a click after cancelling marks a Selection rather than stamping', () => {
-      const { gesture, commitGridChange } = setup(paintedPattern())
+      const { gesture, commitGridChange } = setup(paintedProject())
       copyTopLeft(gesture)
       gesture.cancel()
 
@@ -239,7 +239,7 @@ describe('useSelectionGesture', () => {
     })
 
     it('does not revive a Selection while cancelling a projection', () => {
-      const { gesture } = setup(paintedPattern())
+      const { gesture } = setup(paintedProject())
       copyTopLeft(gesture)
 
       gesture.cancel()
@@ -250,14 +250,14 @@ describe('useSelectionGesture', () => {
 
   describe('pasteAt (Ctrl/Cmd+V)', () => {
     it('stamps at the given cell through commitGridChange and reports it pasted', () => {
-      const pattern = paintedPattern()
-      const { gesture, commitGridChange } = setup(pattern)
+      const project = paintedProject()
+      const { gesture, commitGridChange } = setup(project)
       copyTopLeft(gesture)
 
       expect(gesture.pasteAt({ row: 3, column: 3 })).toBe(true)
 
       const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(pattern)
+      expect(committed).toBe(project)
       expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
     })
 
@@ -269,14 +269,14 @@ describe('useSelectionGesture', () => {
     })
 
     it('is a no-op with the pointer off the grid', () => {
-      const { gesture, commitGridChange } = setup(paintedPattern())
+      const { gesture, commitGridChange } = setup(paintedProject())
       copyTopLeft(gesture)
 
       expect(gesture.pasteAt(undefined)).toBe(false)
       expect(commitGridChange).not.toHaveBeenCalled()
     })
 
-    it('is a no-op with no Pattern open', () => {
+    it('is a no-op with no Project open', () => {
       const { gesture, commitGridChange } = setup(null)
 
       expect(gesture.pasteAt({ row: 0, column: 0 })).toBe(false)
@@ -286,8 +286,8 @@ describe('useSelectionGesture', () => {
 
   describe('leaveSelectTool', () => {
     it('forgets the Selection and dismisses the projection, but keeps the clipboard for keyboard paste', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern)
+      const project = paintedProject()
+      const { gesture } = setup(project)
       copyTopLeft(gesture)
       gesture.beginPress(2, 2)
       gesture.endPress()
@@ -297,15 +297,15 @@ describe('useSelectionGesture', () => {
       gesture.leaveSelectTool()
 
       expect(gesture.selection.value).toBeUndefined()
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
       expect(gesture.pasteAt({ row: 0, column: 0 })).toBe(true)
     })
   })
 
   describe('deleteSelection', () => {
     it('clears the selected cells as one commit, leaving the Selection in place', () => {
-      const pattern = paintCells(makePattern(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
-      const { gesture, commitGridChange } = setup(pattern)
+      const project = paintCells(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      const { gesture, commitGridChange } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(1, 1)
 
@@ -313,7 +313,7 @@ describe('useSelectionGesture', () => {
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(pattern)
+      expect(committed).toBe(project)
       expect(frameGrid(updated)[0]![0]!.color).toBeNull()
       expect(frameGrid(updated)[1]![1]!.color).toBeNull()
       expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
@@ -321,7 +321,7 @@ describe('useSelectionGesture', () => {
     })
 
     it('does nothing without a Selection', () => {
-      const { gesture, commitGridChange } = setup(paintedPattern())
+      const { gesture, commitGridChange } = setup(paintedProject())
 
       gesture.deleteSelection()
 
@@ -331,22 +331,22 @@ describe('useSelectionGesture', () => {
 
   describe('selectLine (ruler click)', () => {
     it('sets the Selection and drops a copied block, the same as a new drag would', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern)
+      const project = paintedProject()
+      const { gesture } = setup(project)
       copyTopLeft(gesture)
 
       gesture.selectLine({ top: 2, left: 0, rows: 1, columns: 4 })
 
       expect(gesture.selection.value).toEqual({ top: 2, left: 0, rows: 1, columns: 4 })
-      expect(gesture.pastePreviewCells(pattern, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
       expect(gesture.pasteAt({ row: 0, column: 0 })).toBe(false)
     })
   })
 
   describe('clearSelection', () => {
-    it('clears the Selection but leaves the clipboard armed, as on a Pattern switch (ADR 0016)', () => {
-      const pattern = paintedPattern()
-      const { gesture } = setup(pattern)
+    it('clears the Selection but leaves the clipboard armed, as on a Project switch (ADR 0016)', () => {
+      const project = paintedProject()
+      const { gesture } = setup(project)
       copyTopLeft(gesture)
       gesture.beginPress(1, 1)
       gesture.extendPress(2, 2)

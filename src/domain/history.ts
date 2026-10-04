@@ -1,8 +1,8 @@
 /**
  * The undo/redo stacks for an editing session (ticket 34). Generic over the snapshot type rather than tied to a
- * Pattern's Grid, since nothing here cares what it's a history of — App.vue is the one that decides what counts as
+ * Project's Grid, since nothing here cares what it's a history of — App.vue is the one that decides what counts as
  * a step and pushes Grid snapshots. Like the undo stack it replaced, this is an editing-session aid: never saved
- * with the Pattern, and reset (via emptyHistory) whenever the open Pattern changes.
+ * with the Project, and reset (via emptyHistory) whenever the open Project changes.
  */
 export interface History<T> {
   readonly undoStack: readonly T[]

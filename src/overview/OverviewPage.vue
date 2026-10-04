@@ -20,12 +20,12 @@ import { TOUR_ENABLED } from '../features'
  * ways in and the features carousel (ticket 217) the coffee tile (ticket 219), the plan tiles (ticket 220) and the drawn layer behind each section (ticket 221). It only reports which way in was chosen: the entry decides where that goes.
  */
 const props = defineProps<{
-  /** How many Patterns this device has saved; none means a new visitor. */
-  patternCount: number
+  /** How many Projects this device has saved; none means a new visitor. */
+  projectCount: number
   /** This page's own address, for the header menu's Overview item. */
   overviewHref: string
 }>()
-const emit = defineEmits<{ makeFirstPattern: []; openEditor: []; takeTour: [] }>()
+const emit = defineEmits<{ makeFirstProject: []; openEditor: []; takeTour: [] }>()
 
 const { t } = provideI18n()
 watchEffect(() => {
@@ -36,8 +36,8 @@ watchEffect(() => {
 const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
 const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
 
-const isNew = computed(() => props.patternCount === 0)
-const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{count}', String(props.patternCount)))
+const isNew = computed(() => props.projectCount === 0)
+const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{count}', String(props.projectCount)))
 </script>
 
 <template>
@@ -83,8 +83,8 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
         <div class="overview__actions">
           <template v-if="isNew">
             <span class="overview__buttons">
-              <AppButton variant="primary" size="lg" data-testid="overview-make-first" @click="emit('makeFirstPattern')">
-                {{ t.overview.makeFirstPattern }}
+              <AppButton variant="primary" size="lg" data-testid="overview-make-first" @click="emit('makeFirstProject')">
+                {{ t.overview.makeFirstProject }}
               </AppButton>
               <AppButton size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
                 {{ t.overview.openEditor }}
@@ -101,7 +101,7 @@ const patternsSaved = computed(() => t.value.overview.patternsSaved.replace('{co
             <AppButton variant="primary" size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
               {{ t.overview.openEditor }}
             </AppButton>
-            <p class="overview__saved" data-testid="overview-saved">{{ patternsSaved }}</p>
+            <p class="overview__saved" data-testid="overview-saved">{{ projectsSaved }}</p>
           </template>
         </div>
         <div v-if="isNew && TOUR_ENABLED" class="overview__band">

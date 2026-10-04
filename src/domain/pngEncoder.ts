@@ -1,5 +1,5 @@
 /**
- * A PNG written strip by strip (ticket 73), so a picture too big for one canvas (a 250 × 250 Pattern at a legible bead
+ * A PNG written strip by strip (ticket 73), so a picture too big for one canvas (a 250 × 250 Project at a legible bead
  * size is far past what iPad Safari will make) can still be one file: the caller draws a band of rows at a time, this
  * compresses each as it arrives, and only the compressed bytes are kept. Compression is the browser's own
  * (`CompressionStream`, whose "deflate" is the zlib format a PNG's data is in).

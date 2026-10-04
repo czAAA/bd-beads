@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import CanvasBackdrop from './CanvasBackdrop.vue'
-import type { Pattern } from '../../domain/pattern'
+import type { Project } from '../../domain/project'
 import CanvasStrip from './CanvasStrip.vue'
 
 beforeEach(() => {
@@ -19,8 +19,8 @@ describe('CanvasStrip', () => {
 
   it('does not count pieces outside the Frame', () => {
     const beads = { '0,0': { color: '#e63746' }, '40,40': { color: '#e63746' } }
-    const pattern = { frame: { row: 0, column: 0, rows: 5, columns: 5 }, beads, technique: 'loom' } as unknown as Pattern
-    const wrapper = mount(CanvasStrip, { props: { pattern } })
+    const project = { frame: { row: 0, column: 0, rows: 5, columns: 5 }, beads, technique: 'loom' } as unknown as Project
+    const wrapper = mount(CanvasStrip, { props: { project } })
 
     expect(wrapper.find('[data-testid="canvas-strip-outside"]').exists()).toBe(false)
     expect(wrapper.text()).not.toMatch(/outside/i)

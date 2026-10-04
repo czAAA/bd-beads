@@ -8,13 +8,13 @@ import AppIcon from '../ui/AppIcon.vue'
 /**
  * The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. Light (the default --
  * Tool, Colour, Edit, Mirror, Size): `panel`, 18px top corners, a grab handle, title and close, no scrim, only as
- * tall as its content so the Pattern stays in view, and closes on a press anywhere outside it. `modal` (the Pattern
+ * tall as its content so the Project stays in view, and closes on a press anywhere outside it. `modal` (the Project
  * sheet): taller, with a scrim, closing only from its own controls or Escape -- an accidental tap past its edge
- * shouldn't lose the way back to New Pattern or Import.
+ * shouldn't lose the way back to New Project or Import.
  *
  * Mounted with `v-if`, like AppModal: while open, focus stays inside (Tab wraps, Escape and the close button hand it
  * back to whatever opened it). Slides up with `transform` (ADR 0018: the drawing surface behind it never resizes).
- * Swipe-to-dismiss (the card's other close gesture, alongside the close button, Escape, tapping the Pattern and the
+ * Swipe-to-dismiss (the card's other close gesture, alongside the close button, Escape, tapping the Project and the
  * Dock button re-toggling it) isn't built this pass -- see ticket 79's own note.
  */
 const props = withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
@@ -68,7 +68,7 @@ function onFocusIn(event: FocusEvent) {
   }
 }
 
-/** A light sheet closes on a press anywhere outside it -- "tapping the Pattern" is one case of this, not a special one. */
+/** A light sheet closes on a press anywhere outside it -- "tapping the Project" is one case of this, not a special one. */
 function onPointerDownOutside(event: PointerEvent) {
   if (props.modal) return
   if (sheetEl.value && !sheetEl.value.contains(event.target as Node) && !inTourCard(event.target)) emit('close')

@@ -1,4 +1,4 @@
-import type { Grid } from '../domain/pattern'
+import type { Grid } from '../domain/project'
 
 /**
  * Every cell a different one of a handful of colors, so almost nothing run-length-compresses -- the same kind of

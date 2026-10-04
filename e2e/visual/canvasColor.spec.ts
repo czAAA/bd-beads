@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { openApp } from '../support/app'
-import { fixturePattern } from '../support/patterns'
+import { fixtureProject } from '../support/projects'
 
 /**
  * The Canvas color picker open on a non-default background (ticket 252): Linen in light, Ash (the lightest dark one,
@@ -14,8 +14,8 @@ for (const [scheme, choice, name] of [
     const context = await browser.newContext({ colorScheme: scheme, viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     await page.addInitScript((value) => localStorage.setItem('bd-beads:canvas-background', value), String(choice))
-    await openApp(page, [fixturePattern({ technique: 'loom' })])
-    await expect(page.getByTestId('pattern-surface-cells')).toHaveCount(1)
+    await openApp(page, [fixtureProject({ technique: 'loom' })])
+    await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await page.getByTestId('canvas-color-button').click()
     await expect(page.getByTestId('canvas-color-picker')).toBeVisible()
     await page.mouse.move(5, 5)

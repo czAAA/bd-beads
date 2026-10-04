@@ -1,32 +1,32 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
-import { createPattern, moveToRow, setRowProgressEnabled, type Pattern, type Technique } from './pattern'
+import { createProject, moveToRow, setRowProgressEnabled, type Project, type Technique } from './project'
 import { removeLineRefusal, removeSelectedLine, selectedFrameLine } from './removeLine'
 import type { Selection } from './selection'
 
-/** A Pattern whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
-function numbered(columns: number, rows: number, technique: Technique = 'loom'): Pattern {
-  const base = createPattern({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
+/** A Project whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
+function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
+  const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const frame = { row: 10, column: 20, columns, rows }
   const colors = Array.from({ length: rows }, (_row, r) => Array.from({ length: columns }, (_cell, c) => `#0${r}0${c}00`))
   return { ...base, frame, beads: beadsFromColors(colors, frame) }
 }
 
-const rowOf = (pattern: Pattern, index: number): Selection => ({ top: pattern.frame!.row + index, left: pattern.frame!.column, rows: 1, columns: pattern.frame!.columns })
-const columnOf = (pattern: Pattern, index: number): Selection => ({ top: pattern.frame!.row, left: pattern.frame!.column + index, rows: pattern.frame!.rows, columns: 1 })
+const rowOf = (project: Project, index: number): Selection => ({ top: project.frame!.row + index, left: project.frame!.column, rows: 1, columns: project.frame!.columns })
+const columnOf = (project: Project, index: number): Selection => ({ top: project.frame!.row, left: project.frame!.column + index, rows: project.frame!.rows, columns: 1 })
 
 describe('selectedFrameLine', () => {
   it('reads a whole row or column of the Frame, and nothing else', () => {
-    const pattern = numbered(3, 4)
-    expect(selectedFrameLine(pattern.frame, rowOf(pattern, 2))).toEqual({ axis: 'row', index: 2 })
-    expect(selectedFrameLine(pattern.frame, columnOf(pattern, 1))).toEqual({ axis: 'column', index: 1 })
-    expect(selectedFrameLine(pattern.frame, { top: 10, left: 20, rows: 2, columns: 2 })).toBeUndefined()
+    const project = numbered(3, 4)
+    expect(selectedFrameLine(project.frame, rowOf(project, 2))).toEqual({ axis: 'row', index: 2 })
+    expect(selectedFrameLine(project.frame, columnOf(project, 1))).toEqual({ axis: 'column', index: 1 })
+    expect(selectedFrameLine(project.frame, { top: 10, left: 20, rows: 2, columns: 2 })).toBeUndefined()
     // A row of another width, or one that is off the Frame, is not the Frame's.
-    expect(selectedFrameLine(pattern.frame, { top: 10, left: 20, rows: 1, columns: 2 })).toBeUndefined()
-    expect(selectedFrameLine(pattern.frame, { top: 99, left: 20, rows: 1, columns: 3 })).toBeUndefined()
-    expect(selectedFrameLine(undefined, rowOf(pattern, 0))).toBeUndefined()
-    expect(selectedFrameLine(pattern.frame, undefined)).toBeUndefined()
+    expect(selectedFrameLine(project.frame, { top: 10, left: 20, rows: 1, columns: 2 })).toBeUndefined()
+    expect(selectedFrameLine(project.frame, { top: 99, left: 20, rows: 1, columns: 3 })).toBeUndefined()
+    expect(selectedFrameLine(undefined, rowOf(project, 0))).toBeUndefined()
+    expect(selectedFrameLine(project.frame, undefined)).toBeUndefined()
   })
 })
 
@@ -73,7 +73,7 @@ describe('removeSelectedLine', () => {
     }
   })
 
-  it('keeps the rest of the Pattern as it was, and bumps updatedAt', () => {
+  it('keeps the rest of the Project as it was, and bumps updatedAt', () => {
     const before = { ...numbered(3, 4), name: 'Keep me', updatedAt: 0 }
     const removed = removeSelectedLine(before, rowOf(before, 1))
     expect(removed).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
@@ -81,14 +81,14 @@ describe('removeSelectedLine', () => {
   })
 
   it('hands back the same instance with no Selection, or one that is not a whole line', () => {
-    const pattern = numbered(3, 4)
-    expect(removeSelectedLine(pattern, undefined)).toBe(pattern)
-    expect(removeSelectedLine(pattern, { top: 10, left: 20, rows: 2, columns: 2 })).toBe(pattern)
+    const project = numbered(3, 4)
+    expect(removeSelectedLine(project, undefined)).toBe(project)
+    expect(removeSelectedLine(project, { top: 10, left: 20, rows: 2, columns: 2 })).toBe(project)
   })
 
   it('is refused with no Frame', () => {
     const { frame: _frame, ...open } = numbered(3, 4)
-    expect(removeLineRefusal(open as Pattern, { top: 10, left: 20, rows: 1, columns: 3 })).toBe('no-line')
+    expect(removeLineRefusal(open as Project, { top: 10, left: 20, rows: 1, columns: 3 })).toBe('no-line')
   })
 
   it('is refused while Row progress is on', () => {
@@ -105,7 +105,7 @@ describe('removeSelectedLine', () => {
 
   it('clamps Row progress\'s pointers onto a row that still exists', () => {
     const before = { ...moveToRow(setRowProgressEnabled(numbered(3, 4), true), 3) }
-    const off: Pattern = { ...before, rowProgress: { ...before.rowProgress, enabled: false } }
+    const off: Project = { ...before, rowProgress: { ...before.rowProgress, enabled: false } }
     expect(removeSelectedLine(off, rowOf(off, 0)).rowProgress.currentRow).toBe(2)
   })
 })

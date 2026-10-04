@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createPattern, moveToRow, setRowProgressEnabled, type Pattern } from '../../domain/pattern'
+import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { useCanvasPointer } from './useCanvasPointer'
 
-const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
 interface Options {
-  pattern?: Pattern | null
+  project?: Project | null
   tool?: Tool
   spaceHeld?: boolean
   strokeMode?: 'paint' | 'erase' | null
@@ -15,7 +15,7 @@ interface Options {
 
 function setup(options: Options = {}) {
   const deps = {
-    currentPattern: () => (options.pattern === null ? undefined : (options.pattern ?? base)),
+    currentProject: () => (options.project === null ? undefined : (options.project ?? base)),
     activeTool: () => options.tool ?? 'paint',
     spaceHeld: () => options.spaceHeld ?? false,
     strokeMode: () => options.strokeMode ?? null,
@@ -59,7 +59,7 @@ describe('useCanvasPointer', () => {
 
     it('leaves out beads in rows already woven', () => {
       const woven = moveToRow(setRowProgressEnabled(base, true), 3)
-      const { previewCells, onCellHover } = setup({ pattern: woven })
+      const { previewCells, onCellHover } = setup({ project: woven })
       onCellHover(0, 0)
       expect(previewCells.value).toEqual([])
     })
@@ -85,8 +85,8 @@ describe('useCanvasPointer', () => {
       expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
     })
 
-    it('does nothing with no color chosen, no Pattern open, or Space held', () => {
-      for (const options of [{ color: null }, { pattern: null }, { spaceHeld: true }, { tool: 'select' as const, spaceHeld: true }]) {
+    it('does nothing with no color chosen, no Project open, or Space held', () => {
+      for (const options of [{ color: null }, { project: null }, { spaceHeld: true }, { tool: 'select' as const, spaceHeld: true }]) {
         const { deps, onCellPrimaryDown } = setup(options)
         onCellPrimaryDown(0, 0)
         expect(deps.beginOrCommitPress).not.toHaveBeenCalled()

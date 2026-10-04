@@ -20,7 +20,7 @@ const FORMATS: { icon: IconName; label: () => string }[] = [
   { icon: 'pdf', label: () => 'PDF' },
   { icon: 'image', label: () => 'PNG' },
   { icon: 'scan', label: () => 'QR' },
-  { icon: 'save', label: () => t.value.overview.examples.patternFile },
+  { icon: 'save', label: () => t.value.overview.examples.projectFile },
 ]
 
 const count = (hex: string | undefined) => POPPY.flat().filter((cell) => cell.color === hex).length

@@ -3,31 +3,31 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
-import { createPattern } from './domain/pattern'
-import { patternExportFileName } from './domain/patternFile'
-import { savePatterns } from './services/libraryStore'
+import { createProject } from './domain/project'
+import { projectExportFileName } from './domain/projectFile'
+import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { exportPatternPdf, exportPatternPng } from './rendering/patternExport'
+import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
-vi.mock('./rendering/patternExport', () => ({
-  exportPatternPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
-  exportPatternPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
+vi.mock('./rendering/projectExport', () => ({
+  exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
+  exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
 }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
-const pattern = createPattern({ technique: 'loom', beadId: cubeBead.id, name: 'My scarf', size: { width: 15, height: 30, unit: 'mm' } })
+const project = createProject({ technique: 'loom', beadId: cubeBead.id, name: 'My scarf', size: { width: 15, height: 30, unit: 'mm' } })
 
 const mounted: ReturnType<typeof mount>[] = []
 
 beforeEach(() => {
   vi.mocked(downloadFile).mockClear()
-  vi.mocked(exportPatternPng).mockClear()
-  vi.mocked(exportPatternPdf).mockClear()
+  vi.mocked(exportProjectPng).mockClear()
+  vi.mocked(exportProjectPdf).mockClear()
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
-  savePatterns([pattern])
+  saveProjects([project])
 })
 
 afterEach(() => {
@@ -48,30 +48,30 @@ async function openExportMenu(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('App PNG and PDF export (tickets 73, 74)', () => {
-  it('hands over the open Pattern as a PNG named for it', async () => {
+  it('hands over the open Project as a PNG named for it', async () => {
     const wrapper = mountApp()
     await openExportMenu(wrapper)
 
     await wrapper.find('[data-testid="export-png"]').trigger('click')
     await flushPromises()
 
-    expect(exportPatternPng).toHaveBeenCalledWith(
-      expect.objectContaining({ id: pattern.id }),
+    expect(exportProjectPng).toHaveBeenCalledWith(
+      expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
     )
-    expect(downloadFile).toHaveBeenCalledWith(patternExportFileName(pattern, 'png'), expect.any(Blob), 'image/png')
-    expect(patternExportFileName(pattern, 'png')).toBe('bd-beads-my-scarf.png')
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+    expect(projectExportFileName(project, 'png')).toBe('bd-beads-my-scarf.png')
   })
 
-  it("hands over the open Pattern as a PDF, with the labels in the app's language", async () => {
+  it("hands over the open Project as a PDF, with the labels in the app's language", async () => {
     const wrapper = mountApp()
     await openExportMenu(wrapper)
 
     await wrapper.find('[data-testid="export-pdf"]').trigger('click')
     await flushPromises()
 
-    expect(exportPatternPdf).toHaveBeenCalledWith(
-      expect.objectContaining({ id: pattern.id }),
+    expect(exportProjectPdf).toHaveBeenCalledWith(
+      expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
     )
     expect(downloadFile).toHaveBeenCalledWith('bd-beads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
@@ -79,7 +79,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
 
   it('keeps its buttons off while a picture is being drawn, and back on after', async () => {
     let finish!: (blob: Blob) => void
-    vi.mocked(exportPatternPng).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
+    vi.mocked(exportProjectPng).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
     const wrapper = mountApp()
     await openExportMenu(wrapper)
 
@@ -97,7 +97,7 @@ describe('App empty, loading and failed states (ticket 158)', () => {
   it('says what is being made once an export takes longer than the loading delay', async () => {
     vi.useFakeTimers()
     let finish!: (blob: Blob) => void
-    vi.mocked(exportPatternPdf).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
+    vi.mocked(exportProjectPdf).mockReturnValueOnce(new Promise((resolve) => (finish = resolve)))
     const wrapper = mountApp()
     await openExportMenu(wrapper)
 
@@ -113,7 +113,7 @@ describe('App empty, loading and failed states (ticket 158)', () => {
     vi.useRealTimers()
   })
 
-  it('offers Export Pattern as the way out when a save fails, handing over the open Pattern', async () => {
+  it('offers Export Project as the way out when a save fails, handing over the open Project', async () => {
     const wrapper = mountApp()
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
@@ -127,7 +127,7 @@ describe('App empty, loading and failed states (ticket 158)', () => {
     expect(downloadFile).toHaveBeenCalledWith('bd-beads-my-scarf.json', expect.any(String))
   })
 
-  it('offers Export Pattern from the Export menu when the Pattern is too large for a QR code', async () => {
+  it('offers Export Project from the Export menu when the Project is too large for a QR code', async () => {
     const wrapper = mountApp()
     await openExportMenu(wrapper)
 

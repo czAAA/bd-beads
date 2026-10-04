@@ -3,12 +3,12 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { hoverBead, pressBead, previewedBeads, rowProgressView } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { createPattern, type Pattern, frameGrid } from './domain/pattern'
-import { loadPatterns, savePatterns } from './services/libraryStore'
-import { serializeLibrary } from './domain/patternFile'
+import { createProject, type Project, frameGrid } from './domain/project'
+import { loadProjects, saveProjects } from './services/libraryStore'
+import { serializeLibrary } from './domain/projectFile'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
-import { createPatternViaForm, mountWithPattern } from './testUtils/seedPattern'
+import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe('App row progress', () => {
   it('shows the overlay only once it is toggled on, without leaving the editor', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
 
     expect(rowProgressView(wrapper).markerShown).toBe(false)
 
@@ -30,7 +30,7 @@ describe('App row progress', () => {
   })
 
   it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -42,7 +42,7 @@ describe('App row progress', () => {
   })
 
   it('moves the pointer back to an earlier row', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -53,8 +53,8 @@ describe('App row progress', () => {
     expect(rowProgressView(wrapper)).toMatchObject({ finished: 1 })
   })
 
-  it('will not step past either end of the Pattern', async () => {
-    const wrapper = await mountWithPattern(3, 3) // 2x2
+  it('will not step past either end of the Project', async () => {
+    const wrapper = await mountWithProject(3, 3) // 2x2
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(
@@ -69,7 +69,7 @@ describe('App row progress', () => {
   })
 
   it('remembers where the weaving got to across a reload', async () => {
-    const first = await mountWithPattern(15, 30)
+    const first = await mountWithProject(15, 30)
     await first.find('[data-testid="progress-bar-switch"]').trigger('click')
     await first.find('[data-testid="progress-bar-next"]').trigger('click')
     first.unmount()
@@ -78,7 +78,7 @@ describe('App row progress', () => {
 
     expect(afterReload.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b2\D+20\b/)
     expect(rowProgressView(afterReload)).toMatchObject({ finished: 1 })
-    expect(loadPatterns()[0]!.rowProgress).toEqual({
+    expect(loadProjects()[0]!.rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
       currentRow: 1,
@@ -92,7 +92,7 @@ describe('App row progress', () => {
     }
 
     it('turns rows to run down the columns: the readout counts columns and the steps move through them', async () => {
-      const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
+      const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
@@ -109,7 +109,7 @@ describe('App row progress', () => {
     })
 
     it('will not step past the last column', async () => {
-      const wrapper = await mountWithPattern(5, 3) // 3 columns x 2 rows
+      const wrapper = await mountWithProject(5, 3) // 3 columns x 2 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
@@ -123,7 +123,7 @@ describe('App row progress', () => {
     })
 
     it('returns to the row the weaver was on after flipping the direction and back', async () => {
-      const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
+      const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -137,7 +137,7 @@ describe('App row progress', () => {
     })
 
     it('remembers the direction and where the weaving got to across a reload', async () => {
-      const first = await mountWithPattern(15, 30)
+      const first = await mountWithProject(15, 30)
       await first.find('[data-testid="progress-bar-switch"]').trigger('click')
       await first.find('[data-testid="progress-bar-direction"]').trigger('click')
       await first.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -150,20 +150,20 @@ describe('App row progress', () => {
     })
 
     it('is its own toggle: it changes neither the beads nor the rotation, and flipping is not an undo step', async () => {
-      const wrapper = await mountWithPattern(15, 30)
-      const gridBefore = frameGrid(loadPatterns()[0]!)
+      const wrapper = await mountWithProject(15, 30)
+      const gridBefore = frameGrid(loadProjects()[0]!)
 
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
-      expect(loadPatterns()[0]!.rotation).toBe(0)
-      expect(frameGrid(loadPatterns()[0]!)).toEqual(gridBefore)
+      expect(loadProjects()[0]!.rotation).toBe(0)
+      expect(frameGrid(loadProjects()[0]!)).toEqual(gridBefore)
       expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
-      expect(loadPatterns()[0]!.rowProgress.direction).toBe('columns')
+      expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
     })
 
     it('leaves redo untouched: Row direction and moving the Row progress pointer are not grid edits', async () => {
-      const wrapper = await mountWithPattern(15, 30)
+      const wrapper = await mountWithProject(15, 30)
       await wrapper.find('[data-color-id="red"]').trigger('click')
       await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
@@ -176,13 +176,13 @@ describe('App row progress', () => {
 
       expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
       await wrapper.find('[data-testid="redo-button"]').trigger('click')
-      expect(frameGrid(loadPatterns()[0]!)[0]![0]!.color).toBe('#e63746')
+      expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     })
   })
 })
 
 describe('App finished rows', () => {
-  /** Opens a 10-column x 20-row Pattern with Row progress on and rows 1-2 marked done, red selected; returns its cells. */
+  /** Opens a 10-column x 20-row Project with Row progress on and rows 1-2 marked done, red selected; returns its cells. */
   async function withTwoRowsWoven(wrapper: ReturnType<typeof mount>) {
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -191,7 +191,7 @@ describe('App finished rows', () => {
   }
 
   function colorAt(row: number, column: number) {
-    return frameGrid(loadPatterns()[0]!)[row]![column]!.color
+    return frameGrid(loadProjects()[0]!)[row]![column]!.color
   }
 
   function undoDisabled(wrapper: ReturnType<typeof mount>) {
@@ -203,7 +203,7 @@ describe('App finished rows', () => {
   }
 
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await pressBead(wrapper, 14) // (1,4)
@@ -214,7 +214,7 @@ describe('App finished rows', () => {
   })
 
   it('an edit that lands only on a finished row changes nothing, so it leaves redo alone', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
     await pressBead(wrapper, 24) // (2,4), the current row — a real edit
     await wrapper.trigger('mouseup')
@@ -231,7 +231,7 @@ describe('App finished rows', () => {
   })
 
   it('paints only the unfinished part of a drag that crosses into the current row', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await pressBead(wrapper, 14) // (1,4)
@@ -245,7 +245,7 @@ describe('App finished rows', () => {
   })
 
   it('will not right-click erase a bead in a finished row', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4), painted before it was woven
     await wrapper.trigger('mouseup')
@@ -259,7 +259,7 @@ describe('App finished rows', () => {
   })
 
   it('fills only the unfinished part of an area that reaches into finished rows', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
@@ -272,7 +272,7 @@ describe('App finished rows', () => {
   })
 
   it('stamps a pasted block only onto the unfinished beads it covers', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
     await pressBead(wrapper, 50) // (5,0)
     await hoverBead(wrapper, 60, { buttons: 1 }) // (6,0)
@@ -291,7 +291,7 @@ describe('App finished rows', () => {
   })
 
   it('locks the finished columns instead once rows run down them', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -306,7 +306,7 @@ describe('App finished rows', () => {
   })
 
   it('lets every bead be drawn on again once the overlay is off', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
@@ -317,7 +317,7 @@ describe('App finished rows', () => {
   })
 
   it('previews no paint on a finished bead', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await withTwoRowsWoven(wrapper)
 
     await hoverBead(wrapper, 14) // (1,4)
@@ -325,7 +325,7 @@ describe('App finished rows', () => {
   })
 
   it('still undoes in full, even a change to a row marked done since', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
@@ -338,7 +338,7 @@ describe('App finished rows', () => {
   })
 
   it('redoes in full too, even onto a row marked done since', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
@@ -359,23 +359,23 @@ describe('App delete all', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
   }
 
-  function loadedPattern() {
-    return loadPatterns()[0]!
+  function loadedProject() {
+    return loadProjects()[0]!
   }
 
   it('opens a confirmation modal instead of clearing immediately', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
-    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
   })
 
-  it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('leaves the Project untouched when Cancel is clicked, and closes the modal', async () => {
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
@@ -383,11 +383,11 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
   })
 
-  it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
-    const wrapper = await mountWithPattern(6, 6) // 4x4
+  it('leaves the Project untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0) // paint (0,0) red
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
@@ -399,16 +399,16 @@ describe('App delete all', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
-    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
 
     // If Escape had also run backOutOfSelect, it would have dropped the copied block (cancelPaste), and this next
     // click would start a fresh Selection instead of stamping — leaving (1,1) uncolored.
     await click(wrapper, 5) // (1,1)
-    expect(frameGrid(loadedPattern())[1]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[1]![1]!.color).toBe('#e63746')
   })
 
   it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
-    const wrapper = await mountWithPattern(15, 30) // 10 columns x 20 rows
+    const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
     await click(wrapper, 25)
@@ -421,8 +421,8 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(frameGrid(loadedPattern()).flat().every((cell) => cell.color === null)).toBe(true)
-    expect(loadedPattern().rowProgress).toEqual({
+    expect(frameGrid(loadedProject()).flat().every((cell) => cell.color === null)).toBe(true)
+    expect(loadedProject().rowProgress).toEqual({
       enabled: false,
       direction: 'rows',
       currentRow: 0,
@@ -431,15 +431,15 @@ describe('App delete all', () => {
   })
 
   it('keeps name, size, Technique, Bead and rotation unchanged', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 0)
-    const before = loadedPattern()
+    const before = loadedProject()
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    const after = loadedPattern()
+    const after = loadedProject()
     expect(after.name).toBe(before.name)
     expect(after.technique).toBe(before.technique)
     expect(after.beadId).toBe(before.beadId)
@@ -449,7 +449,7 @@ describe('App delete all', () => {
   })
 
   it('ignores the Row progress lock, clearing beads in finished rows along with the rest', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4), painted before it's locked
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -458,12 +458,12 @@ describe('App delete all', () => {
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(frameGrid(loadedPattern())[0]![4]!.color).toBeNull()
+    expect(frameGrid(loadedProject())[0]![4]!.color).toBeNull()
   })
 
 
   it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await click(wrapper, 4) // (0,4)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
@@ -476,8 +476,8 @@ describe('App delete all', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    expect(frameGrid(loadedPattern())[0]![4]!.color).toBe('#e63746')
-    expect(loadedPattern().rowProgress).toEqual({
+    expect(frameGrid(loadedProject())[0]![4]!.color).toBe('#e63746')
+    expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
       currentRow: 2,
@@ -486,14 +486,14 @@ describe('App delete all', () => {
     expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/\b3\D+20\b/)
   })
 
-  it('does nothing when there is no open Pattern', () => {
+  it('does nothing when there is no open Project', () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="delete-all-button"]').exists()).toBe(false)
   })
 
   it('translates the modal title, message and button labels with the interface language', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
@@ -512,77 +512,77 @@ describe('App delete all', () => {
 })
 
 describe('App header bead', () => {
-  it("shows the open Pattern's Bead label in the header", async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it("shows the open Project's Bead label in the header", async () => {
+    const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
-  it('updates the Bead shown when switching to another Pattern', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const firstId = loadPatterns()[0]!.id
+  it('updates the Bead shown when switching to another Project', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const firstId = loadProjects()[0]!.id
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
     await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
     await wrapper.find('[data-testid="width-input"]').setValue('15')
     await wrapper.find('[data-testid="height-input"]').setValue('30')
     await wrapper.find('form').trigger('submit')
 
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('Miyuki Delica 11/0')
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('Miyuki Delica 11/0')
 
-    await wrapper.find(`[data-testid="select-pattern-${firstId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Cube 1.5mm')
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
-  it('shows no Bead in the header with no Pattern open', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const patternId = loadPatterns()[0]!.id
+  it('shows no Bead in the header with no Project open', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const projectId = loadProjects()[0]!.id
 
-    await wrapper.find(`[data-testid="remove-pattern-${patternId}"]`).trigger('click')
+    await wrapper.find(`[data-testid="remove-project-${projectId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="current-project-bead"]').exists()).toBe(false)
   })
 
-  it('shows an "unknown bead" label, translated, for a Pattern whose Bead is not in the catalog', async () => {
-    const pattern = createPattern({
+  it('shows an "unknown bead" label, translated, for a Project whose Bead is not in the catalog', async () => {
+    const project = createProject({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    savePatterns([{ ...pattern, beadId: 'no-such-bead' }])
+    saveProjects([{ ...project, beadId: 'no-such-bead' }])
 
     const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(ru.patterns.unknownBeadLabel)
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe(ru.projects.unknownBeadLabel)
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe(en.patterns.unknownBeadLabel)
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe(en.projects.unknownBeadLabel)
   })
 
-  it('leaves the Saved Patterns list unchanged: no Bead shown there', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const patternId = loadPatterns()[0]!.id
+  it('leaves the Saved Projects list unchanged: no Bead shown there', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const projectId = loadProjects()[0]!.id
 
-    await wrapper.find('[data-testid="new-pattern-button"]').trigger('click')
-    await createPatternViaForm(wrapper, '30', '30')
+    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
+    await createProjectViaForm(wrapper, '30', '30')
 
-    const patternItem = wrapper
-      .findAll('[data-testid="pattern-item"]')
-      .find((item) => item.find(`[data-testid="select-pattern-${patternId}"]`).exists())!
-    expect(patternItem.find('[data-testid="current-pattern-bead"]').exists()).toBe(false)
+    const projectItem = wrapper
+      .findAll('[data-testid="project-item"]')
+      .find((item) => item.find(`[data-testid="select-project-${projectId}"]`).exists())!
+    expect(projectItem.find('[data-testid="current-project-bead"]').exists()).toBe(false)
   })
 })
 
 describe('App replace bead', () => {
-  function loadedPattern() {
-    return loadPatterns()[0]!
+  function loadedProject() {
+    return loadProjects()[0]!
   }
 
   it('offers the other built-in catalog Beads, not the current one', async () => {
-    const wrapper = await mountWithPattern(15, 30) // Cube
+    const wrapper = await mountWithProject(15, 30) // Cube
 
     const labels = wrapper.find('[data-testid="replace-bead-select"]').findAll('option').map((option) => option.text())
     expect(labels).not.toContain('TOHO Cube 1.5mm')
@@ -591,7 +591,7 @@ describe('App replace bead', () => {
   })
 
   it('opens a confirmation modal showing the new Estimated size next to the current one instead of replacing immediately', async () => {
-    const wrapper = await mountWithPattern(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
+    const wrapper = await mountWithProject(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
@@ -599,15 +599,15 @@ describe('App replace bead', () => {
     const modal = wrapper.find('[data-testid="replace-bead-modal"]')
     expect(modal.exists()).toBe(true)
     // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
-    expect(modal.text()).toContain('With TOHO Round 11/0, this Pattern will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
+    expect(modal.text()).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
     expect(modal.text()).toContain('Your design and its bead count stay exactly the same')
     expect(modal.text()).not.toContain('New size')
-    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
   })
 
-  it('reports the estimate the way the screen shows the Pattern, so a Pattern saved turned swaps width and height', async () => {
-    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
-    savePatterns([{ ...saved, rotation: 90 }])
+  it('reports the estimate the way the screen shows the Project, so a Project saved turned swaps width and height', async () => {
+    const saved = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    saveProjects([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
     await flushPromises()
     await wrapper.find('[data-testid="language-en"]').trigger('click')
@@ -617,18 +617,18 @@ describe('App replace bead', () => {
     expect(wrapper.find('[data-testid="replace-bead-modal"]').text()).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
 
-  it('leaves the Pattern untouched when Cancel is clicked, and closes the modal', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('leaves the Project untouched when Cancel is clicked, and closes the modal', async () => {
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
   })
 
   it('goes back to its placeholder after Cancel, rather than keeping the declined Bead selected (ticket 113)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
@@ -638,7 +638,7 @@ describe('App replace bead', () => {
   })
 
   it('opens the modal again when the same Bead is picked a second time after Cancel (ticket 113)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
@@ -649,18 +649,18 @@ describe('App replace bead', () => {
   })
 
   it('goes back to its placeholder after Confirm, with the current Bead label showing the new Bead (ticket 113)', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     const select = wrapper.find<HTMLSelectElement>('[data-testid="replace-bead-select"]')
 
     await select.setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(select.element.value).toBe('')
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('TOHO Round 11/0')
   })
 
-  it('leaves the Pattern untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
-    const wrapper = await mountWithPattern(6, 6) // 4x4 at Cube
+  it('leaves the Project untouched when Escape is pressed, and closes the modal without also backing out of Select', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4 at Cube
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
@@ -674,53 +674,53 @@ describe('App replace bead', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
 
     // If Escape had also run backOutOfSelect, it would have dropped the copied block, and this next click would
     // start a fresh Selection instead of stamping.
     await pressBead(wrapper, 5)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect(frameGrid(loadedPattern())[1]![1]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[1]![1]!.color).toBe('#e63746')
   })
 
   it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
-    const wrapper = await mountWithPattern(15, 30) // 10x20 at Cube
+    const wrapper = await mountWithProject(15, 30) // 10x20 at Cube
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().frame!.columns).toBe(10)
-    expect(loadedPattern().frame!.rows).toBe(20)
-    expect(loadedPattern()).not.toHaveProperty('widthMm')
-    expect(wrapper.find('[data-testid="current-pattern-bead"]').text()).toBe('TOHO Round 11/0')
+    expect(loadedProject().beadId).toBe('toho-round-11-0')
+    expect(loadedProject().frame!.columns).toBe(10)
+    expect(loadedProject().frame!.rows).toBe(20)
+    expect(loadedProject()).not.toHaveProperty('widthMm')
+    expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('TOHO Round 11/0')
   })
 
   it('leaves every painted cell where it was, with no rescale', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // (0,0)
     await pressBead(wrapper, 199) // (19,9)
     await wrapper.find('.app-shell').trigger('mouseup')
-    const before = frameGrid(loadedPattern())
+    const before = frameGrid(loadedProject())
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(frameGrid(loadedPattern())).toEqual(before)
-    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(loadedPattern())[19]![9]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())).toEqual(before)
+    expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadedProject())[19]![9]!.color).toBe('#e63746')
   })
 
   it('keeps Row progress as it was, since the grid it describes is unchanged', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().rowProgress).toEqual({
+    expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
       currentRow: 1,
@@ -728,7 +728,7 @@ describe('App replace bead', () => {
     })
   })
 
-  it('works on a Pattern created in beads and painted on', async () => {
+  it('works on a Project created in beads and painted on', async () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
     await wrapper.find('[data-testid="width-input"]').setValue('12')
@@ -741,30 +741,30 @@ describe('App replace bead', () => {
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('miyuki-delica-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedPattern().beadId).toBe('miyuki-delica-11-0')
-    expect(loadedPattern().frame!.columns).toBe(12)
-    expect(loadedPattern().frame!.rows).toBe(5)
-    expect(frameGrid(loadedPattern())[0]![7]!.color).toBe('#e63746')
+    expect(loadedProject().beadId).toBe('miyuki-delica-11-0')
+    expect(loadedProject().frame!.columns).toBe(12)
+    expect(loadedProject().frame!.rows).toBe(5)
+    expect(frameGrid(loadedProject())[0]![7]!.color).toBe('#e63746')
   })
 
   it('keeps name, Technique and rotation unchanged', async () => {
-    const saved = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
-    savePatterns([{ ...saved, rotation: 90 }])
+    const saved = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    saveProjects([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
     await flushPromises()
-    const before = loadedPattern()
+    const before = loadedProject()
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    const after = loadedPattern()
+    const after = loadedProject()
     expect(after.name).toBe(before.name)
     expect(after.technique).toBe(before.technique)
     expect(after.rotation).toBe(90)
   })
 
   it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
@@ -777,11 +777,11 @@ describe('App replace bead', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
-    expect(loadedPattern().beadId).toBe('toho-cube-1.5mm')
-    expect(loadedPattern().frame!.columns).toBe(10)
-    expect(loadedPattern().frame!.rows).toBe(20)
-    expect(frameGrid(loadedPattern())[0]![0]!.color).toBe('#e63746')
-    expect(loadedPattern().rowProgress).toEqual({
+    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().frame!.columns).toBe(10)
+    expect(loadedProject().frame!.rows).toBe(20)
+    expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
+    expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
       currentRow: 1,
@@ -790,18 +790,18 @@ describe('App replace bead', () => {
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
 
-    expect(loadedPattern().beadId).toBe('toho-round-11-0')
-    expect(loadedPattern().frame!.columns).toBe(10)
+    expect(loadedProject().beadId).toBe('toho-round-11-0')
+    expect(loadedProject().frame!.columns).toBe(10)
   })
 
-  it('does nothing when there is no open Pattern', () => {
+  it('does nothing when there is no open Project', () => {
     const wrapper = mount(App)
 
     expect(wrapper.find('[data-testid="replace-bead-select"]').exists()).toBe(false)
   })
 
   it('translates the modal title, message and button labels with the interface language', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
@@ -819,7 +819,7 @@ describe('App replace bead', () => {
 })
 
 describe('App bead quantities', () => {
-  async function patternWithPaintedCells(wrapper: ReturnType<typeof mount>) {
+  async function projectWithPaintedCells(wrapper: ReturnType<typeof mount>) {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     // Each press is a click, so each is released: the bead counts follow a stroke a few times a second (ticket 106) and
     // settle when it ends, which is what a release does.
@@ -833,23 +833,23 @@ describe('App bead quantities', () => {
   }
 
   it('totals the beads each color needs from the painted cells, with no bead picker in sight', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    await patternWithPaintedCells(wrapper)
+    const wrapper = await mountWithProject(15, 30)
+    await projectWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('2')
     expect(wrapper.find('[data-testid="quantity-count-blue"]').text()).toBe('1')
     expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 
-  it('shows no row for a color painted nowhere in the Pattern', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    await patternWithPaintedCells(wrapper)
+  it('shows no row for a color painted nowhere in the Project', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await projectWithPaintedCells(wrapper)
 
     expect(wrapper.find('[data-testid="quantity-count-green"]').exists()).toBe(false)
   })
 
   it("adds a color's row as soon as it is painted, and removes it once its last cell is erased", async () => {
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -861,14 +861,14 @@ describe('App bead quantities', () => {
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
   })
 
-  it('shows the "open a Pattern" message with no Pattern open', async () => {
+  it('shows the "open a Project" message with no Project open', async () => {
     const wrapper = mount(App)
 
-    expect(wrapper.find('[data-testid="quantities-no-pattern"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="quantities-no-project"]').exists()).toBe(true)
   })
 
-  it('shows a "nothing painted yet" message for a Pattern with nothing painted on it', async () => {
-    const wrapper = await mountWithPattern(15, 30)
+  it('shows a "nothing painted yet" message for a Project with nothing painted on it', async () => {
+    const wrapper = await mountWithProject(15, 30)
 
     expect(wrapper.find('[data-testid="quantities-empty"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="quantity-count-red"]').exists()).toBe(false)
@@ -878,7 +878,7 @@ describe('App bead quantities', () => {
 describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
     localStorage.setItem('bd-beads:locale', 'en')
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -899,7 +899,7 @@ describe('App estimated weight (ticket 155)', () => {
 
   it('labels the weight in grams or in Russian «г» by the app language, with its own decimal sign (writing.md)', async () => {
     localStorage.setItem('bd-beads:locale', 'ru')
-    const wrapper = await mountWithPattern(15, 30)
+    const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
@@ -910,9 +910,9 @@ describe('App estimated weight (ticket 155)', () => {
   })
 })
 
-describe('App pattern transfer', () => {
-  function makePattern(name: string): Pattern {
-    return createPattern({
+describe('App project transfer', () => {
+  function makeProject(name: string): Project {
+    return createProject({
       name,
       technique: 'loom',
       beadId: cubeBead.id,
@@ -930,19 +930,19 @@ describe('App pattern transfer', () => {
     await flushPromises()
   }
 
-  it('takes in a library exported on another device and saves every Pattern in it', async () => {
+  it('takes in a library exported on another device and saves every Project in it', async () => {
     const wrapper = mount(App)
-    const library = [makePattern('Fox'), makePattern('Owl')]
+    const library = [makeProject('Fox'), makeProject('Owl')]
 
     await importFile(wrapper, serializeLibrary(library))
 
-    expect(loadPatterns().map((pattern) => pattern.name).sort()).toEqual(['Fox', 'Owl'])
-    expect(wrapper.findAll('[data-testid="pattern-item"]')).toHaveLength(2)
+    expect(loadProjects().map((project) => project.name).sort()).toEqual(['Fox', 'Owl'])
+    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(2)
   })
 
-  it('opens an imported Pattern when nothing was open, so the user resumes where they left off', async () => {
+  it('opens an imported Project when nothing was open, so the user resumes where they left off', async () => {
     const wrapper = mount(App)
-    const woven = makePattern('Fox')
+    const woven = makeProject('Fox')
     woven.rowProgress = { enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 }
 
     await importFile(wrapper, serializeLibrary([woven]))
@@ -951,37 +951,37 @@ describe('App pattern transfer', () => {
     expect(rowProgressView(wrapper)).toMatchObject({ finished: 4 })
   })
 
-  it('imports a Pattern that clashes with a local one as a separate entry, keeping both', async () => {
-    const wrapper = await mountWithPattern(15, 30)
-    const local = loadPatterns()[0]!
+  it('imports a Project that clashes with a local one as a separate entry, keeping both', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const local = loadProjects()[0]!
 
     await importFile(wrapper, serializeLibrary([{ ...local, name: 'Imported copy' }]))
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
 
-    const saved = loadPatterns()
+    const saved = loadProjects()
     expect(saved).toHaveLength(2)
-    expect(saved.map((pattern) => pattern.id)).toContain(local.id)
-    expect(new Set(saved.map((pattern) => pattern.id)).size).toBe(2)
+    expect(saved.map((project) => project.id)).toContain(local.id)
+    expect(new Set(saved.map((project) => project.id)).size).toBe(2)
   })
 
   it('reports a file it cannot read instead of importing anything', async () => {
     const wrapper = mount(App)
 
-    await importFile(wrapper, 'definitely not a pattern file')
+    await importFile(wrapper, 'definitely not a project file')
 
     expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(true)
-    expect(loadPatterns()).toHaveLength(0)
+    expect(loadProjects()).toHaveLength(0)
   })
 
   it('keeps the import result and error visible after an import, in both languages (ticket 117)', async () => {
     const wrapper = mount(App)
 
-    await importFile(wrapper, serializeLibrary([makePattern('Fox'), makePattern('Owl')]))
+    await importFile(wrapper, serializeLibrary([makeProject('Fox'), makeProject('Owl')]))
     expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${ru.transfer.importedLabel}: 2`)
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${en.transfer.importedLabel}: 2`)
 
-    await importFile(wrapper, 'definitely not a pattern file')
+    await importFile(wrapper, 'definitely not a project file')
     expect(wrapper.find('[data-testid="import-error"]').text()).toBe(en.transfer.importErrorLabel)
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
     expect(wrapper.find('[data-testid="import-error"]').text()).toBe(ru.transfer.importErrorLabel)
@@ -989,11 +989,11 @@ describe('App pattern transfer', () => {
 
   it('imports into an empty library and opens what it brought in (ticket 117)', async () => {
     const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="project-list-empty"]').exists()).toBe(true)
 
-    await importFile(wrapper, serializeLibrary([makePattern('Fox')]))
+    await importFile(wrapper, serializeLibrary([makeProject('Fox')]))
 
-    expect(wrapper.find('[data-testid="current-pattern-summary"]').text()).toContain('Fox')
-    expect(wrapper.find('[data-testid="pattern-list-empty"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('Fox')
+    expect(wrapper.find('[data-testid="project-list-empty"]').exists()).toBe(false)
   })
 })

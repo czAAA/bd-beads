@@ -1,8 +1,8 @@
 /**
- * Which part of a big Pattern a Drawing surface draws (ADR 0018). A Pattern at 300% zoom is thousands of px across,
+ * Which part of a big Project a Drawing surface draws (ADR 0018). A Project at 300% zoom is thousands of px across,
  * far past what a canvas can be, so the surface is only as big as the screen (plus a margin) and is drawn again when
- * what is on screen moves out of what it holds. Everything here is in the displayed Pattern's px: zoomed, and turned
- * when the Pattern is rotated, measured from the top-left of its beads.
+ * what is on screen moves out of what it holds. Everything here is in the displayed Project's px: zoomed, and turned
+ * when the Project is rotated, measured from the top-left of its beads.
  */
 
 export interface Rect {
@@ -32,9 +32,9 @@ export function contains(outer: Rect, inner: Rect): boolean {
 }
 
 /**
- * The window of the displayed Pattern the surface should hold, given what is on screen: the visible part with a margin
- * on every side (so a little scrolling does not need a redraw), kept inside the Pattern and on whole px. Never bigger
- * than the Pattern itself, so a small Pattern gets a surface its own size and a big one costs what the screen does.
+ * The window of the displayed Project the surface should hold, given what is on screen: the visible part with a margin
+ * on every side (so a little scrolling does not need a redraw), kept inside the Project and on whole px. Never bigger
+ * than the Project itself, so a small Project gets a surface its own size and a big one costs what the screen does.
  */
 export function drawingWindow(visible: Rect, extent: { width: number; height: number }, margin: number): Rect {
   const left = Math.max(0, Math.floor(visible.x - margin))

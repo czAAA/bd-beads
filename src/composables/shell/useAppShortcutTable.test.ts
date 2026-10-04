@@ -5,7 +5,7 @@ import { useAppShortcutTable, type AppShortcutTableDeps } from './useAppShortcut
 
 function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
   const deps: AppShortcutTableDeps = {
-    activePattern: () => undefined,
+    activeProject: () => undefined,
     activeTool: () => 'paint',
     hasSelection: () => false,
     hasOpenLayer: () => false,
@@ -46,13 +46,13 @@ function press(init: KeyboardEventInit) {
 }
 
 describe('useAppShortcutTable', () => {
-  it('F toggles Set Frame only while a Pattern is open', () => {
+  it('F toggles Set Frame only while a Project is open', () => {
     const none = mountTable()
     press({ key: 'f' })
     expect(none.deps.onToggleFrame).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
-    const { deps, wrapper } = mountTable({ activePattern: () => ({}) as never })
+    const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     press({ key: 'f' })
     expect(deps.onToggleFrame).toHaveBeenCalledOnce()
     wrapper.unmount()
@@ -141,12 +141,12 @@ describe('useAppShortcutTable', () => {
     group.wrapper.unmount()
   })
 
-  it('Ctrl+S saves only while a Pattern is open', () => {
+  it('Ctrl+S saves only while a Project is open', () => {
     const none = mountTable()
     press({ key: 's', ctrlKey: true })
     expect(none.deps.onSave).not.toHaveBeenCalled()
     none.wrapper.unmount()
-    const open = mountTable({ activePattern: () => ({}) as never })
+    const open = mountTable({ activeProject: () => ({}) as never })
     press({ key: 's', ctrlKey: true })
     expect(open.deps.onSave).toHaveBeenCalled()
     open.wrapper.unmount()

@@ -17,12 +17,12 @@ const { t } = useI18n()
 /** The features in the order the design system lists them, each with its Icons v2 icon. Mirror is left out while its controls are hidden (ticket 174). */
 const FEATURES: { key: keyof Translations['overview']['features']; icon: IconName }[] = [
   { key: 'techniques', icon: 'grid' },
-  { key: 'patternEditing', icon: 'paint' },
+  { key: 'projectEditing', icon: 'paint' },
   { key: 'convertImage', icon: 'image' },
   { key: 'rowProgress', icon: 'turn-row-direction' },
   { key: 'beadsNeeded', icon: 'bead' },
   { key: 'exports', icon: 'export' },
-  { key: 'savedPatterns', icon: 'library' },
+  { key: 'savedProjects', icon: 'library' },
 ]
 
 const wide = useMediaQuery('(min-width: 1024px)')

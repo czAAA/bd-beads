@@ -1,6 +1,6 @@
 import { computed, readonly, ref, type ComputedRef, type Ref } from 'vue'
 import { canvasBackgroundOf, canvasTheme, canvasWordColor, shownChoice, type CanvasBackground } from '../rendering/canvasBackgrounds'
-import type { PatternTheme } from '../rendering/beadLook'
+import type { ProjectTheme } from '../rendering/beadLook'
 import { browserCanvasBackgroundStore, type CanvasBackgroundStore } from '../services/canvasBackgroundStore'
 import { useResolvedTheme } from './useResolvedTheme'
 
@@ -18,8 +18,8 @@ export function useCanvasBackground(store: CanvasBackgroundStore = browserCanvas
   shown: ComputedRef<number>
   /** The background shown now, or undefined in high contrast. */
   background: ComputedRef<CanvasBackground | undefined>
-  /** The Pattern's colors on that background. */
-  patternTheme: ComputedRef<PatternTheme>
+  /** The Project's colors on that background. */
+  projectTheme: ComputedRef<ProjectTheme>
   /** The technique word's own color, where the background needs one. */
   wordColor: ComputedRef<string | undefined>
   setChoice: (next: number) => void
@@ -33,7 +33,7 @@ export function useCanvasBackground(store: CanvasBackgroundStore = browserCanvas
     choice: readonly(choice),
     shown: computed(() => shownChoice(theme.value, choice.value)),
     background: computed(() => canvasBackgroundOf(theme.value, choice.value)),
-    patternTheme: computed(() => canvasTheme(theme.value, choice.value)),
+    projectTheme: computed(() => canvasTheme(theme.value, choice.value)),
     wordColor: computed(() => canvasWordColor(theme.value, choice.value)),
     setChoice(next) {
       choice.value = next

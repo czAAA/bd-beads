@@ -4,7 +4,7 @@ import { installFakeCanvas } from '../testUtils/fakeCanvas'
 import TourBand from './TourBand.vue'
 
 describe('TourBand', () => {
-  it('draws the whole Tour Pattern with the Pattern renderer, empty corners included', () => {
+  it('draws the whole Tour Project with the Project renderer, empty corners included', () => {
     const canvas = installFakeCanvas()
     const wrapper = mount(TourBand)
     expect(wrapper.find('canvas').exists()).toBe(true)

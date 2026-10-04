@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadCount, beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
-import { createPattern, type Pattern } from './pattern'
+import { createProject, type Project } from './project'
 import { piecesOf } from './pieces'
-import { rotatePattern, rotatedFrame } from './rotate'
+import { rotateProject, rotatedFrame } from './rotate'
 
-const base = createPattern({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
-function withBeads(beads: BeadMap, extra: Partial<Pattern> = {}): Pattern {
+function withBeads(beads: BeadMap, extra: Partial<Project> = {}): Project {
   return { ...base, beads, frame: { row: 10, column: 10, rows: 2, columns: 3 }, ...extra }
 }
 
@@ -26,15 +26,15 @@ function positionsOf(beads: BeadMap): string[] {
   return found.sort()
 }
 
-describe('rotatePattern', () => {
+describe('rotateProject', () => {
   it('turns the Frame and its beads a quarter clockwise about the Frame\'s centre', () => {
-    const result = rotatePattern(withBeads(FRAME_BEADS))!
+    const result = rotateProject(withBeads(FRAME_BEADS))!
 
     // 2 rows x 3 columns becomes 3 rows x 2 columns about the same middle.
-    expect(result.pattern.frame).toEqual({ row: 10, column: 11, rows: 3, columns: 2 })
+    expect(result.project.frame).toEqual({ row: 10, column: 11, rows: 3, columns: 2 })
     expect(result.moved).toBe(0)
     // Clockwise: the old left column (A, D) is now the top row, read right to left... A D / B . / C F
-    expect(positionsOf(result.pattern.beads)).toEqual(
+    expect(positionsOf(result.project.beads)).toEqual(
       positionsOf(
         beadsFromColors(
           [
@@ -49,24 +49,24 @@ describe('rotatePattern', () => {
   })
 
   it('four turns bring everything home', () => {
-    let pattern = withBeads(FRAME_BEADS)
+    let project = withBeads(FRAME_BEADS)
     for (let turn = 0; turn < 4; turn += 1) {
-      pattern = rotatePattern(pattern)!.pattern
+      project = rotateProject(project)!.project
     }
-    expect(pattern.frame).toEqual({ row: 10, column: 10, rows: 2, columns: 3 })
-    expect(positionsOf(pattern.beads)).toEqual(positionsOf(FRAME_BEADS))
+    expect(project.frame).toEqual({ row: 10, column: 10, rows: 2, columns: 3 })
+    expect(positionsOf(project.beads)).toEqual(positionsOf(FRAME_BEADS))
   })
 
   it('has nothing to turn without a Frame', () => {
     const { frame: _frame, ...open } = withBeads(FRAME_BEADS)
-    expect(rotatePattern(open as Pattern)).toBeUndefined()
+    expect(rotateProject(open as Project)).toBeUndefined()
   })
 
   it('leaves beads clear of the turned Frame where they are', () => {
     const far = withColors(FRAME_BEADS, [{ row: 30, column: 30, color: '#123456' }])
-    const result = rotatePattern(withBeads(far))!
+    const result = rotateProject(withBeads(far))!
     expect(result.moved).toBe(0)
-    expect(result.pattern.beads[30]![30]).toBe('#123456')
+    expect(result.project.beads[30]![30]).toBe('#123456')
   })
 
   it('moves a Piece the turned Frame would cover to clear space, whole, losing and overwriting nothing', () => {
@@ -76,13 +76,13 @@ describe('rotatePattern', () => {
       { row: 13, column: 12, color: '#00bb00' },
     ])
     const before = withBeads(piece)
-    const result = rotatePattern(before)!
+    const result = rotateProject(before)!
 
     expect(result.moved).toBe(1)
-    expect(beadCount(result.pattern.beads)).toBe(beadCount(before.beads))
+    expect(beadCount(result.project.beads)).toBe(beadCount(before.beads))
 
-    const turned = result.pattern.frame!
-    const pieces = piecesOf(result.pattern.beads, 'loom')
+    const turned = result.project.frame!
+    const pieces = piecesOf(result.project.beads, 'loom')
     // The Frame's own beads form one Piece, and the moved Piece is another that is wholly outside the Frame and its rulers.
     expect(pieces).toHaveLength(2)
     const moved = pieces.find((candidate) => candidate.beads === 2)!
@@ -96,21 +96,21 @@ describe('rotatePattern', () => {
     for (const technique of ['peyote', 'brick'] as const) {
       const framed = withBeads(FRAME_BEADS, { technique, frame: { row: 10, column: 10, rows: 2, columns: 3 } })
       const piece = { ...framed, beads: withColors(FRAME_BEADS, [{ row: 12, column: 12, color: '#00aa00' }]) }
-      const result = rotatePattern(piece)!
+      const result = rotateProject(piece)!
       expect(result.moved).toBe(1)
       let movedRow: number | undefined
-      forEachBead(result.pattern.beads, (row, _column, color) => {
+      forEachBead(result.project.beads, (row, _column, color) => {
         if (color === '#00aa00') movedRow = row
       })
       expect(Math.abs(movedRow! - 12) % 2).toBe(0)
-      expect(result.pattern.frame!.row % 2).toBe(0)
+      expect(result.project.frame!.row % 2).toBe(0)
     }
   })
 
-  it('keeps the Pattern\'s other fields', () => {
-    const result = rotatePattern(withBeads(FRAME_BEADS, { name: 'Keep me' }))!
-    expect(result.pattern.name).toBe('Keep me')
-    expect(result.pattern.id).toBe(base.id)
+  it('keeps the Project\'s other fields', () => {
+    const result = rotateProject(withBeads(FRAME_BEADS, { name: 'Keep me' }))!
+    expect(result.project.name).toBe('Keep me')
+    expect(result.project.id).toBe(base.id)
   })
 })
 

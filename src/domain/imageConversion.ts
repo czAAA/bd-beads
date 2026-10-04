@@ -6,7 +6,7 @@ import {
   type ImageSize,
   type PreviewLattice,
 } from './imageFraming'
-import type { Cell, Grid } from './pattern'
+import type { Cell, Grid } from './project'
 
 /**
  * Convert image's actual conversion (ticket 58, ADR 0010): what the picture's pixels become, cell by cell, and what a
@@ -192,7 +192,7 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
  *
  * The ceiling is 14 because Image colors are shown as swatches in the Colors group, and a Tool group holds at most 14
  * controls in view — two rows of seven (CONTEXT.md's Tool group). A higher ceiling would let one conversion fill that
- * group past what the layout is built for, and a Pattern needing more than fourteen colors is not one this feature is
+ * group past what the layout is built for, and a Project needing more than fourteen colors is not one this feature is
  * for: it is the photograph case the ticket deliberately declines to build machinery for.
  *
  * The floor is 1, down from 2 (ticket 177, amending ADR 0011): now that every resolved color is quantized onto the
@@ -270,7 +270,7 @@ export function sampleLatticePacked({
  * The same lattice as sampleLatticePacked, as `#rrggbb` strings — undefined where a cell falls off the picture, or on a
  * pixel too transparent to weave.
  *
- * The lattice's frame block is the Pattern's own cells, so the preview and the Pattern it will create come out of this
+ * The lattice's frame block is the Project's own cells, so the preview and the Project it will create come out of this
  * one sampling pass: what is inside the frame on screen is not a separate rendering of the same idea, it is the same
  * numbers (see convertSampledFrame).
  */
@@ -297,7 +297,7 @@ export function sampleLattice(
   )
 }
 
-/** The Pattern a conversion produced: its grid, and the colors it found (frozen onto the Pattern — ADR 0011). */
+/** The Project a conversion produced: its grid, and the colors it found (frozen onto the Project — ADR 0011). */
 export interface ConvertedImage {
   grid: Grid
   imageColors: string[]
@@ -323,12 +323,12 @@ function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColor
 }
 
 /**
- * The Pattern's grid and Image colors, out of an already-sampled lattice: the frame's own block of cells, reduced to at
+ * The Project's grid and Image colors, out of an already-sampled lattice: the frame's own block of cells, reduced to at
  * most `maxColors` colors and offered to the Palette for near-exact snapping (see resolveImageColors).
  *
  * Only the frame's cells take part. The preview's surrounding cells are context for judging the crop, and letting them
  * influence the reduction would mean the colors inside the frame changed as the picture was panned — the opposite of
- * "what is inside the frame is exactly the Pattern that will be created".
+ * "what is inside the frame is exactly the Project that will be created".
  */
 export function convertSampledFrame(
   sampled: readonly (readonly (string | undefined)[])[],
@@ -347,7 +347,7 @@ export function convertSampledFrame(
   )
 }
 
-/** convertSampledFrame for a lattice sampled into packed colors (see sampleLatticePacked): the same Pattern out of the same cells. */
+/** convertSampledFrame for a lattice sampled into packed colors (see sampleLatticePacked): the same Project out of the same cells. */
 export function convertPackedFrame(
   sampled: Int32Array,
   lattice: PreviewLattice,
@@ -376,7 +376,7 @@ export function convertPackedFrame(
 }
 
 /**
- * One Convert image, straight from a picture and a framing view to the Pattern's grid and Image colors — the framing
+ * One Convert image, straight from a picture and a framing view to the Project's grid and Image colors — the framing
  * preview reaches the same result through sampleLattice + convertSampledFrame, since the frame's cells are a block of
  * the lattice it already sampled.
  */

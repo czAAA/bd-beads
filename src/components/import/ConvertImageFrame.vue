@@ -18,26 +18,26 @@ import {
   type PixelData,
 } from '../../domain/imageConversion'
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../../domain/imageFraming'
-import { framedGrid, type Cell, type Grid } from '../../domain/pattern'
+import { framedGrid, type Cell, type Grid } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { LIGHT_THEME, type BeadDrawer } from '../../rendering/beadLook'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
-import { patternExtentPx, renderPattern, rowTopPx } from '../../rendering/patternRenderer'
+import { projectExtentPx, renderProject, rowTopPx } from '../../rendering/projectRenderer'
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
- * beads with the Pattern's own frame laid over it, and the picture moved underneath by zooming and dragging until the
+ * beads with the Project's own frame laid over it, and the picture moved underneath by zooming and dragging until the
  * right part is inside.
  *
  * The preview is the conversion, not a picture of it. Every bead on screen comes out of one sampling pass (see
- * sampleLatticePacked), and the Pattern this creates is the block of that pass which falls inside the frame — so "what
- * is inside the frame is exactly the Pattern that will be created" is true by construction rather than by two pieces of
+ * sampleLatticePacked), and the Project this creates is the block of that pass which falls inside the frame — so "what
+ * is inside the frame is exactly the Project that will be created" is true by construction rather than by two pieces of
  * code agreeing.
  *
- * The beads are drawn by the Pattern renderer onto one canvas (ticket 104, ADR 0018), the same way the editor draws a
- * Pattern, so the preview and the Pattern that follows it look like each other in every Technique. The frame outline
+ * The beads are drawn by the Project renderer onto one canvas (ticket 104, ADR 0018), the same way the editor draws a
+ * Project, so the preview and the Project that follows it look like each other in every Technique. The frame outline
  * and the dimming around it stay ordinary elements over the canvas.
  *
  * A block too big to draw bead by bead on every move of a drag is drawn in a coarser look while the picture moves (ticket
@@ -50,7 +50,7 @@ import { patternExtentPx, renderPattern, rowTopPx } from '../../rendering/patter
  */
 const props = defineProps<{
   image: PixelData
-  /** The New Pattern form's live values: these size the frame, and the frame follows them as they are edited. */
+  /** The New Project form's live values: these size the frame, and the frame follows them as they are edited. */
   technique: Technique
   bead: Bead
   dimensions: GridDimensions
@@ -81,7 +81,7 @@ const { t } = useI18n()
 /** How long the pointer has to stay still, mid-drag, before the colors are worked out exactly. */
 const PAUSE_MS = 150
 
-/** The Pattern's own real-world footprint — what the picture is framed against (ADR 0010). */
+/** The Project's own real-world footprint — what the picture is framed against (ADR 0010). */
 const frame = computed(() => frameSizeMm(props.technique, props.dimensions, props.bead))
 
 const dragging = ref(false)
@@ -140,7 +140,7 @@ function sampledFor(view: ReturnType<typeof framingView>, lattice: ReturnType<ty
 const restLattice = computed(() => latticeFor(restView.value))
 const restSampled = computed(() => sampledFor(restView.value, restLattice.value))
 
-/** The Pattern this would create: the frame's block of that same pass, reduced to at most maxColors colors. */
+/** The Project this would create: the frame's block of that same pass, reduced to at most maxColors colors. */
 const converted = computed(() =>
   convertPackedFrame(restSampled.value, restLattice.value, props.dimensions, props.maxColors),
 )
@@ -155,7 +155,7 @@ const sampled = computed(() => (moving.value ? sampledFor(liveView.value, lattic
 /**
  * What each lattice bead shows. At rest, inside the frame it is the converted grid itself and outside it is the nearest
  * Image color, so the surround reads as part of the same bead picture rather than as unquantized pixels — it is context
- * for judging the crop, and it is dimmed (see the frame overlay below) precisely because it is not the Pattern. While
+ * for judging the crop, and it is dimmed (see the frame overlay below) precisely because it is not the Project. While
  * the picture moves, every bead is the nearest of the colors held from when the move began.
  */
 const beadColors = computed(() =>
@@ -164,8 +164,8 @@ const beadColors = computed(() =>
     : exactPreviewColors(sampled.value, lattice.value, props.dimensions, converted.value),
 )
 
-/** The lattice as a block of beads for the renderer: not a saved Pattern, but shaped like one, with no Row progress and upright. */
-const drawnPattern = computed(() => {
+/** The lattice as a block of beads for the renderer: not a saved Project, but shaped like one, with no Row progress and upright. */
+const drawnProject = computed(() => {
   const { columns, rows } = lattice.value
   const grid: Grid = Array.from({ length: rows }, (_row, row) =>
     Array.from({ length: columns }, (_cell, column): Cell => ({ color: beadColors.value[row * columns + column] ?? null })),
@@ -179,14 +179,14 @@ const drawnPattern = computed(() => {
 })
 
 /** The lattice at its natural bead size, in unscaled px. */
-const latticeExtent = computed(() => patternExtentPx(props.technique, lattice.value.columns, lattice.value.rows))
+const latticeExtent = computed(() => projectExtentPx(props.technique, lattice.value.columns, lattice.value.rows))
 
 /** The space kept round the preview inside the canvas panel, in px. */
 const PREVIEW_PADDING_PX = 14
 
 /**
  * How much the whole preview is scaled down to fit the canvas panel. Only the drawing scales — the frame is still the
- * Pattern's own cells, and zooming the picture is a separate thing entirely (it moves the picture under the frame,
+ * Project's own cells, and zooming the picture is a separate thing entirely (it moves the picture under the frame,
  * see the zoom prop).
  */
 const fitScale = computed(() =>
@@ -199,9 +199,9 @@ const fitScale = computed(() =>
   }),
 )
 
-/** The frame drawn over the beads: the lattice cells that are the Pattern, outlined and left undimmed. */
+/** The frame drawn over the beads: the lattice cells that are the Project, outlined and left undimmed. */
 const frameStyle = computed(() => {
-  const { width, height } = patternExtentPx(props.technique, props.dimensions.columns, props.dimensions.rows)
+  const { width, height } = projectExtentPx(props.technique, props.dimensions.columns, props.dimensions.rows)
   return {
     left: `${lattice.value.frameColumn * CELL_SIZE_PX}px`,
     top: `${rowTopPx(props.technique, lattice.value.frameRow)}px`,
@@ -241,7 +241,7 @@ watchPostEffect(() => {
   }
 
   // A block too big to draw bead by bead on every move of a drag is drawn coarsely for as long as the picture moves (see
-  // draftRenderer); the beads themselves, and the Pattern they are, come back when it is at rest.
+  // draftRenderer); the beads themselves, and the Project they are, come back when it is at rest.
   if (moving.value && usesDraftLook(props.technique, lattice.value.columns * lattice.value.rows)) {
     renderDraft(context, {
       technique: props.technique,
@@ -255,12 +255,12 @@ watchPostEffect(() => {
     return
   }
 
-  renderPattern(context, {
-    pattern: drawnPattern.value,
+  renderProject(context, {
+    project: drawnProject.value,
     region: { x: 0, y: 0, width, height },
     zoom: fitScale.value,
     pixelRatio,
-    // The board look in light, whatever the app's theme (ticket 150), like the Pattern the picture becomes will print.
+    // The board look in light, whatever the app's theme (ticket 150), like the Project the picture becomes will print.
     theme: LIGHT_THEME,
     drawBead: props.drawBead,
   })
@@ -344,7 +344,7 @@ onBeforeUnmount(() => {
 <template>
   <!--
     The framing step (ticket 150; ConvertImage card) inside the canvas box: the canvas strip names the step, the picture
-    fills the drawing area as beads with the frame at the Pattern's size, everything outside the frame dimmed, and the
+    fills the drawing area as beads with the frame at the Project's size, everything outside the frame dimmed, and the
     hint on the picture, bottom-left. The controls take the Progress bar's place.
   -->
   <section class="convert-image-frame" :aria-label="t.convertImage.heading" data-testid="convert-image-frame">
@@ -367,7 +367,7 @@ onBeforeUnmount(() => {
       >
         <!--
           The frame itself. Its huge outward box-shadow is what dims everything around it in one element, so the part
-          of the picture that isn't becoming the Pattern steps back without a second layer to keep in position.
+          of the picture that isn't becoming the Project steps back without a second layer to keep in position.
         -->
         <div class="convert-image-frame__frame" data-testid="convert-image-frame-outline" :style="frameStyle" />
       </div>

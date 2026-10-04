@@ -28,10 +28,10 @@ const MORE_LINES: [string, number][] = [
 const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-paper"]'
 
 /**
- * Not checked: text the user typed (a long Pattern name legitimately ends in an ellipsis), and the Pattern drawing's
+ * Not checked: text the user typed (a long Project name legitimately ends in an ellipsis), and the Project drawing's
  * own furniture (the big backdrop word and the ruler numbers, which are meant to run past the edge of the scrolling canvas).
  */
-const USER_TEXT = '[data-user-text], [data-testid="pattern-info"], [data-testid="phone-pattern-summary"], [data-testid="canvas-strip-title"], [data-testid="name-on-exports-value"], [data-testid="canvas-backdrop"], [data-testid="ruler-label"], .pattern-canvas__clip, .pattern-list__name'
+const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="phone-project-summary"], [data-testid="canvas-strip-title"], [data-testid="name-on-exports-value"], [data-testid="canvas-backdrop"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
 
 /**
  * Measures, in the browser, every visible piece of text on the page against the box that is meant to hold it, and

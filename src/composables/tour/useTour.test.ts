@@ -1,7 +1,7 @@
 import { nextTick, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createPattern, frameGrid, type CreatePatternInput, type Pattern } from '../../domain/pattern'
+import { createProject, frameGrid, type CreateProjectInput, type Project } from '../../domain/project'
 import { TOUR_STEPS, afterStep, gridsEqual } from '../../domain/tour'
 import { en } from '../../i18n/en'
 import type { TourProgress, TourStatus, TourStore } from '../../services/tourStore'
@@ -9,7 +9,7 @@ import { useTour } from './useTour'
 
 vi.mock('../../features', () => ({ TOUR_ENABLED: true }))
 
-function setup(initial: { status?: TourStatus; progress?: TourProgress; patterns?: Pattern[]; open?: Pattern } = {}) {
+function setup(initial: { status?: TourStatus; progress?: TourProgress; projects?: Project[]; open?: Project } = {}) {
   const saved = { status: initial.status ?? 'running', progress: initial.progress ?? { done: [] } }
   const store: TourStore = {
     loadStatus: () => saved.status,
@@ -17,32 +17,32 @@ function setup(initial: { status?: TourStatus; progress?: TourProgress; patterns
     loadProgress: () => saved.progress,
     saveProgress: (progress) => void (saved.progress = progress),
   }
-  const library = ref<Pattern[]>(initial.patterns ?? (initial.open ? [initial.open] : []))
+  const library = ref<Project[]>(initial.projects ?? (initial.open ? [initial.open] : []))
   const openId = ref<string | undefined>(initial.open?.id)
-  const current = () => library.value.find((pattern) => pattern.id === openId.value)
-  const replace = (pattern: Pattern) => void (library.value = library.value.map((entry) => (entry.id === pattern.id ? pattern : entry)))
+  const current = () => library.value.find((project) => project.id === openId.value)
+  const replace = (project: Project) => void (library.value = library.value.map((entry) => (entry.id === project.id ? project : entry)))
   const tool = ref<'paint' | 'fill' | 'select' | 'erase'>('paint')
   const showToast = vi.fn()
   const undo = vi.fn()
   const tour = useTour({
     store,
-    currentPattern: current,
-    hasPattern: (id) => library.value.some((pattern) => pattern.id === id),
-    openPattern: (id) => void (openId.value = id),
-    openNewPatternForm: () => void (openId.value = undefined),
+    currentProject: current,
+    hasProject: (id) => library.value.some((project) => project.id === id),
+    openProject: (id) => void (openId.value = id),
+    openNewProjectForm: () => void (openId.value = undefined),
     activeTool: () => tool.value,
     selectedColorId: () => undefined,
     selection: () => undefined,
     pasteArmed: () => false,
-    commitGridChange: (_pattern, updated) => replace(updated),
-    replacePattern: replace,
+    commitGridChange: (_project, updated) => replace(updated),
+    replaceProject: replace,
     undo,
     clearSelection: () => undefined,
     draftName: () => 'Rushnik',
-    createPattern: (input: CreatePatternInput) => {
-      const pattern = createPattern(input)
-      library.value = [...library.value, pattern]
-      openId.value = pattern.id
+    createProject: (input: CreateProjectInput) => {
+      const project = createProject(input)
+      library.value = [...library.value, project]
+      openId.value = project.id
     },
     showToast,
     messages: () => en,
@@ -50,12 +50,12 @@ function setup(initial: { status?: TourStatus; progress?: TourProgress; patterns
   return { tour, saved, library, openId, showToast, undo, current }
 }
 
-const tourPattern = () =>
-  createPattern({ technique: 'loom', beadId: BEAD_CATALOG[0]!.id, size: { width: 10, height: 75, unit: 'beads' }, name: 'Rushnik' })
+const tourProject = () =>
+  createProject({ technique: 'loom', beadId: BEAD_CATALOG[0]!.id, size: { width: 10, height: 75, unit: 'beads' }, name: 'Rushnik' })
 
 describe('useTour', () => {
-  it('starts at step 1 and sets an open Pattern aside for the New Pattern form', () => {
-    const { tour, openId } = setup({ open: tourPattern() })
+  it('starts at step 1 and sets an open Project aside for the New Project form', () => {
+    const { tour, openId } = setup({ open: tourProject() })
     expect(tour.step.value).toBe('create')
     expect(openId.value).toBeUndefined()
   })
@@ -65,22 +65,22 @@ describe('useTour', () => {
     expect(tour.active.value).toBe(false)
   })
 
-  it('makes every Pattern created in step 1 the Tour Pattern, keeping the Name', () => {
+  it('makes every Project created in step 1 the Tour Project, keeping the Name', () => {
     const { tour } = setup()
     const input = { name: 'Mine', technique: 'peyote', beadId: BEAD_CATALOG[1]!.id, size: { width: 30, height: 30, unit: 'beads' } } as const
     expect(tour.normalizeCreate(input)).toMatchObject({ name: 'Mine', technique: 'loom', beadId: BEAD_CATALOG[0]!.id, size: { width: 10, height: 75, unit: 'beads' } })
   })
 
-  it('moves on from Create once a Pattern exists, and remembers it', async () => {
+  it('moves on from Create once a Project exists, and remembers it', async () => {
     const { tour, saved, current } = setup()
     tour.next()
     await nextTick()
     expect(current()?.name).toBe('Rushnik')
     expect(tour.step.value).toBe('fill')
-    expect(saved.progress).toEqual({ done: ['create'], patternId: current()!.id })
+    expect(saved.progress).toEqual({ done: ['create'], projectId: current()!.id })
   })
 
-  it('Next does the step, as one change that leaves the Pattern whole', async () => {
+  it('Next does the step, as one change that leaves the Project whole', async () => {
     const { tour, current } = setup()
     tour.next()
     await nextTick()
@@ -113,8 +113,8 @@ describe('useTour', () => {
   })
 
   it('starts again from step 1 at any time', () => {
-    const pattern = tourPattern()
-    const { tour, saved, openId } = setup({ status: 'finished', progress: { done: [...TOUR_STEPS], patternId: pattern.id }, open: pattern })
+    const project = tourProject()
+    const { tour, saved, openId } = setup({ status: 'finished', progress: { done: [...TOUR_STEPS], projectId: project.id }, open: project })
     expect(tour.active.value).toBe(false)
     tour.start()
     expect(saved.status).toBe('running')
@@ -123,23 +123,23 @@ describe('useTour', () => {
     expect(openId.value).toBeUndefined()
   })
 
-  it('resumes at the first step not done, in the Tour Pattern', async () => {
-    const pattern = tourPattern()
-    const other = createPattern({ technique: 'loom', beadId: BEAD_CATALOG[0]!.id, size: { width: 5, height: 5, unit: 'beads' } })
-    const { tour, openId } = setup({ progress: { done: ['create', 'fill'], patternId: pattern.id }, patterns: [other, pattern], open: other })
+  it('resumes at the first step not done, in the Tour Project', async () => {
+    const project = tourProject()
+    const other = createProject({ technique: 'loom', beadId: BEAD_CATALOG[0]!.id, size: { width: 5, height: 5, unit: 'beads' } })
+    const { tour, openId } = setup({ progress: { done: ['create', 'fill'], projectId: project.id }, projects: [other, project], open: other })
     await nextTick()
     expect(tour.step.value).toBe('outline')
-    expect(openId.value).toBe(pattern.id)
+    expect(openId.value).toBe(project.id)
   })
 
-  it('starts over when the Pattern it was building is gone', async () => {
-    const { tour, saved } = setup({ progress: { done: ['create', 'fill'], patternId: 'gone' }, patterns: [] })
+  it('starts over when the Project it was building is gone', async () => {
+    const { tour, saved } = setup({ progress: { done: ['create', 'fill'], projectId: 'gone' }, projects: [] })
     await nextTick()
     expect(saved.progress).toEqual({ done: [] })
     expect(tour.step.value).toBe('create')
   })
 
-  it('lets the Pattern be drawn on only while the step is about drawing', async () => {
+  it('lets the Project be drawn on only while the step is about drawing', async () => {
     const { tour } = setup()
     tour.next()
     await nextTick()

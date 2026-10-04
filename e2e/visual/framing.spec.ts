@@ -3,7 +3,7 @@ import { openApp, setZoom } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
 /**
- * The framing step of Convert image (ticket 58): the picture as beads under the Pattern's frame, at the picture's
+ * The framing step of Convert image (ticket 58): the picture as beads under the Project's frame, at the picture's
  * 100% and 200% zoom and after being dragged to another part of it. The frame outline and its dimming are part of
  * what is compared. The beads are drawn on a canvas (ticket 104) at the preview's own fit-to-panel scale, which is
  * rarely a whole number, so the tolerance is the anti-aliasing of their edges against the reference (made from the one-element-per-bead preview they replaced): 0.8% of

@@ -8,10 +8,10 @@ import {
 } from './grid'
 
 /**
- * The framing step of Convert image (ticket 58, ADR 0010): the frame is the Pattern itself, fixed at its stated
+ * The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project itself, fixed at its stated
  * real-world size, and the picture is scaled and panned underneath it.
  *
- * Everything here works in the frame's own millimetres. That is the one space in which the Pattern's real size, the
+ * Everything here works in the frame's own millimetres. That is the one space in which the Project's real size, the
  * Bead's footprint and the Technique's grid geometry all mean the same thing, so a cell's true centre (see
  * grid.ts's cellCenter) can be turned straight into the picture pixel underneath it.
  */
@@ -21,7 +21,7 @@ import {
  * leave a band of the frame unfilled, and an unfilled cell reads as a deliberate hole in the finished piece rather
  * than as an artifact of fitting a picture (ADR 0010).
  *
- * Deliberately its own range rather than grid.ts's MIN_ZOOM/MAX_ZOOM/clampZoom, which the Pattern editor's own canvas
+ * Deliberately its own range rather than grid.ts's MIN_ZOOM/MAX_ZOOM/clampZoom, which the Project editor's own canvas
  * zoom owns (0.25–3, fit-to-box at reset): the two mean different things, and one function bent to serve both would
  * make either one's range a change to the other's behaviour.
  */
@@ -40,14 +40,14 @@ export interface ImageSize {
   height: number
 }
 
-/** The frame: the Pattern's real-world footprint in millimetres. */
+/** The frame: the Project's real-world footprint in millimetres. */
 export interface FrameSizeMm {
   widthMm: number
   heightMm: number
 }
 
 /**
- * The frame's real-world size: the Pattern grid's own footprint, taking each cell at the Bead's millimetre footprint
+ * The frame's real-world size: the Project grid's own footprint, taking each cell at the Bead's millimetre footprint
  * and each row at the Technique's spacing. Physical size rather than cell count (ADR 0010), so Delica's 1.6 × 1.3mm
  * cell gives a frame the shape the finished piece will have instead of a square one it never was.
  */
@@ -155,18 +155,18 @@ export function sourcePixelAt(
 /**
  * How many bead cells the framing preview renders at most. The preview shows the picture around the frame as beads
  * too, so that the crop can be judged, and at a high zoom the picture reaches far past the frame — a 60 × 90 frame at
- * 800% would be eight frames wide and eight tall, which is 64 times the beads of the Pattern itself. This caps that:
+ * 800% would be eight frames wide and eight tall, which is 64 times the beads of the Project itself. This caps that:
  * the surrounding context shrinks to fit, evenly in both directions, and the frame itself is always rendered whole
- * even when the Pattern alone is past the cap.
+ * even when the Project alone is past the cap.
  *
  * Set when every bead was a DOM element and is kept since (ticket 104 moved the drawing to a canvas, which made a
  * bead far cheaper but not free): the preview is redrawn and resampled on every pointer move of a drag rather than once
- * when a Pattern is opened, so the budget is set by what can be redrawn smoothly, not by what can be displayed.
+ * when a Project is opened, so the budget is set by what can be redrawn smoothly, not by what can be displayed.
  */
 export const PREVIEW_MAX_CELLS = 12000
 
 /**
- * Per-Technique warning thresholds for the New Pattern form (ticket 61): once a Pattern's own grid (columns × rows,
+ * Per-Technique warning thresholds for the New Project form (ticket 61): once a Project's own grid (columns × rows,
  * the frame alone — not the margin PREVIEW_MAX_CELLS otherwise budgets for) reaches a Technique's threshold, framing
  * risks feeling slow once Convert image is used, and the form says so ahead of a picture being chosen.
  *
@@ -201,7 +201,7 @@ export function isSlowFramingSize(
 
 /**
  * The block of bead cells the framing preview draws, and where the frame sits inside it. The lattice is the frame's
- * own cell grid extended outward by a margin of cells on each side, so a cell of the lattice is a cell of the Pattern
+ * own cell grid extended outward by a margin of cells on each side, so a cell of the lattice is a cell of the Project
  * offset by that margin.
  */
 export interface PreviewLattice {

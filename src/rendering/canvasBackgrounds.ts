@@ -1,5 +1,5 @@
 import type { ResolvedTheme } from '../theme/theme'
-import { PATTERN_THEMES, type PatternTheme } from './beadLook'
+import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
 
 /**
  * The drawing area's background, which the person picks (ticket 252; CanvasBackground card): five in light, six in dark.
@@ -60,12 +60,12 @@ function isAsh(theme: ResolvedTheme, choice: number): boolean {
   return canvasBackgroundOf(theme, choice)?.id === 'ash'
 }
 
-/** The colors the Pattern is drawn in on the open canvas: the theme's, on the chosen background. Exports don't use this (they print on PRINT_THEME). */
-export function canvasTheme(theme: ResolvedTheme, choice: number): PatternTheme {
-  const base = PATTERN_THEMES[theme]
+/** The colors the Project is drawn in on the open canvas: the theme's, on the chosen background. Exports don't use this (they print on PRINT_THEME). */
+export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme {
+  const base = PROJECT_THEMES[theme]
   const background = canvasBackgroundOf(theme, choice)
   if (!background) return base
-  const look: PatternTheme = { ...base, canvas: background.color, background: background.color }
+  const look: ProjectTheme = { ...base, canvas: background.color, background: background.color }
   if (background.ruler) look.ruler = background.ruler
   if (isAsh(theme, choice)) {
     look.ruler = ASH.ruler

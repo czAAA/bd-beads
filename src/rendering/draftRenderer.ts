@@ -1,5 +1,5 @@
 import { isOffsetTechnique, type Technique } from '../domain/grid'
-import type { PatternTheme } from './beadLook'
+import type { ProjectTheme } from './beadLook'
 
 /**
  * A coarse look for a block of beads that is being moved (ticket 122, ADR 0018): one flat pixel of color per bead,
@@ -9,7 +9,7 @@ import type { PatternTheme } from './beadLook'
  *
  * It keeps where the beads are (the half-bead shift of peyote and brick stitch rows included) and what color each is;
  * it gives up the rim, the rounding and brick stitch's seam. It is only ever the look while the picture is moving:
- * at rest the beads are drawn by the Pattern renderer, so the Pattern the frame holds is seen exactly as created.
+ * at rest the beads are drawn by the Project renderer, so the Project the frame holds is seen exactly as created.
  */
 
 /** How many beads are worth drawing for real on every move: a square bead is one unit of cost, a rounded one three (measured, ticket 122). */
@@ -46,7 +46,7 @@ function channels(color: string): readonly [number, number, number] {
  * starting a pixel in, which puts those rows half a bead to the side of the ones above and below. `colors` is one entry
  * per bead, row by row; undefined is an empty bead.
  */
-export function draftImage(technique: Technique, columns: number, rows: number, colors: readonly (string | undefined)[], theme: PatternTheme): DraftImage {
+export function draftImage(technique: Technique, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
   const offset = isOffsetTechnique(technique)
   const wide = offset ? 2 : 1
   const width = columns * wide + (offset ? 1 : 0)
@@ -87,7 +87,7 @@ export function renderDraft(
     columns: number
     rows: number
     colors: readonly (string | undefined)[]
-    theme: PatternTheme
+    theme: ProjectTheme
     bitmapWidth: number
     bitmapHeight: number
   },

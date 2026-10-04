@@ -10,13 +10,13 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import IconButton from '../ui/IconButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
-import PatternImport from '../import/PatternImport.vue'
+import ProjectImport from '../import/ProjectImport.vue'
 import PhoneThemeButton from './PhoneThemeButton.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useFitByPriority } from '../../composables/ui/useFitByPriority'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { summarizePattern } from '../../domain/pattern'
+import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
 import { beadLabel } from '../../domain/beads'
 import { useThemePick } from '../../theme/useThemePick'
@@ -26,10 +26,10 @@ import { TOUR_ENABLED } from '../../features'
 const {
   t,
   locale,
-  patterns,
-  activePattern,
+  projects,
+  activeProject,
   saveFailed,
-  onNewPattern,
+  onNewProject,
   activeBeadLabel,
   canUndo,
   canRedo,
@@ -37,7 +37,7 @@ const {
   onRedo,
   replaceBeadCandidates,
   onPickReplaceBead,
-  onImportPatterns,
+  onImportProjects,
   decodeImage,
   onImportToast,
   makerName,
@@ -45,14 +45,14 @@ const {
   drawerOpen,
   openPhoneSheet,
   themeSheetOpen,
-  phoneNewPatternOpen,
+  phoneNewProjectOpen,
   shortcutsHelpOpen,
   tour,
 } = useAppShell()
 
 /** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
 const headerEl = ref<HTMLElement>()
-const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activePattern.value])
+const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activeProject.value])
 
 /** At 1024px and up the header's own controls stay where they are, so the menu holds only its links (HeaderMenu card). */
 const wide = useMediaQuery('(min-width: 1024px)')
@@ -66,9 +66,9 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
 <template>
   <!--
-    The header (ticket 142; Header card): 64px, in order — the brand; the open Pattern's summary and Bead pill (only
-    while a Pattern is open) and Replace bead; a flexible gap; the two imports with their one-line results; New
-    Pattern; EN / RU; the theme control; Keyboard shortcuts. Nothing shrinks but the Pattern's name. When it still
+    The header (ticket 142; Header card): 64px, in order — the brand; the open Project's summary and Bead pill (only
+    while a Project is open) and Replace bead; a flexible gap; the two imports with their one-line results; New
+    Project; EN / RU; the theme control; Keyboard shortcuts. Nothing shrinks but the Project's name. When it still
     doesn't fit, it fits by priority (`writing.md`, Fitting longer text): the imports drop their labels first
     (compactImports).
   -->
@@ -99,19 +99,19 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     <!--
       The header menu (ticket 210; HeaderMenu card), next to the logo at every size, replacing the header menu (ticket
       168, 79). 744-1023px: Import a file/QR code, Language, Theme and Name on exports; below 744px it drops Import
-      (the Pattern sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
+      (the Project sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
       the theme sheet. Every tier ends with a rule and Overview (ticket 77; Take the tour joins it in ticket 80); at
       1024px and up those are all it holds.
     -->
     <span class="app-header__menu">
       <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
         <!--
-          The Pattern name, its size and save state (ticket 188): moved here from the header's own row, which the
-          name and size used to dominate the width of at the phone tier -- see app-header__phone-pattern's own note.
+          The Project name, its size and save state (ticket 188): moved here from the header's own row, which the
+          name and size used to dominate the width of at the phone tier -- see app-header__phone-project's own note.
         -->
-        <p v-if="activePattern" class="app-header__phone-only app-header__phone-pattern" data-testid="phone-pattern-info">
-          <span class="app-header__summary" data-testid="phone-pattern-summary" :title="summarizePattern(activePattern)">
-            {{ summarizePattern(activePattern) }}
+        <p v-if="activeProject" class="app-header__phone-only app-header__phone-project" data-testid="phone-project-info">
+          <span class="app-header__summary" data-testid="phone-project-summary" :title="summarizeProject(activeProject)">
+            {{ summarizeProject(activeProject) }}
           </span>
           <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
         </p>
@@ -120,7 +120,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
           {{ t.theme.groupLabel }}
         </AppMenuItem>
         <div class="app-header__menu-imports">
-          <PatternImport :decode-image="decodeImage" :patterns="patterns" toast-results testid-prefix="menu-" @import="onImportPatterns" @import-result="onImportToast" />
+          <ProjectImport :decode-image="decodeImage" :projects="projects" toast-results testid-prefix="menu-" @import="onImportProjects" @import-result="onImportToast" />
         </div>
         <div class="app-header__menu-row">
           <span class="app-header__menu-label">{{ t.languageSwitcher.ariaLabel }}</span>
@@ -153,23 +153,23 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
     <!--
       Technique/schema and theme (ticket 188; responsive.md, 0-743px): each its own icon, the current bead or
-      theme, with a hover/focus label and a tap that opens its picker (the Pattern sheet's Bead pill row, or a
+      theme, with a hover/focus label and a tap that opens its picker (the Project sheet's Bead pill row, or a
       small four-way theme sheet) -- reclaiming the width the name/size readout (now under the header menu) used to
       take, so nothing after it (Undo, Redo) is pushed out of viewport.
     -->
-    <span v-if="activePattern" class="app-header__phone-only">
-      <IconButton icon="size" shape="round" :label="activeBeadLabel ?? ''" data-testid="phone-bead-button" @click="openPhoneSheet = 'pattern'" />
+    <span v-if="activeProject" class="app-header__phone-only">
+      <IconButton icon="size" shape="round" :label="activeBeadLabel ?? ''" data-testid="phone-bead-button" @click="openPhoneSheet = 'project'" />
     </span>
     <span class="app-header__phone-only">
       <IconButton :icon="themeIcon" shape="round" :label="t.theme.groupLabel" data-testid="phone-theme-button" @click="themeSheetOpen = true" />
     </span>
 
-    <template v-if="activePattern">
-      <p class="app-header__editing app-header__phone-hide" data-testid="pattern-info">
-        <span class="app-header__summary" data-testid="current-pattern-summary" :title="summarizePattern(activePattern)">
-          {{ summarizePattern(activePattern) }}
+    <template v-if="activeProject">
+      <p class="app-header__editing app-header__phone-hide" data-testid="project-info">
+        <span class="app-header__summary" data-testid="current-project-summary" :title="summarizeProject(activeProject)">
+          {{ summarizeProject(activeProject) }}
         </span>
-        <BeadPill data-testid="current-pattern-bead">{{ activeBeadLabel }}</BeadPill>
+        <BeadPill data-testid="current-project-bead">{{ activeBeadLabel }}</BeadPill>
       </p>
       <span class="app-header__phone-hide">
         <AppSelect
@@ -189,23 +189,23 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 
     <span class="app-header__gap" />
 
-    <!-- Imported Patterns go straight into the library, which decides what to open and persists them. Moves into the header menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Pattern sheet. -->
-    <div class="app-header__imports app-header__phone-hide" data-testid="pattern-actions">
-      <PatternImport :decode-image="decodeImage" :patterns="patterns" :compact="compactImports" @import="onImportPatterns" />
+    <!-- Imported Projects go straight into the library, which decides what to open and persists them. Moves into the header menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Project sheet. -->
+    <div class="app-header__imports app-header__phone-hide" data-testid="project-actions">
+      <ProjectImport :decode-image="decodeImage" :projects="projects" :compact="compactImports" @import="onImportProjects" />
     </div>
     <span class="app-header__phone-hide">
       <AppButton
         variant="primary"
         icon="plus"
-        data-testid="new-pattern-button"
-        :disabled="patterns.length === 0"
-        @click="onNewPattern"
+        data-testid="new-project-button"
+        :disabled="projects.length === 0"
+        @click="onNewProject"
       >
-        {{ t.patterns.newPatternButton }}
+        {{ t.projects.newProjectButton }}
       </AppButton>
     </span>
     <!-- Undo/Redo (ticket 79): the phone header's own, alongside the Dock's four tools/colour -- the same history as every other Undo/Redo in the app. -->
-    <template v-if="activePattern">
+    <template v-if="activeProject">
       <span class="app-header__phone-only">
         <IconButton icon="undo" shape="round" :label="t.palette.undoButton" data-testid="phone-undo-button" :disabled="!canUndo" @click="onUndo" />
       </span>
@@ -228,19 +228,19 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   </header>
 
   <!--
-    The phone header's second row (redesign-feedback.md): Replace bead, New Pattern and Theme, each its own icon
+    The phone header's second row (redesign-feedback.md): Replace bead, New Project and Theme, each its own icon
     with the full label on hover/long-press. Full header width to itself, below the name row, rather than sharing
     it as a nested column -- the icons plus a truncating Bead pill left no room to also fit Undo/Redo/More on some
     very narrow phones once inside the same shrinking box.
   -->
-  <p v-if="activePattern" class="app-header__phone-only app-header__phone-tools" data-testid="phone-header-tools">
+  <p v-if="activeProject" class="app-header__phone-only app-header__phone-tools" data-testid="phone-header-tools">
     <AppTooltip :text="t.replaceBead.selectLabel" :announce="false">
       <button
         type="button"
         class="ui-control app-header__phone-bead"
         :aria-label="`${t.replaceBead.selectLabel}: ${activeBeadLabel}`"
         data-testid="phone-header-bead"
-        @click="openPhoneSheet = 'pattern'"
+        @click="openPhoneSheet = 'project'"
       >
         {{ activeBeadLabel }}
       </button>
@@ -248,9 +248,9 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     <IconButton
       icon="plus"
       shape="round"
-      :label="t.patterns.newPatternButton"
-      data-testid="phone-header-new-pattern"
-      @click="phoneNewPatternOpen = true"
+      :label="t.projects.newProjectButton"
+      data-testid="phone-header-new-project"
+      @click="phoneNewProjectOpen = true"
     />
     <PhoneThemeButton />
   </p>
@@ -259,7 +259,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 <style scoped>
 /*
  * The header (ticket 142; Header card): 64px on `canvas`, a `line-soft` rule under it, items 10px apart, none
- * shrinking but the Pattern's name.
+ * shrinking but the Project's name.
  */
 .app-header {
   display: flex;
@@ -319,7 +319,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
  * into the header menu -- everything a wider tier keeps inline in the header. The header menu carries on below 744px
  * (the phone tier, ticket 79) too, since it holds the same Theme/Language/Name on exports there; only the Tools
  * button and the header menu's own Import row are specific to 744-1023px (below that the phone header has no Drawer to
- * open, and imports move into the Pattern sheet instead -- see .app-header__menu-imports and .app-header__phone-*).
+ * open, and imports move into the Project sheet instead -- see .app-header__menu-imports and .app-header__phone-*).
  */
 .app-header__tools,
 .app-header__menu,
@@ -393,8 +393,8 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   color: var(--body);
 }
 
-/* The phone header's combined Pattern name/size + save state (ticket 79), now a row in the header menu (ticket 188). */
-.app-header__phone-pattern {
+/* The phone header's combined Project name/size + save state (ticket 79), now a row in the header menu (ticket 188). */
+.app-header__phone-project {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
@@ -415,7 +415,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 }
 
 /*
- * The phone header's second row (redesign-feedback.md): Replace bead, New Pattern and Theme. A sibling of <header>,
+ * The phone header's second row (redesign-feedback.md): Replace bead, New Project and Theme. A sibling of <header>,
  * not nested inside it -- see the template comment above app-header__phone-tools -- so it gets the full header width
  * to itself instead of negotiating space with Undo/Redo.
  */
@@ -436,7 +436,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   }
 }
 
-/* The only text in the row: a compact pill, same look as the wide tier's read-only Bead pill, but a real button here (it opens the Pattern sheet). */
+/* The only text in the row: a compact pill, same look as the wide tier's read-only Bead pill, but a real button here (it opens the Project sheet). */
 .app-header__phone-bead {
   flex: 1 1 auto;
   min-width: 0;
@@ -495,7 +495,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   margin: 0 var(--space-10) 0 0;
 }
 
-/* bd-beads doesn't earn its keep at 52px next to the Pattern name and the header's own controls (redesign-feedback.md). */
+/* bd-beads doesn't earn its keep at 52px next to the Project name and the header's own controls (redesign-feedback.md). */
 @media (max-width: 743px) {
   .app-header__brand {
     display: none;
@@ -512,7 +512,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   color: var(--ink);
 }
 
-/* The Pattern's summary and its Bead pill. */
+/* The Project's summary and its Bead pill. */
 .app-header__editing {
   display: flex;
   align-items: center;
@@ -521,7 +521,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 }
 
 /*
- * Only once the imports have dropped their labels may the Pattern's name give way, cut with an ellipsis (the second
+ * Only once the imports have dropped their labels may the Project's name give way, cut with an ellipsis (the second
  * fitting step); the Bead pill keeps its size.
  */
 .app-header--compact > .app-header__editing {

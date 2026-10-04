@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAppShell } from '../../composables/shell/useAppShell'
-import { summarizePattern } from '../../domain/pattern'
+import { summarizeProject } from '../../domain/project'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import NameOnExportsModal from '../export/NameOnExportsModal.vue'
 import QrExportPanel from '../export/QrExportPanel.vue'
@@ -8,7 +8,7 @@ import ShortcutsHelp from './ShortcutsHelp.vue'
 
 const {
   t,
-  activePattern,
+  activeProject,
   saveFailed,
   deleteAllConfirmOpen,
   onCancelDeleteAll,
@@ -64,16 +64,16 @@ const {
 
   <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->
   <ConfirmModal
-    v-if="pendingImport && pendingImportOpens && activePattern"
+    v-if="pendingImport && pendingImportOpens && activeProject"
     data-testid="import-switch-modal"
     :title="t.importSwitch.title"
     :message="
       saveFailed
-        ? t.importSwitch.unsavedMessage.replace('{current}', () => activePattern!.name)
+        ? t.importSwitch.unsavedMessage.replace('{current}', () => activeProject!.name)
         : (pendingImport.length === 1 ? t.importSwitch.messageOne : t.importSwitch.messageMany)
             .replace('{count}', () => String(pendingImport!.length))
             .replaceAll('{imported}', () => pendingImportOpens!.name)
-            .replaceAll('{current}', () => activePattern!.name)
+            .replaceAll('{current}', () => activeProject!.name)
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.importSwitch.switchButton"
     :cancel-label="t.importSwitch.keepButton"
@@ -88,44 +88,44 @@ const {
     </p>
   </ConfirmModal>
 
-  <!-- Saved Patterns asks before removing a Pattern or switching to another (ticket 232). -->
+  <!-- Saved Projects asks before removing a Project or switching to another (ticket 232). -->
   <ConfirmModal
     v-if="pendingRemove"
-    data-testid="remove-pattern-modal"
-    :title="t.removePattern.title"
-    :message="t.removePattern.message.replaceAll('{name}', () => pendingRemove!.name)"
-    :confirm-label="t.removePattern.confirmButton"
-    :cancel-label="t.removePattern.cancelButton"
+    data-testid="remove-project-modal"
+    :title="t.removeProject.title"
+    :message="t.removeProject.message.replaceAll('{name}', () => pendingRemove!.name)"
+    :confirm-label="t.removeProject.confirmButton"
+    :cancel-label="t.removeProject.cancelButton"
     @confirm="onConfirmRemove"
     @cancel="onCancelRemove"
   />
 
   <ConfirmModal
-    v-if="pendingSwitch && activePattern"
-    data-testid="switch-pattern-modal"
-    :title="t.switchPattern.title"
+    v-if="pendingSwitch && activeProject"
+    data-testid="switch-project-modal"
+    :title="t.switchProject.title"
     :message="
-      (saveFailed ? t.importSwitch.unsavedMessage : t.switchPattern.message)
-        .replaceAll('{current}', () => activePattern!.name)
+      (saveFailed ? t.importSwitch.unsavedMessage : t.switchProject.message)
+        .replaceAll('{current}', () => activeProject!.name)
         .replaceAll('{picked}', () => pendingSwitch!.name)
     "
-    :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchPattern.confirmButton"
-    :cancel-label="t.switchPattern.cancelButton"
-    :extra-label="saveFailed ? t.switchPattern.saveButton : undefined"
+    :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchProject.confirmButton"
+    :cancel-label="t.switchProject.cancelButton"
+    :extra-label="saveFailed ? t.switchProject.saveButton : undefined"
     :confirm-danger="false"
     @confirm="onConfirmSwitch"
     @cancel="onCancelSwitch"
     @extra="onSaveBeforeSwitch"
   >
-    <p v-if="saveFailed && switchSaveRefused" class="app-shell__modal-error" role="alert" data-testid="switch-pattern-save-failed">
+    <p v-if="saveFailed && switchSaveRefused" class="app-shell__modal-error" role="alert" data-testid="switch-project-save-failed">
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>
 
   <QrExportPanel
-    v-if="qrExport.panelOpen.value && activePattern"
+    v-if="qrExport.panelOpen.value && activeProject"
     :matrix="qrExport.matrix.value!"
-    :summary="summarizePattern(activePattern)"
+    :summary="summarizeProject(activeProject)"
     @close="qrExport.close"
   />
 

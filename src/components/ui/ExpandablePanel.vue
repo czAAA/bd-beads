@@ -6,8 +6,8 @@ import ExpandButton from './ExpandButton.vue'
 import type { IconName } from './icons'
 
 /**
- * The expandable panel template (ticket 146; BeadsNeeded and SavedPatternsExpanded cards), shared by Beads needed and
- * Saved Patterns. A 28px header: an optional `icon` (ticket 188: Saved Patterns' own library icon, at every tier),
+ * The expandable panel template (ticket 146; BeadsNeeded and SavedProjectsExpanded cards), shared by Beads needed and
+ * Saved Projects. A 28px header: an optional `icon` (ticket 188: Saved Projects' own library icon, at every tier),
  * the title (`control`) with an optional muted `suffix`, optional `meta` on the right, then the round expand button.
  * Collapsed, the body is a fixed-height summary (`collapsedHeight`); expanded, the box grows downward to its natural
  * height, never less, pushing the boxes below it down, and shows the `footer`. Escape from inside it, or ↑, collapses
@@ -24,7 +24,7 @@ const props = withDefaults(
     collapsedHeight?: string
     /**
      * Whether the collapsed body clips content past `collapsedHeight` (ticket 175). BeadsNeeded needs this: it draws
-     * every row and relies on the clip to show only the summary ones. Saved Patterns already slices down to its own
+     * every row and relies on the clip to show only the summary ones. Saved Projects already slices down to its own
      * summary count before this ever sees it, so it turns the clip off instead — the clip was cutting off a
      * truncated name's hover tooltip, which sits below the row that names it.
      */

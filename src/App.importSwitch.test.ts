@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead } from './testUtils/beads'
-import { createPattern, type Pattern } from './domain/pattern'
-import { serializeLibrary, serializePattern } from './domain/patternFile'
-import { loadPatterns } from './services/libraryStore'
+import { createProject, type Project } from './domain/project'
+import { serializeLibrary, serializeProject } from './domain/projectFile'
+import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
 
@@ -17,8 +17,8 @@ afterEach(() => vi.restoreAllMocks())
 
 type Wrapper = ReturnType<typeof mount>
 
-function makePattern(name: string): Pattern {
-  return createPattern({ name, technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
+function makeProject(name: string): Project {
+  return createProject({ name, technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
 }
 
 async function createOpen(wrapper: Wrapper, name: string) {
@@ -40,8 +40,8 @@ async function pick(wrapper: Wrapper, testId: string, contents: string) {
 }
 
 const modal = (wrapper: Wrapper) => wrapper.find('[data-testid="import-switch-modal"]')
-const openName = (wrapper: Wrapper) => wrapper.find('[data-testid="current-pattern-summary"]').text()
-const libraryNames = () => loadPatterns().map((pattern) => pattern.name).sort()
+const openName = (wrapper: Wrapper) => wrapper.find('[data-testid="current-project-summary"]').text()
+const libraryNames = () => loadProjects().map((project) => project.name).sort()
 const click = (wrapper: Wrapper, testId: string) => wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 
 describe('App import asks before switching (ticket 154)', () => {
@@ -49,17 +49,17 @@ describe('App import asks before switching (ticket 154)', () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
 
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     expect(modal(wrapper).exists()).toBe(true)
     expect(openName(wrapper)).toContain('Current')
     expect(libraryNames()).toEqual(['Current'])
   })
 
-  it('names the Pattern left and the one opened, and says the progress is saved', async () => {
+  it('names the Project left and the one opened, and says the progress is saved', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     const text = modal(wrapper).text()
     expect(text).toContain('Your progress on “Current” is saved')
@@ -67,10 +67,10 @@ describe('App import asks before switching (ticket 154)', () => {
     expect(text).toContain('Switch to “Fox”')
   })
 
-  it('Switch opens the imported Pattern and keeps the old one in the library', async () => {
+  it('Switch opens the imported Project and keeps the old one in the library', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     await click(wrapper, 'confirm-modal-confirm')
 
@@ -79,10 +79,10 @@ describe('App import asks before switching (ticket 154)', () => {
     expect(libraryNames()).toEqual(['Current', 'Fox'])
   })
 
-  it('Keep current imports into the library and leaves the open Pattern open', async () => {
+  it('Keep current imports into the library and leaves the open Project open', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     await click(wrapper, 'confirm-modal-cancel')
 
@@ -94,7 +94,7 @@ describe('App import asks before switching (ticket 154)', () => {
   it('counts Escape as Keep current', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
@@ -107,11 +107,11 @@ describe('App import asks before switching (ticket 154)', () => {
   it('says how many came in and which one would open when several are imported', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    const older = { ...makePattern('Older'), updatedAt: 1 }
-    const newer = { ...makePattern('Newer'), updatedAt: 2 }
+    const older = { ...makeProject('Older'), updatedAt: 1 }
+    const newer = { ...makeProject('Newer'), updatedAt: 2 }
     await pick(wrapper, 'import-file', serializeLibrary([older, newer]))
 
-    expect(modal(wrapper).text()).toContain('2 Patterns were imported')
+    expect(modal(wrapper).text()).toContain('2 Projects were imported')
     expect(modal(wrapper).text()).toContain('Switch to “Newer”')
 
     await click(wrapper, 'confirm-modal-confirm')
@@ -126,29 +126,29 @@ describe('App import asks before switching (ticket 154)', () => {
       localStorage.setItem('bd-beads:locale', 'en')
       const wrapper = mount(App)
       await createOpen(wrapper, 'Current')
-      const local = loadPatterns()[0]!
+      const local = loadProjects()[0]!
 
-      await pick(wrapper, 'import-file', serializePattern({ ...local, name: 'Clash' }))
+      await pick(wrapper, 'import-file', serializeProject({ ...local, name: 'Clash' }))
       await click(wrapper, answer)
 
-      const saved = loadPatterns()
+      const saved = loadProjects()
       expect(saved).toHaveLength(2)
-      expect(saved.find((pattern) => pattern.id === local.id)!.name).toBe('Current')
-      expect(new Set(saved.map((pattern) => pattern.id)).size).toBe(2)
+      expect(saved.find((project) => project.id === local.id)!.name).toBe('Current')
+      expect(new Set(saved.map((project) => project.id)).size).toBe(2)
     }
   })
 
-  it('shows no modal when no Pattern is open, and opens what came in as before', async () => {
+  it('shows no modal when no Project is open, and opens what came in as before', async () => {
     const wrapper = mount(App)
 
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
     expect(modal(wrapper).exists()).toBe(false)
     expect(openName(wrapper)).toContain('Fox')
     expect(libraryNames()).toEqual(['Fox'])
   })
 
-  it('resets Undo history on Switch, like any Pattern switch, but not on Keep current', async () => {
+  it('resets Undo history on Switch, like any Project switch, but not on Keep current', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -157,11 +157,11 @@ describe('App import asks before switching (ticket 154)', () => {
     const canUndo = () => wrapper.find('[data-testid="undo-button"]').attributes('disabled') === undefined
     expect(canUndo()).toBe(true)
 
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
     await click(wrapper, 'confirm-modal-cancel')
     expect(canUndo()).toBe(true)
 
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Owl')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Owl')]))
     await click(wrapper, 'confirm-modal-confirm')
     expect(canUndo()).toBe(false)
   })
@@ -169,8 +169,8 @@ describe('App import asks before switching (ticket 154)', () => {
   it('offers the same modal for a QR-code picture', async () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    const shown = wrapper.findComponent({ name: 'PatternImport' })
-    shown.vm.$emit('import', [makePattern('Scanned')])
+    const shown = wrapper.findComponent({ name: 'ProjectImport' })
+    shown.vm.$emit('import', [makeProject('Scanned')])
     await flushPromises()
 
     expect(modal(wrapper).exists()).toBe(true)
@@ -190,9 +190,9 @@ describe('App import asks before switching (ticket 154)', () => {
       return { wrapper, spy }
     }
 
-    it('says the current Pattern is not saved and offers Save, not a claim that it is', async () => {
+    it('says the current Project is not saved and offers Save, not a claim that it is', async () => {
       const { wrapper } = await unsavedApp()
-      await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+      await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
       expect(modal(wrapper).text()).toContain('“Current” is not saved')
       expect(modal(wrapper).text()).not.toContain('is saved')
@@ -202,7 +202,7 @@ describe('App import asks before switching (ticket 154)', () => {
 
     it('shows the storage-full error when the save fails again, and stays on the question', async () => {
       const { wrapper } = await unsavedApp()
-      await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+      await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
       await click(wrapper, 'confirm-modal-extra')
 
@@ -212,7 +212,7 @@ describe('App import asks before switching (ticket 154)', () => {
 
     it('turns into the ordinary question once Save gets through', async () => {
       const { wrapper, spy } = await unsavedApp()
-      await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+      await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
       spy.mockRestore()
 
       await click(wrapper, 'confirm-modal-extra')
@@ -224,7 +224,7 @@ describe('App import asks before switching (ticket 154)', () => {
 
     it('lets the person switch anyway', async () => {
       const { wrapper, spy } = await unsavedApp()
-      await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+      await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
       spy.mockRestore()
 
       await click(wrapper, 'confirm-modal-confirm')
@@ -237,8 +237,8 @@ describe('App import asks before switching (ticket 154)', () => {
     localStorage.setItem('bd-beads:locale', 'ru')
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
-    await pick(wrapper, 'import-file', serializeLibrary([makePattern('Fox')]))
+    await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
 
-    expect(modal(wrapper).text()).toContain('Перейти к импортированной схеме?')
+    expect(modal(wrapper).text()).toContain('Перейти к импортированному проекту?')
   })
 })

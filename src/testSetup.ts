@@ -9,7 +9,7 @@ import { installSurfaceLayout } from './testUtils/surfaceLayout'
  * descriptor *directly on the event's own prototype* -- an inherited one doesn't count, so it doesn't realize
  * `button`/`buttons` are read-only and throws trying to set them. Copying the descriptors down as PointerEvent's own
  * makes @vue/test-utils see them and skip the (redundant -- the constructor already set them from `options`)
- * reassignment. `clientX`/`clientY` are the same (tests that press a Pattern at a point, ticket 106, set them).
+ * reassignment. `clientX`/`clientY` are the same (tests that press a Project at a point, ticket 106, set them).
  */
 if (typeof PointerEvent !== 'undefined') {
   for (const key of ['button', 'buttons', 'clientX', 'clientY'] as const) {
@@ -28,7 +28,7 @@ enableAutoUnmount(afterEach)
 
 /**
  * jsdom has no canvas: getContext logs "not implemented" and hands back nothing. A component that draws on one (the
- * Pattern renderer's surfaces) carries on without a context, so this only keeps that from being logged on every mount.
+ * Project renderer's surfaces) carries on without a context, so this only keeps that from being logged on every mount.
  * A test that wants to see what is drawn installs a fake instead (see testUtils/fakeCanvas.ts).
  */
 if (typeof HTMLCanvasElement !== 'undefined') {
@@ -46,7 +46,7 @@ beforeEach(() => {
  * jsdom has no matchMedia at all (ticket 168's useMediaQuery, currently only Drawer.vue): every query answers false
  * and never changes, so a component that reads one carries on rather than throwing. A test that cares installs
  * testUtils/fakeMatchMedia.ts over it instead, with vi.stubGlobal('matchMedia', ...) and its own vi.unstubAllGlobals()
- * in afterEach -- the same pattern useElementSize.test.ts's FakeResizeObserver uses for ResizeObserver.
+ * in afterEach -- the same project useElementSize.test.ts's FakeResizeObserver uses for ResizeObserver.
  */
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = ((query: string) =>

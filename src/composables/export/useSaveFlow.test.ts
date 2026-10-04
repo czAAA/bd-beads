@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createPattern } from '../../domain/pattern'
-import { patternFileName } from '../../domain/patternFile'
+import { createProject } from '../../domain/project'
+import { projectFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { useSaveFlow } from './useSaveFlow'
 
 /** A fake for the file hand-over, so nothing here touches the DOM. */
 const downloadFile = vi.fn()
 
-const pattern = createPattern({
+const project = createProject({
   technique: 'loom',
   beadId: 'toho-cube-1.5mm',
   size: { width: 3, height: 3, unit: 'beads' },
@@ -16,7 +16,7 @@ const pattern = createPattern({
 function setup(options: { open?: boolean; saved?: boolean } = {}) {
   const { open = true, saved = true } = options
   const deps = {
-    currentPattern: () => (open ? pattern : undefined),
+    currentProject: () => (open ? project : undefined),
     saveNow: vi.fn(() => saved),
     messages: () => en,
     showToast: vi.fn(),
@@ -29,11 +29,11 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
 describe('useSaveFlow', () => {
   beforeEach(() => downloadFile.mockClear())
 
-  it('writes, hands over the Pattern file and confirms once the write landed', () => {
+  it('writes, hands over the Project file and confirms once the write landed', () => {
     const { deps, onSave } = setup()
     onSave()
     expect(deps.saveNow).toHaveBeenCalled()
-    expect(downloadFile).toHaveBeenCalledWith(patternFileName(pattern), expect.any(String))
+    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(String))
     expect(deps.showToast).toHaveBeenCalledWith('save-confirmation', en.tools.savedConfirmation)
   })
 
@@ -53,7 +53,7 @@ describe('useSaveFlow', () => {
     expect(deps.showToast).not.toHaveBeenCalled()
   })
 
-  it('does nothing with no Pattern open', () => {
+  it('does nothing with no Project open', () => {
     const { deps, onSave } = setup({ open: false })
     onSave()
     expect(deps.saveNow).not.toHaveBeenCalled()
