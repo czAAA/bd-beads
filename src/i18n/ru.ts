@@ -102,7 +102,6 @@ export const ru: Translations = {
     piecesCount: { one: '{count} фрагмент', few: '{count} фрагмента', many: '{count} фрагментов', other: '{count} фрагмента' },
     noFrame: 'без рамки',
     settingFrame: 'задаётся рамка',
-    piecesOutside: { one: '{count} фрагмент вне рамки', few: '{count} фрагмента вне рамки', many: '{count} фрагментов вне рамки', other: '{count} фрагмента вне рамки' },
     rulersLabel: 'Линейки',
     canvasColor: {
       label: 'Цвет холста',

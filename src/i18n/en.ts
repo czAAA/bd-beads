@@ -100,7 +100,6 @@ export const en: Translations = {
     piecesCount: { one: '{count} piece', other: '{count} pieces' },
     noFrame: 'no Frame',
     settingFrame: 'setting Frame',
-    piecesOutside: { one: '{count} piece outside the Frame', other: '{count} pieces outside the Frame' },
     rulersLabel: 'Rulers',
     canvasColor: {
       label: 'Canvas color',

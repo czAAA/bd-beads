@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, withColors } from './canvas'
-import { piecesOf, piecesOutsideFrame } from './pieces'
+import { piecesOf } from './pieces'
 
 const R = '#e63746'
 const place = (...at: [number, number][]) => withColors({}, at.map(([row, column]) => ({ row, column, color: R })))
@@ -50,10 +50,5 @@ describe('pieces', () => {
   it('gives the same array back for the same beads, so a repaint that changes nothing costs nothing', () => {
     const beads = beadsFromColors([[R, R], [null, R]])
     expect(piecesOf(beads, 'loom')).toBe(piecesOf(beads, 'loom'))
-  })
-
-  it('counts the pieces with any part outside the Frame', () => {
-    const pieces = piecesOf(place([0, 0], [10, 10], [2, 2]), 'loom')
-    expect(piecesOutsideFrame(pieces, { row: 0, column: 0, rows: 5, columns: 5 })).toBe(1)
   })
 })

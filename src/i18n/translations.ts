@@ -124,8 +124,6 @@ export interface Translations {
     /** The strip's meta with no Frame ("3 pieces · no Frame") and while the Frame is being set ("3 pieces · setting Frame"). */
     noFrame: string
     settingFrame: string
-    /** "2 pieces outside the Frame". */
-    piecesOutside: PluralForms
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
     /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */

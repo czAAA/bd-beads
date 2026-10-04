@@ -78,17 +78,3 @@ export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
   return pieces
 }
 
-/** Whether a piece's rectangle lies entirely inside a Frame. */
-export function pieceInsideFrame(piece: Piece, frame: Frame): boolean {
-  return (
-    piece.row >= frame.row &&
-    piece.column >= frame.column &&
-    piece.row + piece.rows <= frame.row + frame.rows &&
-    piece.column + piece.columns <= frame.column + frame.columns
-  )
-}
-
-/** How many pieces have a bead outside the Frame ("2 pieces outside the Frame" on the canvas strip): a piece with any part of its rectangle outside counts. */
-export function piecesOutsideFrame(pieces: readonly Piece[], frame: Frame): number {
-  return pieces.filter((piece) => !pieceInsideFrame(piece, frame)).length
-}

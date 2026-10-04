@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { piecesOf, piecesOutsideFrame } from '../../domain/pieces'
+import { piecesOf } from '../../domain/pieces'
 import { resolvePatternBead, type Pattern } from '../../domain/pattern'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/patternSize'
 import { plural } from '../../i18n/plural'
@@ -13,7 +13,7 @@ import ZoomControls from './ZoomControls.vue'
 /**
  * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the canvas, whether rulers show, and how far
  * it is zoomed. With no Frame it reads "Canvas · 3 pieces · no Frame" ("setting Frame" while one is being drawn); with a
- * Frame, "Pattern · 21 columns · 19 rows · 3.4 × 3.0 cm" and, when pieces lie outside it, how many (v16). While a picture
+ * Frame, "Pattern · 21 columns · 19 rows · 3.4 × 3.0 cm" While a picture
  * is being framed it shows the Pattern that picture will make instead; with nothing to show it holds just the title.
  */
 const props = defineProps<{
@@ -66,13 +66,6 @@ const sizeMeta = computed(() => {
   if (pattern.frame) return [sizeText(pattern.frame), estimate.value].filter(Boolean).join(' · ')
   return `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}`
 })
-
-const outsideMeta = computed(() => {
-  const frame = props.pattern?.frame
-  if (!frame || props.title) return undefined
-  const outside = piecesOutsideFrame(pieces.value, frame)
-  return outside > 0 ? plural(locale.value, outside, t.value.canvas.piecesOutside) : undefined
-})
 </script>
 
 <template>
@@ -80,10 +73,6 @@ const outsideMeta = computed(() => {
     <AppIcon name="grid" :size="16" />
     <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
     <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta }}</span>
-    <template v-if="outsideMeta">
-      <span class="canvas-strip__divider" aria-hidden="true" />
-      <span class="canvas-strip__meta" data-testid="canvas-strip-outside">{{ outsideMeta }}</span>
-    </template>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
     <IconButton
       v-if="rulers !== undefined"
@@ -138,13 +127,6 @@ const outsideMeta = computed(() => {
   color: var(--box-muted);
   text-transform: lowercase;
   white-space: nowrap;
-}
-
-.canvas-strip__divider {
-  flex: none;
-  width: 1px;
-  height: 18px;
-  background: color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
 .canvas-strip__hint + .canvas-strip__rulers,

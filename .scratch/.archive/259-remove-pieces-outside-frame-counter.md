@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] With a Frame set, the strip shows no count of Pieces outside it, however many there are
 - [ ] No code, string, test or doc still refers to the counter (design system copy is not edited by hand; note it for the next design system version)
