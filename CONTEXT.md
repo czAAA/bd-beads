@@ -105,6 +105,13 @@ _Avoid_: tool strip, toolbar, above-canvas panel
 One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Eraser), Colors, Edit (including Save, QR export and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
+**Tool button**:
+A Tools-group tool shown as an icon-only square button (Paint is a pencil), four to a row, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. A tool with a single-key shortcut (a letter or digit) also shows that key as a small badge on the button, except on touch and phone. The name stays as the button's accessible name.
+_Avoid_: tab, tool tab
+
+**Tooltip**:
+The design system's hover (long-press on touch) help for an icon-only control: a bold name, the shortcut as a key chip and, only where the control needs it, a description line. Replaces the browser's native title on Toolbox buttons. A disabled control shows none.
+
 **Eraser**:
 A 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press.
 _Avoid_: erase mode, clear tool
