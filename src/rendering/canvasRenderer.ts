@@ -1,4 +1,5 @@
-import { colorAt, frameContains } from '../domain/canvas'
+import { colorAt, frameContains, type Frame } from '../domain/canvas'
+import { MARGIN, withMargin } from '../domain/margin'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
 import { isInFinishedRow } from '../domain/pattern'
 import { DEFAULT_THEME, drawFlatBead, type BeadDrawer, type DrawingContext, type PatternTheme } from './beadLook'
@@ -85,6 +86,28 @@ function bandOnSurface(
   return { x: left, y: upper, width: Math.max(0, right - left), height: Math.max(0, lower - upper) }
 }
 
+/** The faint shade over the Frame's keep-out margin (ticket 261): the dot's color at half strength, drawn under the beads and dots, one row at a time so it follows each row's own stagger. */
+function drawMarginBand(context: DrawingContext, frame: Frame, row: number, shift: number, top: number, theme: PatternTheme): void {
+  const outer = withMargin(frame)
+  if (row < outer.row || row >= outer.row + outer.rows) {
+    return
+  }
+  const across = row >= frame.row && row < frame.row + frame.rows
+  const spans = across
+    ? [
+        [outer.column, MARGIN],
+        [frame.column + frame.columns, MARGIN],
+      ]
+    : [[outer.column, outer.columns]]
+  context.save()
+  context.globalAlpha = 0.5
+  context.fillStyle = theme.dot
+  for (const [column, count] of spans) {
+    context.fillRect(shift + column! * CELL_SIZE_PX, top, count! * CELL_SIZE_PX, CELL_SIZE_PX)
+  }
+  context.restore()
+}
+
 /** Draws the beads of the open canvas in view, the dots of the empty positions round them, and the Frame's empty beads. Clears what was there first, leaving it transparent for the technique word behind. */
 export function renderCanvas(context: DrawingContext, input: CanvasRenderInput): void {
   const { pattern, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band } = input
@@ -121,6 +144,10 @@ export function renderCanvas(context: DrawingContext, input: CanvasRenderInput):
 
     if (technique === 'brick' && frame && row > frame.row && row < frame.row + frame.rows) {
       drawSeam(context, shift + frame.column * CELL_SIZE_PX, top - SEAM_PX, frame.columns * CELL_SIZE_PX, pattern.rowProgress.direction === 'rows' && isInFinishedRow(pattern, { row, column: frame.column }), look)
+    }
+
+    if (frame) {
+      drawMarginBand(context, frame, row, shift, top, look)
     }
 
     const { first, last } = visible.columnsOf(row)

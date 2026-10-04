@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { changedPositions, keepFinishedRows, mirrorCurrent, type Pattern, patternDimensions } from '../../domain/pattern'
+import { keepAllowedEdits } from '../../domain/margin'
+import { changedPositions, mirrorCurrent, type Pattern, patternDimensions } from '../../domain/pattern'
 
 /** Which "Mirror current" button an interaction names -- grid-space-neutral, since screen left-right/top-bottom is a view-layer concern (Toolbox.vue) that swaps under rotation. */
 export type MirrorCurrentAxis = 'horizontal' | 'vertical'
@@ -57,7 +58,7 @@ export function useMirrorState(
     }
 
     const axis = gridAxisOf(hovered)
-    const result = keepFinishedRows(pattern, mirrorCurrent(pattern, axis, axisCounts.value[axis], copyMode.value))
+    const result = keepAllowedEdits(pattern, mirrorCurrent(pattern, axis, axisCounts.value[axis], copyMode.value))
 
     return changedPositions(pattern.beads, result.beads)
   })

@@ -1,9 +1,9 @@
 import { ref, toRaw } from 'vue'
 import type { BeadMap } from '../../domain/canvas'
+import { keepAllowedEdits } from '../../domain/margin'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import {
   fillArea,
-  keepFinishedRows,
   paintCells,
   type Pattern,
   type UndoEntry,
@@ -82,7 +82,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const painted = paintCells(pattern, [{ row, column }], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
 
-    const updated = keepFinishedRows(pattern, painted)
+    const updated = keepAllowedEdits(pattern, painted)
     if (updated !== pattern) {
       deps.replacePattern(updated, { deferSave: true })
     }

@@ -463,6 +463,7 @@ export interface Translations {
     rotateNeedsFrame: string
     /** The Message after Rotate moved pieces out of the way ("{count}" of them): the singular and plural of the sentence. */
     rotatedMessage: PluralForms
+    marginClearedMessage: PluralForms
     /** The cursor and the keyboard while the Frame is being set. */
     keyboardHint: string
   }

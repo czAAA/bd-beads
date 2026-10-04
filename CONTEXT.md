@@ -42,8 +42,11 @@ A set of beads that touch by a side or a corner. Pieces form, merge and split as
 _Avoid_: island, cluster, group, shape
 
 **Frame**:
-The one rectangle per Open canvas, on whole beads, that marks which beads are the Pattern. A line only: drawing outside it stays possible and is saved with the Pattern, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Pattern has a size (columns × rows, and an Estimated size); without one it has none. Set, moved, resized and removed as Undo steps that never change a bead. A Pattern from before the Frame opens with a Frame the size of its old grid.
+The one rectangle per Open canvas, on whole beads, that marks which beads are the Pattern. A line, plus a **keep-out margin** (below): drawing outside it stays possible beyond the margin and is saved with the Pattern, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Pattern has a size (columns × rows, and an Estimated size); without one it has none. Set, moved, resized and removed as Undo steps that never change a bead. A Pattern from before the Frame opens with a Frame the size of its old grid.
 _Avoid_: border, crop, artboard, page, grid size
+
+**Keep-out margin**:
+The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), marked by a faint shaded band while the Frame is set. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message and one Undo step. Removing the Frame removes the margin. Patterns saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
 
 **Set Frame**:
 The mode (F, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead) and Remove Frame, and Columns/Rows steppers once set.

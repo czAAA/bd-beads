@@ -3,10 +3,12 @@ import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, movedFrame, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
+import { clearMargin } from '../../domain/margin'
 import { withFrame, type Pattern, type UndoEntry } from '../../domain/pattern'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
+import type { MessageTone, Toast } from '../ui/useToasts'
 
 export interface FrameFlowDeps {
   currentPattern: () => Pattern | undefined
@@ -16,6 +18,8 @@ export interface FrameFlowDeps {
   clearMirrorAxisCounts: () => void
   clearSelectionAndHover: () => void
   announce: (message: string) => void
+  showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
+  onUndo: () => void
   messages: () => Translations
   locale: () => Locale
   /** Brings a block of beads into the middle of the view. */
@@ -54,8 +58,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function commit(frame: Frame | undefined, announce = true): void {
     const pattern = deps.currentPattern()
     if (!pattern || locked.value) return
-    const updated = withFrame(pattern, frame)
-    if (updated === pattern) return
+    const framed = withFrame(pattern, frame)
+    if (framed === pattern) return
+    // Beads in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
+    const { pattern: updated, moved } = clearMargin(framed)
     deps.recordHistory({
       beads: pattern.beads,
       rowProgress: pattern.rowProgress,
@@ -64,7 +70,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.replacePattern(updated)
     deps.clearMirrorAxisCounts()
     deps.clearSelectionAndHover()
-    if (announce) deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
+    if (moved > 0) {
+      const t = deps.messages()
+      deps.showToast('frame-margin-cleared', plural(deps.locale(), moved, t.frame.marginClearedMessage), 'info', {
+        label: t.palette.undoButton,
+        run: deps.onUndo,
+      })
+    } else if (announce) {
+      deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
+    }
   }
 
   function start(): void {

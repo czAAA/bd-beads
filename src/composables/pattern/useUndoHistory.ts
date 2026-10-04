@@ -11,7 +11,8 @@ import {
 } from '../../domain/history'
 import { sameFrame } from '../../domain/frame'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { keepFinishedRows, restoreSnapshot, type Pattern, type UndoEntry } from '../../domain/pattern'
+import { keepAllowedEdits } from '../../domain/margin'
+import { restoreSnapshot, type Pattern, type UndoEntry } from '../../domain/pattern'
 
 /** What the history needs from the app shell: the open Pattern and its one write path, plus the session state a step can also touch. */
 export interface UndoHistoryDeps {
@@ -50,10 +51,10 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
 
   /**
    * Commits the result of a grid-changing command (fill/mirror/paste) as one undo step, minus anything it did to rows
-   * already woven (ticket 33), unless that leaves the Pattern unchanged.
+   * already woven (ticket 33) or painted in the Frame's margin (ticket 261), unless that leaves the Pattern unchanged.
    */
   function commitGridChange(pattern: Pattern, updated: Pattern) {
-    const kept = keepFinishedRows(pattern, updated)
+    const kept = keepAllowedEdits(pattern, updated)
     if (kept === pattern) {
       return
     }

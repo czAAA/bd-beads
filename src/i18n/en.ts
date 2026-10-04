@@ -434,6 +434,10 @@ export const en: Translations = {
       one: 'Pattern rotated. {count} piece was in the way and moved outside the Frame.',
       other: 'Pattern rotated. {count} pieces were in the way and moved outside the Frame.',
     },
+    marginClearedMessage: {
+      one: '{count} bead was too close to the Frame and moved outside it.',
+      other: '{count} beads were too close to the Frame and moved outside it.',
+    },
     keyboardHint: 'arrows move the Frame · shift and arrows resize it · enter is done',
   },
   size: {

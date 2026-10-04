@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { withColors } from '../../domain/canvas'
 import { createPattern, setRowProgressEnabled, withFrame, type Pattern } from '../../domain/pattern'
 import { en } from '../../i18n/en'
 import { useFrameFlow } from './useFrameFlow'
@@ -15,6 +16,8 @@ function setup(pattern: Pattern | null = sized) {
     clearMirrorAxisCounts: vi.fn(),
     clearSelectionAndHover: vi.fn(),
     announce: vi.fn(),
+    showToast: vi.fn(),
+    onUndo: vi.fn(),
     messages: () => en,
     locale: () => 'en' as const,
     centreOn: vi.fn(),
@@ -192,5 +195,22 @@ describe('useFrameFlow', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()
     expect(deps.centreOn).toHaveBeenCalledWith(sized.frame)
+  })
+
+  it('moves beads the new Frame would crowd clear, with a Message and the one undo step (ticket 261)', () => {
+    const crowded = { ...open, beads: withColors(open.beads, [{ row: 5, column: 5, color: '#ff0000' }]) }
+    const { deps, start, press, drag, release } = setup(crowded)
+    start()
+    press({ kind: 'outside' }, { row: 0, column: 0 })
+    drag({ row: 3, column: 3 })
+    release()
+
+    const updated = deps.replacePattern.mock.calls.at(-1)?.[0]
+    expect(updated.beads[5]?.[5]).toBeUndefined()
+    expect(Object.values<Record<number, string>>(updated.beads).flatMap((row) => Object.values(row))).toEqual(['#ff0000'])
+    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
+    expect(deps.recordHistory.mock.calls[0]?.[0].beads).toBe(crowded.beads)
+    expect(deps.showToast).toHaveBeenCalledWith('frame-margin-cleared', '1 bead was too close to the Frame and moved outside it.', 'info', expect.anything())
+    expect(deps.announce).not.toHaveBeenCalled()
   })
 })

@@ -357,6 +357,8 @@ function wireAppShell(services: Services) {
     clearMirrorAxisCounts,
     clearSelectionAndHover,
     announce,
+    showToast,
+    onUndo,
     messages,
     locale: currentLocale,
     centreOn,
