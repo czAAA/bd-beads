@@ -172,9 +172,9 @@
           "type": "image/svg+xml"
         },
         "paint.svg": {
-          "blob": "29cab2714644e900f47559616fd325ab",
+          "blob": "71712cc8b810c6f31609f7bd4a2cca81",
           "name": "paint.svg",
-          "size": 250,
+          "size": 349,
           "type": "image/svg+xml"
         },
         "paste.svg": {
@@ -314,6 +314,12 @@
           "name": "hand.svg",
           "size": 368,
           "type": "image/svg+xml"
+        },
+        "palette.svg": {
+          "blob": "e2fb3ac2b6aa8c108fba43d1b1a8622a",
+          "name": "palette.svg",
+          "size": 433,
+          "type": "image/svg+xml"
         }
       },
       "name": "Icons",
@@ -322,6 +328,7 @@
         "fill.svg",
         "select.svg",
         "erase.svg",
+        "palette.svg",
         "remove-line.svg",
         "delete.svg",
         "undo.svg",
@@ -480,10 +487,10 @@
     "Icons"
   ],
   "lastChange": {
-    "at": "2026-10-03T13:00:00Z",
+    "at": "2026-10-03T14:00:00Z",
     "by": "Claude",
     "via": "Claude (chat)",
-    "note": "v16: the Palette's maximum is now 40 swatches (12 built in, up to 28 added, five full rows), was 36; PaletteSwatches card, Message copy note and the v16 log line updated."
+    "note": "v16, removing added colors: PaletteSwatches gains the × badge on a selected or focused added swatch and Delete/Backspace; Message gains the Color removed toast with Undo (EN/RU, proposed copy)."
   },
   "layout": "files",
   "libraries": [],

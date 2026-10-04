@@ -1,0 +1,1123 @@
+{
+  "manifestVersion": 3,
+  "name": "bd-beads",
+  "namespace": "BdBeads",
+  "files": [
+    "accessibility.md",
+    "assets/Icons/README.md",
+    "assets/Logos/README.md",
+    "components/BeadBoard/README.md",
+    "components/BeadCursor/README.md",
+    "components/BeadHover/README.md",
+    "components/BeadPill/README.md",
+    "components/BeadsNeeded/README.md",
+    "components/BottomToolbar/README.md",
+    "components/Button/README.md",
+    "components/CanvasStrip/README.md",
+    "components/ColorPickers/README.md",
+    "components/ConfirmDialogs/README.md",
+    "components/ContextBar/README.md",
+    "components/ContrastAudit/README.md",
+    "components/ConvertImage/README.md",
+    "components/DisclosureRow/README.md",
+    "components/Dock/README.md",
+    "components/Drawer/README.md",
+    "components/EmptyCanvas/README.md",
+    "components/EmptyPanels/README.md",
+    "components/Glossary/README.md",
+    "components/Header/README.md",
+    "components/HeaderMenu/README.md",
+    "components/HighContrastTheme/README.md",
+    "components/ImportResult/README.md",
+    "components/InteractionStates/README.md",
+    "components/KeyboardFocus/README.md",
+    "components/Loading/README.md",
+    "components/LongerText/README.md",
+    "components/Menu/README.md",
+    "components/Message/README.md",
+    "components/MirrorSizeControls/README.md",
+    "components/Modal/README.md",
+    "components/Motion/README.md",
+    "components/NameOnExports/README.md",
+    "components/NewPatternForm/README.md",
+    "components/NumberField/README.md",
+    "components/NumbersAndUnits/README.md",
+    "components/OverflowMenu/README.md",
+    "components/Overview/README.md",
+    "components/PaletteSwatches/README.md",
+    "components/PhoneForms/README.md",
+    "components/PngExport/README.md",
+    "components/PrintChartPage/README.md",
+    "components/PrintPage1/README.md",
+    "components/PrintStrips/README.md",
+    "components/PrintWide/README.md",
+    "components/ProgressBar/README.md",
+    "components/QrExport/README.md",
+    "components/Rulers/README.md",
+    "components/SaveBox/README.md",
+    "components/SaveStates/README.md",
+    "components/SavedPatterns/README.md",
+    "components/SavedPatternsExpanded/README.md",
+    "components/ScreenReaders/README.md",
+    "components/ScreenSizes/README.md",
+    "components/SegmentedControl/README.md",
+    "components/ShortcutsHelp/README.md",
+    "components/StackingOrder/README.md",
+    "components/Stepper/README.md",
+    "components/SwitchAndFileButton/README.md",
+    "components/TextField/README.md",
+    "components/ThemeToggle/README.md",
+    "components/ToolSheet/README.md",
+    "components/ToolTabs/README.md",
+    "components/Toolbox/README.md",
+    "components/TourPattern/README.md",
+    "components/TourPattern/tour-pattern.json",
+    "components/TourStep/README.md",
+    "components/WritingPatterns/README.md",
+    "components/ZoomPill/README.md",
+    "components/bundle.css",
+    "forms-and-states.md",
+    "interaction-and-motion.md",
+    "printed-output.md",
+    "responsive.md",
+    "tokens.css",
+    "writing.md"
+  ],
+  "libraries": [],
+  "components": [
+    {
+      "name": "BeadBoard",
+      "group": "Canvas",
+      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers, the current-row marker, and the technique word and curve behind."
+    },
+    {
+      "name": "Rulers",
+      "group": "Canvas",
+      "summary": "The row and column numbers along the Pattern: every number shown, every 5th bold, column numbers from 100 turned, and the smallest bead that keeps them readable."
+    },
+    {
+      "name": "BeadCursor",
+      "group": "States",
+      "summary": "The keyboard cursor on the Pattern: one bead ringed in focus-ring, its row and column marked on the rulers."
+    },
+    {
+      "name": "BeadHover",
+      "group": "States",
+      "summary": "How the Pattern answers the pointer: outline or colour preview on hover, and the cursors."
+    },
+    {
+      "name": "BeadPill",
+      "group": "Header",
+      "summary": "A read-only pill naming the open Pattern's Bead, shown in the header after \"currently editing\" and the Pattern summary."
+    },
+    {
+      "name": "BeadsNeeded",
+      "group": "Left column",
+      "summary": "An expandable panel listing how many beads of each color the Pattern needs, with the total in its title."
+    },
+    {
+      "name": "BottomToolbar",
+      "group": "Responsive",
+      "summary": "The iPad mini's toolbar: the four tools, the current colour, Undo and Redo, under the thumb so drawing never needs the drawer."
+    },
+    {
+      "name": "Button",
+      "group": "Actions",
+      "summary": "Every clickable action in bd-beads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants."
+    },
+    {
+      "name": "CanvasStrip",
+      "group": "Canvas",
+      "summary": "The 46px header strip at the top of the canvas box: what the Pattern is and how far it is zoomed."
+    },
+    {
+      "name": "ColorPickers",
+      "group": "Screens",
+      "summary": "The Image colors popover and the Custom colour button."
+    },
+    {
+      "name": "ConfirmDialogs",
+      "group": "Screens",
+      "summary": "The Delete all? and Replace bead? confirmations."
+    },
+    {
+      "name": "ContextBar",
+      "group": "Responsive",
+      "summary": "A floating bar above the Progress bar on phone and iPad mini that offers what a Selection can do."
+    },
+    {
+      "name": "ContrastAudit",
+      "group": "Accessibility",
+      "summary": "Every colour pair the design uses, measured against WCAG 2.2 AA in both themes, before and after the Phase C fixes."
+    },
+    {
+      "name": "ConvertImage",
+      "group": "Screens",
+      "summary": "The framing step of Convert image, inside the canvas box."
+    },
+    {
+      "name": "DisclosureRow",
+      "group": "Toolbox",
+      "summary": "A full-width row for a rarely used Tool group (Mirror, Size) that opens its controls in place."
+    },
+    {
+      "name": "Dock",
+      "group": "Responsive",
+      "summary": "The phone's six buttons, one per kind of tool, each opening its own ToolSheet: the active tool, Colour, Edit, Mirror, Size, Pattern."
+    },
+    {
+      "name": "Drawer",
+      "group": "Responsive",
+      "summary": "The iPad mini's left column, sliding in over the canvas from the left when the header's Tools button is pressed."
+    },
+    {
+      "name": "EmptyCanvas",
+      "group": "States",
+      "summary": "What the canvas box shows while no Pattern is open."
+    },
+    {
+      "name": "EmptyPanels",
+      "group": "States",
+      "summary": "Beads needed and Saved Patterns with nothing in them."
+    },
+    {
+      "name": "Glossary",
+      "group": "Writing",
+      "summary": "The app's nouns in English and Russian, and the names of the 12 Palette colors."
+    },
+    {
+      "name": "Header",
+      "group": "Header",
+      "summary": "The 64px app header: brand, what is being edited, Replace bead, imports, New Pattern, language, theme and shortcuts."
+    },
+    {
+      "name": "HeaderMenu",
+      "group": "Header",
+      "summary": "The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15)."
+    },
+    {
+      "name": "HighContrastTheme",
+      "group": "Accessibility",
+      "summary": "The added third theme, contrast: 7:1 text, 2px borders at 3:1, no shadows, a 3px black focus ring."
+    },
+    {
+      "name": "ImportResult",
+      "group": "Screens",
+      "summary": "The one-line result or error beside Import a file and Import QR code."
+    },
+    {
+      "name": "InteractionStates",
+      "group": "States",
+      "summary": "Every interactive component at rest, hovered, pressed, focused, disabled and selected; the samples are live."
+    },
+    {
+      "name": "KeyboardFocus",
+      "group": "Accessibility",
+      "summary": "The Tab order across the desktop layout and the keyboard rules: one stop per group, arrows inside, Escape closes the top-most layer."
+    },
+    {
+      "name": "Loading",
+      "group": "States",
+      "summary": "The waiting indicators: three beads, or a progress line when the share done is known."
+    },
+    {
+      "name": "LongerText",
+      "group": "Writing",
+      "summary": "How controls make room for longer strings (Russian runs about a quarter longer): drop to icons by priority, wrap, or cut only user text."
+    },
+    {
+      "name": "Menu",
+      "group": "Overlays",
+      "summary": "A popup list anchored under its button (Export ▾), and the Tooltip."
+    },
+    {
+      "name": "Message",
+      "group": "Feedback",
+      "summary": "A notice or toast: \"couldn't save\", import results and errors, confirmations of an action."
+    },
+    {
+      "name": "MirrorSizeControls",
+      "group": "Screens",
+      "summary": "The Mirror and Size disclosure rows opened in place, and the Estimated size warning."
+    },
+    {
+      "name": "Modal",
+      "group": "Overlays",
+      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?), the QR export panel and the keyboard shortcuts."
+    },
+    {
+      "name": "Motion",
+      "group": "States",
+      "summary": "How things move: four durations, three easings, and the rules that keep motion off the Pattern; the buttons in the preview play each motion."
+    },
+    {
+      "name": "NameOnExports",
+      "group": "Screens",
+      "summary": "Where the maker's name for the PDF and PNG exports is set: the last row of the Export ▾ menu, and More on the phone."
+    },
+    {
+      "name": "NewPatternForm",
+      "group": "Screens",
+      "summary": "The form that makes a new Pattern, in the left column while no Pattern is open."
+    },
+    {
+      "name": "NumberField",
+      "group": "Forms",
+      "summary": "A number input with its unit inside, and the Select that shares its look."
+    },
+    {
+      "name": "NumbersAndUnits",
+      "group": "Writing",
+      "summary": "How counts, sizes, weights, units, percentages, ranges and dates are written in English and Russian."
+    },
+    {
+      "name": "OverflowMenu",
+      "group": "Responsive",
+      "summary": "Replaced in v15 by HeaderMenu and archived under archived/components/OverflowMenu; do not use."
+    },
+    {
+      "name": "Overview",
+      "group": "Onboarding",
+      "summary": "The one page outside the editor, at /overview: the front door for a new visitor (empty Pattern library), reachable from the header menu, drawn lighter and more…"
+    },
+    {
+      "name": "PaletteSwatches",
+      "group": "Toolbox",
+      "summary": "The Colors group: the Pattern's Palette as an 8-column grid of square swatches, then Custom and Image colors."
+    },
+    {
+      "name": "PhoneForms",
+      "group": "Screens",
+      "summary": "New Pattern and Convert image framing on a phone."
+    },
+    {
+      "name": "PngExport",
+      "group": "Print",
+      "summary": "The PNG export: the whole Pattern on its board, with a narrow story column beside it."
+    },
+    {
+      "name": "PrintChartPage",
+      "group": "Print",
+      "summary": "A chart page of the PDF: one part of the Pattern, filling the sheet, to work from at the craft table."
+    },
+    {
+      "name": "PrintPage1",
+      "group": "Print",
+      "summary": "The first page of the PDF: the whole Pattern large on its board, with Beads needed in beads and grams and the facts beside it."
+    },
+    {
+      "name": "PrintStrips",
+      "group": "Print",
+      "summary": "Long thin Patterns (bracelets) stack several parts on one sheet; the PNG of a wide Pattern puts its story under the chart."
+    },
+    {
+      "name": "PrintWide",
+      "group": "Print",
+      "summary": "A Pattern wider than tall prints on landscape A4 with the same layout: the canvas and the Beads needed column on page 1, one part per chart page."
+    },
+    {
+      "name": "ProgressBar",
+      "group": "Canvas",
+      "summary": "The 56px bar along the canvas box's bottom edge holding every Row progress control."
+    },
+    {
+      "name": "QrExport",
+      "group": "Screens",
+      "summary": "The modal that shows a Pattern as a QR code, and its too-large state."
+    },
+    {
+      "name": "SaveBox",
+      "group": "Left column",
+      "summary": "The second box of the left column: the library's save state, Save Pattern and the Export menu."
+    },
+    {
+      "name": "SaveStates",
+      "group": "States",
+      "summary": "Save failed, not saved and Saved."
+    },
+    {
+      "name": "SavedPatterns",
+      "group": "Left column",
+      "summary": "The fourth box of the left column: the five most recently saved Patterns as round thumbnails, expandable to all."
+    },
+    {
+      "name": "SavedPatternsExpanded",
+      "group": "Screens",
+      "summary": "Saved Patterns expanded to every Pattern, with its export footer."
+    },
+    {
+      "name": "ScreenReaders",
+      "group": "Accessibility",
+      "summary": "Landmarks, the accessible name of the Pattern, a name for every icon-only button, and what gets announced."
+    },
+    {
+      "name": "ScreenSizes",
+      "group": "Responsive",
+      "summary": "The five screen tiers side by side: Phone, iPad mini, iPad 13″, MacBook Air and 24″ and larger (the MacBook Air layout, wider)."
+    },
+    {
+      "name": "SegmentedControl",
+      "group": "Forms",
+      "summary": "Two or three always-visible choices: Technique, Unit, Change from."
+    },
+    {
+      "name": "ShortcutsHelp",
+      "group": "Screens",
+      "summary": "The Keyboard shortcuts modal: every shortcut, grouped as in the Toolbox."
+    },
+    {
+      "name": "StackingOrder",
+      "group": "Accessibility",
+      "summary": "Which layer sits above which: the twelve zIndex tokens, from the canvas overlays up to tooltips."
+    },
+    {
+      "name": "Stepper",
+      "group": "Forms",
+      "summary": "The − value + control for every counted setting on desktop: Mirror axes, Size, Colors at most."
+    },
+    {
+      "name": "SwitchAndFileButton",
+      "group": "Forms",
+      "summary": "The labelled on/off Switch, and the FileButton that opens the file picker with its limits written under it."
+    },
+    {
+      "name": "TextField",
+      "group": "Forms",
+      "summary": "A single-line text input with its label, hint and error."
+    },
+    {
+      "name": "ThemeToggle",
+      "group": "Header",
+      "summary": "The four-way theme control in the header (Match device, Light, Dark, High contrast); the EN / RU language button sits beside it."
+    },
+    {
+      "name": "ToolSheet",
+      "group": "Responsive",
+      "summary": "The bottom sheet a Dock button opens on the phone, holding every option of that kind."
+    },
+    {
+      "name": "ToolTabs",
+      "group": "Toolbox",
+      "summary": "The Tools group: four equal tabs (Paint, Fill, Select, Erase) over a 1px line-strong rule, with Remove line and Delete all underneath."
+    },
+    {
+      "name": "Toolbox",
+      "group": "Toolbox",
+      "summary": "The first box of the left column: Tool groups Tools, Colors and Edit, then the Mirror and Size disclosure rows."
+    },
+    {
+      "name": "TourPattern",
+      "group": "Onboarding",
+      "summary": "The finished Pattern every Tour builds: 10 columns × 75 rows, loom, the default Bead, Palette Yellow #f2c94c and Black #1a1a1a only; five gold rhombuses with a…"
+    },
+    {
+      "name": "TourStep",
+      "group": "Onboarding",
+      "summary": "The Tour: eleven steps inside the real editor; each step card names the tool it teaches, points at one control with a grey dotted line, lights that control in…"
+    },
+    {
+      "name": "WritingPatterns",
+      "group": "Writing",
+      "summary": "How the app talks: the voice, and one sentence pattern for each kind of message, in English and Russian."
+    },
+    {
+      "name": "ZoomPill",
+      "group": "Responsive",
+      "summary": "The phone's zoom control: zoom out, the zoom level, zoom in and fit, floating in the bottom-right corner of the Pattern."
+    }
+  ],
+  "assetGroups": [
+    {
+      "name": "Logos",
+      "tile": "l",
+      "order": [
+        "bd-beads-mark.svg",
+        "bd-beads-mark-dark.svg",
+        "bd-beads-mark-ink.svg",
+        "bd-beads-mark-white.svg",
+        "bd-beads-mark-small.svg",
+        "bd-beads-app-icon.svg",
+        "bd-beads-app-icon-dark.svg",
+        "favicon.svg",
+        "favicon-dark.svg",
+        "favicon-32.png",
+        "apple-touch-icon.png"
+      ],
+      "files": [
+        {
+          "path": "assets/Logos/bd-beads-mark.svg",
+          "id": "26e22cba698f22dc3588b108c09bcd6d"
+        },
+        {
+          "path": "assets/Logos/bd-beads-mark-dark.svg",
+          "id": "1c1806ad1b8b4aaddff8c39222d7c689"
+        },
+        {
+          "path": "assets/Logos/bd-beads-mark-ink.svg",
+          "id": "dff1b8ee5263ed12c22cced3f370d725"
+        },
+        {
+          "path": "assets/Logos/bd-beads-mark-white.svg",
+          "id": "c438c2833b8995e44fb75f00aa4d317a"
+        },
+        {
+          "path": "assets/Logos/bd-beads-mark-small.svg",
+          "id": "345cf71ece1901e065bda1da962bd159"
+        },
+        {
+          "path": "assets/Logos/bd-beads-app-icon.svg",
+          "id": "bab37d79a95c85b729675b7e6d2fab21"
+        },
+        {
+          "path": "assets/Logos/bd-beads-app-icon-dark.svg",
+          "id": "711f08b2e9c39b263bde8866b057ba7e"
+        },
+        {
+          "path": "assets/Logos/favicon.svg",
+          "id": "8f36c131d8fb32d81a6e7a24a04a3128"
+        },
+        {
+          "path": "assets/Logos/favicon-dark.svg",
+          "id": "9a94f041c5021d4e88767ea49d78d72a"
+        },
+        {
+          "path": "assets/Logos/favicon-32.png",
+          "id": "15e81132c92c9027b7d6049d91ec0412"
+        },
+        {
+          "path": "assets/Logos/apple-touch-icon.png",
+          "id": "d96de1723b1e05feff816d3512962730"
+        }
+      ]
+    },
+    {
+      "name": "Icons",
+      "tile": "xs",
+      "order": [
+        "paint.svg",
+        "fill.svg",
+        "select.svg",
+        "erase.svg",
+        "palette.svg",
+        "remove-line.svg",
+        "delete.svg",
+        "undo.svg",
+        "redo.svg",
+        "rotate.svg",
+        "copy.svg",
+        "image.svg",
+        "save.svg",
+        "export.svg",
+        "import.svg",
+        "qr-code.svg",
+        "scan.svg",
+        "pdf.svg",
+        "mirror-horizontal.svg",
+        "mirror-vertical.svg",
+        "mirror-copy-mode.svg",
+        "size.svg",
+        "info.svg",
+        "row-progress.svg",
+        "turn-row-direction.svg",
+        "check.svg",
+        "chevron-left.svg",
+        "plus.svg",
+        "sun.svg",
+        "moon.svg",
+        "device.svg",
+        "contrast.svg",
+        "keyboard.svg",
+        "chevron-down.svg",
+        "grid.svg",
+        "zoom-in.svg",
+        "zoom-out.svg",
+        "fit.svg",
+        "arrow-down.svg",
+        "arrow-up.svg",
+        "chevron-up.svg",
+        "close.svg",
+        "warning.svg",
+        "more.svg",
+        "menu.svg",
+        "pattern.svg",
+        "sidebar.svg",
+        "bead.svg",
+        "library.svg",
+        "paste.svg"
+      ],
+      "files": [
+        {
+          "path": "assets/Icons/paint.svg",
+          "id": "71712cc8b810c6f31609f7bd4a2cca81"
+        },
+        {
+          "path": "assets/Icons/fill.svg",
+          "id": "49e453f5803c560fdb8f97fb954dc8d2"
+        },
+        {
+          "path": "assets/Icons/select.svg",
+          "id": "289f2c3a0907b865fb01eb25ddc10fec"
+        },
+        {
+          "path": "assets/Icons/erase.svg",
+          "id": "b8140ef5aeb568eba2264dd71d579561"
+        },
+        {
+          "path": "assets/Icons/palette.svg",
+          "id": "e2fb3ac2b6aa8c108fba43d1b1a8622a"
+        },
+        {
+          "path": "assets/Icons/remove-line.svg",
+          "id": "0f8f7310c1a32e5b4dfb28fa278989ab"
+        },
+        {
+          "path": "assets/Icons/delete.svg",
+          "id": "c6eef475a7c5752b35b141c32a0fcf7f"
+        },
+        {
+          "path": "assets/Icons/undo.svg",
+          "id": "af02200e616ec8dcabfff350807634e0"
+        },
+        {
+          "path": "assets/Icons/redo.svg",
+          "id": "837241d556bdebd4c2d3095a382047a3"
+        },
+        {
+          "path": "assets/Icons/rotate.svg",
+          "id": "a9dec6b07b77f6b427517796b9a134ef"
+        },
+        {
+          "path": "assets/Icons/copy.svg",
+          "id": "470fef79f493e1008622755208cede59"
+        },
+        {
+          "path": "assets/Icons/image.svg",
+          "id": "c58c5690460d65b36bef433bae07f7fa"
+        },
+        {
+          "path": "assets/Icons/save.svg",
+          "id": "42ee0443e8478c7706f18ba5b9f61dd6"
+        },
+        {
+          "path": "assets/Icons/export.svg",
+          "id": "3845ca053cd8441f36ed947e8ad91650"
+        },
+        {
+          "path": "assets/Icons/import.svg",
+          "id": "6acdb745e2d748666975d704799aded7"
+        },
+        {
+          "path": "assets/Icons/qr-code.svg",
+          "id": "c1f7e1e0405bd1e4fcb90c921906b72e"
+        },
+        {
+          "path": "assets/Icons/scan.svg",
+          "id": "f9d9d3d27c7114e1e9862503c2db0e8f"
+        },
+        {
+          "path": "assets/Icons/pdf.svg",
+          "id": "543b89020c5fb0323f4e47e681650580"
+        },
+        {
+          "path": "assets/Icons/mirror-horizontal.svg",
+          "id": "231017d96cc75fc2ba4305809373a6ae"
+        },
+        {
+          "path": "assets/Icons/mirror-vertical.svg",
+          "id": "08ced04a6cf48c40b7fcede3c322facf"
+        },
+        {
+          "path": "assets/Icons/mirror-copy-mode.svg",
+          "id": "3c0fe37e6f7d4d0b869896135d0dd7d2"
+        },
+        {
+          "path": "assets/Icons/size.svg",
+          "id": "b6cab576f2f6d0c113971a60a3a041e3"
+        },
+        {
+          "path": "assets/Icons/info.svg",
+          "id": "667f8e33ff96de0c498c5e0e77884217"
+        },
+        {
+          "path": "assets/Icons/row-progress.svg",
+          "id": "211b2faf84cc29582a180cf7d7da9fe2"
+        },
+        {
+          "path": "assets/Icons/turn-row-direction.svg",
+          "id": "22db9b804cf8e08d2a633d9a32918767"
+        },
+        {
+          "path": "assets/Icons/check.svg",
+          "id": "3cfd3c229760d473964b728509474681"
+        },
+        {
+          "path": "assets/Icons/chevron-left.svg",
+          "id": "48717d81bfc6c1e68a0d32db0fbd10a2"
+        },
+        {
+          "path": "assets/Icons/plus.svg",
+          "id": "e92feee61eb8f3f8f52170304c741f49"
+        },
+        {
+          "path": "assets/Icons/sun.svg",
+          "id": "21d60e3c2e1436734ce5a1bf4ffafc95"
+        },
+        {
+          "path": "assets/Icons/moon.svg",
+          "id": "12828d3432e271adfdf349dddb73ed9a"
+        },
+        {
+          "path": "assets/Icons/device.svg",
+          "id": "b7c723a2fbd6745a7cbaac40aea93ebf"
+        },
+        {
+          "path": "assets/Icons/contrast.svg",
+          "id": "8bbb2af4f0cde3e318efb8802dac8486"
+        },
+        {
+          "path": "assets/Icons/keyboard.svg",
+          "id": "2fdccaae13e84b9ad880f04da0d2937b"
+        },
+        {
+          "path": "assets/Icons/chevron-down.svg",
+          "id": "4dda60960eac76d72df87b88277be710"
+        },
+        {
+          "path": "assets/Icons/grid.svg",
+          "id": "5b4816990042dfeda8805b40bcf1ed6c"
+        },
+        {
+          "path": "assets/Icons/zoom-in.svg",
+          "id": "136da6d62bda153f54bc10ad40c29087"
+        },
+        {
+          "path": "assets/Icons/zoom-out.svg",
+          "id": "e035b4194f0af4717a180b63495cfbf2"
+        },
+        {
+          "path": "assets/Icons/fit.svg",
+          "id": "80aea620e9b79c115368038d6171976a"
+        },
+        {
+          "path": "assets/Icons/arrow-down.svg",
+          "id": "21d1a7c1738c3a356cda618ccfa44829"
+        },
+        {
+          "path": "assets/Icons/arrow-up.svg",
+          "id": "330dc06533f4fe9b323771afbe5d1d32"
+        },
+        {
+          "path": "assets/Icons/chevron-up.svg",
+          "id": "f460383b3701a97107829c0335a10ae2"
+        },
+        {
+          "path": "assets/Icons/close.svg",
+          "id": "22c2f199cc1106a82349925ec9753411"
+        },
+        {
+          "path": "assets/Icons/warning.svg",
+          "id": "de9174563699609cd0a766247c28165c"
+        },
+        {
+          "path": "assets/Icons/more.svg",
+          "id": "3e7b97e187ae81d1ddc4810ae21ede9f"
+        },
+        {
+          "path": "assets/Icons/menu.svg",
+          "id": "424055a6ffc39dfac008b09700ac302c"
+        },
+        {
+          "path": "assets/Icons/pattern.svg",
+          "id": "fdb430082a4a50a7b487cd4f77b39e20"
+        },
+        {
+          "path": "assets/Icons/sidebar.svg",
+          "id": "95b62851ba2cabdf5cb7111c00fa54bb"
+        },
+        {
+          "path": "assets/Icons/bead.svg",
+          "id": "447a10d61dd2b9658b0901b0a2f0bdd3"
+        },
+        {
+          "path": "assets/Icons/library.svg",
+          "id": "54b334c89ce252cbdcf9a5f556d9facd"
+        },
+        {
+          "path": "assets/Icons/paste.svg",
+          "id": "712c1995d0e5db31b4850a72c3f2574b"
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "files": {
+      "assets/Icons/arrow-down.svg": {
+        "store": "blob",
+        "id": "21d1a7c1738c3a356cda618ccfa44829",
+        "bytes": 241,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/arrow-up.svg": {
+        "store": "blob",
+        "id": "330dc06533f4fe9b323771afbe5d1d32",
+        "bytes": 243,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/bead.svg": {
+        "store": "blob",
+        "id": "447a10d61dd2b9658b0901b0a2f0bdd3",
+        "bytes": 295,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/check.svg": {
+        "store": "blob",
+        "id": "3cfd3c229760d473964b728509474681",
+        "bytes": 224,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-down.svg": {
+        "store": "blob",
+        "id": "4dda60960eac76d72df87b88277be710",
+        "bytes": 217,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-left.svg": {
+        "store": "blob",
+        "id": "48717d81bfc6c1e68a0d32db0fbd10a2",
+        "bytes": 219,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/chevron-up.svg": {
+        "store": "blob",
+        "id": "f460383b3701a97107829c0335a10ae2",
+        "bytes": 218,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/close.svg": {
+        "store": "blob",
+        "id": "22c2f199cc1106a82349925ec9753411",
+        "bytes": 233,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/contrast.svg": {
+        "store": "blob",
+        "id": "8bbb2af4f0cde3e318efb8802dac8486",
+        "bytes": 304,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/copy.svg": {
+        "store": "blob",
+        "id": "470fef79f493e1008622755208cede59",
+        "bytes": 340,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/delete.svg": {
+        "store": "blob",
+        "id": "c6eef475a7c5752b35b141c32a0fcf7f",
+        "bytes": 355,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/device.svg": {
+        "store": "blob",
+        "id": "b7c723a2fbd6745a7cbaac40aea93ebf",
+        "bytes": 341,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/erase.svg": {
+        "store": "blob",
+        "id": "b8140ef5aeb568eba2264dd71d579561",
+        "bytes": 347,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/export.svg": {
+        "store": "blob",
+        "id": "3845ca053cd8441f36ed947e8ad91650",
+        "bytes": 304,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/fill.svg": {
+        "store": "blob",
+        "id": "49e453f5803c560fdb8f97fb954dc8d2",
+        "bytes": 345,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/fit.svg": {
+        "store": "blob",
+        "id": "80aea620e9b79c115368038d6171976a",
+        "bytes": 406,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/grid.svg": {
+        "store": "blob",
+        "id": "5b4816990042dfeda8805b40bcf1ed6c",
+        "bytes": 306,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/image.svg": {
+        "store": "blob",
+        "id": "c58c5690460d65b36bef433bae07f7fa",
+        "bytes": 339,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/import.svg": {
+        "store": "blob",
+        "id": "6acdb745e2d748666975d704799aded7",
+        "bytes": 305,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/info.svg": {
+        "store": "blob",
+        "id": "667f8e33ff96de0c498c5e0e77884217",
+        "bytes": 289,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/keyboard.svg": {
+        "store": "blob",
+        "id": "2fdccaae13e84b9ad880f04da0d2937b",
+        "bytes": 343,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/library.svg": {
+        "store": "blob",
+        "id": "54b334c89ce252cbdcf9a5f556d9facd",
+        "bytes": 368,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/menu.svg": {
+        "store": "blob",
+        "id": "424055a6ffc39dfac008b09700ac302c",
+        "bytes": 234,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/mirror-copy-mode.svg": {
+        "store": "blob",
+        "id": "3c0fe37e6f7d4d0b869896135d0dd7d2",
+        "bytes": 350,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/mirror-horizontal.svg": {
+        "store": "blob",
+        "id": "231017d96cc75fc2ba4305809373a6ae",
+        "bytes": 330,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/mirror-vertical.svg": {
+        "store": "blob",
+        "id": "08ced04a6cf48c40b7fcede3c322facf",
+        "bytes": 329,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/moon.svg": {
+        "store": "blob",
+        "id": "12828d3432e271adfdf349dddb73ed9a",
+        "bytes": 297,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/more.svg": {
+        "store": "blob",
+        "id": "3e7b97e187ae81d1ddc4810ae21ede9f",
+        "bytes": 255,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/paint.svg": {
+        "store": "blob",
+        "id": "71712cc8b810c6f31609f7bd4a2cca81",
+        "bytes": 349,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/palette.svg": {
+        "store": "blob",
+        "id": "e2fb3ac2b6aa8c108fba43d1b1a8622a",
+        "bytes": 433,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/paste.svg": {
+        "store": "blob",
+        "id": "712c1995d0e5db31b4850a72c3f2574b",
+        "bytes": 359,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/pattern.svg": {
+        "store": "blob",
+        "id": "fdb430082a4a50a7b487cd4f77b39e20",
+        "bytes": 343,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/pdf.svg": {
+        "store": "blob",
+        "id": "543b89020c5fb0323f4e47e681650580",
+        "bytes": 329,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/plus.svg": {
+        "store": "blob",
+        "id": "e92feee61eb8f3f8f52170304c741f49",
+        "bytes": 219,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/qr-code.svg": {
+        "store": "blob",
+        "id": "c1f7e1e0405bd1e4fcb90c921906b72e",
+        "bytes": 461,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/redo.svg": {
+        "store": "blob",
+        "id": "837241d556bdebd4c2d3095a382047a3",
+        "bytes": 268,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/remove-line.svg": {
+        "store": "blob",
+        "id": "0f8f7310c1a32e5b4dfb28fa278989ab",
+        "bytes": 323,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/rotate.svg": {
+        "store": "blob",
+        "id": "a9dec6b07b77f6b427517796b9a134ef",
+        "bytes": 320,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/row-progress.svg": {
+        "store": "blob",
+        "id": "211b2faf84cc29582a180cf7d7da9fe2",
+        "bytes": 273,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/save.svg": {
+        "store": "blob",
+        "id": "42ee0443e8478c7706f18ba5b9f61dd6",
+        "bytes": 383,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/scan.svg": {
+        "store": "blob",
+        "id": "f9d9d3d27c7114e1e9862503c2db0e8f",
+        "bytes": 373,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/select.svg": {
+        "store": "blob",
+        "id": "289f2c3a0907b865fb01eb25ddc10fec",
+        "bytes": 258,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/sidebar.svg": {
+        "store": "blob",
+        "id": "95b62851ba2cabdf5cb7111c00fa54bb",
+        "bytes": 325,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/size.svg": {
+        "store": "blob",
+        "id": "b6cab576f2f6d0c113971a60a3a041e3",
+        "bytes": 263,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/sun.svg": {
+        "store": "blob",
+        "id": "21d60e3c2e1436734ce5a1bf4ffafc95",
+        "bytes": 371,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/turn-row-direction.svg": {
+        "store": "blob",
+        "id": "22db9b804cf8e08d2a633d9a32918767",
+        "bytes": 280,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/undo.svg": {
+        "store": "blob",
+        "id": "af02200e616ec8dcabfff350807634e0",
+        "bytes": 265,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/warning.svg": {
+        "store": "blob",
+        "id": "de9174563699609cd0a766247c28165c",
+        "bytes": 347,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/zoom-in.svg": {
+        "store": "blob",
+        "id": "136da6d62bda153f54bc10ad40c29087",
+        "bytes": 296,
+        "type": "image/svg+xml"
+      },
+      "assets/Icons/zoom-out.svg": {
+        "store": "blob",
+        "id": "e035b4194f0af4717a180b63495cfbf2",
+        "bytes": 282,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/apple-touch-icon.png": {
+        "store": "blob",
+        "id": "d96de1723b1e05feff816d3512962730",
+        "bytes": 5420,
+        "type": "image/png"
+      },
+      "assets/Logos/bd-beads-app-icon-dark.svg": {
+        "store": "blob",
+        "id": "711f08b2e9c39b263bde8866b057ba7e",
+        "bytes": 502,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-app-icon.svg": {
+        "store": "blob",
+        "id": "bab37d79a95c85b729675b7e6d2fab21",
+        "bytes": 502,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-mark-dark.svg": {
+        "store": "blob",
+        "id": "1c1806ad1b8b4aaddff8c39222d7c689",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-mark-ink.svg": {
+        "store": "blob",
+        "id": "dff1b8ee5263ed12c22cced3f370d725",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-mark-small.svg": {
+        "store": "blob",
+        "id": "345cf71ece1901e065bda1da962bd159",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-mark-white.svg": {
+        "store": "blob",
+        "id": "c438c2833b8995e44fb75f00aa4d317a",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/bd-beads-mark.svg": {
+        "store": "blob",
+        "id": "26e22cba698f22dc3588b108c09bcd6d",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/favicon-32.png": {
+        "store": "blob",
+        "id": "15e81132c92c9027b7d6049d91ec0412",
+        "bytes": 1486,
+        "type": "image/png"
+      },
+      "assets/Logos/favicon-dark.svg": {
+        "store": "blob",
+        "id": "9a94f041c5021d4e88767ea49d78d72a",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      },
+      "assets/Logos/favicon.svg": {
+        "store": "blob",
+        "id": "8f36c131d8fb32d81a6e7a24a04a3128",
+        "bytes": 393,
+        "type": "image/svg+xml"
+      }
+    },
+    "blobBytesUsed": 25626
+  }
+}
