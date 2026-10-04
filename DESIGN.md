@@ -226,7 +226,8 @@ A map for the implementation tickets (136–168, and 75–83).
 ## 6. Changing the design system
 
 The repo owns the design system ([ADR 0030](docs/adr/0030-the-repo-owns-the-design-system.md)). v18, copied from
-claude.ai on 2026-10-04, is the baseline; the claude.ai project is frozen and is not synced again.
+claude.ai on 2026-10-04, is the baseline. The repo is the source: nothing is synced from claude.ai into it, and a change is
+copied back out to the claude.ai project only when that copy needs it.
 
 When a change touches how something looks, reads or behaves, edit `docs/design/system/` in the same commit as the code:
 

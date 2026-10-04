@@ -1,6 +1,6 @@
-# The repo owns the design system; claude.ai is frozen at v18
+# The repo owns the design system; claude.ai is a copy updated only when needed
 
-**Status: accepted.** Amends [ADR 0021](0021-visual-language-follows-design-md.md): the design system is still the reference for every UI change, but it is no longer edited on claude.ai first. Ticket 273.
+**Status: accepted.** Amends [ADR 0021](0021-visual-language-follows-design-md.md): the design system is still the reference for every UI change, but it is no longer edited on claude.ai first. Ticket 273. Amended: the claude.ai project is not frozen; it is a copy that gets a change back from the repo only when it needs one.
 
 ## Context
 
@@ -9,7 +9,7 @@ ADR 0021 made the bd-beads design system, edited on claude.ai and copied into `d
 ## Decision
 
 - `docs/design/system/` is the source of the design system. Change it in place, in the same commit as the code it describes: the card's `README.md` and `preview.html`, `tokens.json` and `tokens.css`, `components/bundle.css`, and `src/styles/design-values.css` (DESIGN.md §4.6).
-- v18, synced on 2026-10-04, is the baseline. The claude.ai project is frozen and is not synced again. The README's Version section carries a changelog of repo changes after v18, one line each with the ticket number.
+- v18, synced on 2026-10-04, is the baseline. Nothing is synced from claude.ai into the repo. A change is copied back out to the claude.ai project only when that copy needs it, one way, from the repo. The README's Version section carries a changelog of repo changes after v18, one line each with the ticket number.
 - ADR 0021 still holds: UI follows the design system, with role-named tokens and no hand-typed colors, sizes or shadows. What changes is where a missing piece is added: in the design system files, in the repo, not on claude.ai first.
 - The icons, logo and favicon files stay as they are in `docs/design/system/`; a new icon is added there, drawn in the same style.
 
@@ -23,4 +23,4 @@ ADR 0021 made the bd-beads design system, edited on claude.ai and copied into `d
 
 - DESIGN.md §2 and §6 and the Design paragraph of `CLAUDE.md` say "edit in place". The `docs/design/system/README.md` is no longer generated, so its stale lines (the `api/` pointers, "Not synced") can be tidied by hand.
 - A pull request that changes how something looks or reads updates its card in the same change; a card that disagrees with the app is a bug in one of them.
-- A future return to claude.ai would be a deliberate re-import with a diff, not a sync.
+- Copying a change back to claude.ai is optional and one way. Taking claude.ai's version into the repo again would be a deliberate re-import with a diff, not a sync.

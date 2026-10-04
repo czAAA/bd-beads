@@ -10,7 +10,7 @@ for tokens, layout, components, copy and artwork. **[DESIGN.md](../../DESIGN.md)
 point: it says which source wins, maps each topic to its design system file, and holds the app-specific notes the
 design system doesn't carry (the canvas `PatternTheme`, light-only exports, bundled fonts). `docs/design/light.png`
 and `dark.png` stay as the approved reference pictures. UI work follows the design system. A need it doesn't cover is
-added to the design system on claude.ai first and copied in, not invented in a component.
+added to the design system in repo first and copied to claude.ai only if needed.
 
 The decisions a later reader might not expect:
 
@@ -63,4 +63,4 @@ The decisions a later reader might not expect:
   system can't drift. It keeps only the source rule, the topic map and the app-specific notes.
 - **Amended (ticket 273, [ADR 0030](0030-the-repo-owns-the-design-system.md)):** the design system is no longer edited on
   claude.ai first. The repo owns it, v18 is the baseline, and a need it doesn't cover is added in `docs/design/system/`
-  in the same commit as the code.
+  in the same commit as the code. claude.ai gets a change back only when it needs one.

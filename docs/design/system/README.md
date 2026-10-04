@@ -117,7 +117,7 @@ In `index.html`:
 - Phase E is decided but not built: the four-way theme control, Name on exports in the Export menu, the bead cursor for keyboard painting, landscape and stacked exports, the high-contrast pressed fills, and the text-fitting rules (header by priority, wrapping segments, ContextBar icons, one-line thumbnail names).
 - Phase D is decided but not built: the new PDF and PNG layouts, a beads-per-gram field on each catalog Bead (Delica 11/0 ≈ 200, TOHO Round 11/0 ≈ 110–120, TOHO Cube 1.5 mm still to be weighed), an optional "Your name" setting for the exports, Palette color names, and the string fixes listed in the Writing section.
 - The X1 logo, Icons v2, the responsive tiers, the Forms and states designs and the Phase C colour changes (dark labels on orange, `accent-strong`, `field-line`, the high-contrast theme) are decided for the app but not yet in its code (tickets 79 and 83 build the tiers). New copy approved with Phase A: "Scan it with Import QR code on another device.", "Make one with New project, open a Saved project, or import a file.", "Opening {Pattern} · {size}", "Converting the picture · {percent}", and the Image colors reason "No image colors: this project was not converted from a picture."
-- The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written (DESIGN.md §6) until the next sync.
+- The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written in the repo (DESIGN.md §6).
 - The `src/style.css` tokens (the old navy/peppermint palette) were skipped on purpose: DESIGN.md replaces them.
 - v15 is decided but not built: the Overview page, the eleven-step Tour (TourStep) and its 10×75 Pattern (TourPattern), the HeaderMenu, and the `menu` and `pattern` icons. Plans, accounts and the support link on the Overview are designs only, switched off, with no integration. Existing Dock mockups still draw the old Pattern icon.
 - Dark theme: Palette Black #1a1a1a matches the dark `board` and dark draws no bead rim, so black beads blend into the board; the Tour Pattern's gold rhombuses still read.
@@ -125,7 +125,7 @@ In `index.html`:
 
 ## Version
 
-Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); the claude.ai project is frozen and edits are made here.
+Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
   - Repo, 2026-10-04, ticket 273: the repo became the source. The last claude.ai v18 export was copied in: each Toolbox tile centers its icon and prints its hotkey in the top-right corner, the iPad toolbar has six tools (Frame joins) with the Toolbox's icons, the Dock shows the active tool's icon and key, and the phone ToolSheet tiles stay labelled thumb targets.

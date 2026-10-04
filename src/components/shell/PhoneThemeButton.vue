@@ -21,7 +21,7 @@ import ThemeToggle from './ThemeToggle.vue'
  * options as rows" -- this popover is this pass's own replacement for that sheet on phone specifically (the More
  * menu's Theme row is now iPad-mini-only, see App.vue), asked for directly by redesign-feedback.md's "singular icon
  * with current and some sort of selector on click." The card doc still wants updating to match, through the design
- * system on claude.ai (DESIGN.md §6) rather than by hand here.
+ * system in the repo (DESIGN.md §6), in the same change as the code.
  */
 const { t } = useI18n()
 const { pick } = useThemePick()
