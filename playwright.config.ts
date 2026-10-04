@@ -13,7 +13,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
+  // Workers per runner: CI sets VISUAL_WORKERS from the workflow's measured choice (ticket 257); locally Playwright picks.
+  workers: process.env.VISUAL_WORKERS ? Number(process.env.VISUAL_WORKERS) : undefined,
+  // On CI each shard writes a blob report; the workflow's last job merges them into one HTML report.
+  reporter: process.env.CI ? [['list'], ['blob']] : 'list',
   use: {
     baseURL,
     viewport: { width: 1900, height: 1500 },
