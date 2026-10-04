@@ -35,6 +35,7 @@ export const ICON_NAMES = [
   'moon',
   'more',
   'paint',
+  'palette',
   'paste',
   'pattern',
   'pdf',
@@ -72,6 +73,10 @@ const files = import.meta.glob<string>('../../../docs/design/system/assets/Icons
 export const ICON_BODIES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(files).map(([path, svg]) => [
     /([^/]+)\.svg$/.exec(path)![1],
-    svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').trim(),
+    svg
+      .replace(/^[\s\S]*?<svg[^>]*>/, '')
+      .replace(/<\/svg>\s*$/, '')
+      .replace(/<metadata>[\s\S]*?<\/metadata>/, '') // the files' provenance blob is not drawing, and shows up as text
+      .trim(),
   ]),
 )

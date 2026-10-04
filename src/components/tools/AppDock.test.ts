@@ -34,4 +34,9 @@ describe('AppDock', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null, selectedColorId: PALETTE[0]!.id } })
     expect((wrapper.get('.dock__swatch').element as HTMLElement).style.backgroundColor).not.toBe('')
   })
+
+  it('draws the pencil for the Paint tool (ticket 249)', () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
+    expect(wrapper.get('[data-testid="dock-tool"] svg').attributes('data-icon')).toBe('paint')
+  })
 })

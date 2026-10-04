@@ -36,7 +36,7 @@ const colorHex = computed(() => (props.selectedColorId ? palette.value.find((col
 
 const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string }[]>(() => [
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool' },
-  { id: 'color', icon: 'paint', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
+  { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
   { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame' },
   { id: 'pattern', icon: 'save', label: t.value.header.patternSheetLabel, testid: 'dock-pattern' },
