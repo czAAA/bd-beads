@@ -108,7 +108,7 @@ const TOOLTIP_GAP = 10
 
 /**
  * What the Frame carries while it is being set (Frame card): its handles, 9px squares (four 16px ones on touch) with a
- * 1.5px `ink` line, filled with the canvas, and the size tooltip hanging off its bottom-right corner. In the viewport's
+ * 1.5px `ink` line, filled with the canvas, and the size tooltip hanging off its bottom-right corner (none when the tooltip is empty). In the viewport's
  * own px, over everything else.
  */
 export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; view: RulerView; pixelRatio: number; theme: PatternTheme; touch: boolean; tooltip: string }): void {
@@ -127,6 +127,9 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
     context.stroke()
   }
 
+  if (tooltip === '') {
+    return
+  }
   context.font = '500 12px "DM Mono", "JetBrains Mono", ui-monospace, monospace'
   const width = tooltip.length * 12 * 0.6 + TOOLTIP_PAD_X * 2
   const x = Math.min(box.x + box.width - width, view.viewport.width - width - 4)

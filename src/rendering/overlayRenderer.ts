@@ -558,7 +558,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       touch: frameEditing.touch,
-      tooltip: frameEditing.tooltip,
+      // A size is a number too: the Rulers toggle hides it with the rest.
+      tooltip: rulers.numbers ? frameEditing.tooltip : '',
     })
   }
 }

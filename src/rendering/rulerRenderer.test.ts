@@ -76,6 +76,14 @@ describe('drawFrameEditing', () => {
     expect(texts).toEqual(['3×3 · 0.5 × 0.5 cm'])
   })
 
+  it('draws no size tooltip when it is empty (the Rulers toggle is off)', () => {
+    const { context, fills, texts } = fakeContext()
+    drawFrameEditing(context, { frame, view, pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '' })
+
+    expect(fills).toHaveLength(8)
+    expect(texts).toEqual([])
+  })
+
   it('puts four 16px handles at the corners on touch', () => {
     const { context, strokes } = fakeContext()
     drawFrameEditing(context, { frame, view, pixelRatio: 1, theme: LIGHT_THEME, touch: true, tooltip: '' })

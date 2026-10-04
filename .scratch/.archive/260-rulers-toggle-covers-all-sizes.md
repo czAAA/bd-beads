@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Toggle off: no Piece ruler or size label and no Frame ruler is drawn, with and without a Frame, including while the Frame is being set
-- [ ] Toggle on: they all return, as today
-- [ ] The setting persists across reload and the button and R stay in sync
-- [ ] Correct on phone through desktop and in light, dark and high contrast
-- [ ] CONTEXT.md's Rulers toggle entry says it covers every ruler
-- [ ] Overview and Tour question (CLAUDE.md): asked of the user; answer: no
+- [x] Toggle off: no Piece ruler or size label and no Frame ruler is drawn, with and without a Frame, including while the Frame is being set
+- [x] Toggle on: they all return, as today
+- [x] The setting persists across reload and the button and R stay in sync
+- [x] Correct on phone through desktop and in light, dark and high contrast
+- [x] CONTEXT.md's Rulers toggle entry says it covers every ruler
+- [x] Overview and Tour question (CLAUDE.md): asked of the user; answer: no

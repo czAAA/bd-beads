@@ -54,7 +54,7 @@ The tool (H) that moves the view by dragging and never changes a bead. Space + d
 _Avoid_: pan mode, grab tool
 
 **Rulers toggle**:
-The button (and R) that shows or hides the rulers, kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece, from 1, or the Frame's on all four sides once a Frame is set.
+The button (and R, and the phone's zoom pill) that shows or hides every ruler and size marking on the canvas — each Piece's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece, from 1, or the Frame's on all four sides once a Frame is set.
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas color**:
