@@ -27,4 +27,4 @@ The localStorage key `bd-beads:patterns`, the file kinds `bd-beads/pattern`, `bd
 ## Consequences
 
 - Earlier ADRs are history and keep their words; the ones whose titles say "pattern" (0007, 0012, 0016, 0018, 0019) carry a one-line note pointing here. Archived tickets are not touched.
-- The design system still says "New Pattern" and "Saved Patterns"; it is updated on claude.ai and copied in later (DESIGN.md §6). Where its copy differs, it wins.
+- The design system still says "New Pattern" and "Saved Patterns"; its cards are updated in the repo (DESIGN.md §6, ADR 0030). Where its copy differs, it wins.

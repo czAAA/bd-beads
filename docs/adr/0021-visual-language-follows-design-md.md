@@ -61,3 +61,6 @@ The decisions a later reader might not expect:
   refreshed with them.
 - **Amended (ticket 156):** DESIGN.md no longer restates token values or component specs, so it and the design
   system can't drift. It keeps only the source rule, the topic map and the app-specific notes.
+- **Amended (ticket 273, [ADR 0030](0030-the-repo-owns-the-design-system.md)):** the design system is no longer edited on
+  claude.ai first. The repo owns it, v18 is the baseline, and a need it doesn't cover is added in `docs/design/system/`
+  in the same commit as the code.

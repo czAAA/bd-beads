@@ -29,13 +29,13 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 ## Text and zoom
 
 - Sizes in `rem`, so the browser's text size scales the chrome; the layout holds at 200% zoom (the left column scrolls, the header drops labels as on smaller tiers).
-- Nothing below 11px (rulers and Saved Pattern sizes only); on a phone nothing below 12px. Phone rulers are therefore 12px.
+- Nothing below 11px (rulers, Saved Pattern sizes and the hotkey in a tool tile's corner: 10px in the Toolbox, 11px on the iPad toolbar, 12px in the phone Dock); on a phone nothing below 12px. Phone rulers are therefore 12px.
 - `lang="en"` / `lang="ru"` on `<html>` follows the language.
 
 ## Keyboard
 
 - Tab order: Skip to Pattern (visible on focus), header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, the Pattern, Progress bar.
-- One stop per group; arrow keys inside tool tabs, swatches and segmented controls (roving tabindex). The Pattern is one stop with a bead cursor: arrows move, Space or Enter paints.
+- One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex). The Pattern is one stop with a bead cursor: arrows move, Space or Enter paints.
 - Modals, the Drawer and the modal Pattern sheet trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet or Drawer → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 

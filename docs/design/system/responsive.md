@@ -70,7 +70,7 @@ Each tier has a floor under the bead size, so zoom out and Fit never draw a bead
 
 ## Input, not width
 
-- `@media (pointer: coarse)`: touch and Pencil, at any width: every control keeps its drawn size but gets a `touch-target` (44 × 44px) hit area; tool tabs are 48px tall, swatches at least 36px, Dock items 56 × 56.
+- `@media (pointer: coarse)`: touch and Pencil, at any width: every control keeps its drawn size but gets a `touch-target` (44 × 44px) hit area; tool tiles and swatches are both at least 36px (one grid, so they stay the same size), with their hit areas kept apart by the 6px gap, Dock items 56 × 56.
 - Nothing is hover-only on a coarse pointer: the Remove × on Saved Pattern thumbnails is always visible, tooltips become long-press, there is no hover paint preview.
 - Keyboard shortcuts shows only when a fine pointer or keyboard is present: `(any-pointer: fine)`.
 - A stroke on the drawing surface never scrolls the page: `touch-action: none` on the surface.
@@ -99,5 +99,5 @@ The canvas is open at every tier: no board, no size to set first, pieces with th
 
 - **Phone:** two fingers move the canvas and pinch zooms; one finger uses the tool. The ZoomPill starts with the Rulers toggle. The Dock's fifth button is Frame, in Size's place; its sheet holds Set Frame, Fit to drawing, the steppers and Remove Frame. While the Frame is being set it has four 16px corner handles and the ContextBar shows its size, Fit to drawing and Done. With no Frame the Progress bar reads "Row progress · Set Frame to start" with a Set Frame button. No CanvasHint.
 - **iPad mini:** the BottomToolbar holds five tools (Hand added). The Frame is set from the Frame row in the Drawer or the Progress bar's Set Frame button. The canvas strip shows the Rulers toggle, and the CanvasHint shows, since a keyboard or trackpad may be attached.
-- **iPad 13″, MacBook Air, 24″:** the left column's Toolbox has five tool tabs and the Frame row; the canvas strip has the Rulers toggle; the CanvasHint sits bottom-left. The wheel moves the canvas, ⌘ or Ctrl + wheel zooms.
+- **iPad 13″, MacBook Air, 24″:** the left column's Toolbox has six tool tiles on the swatch grid and the Frame row; the canvas strip has the Rulers toggle; the CanvasHint sits bottom-left. The wheel moves the canvas, ⌘ or Ctrl + wheel zooms.
 - **Smallest bead:** the `bead-min-*` floors still hold, for piece rulers and Frame rulers alike. Fit now fits the Frame, or every piece when there is no Frame.

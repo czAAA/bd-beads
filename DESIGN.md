@@ -1,7 +1,7 @@
 # DESIGN.md: bd-beads visual language
 
 The entry point to how bd-beads looks and behaves. The design itself lives in the **bd-beads design system,
-version 18**, copied into [`docs/design/system/`](docs/design/system/README.md). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
+version 18 as its baseline**, owned by this repo in [`docs/design/system/`](docs/design/system/README.md) ([ADR 0030](docs/adr/0030-the-repo-owns-the-design-system.md)). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card
 for each component you touch (`docs/design/system/components/<Name>/README.md` and its `preview.html`), then the
@@ -39,8 +39,8 @@ The design system's [README](docs/design/system/README.md) states these in full.
   a ticket; link to it.
 - **This file wins only for its app-specific notes** (§4): the canvas renderer's `ProjectTheme`, exports always drawn
   in light, the bundled fonts, the ADR links.
-- **A need neither covers** is added to the design system on claude.ai first, then copied in (§6). Don't invent it
-  in a component, and don't patch `docs/design/system/` by hand.
+- **A need neither covers**, or a deliberate difference between the app and a card, is added to the design system in
+  place (§6), in the same commit as the code. Don't invent it in a component only.
 - The component cards' previews are static renditions. The Vue components in `src/components/` stay the
   implementation.
 
@@ -145,9 +145,9 @@ Ticket 140 adds a test that keeps each theme's `ProjectTheme` equal to `tokens.j
 the canvas behind.
 The board, bead shape, finished rows and current row are drawn as the `BeadBoard` card describes.
 
-On screen the drawing area's `canvas` (and `background`) is the person's Canvas color (`src/rendering/canvasBackgrounds.ts`, ticket 252), not always `box`. The repo's design system copy has no `canvas-bg-1` to `canvas-bg-6` tokens yet, so the eleven colors are written out there from the CanvasBackground card, with two app-specific deviations: dark Night is today's `box` (#202020, the card says #1a1a1a) so the default doesn't shift, and its ruler numbers are #8c8c8c to reach 4.8:1. Drop both once the design system is re-synced with the tokens.
+On screen the drawing area's `canvas` (and `background`) is the person's Canvas color (`src/rendering/canvasBackgrounds.ts`, ticket 252), not always `box`. The repo's design system copy has no `canvas-bg-1` to `canvas-bg-6` tokens yet, so the eleven colors are written out there from the CanvasBackground card, with two app-specific deviations: dark Night is today's `box` (#202020, the card says #1a1a1a) so the default doesn't shift, and its ruler numbers are #8c8c8c to reach 4.8:1. Ticket 284 adds the tokens to the design system and drops both.
 
-The `CanvasStrip` card still describes a "N pieces outside the Frame" count and its divider. The app dropped it (ticket 259); remove it from the card in the next design system version.
+The `CanvasStrip` card still describes a "N pieces outside the Frame" count and its divider. The app dropped it (ticket 259); ticket 284 removes it from the card.
 
 ### 4.3 Exports are always light
 
@@ -223,28 +223,28 @@ A map for the implementation tickets (136–168, and 75–83).
 
 ---
 
-## 6. Refreshing the copy from claude.ai
+## 6. Changing the design system
 
-The design system is edited on claude.ai; `docs/design/system/` is a copy, so every developer and agent has the same
-files without an account.
+The repo owns the design system ([ADR 0030](docs/adr/0030-the-repo-owns-the-design-system.md)). v18, copied from
+claude.ai on 2026-10-04, is the baseline; the claude.ai project is frozen and is not synced again.
 
-1. Download the design system from claude.ai.
-2. Copy these into `docs/design/system/` in one commit:
-   - **Sync:** the top-level files (`README.md`, `accessibility.md`, `forms-and-states.md`,
-     `interaction-and-motion.md`, `printed-output.md`, `responsive.md`, `writing.md`, `tokens.json`, `tokens.css`,
-     `design-system.json`) and the folders `components/` (cards, READMEs and `bundle.css`, with their
-     `preview.html` files), `assets/` and `favicon/`.
-   - **Leave out:** `api/` and `manifest.json` (they repeat `tokens.json` and the component READMEs), `previews/`
-     and `sign-off/` (the component cards already hold the previews), `DOWNLOAD-README.md` (this section replaces
-     it) and the legacy `assets/Icons/row-progress.svg`.
-   - The system `README.md` is generated and still points at `api/`; those lines are fixed by hand after each sync
-     (use `tokens.json` and `components/<Comp>/README.md`).
-3. Update the version line below, and any app-specific note (§4) the change touches, in the same commit.
-4. If `components/bundle.css` changed its non-token values, update `src/styles/design-values.css` to match (§4.6).
-5. Run the tests: once ticket 140 lands, the `ProjectTheme` check (§4.2) fails if a canvas token changed without the
-   renderer.
+When a change touches how something looks, reads or behaves, edit `docs/design/system/` in the same commit as the code:
 
-**Version in the repo:** design system **v18**, synced from claude.ai on 2026-10-04. See the Version section of
-[`docs/design/system/README.md`](docs/design/system/README.md) for what each version added. v17 is vocabulary only
-(Project and Pattern); v18 adds the Frame margin and the icon-tile Toolbox (the `ToolTabs` card now shows tiles).
+1. The component's card: `README.md` and its `preview.html`. A new component gets a new card folder.
+2. Tokens: `tokens.json` and `tokens.css` together (the `tokens` test compares them). A new token needs a role name and
+   a `usage` line, in all three themes where it differs.
+3. Values that can't be tokens: the top of `components/bundle.css`, and `src/styles/design-values.css` to match
+   (§4.6).
+4. Guideline files (`accessibility.md`, `responsive.md`, `interaction-and-motion.md`, `forms-and-states.md`,
+   `printed-output.md`, `writing.md`) when a rule changes, and `writing.md` for any new or changed copy.
+5. A line in the Version section of `docs/design/system/README.md`: "Repo, YYYY-MM-DD, ticket N: what changed".
+6. The `ProjectTheme` check (§4.2) fails if a canvas token changed without the renderer; run the tests related to the
+   change.
+
+If the app deliberately differs from a card, fix the card to say what the app does (and why, in one line), not the
+other way round.
+
+**Version in the repo:** design system **v18** is the baseline. Changes since are in the Version section of
+[`docs/design/system/README.md`](docs/design/system/README.md). v17 is vocabulary only (Project and Pattern); v18 adds
+the Frame margin and the icon-tile Toolbox.
 The `CanvasStrip` card still carries the "pieces outside the Frame" count (§4.2).

@@ -93,8 +93,10 @@ body {
 
 /* 5.4 Tool tabs */
 .bb-tools { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-.bb-tool { aspect-ratio: 1; display: grid; place-items: center; padding: 0; background: var(--elevated); border: 0; border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; }
+.bb-tool { position: relative; aspect-ratio: 1; display: grid; place-items: center; padding: 0; background: var(--elevated); border: 0; border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; }
 .bb-tool[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent-strong); }
+.bb-tool-key { position: absolute; top: 1px; right: 2px; font: 400 10px/10px var(--font-mono); color: var(--muted); pointer-events: none; }
+.bb-tool[aria-selected="true"] .bb-tool-key { color: var(--ink); }
 .bb-tool-remove { margin-top: 12px; }
 .bb-tool-actions { display: flex; justify-content: space-between; margin-top: 10px; }
 .bb-tool-actions .bb-link[disabled] { color: var(--faint); cursor: default; }
@@ -240,7 +242,7 @@ body {
 .t-tablet-lg .m-col{gap:12px}
 .m-box{background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:14px 20px 16px;box-shadow:var(--elevation-1)}
 .m-box.tb{padding:24px;box-shadow:none;display:flex;flex-direction:column;gap:8px}
-.m-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line-strong);margin-bottom:12px}.m-tabs b{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 10px;font:500 13px var(--font-sans);color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}.m-tabs b.on{color:var(--accent-strong);border-color:var(--accent)}
+.m-tabs{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px}.m-tabs b{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:0;line-height:0;background:var(--elevated);border-radius:6px;color:var(--muted)}.m-tabs b.on{color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--accent-strong)}
 .m-sw{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px}.m-sw i{aspect-ratio:1;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}.m-sw i.sel{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--ink)}[data-theme=dark] .m-sw i.sel{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--accent-strong)}
 .m-ed{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}.m-ed b{height:38px;display:grid;place-items:center;background:var(--elevated);border:1px solid var(--panel-line);border-radius:8px}
 .m-dr{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--panel-rule);font-weight:500}.m-dr:first-of-type{border-top:1px solid var(--panel-rule)}
@@ -565,7 +567,7 @@ body {
 .au td.need{font:400 12px var(--font-mono);color:var(--muted)}
 .ob{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;font:500 14px var(--font-sans)}
 .hc{background:#fff;color:#000;border:2px solid #000;border-radius:12px;padding:18px}
-.hcb{display:flex;flex-direction:column;gap:12px;max-width:320px}.hct{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:2px solid #000}.hct b{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 8px;font:500 13px var(--font-sans);color:#3d3d3d}.hct b.on{color:#a82c00;border-bottom:3px solid #a82c00;margin-bottom:-2px;font-weight:700}
+.hcb{display:flex;flex-direction:column;gap:12px;max-width:320px}.hct{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}.hct b{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:0;line-height:0;border:2px solid #000;border-radius:6px;color:#3d3d3d}.hct b.on{color:#000;border-color:#a82c00;box-shadow:inset 0 0 0 1px #a82c00}
 .fx-tag{font:400 13px var(--font-mono);color:#3d3d3d}
 .bdg{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--canvas);font:600 13px var(--font-sans);display:grid;place-items:center;box-shadow:0 0 0 3px var(--canvas)}
 .zst{position:relative;height:320px;margin:6px 0 10px;max-width:100%;overflow:hidden}
@@ -670,6 +672,23 @@ body {
 .bb-frame-handle { position: absolute; width: 9px; height: 9px; box-sizing: border-box; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--box); }
 .bb-frame-handle--touch { width: 16px; height: 16px; border-radius: 4px; }
 .bb-frame-tag { position: absolute; white-space: nowrap; }
+/* v18: tool hotkey in the tile's top-right corner (mock tiles take it from their position) */
+.m-tabs b::after,.hct b::after{position:absolute;top:1px;right:2px;font:400 10px/10px var(--font-mono);color:var(--muted)}
+.hct b::after{color:#3d3d3d}.m-tabs b.on::after{color:var(--ink)}.hct b.on::after{color:#000}
+.m-tabs b:nth-child(1)::after,.hct b:nth-child(1)::after{content:"1"}
+.m-tabs b:nth-child(2)::after,.hct b:nth-child(2)::after{content:"2"}
+.m-tabs b:nth-child(3)::after,.hct b:nth-child(3)::after{content:"3"}
+.m-tabs b:nth-child(4)::after,.hct b:nth-child(4)::after{content:"E"}
+.m-tabs b:nth-child(5)::after,.hct b:nth-child(5)::after{content:"H"}
+.m-tabs b:nth-child(6)::after,.hct b:nth-child(6)::after{content:"F"}
+[data-theme="contrast"] :is(.bb-tool-key,.m-tabs b::after){color:var(--ink)}
+/* Dock and iPad toolbar: the same corner key (top-right, DM Mono); 12px on a phone, 11px on the iPad */
+.p-dk,.m-tbar b{position:relative}
+.kc{position:absolute;top:3px;right:4px;font:400 11px/11px var(--font-mono);color:var(--muted);pointer-events:none}
+.p-dk .kc{right:6px;font-size:12px;line-height:12px}
+.p-dk.cur .kc,.m-tbar b.on .kc{color:var(--accent-strong)}
+.p-dock.rail .p-dk .kc{right:8px}
+[data-theme="contrast"] .kc{color:var(--ink)}
 /* v18: the Frame's margin, three bead positions of clear space on every side */
 .bb-frame-clear { position: absolute; box-sizing: border-box; background: var(--box); border-radius: 12px; pointer-events: none; }
 .bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
