@@ -18,7 +18,7 @@ The host and path come from a `production` GitHub Actions environment, not the w
 | `npm test` | Unit and component tests (Vitest, jsdom). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
 | `npm run typecheck` | Type-checks the app, the build config and the browser checks |
 | `npm run lint` | ESLint |
-| `npm run visual` | The visual check (below). Run by hand, not by a hook or CI (below) |
+| `npm run visual` | The visual check (below). Run on every pull request by CI (below) |
 | `npm run visual:update` | Rewrites the Convert image framing screenshots, the only ones the Playwright runner itself owns; the others are read from `e2e/visual/__screenshots__` as they are, and change only when the look is meant to (delete and regenerate them deliberately) |
 | `npm run perf` | The performance check (below). By hand, never in CI |
 
@@ -28,11 +28,11 @@ Renders fixture Projects in a real browser (Playwright, Chromium) and compares t
 
 Those references were made from the one-element-per-bead grid the renderer replaced (ticket 103), and are what the renderer is held to ("visually indistinguishable", ADR 0018). A canvas never lands on exactly the same pixels as the DOM did, so the comparison is two checks (`e2e/support/referenceCheck.ts`): a look check (both images reduced to the average color of blocks a fraction of a bead wide, at most a per-Technique share of blocks may differ) and a content check (every bead's centre is its color, finished rows' greys included). `e2e/visual/look.spec.ts` runs them on the app for every Technique, plain and with Row progress in both directions, at every zoom, upright and rotated; `overlays.spec.ts` for the Selection, paste preview, Mirror axes and dimming; `interaction.spec.ts` for the hover preview and for the pointer tools (paint, erase, Fill, Row progress lock, Mirror, Undo, Space-drag pan, a touch stroke); `framing.spec.ts` for the Convert image framing preview; `large-projects.spec.ts` for 70 × 250 and 250 × 250 Projects end to end. The check tests itself: `look.spec.ts` renders Projects with a bead recolored or missing, and a Row progress marker the reference does not have, and expects the comparison to fail.
 
-The first run needs the browser: `npx playwright install chromium`. The references are made and checked on Linux, the platform CI runs; on another OS, small rendering differences can fail the check locally. To look at a failure, open `playwright-report/index.html` (`npx playwright show-report`). CI does not run it (see Tests before a push).
+The first run needs the browser: `npx playwright install chromium`. The references are made and checked on Linux, the platform CI runs; on another OS, small rendering differences can fail the check locally. To look at a failure, open `playwright-report/index.html` (`npx playwright show-report`). CI runs it on every pull request (see CI).
 
-### Tests before a push
+### CI
 
-GitHub Actions minutes are kept for deployments (ADR 0029). CI runs nothing on pull requests; the deploy workflow's build (`vue-tsc` and `vite build`) is its only check. Typecheck, lint and the tests run on your machine: `npm install` points git at `.githooks/`, the `pre-push` hook runs `npm run typecheck`, `npm run lint`, `npm test` and `npm run visual` in full whenever the push changes `src/`, `e2e/` or the files that build them. A full unit run peaks near 1.5 GB of RAM and takes several minutes on a Raspberry Pi. The hooks cap Node's heap at 1536 MB (`PREPUSH_NODE_HEAP_MB`) and, when a systemd user session exists, the run's memory at 3 GB (`PREPUSH_MEMORY_MAX`); without one it says so and runs uncapped. `--no-verify` on `git push` skips it; say so in the PR if you do.
+CI is the gate (ADR 0032). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only `.scratch/` or Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
 
 ### Performance check
 
