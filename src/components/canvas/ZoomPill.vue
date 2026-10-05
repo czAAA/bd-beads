@@ -4,16 +4,19 @@ import IconButton from '../ui/IconButton.vue'
 
 /**
  * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating in the Project's
- * bottom-right corner (out · level · in · fit) -- pinch zooms and two fingers pan, so this is for a fit or an exact
+ * bottom-right corner (rulers · undo · redo · progress bar · out · level · in · fit; ticket 296) -- pinch zooms and two fingers pan, so this is for a fit or an exact
  * step. Same zoom (useProjectZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  */
-defineProps<{ zoomPercent: number; rulers?: boolean }>()
+defineProps<{ zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
   'toggle-rulers': []
+  'toggle-progress-bar': []
+  undo: []
+  redo: []
 }>()
 const { t } = useI18n()
 </script>
@@ -29,6 +32,18 @@ const { t } = useI18n()
       :selected="rulers"
       data-testid="zoom-pill-rulers"
       @click="emit('toggle-rulers')"
+    />
+    <IconButton icon="undo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" :disabled="!canUndo" data-testid="zoom-pill-undo" data-tour="undo" @click="emit('undo')" />
+    <IconButton icon="redo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" :disabled="!canRedo" data-testid="zoom-pill-redo" @click="emit('redo')" />
+    <IconButton
+      v-if="progressBar !== undefined"
+      icon="check"
+      variant="plain"
+      :icon-size="18"
+      :label="t.canvas.progressBarLabel"
+      :selected="progressBar"
+      data-testid="zoom-pill-progress"
+      @click="emit('toggle-progress-bar')"
     />
     <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>

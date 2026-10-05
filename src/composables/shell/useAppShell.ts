@@ -16,6 +16,7 @@ import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
+import { useProgressBarToggle } from '../canvas/useProgressBarToggle'
 import { useRulers } from '../canvas/useRulers'
 import { useMirrorState } from '../tools/useMirrorState'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
@@ -118,6 +119,9 @@ function wireAppShell(services: Services) {
 
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const { showRulers, toggleRulers } = useRulers(services.rulersStore)
+
+  /** The Zoom pill's Row progress toggle: whether the Progress bar shows under 1024px (ticket 296). */
+  const { showProgressBar, toggleProgressBar } = useProgressBarToggle(services.progressBarStore)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
@@ -576,6 +580,8 @@ function wireAppShell(services: Services) {
     scroll,
     showRulers,
     toggleRulers,
+    showProgressBar,
+    toggleProgressBar,
     panBy,
     scrollBy,
     setZoom,

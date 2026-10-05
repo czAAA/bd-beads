@@ -40,10 +40,6 @@ const {
   onNewProjectDraft,
   onCreateProject,
   startConvertImage,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
   activeTool,
   selectedColorId,
   customColor,
@@ -134,7 +130,7 @@ function toolLabel(tool: Tool): string {
 
   <!--
     The Frame sheet (ticket 295; Dock card): the Frame's own controls and, beneath them, what used to be the Edit sheet --
-    Rotate, Copy and Paste, which all act on the Frame or a Selection -- with Undo and Redo until the Zoom pill takes them (ticket 296).
+    Rotate, Copy and Paste, which all act on the Frame or a Selection; Undo and Redo live in the Zoom pill (ticket 296).
   -->
   <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
     <FrameControls
@@ -146,8 +142,6 @@ function toolLabel(tool: Tool): string {
       @remove="onRemoveFrame"
     />
     <div class="phone-sheet__edit">
-      <IconButton icon="undo" variant="toolbox" size="lg" data-tour="undo" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
-      <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
       <IconButton
         icon="rotate"
         variant="toolbox"
