@@ -56,7 +56,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Tokens as data: color (light, dark, contrast), type, spacing, radius, shadow, layout, zIndex, print | [`tokens.json`](docs/design/system/tokens.json) |
 | The same tokens as CSS custom properties and type classes | [`tokens.css`](docs/design/system/tokens.css) |
 | Values that aren't plain tokens (motion, `--hover-fill`, `--press-fill`, `--track-fill`, scrims) and the card styles | [`components/bundle.css`](docs/design/system/components/bundle.css) |
-| Tiers (phone, iPad mini, iPad 13″, MacBook Air, 24″+), fitting longer text, input, screen edges | [`responsive.md`](docs/design/system/responsive.md) |
+| Tiers (phone, iPad 13″, MacBook Air, 24″+), fitting longer text, input, screen edges | [`responsive.md`](docs/design/system/responsive.md) |
 | Form controls, empty, loading, errors and results | [`forms-and-states.md`](docs/design/system/forms-and-states.md) |
 | Hover, pressed, focus, disabled states; motion tokens | [`interaction-and-motion.md`](docs/design/system/interaction-and-motion.md) |
 | Contrast, high contrast, never color alone, text and zoom, keyboard, painting with the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
@@ -84,7 +84,7 @@ Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve he
 | §3.6 | Contrast | `accessibility.md`, Contrast; `ContrastAudit` card |
 | §4 | Layout | README, Layout; `responsive.md`; `ScreenSizes` card |
 | §4.1 | Header | `Header`, `BeadPill`, `OverflowMenu` cards |
-| §4.2 | Left column | `Toolbox`, `SaveBox`, `BeadsNeeded`, `SavedPatterns`, `Drawer` cards |
+| §4.2 | Left column | `Toolbox`, `SaveBox`, `BeadsNeeded`, `SavedPatterns` cards |
 | §4.3 | Canvas box | `CanvasStrip`, `ZoomPill`, `BeadBoard`, `ProgressBar` cards |
 | §4.4 | Background highlight | `BeadBoard` card; `word` and `curve` tokens |
 | §5 | Components | the component cards |

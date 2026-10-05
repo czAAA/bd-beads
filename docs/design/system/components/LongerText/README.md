@@ -6,7 +6,7 @@ How controls make room for longer strings (Russian runs about a quarter longer):
 - **SegmentedControl labels wrap** to two lines; every segment keeps the same height. Never cut or shrink the text.
 - **The ContextBar drops labels right to left** (Remove line, then Rotate, then Copy) and keeps Cancel's label.
 - **Saved Pattern names are one line**, cut with an ellipsis at 58px, the full name in the tooltip.
-- **Dock and BottomToolbar buttons share the width equally**, so a label may use all of it.
+- **The Dock is icon-only** (ticket 295), so its names (accessible names and Tooltips) never compete for width.
 - The Mirror summary uses arrows in both languages: "↔ 1 · ↕ 0".
 
 Hand-written from the Phase E sign-off (Russian check).

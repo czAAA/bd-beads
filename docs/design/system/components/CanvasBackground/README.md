@@ -9,7 +9,7 @@ The one background of the drawing area: the rulers, the technique word, the curv
 - **Contrast.** Rulers (`ruler`, `#8c8c8c` in dark, 4.9:1 on Night) are at least 4.8:1 and the row marker at least 13:1 on all eleven backgrounds. On Ash (dark choice 6) the rulers use `#a0a0a0` (5.4:1, since `ruler` is 4.0:1 there), the empty beads `#3d3b38` (so they stay visible against the canvas), the technique word `#353432`, and the beads get a 16% white rim (dark has none elsewhere), so a black bead does not vanish. The marker keeps its yellow (13:1). The bead colors never change. With no board edge, each bead's rim (`bead-rim`, 24% ink in light, 16% white on Ash, none on the other dark choices) separates beads from the canvas.
 - **High contrast.** All six are white, so the control is hidden and the drawing area stays white.
 - **Not in exports.** PNG and PDF always print on `print-board`.
-- **Phone and iPad mini.** The strip is not shown, so the same picker opens from the Project sheet's header row: the Canvas color button sits between the title and Close (44px, coarse pointer), with a Project open and not in high contrast. The popover opens under it, kept inside the window, with the same swatches, radio group and remembered choice as on desktop.
+- **Under 1024px.** The strip is not shown, so the same picker opens from the Project sheet's header row: the Canvas color button sits between the title and Close (44px, coarse pointer), with a Project open and not in high contrast. The popover opens under it, kept inside the window, with the same swatches, radio group and remembered choice as on desktop.
 - **Copy.** "Canvas color" (Russian "Цвет холста"); the choice names are in the Writing section.
 
 Hand-written; static rendition of the open picker.

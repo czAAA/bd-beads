@@ -11,7 +11,7 @@ import { findTextMisfits } from '../support/textFit'
 import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-edit', 'dock-frame', 'dock-project']
+const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-frame', 'dock-project', 'dock-menu']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -44,15 +44,9 @@ async function shownOrExpanded(page: Page, testid: string): Promise<boolean> {
   return false
 }
 
-/** Brings the control into view the way a person would at this width: it is already there, or in the drawer, or in one of the phone sheets. Returns false when no way leads to it. */
+/** Brings the control into view the way a person would at this width: it is already there, or in one of the phone sheets. Returns false when no way leads to it. */
 async function reveal(page: Page, testid: string): Promise<boolean> {
   if (await shownOrExpanded(page, testid)) return true
-  if (await shown(page, 'drawer-open-button')) {
-    await vis(page, 'drawer-open-button').click()
-    await settle(page)
-    if (await shownOrExpanded(page, testid)) return true
-    await page.getByTestId('drawer-scrim').click({ position: { x: 5, y: 5 } }).catch(() => {})
-  }
   for (const dock of PHONE_SHEETS) {
     if (!(await shown(page, dock))) break
     await page.getByTestId(dock).click()
@@ -112,14 +106,6 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'drawer',
-    visit: async (page, measure) => {
-      if (!(await shown(page, 'drawer-open-button'))) return false
-      await click(page, 'drawer-open-button')
-      await measure()
-    },
-  },
-  {
     name: 'phone sheets',
     visit: async (page, measure) => {
       if (!(await shown(page, 'dock'))) return false
@@ -131,25 +117,14 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    // Only at 1024px and up: under it there is no header, and the Menu is one of the phone sheets.
     name: 'header menu',
     visit: async (page, measure) => {
+      if (!(await shown(page, 'header-menu'))) return false
       await click(page, 'header-menu')
       await measure()
     },
   },
-  ...[
-    ['Theme', 'menu-item-theme'],
-    ['Shortcuts', 'menu-item-shortcuts'],
-    ['Name on exports', 'menu-item-name-on-exports-change'],
-  ].map(([name, testid]): Screen => ({
-    name: `header menu: ${name}`,
-    visit: async (page, measure) => {
-      await click(page, 'header-menu')
-      if (!(await shown(page, testid))) return false
-      await click(page, testid)
-      await measure()
-    },
-  })),
   {
     name: 'keyboard shortcuts',
     visit: async (page, measure) => {
@@ -207,7 +182,7 @@ const SCREENS: Screen[] = [
     visit: async (page, measure) => {
       await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
       await page.reload()
-      await page.getByTestId('app-topbar').waitFor()
+      await page.getByTestId('app-canvas').waitFor()
       await measure()
     },
   },
@@ -289,7 +264,7 @@ const SCREENS: Screen[] = [
 async function openNewProject(page: Page): Promise<boolean> {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
   await page.reload()
-  await page.getByTestId('app-topbar').waitFor()
+  await page.getByTestId('app-canvas').waitFor()
   if (!(await reveal(page, 'width-input'))) {
     if (!(await shown(page, 'phone-bar-new-project'))) return false
     await click(page, 'phone-bar-new-project')
@@ -321,7 +296,8 @@ for (const locale of LOCALES) {
         await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, screen.project ? storedLibrary([screen.project]) : library])
         if (screen.overview) await page.goto('./overview/')
         else await page.goto('./')
-        await page.getByTestId(screen.overview ? 'overview' : 'app-topbar').waitFor()
+        // No header under 1024px (ticket 295): wait for the canvas box instead.
+        await page.getByTestId(screen.overview ? 'overview' : 'app-canvas').waitFor()
         let current = screen.name
         const measure: Measure = async (detail) => {
           current = detail ? `${screen.name} (${detail})` : screen.name

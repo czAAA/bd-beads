@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import AppDrawer from './AppDrawer.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import ProjectList from '../project/ProjectList.vue'
@@ -55,7 +54,6 @@ const {
   onExportPng,
   onExportPdf,
   onSave,
-  drawerOpen,
 } = useAppShell()
 </script>
 
@@ -67,7 +65,6 @@ const {
     58: the frame is sized by these very fields and follows them as they're edited, so taking them away mid-framing
     would freeze the frame at whatever it last read), the Toolbox otherwise.
   -->
-  <AppDrawer :open="drawerOpen" :label="t.header.toolsButton" @close="drawerOpen = false">
   <aside class="app-shell__column" :aria-label="t.a11y.toolsLandmark" data-testid="app-main-panel">
     <section v-if="!activeProject || framing" class="app-shell__new-project" data-testid="new-project-box">
       <h2 class="app-shell__box-title">{{ t.projects.newProjectButton }}</h2>
@@ -140,15 +137,13 @@ const {
       @export-library="onExportLibraryFile"
     />
   </aside>
-  </AppDrawer>
 </template>
 
 <style scoped>
-/* The left column scrolls on its own, and never scrolls the canvas. height: 100% matters once the Drawer wrapping it switches to position: fixed (744-1023px): a percentage height needs a definite one to resolve against, and there it's the Drawer's own fixed box; in the grid it was already this tall via the row's default stretch. */
+/* The left column scrolls on its own, and never scrolls the canvas. */
 .app-shell__column {
   display: flex;
   flex-direction: column;
-  height: 100%;
   gap: var(--space-16);
   box-sizing: border-box;
   min-height: 0;
@@ -157,6 +152,16 @@ const {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
+}
+
+/*
+ * Under 1024px (ticket 295, ADR 0032) there is no column: the Dock's sheets reach every control it holds through their
+ * own markup. It stays mounted, just hidden, so its own state (an expanded panel, a roving tab stop) isn't lost.
+ */
+@media (max-width: 1023px) {
+  .app-shell__column {
+    display: none;
+  }
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {

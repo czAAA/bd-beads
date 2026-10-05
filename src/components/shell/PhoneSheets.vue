@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import AppLink from '../ui/AppLink.vue'
 import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
@@ -16,9 +17,13 @@ import ProjectImport from '../import/ProjectImport.vue'
 import ProjectList from '../project/ProjectList.vue'
 import SaveBox from '../export/SaveBox.vue'
 import FrameControls from '../project/FrameControls.vue'
+import LanguageSwitcher from './LanguageSwitcher.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
+import { summarizeProject } from '../../domain/project'
+import { overviewUrl } from '../../overview/overviewRoute'
+import { TOUR_ENABLED } from '../../features'
 import type { Tool } from '../../domain/tool'
 import ToolButton from '../tools/ToolButton.vue'
 import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
@@ -71,13 +76,18 @@ const {
   onExportPdf,
   onSave,
   openPhoneSheet,
-  themeSheetOpen,
+  shortcutsHelpOpen,
+  tour,
   phoneNewProjectOpen,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
 /** The phone Tool sheet's four tiles (ToolSheet card), same order and icons as everywhere else the four tools list themselves. */
+/** The Menu's Overview link and the repository's AGPL-3.0 source link (ADR 0031, ticket 269): the same two the wide header's menu holds. */
+const overviewHref = overviewUrl(import.meta.env.BASE_URL)
+const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
+
 const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id), hotkey: TOOL_HOTKEYS[id] })))
 
 function toolLabel(tool: Tool): string {
@@ -122,7 +132,19 @@ function toolLabel(tool: Tool): string {
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'edit' && activeProject" :title="t.toolbox.groups.edit" @close="openPhoneSheet = null">
+  <!--
+    The Frame sheet (ticket 295; Dock card): the Frame's own controls and, beneath them, what used to be the Edit sheet --
+    Rotate, Copy and Paste, which all act on the Frame or a Selection -- with Undo and Redo until the Zoom pill takes them (ticket 296).
+  -->
+  <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
+    <FrameControls
+      :project="activeProject"
+      with-set-frame
+      @set-frame="onStartSetFrame(); openPhoneSheet = null"
+      @set-size="onSetFrameSize"
+      @fit="onFitFrame"
+      @remove="onRemoveFrame"
+    />
     <div class="phone-sheet__edit">
       <IconButton icon="undo" variant="toolbox" size="lg" data-tour="undo" :label="t.palette.undoButton" :disabled="!canUndo" @click="onUndo" />
       <IconButton icon="redo" variant="toolbox" size="lg" :label="t.palette.redoButton" :disabled="!canRedo" @click="onRedo" />
@@ -149,17 +171,6 @@ function toolLabel(tool: Tool): string {
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
-    <FrameControls
-      :project="activeProject"
-      with-set-frame
-      @set-frame="onStartSetFrame(); openPhoneSheet = null"
-      @set-size="onSetFrameSize"
-      @fit="onFitFrame"
-      @remove="onRemoveFrame"
-    />
-  </BottomSheet>
-
   <!--
     The Project sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
@@ -170,6 +181,13 @@ function toolLabel(tool: Tool): string {
       <CanvasColorPicker />
     </template>
     <template v-if="activeProject">
+      <!-- The open Project's name, size and save state (ticket 295): moved here from the header, which is gone under 1024px. -->
+      <p class="phone-sheet__project-info" data-testid="phone-project-info">
+        <span class="phone-sheet__summary" data-testid="phone-project-summary">
+          {{ summarizeProject(activeProject) }}
+        </span>
+        <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" class="phone-sheet__save" :class="{ 'phone-sheet__save--failed': saveFailed }" />
+      </p>
       <p class="phone-sheet__bead-row">
         <BeadPill data-testid="phone-sheet-bead">{{ activeBeadLabel }}</BeadPill>
         <AppSelect
@@ -239,9 +257,43 @@ function toolLabel(tool: Tool): string {
     />
   </BottomSheet>
 
-  <!-- Theme: the phone header's own quick-access icon opens the same four-way choice the More menu's ThemeToggle offers. -->
-  <BottomSheet v-if="themeSheetOpen" :title="t.theme.groupLabel" @close="themeSheetOpen = false">
-    <ThemeToggle />
+  <!--
+    The Menu sheet (ticket 295; Dock card): the Dock's last slot and the header's whole remaining job -- language, theme, Name
+    on exports, Keyboard shortcuts (only with a keyboard or mouse attached), Overview and the source link. Modal, like the
+    Project sheet. Everything about the open Project stays in the Project sheet; nothing is repeated here.
+  -->
+  <BottomSheet v-if="openPhoneSheet === 'menu'" modal :title="t.header.menuButton" @close="openPhoneSheet = null">
+    <div class="phone-sheet__menu-row">
+      <span class="phone-sheet__menu-label">{{ t.languageSwitcher.ariaLabel }}</span>
+      <LanguageSwitcher />
+    </div>
+    <div class="phone-sheet__menu-row phone-sheet__menu-row--wrap">
+      <span class="phone-sheet__menu-label">{{ t.theme.groupLabel }}</span>
+      <ThemeToggle />
+    </div>
+    <div class="phone-sheet__menu-row" data-testid="menu-item-name-on-exports">
+      <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>
+      <AppButton variant="in-box" size="sm" data-testid="menu-item-name-on-exports-change" @click="nameOnExportsOpen = true">
+        {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
+      </AppButton>
+    </div>
+    <button type="button" class="ui-control phone-sheet__menu-link phone-sheet__menu-shortcuts" data-testid="menu-item-shortcuts" @click="shortcutsHelpOpen = true">
+      <AppIcon name="keyboard" :size="16" />
+      {{ t.shortcutsHelp.title }}
+    </button>
+    <a class="ui-control phone-sheet__menu-link" :href="overviewHref" data-testid="menu-item-overview">
+      <AppIcon name="bead" :size="16" />
+      {{ t.header.overviewItem }}
+    </a>
+    <button v-if="TOUR_ENABLED" type="button" class="ui-control phone-sheet__menu-link" data-testid="menu-item-tour" @click="openPhoneSheet = null; tour.start()">
+      <AppIcon name="info" :size="16" />
+      {{ t.header.tourItem }}
+    </button>
+    <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
+    <a class="ui-control phone-sheet__menu-link" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="menu-item-source">
+      <AppIcon name="code" :size="16" />
+      {{ t.header.sourceItem }}
+    </a>
   </BottomSheet>
 </template>
 
@@ -276,6 +328,80 @@ function toolLabel(tool: Tool): string {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-8);
+  margin-top: var(--space-16);
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--line-soft);
+}
+
+.phone-sheet__project-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  min-width: 0;
+  margin: 0 0 var(--space-12);
+}
+
+.phone-sheet__summary {
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-control);
+  color: var(--ink);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.phone-sheet__save {
+  flex: none;
+  color: var(--accent-strong);
+}
+
+.phone-sheet__save--failed {
+  color: var(--danger);
+}
+
+.phone-sheet__menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
+}
+
+.phone-sheet__menu-row--wrap {
+  flex-wrap: wrap;
+}
+
+.phone-sheet__menu-label {
+  font: var(--type-body);
+  color: var(--body);
+}
+
+.phone-sheet__menu-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--menu-item-height);
+  padding: 0;
+  font: var(--type-control);
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). */
+.phone-sheet__menu-shortcuts {
+  display: none;
+}
+
+@media (any-pointer: fine) {
+  .phone-sheet__menu-shortcuts {
+    display: flex;
+  }
 }
 
 .phone-sheet__bead-row {

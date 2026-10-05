@@ -27,7 +27,7 @@ export async function openApp(page: Page, projects: Project[]): Promise<void> {
     document.documentElement.appendChild(style)
   }, '* { text-rendering: geometricPrecision; font-kerning: normal; font-synthesis: none; -webkit-font-smoothing: antialiased; }')
   await page.goto('./')
-  await page.getByTestId('app-topbar').waitFor()
+  await page.getByTestId('app-canvas').waitFor()
   // The app's line height is 145% of 18px, which puts everything below the first line of text at a fractional pixel
   // and so blurs the edge of every bead by a fraction of a pixel. Pinning it to whole pixels leaves the layout as it is
   // and the screenshots free of that noise.

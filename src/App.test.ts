@@ -273,8 +273,8 @@ describe('App', () => {
 
     const column = wrapper.find('[data-testid="app-main-panel"]').element
     expect(column.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
-    // The column sits in the Drawer (ticket 168), itself a direct child of the body alongside the canvas box.
-    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(column.parentElement!.parentElement)
+    // The column is a direct child of the body, alongside the canvas box.
+    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(column.parentElement)
   })
 
   it('paints a cell with the selected palette color', async () => {
@@ -964,37 +964,28 @@ describe('App', () => {
       )
 
     expect(order()).toEqual([
-      'app-header__tools',
       'app-header__brand',
-      'app-header__phone-only', // phone brand icon (ticket 188): the bead icon, apart from the <h1> wordmark
-      'app-header__menu', // the header menu (ticket 210), next to the logo
-      'app-header__phone-only', // phone theme icon: shown whether or not a Project is open
+      'header-menu', // the header menu (ticket 210), next to the logo
       'app-header__gap',
       'project-actions',
-      'app-header__phone-hide', // New Project's wrapper (ticket 79: hidden at the phone tier)
-      'app-header__wide-only',
-      'app-header__wide-only',
+      'new-project-button',
+      'language-switcher',
+      'theme-toggle',
       'app-header__shortcuts',
     ])
 
     await createProjectViaForm(wrapper, '15', '30')
 
     expect(order()).toEqual([
-      'app-header__tools',
       'app-header__brand',
-      'app-header__phone-only', // phone brand icon
-      'app-header__menu',
-      'app-header__phone-only', // phone bead/technique icon (ticket 188), opens the Project sheet's Bead pill row
-      'app-header__phone-only', // phone theme icon
+      'header-menu',
       'project-info',
-      'app-header__phone-hide', // Replace bead's wrapper
+      'replace-bead-select',
       'app-header__gap',
       'project-actions',
-      'app-header__phone-hide', // New Project's wrapper
-      'app-header__phone-only', // phone Undo
-      'app-header__phone-only', // phone Redo
-      'app-header__wide-only',
-      'app-header__wide-only',
+      'new-project-button',
+      'language-switcher',
+      'theme-toggle',
       'app-header__shortcuts',
     ])
     const header = wrapper.find('[data-testid="app-topbar"]')

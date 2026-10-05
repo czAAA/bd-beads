@@ -11,7 +11,7 @@ describe('AppDock', () => {
   it('shows the active tool\'s own icon, name and hotkey on the first button', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
     const button = wrapper.get('[data-testid="dock-tool"]')
-    expect(button.find('.dock__label').text()).toBe('Fill')
+    expect(button.attributes('aria-label')).toBe('Fill')
     expect(button.get('.dock__key').text()).toBe('2')
     expect(button.attributes('aria-keyshortcuts')).toBe('2')
   })
@@ -20,7 +20,7 @@ describe('AppDock', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
     expect(wrapper.get('[data-testid="dock-frame"]').get('.dock__key').text()).toBe('6')
     expect(wrapper.find('[data-testid="dock-color"] .dock__key').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-edit"] .dock__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-menu"] .dock__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-project"] .dock__key').exists()).toBe(false)
   })
 
@@ -29,10 +29,10 @@ describe('AppDock', () => {
     expect(wrapper.get('[data-testid="dock-frame"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
 
-    for (const id of ['tool', 'color', 'edit', 'frame', 'project']) {
+    for (const id of ['tool', 'color', 'frame', 'project', 'menu']) {
       await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['edit'], ['frame'], ['project']])
+    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['frame'], ['project'], ['menu']])
   })
 
   it('has no Mirror sheet button left (ticket 174, pending its own redesign)', () => {

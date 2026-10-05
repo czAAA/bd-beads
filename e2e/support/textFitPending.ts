@@ -20,13 +20,13 @@ export interface PendingEntry {
 
 const ALL_PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
-  { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 768, 390, 360, 320] }, fixedBy: '231' },
-  { screen: 'Overview', texts: ['Создать бесплатный аккаунт'], at: { ru: [1024, 768, 320] }, fixedBy: '231' },
-  { screen: 'Overview', texts: ['Без аккаунта'], at: { ru: [768] }, fixedBy: '231' },
+  { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 844, 820, 768, 390, 360, 320] }, fixedBy: '231' },
+  { screen: 'Overview', texts: ['Создать бесплатный аккаунт'], at: { ru: [1024, 844, 820, 768, 320] }, fixedBy: '231' },
+  { screen: 'Overview', texts: ['Без аккаунта'], at: { ru: [820, 768] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
-  { screen: 'Saved Projects expanded', texts: ['Экспортировать все'], at: { ru: [1024, 768] }, fixedBy: '231' },
+  { screen: 'Saved Projects expanded', texts: ['Экспортировать все'], at: { ru: [1024] }, fixedBy: '231' },
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
 ]
 

@@ -197,21 +197,20 @@
   --radius-lg: 12px; /* Every box, the canvas box, modals, messages. */
   --radius-board: 32px; /* The bead board. */
   --radius-full: 9999px; /* Pills, the switch, round icon buttons, thumbnails, the progress track. */
-  --bp-tablet: 744px; /* iPad mini tier and up (iPad mini, iPad and 11″ iPads upright). Below it: the phone tier. */
+  --bp-tablet: 744px; /* Bead sizing tier only (smallest bead on screen); not a layout split, everything under 1024px is the phone layout. */
   --bp-tablet-lg: 1024px; /* iPad 13″ tier and up (13″ iPads upright, smaller iPads sideways): the left column docks again. */
   --bp-laptop: 1280px; /* MacBook Air tier and up: the reference layout from DESIGN.md. */
   --bp-desktop: 1920px; /* 24″ displays and larger: wider column, more room for the Pattern. */
-  --bp-phone-landscape: 499px; /* max-height: a phone on its side keeps the phone layout with the dock as a side rail, whatever its width. */
   --column-width-tablet-lg: 300px; /* Left column at the iPad 13″ tier (286px boxes). */
   --column-width: 366px; /* Left column at the MacBook Air tier (352px boxes plus a 14px scrollbar gutter; five 56px Tool tabs fit a row). */
   --column-width-desktop: 360px; /* Left column at 24″ and up (344px boxes). */
-  --drawer-width: 326px; /* The left column as a drawer at the iPad mini tier. */
-  --header-height: 64px; /* Header at iPad mini and up. */
+  --header-height: 64px; /* Header at 1024px and up; there is none under it. */
   --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
-  --dock-height: 64px; /* Phone dock and iPad mini bottom toolbar, plus env(safe-area-inset-bottom). */
+  --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
+  --dock-max-width: 480px; /* The Dock's widest, centred. */
   --progress-height-phone: 56px; /* Progress bar on a phone, plus its 3px progress line. */
   --bead-min-phone: 16px; /* Smallest bead at the Phone tier (0–743px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 18px). Set for the phone's 12px ruler numbers (15px would do for 11px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
-  --bead-min-tablet: 15px; /* Smallest bead at the iPad mini tier (744–1023px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-tablet: 15px; /* Smallest bead from 744px up: the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
   --bead-min-tablet-lg: 15px; /* Smallest bead at the iPad 13″ tier (1024–1279px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
   --bead-min-laptop: 15px; /* Smallest bead at the MacBook Air tier (1280–1919px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
   --bead-min-desktop: 15px; /* Smallest bead at the 24″ and larger tier (1920px and up): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
@@ -220,9 +219,8 @@
   --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */
   --loading-delay: 300ms; /* Wait before any loading indicator appears, so fast work never flashes. */
   --z-canvas-overlay: 10; /* Rulers, current-row marker, Selection, paste preview, ZoomPill: inside the canvas box. */
-  --z-chrome: 20; /* Header, Dock, BottomToolbar, Progress bar when they overlap scrolling content. */
+  --z-chrome: 20; /* Header, Dock, Progress bar when they overlap scrolling content. */
   --z-context-bar: 30; /* The Selection ContextBar above the Progress bar. */
-  --z-drawer: 40; /* The iPad mini Drawer and its scrim (scrim one below). */
   --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */
   --z-popover: 60; /* Menus, the Image colors popover, OverflowMenu. */
   --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */

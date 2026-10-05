@@ -1,26 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import AppMenu from '../ui/AppMenu.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppSelect from '../ui/AppSelect.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import IconButton from '../ui/IconButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import ProjectImport from '../import/ProjectImport.vue'
-import PhoneThemeButton from './PhoneThemeButton.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useFitByPriority } from '../../composables/ui/useFitByPriority'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
 import { beadLabel } from '../../domain/beads'
-import { useThemePick } from '../../theme/useThemePick'
-import type { IconName } from '../ui/icons'
 import { TOUR_ENABLED } from '../../features'
 
 const {
@@ -28,24 +22,12 @@ const {
   locale,
   projects,
   activeProject,
-  saveFailed,
   onNewProject,
   activeBeadLabel,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportProjects,
   decodeImage,
-  onImportToast,
-  makerName,
-  nameOnExportsOpen,
-  drawerOpen,
-  openPhoneSheet,
-  themeSheetOpen,
-  phoneNewProjectOpen,
   shortcutsHelpOpen,
   tour,
 } = useAppShell()
@@ -54,17 +36,11 @@ const {
 const headerEl = ref<HTMLElement>()
 const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activeProject.value])
 
-/** At 1024px and up the header's own controls stay where they are, so the menu holds only its links (HeaderMenu card). */
-const wide = useMediaQuery('(min-width: 1024px)')
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
 /** The repository's own URL (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted copy to link to its source. */
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
-/** The phone header's own theme icon (ticket 188): the current pick's icon, tapped open into a small four-way sheet, the same choice ThemeToggle itself offers in the header menu. */
-const THEME_ICONS: Record<string, IconName> = { device: 'device', light: 'sun', dark: 'moon', contrast: 'contrast' }
-const { pick: themePick } = useThemePick()
-const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
 </script>
 
 <template>
@@ -73,157 +49,69 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
     while a Project is open) and Replace bead; a flexible gap; the two imports with their one-line results; New
     Project; EN / RU; the theme control; Keyboard shortcuts. Nothing shrinks but the Project's name. When it still
     doesn't fit, it fits by priority (`writing.md`, Fitting longer text): the imports drop their labels first
-    (compactImports).
+    (compactImports). Under 1024px there is no header at all (ticket 295, ADR 0032): its contents live in the Dock's
+    Project and Menu sheets, and this stays mounted but `display: none`.
   -->
   <header ref="headerEl" class="app-header" :class="{ 'app-header--compact': compactImports }" data-testid="app-topbar">
-    <!--
-      Tools opens the Drawer (ticket 168; Drawer card): the iPad mini tier's own way into the left column, shown
-      only 744-1023px -- at 1024px and up the column is docked and this button has nothing to do.
-    -->
-    <span class="app-header__tools">
-      <IconButton
-        icon="sidebar"
-        :label="t.header.toolsButton"
-        :selected="drawerOpen"
-        data-testid="drawer-open-button"
-        data-tour="header-tools"
-        @click="drawerOpen = !drawerOpen"
-      />
-    </span>
     <h1 class="app-header__brand">
-      <AppLogo class="app-header__mark app-header__phone-hide" :size="22" />
-      <span class="app-header__name app-header__phone-hide">{{ t.app.title }}</span>
+      <AppLogo class="app-header__mark" :size="22" />
+      <span class="app-header__name">{{ t.app.title }}</span>
     </h1>
-    <!-- The phone brand (ticket 188): the bead's own icon, apart from the wordmark <h1> so the two never both render its text; the wordmark is its hover/focus label. -->
-    <AppTooltip class="app-header__phone-only" :text="t.app.title" :announce="false">
-      <AppIcon name="bead" :size="18" />
-    </AppTooltip>
 
-    <!--
-      The header menu (ticket 210; HeaderMenu card), next to the logo at every size, replacing the header menu (ticket
-      168, 79). 744-1023px: Import a file/QR code, Language, Theme and Name on exports; below 744px it drops Import
-      (the Project sheet's job there) and adds Keyboard shortcuts (any-pointer: fine only) and a Theme item that opens
-      the theme sheet. Every tier ends with a rule, Overview (ticket 77; Take the tour joins it in ticket 80) and
-      Source code (ticket 269, the repo's own AGPL-3.0 link); at 1024px and up those are all it holds.
-    -->
-    <span class="app-header__menu">
-      <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
-        <!--
-          The Project name, its size and save state (ticket 188): moved here from the header's own row, which the
-          name and size used to dominate the width of at the phone tier -- see app-header__phone-project's own note.
-        -->
-        <p v-if="activeProject" class="app-header__phone-only app-header__phone-project" data-testid="phone-project-info">
-          <span class="app-header__summary" data-testid="phone-project-summary" :title="summarizeProject(activeProject)">
-            {{ summarizeProject(activeProject) }}
-          </span>
-          <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" :class="{ 'app-header__phone-save--failed': saveFailed }" class="app-header__phone-save" />
-        </p>
-        <template v-if="!wide">
-        <AppMenuItem class="app-header__menu-theme-item" icon="device" data-testid="menu-item-theme" @select="themeSheetOpen = true">
-          {{ t.theme.groupLabel }}
-        </AppMenuItem>
-        <div class="app-header__menu-imports">
-          <ProjectImport :decode-image="decodeImage" :projects="projects" toast-results testid-prefix="menu-" @import="onImportProjects" @import-result="onImportToast" />
-        </div>
-        <div class="app-header__menu-row">
-          <span class="app-header__menu-label">{{ t.languageSwitcher.ariaLabel }}</span>
-          <LanguageSwitcher />
-        </div>
-        <!-- Redundant on phone once PhoneThemeButton sits in the header itself; stays for the iPad mini tier, which has no room for a standalone icon. -->
-        <div class="app-header__menu-row app-header__menu-row--wrap app-header__menu-theme">
-          <span class="app-header__menu-label">{{ t.theme.groupLabel }}</span>
-          <ThemeToggle />
-        </div>
-        <AppMenuItem class="app-header__menu-shortcuts" icon="keyboard" data-testid="menu-item-shortcuts" @select="shortcutsHelpOpen = true">
-          {{ t.shortcutsHelp.title }}
-        </AppMenuItem>
-        <div class="app-header__menu-row" data-testid="menu-item-name-on-exports">
-          <span class="app-header__menu-label">{{ t.saveBox.nameOnExports }}</span>
-          <AppMenuItem data-testid="menu-item-name-on-exports-change" @select="nameOnExportsOpen = true">
-            {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
-          </AppMenuItem>
-        </div>
-        <div class="app-header__menu-rule" role="separator" />
-        </template>
-        <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
-          {{ t.header.overviewItem }}
-        </AppMenuItem>
-        <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="tour.start()">
-          {{ t.header.tourItem }}
-        </AppMenuItem>
-        <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
-        <AppMenuItem icon="code" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="menu-item-source">
-          {{ t.header.sourceItem }}
-        </AppMenuItem>
-      </AppMenu>
-    </span>
-
-    <!--
-      Technique/schema and theme (ticket 188; responsive.md, 0-743px): each its own icon, the current bead or
-      theme, with a hover/focus label and a tap that opens its picker (the Project sheet's Bead pill row, or a
-      small four-way theme sheet) -- reclaiming the width the name/size readout (now under the header menu) used to
-      take, so nothing after it (Undo, Redo) is pushed out of viewport.
-    -->
-    <span v-if="activeProject" class="app-header__phone-only">
-      <IconButton icon="size" shape="round" :label="activeBeadLabel ?? ''" data-testid="phone-bead-button" @click="openPhoneSheet = 'project'" />
-    </span>
-    <span class="app-header__phone-only">
-      <IconButton :icon="themeIcon" shape="round" :label="t.theme.groupLabel" data-testid="phone-theme-button" @click="themeSheetOpen = true" />
-    </span>
+    <!-- The header menu (ticket 210; HeaderMenu card), next to the logo: Overview (ticket 77; Take the tour joins it in ticket 80) and Source code (ticket 269, the repo's own AGPL-3.0 link). -->
+    <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
+      <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
+        {{ t.header.overviewItem }}
+      </AppMenuItem>
+      <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="tour.start()">
+        {{ t.header.tourItem }}
+      </AppMenuItem>
+      <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
+      <AppMenuItem icon="code" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="menu-item-source">
+        {{ t.header.sourceItem }}
+      </AppMenuItem>
+    </AppMenu>
 
     <template v-if="activeProject">
-      <p class="app-header__editing app-header__phone-hide" data-testid="project-info">
+      <p class="app-header__editing" data-testid="project-info">
         <span class="app-header__summary" data-testid="current-project-summary" :title="summarizeProject(activeProject)">
           {{ summarizeProject(activeProject) }}
         </span>
         <BeadPill data-testid="current-project-bead">{{ activeBeadLabel }}</BeadPill>
       </p>
-      <span class="app-header__phone-hide">
-        <AppSelect
-          variant="primary"
-          data-testid="replace-bead-select"
-          :aria-label="t.replaceBead.selectLabel"
-          :value="''"
-          @change="onPickReplaceBead($event.target as HTMLSelectElement)"
-        >
-          <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
-          <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
-            {{ beadLabel(bead) }}
-          </option>
-        </AppSelect>
-      </span>
+      <AppSelect
+        variant="primary"
+        data-testid="replace-bead-select"
+        :aria-label="t.replaceBead.selectLabel"
+        :value="''"
+        @change="onPickReplaceBead($event.target as HTMLSelectElement)"
+      >
+        <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
+        <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+          {{ beadLabel(bead) }}
+        </option>
+      </AppSelect>
     </template>
 
     <span class="app-header__gap" />
 
-    <!-- Imported Projects go straight into the library, which decides what to open and persists them. Moves into the header menu at the iPad mini tier (ticket 168), where a toast reports the result instead; at the phone tier it lives in the Project sheet. -->
-    <div class="app-header__imports app-header__phone-hide" data-testid="project-actions">
+    <!-- Imported Projects go straight into the library, which decides what to open and persists them. -->
+    <div class="app-header__imports" data-testid="project-actions">
       <ProjectImport :decode-image="decodeImage" :projects="projects" :compact="compactImports" @import="onImportProjects" />
     </div>
-    <span class="app-header__phone-hide">
-      <AppButton
-        variant="primary"
-        icon="plus"
-        data-testid="new-project-button"
-        :disabled="projects.length === 0"
-        @click="onNewProject"
-      >
-        {{ t.projects.newProjectButton }}
-      </AppButton>
-    </span>
-    <!-- Undo/Redo (ticket 79): the phone header's own, alongside the Dock's four tools/colour -- the same history as every other Undo/Redo in the app. -->
-    <template v-if="activeProject">
-      <span class="app-header__phone-only">
-        <IconButton icon="undo" shape="round" :label="t.palette.undoButton" data-testid="phone-undo-button" :disabled="!canUndo" @click="onUndo" />
-      </span>
-      <span class="app-header__phone-only">
-        <IconButton icon="redo" shape="round" :label="t.palette.redoButton" data-testid="phone-redo-button" :disabled="!canRedo" @click="onRedo" />
-      </span>
-    </template>
-    <span class="app-header__wide-only"><LanguageSwitcher /></span>
-    <span class="app-header__wide-only"><ThemeToggle /></span>
-    <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"); at the phone tier it moves into the header menu instead of its own button. -->
-    <span class="app-header__shortcuts app-header__phone-hide">
+    <AppButton
+      variant="primary"
+      icon="plus"
+      data-testid="new-project-button"
+      :disabled="projects.length === 0"
+      @click="onNewProject"
+    >
+      {{ t.projects.newProjectButton }}
+    </AppButton>
+    <LanguageSwitcher />
+    <ThemeToggle />
+    <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). -->
+    <span class="app-header__shortcuts">
       <IconButton
         icon="keyboard"
         shape="round"
@@ -233,34 +121,6 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
       />
     </span>
   </header>
-
-  <!--
-    The phone header's second row (redesign-feedback.md): Replace bead, New Project and Theme, each its own icon
-    with the full label on hover/long-press. Full header width to itself, below the name row, rather than sharing
-    it as a nested column -- the icons plus a truncating Bead pill left no room to also fit Undo/Redo/More on some
-    very narrow phones once inside the same shrinking box.
-  -->
-  <p v-if="activeProject" class="app-header__phone-only app-header__phone-tools" data-testid="phone-header-tools">
-    <AppTooltip :text="t.replaceBead.selectLabel" :announce="false">
-      <button
-        type="button"
-        class="ui-control app-header__phone-bead"
-        :aria-label="`${t.replaceBead.selectLabel}: ${activeBeadLabel}`"
-        data-testid="phone-header-bead"
-        @click="openPhoneSheet = 'project'"
-      >
-        {{ activeBeadLabel }}
-      </button>
-    </AppTooltip>
-    <IconButton
-      icon="plus"
-      shape="round"
-      :label="t.projects.newProjectButton"
-      data-testid="phone-header-new-project"
-      @click="phoneNewProjectOpen = true"
-    />
-    <PhoneThemeButton />
-  </p>
 </template>
 
 <style scoped>
@@ -275,8 +135,7 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   gap: var(--space-10);
   box-sizing: border-box;
   min-height: var(--header-height);
-  /* Screen edges (ticket 166; responsive.md): grows past 64px for a notch/dynamic island, `env()` falling back to 0. */
-  padding: env(safe-area-inset-top) var(--space-32) 0;
+  padding: 0 var(--space-32);
   background: var(--canvas);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -289,21 +148,10 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   }
 }
 
-/* The phone tier (ticket 79): 52px, tighter side padding; a phone on its side (responsive.md, bp-phone-landscape) drops to 44px. */
-@media (max-width: 743px) {
+/* No header under 1024px (ticket 295, ADR 0032): the screen belongs to the canvas. */
+@media (max-width: 1023px) {
   .app-header {
-    min-height: var(--header-height-phone);
-    /* Tighter than the reference tier's 10px (ticket 188): several small icon controls now share this row, and
-       every px the gaps between them save is a px Undo and Redo stay clear of the edge. */
-    gap: var(--space-4);
-    padding-right: var(--space-16);
-    padding-left: var(--space-16);
-  }
-}
-
-@media (max-width: 743px) and (max-height: 499px) {
-  .app-header {
-    min-height: var(--header-height-phone-landscape);
+    display: none;
   }
 }
 
@@ -321,192 +169,11 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   }
 }
 
-/*
- * The iPad mini tier (ticket 168; responsive.md, 744-1023px): Tools opens the Drawer, and Import/Language/Theme move
- * into the header menu -- everything a wider tier keeps inline in the header. The header menu carries on below 744px
- * (the phone tier, ticket 79) too, since it holds the same Theme/Language/Name on exports there; only the Tools
- * button and the header menu's own Import row are specific to 744-1023px (below that the phone header has no Drawer to
- * open, and imports move into the Project sheet instead -- see .app-header__menu-imports and .app-header__phone-*).
- */
-.app-header__tools,
-.app-header__menu,
-.app-header__phone-only {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  /*
-   * !important (ticket 188): a utility hide class has to win over whatever else sets `display` on the same element
-   * -- several header rows (.app-header__editing among them) set their own `display: flex` later in this file, at
-   * equal specificity, and were quietly winning the cascade over this rule, leaking a few invisible-but-still-laid-
-   * out px into the phone header's overflow.
-   */
-  .app-header__wide-only,
-  .app-header__phone-hide {
-    display: none !important;
-  }
-
-  .app-header__menu {
-    display: inline-flex;
-  }
-}
-
-/* At 1024px and up the menu is shown too (ticket 77): it holds Overview (and, from ticket 80, Take the tour). */
-@media (min-width: 1024px) {
-  .app-header__menu {
-    display: inline-flex;
-  }
-}
-
-.app-header__menu-rule {
-  margin: var(--space-4) 0;
-  border-top: 1px solid var(--line-soft);
-}
-
-@media (min-width: 744px) and (max-width: 1023px) {
-  .app-header__tools {
-    display: inline-flex;
-  }
-}
-
-@media (max-width: 743px) {
-  .app-header__phone-only {
-    display: inline-flex;
-  }
-
-  .app-header__menu-imports {
-    display: none;
-  }
-}
-
-.app-header__menu-imports {
-  padding: var(--space-4);
-}
-
-.app-header__menu-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  padding: var(--space-4) var(--space-8);
-}
-
-.app-header__menu-row--wrap {
-  flex-wrap: wrap;
-}
-
-.app-header__menu-label {
-  font: var(--type-body);
-  color: var(--body);
-}
-
-/* The phone header's combined Project name/size + save state (ticket 79), now a row in the header menu (ticket 188). */
-.app-header__phone-project {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  gap: var(--space-6);
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: var(--space-4) var(--space-8);
-}
-
-.app-header__phone-save {
-  flex: none;
-  color: var(--accent-strong);
-}
-
-.app-header__phone-save--failed {
-  color: var(--danger);
-}
-
-/*
- * The phone header's second row (redesign-feedback.md): Replace bead, New Project and Theme. A sibling of <header>,
- * not nested inside it -- see the template comment above app-header__phone-tools -- so it gets the full header width
- * to itself instead of negotiating space with Undo/Redo.
- */
-.app-header__phone-tools {
-  display: none;
-  align-items: center;
-  gap: var(--space-8);
-  box-sizing: border-box;
-  margin: 0;
-  padding: var(--space-8) var(--space-16);
-  background: var(--canvas);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-@media (max-width: 743px) {
-  .app-header__phone-tools {
-    display: flex;
-  }
-}
-
-/* The only text in the row: a compact pill, same look as the wide tier's read-only Bead pill, but a real button here (it opens the Project sheet). */
-.app-header__phone-bead {
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 12rem;
-  overflow: hidden;
-  padding: var(--space-4) var(--space-12);
-  font: var(--type-pill);
-  color: var(--ink);
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  background: var(--pill);
-  border: 0;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-}
-
-.app-header__phone-bead:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/* Keyboard shortcuts inside the phone's header menu only helps a fine pointer or keyboard, same rule as ticket 166's standalone header button. */
-.app-header__menu-shortcuts {
-  display: none;
-}
-
-@media (max-width: 743px) and (any-pointer: fine) {
-  .app-header__menu-shortcuts {
-    display: flex;
-  }
-}
-
-/* The phone's Theme item opens the four-way sheet (HeaderMenu card); the iPad mini tier has the ThemeToggle row instead. */
-.app-header__menu-theme-item {
-  display: none;
-}
-
-@media (max-width: 743px) {
-  .app-header__menu-theme-item {
-    display: flex;
-  }
-}
-
-/* Theme has its own icon in the phone header now (PhoneThemeButton); the header menu's copy only earns its keep at the iPad mini tier, which has no room for a standalone icon. */
-@media (max-width: 743px) {
-  .app-header__menu-theme {
-    display: none;
-  }
-}
-
 .app-header__brand {
   display: flex;
   align-items: center;
   gap: var(--space-8);
   margin: 0 var(--space-10) 0 0;
-}
-
-/* bd-beads doesn't earn its keep at 52px next to the Project name and the header's own controls (redesign-feedback.md). */
-@media (max-width: 743px) {
-  .app-header__brand {
-    display: none;
-  }
 }
 
 .app-header__mark {
@@ -555,11 +222,5 @@ const themeIcon = computed(() => THEME_ICONS[themePick.value] ?? 'device')
   display: flex;
   align-items: center;
   gap: var(--space-10);
-}
-
-@media (max-width: 1023px) {
-  .app-header__imports {
-    display: none;
-  }
 }
 </style>

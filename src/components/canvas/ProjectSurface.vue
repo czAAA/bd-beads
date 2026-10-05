@@ -342,8 +342,10 @@ watch(marginOutlineWanted, (wanted) => {
     return
   }
   const from = marginOpacity.value
-  const start = performance.now()
+  // The fade starts at the first frame's own timestamp: it is not always on performance.now()'s clock.
+  let start: number | undefined
   const step = (now: number) => {
+    start ??= now
     const done = Math.min(1, (now - start) / MARGIN_FADE_MS)
     marginOpacity.value = from + (target - from) * done
     fadeFrame = done < 1 ? requestAnimationFrame(step) : undefined

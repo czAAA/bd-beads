@@ -240,14 +240,13 @@
   --bp-tablet-lg: 1024px;
   --bp-laptop: 1280px;
   --bp-desktop: 1920px;
-  --bp-phone-landscape: 499px;
   --column-width-tablet-lg: 18.75rem;
   --column-width: 22.875rem;
   --column-width-desktop: 22.5rem;
-  --drawer-width: 20.375rem;
   --header-height: 4rem;
   --header-height-phone: 3.25rem;
-  --dock-height: 4rem;
+  --dock-height: 3rem;
+  --dock-max-width: 30rem;
   --progress-height-phone: 3.5rem;
   --bead-min-phone: 1rem;
   --bead-min-tablet: 0.9375rem;
@@ -261,7 +260,6 @@
   --z-canvas-overlay: 10;
   --z-chrome: 20;
   --z-context-bar: 30;
-  --z-drawer: 40;
   --z-sheet: 50;
   --z-popover: 60;
   --z-toast: 70;

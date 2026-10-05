@@ -17,14 +17,14 @@
 
 **Human involvement:** interactive (check on a real phone in portrait and landscape and on an iPad)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] At 844x390, 956x440, 390x844 and 820x1180 the page has no header; the canvas fills the screen above the Dock
-- [ ] No Drawer, BottomToolbar or iPad header exists in the code; no media query for 744-1023px remains
-- [ ] The Dock is icon-only, 48px plus the safe-area inset, in portrait and landscape; every slot keeps its accessible name and Tooltip
-- [ ] The Dock reads Tool, Colour, Frame, Project, Menu; the Frame sheet holds the Frame controls plus Rotate, Copy and Paste
-- [ ] The Menu holds exactly the items above; the Project sheet holds the open Project's name, size, bead and save state
-- [ ] With no Project open, the New / Import bar shows the Menu button at its bottom right
-- [ ] The Frame bar floats at the top-centre of the canvas box and never covers the Dock
+- [x] At 844x390, 956x440, 390x844 and 820x1180 the page has no header; the canvas fills the screen above the Dock
+- [x] No Drawer, BottomToolbar or iPad header exists in the code; no media query for 744-1023px remains
+- [x] The Dock is icon-only, 48px plus the safe-area inset, in portrait and landscape; every slot keeps its accessible name and Tooltip
+- [x] The Dock reads Tool, Colour, Frame, Project, Menu; the Frame sheet holds the Frame controls plus Rotate, Copy and Paste
+- [x] The Menu holds exactly the items above; the Project sheet holds the open Project's name, size, bead and save state
+- [x] With no Project open, the New / Import bar shows the Menu button at its bottom right
+- [x] The Frame bar floats at the top-centre of the canvas box and never covers the Dock
 - [ ] The notch and status bar do not overlap the canvas in either orientation
-- [ ] ADR 0032 is linked from `responsive.md`; the visual and Tooltip fit checks cover the new widths
+- [x] ADR 0032 is linked from `responsive.md`; the visual and Tooltip fit checks cover the new widths

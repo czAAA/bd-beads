@@ -53,8 +53,9 @@ describe('App at the phone tier (ticket 79)', () => {
     for (const [dockId, expectFound] of [
       ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
       ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
-      ['dock-edit', () => wrapper.find('[data-testid="sheet-paste"]').exists()],
       ['dock-frame', () => wrapper.find('[data-testid="frame-set"]').exists()],
+      ['dock-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
+      ['dock-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
     ] as const) {
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(expectFound()).toBe(true)
@@ -104,9 +105,9 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
   })
 
-  it('draws the Edit sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {
+  it('draws the Frame sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-edit"]').trigger('click')
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
 
     expect(wrapper.get('[data-testid="sheet-paste"] svg').attributes('data-icon')).toBe('paste')
   })
@@ -122,16 +123,17 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBe('#e63746')
   })
 
-  it('undoes and redoes from the phone header', async () => {
+  it('undoes and redoes from the Frame sheet, until the Zoom pill takes them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
-    await wrapper.find('[data-testid="phone-undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    await wrapper.find('[data-testid="bottom-sheet"] [data-tour="undo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBeNull()
 
-    await wrapper.find('[data-testid="phone-redo-button"]').trigger('click')
+    await wrapper.find('[data-testid="bottom-sheet"] [aria-label="Redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
   })
 
@@ -208,5 +210,61 @@ describe('App at the phone tier (ticket 79)', () => {
     await sheet.get('[data-testid="canvas-color-sage"]').trigger('click')
 
     expect(localStorage.getItem('bd-beads:canvas-background')).toBe('3')
+  })
+
+  it('has exactly five icon-only Dock slots: Tool, Colour, Frame, Project, Menu (ticket 295)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const slots = wrapper.findAll('[data-testid="dock"] button')
+
+    expect(slots.map((slot) => slot.attributes('data-testid'))).toEqual(['dock-tool', 'dock-color', 'dock-frame', 'dock-project', 'dock-menu'])
+    for (const slot of slots) {
+      expect(slot.attributes('aria-label')).toBeTruthy()
+      expect(slot.find('.dock__label').exists()).toBe(false)
+    }
+  })
+
+  it('holds Rotate, Copy and Paste beside the Frame controls in the Frame sheet (ticket 295)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+
+    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
+    expect(sheet.find('[data-testid="frame-set"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="sheet-rotate"]').exists()).toBe(true)
+    expect(sheet.find('[data-tour="copy"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="sheet-paste"]').exists()).toBe(true)
+  })
+
+  it('shows the open Project\'s name, size and save state in the Project sheet (ticket 295)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+
+    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
+    expect(sheet.get('[data-testid="phone-project-summary"]').text()).not.toBe('')
+    expect(sheet.find('[data-testid="phone-project-info"] svg').exists()).toBe(true)
+    expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
+  })
+
+  it('opens the Menu from the Dock with language, theme, Name on exports, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-menu"]').trigger('click')
+
+    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
+    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(true)
+    expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
+    expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
+    expect(sheet.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="save-button"]').exists()).toBe(false)
+    expect(sheet.find('[data-testid="phone-project-info"]').exists()).toBe(false)
+  })
+
+  it('puts the Menu button at the end of the New / Import bar with no Project open, and opens the Menu from it (ticket 295)', async () => {
+    const wrapper = mount(App)
+    const bar = wrapper.get('[data-testid="phone-project-bar"]')
+
+    const last = bar.element.lastElementChild as HTMLElement
+    expect(last.contains(bar.get('[data-testid="phone-bar-menu"]').element)).toBe(true)
+    await bar.get('[data-testid="phone-bar-menu"]').trigger('click')
+    expect(wrapper.get('[data-testid="bottom-sheet"]').find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 })
