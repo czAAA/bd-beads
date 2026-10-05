@@ -97,7 +97,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       :icon="tool.icon"
       :label="tool.label"
       :hotkey="tool.hotkey"
-      :active="activeTool === tool.id"
+      :active="activeTool === tool.id && !settingFrame"
       :data-testid="`bottom-toolbar-${tool.id}`"
       :data-tour="`tool-${tool.id}`"
       @click="emit('select-tool', tool.id)"
