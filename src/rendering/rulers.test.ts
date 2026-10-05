@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { labelAt, rulerLabels, ruledBoxes, visibleRulerLabels, type RulerView } from './rulers'
+import { labelAt, rulerLabels, rulerStep, ruledBoxes, visibleRulerLabels, type RulerView } from './rulers'
 
 const R = '#e63746'
 const view = (extra: Partial<RulerView> = {}): RulerView => ({
@@ -107,5 +107,36 @@ describe('the numbers of a ruled box', () => {
     const first = labels[0]!
     expect(labelAt(labels, { x: first.x, y: first.y })).toBe(first)
     expect(labelAt(labels, { x: 5000, y: 5000 })).toBeUndefined()
+  })
+})
+
+describe('the Ruler step', () => {
+  const two = { width: 13.2, height: 11 }
+  const turned = { width: 11, height: 19.8 }
+
+  it('is every bead while the numbers have room, then 5, 10, 50, 100', () => {
+    expect(rulerStep({ x: 20, y: 20 }, [two])).toBe(1)
+    expect(rulerStep({ x: 10, y: 0 }, [two])).toBe(5)
+    expect(rulerStep({ x: 3, y: 0 }, [two])).toBe(10)
+    expect(rulerStep({ x: 2, y: 0 }, [two])).toBe(10)
+    expect(rulerStep({ x: 1, y: 0 }, [two])).toBe(50)
+    expect(rulerStep({ x: 0.2, y: 0 }, [two])).toBe(100)
+  })
+
+  it('measures turned numbers by their own box, and a ruler running up the screen by its height', () => {
+    // 3-digit numbers turned stand 19.8 tall but only 11 wide.
+    expect(rulerStep({ x: 3, y: 0 }, [two, turned])).toBe(10)
+    expect(rulerStep({ x: 0, y: 3 }, [turned])).toBe(10)
+    expect(rulerStep({ x: 0, y: 3 }, [two])).toBe(5)
+  })
+
+  it('leaves no two drawn numbers overlapping on a 999-column ruler at 10%', () => {
+    const wide = { row: 0, column: 0, rows: 10, columns: 999, kind: 'frame' as const, outset: 7, sides: 'all' as const }
+    const labels = rulerLabels(wide, view({ zoom: 0.1, viewport: { width: 1e6, height: 800 } })).filter((l) => l.axis === 'column' && l.y < 0)
+    // 2px beads: a number needs about 17px, so every 10th bead has room, every 5th does not.
+    expect(labels.map((l) => l.index + 1).slice(0, 3)).toEqual([10, 20, 30])
+    for (let i = 1; i < labels.length; i += 1) {
+      expect(labels[i]!.x - labels[i]!.width / 2).toBeGreaterThanOrEqual(labels[i - 1]!.x + labels[i - 1]!.width / 2)
+    }
   })
 })

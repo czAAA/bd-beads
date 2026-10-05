@@ -9,10 +9,10 @@ function projectOf(columns: number, rows: number, extra: Partial<Project> = {}):
   return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
 }
 
-function setup(project: Project | undefined, size = { width: 1000, height: 800 }, floor = ref(0.1)) {
+function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {
   const current = ref(project)
   const viewport = ref(size)
-  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, floor))!
+  const view = effectScope().run(() => useCanvasView(() => current.value, viewport))!
   return { current, viewport, view }
 }
 
@@ -34,16 +34,16 @@ describe('useCanvasView', () => {
     expect(view.zoom.value * 1600 + FIT_MARGIN_PX.width * 2).toBeLessThanOrEqual(1000)
   })
 
-  it('stops at the zoom-out floor: a wider Project is panned, not shrunk', () => {
-    const { view } = setup(projectOf(200, 100), undefined, ref(0.5))
+  it('shrinks a huge Project down to the 10% Zoom floor and no further, on any screen', () => {
+    const { view } = setup(projectOf(999, 100), { width: 360, height: 640 })
     view.fit()
 
-    expect(view.zoom.value).toBe(0.5)
+    expect(view.zoom.value).toBe(0.1)
 
-    const lower = setup(projectOf(200, 100))
-    lower.view.fit()
-
-    expect(lower.view.zoom.value).toBe(0.21)
+    view.setZoom(0.01)
+    expect(view.zoom.value).toBe(0.1)
+    view.zoomOut()
+    expect(view.zoom.value).toBe(0.1)
   })
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {

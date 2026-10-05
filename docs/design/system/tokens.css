@@ -209,11 +209,8 @@
   --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
   --dock-max-width: 480px; /* The Dock's widest, centred. */
   --progress-height-phone: 56px; /* Progress bar on a phone, plus its 3px progress line. */
-  --bead-min-phone: 16px; /* Smallest bead at the Phone tier (0–743px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 18px). Set for the phone's 12px ruler numbers (15px would do for 11px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
-  --bead-min-tablet: 15px; /* Smallest bead from 744px up: the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
-  --bead-min-tablet-lg: 15px; /* Smallest bead at the iPad 13″ tier (1024–1279px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
-  --bead-min-laptop: 15px; /* Smallest bead at the MacBook Air tier (1280–1919px): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
-  --bead-min-desktop: 15px; /* Smallest bead at the 24″ and larger tier (1920px and up): the zoom-out floor and the most Fit may shrink to, so every ruler number stays clear. Bead width without the 2px gap (pitch 17px). Holds for Patterns to 999 columns, because numbers from 100 are turned. A wider Pattern is panned, not shrunk. */
+  --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
+  --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */
   --field-height: 40px; /* Text, number and select fields, Steppers and form buttons: taller than the 34px controls because people type and read in them. */
   --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */

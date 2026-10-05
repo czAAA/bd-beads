@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
-import { MIN_ZOOM, ZOOM_STEP, clampZoom, type GridPosition } from '../../domain/grid'
+import { ZOOM_STEP, clampZoom, type GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { displayedBox, scrollAfterZoom, scrollToCentre, zoomToFit, type Scroll, type Size } from '../../rendering/canvasView'
 
@@ -24,8 +24,6 @@ export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undef
 export function useCanvasView(
   currentProject: () => Project | undefined,
   viewport: Ref<Size>,
-  /** The zoom-out floor (ticket 223): the smallest bead of the window's tier, as a zoom. Zooming out and Fit stop here. */
-  floor: Ref<number> = ref(MIN_ZOOM),
 ) {
   const zoom = ref(1)
   const scroll = ref<Scroll>({ x: 0, y: 0 })
@@ -45,13 +43,13 @@ export function useCanvasView(
     const box = fitBox(project)
     if (!measured()) {
       // Nothing to fit to until the drawing area has a size: look at the origin at 100% and fit when it is measured.
-      zoom.value = clampZoom(1, floor.value)
+      zoom.value = clampZoom(1)
       scroll.value = { x: 0, y: 0 }
     } else if (!box) {
-      zoom.value = clampZoom(1, floor.value)
+      zoom.value = clampZoom(1)
       scroll.value = scrollToCentre({ x: 0, y: 0, width: 0, height: 0 }, viewport.value)
     } else {
-      zoom.value = clampZoom(zoomToFit(project.technique, project.rotation, box, viewport.value, FIT_MARGIN_PX), floor.value)
+      zoom.value = clampZoom(zoomToFit(project.technique, project.rotation, box, viewport.value, FIT_MARGIN_PX))
       scroll.value = scrollToCentre(displayedBox(project.technique, project.rotation, box, zoom.value), viewport.value)
     }
     isAtFit.value = true
@@ -100,7 +98,7 @@ export function useCanvasView(
   }
 
   function setZoom(value: number, anchor?: Scroll): void {
-    const next = clampZoom(value, floor.value)
+    const next = clampZoom(value)
     if (next === zoom.value) {
       return
     }
@@ -129,15 +127,7 @@ export function useCanvasView(
     if (isAtFit.value) {
       fit()
     } else {
-      zoom.value = clampZoom(zoom.value, floor.value)
-    }
-  })
-
-  watch(floor, () => {
-    if (isAtFit.value && measured()) {
-      fit()
-    } else {
-      zoom.value = clampZoom(zoom.value, floor.value)
+      zoom.value = clampZoom(zoom.value)
     }
   })
 
