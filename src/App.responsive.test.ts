@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -77,5 +77,41 @@ describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', ()
   it('leaves the MacBook Air tier (1280-1919px) on the reference column', () => {
     expect(appSource).toContain('grid-template-columns: var(--column-width) minmax(0, 1fr);')
     expect(layoutPx('column-width')).toBe(366)
+  })
+})
+
+describe('everything under 1024px is the phone layout (ticket 295, ADR 0032)', () => {
+  const shellDir = resolve(__dirname, 'components')
+  const sources = ['shell/AppShell', 'shell/AppSidebar', 'shell/AppHeader', 'shell/AppBottomBar', 'tools/AppDock', 'canvas/CanvasPanel']
+    .map((name) => readFileSync(resolve(shellDir, `${name}.vue`), 'utf8'))
+    .join('\n')
+
+  it('has no media query for the retired 744-1023px iPad mini tier, and no Drawer or BottomToolbar left', () => {
+    expect(sources).not.toMatch(/min-width: 744px\) and \(max-width: 1023px/)
+    expect(sources).not.toMatch(/max-width: 743px/)
+    expect(existsSync(resolve(shellDir, 'shell/AppDrawer.vue'))).toBe(false)
+    expect(existsSync(resolve(shellDir, 'shell/BottomToolbar.vue'))).toBe(false)
+  })
+
+  it('hides the header, the left column and the canvas header strip under 1024px', () => {
+    const header = readFileSync(resolve(shellDir, 'shell/AppHeader.vue'), 'utf8')
+    expect(header).toMatch(/@media \(max-width: 1023px\) \{\s*\.app-header \{\s*display: none;/)
+    const sidebar = readFileSync(resolve(shellDir, 'shell/AppSidebar.vue'), 'utf8')
+    expect(sidebar).toMatch(/@media \(max-width: 1023px\) \{\s*\.app-shell__column \{\s*display: none;/)
+    const panel = readFileSync(resolve(shellDir, 'canvas/CanvasPanel.vue'), 'utf8')
+    expect(panel).toMatch(/@media \(max-width: 1023px\) \{\s*\.app-shell__canvas-strip \{\s*display: none;/)
+  })
+
+  it('starts the canvas at the top edge, padded by the safe-area inset', () => {
+    expect(appSource).toMatch(/@media \(max-width: 1023px\) \{\s*\.app-shell__body \{[^}]*padding: env\(safe-area-inset-top\)/)
+  })
+
+  it('makes the Dock 48px plus the safe-area inset, at most 480px wide, with one layout in both orientations', () => {
+    expect(layoutPx('dock-height')).toBe(48)
+    expect(layoutPx('dock-max-width')).toBe(480)
+    const dock = readFileSync(resolve(shellDir, 'tools/AppDock.vue'), 'utf8')
+    expect(dock).toContain('max-width: var(--dock-max-width);')
+    expect(dock).toContain('padding-bottom: env(safe-area-inset-bottom);')
+    expect(dock).not.toMatch(/max-height/)
   })
 })

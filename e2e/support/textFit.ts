@@ -37,7 +37,7 @@ const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid=
  * Measures, in the browser, every visible piece of text on the page against the box that is meant to hold it, and
  * returns the ones that do not fit (ticket 229). The three rules, in `measure` below:
  * - text partly outside an ancestor that clips it, its own box or the viewport (text wholly outside is off-screen on
- *   purpose: the closed drawer, carousel cards not yet scrolled to), or an element that clips or ellipsizes its content
+ *   purpose: carousel cards not yet scrolled to), or an element that clips or ellipsizes its content
  *   with more content than room;
  * - a one-line control (ONE_LINE) whose text breaks onto two or more lines.
  * Vertical clipping by a scroll container is ignored, since the column scrolls.
@@ -160,9 +160,7 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
           const wholeX = box.right <= clip.left || box.left >= clip.right
           const wholeY = box.bottom <= clip.top || box.top >= clip.bottom
           if (clip.name === 'the viewport') {
-            // Wholly off the screen is a fault too (a menu opened out of view), except in the closed drawer, which waits there on purpose.
-            const drawer = owner.closest('[data-testid="drawer"]')?.getBoundingClientRect()
-            if (wholeX && drawer && (drawer.right <= 0 || drawer.left >= window.innerWidth)) continue
+            // Wholly off the screen is a fault too (a menu opened out of view).
           } else if (wholeX || (clip.vertical && wholeY)) continue
           const worst = Math.max(...sides.map(([, pixels]) => pixels))
           if (worst > TOLERANCE) {

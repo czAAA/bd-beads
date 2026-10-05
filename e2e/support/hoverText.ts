@@ -49,7 +49,7 @@ async function discover(page: Page, seen: Set<string>): Promise<Trigger[]> {
     for (const wrapper of document.querySelectorAll('.app-tooltip')) {
       if (isHidden(wrapper)) continue
       const rect = wrapper.getBoundingClientRect()
-      // Wholly off the screen: the closed drawer and the sheets waiting to open, which the screens open and then look again.
+      // Wholly off the screen: the sheets waiting to open, which the screens open and then look again.
       if (rect.width === 0 || rect.height === 0 || rect.right <= 0 || rect.left >= window.innerWidth) continue
       const control = wrapper.querySelector('button, a, input, [tabindex]') ?? wrapper
       const label = control.getAttribute('data-testid') ?? control.getAttribute('aria-label') ?? control.textContent?.trim().slice(0, 30) ?? ''

@@ -4,7 +4,7 @@ The menu button next to the logo at every screen size and the menu it opens, bui
 
 - **Button:** the `menu` icon, right after the wordmark (after the mark on the phone), 10px gap. 34px ghost icon button from 744 (18px icon), 40px on the phone (20px icon). Hover `--hover-fill`, open `--press-fill`, focus the 2px `focus-ring` (3px in high contrast).
 - **Phone (0–743):** Theme (opens the four-way theme sheet), Language, Name on exports, Keyboard shortcuts when a keyboard is attached; a rule; Overview, Take the tour, Source code. The imports stay in the Pattern sheet.
-- **iPad mini (744–1023):** Import a file, Import QR code; a rule; Language, Theme, Name on exports; a rule; Overview, Take the tour, Source code.
+- **Under 1024:** there is no header; the same items live in the Dock's Menu sheet (ticket 295).
 - **1024 and up:** Overview, Take the tour and Source code only; the header's own controls stay where they are.
 - **On /overview:** Overview, Take the tour and Source code at every size. They are navigation links: no check on the current page, only `aria-current="page"` on Overview.
 - **Menu:** 4px under the button, left edges aligned, `canvas` / `panel`, 1px `panel-line` (`line-strong` in dark, 2px in high contrast), radius-md, `elevation-3`, padding 4, `z-popover`. Items 40px below 1024, 34px from 1024; 16px icons: `bead` for Overview, `info` for Take the tour, `code` for Source code, the More menu's icons for the rest; values right in `meta`. Rules in `line-soft`.

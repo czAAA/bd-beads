@@ -187,13 +187,13 @@ const directionLabel = computed(() =>
   white-space: nowrap;
 }
 
-/* The phone tier's compact mode (ticket 188): swaps the spelled-out row count and text row buttons for a short
+/* The phone layout's compact mode (ticket 188, 295: under 1024px): swaps the spelled-out row count and text row buttons for a short
    counter and icon-only ones, same rule as the header's own app-header__phone-only/-hide. */
 .progress-bar__phone-only {
   display: none;
 }
 
-@media (max-width: 743px) {
+@media (max-width: 1023px) {
   .progress-bar__phone-hide {
     display: none;
   }

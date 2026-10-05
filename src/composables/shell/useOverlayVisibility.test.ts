@@ -9,9 +9,7 @@ function setup() {
 describe('useOverlayVisibility', () => {
   it('starts with every overlay closed', () => {
     const overlays = setup()
-    expect(overlays.drawerOpen.value).toBe(false)
     expect(overlays.openPhoneSheet.value).toBeNull()
-    expect(overlays.themeSheetOpen.value).toBe(false)
     expect(overlays.phoneNewProjectOpen.value).toBe(false)
     expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })

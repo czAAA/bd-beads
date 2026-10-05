@@ -67,7 +67,7 @@ const {
 
 <style scoped>
 /*
- * The app shell (ticket 141, ADR 0021): header, notice row, then the body, filling the screen exactly. The page itself
+ * The app shell (ticket 141, ADR 0021): header (1024px and up), notice row, then the body, filling the screen exactly. The page itself
  * never scrolls: the left column scrolls on its own, and the Project scrolls inside the canvas box, so the header, the
  * Toolbox's top and the canvas box's own top and bottom stay in view on a Project of any size.
  */
@@ -163,29 +163,18 @@ const {
 }
 
 /*
- * iPad mini and phone tiers (ticket 168, 79; responsive.md, under `bp-tablet-lg` 1024px): the column leaves the grid
- * track entirely. 744-1023px, the Drawer wrapping it switches to `position: fixed` (AppDrawer.vue's own media query)
- * and floats over the canvas box instead; under 744px AppDrawer hides it altogether -- the phone tier's Dock and
- * ToolSheets reach the same controls through their own, separate markup instead (Toolbox/SaveBox/Beads
- * needed/Saved Projects stay mounted inside the hidden Drawer, just not visibly). Either way the canvas box takes
- * the whole row on its own.
+ * Under 1024px (ticket 295, ADR 0032; responsive.md, Phone tier): the column leaves the grid entirely (AppSidebar hides
+ * it) and so does the header; the canvas box takes the whole row and starts at the top edge, padded only by the
+ * notch's safe-area inset. The Dock sits below it, in both orientations.
  */
 @media (max-width: 1023px) {
   .app-shell__body {
     grid-template-columns: minmax(0, 1fr);
+    padding: env(safe-area-inset-top) max(var(--space-8), env(safe-area-inset-right)) var(--space-8) max(var(--space-8), env(safe-area-inset-left));
   }
-}
 
-/* The phone tier (ticket 79): tighter page padding; a phone on its side leaves room for the Dock's own left rail (AppDock.vue's matching media query -- position: fixed, so it needs this padding rather than a flex/grid track). */
-@media (max-width: 743px) {
-  .app-shell__body {
-    padding: var(--space-16);
-  }
-}
-
-@media (max-width: 743px) and (max-height: 499px) {
-  .app-shell__body {
-    padding-left: calc(4rem + env(safe-area-inset-left));
+  .app-shell__notices {
+    padding: var(--space-8) var(--space-16) 0;
   }
 }
 </style>

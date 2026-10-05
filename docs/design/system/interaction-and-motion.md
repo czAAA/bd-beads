@@ -18,19 +18,19 @@ How every control answers the pointer, the finger and the keyboard, and how thin
 | `--duration-instant` | 80ms | Press feedback, bead hover |
 | `--duration-fast` | 120ms | Hover and colour changes, tooltips |
 | `--duration-base` | 200ms | Menus, popovers, toasts, modals, disclosure rows, the row marker (leaving: 150ms) |
-| `--duration-slow` | 280ms | Sheets and the Drawer arriving (leaving: 200ms) |
+| `--duration-slow` | 280ms | Sheets arriving (leaving: 200ms) |
 | `--ease-out` | cubic-bezier(.2,.8,.2,1) | Arriving |
 | `--ease-in` | cubic-bezier(.4,0,1,1) | Leaving |
 | `--ease-standard` | cubic-bezier(.2,0,0,1) | Moving between places |
 
 The motion tokens are CSS custom properties in `components/bundle.css`: the design-system format has no motion family.
 
-- Only `transform` and `opacity` animate over the canvas: sheets, the Drawer, menus, toasts and modals move over it, and the drawing surface never resizes during an animation (ADR 0018). Height animates only inside the left column.
+- Only `transform` and `opacity` animate over the canvas: sheets, menus, toasts and modals move over it, and the drawing surface never resizes during an animation (ADR 0018). Height animates only inside the left column.
 - Things arrive with `--ease-out` and leave with `--ease-in`, a little faster than they came. Nothing bounces or overshoots.
 - Row done glides the current-row marker to the next row and grows the progress line with it: the one motion on the Pattern, because it confirms the most repeated action.
 - No motion for painting, the theme switch (colours change at once so the canvas redraws once) or zoom steps; pinch follows the fingers directly.
 - Toasts leave after 5s unless hovered or focused; errors stay until closed.
-- **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, the Drawer, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still. Colour and opacity feedback stay.
+- **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still. Colour and opacity feedback stay.
 
 ## The Tour (v15)
 

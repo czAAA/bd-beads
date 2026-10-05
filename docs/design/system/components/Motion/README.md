@@ -7,6 +7,6 @@ How things move: four durations, three easings, and the rules that keep motion o
 - Only `transform` and `opacity` animate over the canvas; the drawing surface never resizes during an animation (ADR 0018). Height animates only inside the left column.
 - Row done glides the current-row marker to the next row (200ms): the one motion on the Pattern. Painting, the theme switch and zoom steps are instant.
 - Toasts leave after 5s unless hovered or focused; errors stay.
-- Reduced motion: sheets, the Drawer, menus and modals fade in 120ms instead of sliding; the marker jumps; loading beads stand still.
+- Reduced motion: sheets, menus and modals fade in 120ms instead of sliding; the marker jumps; loading beads stand still.
 
 Hand-written from the Phase B sign-off; the tokens and classes live in `components/bundle.css`.

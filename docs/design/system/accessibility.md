@@ -36,7 +36,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 - Tab order: Skip to Pattern (visible on focus), header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, the Pattern, Progress bar.
 - One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex). The Pattern is one stop with a bead cursor: arrows move, Space or Enter paints.
-- Modals, the Drawer and the modal Pattern sheet trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet or Drawer → menu → Selection → open disclosure row.
+- Modals and the modal Pattern and Menu sheets trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
 ## Painting with the keyboard
@@ -57,9 +57,8 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 | Token | Value | Layer |
 | --- | --- | --- |
 | `z-canvas-overlay` | 10 | Rulers, current-row marker, Selection, paste preview, ZoomPill: inside the canvas box. |
-| `z-chrome` | 20 | Header, Dock, BottomToolbar, Progress bar when they overlap scrolling content. |
+| `z-chrome` | 20 | Header, Dock, Progress bar when they overlap scrolling content. |
 | `z-context-bar` | 30 | The Selection ContextBar above the Progress bar. |
-| `z-drawer` | 40 | The iPad mini Drawer and its scrim (scrim one below). |
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
 | `z-popover` | 60 | Menus, the Image colors popover, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |

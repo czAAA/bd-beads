@@ -172,7 +172,7 @@ function techniqueWord(technique: Technique): string {
       <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
         <CanvasBackdrop v-if="activeProject && !framing" :word="techniqueWord(activeProject.technique)" />
 
-        <!-- How to move the canvas and its shortcuts: always, from the iPad mini up (CanvasHint card). -->
+        <!-- How to move the canvas and its shortcuts: at 1024px and up (CanvasHint card). -->
         <CanvasHint v-if="activeProject && !framing" class="app-shell__canvas-hint" />
 
         <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Project's bottom-right corner instead. -->
@@ -264,13 +264,14 @@ function techniqueWord(technique: Technique): string {
       <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
 
       <!--
-        The Selection context bar (ticket 168; ContextBar card): floats above the Progress bar on phone and iPad
-        mini, offering what a Selection can do without needing the Drawer or a right-click. Absent at 1024px and
+        The Selection context bar (ticket 168; ContextBar card): floats above the Progress bar under 1024px,
+        offering what a Selection can do without a right-click. Absent at 1024px and
         up, where the Toolbox's own Remove line/Copy already cover this.
       -->
       <ContextBar
         v-if="activeProject && !framing"
         class="app-shell__context-bar"
+        :class="{ 'app-shell__context-bar--frame': settingFrame }"
         :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
         :paste-armed="pasteProjectionActive"
         :can-remove-line="canRemoveSelectedLine"
@@ -311,7 +312,7 @@ function techniqueWord(technique: Technique): string {
 
 /*
  * The Selection context bar (ticket 168; ContextBar card): floats 10px from the canvas box's own edges, just above
- * the Progress bar, on phone and iPad mini only -- the Toolbox's own Remove line/Copy links cover this at 1024px and
+ * the Progress bar, under 1024px only -- the Toolbox's own Remove line/Copy links cover this at 1024px and
  * up, where there's no need for it to float over the Project.
  */
 .app-shell__context-bar {
@@ -327,13 +328,26 @@ function techniqueWord(technique: Technique): string {
     z-index: var(--z-context-bar);
     display: flex;
   }
+
+  /*
+   * The Frame bar (ticket 295; Frame bar card): while the Frame is being set, the same bar floats at the top-centre of
+   * the canvas box over the beads instead of above the Progress bar, so it never takes a row and never reaches the Dock.
+   */
+  .app-shell__context-bar--frame {
+    top: var(--space-10);
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    max-width: calc(100% - 2 * var(--space-10));
+    transform: translateX(-50%);
+  }
 }
 
 .app-shell__zoom-pill {
   display: none;
 }
 
-@media (max-width: 743px) {
+@media (max-width: 1023px) {
   .app-shell__zoom-pill {
     position: absolute;
     right: var(--space-16);
@@ -441,15 +455,15 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* The phone has no wheel and no keyboard to hint at (CanvasHint card). */
-@media (max-width: 743px) {
+/* The phone layout has no wheel and no keyboard to hint at (CanvasHint card). */
+@media (max-width: 1023px) {
   .app-shell__canvas-hint {
     display: none;
   }
 }
 
-/* No canvas strip on phone (responsive.md): ZoomPill floats over the Project instead. */
-@media (max-width: 743px) {
+/* No canvas header strip under 1024px (ticket 295, responsive.md): ZoomPill floats over the Project instead, and the strip's Project info lives in the Project sheet. */
+@media (max-width: 1023px) {
   .app-shell__canvas-strip {
     display: none;
   }

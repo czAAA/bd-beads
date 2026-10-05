@@ -11,7 +11,6 @@
     "components/BeadHover/README.md",
     "components/BeadPill/README.md",
     "components/BeadsNeeded/README.md",
-    "components/BottomToolbar/README.md",
     "components/Button/README.md",
     "components/CanvasStrip/README.md",
     "components/ColorPickers/README.md",
@@ -21,7 +20,6 @@
     "components/ConvertImage/README.md",
     "components/DisclosureRow/README.md",
     "components/Dock/README.md",
-    "components/Drawer/README.md",
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
     "components/Glossary/README.md",
@@ -116,11 +114,6 @@
       "summary": "An expandable panel listing how many beads of each color the Pattern needs, with the total in its title."
     },
     {
-      "name": "BottomToolbar",
-      "group": "Responsive",
-      "summary": "The iPad mini's toolbar: the four tools, the current colour, Undo and Redo, under the thumb so drawing never needs the drawer."
-    },
-    {
       "name": "Button",
       "group": "Actions",
       "summary": "Every clickable action in bd-beads: primary, primary select, secondary, secondary in a box, text, link, icon, round icon and expand variants."
@@ -143,7 +136,7 @@
     {
       "name": "ContextBar",
       "group": "Responsive",
-      "summary": "A floating bar above the Progress bar on phone and iPad mini that offers what a Selection can do."
+      "summary": "A floating bar above the Progress bar under 1024px that offers what a Selection can do, and the Frame bar."
     },
     {
       "name": "ContrastAudit",
@@ -163,12 +156,7 @@
     {
       "name": "Dock",
       "group": "Responsive",
-      "summary": "The phone's five buttons, one per kind of tool, each opening its own ToolSheet: the active tool, Colour, Edit, Frame, Pattern."
-    },
-    {
-      "name": "Drawer",
-      "group": "Responsive",
-      "summary": "The iPad mini's left column, sliding in over the canvas from the left when the header's Tools button is pressed."
+      "summary": "The phone layout's five icon-only buttons, each opening its own sheet: the active tool, Colour, Frame, Pattern, Menu."
     },
     {
       "name": "EmptyCanvas",
@@ -353,7 +341,7 @@
     {
       "name": "ScreenSizes",
       "group": "Responsive",
-      "summary": "The five screen tiers side by side: Phone, iPad mini, iPad 13″, MacBook Air and 24″ and larger (the MacBook Air layout, wider)."
+      "summary": "The four screen tiers side by side: Phone, iPad 13″, MacBook Air and 24″ and larger (the MacBook Air layout, wider)."
     },
     {
       "name": "SegmentedControl",

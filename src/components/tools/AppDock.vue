@@ -4,15 +4,15 @@ import { usePalette } from '../../composables/tools/usePalette'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 import { TOOL_HOTKEYS, TOOL_ICONS } from './toolIcons'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
- * The design system's Dock (ticket 79; Dock card): the phone's five buttons, one per kind of tool, each opening its
- * own ToolSheet (ticket 174 dropped Mirror's, pending its own redesign). 64px plus the bottom safe-area inset in
- * portrait; a 64px left rail, safe-area by the side insets, once the screen is short (landscape, `bp-phone-landscape`
- * 499px -- BottomToolbar's own media query, since the two share this exact breakpoint and anatomy).
+ * The design system's Dock (ticket 79, 295; Dock card): the phone layout's five icon-only buttons, one per sheet: Tool,
+ * Colour, Frame, Project and Menu. 48px plus the bottom safe-area inset, at most 480px wide and centred, in portrait
+ * and landscape alike (ADR 0032). Each button's name is its accessible name and its Tooltip; there are no text labels.
  */
 const props = defineProps<{
   activeTool: Tool
@@ -34,35 +34,35 @@ const activeToolInfo = computed(() => ({ icon: TOOL_ICONS[props.activeTool], lab
 const palette = usePalette()
 const colorHex = computed(() => (props.selectedColorId ? palette.value.find((color) => color.id === props.selectedColorId)?.hex : undefined))
 
-/** The first button's and Frame's hotkey corner (Dock card, ticket 275): the Toolbox's own keys, `aria-hidden`. Colour, Edit and Project are groups, not tools, so they have none. */
+/** The first button's and Frame's hotkey corner (Dock card, ticket 275): the Toolbox's own keys, `aria-hidden`. Colour, Project and Menu are not tools, so they have none. */
 const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string; key?: string }[]>(() => [
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool', key: TOOL_HOTKEYS[props.activeTool] },
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
-  { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
   { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: '6' },
   { id: 'project', icon: 'pattern', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
+  { id: 'menu', icon: 'menu', label: t.value.header.menuButton, testid: 'dock-menu' },
 ])
 </script>
 
 <template>
   <nav class="dock" :aria-label="t.a11y.toolsLandmark" data-testid="dock">
-    <button
-      v-for="item in items"
-      :key="item.id"
-      type="button"
-      class="ui-control dock__item"
-      :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool', 'dock__item--frame-on': item.id === 'frame' && settingFrame }"
-      :aria-pressed="openSheet === item.id"
-      :aria-keyshortcuts="item.key"
-      :data-testid="item.testid"
-      :data-tour="`dock-${item.id}`"
-      @click="emit('select-sheet', item.id)"
-    >
-      <span v-if="item.id === 'color'" class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
-      <AppIcon v-else :name="item.icon" :size="22" />
-      <span class="dock__label">{{ item.label }}</span>
-      <span v-if="item.key" class="dock__key" :class="{ 'dock__key--accent': item.id === 'tool' || (item.id === 'frame' && settingFrame) }" aria-hidden="true">{{ item.key }}</span>
-    </button>
+    <AppTooltip v-for="item in items" :key="item.id" class="dock__slot" :text="item.label" placement="top" :announce="false">
+      <button
+        type="button"
+        class="ui-control dock__item"
+        :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool', 'dock__item--frame-on': item.id === 'frame' && settingFrame }"
+        :aria-label="item.label"
+        :aria-pressed="openSheet === item.id"
+        :aria-keyshortcuts="item.key"
+        :data-testid="item.testid"
+        :data-tour="`dock-${item.id}`"
+        @click="emit('select-sheet', item.id)"
+      >
+        <span v-if="item.id === 'color'" class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
+        <AppIcon v-else :name="item.icon" :size="22" />
+        <span v-if="item.key" class="dock__key" :class="{ 'dock__key--accent': item.id === 'tool' || (item.id === 'frame' && settingFrame) }" aria-hidden="true">{{ item.key }}</span>
+      </button>
+    </AppTooltip>
   </nav>
 </template>
 
@@ -70,21 +70,29 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 .dock {
   display: flex;
   align-items: stretch;
+  box-sizing: content-box;
+  width: 100%;
+  max-width: var(--dock-max-width);
   height: var(--dock-height);
+  margin: 0 auto;
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--canvas);
   border-top: 1px solid var(--line-soft);
 }
 
+/* The Tooltip's wrapper is the slot; the button fills it. */
+.dock__slot {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 .dock__item {
   position: relative;
   display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  width: 3.75rem;
   padding: 0;
   color: var(--muted);
   background: none;
@@ -127,11 +135,6 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   background: var(--panel);
 }
 
-.dock__label {
-  font: var(--type-meta-tiny);
-  white-space: nowrap;
-}
-
 .dock__swatch {
   box-sizing: border-box;
   width: 22px;
@@ -143,36 +146,5 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 .dock__item:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: -2px;
-}
-
-/*
- * Landscape (responsive.md, height up to bp-phone-landscape): a 64px rail on the left edge, below the header (its
- * own media query drops to 44px there) rather than under the Project -- position: fixed takes it out of the
- * app shell's flex column entirely, since AppShell.vue only knows how to stack it below the body, not beside it.
- * AppShell.vue's own .app-shell__body padding leaves it room (its own matching media query).
- */
-@media (max-width: 743px) and (max-height: 499px) {
-  .dock {
-    position: fixed;
-    top: var(--header-height-phone-landscape);
-    right: auto;
-    bottom: 0;
-    left: 0;
-    z-index: var(--z-chrome);
-    flex-direction: column;
-    height: auto;
-    padding-bottom: 0;
-    padding-left: env(safe-area-inset-left);
-    border-top: 0;
-    border-right: 1px solid var(--line-soft);
-  }
-
-  .dock__item {
-    width: auto;
-  }
-
-  .dock__key {
-    right: var(--space-8);
-  }
 }
 </style>
