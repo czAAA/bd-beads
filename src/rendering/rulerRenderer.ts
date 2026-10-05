@@ -19,7 +19,7 @@ export interface RulerDrawInput {
   view: RulerView
   pixelRatio: number
   theme: ProjectTheme
-  /** Whether the numbers are drawn (the Rulers toggle); the lines are drawn either way. */
+  /** Whether the numbers and the Pieces' rectangles are drawn (the Rulers toggle); the Frame's line is drawn either way. */
   showNumbers: boolean
   /** The keyboard's bead cursor: its row and column numbers are marked. */
   cursor?: GridPosition
@@ -75,7 +75,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, view: RulerView, 
 }
 
 /**
- * Draws the lines (the Frame's, or each piece's rectangle) and, with the Rulers toggle on, their numbers, in the
+ * Draws the lines (the Frame's, or each piece's rectangle) and their numbers, in the
  * viewport's own px over whatever is drawn, and gives back the numbers it drew so a click can be tested against them.
  */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): RulerLabel[] {
@@ -84,6 +84,10 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): Rule
 
   const reach = view.fontPx * 4 + 40
   for (const box of ruledBoxes(project)) {
+    // With Rulers off a Piece's rectangle goes with its numbers; the Frame's line never does.
+    if (!showNumbers && box.kind === 'piece') {
+      continue
+    }
     const shown = boxOnScreen(box, view)
     if (shown.x + shown.width > -reach && shown.x < view.viewport.width + reach && shown.y + shown.height > -reach && shown.y < view.viewport.height + reach) {
       strokeBoxLine(context, box, view, theme, sameBox(box, activePiece))

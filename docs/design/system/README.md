@@ -149,6 +149,8 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 - **v18, Frame margin:** the Frame keeps a three-bead margin where nothing can be drawn, and beads already there move outside it. Drawn flat: no fill, a gap in the grid dots at rest, a 1px dashed `line-strong` outline only while the Frame is being set or a press is refused. New Message "Frame set. 1 piece was in the margin and moved outside it." (Russian proposed, not reviewed). No token changed.
 
+- **v19, Rulers off hides the piece rectangles:** the Rulers card (README and `preview.html`) says that with the Rulers toggle off a piece's rectangle is not drawn, along with its numbers; the Frame's line is never hidden by the toggle (ticket 289). No token changed.
+
 - **v18, Toolbox follows the app:** the Tools group is six compact icon tiles on the Palette swatch grid (8 columns, gap 6, square, about 28px) in place of five labelled tabs: Paint, Fill, Select, Erase, Hand and Frame (1, 2, 3, E, H, F), the active one outlined in `accent-strong`; each tile centers its icon and prints its hotkey (1, 2, 3, E, H, F) in the top-right corner. The iPad toolbar and the phone Dock use the same icons and the same corner key. Under them: Remove Frame, Remove line, Clear (was Delete all). The Mirror row leaves the Toolbox. Custom shows a hatched glyph. SaveBox says Save Project and Export; Saved Projects names stay on one line. Product nouns are capitalized in buttons and box titles. No token changed.
 
 - **v17, vocabulary only:** Project is the whole canvas and the saved thing; Pattern narrows to the beads inside the Frame. No layout, token value, colour, spacing, icon or behaviour changed. See *What changed in this version* in `WHAT-CHANGED-v17.md`.
