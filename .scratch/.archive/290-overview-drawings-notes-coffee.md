@@ -12,10 +12,10 @@ Check the visual specs and any reference screenshots for the Overview (EN and RU
 
 **Human involvement:** autonomous (a human should eyeball the drawing placements at the five bands, as the tests can't judge "looks close enough")
 
-**Status:** ready-for-agent
+**Status:** done (except `preview.html`, left for a human: blocked by a deny rule in the implementing session)
 
-- [ ] At every band, each drawing sits a fixed gap outside the content column, with none touching text or a control, in EN and RU
-- [ ] Item counts per band: `xl`/`xxl` as today, `md`/`lg` about two thirds, `sm` about one third; the header logo is unchanged
-- [ ] The "you" and "on us" notes show with and without saved Projects, in the "you are here" note's font and style, in EN and RU
-- [ ] The Coffee tile spans the main column at every band; its text is 1-2 lines where it fits at tablet and up
+- [x] At every band, each drawing sits a fixed gap outside the content column, with none touching text or a control, in EN and RU
+- [x] Item counts per band: `xl`/`xxl` as today, `md`/`lg` about two thirds, `sm` about one third; the header logo is unchanged
+- [x] The "you" and "on us" notes show with and without saved Projects, in the "you are here" note's font and style, in EN and RU
+- [x] The Coffee tile spans the main column at every band; its text is 1-2 lines where it fits at tablet and up
 - [ ] The Overview card (README, `preview.html`, changelog line), tokens, `bundle.css` and `design-values.css` match the app; tests and visual specs updated

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DrawnLayer from './DrawnLayer.vue'
-import { LAYERS, TIERS, type SectionName } from './drawnLayer'
+import { LAYERS, TIERS, type SectionName, type Tier } from './drawnLayer'
 
 const SECTIONS: SectionName[] = ['hero', 'inside', 'coffee', 'plans']
 
@@ -19,12 +19,63 @@ describe('DrawnLayer', () => {
     expect(wrapper.findAll('[data-testid="overview-drawn-doodle"]')).toHaveLength(count('doodles'))
   })
 
-  it('keeps the hero and the plans at three to five X1 marks from 1024 up', () => {
+  it('keeps the hero and the plans at three to five X1 marks from 1440 up', () => {
     for (const section of ['hero', 'plans'] as const)
-      for (const tier of ['lg', 'xl', 'xxl'] as const) {
+      for (const tier of ['xl', 'xxl'] as const) {
         expect(LAYERS[section].marks[tier].length).toBeGreaterThanOrEqual(3)
         expect(LAYERS[section].marks[tier].length).toBeLessThanOrEqual(5)
       }
+  })
+
+  describe('how many there are per band (ticket 290)', () => {
+    const total = (tier: Tier, kind: 'marks' | 'doodles') =>
+      SECTIONS.reduce((n, s) => n + LAYERS[s][kind][tier].length, 0)
+
+    it('keeps the laptop and desktop bands as they were', () => {
+      for (const tier of ['xl', 'xxl'] as const) {
+        expect(total(tier, 'doodles')).toBe(24)
+        expect(total(tier, 'marks')).toBe(9)
+      }
+    })
+
+    it('thins the tablet and small laptop bands to about two thirds, and the phone band to about one third', () => {
+      for (const tier of ['md', 'lg'] as const) {
+        expect(total(tier, 'doodles')).toBeGreaterThanOrEqual(14)
+        expect(total(tier, 'doodles')).toBeLessThanOrEqual(18)
+        expect(total(tier, 'marks')).toBeGreaterThanOrEqual(5)
+        expect(total(tier, 'marks')).toBeLessThanOrEqual(7)
+      }
+      expect(total('sm', 'doodles')).toBeGreaterThanOrEqual(6)
+      expect(total('sm', 'doodles')).toBeLessThanOrEqual(10)
+      expect(total('sm', 'marks')).toBeGreaterThanOrEqual(2)
+      expect(total('sm', 'marks')).toBeLessThanOrEqual(4)
+    })
+  })
+
+  it('sits the drawings a fixed gap of 24-48px outside the column where the wide bands have room', () => {
+    for (const section of SECTIONS)
+      for (const tier of ['xl', 'xxl'] as const)
+        for (const d of LAYERS[section].doodles[tier].filter((d) => !d.big)) {
+          // A few small ones tuck into blank space beside the hero's text instead.
+          if (d.gap < 0) continue
+          expect(d.gap).toBeGreaterThanOrEqual(8)
+          expect(d.gap).toBeLessThanOrEqual(48)
+        }
+    const outside = (tier: Tier) =>
+      SECTIONS.flatMap((s) => LAYERS[s].doodles[tier]).filter((d) => d.gap >= 24 && d.gap <= 48).length
+    expect(outside('xl')).toBeGreaterThanOrEqual(18)
+    expect(outside('xxl')).toBeGreaterThanOrEqual(18)
+  })
+
+  it('places each drawing from the column with a gap in CSS', () => {
+    const wrapper = mount(DrawnLayer, { props: { section: 'inside' } })
+    const first = LAYERS.inside.doodles.md[0]!
+    const style = wrapper
+      .findAll('[data-testid="overview-drawn-doodle"]')
+      .find((d) => d.classes().includes('drawn__tier--md'))!
+      .attributes('style')!
+      .replace(/\s/g, '')
+    expect(style).toContain(`${first.side === 'left' ? 'right' : 'left'}:calc(50%+var(--col)+${first.gap}px)`)
   })
 
   it('leaves the large drawings out of the phone band and gives them 16% opacity elsewhere', () => {

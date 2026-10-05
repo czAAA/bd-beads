@@ -64,11 +64,14 @@ describe('OverviewPage', () => {
       expect(wrapper.find('[data-testid="overview-note-steps"]').text()).toBe('одиннадцать коротких шагов')
     })
 
-    it('shows neither the band nor the notes once Projects are saved', () => {
+    it('shows only "you" and "on us" once Projects are saved, not the band or the first-time notes', () => {
       const wrapper = page(2)
       expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
-      expect(wrapper.findAll('.overview__note')).toHaveLength(0)
-      expect(wrapper.find('[data-testid="overview-slogan"]').text()).toBe('Draw. Joy. Weave.')
+      expect(wrapper.find('[data-testid="overview-note-you"]').text()).toBe('you')
+      expect(wrapper.find('[data-testid="overview-note-on-us"]').text()).toBe('on us')
+      expect(wrapper.find('[data-testid="overview-note-steps"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="overview-note-make-this"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="overview-slogan"]').text().replace('you', '')).toBe('Draw. Joy. Weave.')
     })
   })
 

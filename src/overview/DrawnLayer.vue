@@ -5,10 +5,11 @@ import { findPaletteColor } from '../domain/palette'
 import { beadsOf, DRAWINGS, LAYERS, LETTER_COLORS, TIERS, type Doodle, type Placement, type SectionName } from './drawnLayer'
 
 /**
- * The drawn layer behind one Overview section (ticket 221; Overview card): bead drawings at the page edges and X1 marks
- * at 8% `accent`. It is decoration only: hidden from screen readers, behind the content (the section isolates it with
- * `z-index: -1`), and out of reach of the pointer and the keyboard. It is as wide as the page, so the edges are the
- * page's; each placement belongs to one screen-size band and only that band's are shown (see `drawnLayer.ts`).
+ * The drawn layer behind one Overview section (ticket 221; Overview card): bead drawings beside the main column and X1
+ * marks at 8% `accent`. It is decoration only: hidden from screen readers, behind the content (the section isolates it
+ * with `z-index: -1`), and out of reach of the pointer and the keyboard. It is as wide as the page and centred on the
+ * column, whose half-width is `--col`, so a placement's gap is measured from the column's edge. Each placement belongs
+ * to one screen-size band and only that band's are shown (see `drawnLayer.ts`).
  */
 const props = defineProps<{ section: SectionName }>()
 
@@ -29,7 +30,8 @@ function shape(d: Doodle) {
 }
 
 function position(p: Placement): string {
-  return `${p.side}:${p.edge}px;top:${p.top}px`
+  const from = p.side === 'left' ? 'right' : 'left'
+  return `${from}:calc(50% + var(--col) + ${p.gap}px);top:${p.top}px`
 }
 
 const layer = computed(() => LAYERS[props.section])
@@ -85,6 +87,8 @@ const doodles = computed(() =>
   top: 0;
   bottom: 0;
   left: 50%;
+  /* Half the main column's content width: the page minus its padding, up to the column's maximum. */
+  --col: calc(50cqw - var(--space-16));
   width: 100vw;
   margin-left: -50vw;
   z-index: -1;
@@ -125,6 +129,9 @@ const doodles = computed(() =>
 }
 
 @media (min-width: 744px) {
+  .drawn {
+    --col: calc(50cqw - var(--space-24));
+  }
   .drawn__tier--sm {
     display: none;
   }
@@ -134,6 +141,9 @@ const doodles = computed(() =>
 }
 
 @media (min-width: 1024px) {
+  .drawn {
+    --col: min(50cqw - var(--space-32), 33.75rem - var(--space-32));
+  }
   .drawn__tier--md {
     display: none;
   }
@@ -152,6 +162,9 @@ const doodles = computed(() =>
 }
 
 @media (min-width: 1920px) {
+  .drawn {
+    --col: min(50cqw - 2.5rem, 37.5rem - 2.5rem);
+  }
   .drawn__tier--xl {
     display: none;
   }
