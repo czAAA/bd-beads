@@ -497,4 +497,26 @@ describe('the bead cursor (ticket 159)', () => {
 
     expect(named('fill')).toHaveLength(0)
   })
+
+  describe('the Frame margin outline (ticket 276)', () => {
+    const framed = { ...projectOf('loom', 4, 4, { enabled: false }), frame: { row: 5, column: 5, rows: 4, columns: 4 } }
+
+    it('strokes a dashed 1px outline round the margin at the given opacity', () => {
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project: framed, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 2, marginOutline: 0.5 })
+
+      expect(named('setLineDash')[0]!.args[0]).toEqual([2, 1.5])
+      const stroke = calls.find((call) => call.name === 'stroke')!
+      expect(stroke.globalAlpha).toBe(0.5)
+    })
+
+    it('draws nothing while it is faded out', () => {
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project: framed, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 0 })
+
+      expect(calls.some((call) => call.name === 'stroke')).toBe(false)
+    })
+  })
 })

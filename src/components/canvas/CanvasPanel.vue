@@ -220,6 +220,7 @@ function techniqueWord(technique: Technique): string {
               :scroll="scroll"
               :show-rulers="showRulers"
               :moving="activeTool === 'hand'"
+              :blocks-margin="activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"

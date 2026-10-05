@@ -6,7 +6,7 @@
 
 **Human involvement:** interactive
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The margin has no fill and no dots drawn in it; the rest of the canvas is unchanged; theme and Canvas color variations all read well, including the dark and Ash backgrounds
 - [ ] A dashed `line-strong` outline of the margin fades in while a Frame is set, moved or resized (one drag, one fade), and after a refused press in the margin lasts 1s; reduced motion shows it without the fade
