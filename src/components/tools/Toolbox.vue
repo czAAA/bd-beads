@@ -144,7 +144,6 @@ const frameSummary = computed(() => {
           :hotkey="tool.hotkey"
           :description="tool.description"
           :active="activeTool === tool.id"
-          variant="tile"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
@@ -154,10 +153,9 @@ const frameSummary = computed(() => {
         <ToolButton
           icon="frame"
           :label="t.frame.setFrame"
-          hotkey="F"
+          hotkey="6"
           :description="t.frame.setFrameHint"
           :active="!!settingFrame"
-          variant="tile"
           data-testid="tool-frame"
           :tabindex="tabsRoving.tabIndexFor(!!settingFrame)"
           @click="emit('start-frame')"
@@ -281,11 +279,12 @@ const frameSummary = computed(() => {
   border-radius: var(--radius-lg);
 }
 
-/* Tool tiles (ToolTabs card, v18): the Palette swatches' 8 columns, so a tile is a swatch's size and the six tools fill the first six. */
+/* Tool tabs (ToolTabs card): 56x72 tabs, five to a row (Frame wraps), a full-width 1px `line-strong` rule under each row. */
 .tool-buttons {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: var(--space-6);
+  grid-template-columns: repeat(5, 56px);
+  grid-auto-rows: 72px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px);
 }
 
 .toolbox__links {

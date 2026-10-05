@@ -48,12 +48,12 @@ function press(init: KeyboardEventInit) {
 describe('useAppShortcutTable', () => {
   it('F toggles Set Frame only while a Project is open', () => {
     const none = mountTable()
-    press({ key: 'f' })
+    press({ key: '6' })
     expect(none.deps.onToggleFrame).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
-    press({ key: 'f' })
+    press({ key: '6' })
     expect(deps.onToggleFrame).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
@@ -90,7 +90,7 @@ describe('useAppShortcutTable', () => {
 
   it('E picks the eraser, but not while a modal is open', () => {
     const { deps, wrapper } = mountTable()
-    press({ key: 'e' })
+    press({ key: '4' })
     expect(deps.onSelectTool).toHaveBeenCalledWith('erase')
     wrapper.unmount()
   })

@@ -122,7 +122,7 @@ One titled box within the Toolbox gathering related controls — e.g. Tools (Pai
 _Avoid_: subbox, card, section, panel
 
 **Tool button**:
-A Tools-group tool shown as an icon-only square button (Paint is a pencil), four to a row, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
+A Tools-group tool shown as an icon-only tab (Paint is a pencil), 56px wide, five to a row, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
 _Avoid_: tab, tool tab
 
 **Tooltip**:

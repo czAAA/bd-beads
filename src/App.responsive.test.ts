@@ -76,6 +76,6 @@ describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', ()
 
   it('leaves the MacBook Air tier (1280-1919px) on the reference column', () => {
     expect(appSource).toContain('grid-template-columns: var(--column-width) minmax(0, 1fr);')
-    expect(layoutPx('column-width')).toBe(326)
+    expect(layoutPx('column-width')).toBe(366)
   })
 })

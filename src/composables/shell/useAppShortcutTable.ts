@@ -22,7 +22,7 @@ export interface AppShortcutTableDeps {
   onSelectColor: (colorId: string) => void
   onDeleteSelection: () => void
   onToggleRulers: () => void
-  /** F: starts Set Frame, or finishes it. */
+  /** 6: starts Set Frame, or finishes it. */
   onToggleFrame: () => void
   /** Whether the Frame is being set, and the way out of it. */
   settingFrame: () => boolean
@@ -133,7 +133,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         deps.onUndo()
       },
     },
-    // Tools group (ticket 87): 1/2/3 select Paint/Fill/Select, the same as clicking that button.
+    // Tools group (ticket 87): 1/2/3 select Paint/Fill/Select (4/5/6: Erase/Hand/Frame below), the same as clicking that button.
     {
       matches: (event) => isPlainLetterKey(event, '1'),
       guard: noModalOpen,
@@ -149,15 +149,15 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
       guard: noModalOpen,
       action: () => deps.onSelectTool('select'),
     },
-    // Canvas group (v16): H picks the Hand tool, which moves the canvas and never changes a bead.
+    // Canvas group (v16): 5 picks the Hand tool (ticket 292), which moves the canvas and never changes a bead.
     {
-      matches: (event) => isPlainLetterKey(event, 'h'),
+      matches: (event) => isPlainLetterKey(event, '5'),
       guard: noModalOpen,
       action: () => deps.onSelectTool('hand'),
     },
-    // ticket 250: E picks Eraser, so it is no longer the one tool without a key.
+    // ticket 250/292: 4 picks Eraser.
     {
-      matches: (event) => isPlainLetterKey(event, 'e'),
+      matches: (event) => isPlainLetterKey(event, '4'),
       guard: noModalOpen,
       action: () => deps.onSelectTool('erase'),
     },
@@ -185,9 +185,9 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         }
       },
     },
-    // Canvas group (v16): F starts Set Frame (and finishes it).
+    // Canvas group (v16): 6 starts Set Frame (ticket 292) (and finishes it).
     {
-      matches: (event) => isPlainLetterKey(event, 'f'),
+      matches: (event) => isPlainLetterKey(event, '6'),
       guard: () => noModalOpen() && !!deps.activeProject(),
       action: () => deps.onToggleFrame(),
     },

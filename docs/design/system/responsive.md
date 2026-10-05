@@ -46,7 +46,7 @@ Devices (CSS px): iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, iPad min
 
 Devices (CSS px): iPad Air 13″, landscape 1366×1024, DESIGN.md reference 1440×900, MacBook Air 13″ 1470×956, MacBook Air 15″ 1710×1107.
 
-- The layout DESIGN.md defines, unchanged: 326px column (312px boxes), page padding 24 / 32, header 64px with every item and its label.
+- The layout DESIGN.md defines, unchanged: 366px column (352px boxes), page padding 24 / 32, header 64px with every item and its label.
 - This is the reference tier: every other tier is described as a change from it.
 
 ### 24″ and larger · 1920 and up px

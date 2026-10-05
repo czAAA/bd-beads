@@ -12,7 +12,7 @@ Update in the same change (CLAUDE.md Design rules): the ToolTabs card (README, `
 
 **Human involvement:** needs a human to confirm the other tiers' sizes on real devices
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] 1–6 select Paint, Fill, Select, Erase, Hand, Frame; E, H, F do nothing; Shift+digit still picks the Palette
 - [ ] Every shown key (badge, Tooltip, shortcuts modal, Tour, Overview, EN and RU) reads the digit

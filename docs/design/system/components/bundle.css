@@ -49,6 +49,7 @@ body {
 .bb-icon--16 { width: 16px; height: 16px; }
 .bb-icon--17 { width: 17px; height: 17px; }
 .bb-icon--18 { width: 18px; height: 18px; }
+.bb-icon--34 { width: 34px; height: 34px; }
 
 /* 5.1 Buttons */
 .bb-btn {
@@ -92,11 +93,12 @@ body {
 .bb-theme button[aria-pressed="true"] { background: var(--ink); color: var(--canvas); }
 
 /* 5.4 Tool tabs */
-.bb-tools { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
-.bb-tool { position: relative; aspect-ratio: 1; display: grid; place-items: center; padding: 0; background: var(--elevated); border: 0; border-radius: var(--radius-sm); color: var(--muted); cursor: pointer; }
-.bb-tool[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--accent-strong); }
-.bb-tool-key { position: absolute; top: 1px; right: 2px; font: 400 10px/10px var(--font-mono); color: var(--muted); pointer-events: none; }
-.bb-tool[aria-selected="true"] .bb-tool-key { color: var(--ink); }
+.bb-tools { display: grid; grid-template-columns: repeat(5, 56px); grid-auto-rows: 72px; background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px); }
+.bb-tool { position: relative; display: grid; place-items: center; width: 56px; height: 72px; padding: 0; background: none; border: 0; border-radius: 0; color: var(--muted); cursor: pointer; }
+.bb-tool[aria-selected="true"] { color: var(--accent-strong); }
+.bb-tool[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent-strong); }
+.bb-tool-key { position: absolute; top: calc(50% - 23px); left: calc(50% + 15px); font: 400 11px/11px var(--font-mono); color: var(--muted); pointer-events: none; }
+.bb-tool[aria-selected="true"] .bb-tool-key { color: var(--accent-strong); }
 .bb-tool-remove { margin-top: 12px; }
 .bb-tool-actions { display: flex; justify-content: space-between; margin-top: 10px; }
 .bb-tool-actions .bb-link[disabled] { color: var(--faint); cursor: default; }
@@ -239,7 +241,7 @@ body {
 .m-main.solo{padding:12px}
 .t-tablet-lg .m-main{padding:16px;gap:12px}.t-tablet-lg .m-col{width:300px}
 .t-desktop .m-hd{padding:0 40px}.t-desktop .m-main{padding:32px 40px}.t-desktop .m-col{width:360px}
-.m-col{width:326px;flex:none;display:flex;flex-direction:column;gap:16px;overflow:hidden;padding-right:14px}
+.m-col{width:366px;flex:none;display:flex;flex-direction:column;gap:16px;overflow:hidden;padding-right:14px}
 .t-tablet-lg .m-col{gap:12px}
 .m-box{background:var(--panel);border:1px solid var(--panel-line);border-radius:12px;padding:14px 20px 16px;box-shadow:var(--elevation-1)}
 .m-box.tb{padding:24px;box-shadow:none;display:flex;flex-direction:column;gap:8px}
@@ -580,14 +582,14 @@ body {
 [data-theme="contrast"] :where(button,select,[role="switch"],a):focus-visible,[data-theme="contrast"] .ix:focus-visible,[data-theme="contrast"] .ix.is-focus,[data-theme="contrast"] .f-in.focus{outline-width:3px}
 [data-theme="contrast"] :is(.f-in,.f-step,.bb-btn,.f-btn,.ix,.m-b){border-width:2px}
 [data-theme="contrast"] .ix-tab.is-on{border-bottom-width:3px;font-weight:700}
-[data-theme="contrast"] .bb-tool[aria-selected="true"]{box-shadow:inset 0 0 0 3px var(--accent-strong)}
+[data-theme="contrast"] .bb-tool[aria-selected="true"]::after{height:3px}
 /* Windows high contrast: let the system colours win, keep outlines, never rely on a fill */
 @media (forced-colors: active){
   :where(button,select,[role="switch"],a):focus-visible,.ix:focus-visible{outline:2px solid Highlight}
   :is(.bb-btn,.f-btn,.ix,.m-b,.f-in,.f-step,.bb-switch){border:1px solid ButtonText}
   .bb-switch[aria-checked="true"]{background:Highlight}
   .ix-tab.is-on{border-bottom:3px solid Highlight}
-  .bb-tool[aria-selected="true"]{outline:2px solid Highlight;outline-offset:-2px}
+  .bb-tool[aria-selected="true"]::after{background:Highlight}
   .bb-thumb.is-open .bb-thumb-circle{outline:2px solid Highlight;outline-offset:2px}
 }
 /* Stacking: the zIndex tokens (--z-*) come from tokens.css */
@@ -680,7 +682,7 @@ body {
 .m-tabs b:nth-child(4)::after,.hct b:nth-child(4)::after{content:"E"}
 .m-tabs b:nth-child(5)::after,.hct b:nth-child(5)::after{content:"H"}
 .m-tabs b:nth-child(6)::after,.hct b:nth-child(6)::after{content:"F"}
-[data-theme="contrast"] :is(.bb-tool-key,.m-tabs b::after){color:var(--ink)}
+[data-theme="contrast"] .m-tabs b::after{color:var(--ink)}
 /* Dock and iPad toolbar: the same corner key (top-right, DM Mono); 12px on a phone, 11px on the iPad */
 .p-dk,.m-tbar b{position:relative}
 .kc{position:absolute;top:3px;right:4px;font:400 11px/11px var(--font-mono);color:var(--muted);pointer-events:none}
