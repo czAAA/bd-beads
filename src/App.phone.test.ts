@@ -195,4 +195,18 @@ describe('App at the phone tier (ticket 79)', () => {
     // The compact import file input should be present in the project sheet.
     expect(wrapper.find('[data-testid="bottom-sheet"] [data-testid="project-sheet-import-file"]').exists()).toBe(true)
   })
+
+  it('changes the Canvas color from the Project sheet header and remembers it (ticket 281)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+
+    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
+    const button = sheet.get('[data-testid="canvas-color-button"]')
+    expect(button.attributes('aria-label')).toBe('Canvas color')
+    await button.trigger('click')
+    expect(sheet.findAll('[role="radio"]')).toHaveLength(5)
+    await sheet.get('[data-testid="canvas-color-sage"]').trigger('click')
+
+    expect(localStorage.getItem('bd-beads:canvas-background')).toBe('3')
+  })
 })
