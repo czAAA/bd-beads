@@ -462,7 +462,8 @@ function onPointerDown(event: PointerEvent): void {
     lastBead = undefined
     return
   }
-  if (event.button === 0 && refusesMargin(bead)) {
+  // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
+  if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
     refusePress()
   }
 

@@ -8,10 +8,10 @@
 
 **Status:** done
 
-- [ ] The margin has no fill and no dots drawn in it; the rest of the canvas is unchanged; theme and Canvas color variations all read well, including the dark and Ash backgrounds
-- [ ] A dashed `line-strong` outline of the margin fades in while a Frame is set, moved or resized (one drag, one fade), and after a refused press in the margin lasts 1s; reduced motion shows it without the fade
-- [ ] A refused press (Paint, Fill, Paste or Mirror landing in the margin) triggers that outline; Erase, which still works there, does not
-- [ ] The pointer is `not-allowed` over the margin for the tools that cannot place beads there; Erase and Hand keep theirs
-- [ ] Removing the Frame removes the margin and the outline; the `Frame` card, `interaction-and-motion.md` and `ProjectTheme` (DESIGN.md §4.2) agree with what is drawn
-- [ ] CONTEXT.md's Keep-out margin entry and ADR 0027 no longer say "band"; the README Version changelog has a line
-- [ ] Renderer tests and the canvas visual references regenerated deliberately
+- [x] The margin has no fill and no dots drawn in it; the rest of the canvas is unchanged; theme and Canvas color variations all read well, including the dark and Ash backgrounds
+- [x] A dashed `line-strong` outline of the margin fades in while a Frame is set, moved or resized (one drag, one fade), and after a refused press in the margin lasts 1s; reduced motion shows it without the fade
+- [x] A refused press (Paint, Fill, Paste or Mirror landing in the margin) triggers that outline; Erase, which still works there, does not
+- [x] The pointer is `not-allowed` over the margin for the tools that cannot place beads there; Erase and Hand keep theirs
+- [x] Removing the Frame removes the margin and the outline; the `Frame` card, `interaction-and-motion.md` and `ProjectTheme` (DESIGN.md §4.2) agree with what is drawn
+- [x] CONTEXT.md's Keep-out margin entry and ADR 0027 no longer say "band"; the README Version changelog has a line
+- [x] Renderer tests and the canvas visual references regenerated deliberately

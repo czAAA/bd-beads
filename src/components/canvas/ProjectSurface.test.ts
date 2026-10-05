@@ -353,6 +353,16 @@ describe('ProjectSurface', () => {
         expect(surface.classes()).not.toContain('project-surface--refused')
       })
 
+      it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+
+        // The outline fades in on the overlay once refused: a dashed stroke is drawn.
+        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      })
+
       it('keeps its own cursor for Erase, which still works there', async () => {
         const project = framed()
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: false })
