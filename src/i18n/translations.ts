@@ -112,6 +112,7 @@ export interface Translations {
     zoomInLabel: string
     zoomOutLabel: string
     zoomResetLabel: string
+    zoomPillMoveLabel: string
     /** The canvas strip's title (ticket 143). */
     stripTitle: string
     /** The strip's size meta, "40 columns · 30 rows": each count in its plural form, joined by a spaced middle dot. */

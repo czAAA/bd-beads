@@ -8,7 +8,7 @@ ADR 0021 made the bd-beads design system, edited on claude.ai and copied into `d
 
 ## Decision
 
-- `docs/design/system/` is the source of the design system. Change it in place, in the same commit as the code it describes: the card's `README.md` and `preview.html`, `tokens.json` and `tokens.css`, `components/bundle.css`, and `src/styles/design-values.css` (DESIGN.md §4.6).
+- `docs/design/system/` is the source of the design system. Change it in place, in the same commit as the code it describes: the card's `README.md`, `tokens.json` and `tokens.css`, `components/bundle.css`, and `src/styles/design-values.css` (DESIGN.md §4.6).
 - v18, synced on 2026-10-04, is the baseline. Nothing is synced from claude.ai into the repo. A change is copied back out to the claude.ai project only when that copy needs it, one way, from the repo. The README's Version section carries a changelog of repo changes after v18, one line each with the ticket number.
 - ADR 0021 still holds: UI follows the design system, with role-named tokens and no hand-typed colors, sizes or shadows. What changes is where a missing piece is added: in the design system files, in the repo, not on claude.ai first.
 - The icons, logo and favicon files stay as they are in `docs/design/system/`; a new icon is added there, drawn in the same style.

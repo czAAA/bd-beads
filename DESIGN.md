@@ -4,7 +4,7 @@ The entry point to how bd-beads looks and behaves. The design itself lives in th
 version 18 as its baseline**, owned by this repo in [`docs/design/system/`](docs/design/system/README.md) ([ADR 0030](docs/adr/0030-the-repo-owns-the-design-system.md)). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md)).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card
-for each component you touch (`docs/design/system/components/<Name>/README.md` and its `preview.html`), then the
+for each component you touch (`docs/design/system/components/<Name>/README.md`), then the
 guideline file for the topic (§3). Use tokens; never type a color, size, duration or z-index by hand.
 
 ---
@@ -41,7 +41,7 @@ The design system's [README](docs/design/system/README.md) states these in full.
   in light, the bundled fonts, the ADR links.
 - **A need neither covers**, or a deliberate difference between the app and a card, is added to the design system in
   place (§6), in the same commit as the code. Don't invent it in a component only.
-- The component cards' previews are static renditions. The Vue components in `src/components/` stay the
+- The component cards are written descriptions, not runnable code. The Vue components in `src/components/` stay the
   implementation.
 
 ---
@@ -62,7 +62,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Contrast, high contrast, never color alone, text and zoom, keyboard, painting with the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
 | PDF and PNG exports: page 1, chart pages, beads and grams, the maker's name, wide and long Patterns | [`printed-output.md`](docs/design/system/printed-output.md) |
 | Voice, sentence patterns, plurals, glossary, color names, numbers and units, strings to fix, Russian | [`writing.md`](docs/design/system/writing.md) |
-| One card per component (67, plus the `Cover`): a short guideline and a static preview | [`components/<Name>/`](docs/design/system/components) |
+| One card per component (67, plus the `Cover`): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
 | Icons v2 (53 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
@@ -162,7 +162,7 @@ Inter (400/500/600/700; 600 is the `title` style and the export facts), DM Mono 
 Cyrillic glyphs DM Mono and Instrument Serif lack, ship with the app as same-origin `woff2` files under
 `public/fonts/`. They are never loaded from a font CDN: the app works offline and makes no third-party requests
 ([ADR 0001](docs/adr/0001-local-only-persistence.md)). All five are SIL Open Font License. The design system's
-previews load them from Google Fonts for display only.
+the design system no longer has preview pages (ticket 297).
 
 ### 4.5 Icons and logo in the UI
 
@@ -178,8 +178,8 @@ every theme.
   once, at the root of its styles. Components use `var(--token)` and the type classes only.
 - The values that aren't tokens (motion, `--hover-fill`, `--press-fill`, `--track-fill`, scrims, and their dark and
   contrast overrides) are copied from the top of `components/bundle.css` into one app file, `src/styles/design-values.css`.
-- The app never imports `components/bundle.css` itself: the rest of it styles the design system's preview cards
-  (`bb-*`, `ix-*`, `e-*`, `bc-*` classes), not the app.
+- The app never imports `components/bundle.css` itself: the rest of it styles the retired preview cards
+  (`bb-*`, `ix-*`, `e-*`, `bc-*` classes, ticket 297), not the app.
 - Media queries can't read custom properties, so the breakpoints are written as literal values that match the `bp-*`
   tokens (`@media (min-width: 744px)`).
 - The design system's `--text-*` tokens and classes are the app's `--type-*`: the same styles under another name. The app
@@ -237,7 +237,7 @@ copied back out to the claude.ai project only when that copy needs it.
 
 When a change touches how something looks, reads or behaves, edit `docs/design/system/` in the same commit as the code:
 
-1. The component's card: `README.md` and its `preview.html`. A new component gets a new card folder.
+1. The component's card: `README.md`. A new component gets a new card folder.
 2. Tokens: `tokens.json` and `tokens.css` together (the `tokens` test compares them). A new token needs a role name and
    a `usage` line, in all three themes where it differs.
 3. Values that can't be tokens: the top of `components/bundle.css`, and `src/styles/design-values.css` to match

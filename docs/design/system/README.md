@@ -37,7 +37,7 @@ bd-beads is a bead-pattern editor. The canvas is the largest thing on screen; ev
 - `label` and `meta` (DM Mono 13/18) are for group labels and values next to a label. `meta-small` (12/16) and `meta-tiny` (11/15) are for hints, counts and sizes. `ruler` (DM Mono 11, 12 on a phone) is for the canvas rulers: every 5th number is bold in `body`, and the current row is 700 in `marker` (see the Rulers card).
 - `word` (Instrument Serif italic 240/1, −4px, in `word`) is only for the background technique word. On PDF and PNG exports the same face sets the technique word in `accent` and the maker's name, pale (see the Printed output section).
 - Cyrillic: DM Mono and Instrument Serif have none, so the stacks fall back per glyph to JetBrains Mono and Source Serif 4 (Cyrillic subsets only).
-- The app bundles its fonts as woff2 (Inter 400/500/600/700, DM Mono 400, Instrument Serif italic 400, plus the two Cyrillic fallbacks) and never loads them from a font CDN, because it works offline and makes no third-party requests. This design system's previews load them from Google Fonts for display only.
+- The app bundles its fonts as woff2 (Inter 400/500/600/700, DM Mono 400, Instrument Serif italic 400, plus the two Cyrillic fallbacks) and never loads them from a font CDN, because it works offline and makes no third-party requests. The design system has no preview pages any more (ticket 297).
 
 ## Spacing, radii, elevation
 
@@ -111,8 +111,7 @@ In `index.html`:
 
 ## Where the cards differ from the app, and what is hand-written
 
-- The component cards are static renditions (`components/<Comp>/README.md` and `preview.html`), written by hand; the Vue components in `src/components/` are the real thing. Where the app deliberately differs from a card, the card says so, with its reason, and the Version changelog below has a line for it (DESIGN.md §6).
-- The previews still draw the v15 board or Size controls in ScreenSizes, ToolSheet, ContextBar, PhoneForms, ShortcutsHelp, Rulers, EmptyCanvas, the Tour cards and the print cards (exports keep their board). Their READMEs are current.
+- The component cards are written descriptions (`components/<Comp>/README.md`), written by hand (the `preview.html` pages were removed in ticket 297); the Vue components in `src/components/` are the real thing. Where the app deliberately differs from a card, the card says so, with its reason, and the Version changelog below has a line for it (DESIGN.md §6).
 - The Progress bar's light gradient fill (`--track-fill`) and the modal scrims can't be color tokens, so they live in `components/bundle.css`.
 - The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written in the repo (DESIGN.md §6).
 - Dark theme: Palette Black #1a1a1a matches the dark `board` closely and dark draws no bead rim, so black beads blend into the board; the Tour Pattern's gold rhombuses still read.
@@ -124,6 +123,8 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
   - Repo, 2026-10-05, ticket 295: everything under 1024px is the phone layout (ADR 0032). The iPad mini tier is retired (the Drawer and BottomToolbar cards are deleted; `responsive.md` has four tiers). The phone has no header and no canvas header strip: the Dock is icon-only and 48px plus the safe-area inset in both orientations (no left rail), five slots (Tool, Colour, Frame, Pattern, Menu), the Frame sheet gains Rotate, Copy and Paste (the Edit slot goes), the Menu sheet takes the header's language, theme, Name on exports, Keyboard shortcuts, Overview and source link, and the Frame bar floats at the top-centre of the canvas box. Tokens: `dock-height` 64px to 48px, `dock-max-width` 480px added; `drawer-width`, `z-drawer` and `bp-phone-landscape` removed; `bp-tablet` is the bead sizing tier only. Dock, ContextBar, ScreenSizes, HeaderMenu and responsive.md follow.
+  - Repo, 2026-10-05, ticket 297: the ZoomPill card gains a drag handle, its first control (six `muted` dots, 16px wide, Tooltip and name "Move the zoom controls"), and a dragged state (`elevation-2`, `grabbing` cursor); the pill moves anywhere inside the canvas box, snaps to the nearest corner on release and the corner is kept on the device. The Frame bar and Selection context bar keep clear of it. No token changed.
+  - Repo, 2026-10-05, ticket 297: the 70 `preview.html` pages are removed; a card is its `README.md` alone, and `DESIGN.md`, ADR 0030 and CLAUDE.md no longer ask for a preview.
   - Repo, 2026-10-05, ticket 292: the Tools group is a tab strip again, on icons: 56×72 tabs, 34px icons, five to a row, a `line-strong` rule per row, the active tab marked by a 2px accent underline (the v18 inset outline is gone), and the keys are the digits 1 to 6 (Paint, Fill, Select, Eraser, Hand, Frame) in place of E, H and F. `column-width` grows from 326px to 366px. ToolTabs, Toolbox, BottomToolbar, Dock, ToolSheet and ShortcutsHelp cards follow.
   - Repo, 2026-10-05, ticket 288: the Rulers card says piece rulers belong to the Piece area, the bounding box of every piece whose rectangle overlaps, lies inside or touches another's (repeated until none do); numbers, ruler-click selection and the active-piece highlight use the area. No token changed.
   - Repo, 2026-10-05, ticket 293: the Rulers card counts each piece's area as everything within one bead outside its bounds when joining pieces, so pieces one empty bead apart share one rectangle and one set of rulers; the drawn rectangle is unchanged. No token or CSS change.
@@ -177,7 +178,7 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 Every path below is relative to `docs/design/system/`; there is no `api/` folder in the repo, so the old `api/` paths of the claude.ai export map to the files here.
 
-68 components are documented without a runnable `components/bundle.js`: read each component's card (`components/<Comp>/README.md`, with `preview.html` beside it) and build to those guidelines. Token values are in `tokens.json` (and `tokens.css`); a Slides deck or Design canvas also takes `tokens.json` by file path.
+68 components are documented without a runnable `components/bundle.js`: read each component's card (`components/<Comp>/README.md`) and build to those guidelines. Token values are in `tokens.json` (and `tokens.css`); a Slides deck or Design canvas also takes `tokens.json` by file path.
 
 **Read, per thing:** a component's parts and rules: `components/<Comp>/README.md`; token values: `tokens.json`; stored assets: `assets/<Group>/` (`assets/Icons/`, `assets/Logos/`).
 

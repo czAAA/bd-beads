@@ -6,6 +6,7 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
 import { browserProgressBarStore, type ProgressBarStore } from './progressBarStore'
+import { browserZoomPillStore, type ZoomPillStore } from './zoomPillStore'
 import { browserRulersStore, type RulersStore } from './rulersStore'
 import { browserThemePickStore, type ThemePickStore } from './themeStore'
 import { browserTourStore, type TourStore } from './tourStore'
@@ -26,6 +27,7 @@ export interface Services {
   tourStore: TourStore
   rulersStore: RulersStore
   progressBarStore: ProgressBarStore
+  zoomPillStore: ZoomPillStore
 }
 
 export const browserServices: Services = {
@@ -39,4 +41,5 @@ export const browserServices: Services = {
   tourStore: browserTourStore,
   rulersStore: browserRulersStore,
   progressBarStore: browserProgressBarStore,
+  zoomPillStore: browserZoomPillStore,
 }
