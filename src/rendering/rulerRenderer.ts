@@ -1,7 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import type { DrawingContext } from './beadLook'
-import { boxOnScreen, visibleRulerLabels, ruledBoxes, type RulerLabel, type RulerView, type RuledBox } from './rulers'
+import { boxOnScreen, visibleRulerLabels, visibleRulerDots, ruledBoxes, type RulerDot, type RulerLabel, type RulerView, type RuledBox } from './rulers'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { frameHandles, frameLineBox } from './frameHandles'
@@ -36,6 +36,18 @@ function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, 
   context.beginPath()
   context.roundRect(shown.x - outset, shown.y - outset, shown.width + outset * 2, shown.height + outset * 2, isFrame ? FRAME_RADIUS_PX : PIECE_RADIUS_PX)
   context.stroke()
+}
+
+/** A Ruler dot's radius, and a 5th one's (Rulers card). */
+const DOT_RADIUS_PX = 1
+const FIFTH_DOT_RADIUS_PX = 1.75
+
+/** One Ruler dot: the number's colours, every 5th bolder. */
+function drawDot(context: DrawingContext, dot: RulerDot, theme: ProjectTheme): void {
+  context.fillStyle = dot.fifth ? theme.rulerStrong : theme.ruler
+  context.beginPath()
+  context.arc(dot.x, dot.y, dot.fifth ? FIFTH_DOT_RADIUS_PX : DOT_RADIUS_PX, 0, Math.PI * 2)
+  context.fill()
 }
 
 /** One ruler number, in the style its role asks for (Rulers card). */
@@ -90,6 +102,9 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): Rule
 
   if (!showNumbers) {
     return []
+  }
+  for (const dot of visibleRulerDots(project, view)) {
+    drawDot(context, dot, theme)
   }
   const labels = visibleRulerLabels(project, view)
   for (const label of labels) {

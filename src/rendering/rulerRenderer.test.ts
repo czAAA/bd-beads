@@ -20,6 +20,9 @@ function fakeContext() {
     translate: () => {},
     rotate: () => {},
     beginPath: () => {},
+    arc: (...args: number[]) => {
+      current = args
+    },
     fillRect: () => {},
     roundRect: (...args: number[]) => {
       current = args
