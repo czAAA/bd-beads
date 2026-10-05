@@ -104,11 +104,25 @@ function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
   return false
 }
 
+/** How far a Piece's area reaches past its own bounds when Pieces are joined: one bead, so Pieces with one empty bead between them join and two empty beads keep them apart (ticket 293). */
+const JOIN_MARGIN = 1
+
+/** Whether two Pieces' areas join: `areasJoin` once `a` is counted with the margin. The margin is a distance, so the answer is the same either way round. */
+function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean {
+  return areasJoin(technique, {
+    row: a.row - JOIN_MARGIN,
+    column: a.column - JOIN_MARGIN,
+    rows: a.rows + 2 * JOIN_MARGIN,
+    columns: a.columns + 2 * JOIN_MARGIN,
+  }, b)
+}
+
 const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
 
 /**
- * Every Piece area (CONTEXT.md): the rectangle around one or more Pieces. A Piece's rectangle that overlaps, lies inside
- * or touches another's joins it, repeated until none do, so the area is the bounding box of the group. Top to bottom
+ * Every Piece area (CONTEXT.md): the rectangle around one or more Pieces. A Piece's area, counted as everything within one
+ * bead outside its bounds, that overlaps, lies inside or touches another's joins it, repeated until none do, so the area
+ * is the bounding box of the group (the margin joins, it is not drawn). Top to bottom
  * and left to right. Cached per set of beads like `piecesOf`.
  */
 export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
@@ -123,7 +137,7 @@ export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
     merged = false
     const next: Frame[] = []
     for (const area of areas) {
-      const at = next.findIndex((other) => areasJoin(technique, other, area))
+      const at = next.findIndex((other) => areasJoinWithMargin(technique, other, area))
       if (at === -1) {
         next.push(area)
         continue
