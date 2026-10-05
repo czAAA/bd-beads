@@ -11,7 +11,7 @@ ADR 0026 made the Frame a line only. Beads could be drawn hard against it, which
 - While a Frame is set, the 3 positions all round it, outside its line, are a **keep-out margin**. No tool places a bead there: Paint strokes, Fill, Paste and Mirror paint only the allowed beads; Erase works anywhere. One stroke stays one Undo step.
 - The rule lives at one seam: every drawing command's result goes through `keepAllowedEdits` (the Row progress lock plus the margin), which takes back whatever it newly painted in the margin.
 - Setting, moving or resizing the Frame, and Rotate, move every Piece that reaches the margin clear (the machinery Rotate already had, now shared in `domain/margin.ts`), with a Message counting beads and one Undo step that restores beads and Frame together.
-- The band that marks it is drawn on the canvas, beneath the beads, in the empty-position dot's color at half strength. Removing the Frame removes the margin and the band.
+- The margin is drawn flat: no fill, and the empty-position dots are left out of it. A dashed outline of its outer edge shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused, and the pointer shows `not-allowed` over it for tools that cannot place beads there. Removing the Frame removes the margin and the outline. (Amended 2026-10-05, ticket 276: first drawn as a faint band in the dot's color at half strength, reversed to follow the v18 `Frame` card.)
 - Saved Patterns are not migrated: beads already in a margin open unchanged and are moved the first time the Frame is edited, not on load. Export, Beads needed and Row progress read the Frame only, so they are unchanged.
 
 ## Considered options
@@ -24,4 +24,4 @@ ADR 0026 made the Frame a line only. Beads could be drawn hard against it, which
 
 - A Frame cannot be set so that it leaves the beads it crowds in place; they move, whole Pieces at a time, to the nearest clear space.
 - Pieces straddling the Frame are split at its line: the beads inside stay, the ones outside move.
-- The design system has no card for the band yet; it uses existing role tokens for now (see DESIGN.md §6 to add one).
+- The `Frame` card draws the margin and its outline (amended 2026-10-05, ticket 276; before, the design system had no card for the band).

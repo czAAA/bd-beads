@@ -1,6 +1,7 @@
 import { colorAt, type Frame } from '../domain/canvas'
 import { projectDimensions, projectFrame } from '../domain/project'
-import { CELL_SIZE_PX, type GridPosition, type PreviewCell } from '../domain/grid'
+import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
+import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
 import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
@@ -80,6 +81,8 @@ export interface OverlayInput {
   rulers?: { numbers: boolean; fontPx: number; viewport: { width: number; height: number }; activePiece?: Frame }
   /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
+  /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
+  marginOutline?: number
 }
 
 /** The Tour's marks on the Project, dashed. */
@@ -415,6 +418,24 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   context.fill('evenodd')
 }
 
+/** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12, faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
+const MARGIN_OUTLINE_DASH_PX = [4, 3]
+const MARGIN_OUTLINE_RADIUS_PX = 12
+
+function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme): void {
+  const outer = withMargin(frame)
+  const x = outer.column * CELL_SIZE_PX
+  context.save()
+  context.globalAlpha = opacity
+  context.strokeStyle = theme.pieceLine
+  context.lineWidth = 1 / zoom
+  context.setLineDash(MARGIN_OUTLINE_DASH_PX.map((length) => length / zoom))
+  context.beginPath()
+  roundedRect(context, x, rowTopPx(technique, outer.row), outer.columns * CELL_SIZE_PX, outer.rows * CELL_SIZE_PX, MARGIN_OUTLINE_RADIUS_PX / zoom)
+  context.stroke()
+  context.restore()
+}
+
 /** The Tour's dashed marks (ticket 80): dark under gold, so a mark reads on a gold bead as well as on a black one. */
 const TOUR_DASH_PX = [4, 3]
 const TOUR_MARK_PX = 2
@@ -491,7 +512,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing, marginOutline = 0 } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -501,7 +522,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing) {
+  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !(marginOutline > 0)) {
     return
   }
 
@@ -531,6 +552,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (axes) {
     drawMirrorAxes(context, project, space, axes, theme)
+  }
+  if (marginOutline > 0 && project.frame) {
+    drawMarginOutline(context, project.frame, project.technique, zoom, marginOutline, theme)
   }
   if (marks) {
     drawTourMarks(context, project, space, marks, theme)

@@ -120,8 +120,8 @@ describe('ProjectSurface', () => {
     context.calls.length = 0
     await mountSurface(framed, 1, { x: 0, y: 0 })
 
-    // The four positions the Frame covers are beads now, not dots.
-    expect(dotsOnly - context.named('arc').length).toBe(4)
+    // The four positions the Frame covers are beads now, not dots, and its margin (the other 32 in view) is a gap (ticket 276).
+    expect(dotsOnly - context.named('arc').length).toBe(36)
   })
 
   it('draws a bead painted far from the first bead when the view is moved to it', async () => {
@@ -337,6 +337,42 @@ describe('ProjectSurface', () => {
 
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
+
+    describe('over the Frame margin (ticket 276)', () => {
+      const framed = () => projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4 } })
+
+      it('shows not-allowed over the margin for a tool that cannot place beads there, and the crosshair elsewhere', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        await surface.trigger('pointermove', centreOf(project, 8, 8))
+        expect(surface.classes()).toContain('project-surface--refused')
+
+        await surface.trigger('pointermove', centreOf(project, 2, 2))
+        expect(surface.classes()).not.toContain('project-surface--refused')
+      })
+
+      it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+
+        // The outline fades in on the overlay once refused: a dashed stroke is drawn.
+        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      })
+
+      it('keeps its own cursor for Erase, which still works there', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: false })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        await surface.trigger('pointermove', centreOf(project, 8, 8))
+
+        expect(surface.classes()).not.toContain('project-surface--refused')
+      })
+    })
 
     it('says which bead a press landed on, hovering it first as its own pointerenter did', async () => {
       const project = projectOf(20, 10)

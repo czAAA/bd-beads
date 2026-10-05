@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
+import { inMargin } from '../../domain/margin'
 import { changedPositions, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -56,6 +57,8 @@ const props = defineProps<{
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
   frameTooltip?: string
+  /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
+  blocksMargin?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -232,6 +235,9 @@ function drawCells(): void {
   }
 }
 
+/** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
+const marginOpacity = ref(0)
+
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
 function rulerFontPx(): number {
   return window.innerWidth <= 743 ? 12 : 11
@@ -262,6 +268,7 @@ function drawOverlay(): void {
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
+      marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
       rulers: {
         numbers: props.showRulers ?? true,
@@ -292,6 +299,7 @@ watch(
     () => props.showRulers,
     () => props.settingFrame,
     () => props.frameTooltip,
+    marginOpacity,
     () => props.activePiece,
     touchInput,
     theme,
@@ -307,10 +315,53 @@ watch(
  * contact keeps its implicit capture on the surface, so the moves of a stroke go on arriving here.
  */
 const overBead = ref(false)
+/** Whether the pointer is over the Frame's margin with a tool that cannot place beads there. */
+const overRefusedMargin = ref(false)
 const dragging = ref(false)
 /** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
 const framing = ref(false)
 let lastBead: GridPosition | undefined
+
+/**
+ * The Frame margin's outline (ticket 276, Frame card): shown while a Frame gesture is going on and for 1s after a press
+ * in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
+ * with reduced motion it is shown and hidden at once.
+ */
+const MARGIN_FADE_MS = 120
+const REFUSED_PRESS_MS = 1000
+const refusedPress = ref(false)
+let refusedTimer: ReturnType<typeof setTimeout> | undefined
+let fadeFrame: number | undefined
+
+const marginOutlineWanted = computed(() => props.project.frame !== undefined && (framing.value || refusedPress.value))
+
+function reducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+watch(marginOutlineWanted, (wanted) => {
+  if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
+  const target = wanted ? 1 : 0
+  if (reducedMotion() || typeof requestAnimationFrame !== 'function') {
+    marginOpacity.value = target
+    return
+  }
+  const from = marginOpacity.value
+  const start = performance.now()
+  const step = (now: number) => {
+    const done = Math.min(1, (now - start) / MARGIN_FADE_MS)
+    marginOpacity.value = from + (target - from) * done
+    fadeFrame = done < 1 ? requestAnimationFrame(step) : undefined
+  }
+  fadeFrame = requestAnimationFrame(step)
+})
+
+function refusePress(): void {
+  refusedPress.value = true
+  clearTimeout(refusedTimer)
+  refusedTimer = setTimeout(() => (refusedPress.value = false), REFUSED_PRESS_MS)
+}
+
 let lastPoint = { x: 0, y: 0 }
 
 function beadUnder(event: PointerEvent): GridPosition | undefined {
@@ -324,6 +375,10 @@ function beadUnder(event: PointerEvent): GridPosition | undefined {
     { x: event.clientX - box.left + props.scroll.x, y: event.clientY - box.top + props.scroll.y },
     props.zoom,
   )
+}
+
+function refusesMargin(bead: GridPosition | undefined): boolean {
+  return props.blocksMargin === true && bead !== undefined && inMargin(props.project.frame, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -402,9 +457,14 @@ function onPointerDown(event: PointerEvent): void {
 
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
+  overRefusedMargin.value = refusesMargin(bead)
   if (!bead) {
     lastBead = undefined
     return
+  }
+  // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
+  if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
+    refusePress()
   }
 
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.
@@ -438,11 +498,13 @@ function onPointerMove(event: PointerEvent): void {
   // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame.
   if (props.moving || props.settingFrame) {
     overBead.value = false
+    overRefusedMargin.value = false
     return
   }
 
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
+  overRefusedMargin.value = refusesMargin(bead)
   if (isSameBead(bead, lastBead)) {
     return
   }
@@ -471,6 +533,7 @@ function onPointerEnd(): void {
 function onPointerLeave(): void {
   lastBead = undefined
   overBead.value = false
+  overRefusedMargin.value = false
   emit('hover-end')
 }
 
@@ -504,6 +567,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearTimeout(refusedTimer)
+  if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
 })
@@ -524,6 +589,7 @@ defineExpose({ measure })
     :data-scroll-y="scroll.y"
     :class="{
       'project-surface--over-bead': overBead && !moving,
+      'project-surface--refused': overRefusedMargin && !moving && !settingFrame,
       'project-surface--moving': moving,
       'project-surface--setting-frame': settingFrame && !moving,
       'project-surface--dragging': dragging,
@@ -570,6 +636,11 @@ defineExpose({ measure })
 /* A crosshair over the canvas's beads (BeadHover card). */
 .project-surface--over-bead {
   cursor: crosshair;
+}
+
+/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the crosshair. */
+.project-surface--refused {
+  cursor: not-allowed;
 }
 
 /* The Hand tool and Space + drag (CanvasHint card): an open hand, closed while the canvas is being moved. */
