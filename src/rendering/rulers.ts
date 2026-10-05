@@ -4,7 +4,7 @@ import { pieceAreasOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
 import type { ProjectTheme } from './beadLook'
 import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
-import { rowShiftPx, rowTopPx } from './projectRenderer'
+import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
 
 /**
  * The rulers and the lines they hang from on the open canvas (Rulers and BeadBoard cards, ADR 0026): every row and
@@ -24,6 +24,8 @@ export const RULER_GAP_PX = 3
 export const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
 const MONO_ADVANCE = 0.6
+/** The clear space kept between two neighbouring numbers when the Ruler step is chosen (ADR 0033). */
+export const RULER_NUMBER_GAP_PX = 4
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
 export interface RuledBox extends Frame {
@@ -78,6 +80,37 @@ export function boxOnScreen(box: Frame, view: Pick<RulerView, 'technique' | 'rot
   return { x: shown.x - view.scroll.x, y: shown.y - view.scroll.y, width: shown.width, height: shown.height }
 }
 
+/** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */
+function* rulerSteps(): Generator<number> {
+  yield 1
+  yield 5
+  let step = 10
+  let fiveNext = true
+  for (;;) {
+    yield step
+    step *= fiveNext ? 5 : 2
+    fiveNext = !fiveNext
+  }
+}
+
+/**
+ * The Ruler step (ADR 0033): the smallest of 1, 5, 10, 50, 100... beads between numbers that keeps every number clear
+ * of the next. `spacing` is how far apart two neighbouring beads' numbers sit on screen, `sizes` the biggest numbers'
+ * boxes; two numbers are clear when one box's width or height fits in the gap along its own axis, so a ruler running
+ * sideways, up or at any turn is measured the same way.
+ */
+export function rulerStep(spacing: { x: number; y: number }, sizes: readonly { width: number; height: number }[]): number {
+  for (const step of rulerSteps()) {
+    const clear = sizes.every(
+      (size) => step * Math.abs(spacing.x) >= size.width + RULER_NUMBER_GAP_PX || step * Math.abs(spacing.y) >= size.height + RULER_NUMBER_GAP_PX,
+    )
+    if (clear || step >= 1e7) {
+      return step
+    }
+  }
+  return 1
+}
+
 function labelBox(text: string, turned: boolean, fontPx: number): { width: number; height: number } {
   const width = text.length * fontPx * MONO_ADVANCE
   return turned ? { width: fontPx, height: width } : { width, height: fontPx }
@@ -117,8 +150,18 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   const columnSelection = (column: number): Selection => ({ top: box.row, left: column, rows: box.rows, columns: 1 })
   const rowSelection = (row: number): Selection => ({ top: row, left: box.column, rows: 1, columns: box.columns })
 
+  // The widest column numbers: the longest upright one (under 100) and the longest turned one.
+  const columnSizes = [labelBox(String(Math.min(box.columns, TURNED_FROM - 1)), false, fontPx)]
+  if (box.columns >= TURNED_FROM) {
+    columnSizes.push(labelBox(String(box.columns), true, fontPx))
+  }
+  const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
+  const columnStep = rulerStep({ x: beadX, y: beadY }, columnSizes)
+  const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
+  const rowStep = rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
+
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
-    for (let index = 0; index < box.columns; index += 1) {
+    for (let index = columnStep - 1; index < box.columns; index += columnStep) {
       const text = String(index + 1)
       const turned = index + 1 >= TURNED_FROM
       const gridX = rowShiftPx(technique, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
@@ -129,7 +172,7 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
     }
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
-    for (let index = 0; index < box.rows; index += 1) {
+    for (let index = rowStep - 1; index < box.rows; index += rowStep) {
       const text = String(index + 1)
       const gridY = rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
       const spot = place(gridX, gridY, normal, text, false)

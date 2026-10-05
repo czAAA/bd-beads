@@ -192,24 +192,14 @@ export function neighborsOf(
   )
 }
 
+/** The Zoom floor (ADR 0033): the same on every screen. */
 export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 4
 export const ZOOM_STEP = 0.1
 
-/** The phone tier ends here (responsive.md, `bp-tablet`): under it the smallest bead is `bead-min-phone`, from it up `bead-min-tablet` and wider. */
-export const PHONE_MAX_WIDTH_PX = 743
-
-/**
- * The zoom-out floor for a smallest bead width (ticket 223; `bead-min-*` tokens): the zoom at which a bead is drawn
- * that wide. Never below MIN_ZOOM.
- */
-export function zoomFloorFor(beadMinPx: number): number {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.ceil((beadMinPx / CELL_SIZE_PX) * 100) / 100))
-}
-
-/** Keeps a zoom inside the usable range (from `min` up, MIN_ZOOM by default), at whole-percent precision so the displayed level and the applied scale agree. */
-export function clampZoom(value: number, min = MIN_ZOOM): number {
-  return Math.min(MAX_ZOOM, Math.max(min, Math.round(value * 100) / 100))
+/** Keeps a zoom inside the usable range (MIN_ZOOM to MAX_ZOOM), at whole-percent precision so the displayed level and the applied scale agree. */
+export function clampZoom(value: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
 }
 
 export interface FitZoomInput extends GridDimensions {

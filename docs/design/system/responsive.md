@@ -49,7 +49,7 @@ Devices (CSS px): 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 256
 
 ## Smallest bead
 
-Each size has a floor under the bead size, so zoom out and Fit never draw a bead the rulers cannot label: `bead-min-phone` 16px (12px ruler numbers) under 744px, and 15px from 744px up. Wider Patterns are panned, not shrunk. See the Rulers card.
+The Zoom floor is 10% on every size (ADR 0033); zoom out, pinch, wheel and Fit all reach it, and Fit stays capped at 100%. The rulers thin their numbers instead (the Ruler step: every 5, 10, 50, 100 beads as room allows). `bead-min-phone` 16px (12px ruler numbers) and `bead-min-tablet` 15px mark where a number needs more room. See the Rulers card.
 
 ## Fitting longer text
 
@@ -88,4 +88,4 @@ The canvas is open at every tier: no board, no size to set first, pieces with th
 
 - **Phone:** two fingers move the canvas and pinch zooms; one finger uses the tool. The ZoomPill starts with the Rulers toggle. The Dock's third button is Frame; its sheet holds Set Frame, Fit to drawing, the steppers, Remove Frame, Rotate, Copy and Paste. While the Frame is being set it has four 16px corner handles and the Frame bar floats at the top-centre of the canvas box with its size, Fit to drawing, ✕ and Done. With no Frame the Progress bar reads "Row progress · Set Frame to start" with a Set Frame button. No CanvasHint.
 - **iPad 13″, MacBook Air, 24″:** the left column's Toolbox has six tool tiles on the swatch grid and the Frame row; the canvas strip has the Rulers toggle; the CanvasHint sits bottom-left. The wheel moves the canvas, ⌘ or Ctrl + wheel zooms.
-- **Smallest bead:** the `bead-min-*` floors still hold, for piece rulers and Frame rulers alike. Fit now fits the Frame, or every piece when there is no Frame.
+- **Zoom floor:** 10%, with the Ruler step, for piece rulers and Frame rulers alike. Fit now fits the Frame, or every piece when there is no Frame.
