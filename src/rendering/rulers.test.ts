@@ -192,3 +192,20 @@ describe('picking by the nearest bead on a ruler', () => {
     expect(rulerPick(wide, tenPercent, labels, { x: label.x, y: label.y })).toEqual(label.selection)
   })
 })
+
+describe('Ruler dots on other layouts', () => {
+  const brick = { row: 0, column: 0, rows: 4, columns: 12, kind: 'frame' as const, outset: 7, sides: 'all' as const }
+
+  it('shift a brick stitch\'s odd rows by half a bead, as the numbers do', () => {
+    const top = rulerBeads({ ...brick, sides: 'start' }, view({ technique: 'brick', zoom: 0.7 })).filter((d) => d.axis === 'column')
+    const bottom = rulerBeads(brick, view({ technique: 'brick', zoom: 0.7 })).filter((d) => d.axis === 'column' && d.y > 0)
+    expect(top).toHaveLength(12)
+    expect(Math.abs(bottom[0]!.x - top[0]!.x)).toBeGreaterThan(0)
+  })
+
+  it('stand on the side the top faces when turned, and give only a Piece\'s start sides dots', () => {
+    const turned = rulerBeads({ ...brick, sides: 'start' }, view({ rotation: 90, zoom: 0.7 }))
+    expect(new Set(turned.map((d) => d.axis))).toEqual(new Set(['row', 'column']))
+    expect(rulerBeads(brick, view({ rotation: 90, zoom: 0.7 })).length).toBeGreaterThan(turned.length)
+  })
+})
