@@ -6,8 +6,8 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each string above is changed, and a test (or the existing i18n test) fails on an em dash in `ru.ts` and `en.ts` going forward
-- [ ] The segmented control fits the full technique labels at every width from 320 to 1900 px without clipping, and the Russian visual references are regenerated deliberately
-- [ ] `writing.md`, the cards and the app agree on each of these strings; the README Version changelog has a line
+- [x] Each string above is changed, and a test (or the existing i18n test) fails on an em dash in `ru.ts` and `en.ts` going forward
+- [x] The segmented control fits the full technique labels at every width from 320 to 1900 px without clipping, and the Russian visual references are regenerated deliberately
+- [x] `writing.md`, the cards and the app agree on each of these strings; the README Version changelog has a line
