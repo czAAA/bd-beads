@@ -15,7 +15,6 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'finished' | 'cursorWid
   canvas: 'box',
   dot: 'bead-empty',
   pieceLine: 'line-strong',
-  pieceLineActive: 'muted',
   frameLine: 'ink',
   ruler: 'ruler',
   rulerStrong: 'body',

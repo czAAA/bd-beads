@@ -83,7 +83,6 @@ const {
   locale,
   settingFrame,
   settledProject,
-  activePiece,
   onStartSetFrame,
   onDoneSetFrame,
   onFitFrame,
@@ -213,7 +212,6 @@ function techniqueWord(technique: Technique): string {
             <ProjectSurface
               v-else-if="activeProject"
               :project="shownProject!"
-              :active-piece="activePiece"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
               :zoom="zoom"

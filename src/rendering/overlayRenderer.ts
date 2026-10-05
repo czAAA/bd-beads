@@ -78,7 +78,7 @@ export interface OverlayInput {
    * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with their
    * numbers while `numbers` is on. `fontPx` is the numbers' size and `viewport` the surface's size in px.
    */
-  rulers?: { numbers: boolean; fontPx: number; viewport: { width: number; height: number }; activePiece?: Frame }
+  rulers?: { numbers: boolean; fontPx: number; viewport: { width: number; height: number } }
   /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
@@ -572,7 +572,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       theme,
       showNumbers: rulers.numbers,
       cursor,
-      activePiece: rulers.activePiece,
     })
   }
   if (open && rulers && frameEditing && project.frame) {
