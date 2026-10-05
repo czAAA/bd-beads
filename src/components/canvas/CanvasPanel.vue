@@ -42,6 +42,12 @@ const {
   activeTool,
   showRulers,
   toggleRulers,
+  showProgressBar,
+  toggleProgressBar,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
   panBy,
   scrollBy,
   setZoom,
@@ -142,7 +148,7 @@ function techniqueWord(technique: Technique): string {
   <main class="app-shell__canvas-column">
     <div
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning }"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': !showProgressBar && !framing }"
       data-testid="app-canvas"
     >
       <!--
@@ -180,7 +186,13 @@ function techniqueWord(technique: Technique): string {
           class="app-shell__zoom-pill"
           :zoom-percent="zoomPercent"
           :rulers="showRulers"
+          :progress-bar="showProgressBar"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
           @toggle-rulers="toggleRulers"
+          @toggle-progress-bar="toggleProgressBar"
+          @undo="onUndo"
+          @redo="onRedo"
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @reset="resetZoom"
@@ -292,6 +304,7 @@ function techniqueWord(technique: Technique): string {
       -->
       <ProgressBar
         v-if="activeProject && !framing"
+        :class="{ 'app-shell__progress--hidden': !showProgressBar }"
         :project="activeProject"
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
@@ -343,6 +356,18 @@ function techniqueWord(technique: Technique): string {
 
 .app-shell__zoom-pill {
   display: none;
+}
+
+/* The Zoom pill's Row progress toggle (ticket 296) hides the bar under 1024px only; the Zoom pill that holds the toggle is not there above. */
+@media (max-width: 1023px) {
+  .app-shell__progress--hidden {
+    display: none;
+  }
+
+  /* With the bar gone, the toasts and the Selection bar sit where it was. */
+  .app-shell__canvas--no-progress {
+    --progress-height: 0px;
+  }
 }
 
 @media (max-width: 1023px) {

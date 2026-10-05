@@ -126,6 +126,8 @@ export interface Translations {
     settingFrame: string
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
+    /** The Zoom pill's toggle that shows or hides the Progress bar (ticket 296). */
+    progressBarLabel: string
     /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */
     canvasColor: {
       label: string

@@ -123,18 +123,37 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBe('#e63746')
   })
 
-  it('undoes and redoes from the Frame sheet, until the Zoom pill takes them (tickets 295, 296)', async () => {
+  it('undoes and redoes from the Zoom pill, and the Frame sheet no longer holds them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="zoom-pill-redo"]').attributes('disabled')).toBeDefined()
+
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-    await wrapper.find('[data-testid="bottom-sheet"] [data-tour="undo"]').trigger('click')
+    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBeNull()
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('disabled')).toBeDefined()
 
-    await wrapper.find('[data-testid="bottom-sheet"] [aria-label="Redo"]').trigger('click')
+    await wrapper.get('[data-testid="zoom-pill-redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
+
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
+  })
+
+  it('hides the Progress bar from the Zoom pill toggle and keeps the choice (ticket 296)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    expect(wrapper.find('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
+
+    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__progress--hidden')
+    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('false')
+    expect(localStorage.getItem('bd-beads:progress-bar')).toBe('off')
+
+    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
   })
 
   it('shows the Project sheet\'s Save box for the open Project', async () => {

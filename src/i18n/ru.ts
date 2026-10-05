@@ -103,6 +103,7 @@ export const ru: Translations = {
     noFrame: 'без рамки',
     settingFrame: 'задаётся рамка',
     rulersLabel: 'Линейки',
+    progressBarLabel: 'Панель прогресса',
     canvasColor: {
       label: 'Цвет холста',
       pickerLabel: 'цвет холста',

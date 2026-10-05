@@ -5,6 +5,7 @@ import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsSto
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
+import { browserProgressBarStore, type ProgressBarStore } from './progressBarStore'
 import { browserRulersStore, type RulersStore } from './rulersStore'
 import { browserThemePickStore, type ThemePickStore } from './themeStore'
 import { browserTourStore, type TourStore } from './tourStore'
@@ -24,6 +25,7 @@ export interface Services {
   localeStore: LocaleStore
   tourStore: TourStore
   rulersStore: RulersStore
+  progressBarStore: ProgressBarStore
 }
 
 export const browserServices: Services = {
@@ -36,4 +38,5 @@ export const browserServices: Services = {
   localeStore: browserLocaleStore,
   tourStore: browserTourStore,
   rulersStore: browserRulersStore,
+  progressBarStore: browserProgressBarStore,
 }
