@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Rotation, Technique } from '../domain/grid'
-import { MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_OPACITY } from './printPages'
+import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_OPACITY } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN, PRINT_NAME_BAND } from './printPlan'
 
@@ -91,5 +91,19 @@ describe('miniMapLayout: the chart-page locator (ticket 187)', () => {
     // Every cell sits in a single row: the locator adds no height under the header.
     expect(layout.cells.every((cell) => cell.down === 0)).toBe(true)
     expect(layout.cells.filter((cell) => cell.here)).toHaveLength(1)
+  })
+})
+
+describe('loadPrintFonts (ticket 278)', () => {
+  it('loads Inter 400, 600 and 700 before anything is drawn', async () => {
+    const load = vi.fn().mockResolvedValue([])
+    vi.stubGlobal('document', { fonts: { load } })
+    try {
+      await loadPrintFonts()
+    } finally {
+      vi.unstubAllGlobals()
+    }
+    const specs = load.mock.calls.map(([spec]) => String(spec))
+    for (const weight of ['400', '600', '700']) expect(specs.some((spec) => spec.startsWith(`${weight} `) && spec.includes('Inter')), weight).toBe(true)
   })
 })

@@ -101,6 +101,10 @@ describe('fonts.css', () => {
     }
   })
 
+  it('bundles Inter 600 (the title style) in latin, latin-ext and cyrillic', () => {
+    for (const subset of ['latin', 'latin-ext', 'cyrillic']) expect(urls).toContain(`/fonts/inter-${subset}-600-normal.woff2`)
+  })
+
   it('has the three families plus the two Cyrillic fallbacks', () => {
     for (const family of ['Inter', 'DM Mono', 'Instrument Serif', 'JetBrains Mono', 'Source Serif 4']) {
       expect(fonts).toContain(`font-family: '${family}';`)
