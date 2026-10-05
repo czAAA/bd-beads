@@ -100,7 +100,8 @@ function onKeydown(event: KeyboardEvent) {
 .expandable-panel__head {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-8);
   min-height: var(--panel-head-height);
   margin-bottom: var(--space-8);
 }
