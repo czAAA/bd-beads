@@ -115,6 +115,14 @@ describe('AppTooltip', () => {
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
   })
 
+  it('shows for a hovering pen, like a mouse', async () => {
+    const wrapper = tooltip()
+    await wrapper.trigger('pointerenter', { pointerType: 'pen' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+    await wrapper.trigger('pointerleave', { pointerType: 'pen' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
+
   it('shows on a long touch or pen press and hides on release (ticket 166: tooltips become long-press)', async () => {
     vi.useFakeTimers()
     try {

@@ -4,8 +4,8 @@ import { tooltipOwners } from './tooltipOwner'
 
 /**
  * The design system's Tooltip (ticket 157; Modal card): a short `ink` label that shows while its trigger is hovered
- * with a mouse or focused from the keyboard, and hides on leave, blur or Escape. On a coarse pointer there is no
- * hover, so a touch or pen press held for LONG_PRESS_MS opens it instead, closing again on release (ticket 166;
+ * with a mouse or focused from the keyboard, and hides on leave, blur or Escape. A pen hovers like a mouse (an Apple
+ * Pencil over an iPad). On a finger there is no hover, so a touch or pen press held for LONG_PRESS_MS opens it instead, closing again on release (ticket 166;
  * responsive.md "Input, not width": "tooltips become long-press"). The trigger gets the tooltip's id through the
  * `describedby` slot prop; an icon-only button whose own name already says the same passes `announce: false`, so
  * screen readers don't hear it twice.
@@ -113,8 +113,9 @@ function show() {
 }
 
 function onPointerEnter(event: PointerEvent) {
-  // A mouse or trackpad only: a finger or pen has no hover, and a tooltip would cover what it touches.
-  if (event.pointerType !== 'touch' && event.pointerType !== 'pen') show()
+  // A mouse, trackpad or hovering pen (Apple Pencil over an iPad): all of them hover. A finger has no hover, and a
+  // tooltip would cover what it touches.
+  if (event.pointerType !== 'touch') show()
 }
 
 function onPointerDown(event: PointerEvent) {
