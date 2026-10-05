@@ -22,6 +22,13 @@ function makeProject() {
 }
 
 describe('ProjectList', () => {
+  it('says "no Frame" where the size goes for a Project without a Frame', () => {
+    const open: Project = { ...makeProject(), frame: undefined }
+    const wrapper = mount(ProjectList, { props: { projects: [open] } })
+
+    expect(wrapper.find('.project-list__size').text()).toBe(ru.canvas.noFrame)
+  })
+
   it('still renders its box with an empty message when there are no saved projects (ticket 39: always one of the below-canvas boxes)', () => {
     const wrapper = mount(ProjectList, { props: { projects: [] } })
 

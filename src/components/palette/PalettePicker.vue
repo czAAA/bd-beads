@@ -18,6 +18,17 @@ const gridEl = ref<HTMLElement>()
 const roving = useRovingFocus(gridEl, '.palette-picker__swatch')
 const removeAdded = useRemoveAddedColor()
 
+/** The swatch (or its × badge) holding focus, so the × shows on a focused added swatch as well as a selected one. */
+const focusedColorId = ref<string>()
+
+function onCellFocusin(colorId: string) {
+  focusedColorId.value = colorId
+}
+
+function onCellFocusout(event: FocusEvent, colorId: string) {
+  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null) && focusedColorId.value === colorId) focusedColorId.value = undefined
+}
+
 function isStop(colorId: string, index: number): boolean {
   const selected = palette.value.some((color) => color.id === props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
@@ -43,7 +54,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
 
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
-    <span v-for="(color, index) in palette" :key="color.id" class="palette-picker__cell">
+    <span v-for="(color, index) in palette" :key="color.id" class="palette-picker__cell" @focusin="onCellFocusin(color.id)" @focusout="onCellFocusout($event, color.id)">
       <button
         type="button"
         class="ui-control palette-picker__swatch"
@@ -61,7 +72,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
         @keydown="onSwatchKeydown($event, color.id, index)"
       />
       <button
-        v-if="removeAdded && isAddedColorId(color.id) && color.id === selectedColorId"
+        v-if="removeAdded && isAddedColorId(color.id) && (color.id === selectedColorId || color.id === focusedColorId)"
         type="button"
         class="ui-control palette-picker__remove"
         :aria-label="t.palette.removeSwatch.replace('{hex}', color.hex)"
@@ -112,10 +123,10 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
 
 .palette-picker__swatch:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 
-/* The removal × (PaletteSwatches card): a 16px round badge on the swatch's top-right corner, on the selected added swatch only. */
+/* The removal × (PaletteSwatches card): a 16px round badge on the swatch's top-right corner, on an added swatch while it is selected or has focus. */
 .palette-picker__remove {
   position: absolute;
   top: -6px;

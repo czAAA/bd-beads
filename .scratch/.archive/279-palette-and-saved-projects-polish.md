@@ -6,10 +6,10 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The × badge shows on a focused added swatch as well as a selected one; Delete and Backspace still remove it; the touch hit area (a deliberate larger one) is kept and noted on the card in ticket 284
-- [ ] The swatch focus ring offset matches the card in all three themes and forced colors
-- [ ] The Custom glyph is the card's hatched `muted` square, always
-- [ ] A saved Project with no Frame says "no Frame" in the list; one with a Frame shows its size as now
-- [ ] Unit and visual tests for the changed components; the README Version changelog has a line
+- [x] The × badge shows on a focused added swatch as well as a selected one; Delete and Backspace still remove it; the touch hit area (a deliberate larger one) is kept and noted on the card in ticket 284
+- [x] The swatch focus ring offset matches the card in all three themes and forced colors
+- [x] The Custom glyph is the card's hatched `muted` square, always
+- [x] A saved Project with no Frame says "no Frame" in the list; one with a Frame shows its size as now
+- [x] Unit and visual tests for the changed components; the README Version changelog has a line
