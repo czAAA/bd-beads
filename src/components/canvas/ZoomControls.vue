@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { MAX_ZOOM, MIN_ZOOM } from '../../domain/grid'
+import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 
 const props = withDefaults(defineProps<{ zoomPercent: number; minPercent?: number; maxPercent?: number }>(), {
-  minPercent: Math.round(MIN_ZOOM * 100),
-  maxPercent: Math.round(MAX_ZOOM * 100),
+  minPercent: MIN_ZOOM_PERCENT,
+  maxPercent: MAX_ZOOM_PERCENT,
 })
 const emit = defineEmits<{
   'zoom-in': []
