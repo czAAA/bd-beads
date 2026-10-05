@@ -2,8 +2,8 @@
 import { useI18n } from '../../i18n/useI18n'
 
 /**
- * The Custom color button (tickets 75, 151; PaletteSwatches and ColorPickers cards): a 12px swatch of the chosen color,
- * hatched until one is chosen, then the label; the ring, like a Palette swatch, while it is the paint color. It opens
+ * The Custom color button (tickets 75, 151; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
+ * ("pick any color"; v18 card), then the label; the ring, like a Palette swatch, while it is the paint color. It opens
  * the system color picker, which can't be styled: the native input covers the whole button, invisible.
  */
 defineProps<{
@@ -40,11 +40,7 @@ function onInput(event: Event) {
       :aria-pressed="selected"
       @input="onInput"
     />
-    <span
-      class="custom-color-picker__swatch"
-      :class="{ 'custom-color-picker__swatch--none': !color }"
-      :style="color ? { backgroundColor: color } : undefined"
-    />
+    <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
   </label>
 </template>
@@ -111,12 +107,7 @@ function onInput(event: Event) {
   width: var(--swatch-dot);
   height: var(--swatch-dot);
   border-radius: var(--swatch-dot-radius);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
-}
-
-/* No color chosen yet: hatched, so it reads as "not set" rather than as a color. */
-.custom-color-picker__swatch--none {
-  background: repeating-linear-gradient(45deg, var(--faint) 0 1px, transparent 1px var(--space-4));
+  background: repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px var(--space-4));
 }
 
 .custom-color-picker__label {

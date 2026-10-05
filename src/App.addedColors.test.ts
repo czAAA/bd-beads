@@ -85,6 +85,19 @@ describe('an added swatch can be removed (ticket 228)', () => {
     expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
   })
 
+  it('shows the × on a focused added swatch, not a focused built-in one, and hides it when focus leaves', async () => {
+    seed(['#123456', '#abcdef'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await swatches(wrapper)[0]!.trigger('click') // selection on a built-in swatch, so only focus can show the ×
+    await swatches(wrapper)[PALETTE.length]!.trigger('focusin')
+    expect(removeButton(wrapper).exists()).toBe(true)
+    await swatches(wrapper)[PALETTE.length]!.trigger('focusout')
+    expect(removeButton(wrapper).exists()).toBe(false)
+    await swatches(wrapper)[1]!.trigger('focusin')
+    expect(removeButton(wrapper).exists()).toBe(false)
+  })
+
   it('removes the selected added swatch with its ×, falls back to the default color, keeps it gone after a reload', async () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)

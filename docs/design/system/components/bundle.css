@@ -106,6 +106,7 @@ body {
 .bb-swatch { aspect-ratio: 1; border: 0; padding: 0; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px var(--swatch-edge); cursor: pointer; }
 .bb-swatch[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--swatch-edge), 0 0 0 2px var(--panel), 0 0 0 4px var(--ring); }
 .bb-swatch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.bb-hatch { width: 14px; height: 14px; border-radius: 3px; background: repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px var(--space-4)); flex: none; }
 .bb-dot { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--swatch-edge); flex: none; }
 
 /* 5.6 Disclosure row */

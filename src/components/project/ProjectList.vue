@@ -52,6 +52,8 @@ const activeProject = computed(() => props.projects.find((project) => project.id
 
 /** A thumbnail's size line, as the Project shows on screen. */
 function sizeOf(project: Project): string {
+  // A canvas with no Frame has no size to state (SavedPatterns card, v16; ADR 0026).
+  if (!project.frame) return t.value.canvas.noFrame
   return rotationSwapsAxes(project.rotation) ? `${projectDimensions(project).rows}×${projectDimensions(project).columns}` : `${projectDimensions(project).columns}×${projectDimensions(project).rows}`
 }
 </script>
