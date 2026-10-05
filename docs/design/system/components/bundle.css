@@ -455,6 +455,7 @@ body {
   --duration-instant:80ms;--duration-fast:120ms;--duration-base:200ms;--duration-slow:280ms;
   --ease-out:cubic-bezier(.2,.8,.2,1);--ease-in:cubic-bezier(.4,0,1,1);--ease-standard:cubic-bezier(.2,0,0,1);
   --hover-fill:var(--surface);--press-fill:var(--line);
+  --framing-dim:rgba(0,0,0,.45);
 }
 [data-theme="dark"]{--hover-fill:var(--elevated);--press-fill:var(--line-strong)}
 @media (prefers-reduced-motion:reduce){:root{--duration-slow:120ms;--duration-base:120ms}}

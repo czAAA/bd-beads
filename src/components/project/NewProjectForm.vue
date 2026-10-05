@@ -384,7 +384,7 @@ function onDropImage(file: File) {
       
       <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
         <NumberField
-          id="heihgt-input"
+          id="height-input"
           v-model="heightText"
           data-testid="height-input"
           testid-prefix="height-input"

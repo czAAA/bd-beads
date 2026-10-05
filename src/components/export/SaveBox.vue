@@ -145,7 +145,7 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
 
 .save-box__prompt-body {
   margin: 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 18px;
   color: var(--body);
 }

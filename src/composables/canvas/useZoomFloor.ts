@@ -1,5 +1,14 @@
 import { computed, onBeforeUnmount, ref, type Ref } from 'vue'
-import { PHONE_MAX_WIDTH_PX, zoomFloorFor } from '../../domain/grid'
+import { zoomFloorFor } from '../../domain/grid'
+
+/** The screen tiers (responsive.md; the `bp-*` tokens, as literals since a script can't read them cheaply): each starts at its `from` width and reads its own `bead-min-*` token. Widest first. */
+const TIERS = [
+  { from: 1920, token: '--bead-min-desktop' },
+  { from: 1280, token: '--bead-min-laptop' },
+  { from: 1024, token: '--bead-min-tablet-lg' },
+  { from: 744, token: '--bead-min-tablet' },
+  { from: 0, token: '--bead-min-phone' },
+] as const
 
 /** Fallbacks for when the page carries no tokens (tests): the `bead-min-*` values in tokens.json. */
 const FALLBACK_PHONE_PX = 16
@@ -27,11 +36,8 @@ export function useZoomFloor(viewportWidth?: Ref<number>): Ref<number> {
     window.addEventListener('resize', onResize)
     onBeforeUnmount(() => window.removeEventListener('resize', onResize))
   }
-  return computed(() =>
-    zoomFloorFor(
-      width.value <= PHONE_MAX_WIDTH_PX
-        ? beadMinPx('--bead-min-phone', FALLBACK_PHONE_PX)
-        : beadMinPx('--bead-min-tablet', FALLBACK_WIDER_PX),
-    ),
-  )
+  return computed(() => {
+    const tier = TIERS.find((candidate) => width.value >= candidate.from) ?? TIERS[TIERS.length - 1]
+    return zoomFloorFor(beadMinPx(tier.token, tier.from === 0 ? FALLBACK_PHONE_PX : FALLBACK_WIDER_PX))
+  })
 }

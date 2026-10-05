@@ -40,7 +40,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
   { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: 'F' },
-  { id: 'project', icon: 'save', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
+  { id: 'project', icon: 'pattern', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
 ])
 </script>
 
