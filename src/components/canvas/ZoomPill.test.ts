@@ -15,11 +15,10 @@ describe('ZoomPill', () => {
     expect(wrapper.emitted('reset')).toHaveLength(1)
   })
 
-  it('reads the handle, rulers, undo, redo, progress bar, out, level, in, fit', () => {
+  it('reads rulers, undo, redo, progress bar, out, level, in, fit', () => {
     const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, rulers: true, progressBar: true } })
-    const order = wrapper.findAll('[data-testid^="zoom-pill-"]').map((element) => element.attributes('data-testid'))
+    const order = wrapper.findAll('[data-testid^="zoom-pill-"]:not([role="status"])').map((element) => element.attributes('data-testid'))
     expect(order).toEqual([
-      'zoom-pill-handle',
       'zoom-pill-rulers',
       'zoom-pill-undo',
       'zoom-pill-redo',
@@ -51,45 +50,81 @@ describe('ZoomPill', () => {
     expect(wrapper.emitted('toggle-progress-bar')).toHaveLength(1)
   })
 
-  describe('drag handle (ticket 297)', () => {
+  describe('drag from anywhere (ticket 302)', () => {
     const rect = (left: number, top: number, width: number, height: number) => ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top, toJSON: () => ({}) }) as DOMRect
 
     /** A pill 200 x 46 at the bottom right of a 400 x 600 area, in a layout-less DOM. */
     function mountDraggable() {
       const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, corner: 'bottom-right' }, attachTo: document.body })
-      const pill = wrapper.get('[data-testid="zoom-pill"]').element as HTMLElement
-      Object.defineProperty(pill, 'offsetParent', { value: { getBoundingClientRect: () => rect(0, 0, 400, 600) } })
-      pill.getBoundingClientRect = () => rect(184, 538, 200, 46)
-      const handle = wrapper.get('[data-testid="zoom-pill-handle"]')
-      ;(handle.element as HTMLElement).setPointerCapture = () => {}
-      return { wrapper, handle }
+      const pill = wrapper.get('[data-testid="zoom-pill"]')
+      Object.defineProperty(pill.element, 'offsetParent', { value: { getBoundingClientRect: () => rect(0, 0, 400, 600) } })
+      ;(pill.element as HTMLElement).getBoundingClientRect = () => rect(184, 538, 200, 46)
+      ;(pill.element as HTMLElement).setPointerCapture = () => {}
+      return { wrapper, pill }
     }
     const pointer = (clientX: number, clientY: number) => ({ pointerId: 1, pointerType: 'touch', clientX, clientY, button: 0 })
 
-    it('names the handle', () => {
-      const { wrapper, handle } = mountDraggable()
-      expect(handle.attributes('aria-label')).toBe('Move the zoom controls')
+    it('has no handle', () => {
+      const { wrapper } = mountDraggable()
+      expect(wrapper.find('[data-testid="zoom-pill-handle"]').exists()).toBe(false)
       wrapper.unmount()
     })
 
-    it('snaps to the nearest corner on release, without firing the pill\'s other buttons', async () => {
-      const { wrapper, handle } = mountDraggable()
-      await handle.trigger('pointerdown', pointer(200, 560))
-      await handle.trigger('pointermove', pointer(-3000, -3000))
-      expect(wrapper.get('[data-testid="zoom-pill"]').attributes('style')).toContain('translate(-184px, -538px)')
-      await handle.trigger('pointerup', pointer(-3000, -3000))
+    it('moves when dragged from a button, and snaps to the nearest corner on release without pressing it', async () => {
+      const { wrapper, pill } = mountDraggable()
+      const fit = wrapper.get('[data-testid="zoom-pill-fit"]')
+      await fit.trigger('pointerdown', pointer(360, 560))
+      await fit.trigger('pointermove', pointer(-2640, -2440))
+      expect(pill.attributes('style')).toContain('translate(-184px, -538px)')
+      expect(pill.classes()).toContain('zoom-pill--dragging')
+      await fit.trigger('pointerup', pointer(-2640, -2440))
+      await fit.trigger('click')
       expect(wrapper.emitted('move')).toEqual([['top-left']])
-      expect(wrapper.emitted('zoom-in')).toBeUndefined()
       expect(wrapper.emitted('reset')).toBeUndefined()
       wrapper.unmount()
     })
 
-    it('moves to the neighbouring corner with an arrow key', async () => {
-      const { wrapper, handle } = mountDraggable()
-      await handle.trigger('keydown', { key: 'ArrowLeft' })
-      await handle.trigger('keydown', { key: 'ArrowUp' })
-      await handle.trigger('keydown', { key: 'ArrowRight' })
+    it('moves when dragged from a gap or the zoom level', async () => {
+      const { wrapper, pill } = mountDraggable()
+      const level = wrapper.get('[data-testid="zoom-pill-level"]')
+      await level.trigger('pointerdown', pointer(300, 560))
+      await level.trigger('pointermove', pointer(-3000, 560))
+      await level.trigger('pointerup', pointer(-3000, 560))
+      expect(wrapper.emitted('move')).toEqual([['bottom-left']])
+      expect(pill.exists()).toBe(true)
+      wrapper.unmount()
+    })
+
+    it('treats a press that stays under the threshold as a tap', async () => {
+      const { wrapper, pill } = mountDraggable()
+      const zoomIn = wrapper.get('[data-testid="zoom-pill-in"]')
+      await zoomIn.trigger('pointerdown', pointer(300, 560))
+      await zoomIn.trigger('pointermove', pointer(304, 563))
+      expect(pill.classes()).not.toContain('zoom-pill--dragging')
+      await zoomIn.trigger('pointerup', pointer(304, 563))
+      await zoomIn.trigger('click')
+      expect(wrapper.emitted('zoom-in')).toHaveLength(1)
+      expect(wrapper.emitted('move')).toBeUndefined()
+      wrapper.unmount()
+    })
+
+    it('moves to the neighbouring corner with Alt + an arrow key from any control, and announces it', async () => {
+      const { wrapper } = mountDraggable()
+      const out = wrapper.get('[data-testid="zoom-pill-out"]')
+      await out.trigger('keydown', { key: 'ArrowLeft', altKey: true })
+      expect(wrapper.emitted('move')).toEqual([['bottom-left']])
+      await wrapper.vm.$nextTick()
+      await wrapper.vm.$nextTick()
+      expect(wrapper.get('[data-testid="zoom-pill-announcer"]').text()).toBe('Zoom controls moved to the bottom left')
+      await out.trigger('keydown', { key: 'ArrowUp', altKey: true })
       expect(wrapper.emitted('move')).toEqual([['bottom-left'], ['top-right']])
+      wrapper.unmount()
+    })
+
+    it('ignores an arrow key without Alt', async () => {
+      const { wrapper } = mountDraggable()
+      await wrapper.get('[data-testid="zoom-pill-out"]').trigger('keydown', { key: 'ArrowLeft' })
+      expect(wrapper.emitted('move')).toBeUndefined()
       wrapper.unmount()
     })
   })
