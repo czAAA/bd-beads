@@ -67,9 +67,10 @@ const {
     display: flex;
     flex: none;
     align-items: center;
-    gap: var(--space-8);
+    gap: var(--space-4);
     height: var(--dock-height);
-    padding: 0 var(--space-16);
+    /* Tight enough that New Project, both imports and Menu fit a 320px screen in Russian. */
+    padding: 0 var(--space-12);
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--canvas);
     border-top: 1px solid var(--line-soft);
