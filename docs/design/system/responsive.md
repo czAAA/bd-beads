@@ -17,10 +17,10 @@ A phone on its side (height up to `bp-phone-landscape`, 499px) keeps the phone l
 Devices (CSS px): iPhone 16e 390×844, iPhone 17 · 17 Pro 402×874, iPhone Air 420×912, iPhone 17 Pro Max 440×956.
 
 - The screen belongs to the Pattern and the Progress bar. Header 52px (ticket 188): the `bead` icon in the wordmark's place (its name a hover/focus label), the open Pattern's own bead as a second icon (opens the Pattern sheet's Bead pill row), a single-icon theme control (opens a small four-way sheet), Undo, Redo and a More menu (Pattern name/size/save state, Theme, Language, Name on exports, Keyboard shortcuts when a keyboard is attached) -- every gap tightened to 4px so these all fit the narrowest phone in the table above.
-- No canvas strip: pinch to zoom and pan; a small zoom pill (rulers · out · 100% · in · fit) floats in the bottom-right corner of the Pattern.
+- No canvas strip: pinch to zoom and pan; a small zoom pill (rulers · out · fit · in; no level readout) floats in the bottom-right corner of the Pattern.
 - The Progress bar is the largest control on the screen: 56px, its own compact mode (ticket 188) in place of the reference tier's spelled-out one -- a "1/222" counter, Turn row direction, and Row not done/Row done as icon-only buttons (their hover/focus label carries the word) -- and a 3px progress line under it.
-- A dock of six buttons, one per kind of tool (the active tool, Color, Edit, Mirror, Frame, Pattern); each opens its own bottom sheet with every option of that kind. Nothing the desktop has is missing.
-- Tool, Colour, Edit, Mirror and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Pattern sheet (Canvas color button in its header, save, export, Replace bead, Beads needed, Saved Patterns, New, Import) is modal, with a scrim.
+- A dock of five buttons, one per kind of tool (the active tool, Color, Edit, Frame, Pattern; no Mirror, which the app hides pending a redesign, ticket 174); each opens its own bottom sheet with every option of that kind. Nothing the desktop has is missing.
+- Tool, Colour, Edit and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Pattern sheet (Canvas color button in its header, save, export, Replace bead, Beads needed, Saved Patterns, New, Import) is modal, with a scrim.
 - While a Selection exists, a context bar above the Progress bar offers Copy, Rotate, Remove line and clear; after Copy it turns into "Tap where to paste" with Rotate and Cancel.
 - Landscape (height under 500px): the dock becomes a 64px rail on the left, the header drops to 44px.
 

@@ -43,6 +43,12 @@
   --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
   --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
   --curve: rgba(250,82,15,.32); /* The 1.5px decorative curve behind the board. */
+  --canvas-bg-1: #fafafa;
+  --canvas-bg-2: #f7f3ec;
+  --canvas-bg-3: #f1f5ee;
+  --canvas-bg-4: #eff4f8;
+  --canvas-bg-5: #fbf0ea;
+  --canvas-bg-6: #fafafa;
   --bead-rim: rgba(20,20,19,.12); /* Faint 0.75px rim drawn around each bead in light; none in dark (drawn in the board color). */
   --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
   --bead-seam: #1f1f1f; /* The seam line in brick stitch patterns. */
@@ -91,12 +97,18 @@
   --box-button-line: #2a2a2a;
   --switch-off: #7a7a7a;
   --board: #202020;
-  --ruler: #888888;
+  --ruler: #8c8c8c;
   --marker: #faff69;
   --track: #333333;
   --word: #202020;
   --print-board: #f7f3ec;
   --curve: rgba(250,255,105,.14);
+  --canvas-bg-1: #202020;
+  --canvas-bg-2: #0e0e0e;
+  --canvas-bg-3: #12161c;
+  --canvas-bg-4: #171608;
+  --canvas-bg-5: #1c1714;
+  --canvas-bg-6: #2c2b29;
   --bead-rim: #202020;
   --bead-empty: #3c3c3c;
   --bead-seam: #888888;
@@ -151,6 +163,12 @@
   --word: #f5f5f5;
   --print-board: #f7f3ec;
   --curve: #00000000;
+  --canvas-bg-1: #ffffff;
+  --canvas-bg-2: #ffffff;
+  --canvas-bg-3: #ffffff;
+  --canvas-bg-4: #ffffff;
+  --canvas-bg-5: #ffffff;
+  --canvas-bg-6: #ffffff;
   --bead-rim: rgba(0,0,0,.35);
   --bead-empty: #b8b0a8;
   --bead-seam: #000000;

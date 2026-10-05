@@ -112,7 +112,7 @@ export const DARK_THEME: ProjectTheme = {
   pieceLine: '#3a3a3a',
   pieceLineActive: '#949494',
   frameLine: '#ffffff',
-  ruler: '#888888',
+  ruler: '#8c8c8c',
   rulerStrong: '#cccccc',
   background: '#202020',
   rim: null,

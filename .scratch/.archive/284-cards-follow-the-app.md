@@ -6,9 +6,9 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every deviation above is written on its card or guideline file with its reason; no card describes something the app does not do
-- [ ] `canvas-bg-1` to `canvas-bg-6` are tokens in both token files (the `tokens` test passes), `canvasBackgrounds.ts` reads them, and DESIGN.md §4.2 loses the override text
-- [ ] The `CanvasStrip` card has no outside-the-Frame count; `accessibility.md` and the README no longer carry the stale lines
-- [ ] The README Version changelog has one line per change
+- [x] Every deviation above is written on its card or guideline file with its reason; no card describes something the app does not do
+- [x] `canvas-bg-1` to `canvas-bg-6` are tokens in both token files (the `tokens` test passes), `canvasBackgrounds.ts` reads them, and DESIGN.md §4.2 loses the override text
+- [x] The `CanvasStrip` card has no outside-the-Frame count; `accessibility.md` and the README no longer carry the stale lines
+- [x] The README Version changelog has one line per change
