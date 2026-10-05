@@ -111,9 +111,12 @@ onBeforeUnmount(() => {
     <div class="bottom-sheet__handle" aria-hidden="true" />
     <div class="bottom-sheet__head">
       <h2 :id="titleId" class="bottom-sheet__title">{{ title }}</h2>
-      <button type="button" class="ui-control bottom-sheet__close" :aria-label="t.a11y.closeMessage" data-testid="sheet-close" @click="emit('close')">
-        <AppIcon name="close" :size="16" />
-      </button>
+      <div class="bottom-sheet__head-actions">
+        <slot name="actions" />
+        <button type="button" class="ui-control bottom-sheet__close" :aria-label="t.a11y.closeMessage" data-testid="sheet-close" @click="emit('close')">
+          <AppIcon name="close" :size="16" />
+        </button>
+      </div>
     </div>
     <div ref="bodyEl" class="bottom-sheet__body">
       <slot />
@@ -180,6 +183,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: var(--space-16);
   margin-bottom: var(--space-12);
+}
+
+.bottom-sheet__head-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .bottom-sheet__title {
