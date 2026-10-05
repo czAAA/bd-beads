@@ -47,7 +47,7 @@ A set of beads that touch by a side or a corner. Pieces form, merge and split as
 _Avoid_: island, cluster, group, shape
 
 **Piece area**:
-The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. A Piece's rectangle that overlaps, lies inside or touches another Piece area's rectangle joins it, repeated until none do, so a large Piece never shows smaller Pieces' rectangles inside or against its own. Forms, merges and splits as beads are painted and erased. The Rulers toggle shows or hides it; the Frame is never hidden by it.
+The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. Each Piece's area counts as everything within one bead outside its own bounds; Piece areas whose rectangles overlap, lie inside or touch once that margin is included join, repeated until none do, so Pieces with one empty bead between them share one rectangle and one set of rulers while two or more empty beads keep them apart, and a large Piece never shows smaller Pieces' rectangles inside or against its own. The margin only decides what joins; the drawn rectangle stays around the beads. Forms, merges and splits as beads are painted and erased. The Rulers toggle shows or hides it; the Frame is never hidden by it.
 _Avoid_: group, cluster, island
 
 **Frame**:
