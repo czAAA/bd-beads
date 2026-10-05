@@ -22,6 +22,9 @@ const props = defineProps<{
   /** The size of the Project a framed picture will make (Convert image), shown in place of the Project's own. */
   size?: { columns: number; rows: number }
   zoomPercent?: number
+  /** The zoom range the buttons stop at, when it isn't the Project canvas's (the framing step has its own). */
+  zoomMinPercent?: number
+  zoomMaxPercent?: number
   /** Shown while the Project has keyboard focus: "arrows move · space paints · esc leaves" (BeadCursor card). */
   hint?: string
   /** What is on the board, when it isn't the Project: the framing step names itself here (ConvertImage card). */
@@ -90,6 +93,8 @@ const sizeMeta = computed(() => {
       v-if="zoomPercent !== undefined"
       class="canvas-strip__zoom"
       :zoom-percent="zoomPercent"
+      :min-percent="zoomMinPercent"
+      :max-percent="zoomMaxPercent"
       @zoom-in="emit('zoom-in')"
       @zoom-out="emit('zoom-out')"
       @reset="emit('reset')"
@@ -115,6 +120,9 @@ const sizeMeta = computed(() => {
 }
 
 .canvas-strip__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font: var(--type-meta);
   color: var(--box-muted);
   text-transform: lowercase;
@@ -122,7 +130,10 @@ const sizeMeta = computed(() => {
 }
 
 .canvas-strip__hint {
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font: var(--type-meta-small);
   color: var(--box-muted);
   text-transform: lowercase;
@@ -154,6 +165,8 @@ const sizeMeta = computed(() => {
 }
 
 .canvas-strip__zoom {
+  /* Never squeezed out by the title, meta or hint: zoom out, zoom in and Fit stay on screen at 1024px (ticket 300). */
+  flex: none;
   margin-left: auto;
 }
 </style>

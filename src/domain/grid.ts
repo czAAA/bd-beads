@@ -197,6 +197,17 @@ export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 4
 export const ZOOM_STEP = 0.1
 
+/**
+ * The next button step from a zoom: the next whole multiple of ZOOM_STEP (10%) above or below it, so the buttons walk
+ * 10, 20, 30 ... from wherever a fit, wheel or pinch left the level (43% goes to 50% in, 40% out), and a level already on a rung moves one rung.
+ */
+export function stepZoom(zoom: number, direction: 1 | -1): number {
+  const stepPercent = Math.round(ZOOM_STEP * 100)
+  const percent = Math.round(zoom * 100)
+  const next = direction === 1 ? (Math.floor(percent / stepPercent) + 1) * stepPercent : (Math.ceil(percent / stepPercent) - 1) * stepPercent
+  return clampZoom(next / 100)
+}
+
 /** Keeps a zoom inside the usable range (MIN_ZOOM to MAX_ZOOM), at whole-percent precision so the displayed level and the applied scale agree. */
 export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))

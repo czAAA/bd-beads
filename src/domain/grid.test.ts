@@ -6,6 +6,7 @@ import {
   cellCenter,
   clampZoom,
   computeFitZoom,
+  stepZoom,
   computeGridDimensions,
   gridHeightPx,
   gridWidthPx,
@@ -328,5 +329,27 @@ describe('cellCenter', () => {
       expect(last.x + 1.6 / 2).toBeCloseTo(gridWidthPx(technique, 6, 1.6) - rowOffsetPx(technique, 1, 1.6))
       expect(last.y + 1.3 / 2).toBeCloseTo(gridHeightPx(technique, 5, 1.3))
     }
+  })
+})
+
+describe('stepZoom', () => {
+  it('walks the 10% rungs from one to the next, both ways', () => {
+    expect(stepZoom(1, -1)).toBe(0.9)
+    expect(stepZoom(0.2, -1)).toBe(0.1)
+    expect(stepZoom(1, 1)).toBe(1.1)
+    expect(stepZoom(0.1, 1)).toBe(0.2)
+  })
+
+  it('lands on the next rung from a level a fit, wheel or pinch left between two', () => {
+    expect(stepZoom(0.43, 1)).toBe(0.5)
+    expect(stepZoom(0.43, -1)).toBe(0.4)
+    expect(stepZoom(0.54, -1)).toBe(0.5)
+  })
+
+  it('stays inside the Zoom range', () => {
+    expect(stepZoom(0.1, -1)).toBe(0.1)
+    expect(stepZoom(0.14, -1)).toBe(0.1)
+    expect(stepZoom(4, 1)).toBe(4)
+    expect(stepZoom(3.95, 1)).toBe(4)
   })
 })
