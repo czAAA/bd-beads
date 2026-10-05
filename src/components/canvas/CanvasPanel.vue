@@ -14,6 +14,7 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
+import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
 const {
@@ -164,6 +165,8 @@ function techniqueWord(technique: Technique): string {
         :project="settledProject"
         :size="stripSize"
         :zoom-percent="stripZoomPercent"
+        :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
+        :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"
         :title="framing ? t.convertImage.heading : undefined"
         :rulers="activeProject && !framing ? showRulers : undefined"

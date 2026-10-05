@@ -14,6 +14,18 @@ describe('ZoomControls', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('69%')
   })
 
+  it('disables zoom out at the 10% floor and zoom in at the top zoom, and takes the framing step\'s own range', () => {
+    const attr = (zoomPercent: number, id: string, extra = {}) =>
+      mount(ZoomControls, { props: { zoomPercent, ...extra } }).get(`[data-testid="${id}"]`).attributes('disabled')
+
+    expect(attr(10, 'zoom-out')).toBeDefined()
+    expect(attr(10, 'zoom-in')).toBeUndefined()
+    expect(attr(400, 'zoom-in')).toBeDefined()
+    expect(attr(400, 'zoom-out')).toBeUndefined()
+    expect(attr(400, 'zoom-in', { minPercent: 100, maxPercent: 800 })).toBeUndefined()
+    expect(attr(100, 'zoom-out', { minPercent: 100, maxPercent: 800 })).toBeDefined()
+  })
+
   it('asks for each zoom change rather than holding the level itself', async () => {
     const wrapper = mount(ZoomControls, { props: { zoomPercent: 100 } })
 

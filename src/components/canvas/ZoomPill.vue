@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
+import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { clampOffset, nearestCorner, type Box, type ZoomPillCorner } from '../../domain/zoomPillCorner'
 import IconButton from '../ui/IconButton.vue'
 
@@ -15,7 +16,7 @@ import IconButton from '../ui/IconButton.vue'
  * which the parent keeps (`move`). Alt + an arrow key does the same from the keyboard. The parent places the pill in `corner`; this
  * component only owns the drag's own offset and the glide into the corner.
  */
-defineProps<{ corner?: ZoomPillCorner; zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
+const props = defineProps<{ corner?: ZoomPillCorner; zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
@@ -168,9 +169,9 @@ function onKeydown(event: KeyboardEvent, current: ZoomPillCorner): void {
       data-testid="zoom-pill-progress"
       @click="emit('toggle-progress-bar')"
     />
-    <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
+    <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>
-    <IconButton icon="zoom-in" variant="plain" :icon-size="18" :label="t.canvas.zoomInLabel" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
+    <IconButton icon="zoom-in" variant="plain" :icon-size="18" :label="t.canvas.zoomInLabel" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
     <IconButton icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
   </div>
 </template>

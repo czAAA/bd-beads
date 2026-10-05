@@ -1,6 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
-import { ZOOM_STEP, clampZoom, type GridPosition } from '../../domain/grid'
+import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { displayedBox, scrollAfterZoom, scrollToCentre, zoomToFit, type Scroll, type Size } from '../../rendering/canvasView'
 
@@ -135,8 +135,8 @@ export function useCanvasView(
     zoom,
     scroll,
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
-    zoomIn: (anchor?: Scroll) => setZoom(zoom.value + ZOOM_STEP, anchor),
-    zoomOut: (anchor?: Scroll) => setZoom(zoom.value - ZOOM_STEP, anchor),
+    zoomIn: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, 1), anchor),
+    zoomOut: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, -1), anchor),
     /** A zoom the wheel or fingers chose: any level in the usable range rather than a step, about the point under them. */
     setZoom,
     resetZoom: fit,

@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 
-defineProps<{ zoomPercent: number }>()
+const props = withDefaults(defineProps<{ zoomPercent: number; minPercent?: number; maxPercent?: number }>(), {
+  minPercent: MIN_ZOOM_PERCENT,
+  maxPercent: MAX_ZOOM_PERCENT,
+})
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
@@ -22,6 +26,7 @@ const { t } = useI18n()
       variant="plain"
       :icon-size="16"
       :label="t.canvas.zoomOutLabel"
+      :disabled="props.zoomPercent <= props.minPercent"
       data-testid="zoom-out"
       @click="emit('zoom-out')"
     />
@@ -31,6 +36,7 @@ const { t } = useI18n()
       variant="plain"
       :icon-size="16"
       :label="t.canvas.zoomInLabel"
+      :disabled="props.zoomPercent >= props.maxPercent"
       data-testid="zoom-in"
       @click="emit('zoom-in')"
     />

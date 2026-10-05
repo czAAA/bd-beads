@@ -101,6 +101,26 @@ describe('useCanvasView', () => {
     expect(view.zoom.value).toBe(0.1)
   })
 
+  it('walks the 10% rungs with the buttons, from a level between two as well, and the label agrees', () => {
+    const { view } = setup(projectOf(20, 10))
+    view.fit()
+    view.setZoom(0.43)
+    view.zoomIn()
+    expect(view.zoom.value).toBe(0.5)
+    view.setZoom(0.43)
+    view.zoomOut()
+    expect(view.zoom.value).toBe(0.4)
+    for (const percent of [30, 20, 10]) {
+      view.zoomOut()
+      expect(view.zoomPercent.value).toBe(percent)
+      expect(view.zoom.value).toBe(percent / 100)
+    }
+    for (const percent of [20, 30]) {
+      view.zoomIn()
+      expect(view.zoomPercent.value).toBe(percent)
+    }
+  })
+
   it('fits again when the Project changes or the viewport is measured, until the person moves it', async () => {
     const { current, viewport, view } = setup(projectOf(20, 10), { width: 0, height: 0 })
     viewport.value = { width: 1000, height: 800 }

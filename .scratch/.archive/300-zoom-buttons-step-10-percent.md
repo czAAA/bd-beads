@@ -6,11 +6,18 @@ On small devices, up to a 10″ iPad, the Zoom pill is always visible: whenever 
 
 **Blocked by:** 298 (Zoom out to 10% on every screen, with the ruler numbers thinning).
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
-- [ ] From 100%, zoom out reaches 90, 80, ... down to 10%, and zoom in climbs the same rungs back
-- [ ] The zoom level label and the applied scale agree at every step
-- [ ] The buttons disable at 10% and at the top zoom
+- [x] From 100%, zoom out reaches 90, 80, ... down to 10%, and zoom in climbs the same rungs back
+- [x] The zoom level label and the applied scale agree at every step
+- [x] The buttons disable at 10% and at the top zoom
 - [ ] On a phone (the Zoom pill) and on a 10″ iPad in both orientations (the pill, or the canvas strip's zoom in landscape), zoom out, zoom in and Fit are always on screen with a Project open: not behind a sheet, the Frame bar, the Progress bar or the on-screen keyboard (audit each state and list any that hide them, with the fix or the reason)
-- [ ] Pinch and wheel are unchanged apart from the new floor
-- [ ] Unit tests for the step and the clamps
+- [x] Pinch and wheel are unchanged apart from the new floor
+- [x] Unit tests for the step and the clamps
+
+## Audit (small devices): still open, a human has to do it
+
+- Phone and iPad portrait (under 1024px): the Zoom pill is rendered whenever a Project is open outside Convert image framing (read from `CanvasPanel.vue`). I did not run the app, so whether the Frame bar, Progress bar or on-screen keyboard cover it is not checked: a human should check on a phone and an iPad.
+- 10″ iPad landscape (about 1080px, desktop layout): the strip's zoom is shown (not folded into a menu). It could be squeezed out by a long title, meta or hint, so the zoom is now `flex: none` and the title, meta and hint truncate instead.
+- Convert image framing keeps its own zoom (1 to 8, steps of 25%, ADR 0010); the strip's buttons disable at that range's ends.
+- Convert image framing under 1024px has no zoom control: the Zoom pill is Project-only and the strip is hidden there, and the framing step has no pinch or wheel. Found in code review; needs a decision (follow-up ticket).
