@@ -58,11 +58,11 @@ _Avoid_: border, crop, artboard, page, grid size
 The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), drawn flat: a gap in the grid dots, with a dashed outline that shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused; the pointer shows not-allowed there. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message and one Undo step. Removing the Frame removes the margin. Projects saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
 
 **Set Frame**:
-The mode (F, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead) and Remove Frame, and Columns/Rows steppers once set.
+The mode (6, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead) and Remove Frame, and Columns/Rows steppers once set.
 _Avoid_: crop, resize, set size
 
 **Hand tool**:
-The tool (H) that moves the view by dragging and never changes a bead. Space + drag does the same from any tool.
+The tool (5) that moves the view by dragging and never changes a bead. Space + drag does the same from any tool.
 _Avoid_: pan mode, grab tool
 
 **Rulers toggle**:
@@ -122,14 +122,14 @@ One titled box within the Toolbox gathering related controls — e.g. Tools (Pai
 _Avoid_: subbox, card, section, panel
 
 **Tool button**:
-A Tools-group tool shown as an icon-only square button (Paint is a pencil), four to a row, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. A tool with a single-key shortcut (a letter or digit) also shows that key as a small badge on the button, except on touch and phone. The name stays as the button's accessible name.
+A Tools-group tool shown as an icon-only square button (Paint is a pencil), four to a row, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
 _Avoid_: tab, tool tab
 
 **Tooltip**:
 The design system's hover (long-press on touch) help for an icon-only control: a bold name, the shortcut as a key chip and, only where the control needs it, a description line. Replaces the browser's native title on Toolbox buttons. A disabled control shows none. A Tooltip is never clipped (ticket 265): its bubble opens in the browser's top layer, outside every column, sheet and canvas that holds its button, on the side of the button that has room (above near the bottom of the screen, below near the top), inside the screen on all four edges, and wraps at a maximum width (the wide-tooltip measure, 15rem) instead of running in one long strip.
 
 **Eraser**:
-A 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press. Its key is `E` (ticket 250), alongside `Del`, which also erases a Selection.
+The 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press. Its key is `4` (ticket 292; it was `E` from ticket 250), alongside `Del`, which also erases a Selection.
 _Avoid_: erase mode, clear tool
 
 **Clear**:
