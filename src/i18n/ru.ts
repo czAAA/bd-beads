@@ -11,8 +11,8 @@ export const ru: Translations = {
     beadLabel: 'Бисеринка',
     techniqueLabel: 'Техника плетения',
     techniqueLoom: 'Ткачество',
-    techniquePeyote: 'Мозаичное',
-    techniqueBrick: 'Кирпичное',
+    techniquePeyote: 'Мозаичное плетение',
+    techniqueBrick: 'Кирпичное плетение',
     sizePlaceholder: '20',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
@@ -84,7 +84,7 @@ export const ru: Translations = {
     switchLabel: 'Язык: русский. Переключить на английский',
   },
   projects: {
-    heading: 'Мои проекты',
+    heading: 'Сохранённые проекты',
     newProjectButton: 'Новый проект',
     removeButton: 'Удалить',
     unknownBeadLabel: 'Неизвестная бисеринка',
@@ -112,8 +112,8 @@ export const ru: Translations = {
     hint: {
       scrollOr: 'прокрутка или',
       spaceKey: 'пробел',
-      dragToMove: 'и перетаскивание — сдвиг',
-      scrollToZoom: 'прокрутка — масштаб',
+      dragToMove: 'и перетаскивание: сдвиг',
+      scrollToZoom: 'прокрутка: масштаб',
       hand: 'Рука',
       setFrame: 'Задать рамку',
       rulers: 'Линейки',
@@ -294,7 +294,7 @@ export const ru: Translations = {
     savedConfirmation: 'Сохранено',
     pasteLabel: 'Вставить',
     removeLineButton: 'Удалить выделенный ряд/столбец',
-    removeLineShort: 'Убрать',
+    removeLineShort: 'Удалить линию',
     removeLineName: 'Удалить линию',
   },
   rulers: {
@@ -411,7 +411,7 @@ export const ru: Translations = {
   frame: {
     title: 'Рамка',
     setFrame: 'Задать рамку',
-    setFrameHint: 'Выделите, какие бусины входят в узор.',
+    setFrameHint: 'Протяните, чтобы отметить, какие бисеринки входят в схему.',
     notSet: 'не задана',
     numberLabel: 'Рамка {number}, показать на экране',
     fitToDrawing: 'По рисунку',
@@ -446,7 +446,7 @@ export const ru: Translations = {
       many: '{count} бусин были в поле рамки и перемещены за его пределы.',
       other: '{count} бусины были в поле рамки и перемещены за его пределы.',
     },
-    keyboardHint: 'стрелки двигают рамку · Shift и стрелки меняют размер · Enter — готово',
+    keyboardHint: 'стрелки двигают рамку · Shift и стрелки меняют размер · Enter: готово',
   },
   size: {
     estimateLabel: 'Примерный размер',

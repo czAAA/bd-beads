@@ -25,3 +25,12 @@ describe('provideI18n', () => {
     expect(document.documentElement.lang).toBe('ru')
   })
 })
+
+describe('copy rules (writing.md)', () => {
+  it('has no em dash in any string, in either language', async () => {
+    const { en } = await import('./en')
+    const { ru } = await import('./ru')
+    expect(JSON.stringify(en)).not.toContain('—')
+    expect(JSON.stringify(ru)).not.toContain('—')
+  })
+})
