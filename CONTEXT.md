@@ -43,8 +43,12 @@ What a Project is drawn on: an endless field of bead positions with no board and
 _Avoid_: board, grid, infinite grid, sheet
 
 **Piece**:
-A set of beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and erased. Each Piece has a rectangle around it and, while there is no Frame, its own rulers.
+A set of beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and erased. Each Piece belongs to exactly one Piece area.
 _Avoid_: island, cluster, group, shape
+
+**Piece area**:
+The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. A Piece's rectangle that overlaps, lies inside or touches another Piece area's rectangle joins it, repeated until none do, so a large Piece never shows smaller Pieces' rectangles inside or against its own. Forms, merges and splits as beads are painted and erased. The Rulers toggle shows or hides it; the Frame is never hidden by it.
+_Avoid_: group, cluster, island
 
 **Frame**:
 The one rectangle per Open canvas, on whole beads, that marks which beads are the Pattern. A line, plus a **keep-out margin** (below): drawing outside it stays possible beyond the margin and is saved with the Project, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Pattern has a size (the Pattern size) . Set, moved, resized and removed as Undo steps that never change a bead. A Project from before the Frame opens with a Frame the size of its old grid.
@@ -62,7 +66,7 @@ The tool (H) that moves the view by dragging and never changes a bead. Space + d
 _Avoid_: pan mode, grab tool
 
 **Rulers toggle**:
-The button (and R, and the phone's zoom pill) that shows or hides every ruler and size marking on the canvas — each Piece's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece, from 1, or the Frame's on all four sides once a Frame is set.
+The button (and R, and the phone's zoom pill) that shows or hides every ruler and size marking on the canvas, and the Piece areas' rectangles — each Piece area's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece area, from 1, or the Frame's on all four sides once a Frame is set.
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas color**:
