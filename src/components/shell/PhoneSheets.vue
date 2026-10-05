@@ -183,7 +183,7 @@ function toolLabel(tool: Tool): string {
     <template v-if="activeProject">
       <!-- The open Project's name, size and save state (ticket 295): moved here from the header, which is gone under 1024px. -->
       <p class="phone-sheet__project-info" data-testid="phone-project-info">
-        <span class="phone-sheet__summary" data-testid="phone-project-summary" :title="summarizeProject(activeProject)">
+        <span class="phone-sheet__summary" data-testid="phone-project-summary">
           {{ summarizeProject(activeProject) }}
         </span>
         <AppIcon :name="saveFailed ? 'warning' : 'check'" :size="14" class="phone-sheet__save" :class="{ 'phone-sheet__save--failed': saveFailed }" />

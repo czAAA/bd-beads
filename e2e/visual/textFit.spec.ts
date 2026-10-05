@@ -182,7 +182,7 @@ const SCREENS: Screen[] = [
     visit: async (page, measure) => {
       await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
       await page.reload()
-      await page.getByTestId('app-topbar').waitFor()
+      await page.getByTestId('app-canvas').waitFor()
       await measure()
     },
   },
@@ -264,7 +264,7 @@ const SCREENS: Screen[] = [
 async function openNewProject(page: Page): Promise<boolean> {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
   await page.reload()
-  await page.getByTestId('app-topbar').waitFor()
+  await page.getByTestId('app-canvas').waitFor()
   if (!(await reveal(page, 'width-input'))) {
     if (!(await shown(page, 'phone-bar-new-project'))) return false
     await click(page, 'phone-bar-new-project')
