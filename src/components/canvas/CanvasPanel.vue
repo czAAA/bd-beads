@@ -44,6 +44,8 @@ const {
   toggleRulers,
   showProgressBar,
   toggleProgressBar,
+  zoomPillCorner,
+  setZoomPillCorner,
   canUndo,
   canRedo,
   onUndo,
@@ -184,6 +186,8 @@ function techniqueWord(technique: Technique): string {
         <ZoomPill
           v-if="activeProject && !framing"
           class="app-shell__zoom-pill"
+          :class="`app-shell__zoom-pill--${zoomPillCorner}`"
+          :corner="zoomPillCorner"
           :zoom-percent="zoomPercent"
           :rulers="showRulers"
           :progress-bar="showProgressBar"
@@ -196,6 +200,7 @@ function techniqueWord(technique: Technique): string {
           @zoom-in="zoomIn"
           @zoom-out="zoomOut"
           @reset="resetZoom"
+          @move="setZoomPillCorner"
         />
 
         <div class="app-shell__canvas-row">
@@ -281,7 +286,7 @@ function techniqueWord(technique: Technique): string {
       <ContextBar
         v-if="activeProject && !framing"
         class="app-shell__context-bar"
-        :class="{ 'app-shell__context-bar--frame': settingFrame }"
+        :class="{ 'app-shell__context-bar--frame': settingFrame, [`app-shell__context-bar--pill-${zoomPillCorner}`]: true }"
         :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
         :paste-armed="pasteProjectionActive"
         :can-remove-line="canRemoveSelectedLine"
@@ -352,6 +357,20 @@ function techniqueWord(technique: Technique): string {
     max-width: calc(100% - 2 * var(--space-10));
     transform: translateX(-50%);
   }
+
+  /*
+   * The bars keep clear of the Zoom pill (ticket 297): the Selection bar rises above a pill resting at the bottom, and the
+   * Frame bar drops below one resting at the top. The pill's own height is its 36px buttons, 4px padding and 1px border.
+   */
+  .app-shell__context-bar--pill-bottom-left:not(.app-shell__context-bar--frame),
+  .app-shell__context-bar--pill-bottom-right:not(.app-shell__context-bar--frame) {
+    bottom: calc(var(--progress-height) + var(--space-16) + env(safe-area-inset-bottom) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
+  }
+
+  .app-shell__context-bar--frame.app-shell__context-bar--pill-top-left,
+  .app-shell__context-bar--frame.app-shell__context-bar--pill-top-right {
+    top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
+  }
 }
 
 .app-shell__zoom-pill {
@@ -373,11 +392,31 @@ function techniqueWord(technique: Technique): string {
 @media (max-width: 1023px) {
   .app-shell__zoom-pill {
     position: absolute;
-    right: var(--space-16);
-    /* Clears the home indicator / gesture bar (responsive.md "Screen edges"), the same as the Dock and BottomToolbar. */
-    bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
     z-index: var(--z-canvas-overlay);
     display: inline-flex;
+    /* Never wider than the box it floats in, so a narrow phone can't push it out (ticket 297). */
+    max-width: calc(100% - 2 * var(--space-16));
+  }
+
+  /* The pill rests in one of the drawing area's four corners (ticket 297), the bottom ones clear of the home indicator / gesture bar (responsive.md "Screen edges"). */
+  .app-shell__zoom-pill--top-left,
+  .app-shell__zoom-pill--bottom-left {
+    left: var(--space-16);
+  }
+
+  .app-shell__zoom-pill--top-right,
+  .app-shell__zoom-pill--bottom-right {
+    right: var(--space-16);
+  }
+
+  .app-shell__zoom-pill--top-left,
+  .app-shell__zoom-pill--top-right {
+    top: var(--space-16);
+  }
+
+  .app-shell__zoom-pill--bottom-left,
+  .app-shell__zoom-pill--bottom-right {
+    bottom: calc(var(--space-16) + env(safe-area-inset-bottom));
   }
 }
 
