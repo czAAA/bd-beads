@@ -465,6 +465,9 @@ export interface Translations {
     rotateNeedsFrame: string
     /** The Message after Rotate moved pieces out of the way ("{count}" of them): the singular and plural of the sentence. */
     rotatedMessage: PluralForms
+    /** The lead of the margin Message, by what was done to the Frame. */
+    marginLead: Record<'set' | 'moved' | 'resized', string>
+    /** The rest of the margin Message, after the lead: how many beads were in the margin. */
     marginClearedMessage: PluralForms
     /** The cursor and the keyboard while the Frame is being set. */
     keyboardHint: string

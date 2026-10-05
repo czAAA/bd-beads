@@ -210,7 +210,29 @@ describe('useFrameFlow', () => {
     expect(Object.values<Record<number, string>>(updated.beads).flatMap((row) => Object.values(row))).toEqual(['#ff0000'])
     expect(deps.recordHistory).toHaveBeenCalledTimes(1)
     expect(deps.recordHistory.mock.calls[0]?.[0].beads).toBe(crowded.beads)
-    expect(deps.showToast).toHaveBeenCalledWith('frame-margin-cleared', '1 bead was too close to the Frame and moved outside it.', 'info', expect.anything())
+    expect(deps.showToast).toHaveBeenCalledWith('frame-margin-cleared', 'Frame set. 1 bead was in the margin and moved outside it.', 'info', expect.anything())
     expect(deps.announce).not.toHaveBeenCalled()
+  })
+
+  describe('the margin Message names what was done to the Frame', () => {
+    function crowdedBelow() {
+      const frame = sized.frame!
+      const bead = { row: frame.row + frame.rows + 3, column: frame.column, color: '#ff0000' }
+      return { ...sized, beads: withColors(sized.beads, [bead]) }
+    }
+    const key = (name: string, shiftKey = false) => ({ key: name, shiftKey }) as KeyboardEvent
+
+    it('says "Frame moved." for a move', () => {
+      const { deps, start, onKey } = setup(crowdedBelow())
+      start()
+      onKey(key('ArrowDown'))
+      expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame moved. 1 bead was in the margin and moved outside it.')
+    })
+
+    it('says "Frame resized." for a resize', () => {
+      const { deps, setSize } = setup(crowdedBelow())
+      setSize(sized.frame!.columns, sized.frame!.rows + 1)
+      expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame resized. 1 bead was in the margin and moved outside it.')
+    })
   })
 })
