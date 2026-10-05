@@ -48,11 +48,11 @@ describe('drawRulers', () => {
   const { frame: _frame, ...open } = base
   const twoPieces = { ...open, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }, { row: 10, column: 10, color: '#00ff00' }]) }
 
-  it('draws a Piece\'s rectangle `muted` while it is being drawn, and the others `line-strong`', () => {
+  it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true, activePiece: { row: 0, column: 0, rows: 1, columns: 1 } })
+    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
 
-    expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLineActive, LIGHT_THEME.pieceLine])
+    expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
   })
 
   it('draws no Piece rectangle with Rulers off, and both rectangles and numbers with Rulers on', () => {

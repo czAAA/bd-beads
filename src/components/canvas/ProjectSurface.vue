@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
-import type { Frame } from '../../domain/canvas'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { inMargin } from '../../domain/margin'
@@ -51,8 +50,6 @@ const props = defineProps<{
   moving?: boolean
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
-  /** The Piece being drawn now, whose rectangle is drawn `muted` rather than `line-strong` (BeadBoard card). */
-  activePiece?: Frame
   /** Whether the Frame is being set (Set Frame): a drag draws, moves or resizes it instead of drawing beads, and its handles show. */
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
@@ -274,7 +271,6 @@ function drawOverlay(): void {
         numbers: props.showRulers ?? true,
         fontPx: rulerFontPx(),
         viewport: size.value,
-        activePiece: props.activePiece,
       },
     })
   }
@@ -300,7 +296,6 @@ watch(
     () => props.settingFrame,
     () => props.frameTooltip,
     marginOpacity,
-    () => props.activePiece,
     touchInput,
     theme,
   ],

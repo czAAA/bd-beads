@@ -23,22 +23,16 @@ export interface RulerDrawInput {
   showNumbers: boolean
   /** The keyboard's bead cursor: its row and column numbers are marked. */
   cursor?: GridPosition
-  /** The piece being drawn now, whose rectangle is `muted` rather than `line-strong`. */
-  activePiece?: Frame
-}
-
-function sameBox(a: Frame, b: Frame | undefined): boolean {
-  return !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns
 }
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
-function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, theme: ProjectTheme, active: boolean): void {
+function strokeBoxLine(context: DrawingContext, box: RuledBox, view: RulerView, theme: ProjectTheme): void {
   const shown = boxOnScreen(box, view)
   const outset = box.outset
   const isFrame = box.kind === 'frame'
   context.setLineDash([])
   context.lineWidth = isFrame ? FRAME_LINE_PX : PIECE_LINE_PX
-  context.strokeStyle = isFrame ? theme.frameLine : active ? theme.pieceLineActive : theme.pieceLine
+  context.strokeStyle = isFrame ? theme.frameLine : theme.pieceLine
   context.beginPath()
   context.roundRect(shown.x - outset, shown.y - outset, shown.width + outset * 2, shown.height + outset * 2, isFrame ? FRAME_RADIUS_PX : PIECE_RADIUS_PX)
   context.stroke()
@@ -79,7 +73,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, view: RulerView, 
  * viewport's own px over whatever is drawn, and gives back the numbers it drew so a click can be tested against them.
  */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): RulerLabel[] {
-  const { project, view, pixelRatio, theme, showNumbers, cursor, activePiece } = input
+  const { project, view, pixelRatio, theme, showNumbers, cursor } = input
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
   const reach = view.fontPx * 4 + 40
@@ -90,7 +84,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): Rule
     }
     const shown = boxOnScreen(box, view)
     if (shown.x + shown.width > -reach && shown.x < view.viewport.width + reach && shown.y + shown.height > -reach && shown.y < view.viewport.height + reach) {
-      strokeBoxLine(context, box, view, theme, sameBox(box, activePiece))
+      strokeBoxLine(context, box, view, theme)
     }
   }
 

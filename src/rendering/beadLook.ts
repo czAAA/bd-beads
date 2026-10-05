@@ -54,7 +54,6 @@ export interface ProjectTheme {
   dot: string
   /** The rectangle round a piece (`line-strong`), and round the piece being drawn (`muted`). */
   pieceLine: string
-  pieceLineActive: string
   /** The Frame's line and handles (`ink`). */
   frameLine: string
   /** Ruler numbers: regular (`ruler`) and every 5th, bold (`body`). */
@@ -89,7 +88,6 @@ export const LIGHT_THEME: ProjectTheme = {
   canvas: '#fafafa',
   dot: '#d8d2cc',
   pieceLine: '#c7c7c7',
-  pieceLineActive: '#6a6a6a',
   frameLine: '#1f1f1f',
   ruler: '#6a6a6a',
   rulerStrong: '#4a4a4a',
@@ -110,7 +108,6 @@ export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
   dot: '#3c3c3c',
   pieceLine: '#3a3a3a',
-  pieceLineActive: '#949494',
   frameLine: '#ffffff',
   ruler: '#8c8c8c',
   rulerStrong: '#cccccc',
@@ -131,7 +128,6 @@ export const CONTRAST_THEME: ProjectTheme = {
   canvas: '#ffffff',
   dot: '#b8b0a8',
   pieceLine: '#000000',
-  pieceLineActive: '#3d3d3d',
   frameLine: '#000000',
   ruler: '#3d3d3d',
   rulerStrong: '#1f1f1f',

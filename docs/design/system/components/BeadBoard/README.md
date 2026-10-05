@@ -4,7 +4,7 @@ How a Pattern is drawn: beads on an open canvas you can draw on anywhere, in pie
 
 - **Open canvas (v16):** there is no board. The drawing area is one background (CanvasBackground) covered edge to edge with the positions of the chosen Technique, each a 1.5px `bead-empty` dot at the bead pitch. Painting works at every position. The canvas has no edge and no size; it is moved, never resized.
 - **Moving and zooming:** the wheel or two fingers move the canvas, and so do Space + drag and the Hand tool (`H`). ⌘ or Ctrl + wheel and pinch zoom, as do the canvas strip's buttons. The CanvasHint names these in the bottom-left corner.
-- **Pieces:** beads that touch by a side or a corner form one piece. Until a Frame is set, each piece has a 1px `line-strong` rectangle 5px outside its beads (radius 6; `muted` on the piece being drawn) and its own rulers above and on the left (Rulers card).
+- **Pieces:** beads that touch by a side or a corner form one piece. Until a Frame is set, each piece has a 1px `line-strong` rectangle 5px outside its beads (radius 6; it does not change while you draw) and its own rulers above and on the left (Rulers card).
 - **The Frame** marks the part of the canvas that is the Pattern (Frame card). Inside a set Frame, empty positions draw as full `bead-empty` beads instead of dots.
 - **Beads:** 2px gap. Shape comes from the Bead's form factor and Technique; a rounded bead has corners at 22% of its width. Light draws a faint `bead-rim` at 0.75px; dark draws none.
 - **Finished rows** (inside the Frame): light fades each bead's own color toward the canvas background (28% color, 72% background), not grey; dark draws the bead's grey at 45% over it.

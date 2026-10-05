@@ -177,4 +177,4 @@ export function visibleRulerLabels(
 }
 
 /** What the rulers are drawn in: the numbers and the lines. */
-export type RulerTheme = Pick<ProjectTheme, 'ruler' | 'rulerStrong' | 'marker' | 'cursor' | 'frameLine' | 'pieceLine' | 'pieceLineActive'>
+export type RulerTheme = Pick<ProjectTheme, 'ruler' | 'rulerStrong' | 'marker' | 'cursor' | 'frameLine' | 'pieceLine'>
