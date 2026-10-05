@@ -53,6 +53,8 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Palette | палитра |  |
 | Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
+| Clear | Очистить; confirm Очистить? | Empties the cells; the Pattern stays. Not «Очистить всё», which was Delete all |
+| Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
 | Delete all | Очистить всё | Empties the cells; the Pattern stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
@@ -234,7 +236,7 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | Frame 1, bring it into view | Рамка 1, показать на экране |
 | Rotate, Set Frame first | Повернуть: сначала задайте рамку |
 | Pattern rotated. 1 piece was in the way and moved outside the Frame. · Undo | Схема повёрнута. 1 фрагмент мешал и сдвинут за рамку. · Отменить |
-| Frame set. 1 bead was in the margin and moved outside it. · Undo | Рамка задана. 1 бусина была в поле рамки и перемещена за его пределы. · Отменить |
+| Frame set. 1 bead was in the margin and moved outside it. · Undo | Рамка задана. 1 бисеринка была в поле рамки и перемещена за его пределы. · Отменить |
 | Hand · Rulers | Рука · Линейки |
 | scroll or space drag to move · scroll to zoom | прокрутка или пробел и перетаскивание: сдвиг · прокрутка: масштаб |
 | Frame (optional) | Рамка (необязательно) |
