@@ -241,9 +241,9 @@ defineExpose({ close })
 
 /* The Export prompt (SaveBox card): 288px, padding 14, radius 10. */
 .app-menu__list--popover {
-  width: 288px;
+  width: var(--popover-width);
   padding: var(--space-14);
-  border-radius: 10px;
+  border-radius: var(--popover-radius);
 }
 
 .app-menu__list--start {

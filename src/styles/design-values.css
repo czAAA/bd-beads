@@ -64,6 +64,8 @@
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --ease-in: cubic-bezier(.4, 0, 1, 1);
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
+  /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
+  --framing-dim: rgba(0, 0, 0, .45);
 }
 
 @media (prefers-reduced-motion: reduce) {

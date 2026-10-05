@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Comment, computed, normalizeClass, ref, useId, useSlots, type VNode } from 'vue'
+import AppIcon from '../ui/AppIcon.vue'
 
 defineProps<{ title: string }>()
 
@@ -98,9 +99,7 @@ defineExpose({ expanded, collapse })
     </div>
     <span v-if="overflows" class="tool-group__chevron" aria-hidden="true" data-testid="tool-group-chevron">
       <!-- A simple downward chevron: "there's more below," not a "+N" count (2026-09-16 decision). -->
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M5 9l7 7 7-7" />
-      </svg>
+      <AppIcon name="chevron-down" :size="16" />
     </span>
     <div v-if="expanded" class="tool-group__overflow" data-testid="tool-group-overflow">
       <component :is="Overflow" />
@@ -133,16 +132,6 @@ defineExpose({ expanded, collapse })
   top: 0;
   right: 0;
   color: var(--muted);
-}
-
-.tool-group__chevron svg {
-  width: var(--space-16);
-  height: var(--space-16);
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.75;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .tool-group__overflow {

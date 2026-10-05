@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
@@ -120,11 +121,7 @@ const tipOpen = ref(false)
         @blur="tipOpen = false"
         @keydown.escape="tipOpen = false"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 11v6" />
-          <path d="M12 7.5v.01" />
-        </svg>
+        <AppIcon name="info" :size="18" />
       </button>
       <span v-show="tipOpen" :id="tooltipId" class="frame-controls__tooltip" role="tooltip" data-testid="size-estimate-tooltip">{{ t.size.estimateWarning }}</span>
     </div>
@@ -192,26 +189,16 @@ const tipOpen = ref(false)
   outline-offset: 2px;
 }
 
-.frame-controls__info svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 /* The warning color, not an error's: this is a guide, not a fact. Opens below the estimate at the rail's width, over the controls under it — within the rail, since the rail scrolls and would clip anything wider. */
 .frame-controls__tooltip {
   position: absolute;
-  z-index: 10;
+  z-index: var(--z-canvas-overlay);
   top: calc(100% + 8px);
   left: 0;
   right: 0;
   box-sizing: border-box;
   padding: 10px 14px;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.4;
   color: var(--ink);
   background: var(--warning);
@@ -221,7 +208,7 @@ const tipOpen = ref(false)
 
 .frame-controls__note {
   margin: 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.35;
   opacity: 0.75;
 }

@@ -34,6 +34,9 @@
   /* Menu card: the narrowest a menu gets, and an item */
   --menu-width: 12.5rem;
   --menu-item-height: 2.125rem;
+  /* SaveBox card: the Export prompt popover, 288px wide with a 10px radius */
+  --popover-width: 18rem;
+  --popover-radius: 0.625rem;
   /* BeadsNeeded and SavedProjects cards: an expandable panel's header, a Beads needed row (three fill the collapsed
      body), the Saved Projects collapsed body, and a color's 12px dot */
   --panel-head-height: 1.75rem;
@@ -57,8 +60,6 @@
   --control-height-small: 1.75rem;
   --stepper-value-width: 2.75rem;
   --stepper-value-size: 0.9375rem;
-  /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
-  --framing-dim: rgba(0, 0, 0, .45);
   /* ColorPickers card: an Image colors swatch */
   --image-color-size: 1.75rem;
   /* InteractionStates card: the pressed shrink */

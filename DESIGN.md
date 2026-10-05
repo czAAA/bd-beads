@@ -65,7 +65,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | One card per component (67, plus the `Cover`): a short guideline and a static preview | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
-| Icons v2 (51 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
+| Icons v2 (53 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
 ### 3.1 Old section numbers
@@ -170,7 +170,9 @@ previews load them from Google Fonts for display only.
 
 The SVG files carry a fixed `#1f1f1f` stroke because an `<img>` can't inherit color. The app inlines them and sets
 `stroke: currentColor` (the logo mark: `stroke: var(--accent)`). Take the files from the design system; don't redraw
-them.
+them. Every icon in the UI goes through `AppIcon`; no inline `<svg>`. `more` is reserved: no card places it, so the app
+doesn't draw it. The QR code's black modules on white (`QrCode.vue`) are deliberate: a scanner needs that contrast in
+every theme.
 
 ### 4.6 Tokens in the app's CSS
 
@@ -182,6 +184,12 @@ them.
   (`bb-*`, `ix-*`, `e-*`, `bc-*` classes), not the app.
 - Media queries can't read custom properties, so the breakpoints are written as literal values that match the `bp-*`
   tokens (`@media (min-width: 744px)`).
+- The design system's `--text-*` tokens and classes are the app's `--type-*`: the same styles under another name. The app
+  keeps its names; renaming them would only churn.
+- Local stacking is deliberate: the size-estimate tooltip in the Frame rail uses `--z-canvas-overlay` (10) for the same
+  "above its neighbours, inside its box" job.
+- Card sizes that aren't tokens (the Export prompt's 288px and 10px radius, `--popover-width` and `--popover-radius`)
+  live in `src/styles/controls.css`.
 
 ### 4.7 Decisions
 
