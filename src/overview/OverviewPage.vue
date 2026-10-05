@@ -68,14 +68,14 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
         <p class="overview__slogan" data-testid="overview-slogan">
           <span class="overview__slogan-first"
             >{{ sloganFirst
-            }}<span v-if="isNew" class="overview__note overview__note--you" aria-hidden="true" data-testid="overview-note-you">{{
+            }}<span class="overview__note overview__note--you" aria-hidden="true" data-testid="overview-note-you">{{
               t.overview.notes.you
             }}</span></span
           >{{ sloganRest }} <span class="overview__slogan-last">{{ t.overview.sloganLast }}</span>
         </p>
         <p class="overview__tagline">
           <span class="overview__tagline-text">{{ t.overview.tagline }}</span>
-          <span v-if="isNew" class="overview__aside overview__aside--us" aria-hidden="true" data-testid="overview-note-on-us">
+          <span class="overview__aside overview__aside--us" aria-hidden="true" data-testid="overview-note-on-us">
             <svg class="overview__arrow" width="18" height="8" viewBox="0 0 18 8"><path d="M17 4 H2 M6 1 L2 4 L6 7" /></svg>
             <span class="overview__note overview__note--accent">{{ t.overview.notes.onUs }}</span>
           </span>
@@ -130,6 +130,8 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
 
 <style scoped>
 .overview {
+  /* The drawn layer measures its placements from the main column's edge, in this page's width (without a scrollbar). */
+  container-type: inline-size;
   min-height: 100vh;
   color: var(--ink);
   background: var(--surface);
@@ -308,8 +310,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
 .overview__note--you {
   top: -0.75rem;
   left: -0.25rem;
-  font-size: 1.125rem;
-  letter-spacing: 0;
   transform: rotate(-8deg);
 }
 

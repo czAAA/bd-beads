@@ -62,8 +62,8 @@ const steam = [
   align-items: center;
   gap: var(--space-14);
   box-sizing: border-box;
-  max-width: 51.25rem;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   padding: 1.625rem 1.375rem;
   text-align: center;
   background: var(--panel);
@@ -130,7 +130,6 @@ const steam = [
 }
 
 .coffee__text {
-  max-width: 27.5rem;
   margin: var(--space-6) 0 0;
   font: var(--type-body);
   color: var(--body);
