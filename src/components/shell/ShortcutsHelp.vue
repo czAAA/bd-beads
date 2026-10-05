@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
+import { FRAME_HOTKEY, TOOL_HOTKEYS } from '../tools/toolIcons'
 
 /**
  * The `?` shortcuts help overlay (ticket 96): every keyboard shortcut from tickets 87, 88, 90, 91, 92, 94, 95, grouped
@@ -29,7 +30,7 @@ const groups = computed(() => [
       { keys: '1', label: t.value.tools.paintLabel },
       { keys: '2', label: t.value.tools.fillLabel },
       { keys: '3', label: t.value.tools.selectLabel },
-      { keys: '4', label: t.value.tools.eraseLabel },
+      { keys: TOOL_HOTKEYS.erase!, label: t.value.tools.eraseLabel },
       { keys: 'Del', label: t.value.shortcutsHelp.eraseOrClearSelection },
       { keys: 'Esc', label: t.value.shortcutsHelp.escapeSelectsPaint },
     ],
@@ -37,8 +38,8 @@ const groups = computed(() => [
   {
     title: t.value.shortcutsHelp.canvasGroup,
     shortcuts: [
-      { keys: '5', label: t.value.tools.handLabel },
-      { keys: '6', label: t.value.frame.setFrame },
+      { keys: TOOL_HOTKEYS.hand!, label: t.value.tools.handLabel },
+      { keys: FRAME_HOTKEY, label: t.value.frame.setFrame },
       { keys: 'R', label: t.value.canvas.rulersLabel },
       { keys: 'Space + drag', label: t.value.shortcutsHelp.panCanvas },
       { keys: 'Ctrl/Cmd + wheel', label: t.value.shortcutsHelp.zoomCanvas },

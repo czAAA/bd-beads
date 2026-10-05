@@ -7,6 +7,7 @@ import AppStepper from '../ui/form/AppStepper.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { useI18n } from '../../i18n/useI18n'
+import { FRAME_HOTKEY } from '../tools/toolIcons'
 
 /**
  * The body of the Frame row (MirrorSizeControls card, ticket 233): Columns and Rows steppers, Fit to drawing and Remove
@@ -91,7 +92,7 @@ const tipOpen = ref(false)
 
     <!-- While Row progress is on the buttons are locked, and the reason is on their title and written below. -->
     <div class="frame-controls__actions">
-      <AppTooltip v-if="withSetFrame" :text="t.frame.setFrame" shortcut="6" :description="t.frame.setFrameHint" :announce="false">
+      <AppTooltip v-if="withSetFrame" :text="t.frame.setFrame" :shortcut="FRAME_HOTKEY" :description="t.frame.setFrameHint" :announce="false">
         <AppButton variant="primary" icon="frame" data-testid="frame-set" @click="emit('set-frame')">
           {{ t.frame.setFrame }}
         </AppButton>

@@ -10,7 +10,7 @@ import PalettePicker from '../palette/PalettePicker.vue'
 import FrameControls from '../project/FrameControls.vue'
 import ToolButton from './ToolButton.vue'
 import ToolGroup from './ToolGroup.vue'
-import { TOOL_HOTKEYS } from './toolIcons'
+import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Tool } from '../../domain/tool'
@@ -153,7 +153,7 @@ const frameSummary = computed(() => {
         <ToolButton
           icon="frame"
           :label="t.frame.setFrame"
-          hotkey="6"
+          :hotkey="FRAME_HOTKEY"
           :description="t.frame.setFrameHint"
           :active="!!settingFrame"
           data-testid="tool-frame"

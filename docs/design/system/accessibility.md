@@ -79,7 +79,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Open canvas and Frame (v16)
 
-- **Keys:** `F` starts Set Frame, `R` toggles the rulers, `H` picks the Hand tool. Space pressed on its own still paints at the bead cursor; Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
+- **Keys:** `6` starts Set Frame, `R` toggles the rulers, `5` picks the Hand tool. Space pressed on its own still paints at the bead cursor; Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
 - **Bead cursor:** arrows move it across the whole open canvas, and the canvas scrolls to keep it in view. With the Frame being set, arrows move the Frame by one bead, Shift + arrows resize it, Enter sets it and Escape cancels.
 - **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
 - **Announced:** "Frame set, 21 columns, 19 rows", "Frame removed", the margin notice in full ("Frame set. 1 bead was in the margin and moved outside it."), and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."
