@@ -104,7 +104,7 @@ describe('Set Frame', () => {
     const pressed = () => wrapper.findAll('[data-testid^="tool-"][aria-pressed="true"]').map((el) => el.attributes('data-testid'))
     expect(pressed()).toEqual(['tool-paint'])
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     expect(pressed()).toEqual(['tool-frame'])
 
     await key({ key: 'Escape' })
