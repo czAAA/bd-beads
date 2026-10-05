@@ -68,8 +68,11 @@ export interface RulerView {
   fontPx: number
 }
 
+/** What decides which boxes carry rulers. */
+export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }
+
 /** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area (those near the viewport are chosen by the caller). */
-export function ruledBoxes(project: { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }): RuledBox[] {
+export function ruledBoxes(project: RuledProject): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
   }
@@ -194,6 +197,153 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   return labels
 }
 
+/** How far outside the viewport a box still counts as near it. */
+const NEAR_VIEWPORT_PX = 40
+
+/** How far past the band of a ruler's numbers a press still counts as on the ruler, and a quarter of it along the ruler. */
+const PICK_SLACK_PX = 2
+
+/** Below this bead pitch (px) a dot per bead would run together into a line, so only every 5th bead keeps its dot (ADR 0033). */
+export const DOT_EVERY_BEAD_FROM_PX = 6
+
+/** A bead's mark on a ruler: where it sits in the viewport, and what a click on it selects. */
+export interface RulerDot {
+  x: number
+  y: number
+  /** Every 5th bead: drawn bolder. */
+  fifth: boolean
+  /** Whether this bead already carries a number at the current Ruler step. */
+  numbered: boolean
+  axis: 'row' | 'column'
+  index: number
+  selection: Selection
+  position: number
+  /** The unit direction away from the ruled box, in the viewport, and the bead pitch along the ruler in px. */
+  normal: [number, number]
+  pitch: number
+  /** Half the thickness of the band the ruler's numbers fill, across the ruler: where the dot's line sits and how far a press on the ruler reaches. */
+  half: number
+}
+
+/**
+ * Every bead of one ruled box that touches the viewport, as a mark on each of its rulers, with the Ruler step's numbered
+ * ones flagged. Dots stand on the line the numbers' centres follow. The pick walks all of them; the drawing keeps the
+ * unnumbered ones (see `rulerDots`).
+ */
+export function rulerBeads(box: RuledBox, view: RulerView): RulerDot[] {
+  const { technique, rotation, zoom, scroll, viewport, fontPx } = view
+  const margin = fontPx * 4
+  const dots: RulerDot[] = []
+
+  const lastRow = box.row + box.rows - 1
+  const bottom = rowTopPx(technique, lastRow) + CELL_SIZE_PX
+  const right = box.column * CELL_SIZE_PX + box.columns * CELL_SIZE_PX + (technique === 'loom' ? 0 : CELL_SIZE_PX / 2)
+  const left = box.column * CELL_SIZE_PX
+
+  const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
+  const columnSizes = [labelBox(String(Math.min(box.columns, TURNED_FROM - 1)), false, fontPx)]
+  if (box.columns >= TURNED_FROM) {
+    columnSizes.push(labelBox(String(box.columns), true, fontPx))
+  }
+  const lastOnly = zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
+  const columnStep = lastOnly ? box.columns : rulerStep({ x: beadX, y: beadY }, columnSizes)
+  const columnPitch = Math.hypot(beadX, beadY)
+  const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
+  const rowStep = lastOnly ? box.rows : rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
+  const rowPitch = Math.hypot(rowX, rowY)
+
+  // The band the numbers fill across each ruler: a row number's width, a turned column number's height, else the font size.
+  const columnHalf = Math.max(...columnSizes.map((size) => size.height)) / 2
+  const rowHalf = labelBox(String(box.rows), false, fontPx).width / 2
+
+  const dotAt = (gridX: number, gridY: number, normal: [number, number], half: number) => {
+    const [dx, dy] = gridToDisplayed(rotation, gridX, gridY, zoom)
+    const [nx, ny] = gridToDisplayed(rotation, normal[0], normal[1], 1)
+    const away = box.outset + RULER_GAP_PX + half
+    return { x: dx - scroll.x + nx * away, y: dy - scroll.y + ny * away, normal: [nx, ny] as [number, number] }
+  }
+  const visible = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
+
+  const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
+    for (let index = 0; index < box.columns; index += 1) {
+      const gridX = rowShiftPx(technique, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
+      const spot = dotAt(gridX, gridY, normal, columnHalf)
+      if (visible(spot)) {
+        const selection: Selection = { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
+        dots.push({ ...spot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % columnStep === 0, axis: 'column', index, selection, position: box.column + index, pitch: columnPitch, half: columnHalf })
+      }
+    }
+  }
+  const rowsAt = (gridX: number, normal: [number, number]) => {
+    for (let index = 0; index < box.rows; index += 1) {
+      const spot = dotAt(gridX, rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2, normal, rowHalf)
+      if (visible(spot)) {
+        const selection: Selection = { top: box.row + index, left: box.column, rows: 1, columns: box.columns }
+        dots.push({ ...spot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % rowStep === 0, axis: 'row', index, selection, position: box.row + index, pitch: rowPitch, half: rowHalf })
+      }
+    }
+  }
+
+  columnsAt(box.row, rowTopPx(technique, box.row), [0, -1])
+  rowsAt(left, [-1, 0])
+  if (box.sides === 'all') {
+    columnsAt(lastRow, bottom, [0, 1])
+    rowsAt(right, [1, 0])
+  }
+  return dots
+}
+
+/** The boxes' beads without a number that are drawn as a Ruler dot: all of them, or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch. */
+export function rulerDots(box: RuledBox, view: RulerView): RulerDot[] {
+  return rulerBeads(box, view).filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX))
+}
+
+/** The boxes near the viewport that carry rulers. */
+function nearBoxes(project: RuledProject, view: RulerView): RuledBox[] {
+  const reach = view.fontPx * 4 + FRAME_OUTSET_PX + NEAR_VIEWPORT_PX
+  return ruledBoxes(project).filter((box) => {
+    const shown = boxOnScreen(box, view)
+    return shown.x + shown.width > -reach && shown.x < view.viewport.width + reach && shown.y + shown.height > -reach && shown.y < view.viewport.height + reach
+  })
+}
+
+/** Every Ruler dot in view, for all the boxes that carry rulers and are near the viewport. */
+export function visibleRulerDots(project: RuledProject, view: RulerView): RulerDot[] {
+  return nearBoxes(project, view).flatMap((box) => rulerDots(box, view))
+}
+
+/**
+ * The row or column a press on a ruler selects, by the nearest bead along it: the pointer is on a ruler when it is
+ * within the band of its dots (the width of a number) and no further than half a bead pitch from a bead's mark. A
+ * number under the pointer wins, so a click on it picks its own bead; everywhere else on the ruler, at 2px of pitch too,
+ * the nearest bead is picked.
+ */
+export function rulerPick(
+  project: RuledProject,
+  view: RulerView,
+  labels: readonly RulerLabel[],
+  point: { x: number; y: number },
+): Selection | undefined {
+  const label = labelAt(labels, point)
+  if (label) {
+    return label.selection
+  }
+  let best: { along: number; selection: Selection } | undefined
+  for (const box of nearBoxes(project, view)) {
+    for (const dot of rulerBeads(box, view)) {
+      const dx = point.x - dot.x
+      const dy = point.y - dot.y
+      const [nx, ny] = dot.normal
+      const across = Math.abs(dx * nx + dy * ny)
+      const along = Math.abs(-dx * ny + dy * nx)
+      if (across <= dot.half + RULER_GAP_PX + PICK_SLACK_PX && along <= dot.pitch / 2 + PICK_SLACK_PX / 4 && (!best || along < best.along)) {
+        best = { along, selection: dot.selection }
+      }
+    }
+  }
+  return best?.selection
+}
+
 /** The label under a point of the viewport, if any: the last drawn wins where two boxes crowd. */
 export function labelAt(labels: readonly RulerLabel[], point: { x: number; y: number }): RulerLabel | undefined {
   for (let i = labels.length - 1; i >= 0; i -= 1) {
@@ -207,10 +357,10 @@ export function labelAt(labels: readonly RulerLabel[], point: { x: number; y: nu
 
 /** Every ruler number in view, for all the boxes that carry rulers and are near the viewport. */
 export function visibleRulerLabels(
-  project: { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique },
+  project: RuledProject,
   view: RulerView,
 ): RulerLabel[] {
-  const reach = view.fontPx * 4 + FRAME_OUTSET_PX + 40
+  const reach = view.fontPx * 4 + FRAME_OUTSET_PX + NEAR_VIEWPORT_PX
   return ruledBoxes(project).flatMap((box) => {
     const shown = boxOnScreen(box, view)
     const near =

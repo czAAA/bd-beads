@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { labelAt, rulerLabels, rulerStep, ruledBoxes, visibleRulerLabels, type RulerView } from './rulers'
+import { labelAt, rulerBeads, rulerDots, rulerLabels, rulerPick, rulerStep, ruledBoxes, visibleRulerLabels, type RulerView } from './rulers'
 
 const R = '#e63746'
 const view = (extra: Partial<RulerView> = {}): RulerView => ({
@@ -138,6 +138,76 @@ describe('the Ruler step', () => {
     for (let i = 1; i < labels.length; i += 1) {
       expect(labels[i]!.x - labels[i]!.width / 2).toBeGreaterThanOrEqual(labels[i - 1]!.x + labels[i - 1]!.width / 2)
     }
+  })
+})
+
+describe('the Ruler dots', () => {
+  const box = { row: 0, column: 0, rows: 3, columns: 30, kind: 'frame' as const, outset: 7, sides: 'all' as const }
+  const columnsOnTop = (dots: ReturnType<typeof rulerDots>) => dots.filter((d) => d.axis === 'column' && d.y < 0)
+
+  it('mark every bead without a number, every 5th bolder', () => {
+    // 14px of pitch: numbers every 5, so the 4 beads between each pair are dots.
+    const dots = columnsOnTop(rulerDots(box, view({ zoom: 0.7 })))
+    expect(dots.map((d) => d.index + 1)).toEqual([1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24, 26, 27, 28, 29])
+    expect(dots.every((d) => !d.fifth)).toBe(true)
+  })
+
+  it('leave no bead bare where every bead has a number', () => {
+    expect(rulerDots(box, view())).toEqual([])
+  })
+
+  it('keep only the 5th-bead dots under 6px of pitch', () => {
+    const wide = { ...box, columns: 999 }
+    const dots = columnsOnTop(rulerDots(wide, view({ zoom: 0.1, viewport: { width: 4000, height: 800 } })))
+    expect(dots.length).toBeGreaterThan(0)
+    expect(dots.every((d) => d.fifth && !d.numbered)).toBe(true)
+  })
+
+  it('bring back a dot per bead from 6px of pitch', () => {
+    const dots = columnsOnTop(rulerDots({ ...box, columns: 999 }, view({ zoom: 6.5 / 20, viewport: { width: 4000, height: 800 } })))
+    expect(dots.some((d) => !d.fifth)).toBe(true)
+  })
+})
+
+describe('picking by the nearest bead on a ruler', () => {
+  const frame = { row: 0, column: 0, rows: 4, columns: 999 }
+  const wide = project([[0, 0]], frame)
+  const tenPercent = view({ zoom: 0.1, viewport: { width: 400, height: 300 } })
+
+  it('lands on the bead under the pointer at 10%, where a bead is 2px', () => {
+    const [bead] = rulerBeads({ ...frame, kind: 'frame', outset: 7, sides: 'all' }, tenPercent).filter((d) => d.axis === 'column' && d.index === 40 && d.y < 0)
+    const picked = rulerPick(wide, tenPercent, [], { x: bead!.x + 0.4, y: bead!.y })
+    expect(picked).toEqual({ top: 0, left: 40, rows: 4, columns: 1 })
+  })
+
+  it('selects a row from a dot beside the left ruler, and nothing away from the rulers', () => {
+    const [dot] = rulerBeads({ ...frame, kind: 'frame', outset: 7, sides: 'all' }, view()).filter((d) => d.axis === 'row' && d.index === 2 && d.x < 0)
+    expect(rulerPick(wide, view(), [], { x: dot!.x, y: dot!.y })).toEqual({ top: 2, left: 0, rows: 1, columns: 999 })
+    expect(rulerPick(wide, view(), [], { x: 300, y: 300 })).toBeUndefined()
+  })
+
+  it('lets a number under the pointer pick its own bead', () => {
+    const whole = view({ zoom: 0.1, viewport: { width: 2400, height: 300 } })
+    const labels = visibleRulerLabels(wide, whole)
+    const label = labels.find((l) => l.axis === 'column' && l.y < 0)!
+    expect(rulerPick(wide, whole, labels, { x: label.x, y: label.y })).toEqual(label.selection)
+  })
+})
+
+describe('Ruler dots on other layouts', () => {
+  const brick = { row: 0, column: 0, rows: 4, columns: 12, kind: 'frame' as const, outset: 7, sides: 'all' as const }
+
+  it('shift a brick stitch\'s odd rows by half a bead, as the numbers do', () => {
+    const top = rulerBeads({ ...brick, sides: 'start' }, view({ technique: 'brick', zoom: 0.7 })).filter((d) => d.axis === 'column')
+    const bottom = rulerBeads(brick, view({ technique: 'brick', zoom: 0.7 })).filter((d) => d.axis === 'column' && d.y > 0)
+    expect(top).toHaveLength(12)
+    expect(Math.abs(bottom[0]!.x - top[0]!.x)).toBeGreaterThan(0)
+  })
+
+  it('stand on the side the top faces when turned, and give only a Piece\'s start sides dots', () => {
+    const turned = rulerBeads({ ...brick, sides: 'start' }, view({ rotation: 90, zoom: 0.7 }))
+    expect(new Set(turned.map((d) => d.axis))).toEqual(new Set(['row', 'column']))
+    expect(rulerBeads(brick, view({ rotation: 90, zoom: 0.7 })).length).toBeGreaterThan(turned.length)
   })
 })
 

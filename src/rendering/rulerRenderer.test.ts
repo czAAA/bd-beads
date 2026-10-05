@@ -20,6 +20,9 @@ function fakeContext() {
     translate: () => {},
     rotate: () => {},
     beginPath: () => {},
+    arc: (...args: number[]) => {
+      current = args
+    },
     fillRect: () => {},
     roundRect: (...args: number[]) => {
       current = args
@@ -80,6 +83,34 @@ describe('drawRulers', () => {
     drawRulers(context, { project: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
+  })
+})
+
+describe('the Ruler dots', () => {
+  const framed = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 120 } }
+  const radii = (fills: { rect: number[] }[]) => fills.filter((fill) => fill.rect.length === 5).map((fill) => fill.rect[2])
+
+  it('draw a small dot for every bead without a number, in the number colours', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, { project: framed, view: { ...view, zoom: 0.7 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+
+    expect(new Set(radii(fills))).toEqual(new Set([1]))
+    expect(fills.filter((fill) => fill.rect.length === 5).every((fill) => fill.style === LIGHT_THEME.ruler)).toBe(true)
+  })
+
+  it('draw only bolder 5th-bead dots under 6px of bead pitch', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, { project: framed, view: { ...view, zoom: 0.1 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+
+    expect(radii(fills).length).toBeGreaterThan(0)
+    expect(new Set(radii(fills))).toEqual(new Set([1.75]))
+  })
+
+  it('draw none with Rulers off', () => {
+    const { context, fills } = fakeContext()
+    drawRulers(context, { project: framed, view: { ...view, zoom: 0.7 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+
+    expect(radii(fills)).toEqual([])
   })
 })
 

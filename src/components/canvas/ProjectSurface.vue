@@ -11,7 +11,7 @@ import { renderCanvas } from '../../rendering/canvasRenderer'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
 import { beadAtOpen, cellAtOpen } from '../../rendering/hitTest'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
-import { labelAt, visibleRulerLabels } from '../../rendering/rulers'
+import { rulerPick, visibleRulerLabels } from '../../rendering/rulers'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
@@ -436,18 +436,17 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
 
-  // A ruler number selects its whole row or column, from any tool, instead of reaching the beads under it.
-  if (event.button === 0) {
-    const box = rootEl.value?.getBoundingClientRect()
+  // A ruler number or dot selects its whole row or column, from any tool, instead of reaching the beads under it.
+  // A second finger of a pinch is not a press on a ruler.
+  if (event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary)) {
     // The numbers are laid out again for the press, from the same maths that drew them. A surface not yet measured (no layout) has no edge to cut them at.
     const viewport = size.value.width > 0 ? size.value : { width: Infinity, height: Infinity }
-    const labels =
-      props.showRulers === false
-        ? []
-        : visibleRulerLabels(toRaw(props.project), { technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport, fontPx: rulerFontPx() })
-    const label = labelAt(labels, { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) })
-    if (label) {
-      emit('select-line', label.selection)
+    const view = { technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport, fontPx: rulerFontPx() }
+    const rulered = props.showRulers !== false
+    const labels = rulered ? visibleRulerLabels(toRaw(props.project), view) : []
+    const picked = rulered ? rulerPick(toRaw(props.project), view, labels, pointInSurface(event)) : undefined
+    if (picked) {
+      emit('select-line', picked)
       return
     }
   }
