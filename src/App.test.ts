@@ -947,7 +947,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
 
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
-    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('125%')
+    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('110%')
 
     await wrapper.find('[data-testid="zoom-reset"]').trigger('click')
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')

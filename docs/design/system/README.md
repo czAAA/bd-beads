@@ -129,6 +129,7 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
   - Repo, 2026-10-05, ticket 284: `canvas-bg-1` to `canvas-bg-6` join `tokens.json` and `tokens.css` (light, dark, contrast; light's sixth repeats Studio, contrast's are white), and the app's canvas backgrounds read from them with no override left.
   - Repo, 2026-10-05, ticket 284: dark Night is `#202020`, as the app has it (the card said `#1a1a1a`), and the dark `ruler` token is `#8c8c8c` (4.9:1 on Night; it was `#888888`, 4.6:1), so the app no longer needs its own ruler color for the default background.
   - Repo, 2026-10-05, ticket 284: the zoom cluster reads out, Fit, in with no level readout, on the CanvasStrip, the ZoomPill and in `responsive.md` (ticket 215).
+  - Repo, 2026-10-05, ticket 287: zoom runs 10% to 400% in 10% steps (was 50% to 300%, 25%), and the level is back: the cluster reads out, level, in, Fit, on the CanvasStrip, the ZoomPill and in `responsive.md`.
   - Repo, 2026-10-05, ticket 284: the `CanvasStrip` card and `writing.md` lose the "N pieces outside the Frame" count and its divider (ticket 259).
   - Repo, 2026-10-05, ticket 284: the Dock has five buttons, with no Mirror (ticket 174); the `Dock`, `ScreenSizes`, `ToolSheet` and `responsive.md` lists and previews drop it.
   - Repo, 2026-10-05, ticket 284: the Saved Projects thumbnail grid has an 8px column gap (ticket 175), in the `SavedPatterns` card and `bundle.css`.
