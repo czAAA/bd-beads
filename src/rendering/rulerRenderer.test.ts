@@ -50,9 +50,29 @@ describe('drawRulers', () => {
 
   it('draws a Piece\'s rectangle `muted` while it is being drawn, and the others `line-strong`', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false, activePiece: { row: 0, column: 0, rows: 1, columns: 1 } })
+    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true, activePiece: { row: 0, column: 0, rows: 1, columns: 1 } })
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLineActive, LIGHT_THEME.pieceLine])
+  })
+
+  it('draws no Piece rectangle with Rulers off, and both rectangles and numbers with Rulers on', () => {
+    const off = fakeContext()
+    drawRulers(off.context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    expect(off.strokes).toHaveLength(0)
+    expect(off.texts).toHaveLength(0)
+
+    const on = fakeContext()
+    drawRulers(on.context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+    expect(on.strokes).toHaveLength(2)
+    expect(on.texts.length).toBeGreaterThan(0)
+  })
+
+  it('still draws the Frame\'s line with Rulers off', () => {
+    const { context, strokes, texts } = fakeContext()
+    drawRulers(context, { project: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+
+    expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
+    expect(texts).toHaveLength(0)
   })
 
   it('draws the Frame\'s line in `ink` and no Piece rectangles once there is a Frame', () => {
