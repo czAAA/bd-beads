@@ -1,6 +1,6 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { frameContains } from '../../domain/canvas'
-import { piecesOf } from '../../domain/pieces'
+import { pieceAreasOf } from '../../domain/pieces'
 import type { CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
@@ -250,14 +250,14 @@ function wireAppShell(services: Services) {
     flushPendingSave,
   })
 
-  /** The Piece being drawn right now (its rectangle is drawn `muted`, ADR 0026): the one under the pointer while a stroke is going, with no Frame to take the rulers over. */
+  /** The Piece area holding the Piece being drawn right now (its rectangle is drawn `muted`, ADR 0026): the one under the pointer while a stroke is going, with no Frame to take the rulers over. */
   const activePiece = computed(() => {
     const project = currentProject()
     const hovered = hoveredCell.value
     if (!project || project.frame || strokeMode.value === null || !hovered) {
       return undefined
     }
-    return piecesOf(project.beads, project.technique).find((piece) => frameContains(piece, hovered))
+    return pieceAreasOf(project.beads, project.technique).find((area) => frameContains(area, hovered))
   })
 
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */

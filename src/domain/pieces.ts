@@ -1,4 +1,4 @@
-import { forEachBead, type BeadMap, type Frame } from './canvas'
+import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, neighborsOf, type GridPosition, type Technique } from './grid'
 
 /**
@@ -78,3 +78,70 @@ export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
   return pieces
 }
 
+
+/** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell ring (side or corner, by the Technique's own neighbour geometry). */
+function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
+  const aBottom = a.row + a.rows - 1
+  const aRight = a.column + a.columns - 1
+  const bBottom = b.row + b.rows - 1
+  const bRight = b.column + b.columns - 1
+  // The ring lies within one cell of a's rectangle, so anything further off cannot touch it.
+  if (b.row > aBottom + 1 || bBottom < a.row - 1 || b.column > aRight + 1 || bRight < a.column - 1) {
+    return false
+  }
+  if (b.row <= aBottom && bBottom >= a.row && b.column <= aRight && bRight >= a.column) {
+    return true
+  }
+  const inB = (at: GridPosition) => frameContains(b, at)
+  for (let row = a.row; row <= aBottom; row += 1) {
+    const edge = row === a.row || row === aBottom
+    for (let column = a.column; column <= aRight; column += edge ? 1 : Math.max(1, a.columns - 1)) {
+      if (touching(technique, { row, column }).some(inB)) {
+        return true
+      }
+    }
+  }
+  return false
+}
+
+const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
+
+/**
+ * Every Piece area (CONTEXT.md): the rectangle around one or more Pieces. A Piece's rectangle that overlaps, lies inside
+ * or touches another's joins it, repeated until none do, so the area is the bounding box of the group. Top to bottom
+ * and left to right. Cached per set of beads like `piecesOf`.
+ */
+export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
+  const known = areaCache.get(beads)?.get(technique)
+  if (known) {
+    return known
+  }
+
+  let areas: Frame[] = piecesOf(beads, technique).map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))
+  let merged = true
+  while (merged) {
+    merged = false
+    const next: Frame[] = []
+    for (const area of areas) {
+      const at = next.findIndex((other) => areasJoin(technique, other, area))
+      if (at === -1) {
+        next.push(area)
+        continue
+      }
+      const other = next[at]
+      const top = Math.min(other.row, area.row)
+      const left = Math.min(other.column, area.column)
+      const bottom = Math.max(other.row + other.rows, area.row + area.rows)
+      const right = Math.max(other.column + other.columns, area.column + area.columns)
+      next[at] = { row: top, column: left, rows: bottom - top, columns: right - left }
+      merged = true
+    }
+    areas = next
+  }
+
+  areas.sort((a, b) => a.row - b.row || a.column - b.column)
+  const byTechnique = areaCache.get(beads) ?? new Map<Technique, Frame[]>()
+  byTechnique.set(technique, areas)
+  areaCache.set(beads, byTechnique)
+  return areas
+}
