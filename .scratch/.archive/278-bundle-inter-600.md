@@ -6,7 +6,7 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Inter 600 latin, latin-ext and cyrillic woff2 files from the same source as the other faces (with the licence file already there), same-origin, listed in `fonts.css`
 - [ ] `loadPrintFonts` also loads 600 where the PNG/PDF facts use it, and an export test or check would fail without it

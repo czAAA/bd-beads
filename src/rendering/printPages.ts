@@ -47,7 +47,7 @@ export async function loadPrintFonts(): Promise<void> {
   if (!fonts) return
   const sample = 'Aa Яя 0123'
   await Promise.all(
-    [font('400', 10, SANS), font('700', 10, SANS), font('400', 10, MONO), font('italic 400', 10, SERIF)].map((spec) =>
+    [font('400', 10, SANS), font('600', 10, SANS), font('700', 10, SANS), font('400', 10, MONO), font('italic 400', 10, SERIF)].map((spec) =>
       fonts.load(spec, sample).catch(() => []),
     ),
   )
