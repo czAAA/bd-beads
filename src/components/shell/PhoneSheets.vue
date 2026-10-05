@@ -6,6 +6,7 @@ import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
+import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
@@ -164,6 +165,10 @@ function toolLabel(tool: Tool): string {
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
   <BottomSheet v-if="openPhoneSheet === 'project'" modal :title="t.header.projectSheetLabel" @close="openPhoneSheet = null; phoneSavedProjectsOpen = false">
+    <!-- Canvas color on the phone (CanvasBackground card): the CanvasStrip is hidden here, so the picker lives in this header, before Close. Hidden in high contrast, and with no Project open there is no canvas to color. -->
+    <template v-if="activeProject" #actions>
+      <CanvasColorPicker />
+    </template>
     <template v-if="activeProject">
       <p class="phone-sheet__bead-row">
         <BeadPill data-testid="phone-sheet-bead">{{ activeBeadLabel }}</BeadPill>

@@ -20,7 +20,7 @@ Devices (CSS px): iPhone 16e 390×844, iPhone 17 · 17 Pro 402×874, iPhone Air 
 - No canvas strip: pinch to zoom and pan; a small zoom pill (rulers · out · 100% · in · fit) floats in the bottom-right corner of the Pattern.
 - The Progress bar is the largest control on the screen: 56px, its own compact mode (ticket 188) in place of the reference tier's spelled-out one -- a "1/222" counter, Turn row direction, and Row not done/Row done as icon-only buttons (their hover/focus label carries the word) -- and a 3px progress line under it.
 - A dock of six buttons, one per kind of tool (the active tool, Color, Edit, Mirror, Frame, Pattern); each opens its own bottom sheet with every option of that kind. Nothing the desktop has is missing.
-- Tool, Colour, Edit, Mirror and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Pattern sheet (save, export, Replace bead, Beads needed, Saved Patterns, New, Import) is modal, with a scrim.
+- Tool, Colour, Edit, Mirror and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Pattern sheet (Canvas color button in its header, save, export, Replace bead, Beads needed, Saved Patterns, New, Import) is modal, with a scrim.
 - While a Selection exists, a context bar above the Progress bar offers Copy, Rotate, Remove line and clear; after Copy it turns into "Tap where to paste" with Rotate and Cancel.
 - Landscape (height under 500px): the dock becomes a 64px rail on the left, the header drops to 44px.
 
