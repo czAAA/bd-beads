@@ -13,7 +13,7 @@ const { t } = useI18n()
 
 <template>
   <!--
-    The canvas strip's zoom (ticket 143; CanvasStrip card): zoom out, the level, zoom in, then reset to fit. 30px icon
+    The canvas strip's zoom (ticket 143; CanvasStrip card): zoom out, the level, zoom in, then reset to fit (ticket 287 brought the level back). 30px icon
     buttons with no fill; the level in DM Mono, 48px wide and centered, so the buttons don't shift as it changes.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
@@ -25,15 +25,7 @@ const { t } = useI18n()
       data-testid="zoom-out"
       @click="emit('zoom-out')"
     />
-    <IconButton
-      icon="fit"
-      variant="plain"
-      :icon-size="16"
-      :label="t.canvas.zoomResetLabel"
-      data-testid="zoom-reset"
-      @click="emit('reset')"
-    />
-    <span class="zoom-controls__level" data-testid="zoom-level" hidden>{{ zoomPercent }}%</span>
+    <span class="zoom-controls__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
     <IconButton
       icon="zoom-in"
       variant="plain"
@@ -41,6 +33,14 @@ const { t } = useI18n()
       :label="t.canvas.zoomInLabel"
       data-testid="zoom-in"
       @click="emit('zoom-in')"
+    />
+    <IconButton
+      icon="fit"
+      variant="plain"
+      :icon-size="16"
+      :label="t.canvas.zoomResetLabel"
+      data-testid="zoom-reset"
+      @click="emit('reset')"
     />
   </div>
 </template>

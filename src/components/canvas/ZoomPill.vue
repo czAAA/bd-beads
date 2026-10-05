@@ -31,9 +31,9 @@ const { t } = useI18n()
       @click="emit('toggle-rulers')"
     />
     <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
-    <IconButton icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
-    <span class="zoom-pill__level" data-testid="zoom-pill-level" hidden>{{ zoomPercent }}%</span>
+    <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>
     <IconButton icon="zoom-in" variant="plain" :icon-size="18" :label="t.canvas.zoomInLabel" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
+    <IconButton icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
   </div>
 </template>
 

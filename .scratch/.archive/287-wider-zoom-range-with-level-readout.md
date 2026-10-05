@@ -6,7 +6,7 @@
 
 **Human involvement:** autonomous
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Zoom minimum is 10%, maximum 400%, and zoom in and out move by 10%; wheel and pinch zoom clamp to the same range
 - [ ] The level shows between zoom out and zoom in on the canvas strip and the ZoomPill, with the Fit button after zoom in; it stays readable and doesn't shift the buttons as it changes

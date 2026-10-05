@@ -14,4 +14,10 @@ describe('ZoomPill', () => {
     await wrapper.get('[data-testid="zoom-pill-fit"]').trigger('click')
     expect(wrapper.emitted('reset')).toHaveLength(1)
   })
+
+  it('reads out, level, in, fit', () => {
+    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100 } })
+    const order = wrapper.findAll('[data-testid^="zoom-pill-"]').map((element) => element.attributes('data-testid'))
+    expect(order).toEqual(['zoom-pill-rulers', 'zoom-pill-out', 'zoom-pill-level', 'zoom-pill-in', 'zoom-pill-fit'])
+  })
 })

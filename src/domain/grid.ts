@@ -192,9 +192,9 @@ export function neighborsOf(
   )
 }
 
-export const MIN_ZOOM = 0.5
-export const MAX_ZOOM = 3
-export const ZOOM_STEP = 0.25
+export const MIN_ZOOM = 0.1
+export const MAX_ZOOM = 4
+export const ZOOM_STEP = 0.1
 
 /** The phone tier ends here (responsive.md, `bp-tablet`): under it the smallest bead is `bead-min-phone`, from it up `bead-min-tablet` and wider. */
 export const PHONE_MAX_WIDTH_PX = 743
