@@ -117,9 +117,15 @@ describe('AppTooltip', () => {
 
   it('shows for a hovering pen, like a mouse', async () => {
     const wrapper = tooltip()
-    await wrapper.trigger('pointerenter', { pointerType: 'pen' })
+    await wrapper.trigger('pointerenter', { pointerType: 'pen', buttons: 0 })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
     await wrapper.trigger('pointerleave', { pointerType: 'pen' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
+
+  it('does not show for a pen that enters with its tip down (a pen that cannot hover)', async () => {
+    const wrapper = tooltip()
+    await wrapper.trigger('pointerenter', { pointerType: 'pen', buttons: 1 })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
   })
 

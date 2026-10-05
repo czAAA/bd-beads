@@ -114,8 +114,11 @@ function show() {
 
 function onPointerEnter(event: PointerEvent) {
   // A mouse, trackpad or hovering pen (Apple Pencil over an iPad): all of them hover. A finger has no hover, and a
-  // tooltip would cover what it touches.
-  if (event.pointerType !== 'touch') show()
+  // tooltip would cover what it touches. A pen that can't hover (an older iPad) enters at contact, with its tip down
+  // (`buttons` is 1): that is a press, which the long-press handles, not a hover.
+  if (event.pointerType === 'touch') return
+  if (event.pointerType === 'pen' && event.buttons !== 0) return
+  show()
 }
 
 function onPointerDown(event: PointerEvent) {
