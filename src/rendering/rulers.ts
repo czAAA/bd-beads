@@ -1,6 +1,6 @@
 import type { Frame } from '../domain/canvas'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
-import { piecesOf } from '../domain/pieces'
+import { pieceAreasOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
 import type { ProjectTheme } from './beadLook'
 import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
@@ -64,12 +64,12 @@ export interface RulerView {
   fontPx: number
 }
 
-/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece (those near the viewport are chosen by the caller). */
-export function ruledBoxes(project: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique }): RuledBox[] {
+/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area (those near the viewport are chosen by the caller). */
+export function ruledBoxes(project: { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
   }
-  return piecesOf(project.beads, project.technique).map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
+  return pieceAreasOf(project.beads, project.technique).map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
 }
 
 /** A box's rectangle in viewport px: where its beads are, without the outset. */
@@ -161,7 +161,7 @@ export function labelAt(labels: readonly RulerLabel[], point: { x: number; y: nu
 
 /** Every ruler number in view, for all the boxes that carry rulers and are near the viewport. */
 export function visibleRulerLabels(
-  project: { frame?: Frame; beads: Parameters<typeof piecesOf>[0]; technique: Technique },
+  project: { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique },
   view: RulerView,
 ): RulerLabel[] {
   const reach = view.fontPx * 4 + FRAME_OUTSET_PX + 40
