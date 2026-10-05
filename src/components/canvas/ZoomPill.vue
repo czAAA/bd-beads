@@ -2,7 +2,6 @@
 import { nextTick, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { clampOffset, nearestCorner, type Box, type ZoomPillCorner } from '../../domain/zoomPillCorner'
-import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 
 /**
@@ -11,8 +10,9 @@ import IconButton from '../ui/IconButton.vue'
  * step. Same zoom (useProjectZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  *
- * Its drag handle (ticket 297) moves it anywhere inside its positioned parent, the canvas box's drawing area, and on
- * release it snaps to the nearest corner, which the parent keeps (`move`). The parent places the pill in `corner`; this
+ * Dragging it from anywhere (ticket 297; 302 took the handle away) moves it anywhere inside its positioned parent, the
+ * canvas box's drawing area, once the pointer is past DRAG_THRESHOLD_PX, and on release it snaps to the nearest corner,
+ * which the parent keeps (`move`). Alt + an arrow key does the same from the keyboard. The parent places the pill in `corner`; this
  * component only owns the drag's own offset and the glide into the corner.
  */
 defineProps<{ corner?: ZoomPillCorner; zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
@@ -32,35 +32,60 @@ const pill = ref<HTMLElement>()
 const offset = ref<{ x: number; y: number }>()
 const dragging = ref(false)
 const gliding = ref(false)
-let drag: { pointerId: number; startX: number; startY: number; pill: Box; area: Box } | undefined
+const announcement = ref('')
+/** The pointer is down on the pill; `moved` once it has gone past DRAG_THRESHOLD_PX and the pill follows it. */
+let drag: { pointerId: number; startX: number; startY: number; pill: Box; area: Box; moved: boolean } | undefined
+/** Set by a drag's release, so the click the browser may still send to the button under the pointer is dropped. */
+let swallowClick = false
+
+/** How far a press travels before it is a drag, not a tap (ticket 302). */
+const DRAG_THRESHOLD_PX = 6
 
 const toBox = (rect: DOMRect): Box => ({ left: rect.left, top: rect.top, width: rect.width, height: rect.height })
 
-function onHandleDown(event: PointerEvent): void {
+function onPointerDown(event: PointerEvent): void {
   const element = pill.value
   const area = element?.offsetParent
-  if (!element || !area || (event.pointerType === 'mouse' && event.button !== 0)) return
-  ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
-  drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, pill: toBox(element.getBoundingClientRect()), area: toBox(area.getBoundingClientRect()) }
-  gliding.value = false
-  dragging.value = true
-  offset.value = { x: 0, y: 0 }
+  if (!element || !area || drag || (event.pointerType === 'mouse' && event.button !== 0)) return
+  drag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, pill: toBox(element.getBoundingClientRect()), area: toBox(area.getBoundingClientRect()), moved: false }
+  swallowClick = false
 }
 
-function onHandleMove(event: PointerEvent): void {
+function onPointerMove(event: PointerEvent): void {
   if (!drag || event.pointerId !== drag.pointerId) return
-  offset.value = clampOffset(drag.pill, drag.area, event.clientX - drag.startX, event.clientY - drag.startY)
+  const dx = event.clientX - drag.startX
+  const dy = event.clientY - drag.startY
+  if (!drag.moved) {
+    if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return
+    // Captured only now, so a tap still reaches the button under it.
+    pill.value?.setPointerCapture?.(event.pointerId)
+    drag.moved = true
+    gliding.value = false
+    dragging.value = true
+  }
+  offset.value = clampOffset(drag.pill, drag.area, dx, dy)
 }
 
-async function onHandleUp(event: PointerEvent): Promise<void> {
+async function onPointerUp(event: PointerEvent): Promise<void> {
   if (!drag || event.pointerId !== drag.pointerId) return
-  const { pill: start, area } = drag
-  const at = offset.value ?? { x: 0, y: 0 }
+  const { pill: start, area, moved } = drag
   drag = undefined
+  if (!moved) return
+  const at = offset.value ?? { x: 0, y: 0 }
   dragging.value = false
+  swallowClick = true
+  setTimeout(() => (swallowClick = false))
   const dropped = { ...start, left: start.left + at.x, top: start.top + at.y }
   emit('move', nearestCorner(dropped, area))
   await settleInto(dropped)
+}
+
+/** A drag that began on a button never presses it. */
+function onClickCapture(event: MouseEvent): void {
+  if (!swallowClick) return
+  swallowClick = false
+  event.stopPropagation()
+  event.preventDefault()
 }
 
 /** The pill now sits in its new corner: start it where it was dropped and let it glide across (not at all with reduced motion). */
@@ -93,11 +118,14 @@ const NEXT_CORNER: Record<string, Partial<Record<ZoomPillCorner, ZoomPillCorner>
   ArrowDown: { 'top-left': 'bottom-left', 'top-right': 'bottom-right' },
 }
 
-/** The handle's keyboard move: an arrow key sends the pill to the corner next to it. */
-function onHandleKey(event: KeyboardEvent, current: ZoomPillCorner): void {
+/** The keyboard move: Alt + an arrow key, with focus anywhere in the pill, sends it to the corner next to it. */
+function onKeydown(event: KeyboardEvent, current: ZoomPillCorner): void {
+  if (!event.altKey) return
   const next = NEXT_CORNER[event.key]?.[current]
   if (!next) return
   event.preventDefault()
+  announcement.value = ''
+  void nextTick(() => (announcement.value = t.value.canvas.zoomPillMovedAnnouncement[next]))
   emit('move', next)
 }
 </script>
@@ -109,21 +137,15 @@ function onHandleKey(event: KeyboardEvent, current: ZoomPillCorner): void {
     :class="{ 'zoom-pill--dragging': dragging, 'zoom-pill--gliding': gliding }"
     :style="offset ? { transform: `translate(${offset.x}px, ${offset.y}px)` } : undefined"
     data-testid="zoom-pill"
+    @pointerdown="onPointerDown"
+    @pointermove="onPointerMove"
+    @pointerup="onPointerUp"
+    @pointercancel="onPointerUp"
+    @click.capture="onClickCapture"
+    @keydown="onKeydown($event, corner ?? 'bottom-right')"
     @transitionend.self="onGlideEnd"
   >
-    <AppTooltip :text="t.canvas.zoomPillMoveLabel" :announce="false">
-      <button
-        class="ui-control zoom-pill__handle"
-        type="button"
-        :aria-label="t.canvas.zoomPillMoveLabel"
-        data-testid="zoom-pill-handle"
-        @pointerdown="onHandleDown"
-        @pointermove="onHandleMove"
-        @pointerup="onHandleUp"
-        @pointercancel="onHandleUp"
-        @keydown="onHandleKey($event, corner ?? 'bottom-right')"
-      />
-    </AppTooltip>
+    <span class="zoom-pill__announcer" role="status" aria-live="polite" data-testid="zoom-pill-announcer">{{ announcement }}</span>
     <IconButton
       v-if="rulers !== undefined"
       icon="ruler"
@@ -171,25 +193,29 @@ function onHandleKey(event: KeyboardEvent, current: ZoomPillCorner): void {
   height: var(--zoom-pill-button);
 }
 
-/* The drag handle (ZoomPill card): six dots in a grip, at the pill's left end. A finger or a mouse can drag it without drawing or panning. */
-.zoom-pill__handle {
-  flex: none;
-  width: var(--space-16);
-  height: var(--zoom-pill-button);
-  padding: 0;
-  color: var(--muted);
-  cursor: grab;
+/* A finger, the Pencil or a mouse can drag it from anywhere without drawing, panning or selecting text. */
+.zoom-pill {
   touch-action: none;
   user-select: none;
-  background: radial-gradient(circle, currentColor 1.25px, transparent 1.5px) center / 6px 6px;
-  background-clip: content-box;
-  border: 0;
-  border-radius: var(--radius-full);
+}
+
+.zoom-pill__announcer {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .zoom-pill--dragging,
-.zoom-pill--dragging .zoom-pill__handle {
+.zoom-pill--dragging :deep(button) {
   cursor: grabbing;
+}
+
+/* No Tooltip over the button under a dragged pill. */
+.zoom-pill--dragging :deep(.app-tooltip__bubble) {
+  display: none !important;
 }
 
 /* Dragged: lifted off the canvas by a deeper shadow, and it follows the pointer without easing. */
