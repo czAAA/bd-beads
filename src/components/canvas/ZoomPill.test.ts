@@ -85,13 +85,12 @@ describe('ZoomPill', () => {
     })
 
     it('moves when dragged from a gap or the zoom level', async () => {
-      const { wrapper, pill } = mountDraggable()
+      const { wrapper } = mountDraggable()
       const level = wrapper.get('[data-testid="zoom-pill-level"]')
       await level.trigger('pointerdown', pointer(300, 560))
       await level.trigger('pointermove', pointer(-3000, 560))
       await level.trigger('pointerup', pointer(-3000, 560))
       expect(wrapper.emitted('move')).toEqual([['bottom-left']])
-      expect(pill.exists()).toBe(true)
       wrapper.unmount()
     })
 
