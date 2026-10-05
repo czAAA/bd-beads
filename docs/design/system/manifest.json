@@ -163,7 +163,7 @@
     {
       "name": "Dock",
       "group": "Responsive",
-      "summary": "The phone's six buttons, one per kind of tool, each opening its own ToolSheet: the active tool, Colour, Edit, Mirror, Size, Pattern."
+      "summary": "The phone's five buttons, one per kind of tool, each opening its own ToolSheet: the active tool, Colour, Edit, Frame, Pattern."
     },
     {
       "name": "Drawer",
@@ -398,7 +398,7 @@
     {
       "name": "ToolTabs",
       "group": "Toolbox",
-      "summary": "The Tools group: four equal tabs (Paint, Fill, Select, Erase) over a 1px line-strong rule, with Remove line and Delete all underneath."
+      "summary": "The Tools group: four equal tabs (Paint, Fill, Select, Eraser) over a 1px line-strong rule, with Remove line and Delete all underneath."
     },
     {
       "name": "Toolbox",

@@ -109,25 +109,31 @@ In `index.html`:
 - Which icon goes where: paint, fill, select, erase, hand and frame are the tools. palette is the Colors button's own icon (a round palette with four bead dabs), so Colors and Paint never share a glyph. remove-line and delete sit under them. undo, redo, rotate and copy are the Edit row. image covers Image colors and the PNG image menu item. save goes on Save project, export on Export ▾, qr-code and pdf on its menu items. import and scan go on Import a file and Import QR code, plus on New project. device, sun, moon and contrast are the four-way theme control, keyboard is Keyboard shortcuts. mirror-horizontal, mirror-vertical and mirror-copy-mode are the Mirror controls, frame (v16) is the Frame row, every Set Frame button and the Dock's Frame button; size, which marked the Size row until v15, stays as the phone header's own bead/technique selector (ticket 188). grid, ruler (v16, the Rulers toggle), zoom-out, zoom-in and fit are the canvas strip. code (two chevrons, v18) is the HeaderMenu's Source code link, added when the repository went public. The Progress bar uses turn-row-direction, chevron-left (Row not done) and check (Row done). arrow-down and arrow-up expand and collapse a panel. chevron-down and chevron-up mark selects and disclosure rows. info, warning and close are for messages. menu (three lines, v15) opens the HeaderMenu next to the logo at every size; pattern (a tall board of six beads, v15) is the Dock's Pattern button, replacing the save-like icon there; more (three beads) stays in the set but no longer sits in the header. sidebar is the iPad mini's Tools button that opens the Drawer. row-progress is kept for the legacy Row progress group. bead (a rounded bead module with its drilled hole) is the app's own mark at header widths too narrow for the wordmark, with the app name as its hover label; library (three shelved spines) marks Saved projects at every tier; paste (a clipboard with two lines) is the phone Edit sheet's Paste, replacing its former reuse of import.
 - The **Icons v1** group keeps the 23 icons the app ships today, copied from its components, for reference until the app switches over.
 
-## Not synced
+## Where the cards differ from the app, and what is hand-written
 
-- The Vue components in `src/components/` still use the old style (ticket 02), so they weren't bundled. The component cards are static renditions hand-written from DESIGN.md §4–§7.
-- There are no font files in the repository yet; the owner adds them under `public/fonts/` (Inter, DM Mono, Instrument Serif, JetBrains Mono and Source Serif 4 for Cyrillic, all SIL OFL). The previews load them from Google Fonts until then.
+- The component cards are static renditions (`components/<Comp>/README.md` and `preview.html`), written by hand; the Vue components in `src/components/` are the real thing. Where the app deliberately differs from a card, the card says so, with its reason, and the Version changelog below has a line for it (DESIGN.md §6).
+- The previews still draw the v15 board or Size controls in ScreenSizes, ToolSheet, ContextBar, PhoneForms, ShortcutsHelp, Rulers, EmptyCanvas, the Tour cards and the print cards (exports keep their board). Their READMEs are current.
 - The Progress bar's light gradient fill (`--track-fill`) and the modal scrims can't be color tokens, so they live in `components/bundle.css`.
-- Phase E is decided but not built: the four-way theme control, Name on exports in the Export menu, the bead cursor for keyboard painting, landscape and stacked exports, the high-contrast pressed fills, and the text-fitting rules (header by priority, wrapping segments, ContextBar icons, one-line thumbnail names).
-- Phase D is decided but not built: the new PDF and PNG layouts, a beads-per-gram field on each catalog Bead (Delica 11/0 ≈ 200, TOHO Round 11/0 ≈ 110–120, TOHO Cube 1.5 mm still to be weighed), an optional "Your name" setting for the exports, Palette color names, and the string fixes listed in the Writing section.
-- The X1 logo, Icons v2, the responsive tiers, the Forms and states designs and the Phase C colour changes (dark labels on orange, `accent-strong`, `field-line`, the high-contrast theme) are decided for the app but not yet in its code (tickets 79 and 83 build the tiers). New copy approved with Phase A: "Scan it with Import QR code on another device.", "Make one with New project, open a Saved project, or import a file.", "Opening {Pattern} · {size}", "Converting the picture · {percent}", and the Image colors reason "No image colors: this project was not converted from a picture."
 - The Rulers card (ticket 222) and the `bead-min-*` tokens are hand-written in the repo (DESIGN.md §6).
-- The `src/style.css` tokens (the old navy/peppermint palette) were skipped on purpose: DESIGN.md replaces them.
-- v15 is decided but not built: the Overview page, the eleven-step Tour (TourStep) and its 10×75 Pattern (TourPattern), the HeaderMenu, and the `menu` and `pattern` icons. Plans, accounts and the support link on the Overview are designs only, switched off, with no integration. Existing Dock mockups still draw the old Pattern icon.
-- Dark theme: Palette Black #1a1a1a matches the dark `board` and dark draws no bead rim, so black beads blend into the board; the Tour Pattern's gold rhombuses still read.
-- v16 is decided but not built: the open canvas, pieces and their rulers, the Frame and everything that depends on it, the Hand tool, the Rulers toggle, the CanvasHint and the `frame`, `ruler` and `hand` icons. Its cards are hand-written from the signed-off mockups ("bd-beads · Open canvas and frame"). These previews still draw the v15 board or Size controls: ScreenSizes, ToolSheet, ContextBar, PhoneForms, ShortcutsHelp, Rulers, EmptyCanvas, the Tour cards and the print cards (exports keep their board). The v16 Russian strings, keyboard rules and announcements are proposed and not yet reviewed. The Tour (TourStep, TourPattern) has not been checked against the open canvas yet.
+- Dark theme: Palette Black #1a1a1a matches the dark `board` closely and dark draws no bead rim, so black beads blend into the board; the Tour Pattern's gold rhombuses still read.
+- Plans, accounts and the support link on the Overview are designs only, switched off, with no integration. The Tour is switched off too (ticket 247).
 
 ## Version
 
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-05, ticket 284: `canvas-bg-1` to `canvas-bg-6` join `tokens.json` and `tokens.css` (light, dark, contrast; light's sixth repeats Studio, contrast's are white), and the app's canvas backgrounds read from them with no override left.
+  - Repo, 2026-10-05, ticket 284: dark Night is `#202020`, as the app has it (the card said `#1a1a1a`), and the dark `ruler` token is `#8c8c8c` (4.9:1 on Night; it was `#888888`, 4.6:1), so the app no longer needs its own ruler color for the default background.
+  - Repo, 2026-10-05, ticket 284: the zoom cluster reads out, Fit, in with no level readout, on the CanvasStrip, the ZoomPill and in `responsive.md` (ticket 215).
+  - Repo, 2026-10-05, ticket 284: the `CanvasStrip` card and `writing.md` lose the "N pieces outside the Frame" count and its divider (ticket 259).
+  - Repo, 2026-10-05, ticket 284: the Dock has five buttons, with no Mirror (ticket 174); the `Dock`, `ScreenSizes`, `ToolSheet` and `responsive.md` lists and previews drop it.
+  - Repo, 2026-10-05, ticket 284: the Saved Projects thumbnail grid has an 8px column gap (ticket 175), in the `SavedPatterns` card and `bundle.css`.
+  - Repo, 2026-10-05, ticket 284: the palette × badge keeps a 28px hit area on touch, not the 44px `touch-target`, because the swatches are 6px apart (ticket 166); `PaletteSwatches` says so.
+  - Repo, 2026-10-05, ticket 284: the size unit is the NumberField's placeholder, not a label on the border (commit 48ae79e reverted ticket 224); the `NumberField` card, `forms-and-states.md` and `bundle.css` follow.
+  - Repo, 2026-10-05, ticket 284: the tool is "Eraser" on the tool cards, previews and the Tour copy (ticket 250); the verb "Erase" stays for the action.
+  - Repo, 2026-10-05, ticket 284: the Frame margin Message counts beads, not pieces (ticket 277); the `Frame` card, `writing.md` and `accessibility.md` already say so.
+  - Repo, 2026-10-05, ticket 284: `accessibility.md` no longer says the active tool has an underline (v18 has none: an inset outline and `aria-pressed`), and this README's "Not synced" and `api/` lines are replaced by what is true of the repo.
   - Repo, 2026-10-05, ticket 282: the Russian app copy now follows `writing.md` where it had drifted: no em dashes (scroll hint and Frame keyboard hint use a colon or «:» form), «Сохранённые проекты» heading, full technique labels «Мозаичное плетение» and «Кирпичное плетение» (the SegmentedControl wraps them), «Удалить линию» for Remove line, and Set Frame's hint in glossary words (бисеринки, схема). The panel head wraps its count and buttons under the title when «Сохранённые проекты» does not fit beside them, so the title stays on one line. A test fails on an em dash in either language.
   - Repo, 2026-10-05, ticket 281: the Canvas color button is on the phone. The CanvasStrip is hidden there, so the Project sheet's header carries it, between the title and Close (44px, the same popover and radio group, hidden in high contrast and with no Project open). `CanvasBackground`, `ToolSheet` and `responsive.md` say so; no token changed.
   - Repo, 2026-10-05, ticket 279: the app follows the cards on four small points: the Palette × badge shows on a focused added swatch as well as a selected one, the swatch focus ring is 2px away, the Custom glyph is always the 14px hatched `muted` square (`--swatch-dot` 14px; `.bb-hatch` in `bundle.css`), and Saved Projects says "no Frame" for a Project without a Frame. The ColorPickers card now says the same; no token changed.
@@ -157,28 +163,28 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 ---
 
-## Consuming this system (generated — do not edit)
+## Consuming this system
 
-Every path named below is under `project/` in this design system: read `project/api/tokens.md`, not `api/tokens.md`.
+Every path below is relative to `docs/design/system/`; there is no `api/` folder in the repo, so the old `api/` paths of the claude.ai export map to the files here.
 
-68 components are documented without a runnable `components/bundle.js`: read each component’s card, and its README where it has one (`components/<Comp>/README.md`), and build to those guidelines. Tokens: the values are on `api/tokens.md`; a Slides deck or Design canvas also takes `tokens.json` by file path.
+68 components are documented without a runnable `components/bundle.js`: read each component's card (`components/<Comp>/README.md`, with `preview.html` beside it) and build to those guidelines. Token values are in `tokens.json` (and `tokens.css`); a Slides deck or Design canvas also takes `tokens.json` by file path.
 
-**Read, per thing:** a component’s props, parts and examples: `api/components/<Comp>.md`; token values: `api/tokens.md`; stored assets and their paths: `api/assets/<Group>.md`. After this README, fetch the cards and fonts you need in ONE message as parallel calls — none depends on another.
+**Read, per thing:** a component's parts and rules: `components/<Comp>/README.md`; token values: `tokens.json`; stored assets: `assets/<Group>/` (`assets/Icons/`, `assets/Logos/`).
 
 **Two rules.** Before you use a thing — a component, a token group, an icon, an asset — read its card from the index below; a value you did not read from a card is a guess. `tokens.json`, `manifest.json` and `design-system.json` are sources for tools: hand them over. `components/<Comp>/README.md` and `assets/<Group>/README.md` are the long-form second read a card links to; `SKILL.md` and `artifact-type/` beside them are authoring guidance, not needed to consume the system.
 
-## Index (generated — do not edit)
+## Index
 
 **Tokens**
 
-- `api/tokens.md` — Every token: surface, text, fill, border, palette, type, spacing, radius, shadow, layout, z-index, print. (18.9k)
+- `tokens.json` — Every token: surface, text, fill, border, palette, type, spacing, radius, shadow, layout, z-index, print. (18.9k)
 
 **Icons and assets**
 
-- `api/assets/Logos.md` — 11 files, by asset id. (2.4k)
-- `api/assets/Icons.md` — 50 files, by asset id. (5.1k)
+- `assets/Logos/` — 11 files.
+- `assets/Icons/` — the icon files.
 
-**Components** (`api/components/<Comp>.md`, 68)
+**Components** (`components/<Comp>/README.md`, 68)
 
 - **Canvas**: `BeadBoard` — How a Pattern is drawn: beads on a rounded board, with rulers, the current-row marker, and the technique word and curve behind · `CanvasStrip` — The 46px header strip at the top of the canvas box: what the Pattern is and how far it is zoomed · `ProgressBar` — The 56px bar along the canvas box's bottom edge holding every Row progress control · `Rulers` — The row and column numbers along the Pattern: size per screen tier, every 5th number bold in body, the current row marked
 - **States**: `BeadCursor` — The keyboard cursor on the Pattern: one bead ringed in focus-ring, its row and column marked on the rulers · `BeadHover` — How the Pattern answers the pointer: outline or colour preview on hover, and the cursors · `EmptyCanvas` — What the canvas box shows while no Pattern is open · `EmptyPanels` — Beads needed and Saved Patterns with nothing in them · `InteractionStates` — Every interactive component at rest, hovered, pressed, focused, disabled and selected; the samples are live · `Loading` — The waiting indicators: three beads, or a progress line when the share done is known · `Motion` — How things move: four durations, three easings, and the rules that keep motion off the Pattern; the buttons in the preview play each motion · `SaveStates` — Save failed, not saved and Saved
@@ -192,6 +198,6 @@ Every path named below is under `project/` in this design system: read `project/
 - **Writing**: `Glossary` — The app's nouns in English and Russian, and the names of the 12 Palette colors · `LongerText` — How controls make room for longer strings (Russian runs about a quarter longer): drop to icons by priority, wrap, or cut only user text · `NumbersAndUnits` — How counts, sizes, weights, units, percentages, ranges and dates are written in English and Russian · `WritingPatterns` — How the app talks: the voice, and one sentence pattern for each kind of message, in English and Russian
 - **Overlays**: `Menu` — A popup list anchored under its button (Export ▾), and the Tooltip · `Modal` — A centered dialog for confirmations (Delete all?, Replace bead?), the QR export panel and the keyboard shortcuts
 - **Feedback**: `Message` — A notice or toast: "couldn't save", import results and errors, confirmations of an action
-- **Forms**: `NumberField` — A number input with its unit on the border, and the Select that shares its look · `SegmentedControl` — Two or three always-visible choices: Technique, Unit, Change from · `Stepper` — The − value + control for every counted setting on desktop: Mirror axes, Size, Colors at most · `SwitchAndFileButton` — The labelled on/off Switch, and the FileButton that opens the file picker with its limits written under it · `TextField` — A single-line text input with its label, hint and error
+- **Forms**: `NumberField` — A number input with its unit as the placeholder, and the Select that shares its look · `SegmentedControl` — Two or three always-visible choices: Technique, Unit, Change from · `Stepper` — The − value + control for every counted setting on desktop: Mirror axes, Size, Colors at most · `SwitchAndFileButton` — The labelled on/off Switch, and the FileButton that opens the file picker with its limits written under it · `TextField` — A single-line text input with its label, hint and error
 - **Onboarding**: `Overview` — The one page outside the editor, at /overview: the front door for a new visitor (empty Pattern library), reachable from the header menu, drawn lighter and more… · `TourPattern` — The finished Pattern every Tour builds: 10 columns × 75 rows, loom, the default Bead, Palette Yellow #f2c94c and Black #1a1a1a only; five gold rhombuses with a… · `TourStep` — The Tour: eleven steps inside the real editor; each step card names the tool it teaches, points at one control with a grey dotted line, lights that control in…
 - **Print**: `PngExport` — The PNG export: the whole Pattern on its board, with a narrow story column beside it · `PrintChartPage` — A chart page of the PDF: one part of the Pattern, filling the sheet, to work from at the craft table · `PrintPage1` — The first page of the PDF: the whole Pattern large on its board, with Beads needed in beads and grams and the facts beside it · `PrintStrips` — Long thin Patterns (bracelets) stack several parts on one sheet; the PNG of a wide Pattern puts its story under the chart · `PrintWide` — A Pattern wider than tall prints on landscape A4 with the same layout: the canvas and the Beads needed column on page 1, one part per chart page

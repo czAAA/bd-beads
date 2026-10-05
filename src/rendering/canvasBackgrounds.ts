@@ -3,18 +3,15 @@ import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
 
 /**
  * The drawing area's background, which the person picks (ticket 252; CanvasBackground card): five in light, six in dark.
- * The app stores the choice's number, not its color, so switching theme keeps the position. The design system lists the
- * colors on the card as `canvas-bg-1` to `canvas-bg-6` but the copy in the repo carries no such tokens yet, so they are
- * written out here; the dark Night is the dark `box` the canvas has today (#202020, the card says #1a1a1a), so the default
- * doesn't shift. On it `ruler` (#888888) is only 4.6:1, so its numbers are #8c8c8c (4.9:1), the one change to the default.
+ * The app stores the choice's number, not its color, so switching theme keeps the position. The colors are the design
+ * system's `canvas-bg-1` to `canvas-bg-6` tokens, copied here because a canvas can't read CSS; canvasBackgrounds.test.ts
+ * keeps them equal to tokens.json. Light has no sixth, so a stored 6 shows Studio there (`canvas-bg-6` light).
  */
 export type CanvasBackgroundId = 'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash'
 
 export interface CanvasBackground {
   id: CanvasBackgroundId
   color: string
-  /** Ruler numbers where the theme's own `ruler` is under 4.8:1 on this background. */
-  ruler?: string
 }
 
 const LIGHT: readonly CanvasBackground[] = [
@@ -26,7 +23,7 @@ const LIGHT: readonly CanvasBackground[] = [
 ]
 
 const DARK: readonly CanvasBackground[] = [
-  { id: 'night', color: '#202020', ruler: '#8c8c8c' },
+  { id: 'night', color: '#202020' },
   { id: 'ink', color: '#0e0e0e' },
   { id: 'midnight', color: '#12161c' },
   { id: 'olive', color: '#171608' },
@@ -66,7 +63,6 @@ export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme 
   const background = canvasBackgroundOf(theme, choice)
   if (!background) return base
   const look: ProjectTheme = { ...base, canvas: background.color, background: background.color }
-  if (background.ruler) look.ruler = background.ruler
   if (isAsh(theme, choice)) {
     look.ruler = ASH.ruler
     look.dot = ASH.emptyBead

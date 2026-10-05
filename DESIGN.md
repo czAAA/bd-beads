@@ -145,9 +145,7 @@ Ticket 140 adds a test that keeps each theme's `ProjectTheme` equal to `tokens.j
 the canvas behind.
 The board, bead shape, finished rows and current row are drawn as the `BeadBoard` card describes.
 
-On screen the drawing area's `canvas` (and `background`) is the person's Canvas color (`src/rendering/canvasBackgrounds.ts`, ticket 252), not always `box`. The repo's design system copy has no `canvas-bg-1` to `canvas-bg-6` tokens yet, so the eleven colors are written out there from the CanvasBackground card, with two app-specific deviations: dark Night is today's `box` (#202020, the card says #1a1a1a) so the default doesn't shift, and its ruler numbers are #8c8c8c to reach 4.8:1. Ticket 284 adds the tokens to the design system and drops both.
-
-The `CanvasStrip` card still describes a "N pieces outside the Frame" count and its divider. The app dropped it (ticket 259); ticket 284 removes it from the card.
+On screen the drawing area's `canvas` (and `background`) is the person's Canvas color (`src/rendering/canvasBackgrounds.ts`, ticket 252), not always `box`. Its eleven colors are the `canvas-bg-1` to `canvas-bg-6` tokens (light, dark; ticket 284), copied into that file, and `canvasBackgrounds.test.ts` keeps the copy equal to `tokens.json`. Only Ash (dark choice 6) carries its own greys there, as the CanvasBackground card says.
 
 ### 4.3 Exports are always light
 

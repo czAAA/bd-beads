@@ -8,7 +8,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - **Orange buttons carry dark labels.** `on-accent` is #1f1f1f in light (4.9:1 on #fa520f), the same move the dark theme makes with dark text on yellow. Hover lightens to `accent-hover` #ff6a2b (5.8:1). The brand orange itself is unchanged.
 - **Accent as text or a thin mark** on light surfaces is `accent-strong` (#c23604, 4.9:1 on panel): the active tool label and underline, the open Saved Pattern ring and name, message edges, accent icons, links. `accent` stays for fills, the current row and the logo.
 - The focus ring is `focus-ring`. Fields and Steppers, whose border is their only edge, use `field-line`; the off Switch uses `switch-off`; danger-filled buttons label in `on-danger`.
-- Changed values: `danger` light #c23604; `ruler` #6a6a6a / #888888; `subtle` light #767676; `muted` and `box-muted` dark #949494.
+- Changed values: `danger` light #c23604; `ruler` #6a6a6a / #8c8c8c; `subtle` light #767676; `muted` and `box-muted` dark #949494.
 - **Rulers** are measured on all eleven canvas backgrounds: regular numbers in `ruler` at 4.8:1 or more (Ash uses a lifted `#a0a0a0`, 5.4:1), every 5th in `body` at 7.9:1 or more, the current row's `marker` at 13:1 or more, and 10.9:1, 16.5:1 and 21:1 in high contrast. The Rulers card has the table. Column numbers from 100 are turned a quarter turn; none is ever thinned.
 - The logo on an accent tile (app icon, apple-touch icon, the cover) stays white in light: a graphic needs 3:1 and has 3.3:1.
 
@@ -22,7 +22,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Never colour alone
 
-- Every state with a colour also has a shape or a word: the active tool its underline and `aria-pressed`, the selected swatch its ring, errors their icon and sentence, the current row its outline and "Row 12".
+- Every state with a colour also has a shape or a word: the active tool its inset outline and `aria-pressed` (no underline since v18), the selected swatch its ring, errors their icon and sentence, the current row its outline and "Row 12".
 - Bead colours carry names in Beads needed and in swatch labels ("Color 1, red").
 - Warnings are an icon on a neutral edge, never warning-coloured text.
 

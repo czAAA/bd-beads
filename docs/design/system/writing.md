@@ -173,7 +173,7 @@ The Overview, the header menu and the Tour, as signed off. The same rules: plain
 | you'll make this (note) | её вы и сделаете |
 | What's inside | Что внутри |
 | Techniques: Loom, peyote and brick stitch, each drawn the way its beads sit. | Техники плетения: Ткачество, мозаичное и кирпичное плетение: каждая рисуется так, как ложится бисер. |
-| Pattern editing: Paint, Fill and Erase, copy and paste, and Undo for every step. | Редактирование схемы: Кисть, заливка и ластик, копирование и вставка, отмена любого шага. |
+| Pattern editing: Paint, Fill and Eraser, copy and paste, and Undo for every step. | Редактирование схемы: Кисть, заливка и ластик, копирование и вставка, отмена любого шага. |
 | Convert image: Turn a picture into a Pattern in up to 14 colors. | Конвертировать изображение: Превращает картинку в схему, до 14 цветов. |
 | Row progress: Mark rows done as you weave and pick up where you stopped. | Прогресс по рядам: Отмечайте готовые ряды и продолжайте с того места, где остановились. |
 | Beads needed: Every color counted, with Estimated weight in grams. | Нужно бисера: Подсчёт по каждому цвету и примерный вес в граммах. |
@@ -204,7 +204,7 @@ Plan contents are placeholders until paid features exist.
 | 5 | Paint · 1 | **Paint the eye** Choose Paint and black, then paint the 16 marked beads inside: a small ring and its centre. | **Нарисуйте глазок** Выберите «Кисть» и чёрный, затем закрасьте 16 отмеченных бисеринок внутри: маленькое кольцо и его середину. |
 | 6 | Select · 3 | **Copy the rhombus** Select draws a frame around beads you want to reuse. Select the rhombus, press Copy, then paste it into each of the four outlines below. | **Скопируйте ромб** «Выделение» обводит бисеринки, которые нужно повторить. Выделите ромб, нажмите «Копировать» и вставьте его в каждый из четырёх контуров ниже. |
 | 7 | Undo · Ctrl/Cmd+Z | **We'll finish the rest** The small gold beads between the rhombuses and the rounded ends go in as one change, so one Undo would take them all back. Press Next to watch. | **Остальное доделаем мы** Золотые бисеринки между ромбами и скруглённые концы добавятся одним изменением: одна отмена убрала бы их все. Нажмите «Далее» и смотрите. |
-| 8 | Erase · Del | **Erase the stray bead** Erase empties a bead. One bead sits outside the rounded corner: choose Erase and remove it. | **Сотрите лишнюю бисеринку** Ластик убирает бисеринку. Одна осталась за скруглённым углом: выберите «Ластик» и сотрите её. |
+| 8 | Eraser · Del | **Erase the stray bead** Eraser empties a bead. One bead sits outside the rounded corner: choose Eraser and remove it. | **Сотрите лишнюю бисеринку** Ластик убирает бисеринку. Одна осталась за скруглённым углом: выберите «Ластик» и сотрите её. |
 | 9 | Remove line | **Remove a line** Remove line takes out a whole row or column. Remove any one, then press Undo to bring it back. | **Удалите линию** «Удалить линию» убирает целый ряд или столбец. Удалите любой, затем нажмите «Отменить», чтобы вернуть его. |
 | 10 | Size | **Change the size** Size adds or removes rows and columns at the edge. Press − or + next to Columns, look at the Pattern, then press Undo. | **Измените размер** «Размер» добавляет или убирает ряды и столбцы с края. Нажмите − или + у столбцов, посмотрите на схему, затем нажмите «Отменить». |
 | 11 | Row progress · P | **Track your rows** Row progress keeps your place while you weave. Turn it on, press Row done three times, then Row not done once to open row 3 again. | **Отмечайте ряды** Прогресс по рядам запоминает, где вы остановились. Включите его, трижды нажмите «Ряд готов», затем один раз «Ряд не готов», чтобы вернуть ряд 3. |
@@ -231,7 +231,6 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | Row progress · Set Frame to start | Прогресс по рядам · Задайте рамку, чтобы начать |
 | Canvas · 3 pieces · no Frame | Холст · 3 фрагмента · без рамки |
 | 3 pieces · setting Frame | 3 фрагмента · задаётся рамка |
-| 2 pieces outside the Frame | 2 фрагмента вне рамки |
 | Frame 1, bring it into view | Рамка 1, показать на экране |
 | Rotate, Set Frame first | Повернуть: сначала задайте рамку |
 | Pattern rotated. 1 piece was in the way and moved outside the Frame. · Undo | Схема повёрнута. 1 фрагмент мешал и сдвинут за рамку. · Отменить |

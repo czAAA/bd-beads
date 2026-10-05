@@ -1,6 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
 import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, canvasWordColor, shownChoice } from './canvasBackgrounds'
+
+const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
+  color: { tokens: { name: string; value: Record<'light' | 'dark', string> }[] }
+}
+const token = (n: number, theme: 'light' | 'dark') => tokens.color.tokens.find((entry) => entry.name === `canvas-bg-${n}`)!.value[theme]
 
 function luminance(hex: string): number {
   const channel = (offset: number) => {
@@ -22,9 +29,19 @@ describe('Canvas color backgrounds', () => {
     expect(canvasBackgrounds('contrast')).toEqual([])
   })
 
-  it('makes the defaults the canvas the theme has today (dark with ruler numbers a shade lighter, to reach 4.8:1)', () => {
+  it('makes the defaults the canvas the theme has today ', () => {
     expect(canvasTheme('light', 1)).toEqual({ ...PROJECT_THEMES.light, background: PROJECT_THEMES.light.canvas })
-    expect(canvasTheme('dark', 1)).toEqual({ ...PROJECT_THEMES.dark, background: PROJECT_THEMES.dark.canvas, ruler: '#8c8c8c' })
+    expect(canvasTheme('dark', 1)).toEqual({ ...PROJECT_THEMES.dark, background: PROJECT_THEMES.dark.canvas })
+  })
+
+  it.each([
+    ['light', 5],
+    ['dark', 6],
+  ] as const)('copies canvas-bg-1 to canvas-bg-6 of tokens.json in %s', (theme, count) => {
+    canvasBackgrounds(theme).forEach((background, index) => expect(background.color, background.id).toBe(token(index + 1, theme)))
+    expect(canvasBackgrounds(theme)).toHaveLength(count)
+    // Light has no sixth choice: its token is Studio, which a stored 6 shows there.
+    expect(token(6, 'light')).toBe(token(1, 'light'))
   })
 
   it('keeps the position when the theme changes, and shows Studio for a stored 6 in light', () => {
