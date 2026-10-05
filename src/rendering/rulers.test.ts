@@ -130,13 +130,41 @@ describe('the Ruler step', () => {
     expect(rulerStep({ x: 0, y: 3 }, [two])).toBe(5)
   })
 
-  it('leaves no two drawn numbers overlapping on a 999-column ruler at 10%', () => {
+  it('leaves no two drawn numbers overlapping on a 999-column ruler at 50%, where the step still applies', () => {
     const wide = { row: 0, column: 0, rows: 10, columns: 999, kind: 'frame' as const, outset: 7, sides: 'all' as const }
-    const labels = rulerLabels(wide, view({ zoom: 0.1, viewport: { width: 1e6, height: 800 } })).filter((l) => l.axis === 'column' && l.y < 0)
-    // 2px beads: a number needs about 17px, so every 10th bead has room, every 5th does not.
-    expect(labels.map((l) => l.index + 1).slice(0, 3)).toEqual([10, 20, 30])
+    const labels = rulerLabels(wide, view({ zoom: 0.5, viewport: { width: 1e6, height: 800 } })).filter((l) => l.axis === 'column' && l.y < 0)
+    // 10px beads: a number needs about 17px, so every 5th bead has room, every bead does not.
+    expect(labels.map((l) => l.index + 1).slice(0, 3)).toEqual([5, 10, 15])
     for (let i = 1; i < labels.length; i += 1) {
       expect(labels[i]!.x - labels[i]!.width / 2).toBeGreaterThanOrEqual(labels[i - 1]!.x + labels[i - 1]!.width / 2)
     }
+  })
+})
+
+describe('the numbers below 50% zoom (ticket 303)', () => {
+  const wide = { row: 0, column: 0, rows: 13, columns: 100, kind: 'frame' as const, outset: 7, sides: 'all' as const }
+  const texts = (zoom: number, side: (l: ReturnType<typeof rulerLabels>[number]) => boolean) =>
+    rulerLabels(wide, view({ zoom, viewport: { width: 1e6, height: 1e6 } })).filter(side).map((l) => l.text)
+
+  it('keep the Ruler step at 50%', () => {
+    expect(texts(0.5, (l) => l.axis === 'column' && l.y < 0).length).toBeGreaterThan(1)
+    expect(texts(0.5, (l) => l.axis === 'row' && l.x < 0).length).toBeGreaterThan(0)
+  })
+
+  it('are only the last one on each side at 49%, columns and rows, above and below, left and right', () => {
+    expect(texts(0.49, (l) => l.axis === 'column' && l.y < 0)).toEqual(['100'])
+    expect(texts(0.49, (l) => l.axis === 'column' && l.y > 0)).toEqual(['100'])
+    expect(texts(0.49, (l) => l.axis === 'row' && l.x < 0)).toEqual(['13'])
+    expect(texts(0.49, (l) => l.axis === 'row' && l.x > 0)).toEqual(['13'])
+  })
+
+  it('give a click on the last number its whole row or column', () => {
+    const [last] = rulerLabels(wide, view({ zoom: 0.1 })).filter((l) => l.axis === 'column')
+    expect(last!.selection).toEqual({ top: 0, left: 99, rows: 13, columns: 1 })
+  })
+
+  it('are the one number of a piece’s start sides too', () => {
+    const piece = { ...wide, kind: 'piece' as const, outset: 5, sides: 'start' as const }
+    expect(rulerLabels(piece, view({ zoom: 0.25 })).map((l) => l.text).sort()).toEqual(['100', '13'])
   })
 })

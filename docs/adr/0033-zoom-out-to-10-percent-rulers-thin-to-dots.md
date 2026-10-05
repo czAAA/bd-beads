@@ -10,6 +10,7 @@ Ticket 223 made the smallest zoom the smallest bead of the screen's tier, so eve
 
 - One **Zoom floor** of 10% on every screen, for zoom out, pinch, wheel, the zoom buttons and Fit. Fit is still capped at 100% and only shrinks.
 - The rulers no longer set the floor; they adapt to it. The **Ruler step** is the smallest of 5, 10, 50, 100 and so on that leaves every number clear at the current zoom. Beads between numbers get a **Ruler dot**, every 5th bolder; below about 6px of bead pitch only the 5th-bead dots remain.
+- From 50% zoom up the Ruler step applies as above. Below 50% (ticket 303) a ruler shows only its last number, with no intermediate steps: the column count along the columns, the row count along the rows, on every Piece ruler and every Frame side. The last number stays clickable and selects its row or column; the hidden numbers cannot be clicked, and the cursor and Row progress highlights show only on a number that is drawn.
 - A dot selects its row or column like a number does, by the nearest bead under the pointer.
 - The zoom buttons move 10% at a time (10, 20, 30...); pinch and wheel stay continuous at whole-percent precision.
 - Two number-size tiers stay (12px ruler numbers at phone widths, 11px above, which is the `bead-min-phone` and `bead-min-tablet` values) but they now set the point where numbers turn to dots. `bead-min-tablet-lg`, `-laptop` and `-desktop` repeat `bead-min-tablet` and are removed.

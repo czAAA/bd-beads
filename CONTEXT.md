@@ -74,7 +74,7 @@ The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit
 _Avoid_: min zoom, bead-min floor
 
 **Ruler step**:
-How many beads apart the rulers show a number, chosen from 5, 10, 50, 100 and so on as the smallest that leaves every number clear at the current zoom; the beads between are drawn as Ruler dots.
+How many beads apart the rulers show a number, chosen from 5, 10, 50, 100 and so on as the smallest that leaves every number clear at the current zoom; the beads between are drawn as Ruler dots. The Ruler step applies from 50% zoom up; below 50% a ruler shows only its last number (the column count along the columns, the row count along the rows, on every Frame side and every Piece ruler), and the beads without a number keep their dots.
 _Avoid_: label interval, tick spacing
 
 **Ruler dot**:
