@@ -190,7 +190,7 @@ describe('the Hand tool', () => {
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
-    await key({ key: 'h' })
+    await key({ key: '5' })
     expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-button--active')
     expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(6)
 
@@ -213,7 +213,7 @@ describe('the Hand tool', () => {
     const wrapper = mountApp()
     await flushPromises()
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await key({ key: 'h' })
+    await key({ key: '5' })
     await key({ key: '1' })
 
     await pressBead(wrapper, { row: 3, column: 3 })

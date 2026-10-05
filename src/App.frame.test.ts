@@ -62,7 +62,7 @@ describe('Set Frame', () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · no Frame')
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · setting Frame')
 
     await drag(wrapper, { row: 4, column: 6 }, { row: 1, column: 2 })
@@ -74,7 +74,7 @@ describe('Set Frame', () => {
 
   it('shows the Frame while it is dragged and commits it on release, as one Undo step that changes no bead', async () => {
     const wrapper = await mountOpen()
-    await key({ key: 'f' })
+    await key({ key: '6' })
 
     await pressBead(wrapper, { row: 1, column: 1 })
     await hoverBead(wrapper, { row: 3, column: 4 }, { buttons: 1 })
@@ -93,7 +93,7 @@ describe('Set Frame', () => {
 
   it('moves a Frame by dragging inside it', async () => {
     const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    await key({ key: 'f' })
+    await key({ key: '6' })
 
     await drag(wrapper, { row: 2, column: 2 }, { row: 3, column: 4 })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
@@ -104,7 +104,7 @@ describe('Set Frame', () => {
     const pressed = () => wrapper.findAll('[data-testid^="tool-"][aria-pressed="true"]').map((el) => el.attributes('data-testid'))
     expect(pressed()).toEqual(['tool-paint'])
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     expect(pressed()).toEqual(['tool-frame'])
 
     await key({ key: 'Escape' })
@@ -115,24 +115,24 @@ describe('Set Frame', () => {
     const wrapper = await mountOpen()
     const strip = () => wrapper.find('[data-testid="canvas-strip-size"]').text()
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     expect(strip()).toContain('setting Frame')
     await key({ key: 'Escape' })
     expect(strip()).not.toContain('setting Frame')
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
     await flushPromises()
     expect(strip()).not.toContain('setting Frame')
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
     expect(strip()).not.toContain('setting Frame')
   })
 
   it('works from the keyboard: arrows start a Frame, move it, and Shift resizes it', async () => {
     const wrapper = await mountOpen()
-    await key({ key: 'f' })
+    await key({ key: '6' })
 
     await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
     expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 1, columns: 1 })
@@ -143,7 +143,7 @@ describe('Set Frame', () => {
 
   it('shows no bead cursor when F focuses the Project, and hints at the Frame keys instead (ticket 286)', async () => {
     const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    await key({ key: 'f' })
+    await key({ key: '6' })
 
     expect(document.activeElement).toBe(surface(wrapper).element)
     expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
@@ -157,7 +157,7 @@ describe('Set Frame', () => {
   it('is refused while Row progress is on', async () => {
     const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
     const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
-    await key({ key: 'f' })
+    await key({ key: '6' })
     await drag(wrapper, { row: 5, column: 5 }, { row: 7, column: 8 })
     expect(savedFrame()).toEqual(project.frame)
   })
@@ -261,7 +261,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/1.*2/)
 
-    await key({ key: 'f' })
+    await key({ key: '6' })
     await drag(wrapper, { row: 9, column: 9 }, { row: 11, column: 12 })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(wrapper.find('[data-testid="rotate-button"]').attributes('disabled')).toBeDefined()

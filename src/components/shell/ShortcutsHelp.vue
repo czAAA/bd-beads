@@ -29,7 +29,7 @@ const groups = computed(() => [
       { keys: '1', label: t.value.tools.paintLabel },
       { keys: '2', label: t.value.tools.fillLabel },
       { keys: '3', label: t.value.tools.selectLabel },
-      { keys: 'E', label: t.value.tools.eraseLabel },
+      { keys: '4', label: t.value.tools.eraseLabel },
       { keys: 'Del', label: t.value.shortcutsHelp.eraseOrClearSelection },
       { keys: 'Esc', label: t.value.shortcutsHelp.escapeSelectsPaint },
     ],
@@ -37,7 +37,8 @@ const groups = computed(() => [
   {
     title: t.value.shortcutsHelp.canvasGroup,
     shortcuts: [
-      { keys: 'H', label: t.value.tools.handLabel },
+      { keys: '5', label: t.value.tools.handLabel },
+      { keys: '6', label: t.value.frame.setFrame },
       { keys: 'R', label: t.value.canvas.rulersLabel },
       { keys: 'Space + drag', label: t.value.shortcutsHelp.panCanvas },
       { keys: 'Ctrl/Cmd + wheel', label: t.value.shortcutsHelp.zoomCanvas },

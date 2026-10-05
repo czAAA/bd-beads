@@ -83,7 +83,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
-    const expectedKeys: Record<string, string> = { paint: '1', fill: '2', select: '3', erase: 'E', hand: 'H' }
+    const expectedKeys: Record<string, string> = { paint: '1', fill: '2', select: '3', erase: '4', hand: '5' }
     for (const [tool, key] of Object.entries(expectedKeys)) {
       const tile = wrapper.find(`[data-testid="sheet-tool-${tool}"]`)
       expect(tile.exists()).toBe(true)

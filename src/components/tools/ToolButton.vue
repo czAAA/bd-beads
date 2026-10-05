@@ -10,8 +10,9 @@ import type { IconName } from '../ui/icons'
  * accessible name; its Tooltip (ticket 251) shows the name, the key and the `description`, if the tool needs one.
  * Attributes and listeners (data-testid, tabindex, @click) go to the <button>.
  *
- * The `tile` variant (ticket 274; ToolTabs card) is the desktop Toolbox's swatch-sized tile: a borderless 16px icon
- * that turns `ink` with an inset accent outline when active.
+ * It is a tab (ticket 292; ToolTabs card): a 34px icon in a 56px-wide, 72px-tall cell, no background, selected by a 2px
+ * accent underline. The container sets the width (`--tab-width`, never below 44px) and the height (`--tab-height`) and
+ * draws the full-width rule the underline sits on.
  */
 defineOptions({ inheritAttrs: false })
 withDefaults(
@@ -19,13 +20,11 @@ withDefaults(
     icon: IconName
     label: string
     active: boolean
-    /** The tool's single-key shortcut, as shown on its badge ("1", "H", "E"). */
+    /** The tool's single-key shortcut, as shown on its badge ("1", "5", "4"). */
     hotkey?: string
     description?: string
-    iconSize?: 18 | 22
-    variant?: 'button' | 'tile'
   }>(),
-  { iconSize: 22, hotkey: undefined, description: undefined, variant: 'button' },
+  { hotkey: undefined, description: undefined },
 )
 </script>
 
@@ -41,14 +40,14 @@ withDefaults(
       <button
         type="button"
         class="ui-control tool-button"
-        :class="[{ 'tool-button--active': active }, `tool-button--${variant}`]"
+        :class="{ 'tool-button--active': active }"
         :aria-label="label"
         :aria-keyshortcuts="hotkey"
         :aria-pressed="active"
         :aria-describedby="describedby"
         v-bind="$attrs"
       >
-        <AppIcon :name="icon" :size="variant === 'tile' ? 16 : iconSize" />
+        <AppIcon :name="icon" :size="34" />
         <span v-if="hotkey" class="tool-button__key" aria-hidden="true">{{ hotkey }}</span>
       </button>
     </template>
@@ -56,53 +55,54 @@ withDefaults(
 </template>
 
 <style scoped>
-/* The Tooltip's wrapper takes the grid cell, and the button fills it. */
+/* The Tooltip's wrapper takes the grid cell, and the tab fills it. */
 .tool-button-wrap {
   display: flex;
   min-width: 0;
 }
 
 .tool-button {
-  width: 100%;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  aspect-ratio: 1;
+  width: var(--tab-width, 56px);
+  height: var(--tab-height, 72px);
   min-width: 0;
   padding: 0;
   color: var(--muted);
-  background: var(--elevated);
-  border: 1px solid var(--panel-line);
-  border-radius: var(--radius-md);
+  background: none;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
   transition:
     color var(--duration-fast) var(--ease-standard),
     transform var(--duration-instant) var(--ease-standard);
 }
 
-:root[data-theme='dark'] .tool-button {
-  border-color: var(--elevated);
+/* The selection: a 2px accent underline over the container's 1px rule (3px in high contrast). */
+.tool-button--active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent-strong);
+}
+
+:root[data-theme='contrast'] .tool-button--active::after {
+  height: 3px;
 }
 
 .tool-button--active {
   color: var(--accent-strong);
-  border-color: var(--accent-strong);
-}
-
-:root[data-theme='dark'] .tool-button--active {
-  border-color: var(--accent-strong);
-}
-
-:root[data-theme='contrast'] .tool-button--active {
-  border-width: 2px;
 }
 
 @media (hover: hover) {
   .tool-button:not(.tool-button--active):hover {
     color: var(--ink);
-    border-color: var(--ink);
   }
 }
 
@@ -112,71 +112,25 @@ withDefaults(
 
 .tool-button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
+/* The key sits against the icon's top-right corner: DM Mono 11px, `muted`, accent when active. */
 .tool-button__key {
   position: absolute;
-  top: 3px;
-  right: var(--space-4);
-  font: var(--type-meta-tiny);
-  line-height: 1;
+  top: calc(50% - 17px - 6px);
+  left: calc(50% + 17px - 2px);
+  font: 400 0.6875rem/1 var(--font-mono);
   color: var(--muted);
-}
-
-/* Phone (BottomToolbar/Dock card; ToolSheet card): nothing is below 12px, so the badge steps up from meta-tiny. */
-@media (max-width: 743px) {
-  .tool-button__key {
-    font: var(--type-meta-small);
-  }
 }
 
 .tool-button--active .tool-button__key {
   color: var(--accent-strong);
 }
 
-/*
- * The tile (ToolTabs card, v18): a swatch-sized square, `elevated` fill, no border, `radius-sm`. The icon is centred by
- * the button's flex alone; the key is out of the flow in the top-right corner, so it never moves the icon. Active:
- * `ink` icon and a 1.5px inset `accent-strong` outline (3px in high contrast, a 2px Highlight outline in forced colors).
- */
-.tool-button--tile {
-  border: 0;
-  border-radius: var(--radius-sm);
-}
-
-.tool-button--tile.tool-button--active {
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1.5px var(--accent-strong);
-}
-
-:root[data-theme='contrast'] .tool-button--tile.tool-button--active {
-  box-shadow: inset 0 0 0 3px var(--accent-strong);
-}
-
-@media (hover: hover) {
-  .tool-button--tile:not(.tool-button--active):hover {
-    color: var(--ink);
-  }
-}
-
-.tool-button--tile .tool-button__key {
-  top: 1px;
-  right: 2px;
-  font: 400 0.625rem/1 var(--font-mono);
-  color: var(--muted);
-}
-
-.tool-button--tile.tool-button--active .tool-button__key,
-:root[data-theme='contrast'] .tool-button--tile .tool-button__key {
-  color: var(--ink);
-}
-
 @media (forced-colors: active) {
-  .tool-button--tile.tool-button--active:not(:focus-visible) {
-    box-shadow: none;
-    outline: 2px solid Highlight;
-    outline-offset: -2px;
+  .tool-button--active::after {
+    background: Highlight;
   }
 }
 

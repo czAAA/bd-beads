@@ -22,6 +22,6 @@ export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {
   paint: '1',
   fill: '2',
   select: '3',
-  erase: 'E',
-  hand: 'H',
+  erase: '4',
+  hand: '5',
 }

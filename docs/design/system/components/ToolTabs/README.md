@@ -1,15 +1,17 @@
 # ToolTabs
 
-The Tools group: six compact icon tiles (Paint, Fill, Select, Eraser, Hand, Frame) on the same grid as the Palette swatches, with Remove Frame, Remove line and Clear underneath.
+The Tools group: six icon tabs (Paint, Fill, Select, Eraser, Hand, Frame) on a rule, with Remove Frame, Remove line and Clear underneath.
 
-- **Tiles (v18):** the same 8-column grid as PaletteSwatches (gap 6, square, `radius-sm`), so a tile is exactly a swatch in size (about 28px in the 264px Toolbox) and the six tools fill the first six columns, with two left free. Fill `elevated`, no border. Icon 16px, `muted`, centered in the tile first (nothing else takes part in centering); no text label.
-- **Active:** the icon turns `ink` and the tile gets a 1.5px inset `accent-strong` outline (`accent` yellow in dark; 3px in high contrast; a 2px `Highlight` outline in forced colors). There is no underline and no rule.
-- **Hotkey corner:** each tile prints its key in the top-right corner: 1 Paint, 2 Fill, 3 Select, E Eraser, H Hand, F Frame. DM Mono 10px, `muted` (`ink` on the active tile and in high contrast), 1px from the top and 2px from the right, absolutely positioned so it never moves the icon (`bb-tool-key`, `aria-hidden`). It is also in the tooltip ("Paint (1)") and in `aria-keyshortcuts`, and it shows on every device (the Dock and the iPad toolbar print the same corner key). Each tile is named by its tool ("Paint"), not by the key.
-- 12px below the tiles: **Remove Frame** (link, `close` icon, left). It removes the Frame and is disabled while there is none.
+- **Tabs (ticket 292):** 56px wide, 72px tall, no tile background, five to a row (Frame wraps to a second row). Icon 34px, `muted`, centered in the tab; no text label. Each row has a full-width 1px `line-strong` rule under it.
+- **Active:** the icon and key turn `accent-strong` (`accent` yellow in dark) and a 2px accent underline sits over the rule (3px in high contrast; `Highlight` in forced colors). It replaces v18's inset outline (this is v16's tab look again, on icons).
+- **Hotkey:** each tab prints its key against the icon's top-right corner: 1 Paint, 2 Fill, 3 Select, 4 Eraser, 5 Hand, 6 Frame (7 to `=` are left free for later tools; E, H and F are no longer shortcuts). DM Mono 11px, `muted`, accent when active, absolutely positioned so it never moves the icon (`bb-tool-key`, `aria-hidden`). It is also in the tooltip ("Paint (1)") and in `aria-keyshortcuts`, and it shows on every device. Each tab is named by its tool ("Paint"), not by the key. Shift+digit still picks the Palette.
+- **Width:** five 56px tabs need the MacBook-tier left column at 366px (`column-width`, was 326px).
+- 12px below the tabs: **Remove Frame** (link, `close` icon, left). It removes the Frame and is disabled while there is none.
 - 10px below: **Remove line** (link, left, `faint` while there is no line to remove) and **Clear** (danger link, `delete` icon, right). Clear replaces "Delete all" (see the ConfirmDialogs card for its confirmation).
-- **Eraser:** the fourth tool is named "Eraser", not "Erase" (ticket 250, ticket 176): the name follows the app's vocabulary (CONTEXT.md; the tool was renamed from "Erase" in ticket 176), and the verb stays for the action ("Erase the stray bead"). Its icon is `erase`, its key `E`.
+- **Eraser:** the fourth tool is named "Eraser", not "Erase" (ticket 250, ticket 176): the verb stays for the action ("Erase the stray bead"). Its icon is `erase`, its key `4`.
 - **Hand** moves the open canvas by dragging; holding Space with any tool does the same.
-- **Frame** is a tool tile again (it was the Frame row only in v16): pressing it, or `F`, starts Set Frame. The Frame row in the Toolbox still shows the Frame's number and size (Frame card).
+- **Frame** is a tab: pressing it, or `6`, starts Set Frame (Esc leaves it). The Frame row in the Toolbox still shows the Frame's number and size (Frame card).
 - The consumer provides the active tool and handlers; the six tools are fixed. Classes: `bb-tools`, `bb-tool`, `bb-tool-remove`, `bb-tool-actions`.
+- Other tiers: the iPad toolbar, the phone Dock and the ToolSheet use the same icon scale, underline and key where their size allows (see their cards).
 
-Updated in v18 from the running app's Toolbox; static rendition.
+Updated in ticket 292 (v18 had 28px tiles with an inset outline).

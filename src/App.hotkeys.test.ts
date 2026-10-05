@@ -25,7 +25,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     { testId: 'tool-paint', label: (t: typeof en) => t.tools.paintLabel, icon: 'paint', chip: '1' },
     { testId: 'tool-fill', label: (t: typeof en) => t.tools.fillLabel, icon: 'fill', chip: '2' },
     { testId: 'tool-select', label: (t: typeof en) => t.tools.selectLabel, icon: 'select', chip: '3' },
-    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', chip: 'E' },
+    { testId: 'tool-erase', label: (t: typeof en) => t.tools.eraseLabel, icon: 'erase', chip: '4' },
   ]
 
   /** Icon-only buttons: named by aria-label, shown as a tooltip; the hotkey, where there is one, as the Tooltip's chip. */
@@ -634,6 +634,31 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
     } finally {
       field.remove()
     }
+  })
+})
+
+describe('App tool digit keys (ticket 292)', () => {
+  it.each([
+    ['4', 'tool-erase'],
+    ['5', 'tool-hand'],
+    ['6', 'tool-frame'],
+  ])('%s lights %s', async (digit, testId) => {
+    const wrapper = await mountAppForCleanup(15, 30)
+
+    await pressKey({ key: digit })
+
+    expect(wrapper.find(`[data-testid="${testId}"]`).classes()).toContain('tool-button--active')
+  })
+
+  it('E, H and F no longer pick a tool', async () => {
+    const wrapper = await mountAppForCleanup(15, 30)
+
+    for (const key of ['e', 'h', 'f']) {
+      await pressKey({ key })
+    }
+
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="tool-frame"]').classes()).not.toContain('tool-button--active')
   })
 })
 

@@ -42,7 +42,7 @@ bd-beads is a bead-pattern editor. The canvas is the largest thing on screen; ev
 ## Spacing, radii, elevation
 
 - The base is 4px, with 2px and 6px steps for tight control groups: `space-2` … `space-32`.
-- Page padding is 24/32. The header is 64px tall with 0 32 padding and a 10px gap. The left column is 326px (312px boxes plus a 14px scrollbar gutter), with 16px between boxes. The Toolbox has 24px padding and 20px between groups. The save box is 16 20, and the panels are 14 20 16.
+- Page padding is 24/32. The header is 64px tall with 0 32 padding and a 10px gap. The left column is 366px (352px boxes plus a 14px scrollbar gutter), with 16px between boxes. The Toolbox has 24px padding and 20px between groups. The save box is 16 20, and the panels are 14 20 16.
 - Radii: `radius-xs` for kbd hints. `radius-sm` for swatches and small icon buttons. `radius-md` for buttons and selects. `radius-lg` for every box, the canvas box and modals. `radius-board` for the board on exports (the editor has no board since v16). `radius-full` for pills, switches, thumbnails and round buttons. Beads have corners at 22% of their width.
 - Elevation: `elevation-1` for the save box, Beads needed and Saved projects. `elevation-2` for the canvas box. `elevation-3` for modals, menus and messages. Every elevation is `none` in dark, where overlays add a 1px `line-strong` border.
 
@@ -123,6 +123,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-05, ticket 292: the Tools group is a tab strip again, on icons: 56×72 tabs, 34px icons, five to a row, a `line-strong` rule per row, the active tab marked by a 2px accent underline (the v18 inset outline is gone), and the keys are the digits 1 to 6 (Paint, Fill, Select, Eraser, Hand, Frame) in place of E, H and F. `column-width` grows from 326px to 366px. ToolTabs, Toolbox, BottomToolbar, Dock, ToolSheet and ShortcutsHelp cards follow.
   - Repo, 2026-10-05, ticket 288: the Rulers card says piece rulers belong to the Piece area, the bounding box of every piece whose rectangle overlaps, lies inside or touches another's (repeated until none do); numbers, ruler-click selection and the active-piece highlight use the area. No token changed.
   - Repo, 2026-10-05, ticket 293: the Rulers card counts each piece's area as everything within one bead outside its bounds when joining pieces, so pieces one empty bead apart share one rectangle and one set of rulers; the drawn rectangle is unchanged. No token or CSS change.
   - Repo, 2026-10-05, ticket 283: a Russian speaker settled the Russian copy the cards left open: Clear stays «Очистить» / «Очистить?», Save Project is «Сохранить проект» (the name field's Save stays «Сохранить»), the colour-removed Message is «Цвет удалён из палитры.» (matches Delete), the coffee tile title is «Один человек» (the longer «Сделано в одиночку» wrapped on a 320px phone), and a bead is «бисеринка» in the Frame margin Message (not «бусина»; «фрагмент» stays for a piece). `writing.md`, the Message card and `ru.ts` match.

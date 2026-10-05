@@ -119,7 +119,7 @@ const {
 }
 
 /*
- * The body: the 326px left column (312px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
+ * The body: the 366px left column (352px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
  * takes all the remaining width and the full height (ticket 141; `responsive.md`, MacBook Air tier). minmax(0, 1fr)
  * lets the canvas box shrink below its content instead of pushing the page wider.
  */

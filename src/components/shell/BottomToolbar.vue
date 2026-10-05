@@ -108,7 +108,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
       class="bottom-toolbar__tool"
       icon="frame"
       :label="t.frame.setFrame"
-      hotkey="F"
+      hotkey="6"
       :description="t.frame.setFrameHint"
       :active="!!settingFrame"
       data-testid="bottom-toolbar-frame"
@@ -193,12 +193,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
   transition: color var(--duration-fast) var(--ease-standard);
 }
 
-/* Tool buttons are icon-only squares, so they size to the bar's height rather than stretch (ticket 250). */
+/* Tool tabs are icon-only, 56px wide and as tall as the bar, so they don't stretch (tickets 250, 292). */
 .bottom-toolbar__tool {
+  --tab-height: var(--dock-height);
+
   flex: 0 0 auto;
   align-self: center;
-  height: calc(var(--dock-height) - var(--space-16));
-  margin-inline: var(--space-4);
 }
 
 .bottom-toolbar__item--active {

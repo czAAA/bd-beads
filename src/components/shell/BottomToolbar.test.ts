@@ -27,7 +27,7 @@ describe('BottomToolbar', () => {
   it('shows the Toolbox\'s own six tools with their hotkey corners, and starts Set Frame from the Frame tool', async () => {
     const wrapper = mountBar()
     const badges = wrapper.findAll('[data-testid^="bottom-toolbar-"] .tool-button__key').map((badge) => badge.text())
-    expect(badges).toEqual(['1', '2', '3', 'E', 'H', 'F'])
+    expect(badges).toEqual(['1', '2', '3', '4', '5', '6'])
 
     await wrapper.get('[data-testid="bottom-toolbar-frame"]').trigger('click')
     expect(wrapper.emitted('start-frame')).toHaveLength(1)

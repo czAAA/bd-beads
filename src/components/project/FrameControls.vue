@@ -91,7 +91,7 @@ const tipOpen = ref(false)
 
     <!-- While Row progress is on the buttons are locked, and the reason is on their title and written below. -->
     <div class="frame-controls__actions">
-      <AppTooltip v-if="withSetFrame" :text="t.frame.setFrame" shortcut="F" :description="t.frame.setFrameHint" :announce="false">
+      <AppTooltip v-if="withSetFrame" :text="t.frame.setFrame" shortcut="6" :description="t.frame.setFrameHint" :announce="false">
         <AppButton variant="primary" icon="frame" data-testid="frame-set" @click="emit('set-frame')">
           {{ t.frame.setFrame }}
         </AppButton>

@@ -99,7 +99,7 @@ describe('Toolbox', () => {
     const chip = (tool: string) => tip(tool).querySelector('.app-tooltip__key')?.textContent
     const description = (tool: string) => tip(tool).querySelector('.app-tooltip__description')?.textContent
 
-    expect([chip('paint'), chip('fill'), chip('select'), chip('erase'), chip('hand')]).toEqual(['1', '2', '3', 'E', 'H'])
+    expect([chip('paint'), chip('fill'), chip('select'), chip('erase'), chip('hand')]).toEqual(['1', '2', '3', '4', '5'])
     expect(description('paint')).toBe(ru.tools.paintHint)
     expect(description('fill')).toBe(ru.tools.fillHint)
     expect(description('select')).toBe(ru.tools.selectHint)
@@ -504,18 +504,17 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(paint.text()).toBe('1')
     expect(paint.attributes('aria-label')).toBeTruthy()
     const badges = wrapper.findAll('[data-testid^="tool-"] .tool-button__key').map((badge) => badge.text())
-    expect(badges).toEqual(['1', '2', '3', 'E', 'H', 'F'])
+    expect(badges).toEqual(['1', '2', '3', '4', '5', '6'])
   })
 
-  it('draws the six tools as swatch-sized tiles with their key in aria-keyshortcuts (ticket 274)', () => {
+  it('draws the six tools as 34px tabs with their digit in aria-keyshortcuts (tickets 274, 292)', () => {
     const wrapper = mountToolbox()
     const tiles = wrapper.findAll('.tool-buttons .tool-button')
     expect(tiles).toHaveLength(6)
-    expect(tiles.map((tile) => tile.classes('tool-button--tile'))).toEqual(Array(6).fill(true))
-    expect(tiles.map((tile) => tile.attributes('aria-keyshortcuts'))).toEqual(['1', '2', '3', 'E', 'H', 'F'])
-    // Each tile holds its 16px icon and, apart from it, only the aria-hidden key.
+    expect(tiles.map((tile) => tile.attributes('aria-keyshortcuts'))).toEqual(['1', '2', '3', '4', '5', '6'])
+    // Each tab holds its 34px icon and, apart from it, only the aria-hidden key.
     for (const tile of tiles) {
-      expect(tile.find('svg').attributes('style')).toContain('width: 1rem')
+      expect(tile.find('svg').attributes('style')).toContain('width: 2.125rem')
       expect(tile.find('.tool-button__key').attributes('aria-hidden')).toBe('true')
     }
   })

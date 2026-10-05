@@ -39,7 +39,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool', key: TOOL_HOTKEYS[props.activeTool] },
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
   { id: 'edit', icon: 'undo', label: t.value.toolbox.groups.edit, testid: 'dock-edit' },
-  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: 'F' },
+  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: '6' },
   { id: 'project', icon: 'pattern', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
 ])
 </script>
@@ -51,7 +51,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       :key="item.id"
       type="button"
       class="ui-control dock__item"
-      :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool' }"
+      :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool', 'dock__item--frame-on': item.id === 'frame' && settingFrame }"
       :aria-pressed="openSheet === item.id"
       :aria-keyshortcuts="item.key"
       :data-testid="item.testid"
@@ -108,6 +108,18 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
 
 .dock__item--accent {
   color: var(--accent-strong);
+}
+
+/* The selected tool is marked by the same 2px accent underline as the Toolbox tabs (ticket 292). */
+.dock__item--accent::after,
+.dock__item--frame-on::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent-strong);
 }
 
 .dock__item--open {

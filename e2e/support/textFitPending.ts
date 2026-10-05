@@ -26,7 +26,7 @@ const ALL_PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
-  { screen: 'Saved Projects expanded', texts: ['Экспортировать все'], at: { ru: [1900, 1280, 1024, 768] }, fixedBy: '231' },
+  { screen: 'Saved Projects expanded', texts: ['Экспортировать все'], at: { ru: [1024, 768] }, fixedBy: '231' },
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
 ]
 

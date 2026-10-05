@@ -18,7 +18,7 @@ describe('AppDock', () => {
 
   it('shows the Frame button\'s F key, and no key on the group buttons', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.get('[data-testid="dock-frame"]').get('.dock__key').text()).toBe('F')
+    expect(wrapper.get('[data-testid="dock-frame"]').get('.dock__key').text()).toBe('6')
     expect(wrapper.find('[data-testid="dock-color"] .dock__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-edit"] .dock__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-project"] .dock__key').exists()).toBe(false)
