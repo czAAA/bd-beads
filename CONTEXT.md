@@ -142,7 +142,7 @@ The Dock's last slot: a modal sheet of app-wide settings and links (language, th
 _Avoid_: More, header menu
 
 **Zoom pill**:
-The movable pill floating over the canvas under 1024px: Rulers, Undo, Redo, the Row progress toggle, zoom out, the zoom level, zoom in, Fit. A drag handle moves it anywhere inside the canvas box; on release it snaps to the nearest corner, and the position is kept on the device. The Progress bar shows only while its toggle is on.
+The movable pill floating over the canvas under 1024px: Rulers, Undo, Redo, the Row progress toggle, zoom out, the zoom level, zoom in, Fit. Dragging it from anywhere on it (past about 6px; a tap still presses the button) moves it anywhere inside the canvas box, and Alt + an arrow key moves it to the next corner; on release it snaps to the nearest corner, and the position is kept on the device. The Progress bar shows only while its toggle is on.
 
 **Tool button**:
 A Tools-group tool shown as an icon-only tab (Paint is a pencil), 56px wide, five to a row, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.

@@ -93,7 +93,12 @@ export const en: Translations = {
     zoomInLabel: 'Zoom in',
     zoomOutLabel: 'Zoom out',
     zoomResetLabel: 'Reset zoom to fit',
-    zoomPillMoveLabel: 'Move the zoom controls',
+    zoomPillMovedAnnouncement: {
+      'top-left': 'Zoom controls moved to the top left',
+      'top-right': 'Zoom controls moved to the top right',
+      'bottom-left': 'Zoom controls moved to the bottom left',
+      'bottom-right': 'Zoom controls moved to the bottom right',
+    },
     stripTitle: 'Pattern',
     columnsCount: { one: '{count} column', other: '{count} columns' },
     rowsCount: { one: '{count} row', other: '{count} rows' },
