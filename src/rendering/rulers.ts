@@ -26,6 +26,8 @@ export const TURNED_FROM = 100
 const MONO_ADVANCE = 0.6
 /** The clear space kept between two neighbouring numbers when the Ruler step is chosen (ADR 0033). */
 export const RULER_NUMBER_GAP_PX = 4
+/** Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the step applies. */
+export const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
 export interface RuledBox extends Frame {
@@ -156,9 +158,10 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
     columnSizes.push(labelBox(String(box.columns), true, fontPx))
   }
   const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
-  const columnStep = rulerStep({ x: beadX, y: beadY }, columnSizes)
   const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
-  const rowStep = rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
+  const lastOnly = zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
+  const columnStep = lastOnly ? box.columns : rulerStep({ x: beadX, y: beadY }, columnSizes)
+  const rowStep = lastOnly ? box.rows : rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
 
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
     for (let index = columnStep - 1; index < box.columns; index += columnStep) {
