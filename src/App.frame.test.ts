@@ -99,6 +99,18 @@ describe('Set Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
   })
 
+  it('lights the Frame tool alone while setting, and the previous tool again afterwards (ticket 294)', async () => {
+    const wrapper = await mountOpen()
+    const pressed = () => wrapper.findAll('[data-testid^="tool-"][aria-pressed="true"]').map((el) => el.attributes('data-testid'))
+    expect(pressed()).toEqual(['tool-paint'])
+
+    await key({ key: 'f' })
+    expect(pressed()).toEqual(['tool-frame'])
+
+    await key({ key: 'Escape' })
+    expect(pressed()).toEqual(['tool-paint'])
+  })
+
   it('is left by Escape, Enter, and by choosing a tool', async () => {
     const wrapper = await mountOpen()
     const strip = () => wrapper.find('[data-testid="canvas-strip-size"]').text()

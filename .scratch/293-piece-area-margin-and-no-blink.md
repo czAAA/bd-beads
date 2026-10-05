@@ -11,12 +11,14 @@ Update the CONTEXT.md **Piece area** wording and the Piece area / Rulers design 
 
 **Human involvement:** needs a human to confirm whether the drawn rectangle itself grows by the one-bead margin, or only the rule for joining uses it (existing rectangles already pad each bead a little)
 
-**Status:** ready-for-agent
+**Status:** needs-info
 
-- [ ] Beads in a triangle, each within one bead of the next, form a single Piece area: one rectangle, one set of column and row numbers
-- [ ] Two Pieces with one empty bead between them join; with two or more empty beads between them they stay separate
-- [ ] Painting a bead that bridges two Piece areas merges them; erasing it splits them again
-- [ ] Peyote and brick stitch use the same one-bead margin (the half-bead row shift doesn't stop nearby Pieces joining)
+**Progress:** the one-bead join margin shipped (the drawn rectangle is unchanged; only the joining rule uses the margin). The blink half is NOT done: in headless Chromium (mouse, paint and erase, no Frame) the overlay shows no mid-stroke dip, only the intended `muted` highlight switching on at press and off at release, so it needs a repro on the device and tool where it shows (which tool, which device, line or rulers).
+
+- [x] Beads in a triangle, each within one bead of the next, form a single Piece area: one rectangle, one set of column and row numbers
+- [x] Two Pieces with one empty bead between them join; with two or more empty beads between them they stay separate
+- [x] Painting a bead that bridges two Piece areas merges them; erasing it splits them again
+- [x] Peyote and brick stitch use the same one-bead margin (the half-bead row shift doesn't stop nearby Pieces joining)
 - [ ] Drawing and erasing inside an existing Piece area, with and without a Frame: its rectangle and rulers don't blink during the stroke, on mouse and touch
 - [ ] A stroke that grows, merges or splits Piece areas goes straight to the new rectangles with no blink
 - [ ] A test (unit or visual) fails without the no-blink fix: the overlay for an unchanged Piece area isn't cleared and redrawn mid-stroke

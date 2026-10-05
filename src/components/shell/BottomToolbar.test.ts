@@ -38,6 +38,12 @@ describe('BottomToolbar', () => {
     expect(wrapper.get('[data-testid="bottom-toolbar-frame"]').attributes('aria-pressed')).toBe('true')
   })
 
+  it('lights only the Frame tool while the Frame is being set (ticket 294)', () => {
+    const wrapper = mountBar({ settingFrame: true })
+    expect(wrapper.get('[data-testid="bottom-toolbar-paint"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('[data-testid="bottom-toolbar-frame"]').attributes('aria-pressed')).toBe('true')
+  })
+
   it('undoes and redoes, disabled exactly when the props say so', async () => {
     const wrapper = mountBar({ canUndo: true, canRedo: false })
     expect(wrapper.get('[data-testid="bottom-toolbar-undo"]').attributes('disabled')).toBeUndefined()

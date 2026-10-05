@@ -8,7 +8,7 @@
 
 Update in the same change (CLAUDE.md Design rules): the ToolTabs card (README, `preview.html`), the Toolbox, BottomToolbar, Dock, ToolSheet and ShortcutsHelp cards where they name the keys or the look, tokens/`bundle.css`/`src/styles/design-values.css` for the column width, a line in the design README's Version changelog, and CONTEXT.md (**Set Frame**, **Hand tool**, **Eraser** keys, **Tool button**, **Toolbox**: done in this ticket's grill session, re-check). Update the key tests (App.hotkeys, App.keyboard, Toolbox, BottomToolbar, AppDock, ShortcutsHelp), the Tour and the visual references and text-fit/hover specs that move. No ADR: the keys and look are easy to change back.
 
-**Blocked by:** none (291 touches the same tiles; whichever lands second rebases)
+**Blocked by:** none (294 touches the same tiles; whichever lands second rebases)
 
 **Human involvement:** needs a human to confirm the other tiers' sizes on real devices
 

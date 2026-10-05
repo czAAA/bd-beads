@@ -87,6 +87,12 @@ describe('Toolbox', () => {
     expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
   })
 
+  it('lights only the Frame tool while the Frame is being set (ticket 294)', () => {
+    const wrapper = mountToolbox({ settingFrame: true })
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="tool-frame"]').attributes('aria-pressed')).toBe('true')
+  })
+
   it("shows each tool's Tooltip: name, shortcut chip and, where needed, a description (ticket 251)", () => {
     const wrapper = mountToolbox()
     const tip = (tool: string) => wrapper.get(`[data-testid="tool-${tool}"]`).element.closest('.app-tooltip')!

@@ -143,7 +143,7 @@ const frameSummary = computed(() => {
           :label="tool.label"
           :hotkey="tool.hotkey"
           :description="tool.description"
-          :active="activeTool === tool.id"
+          :active="activeTool === tool.id && !settingFrame"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
