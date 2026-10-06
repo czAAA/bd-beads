@@ -22,10 +22,10 @@ The flows (Set Frame, Rotate, Remove line) call `changeFrame` and keep only thei
 
 **Status:** done
 
-- [ ] `changeFrame` is a pure domain function taking the four-variant change above and returning refused / unchanged / changed-with-Pieces-moved
-- [ ] Table tests cover change variant × rule: refused while Row progress is on, per-variant refusals, pointers clamped inside the new Frame for both Row directions, margin left empty with Pieces moved whole, the moved count in Pieces, and no-change returning the same instance
-- [ ] The existing Frame, Rotate and Remove-line domain tests are moved onto `changeFrame` (or deleted where a table row covers them); ticket 305's regression test still passes
-- [ ] Set Frame, move, resize, Fit to drawing, Remove Frame, Rotate and Remove line all go through `changeFrame`; no flow calls `withFrame`, `clearMargin` or `rotateProject` directly any more, and none checks the Row progress lock itself
-- [ ] The margin Message after Set/move/resize Frame counts Pieces, in EN and RU
-- [ ] CONTEXT.md's Keep-out margin entry says the Message counts the Pieces moved
+- [x] `changeFrame` is a pure domain function taking the four-variant change above and returning refused / unchanged / changed-with-Pieces-moved
+- [x] Table tests cover change variant × rule: refused while Row progress is on, per-variant refusals, pointers clamped inside the new Frame for both Row directions, margin left empty with Pieces moved whole, the moved count in Pieces, and no-change returning the same instance
+- [x] The existing Frame, Rotate and Remove-line domain tests are moved onto `changeFrame` (or deleted where a table row covers them); ticket 305's regression test still passes
+- [x] Set Frame, move, resize, Fit to drawing, Remove Frame, Rotate and Remove line all go through `changeFrame`; no flow calls `withFrame`, `clearMargin` or `rotateProject` directly any more, and none checks the Row progress lock itself
+- [x] The margin Message after Set/move/resize Frame counts Pieces, in EN and RU
+- [x] CONTEXT.md's Keep-out margin entry says the Message counts the Pieces moved
 - [ ] Typecheck, lint, unit tests and the visual check pass in CI

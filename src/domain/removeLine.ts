@@ -67,7 +67,8 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
     return 'no-line'
   }
   if (!project.frame) {
-    return undefined
+    // No Frame, so not a Frame change; Row progress still holds the area still.
+    return project.rowProgress.enabled ? 'locked' : undefined
   }
   switch (frameChangeRefusal(project, { removeLine: line })) {
     case 'locked':
