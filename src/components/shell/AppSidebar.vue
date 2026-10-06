@@ -149,7 +149,7 @@ const {
   min-height: 0;
   padding-right: var(--space-14);
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }

@@ -42,7 +42,7 @@ const groups = computed(() => [
       { keys: FRAME_HOTKEY, label: t.value.frame.setFrame },
       { keys: 'R', label: t.value.canvas.rulersLabel },
       { keys: 'Space + drag', label: t.value.shortcutsHelp.panCanvas },
-      { keys: 'Ctrl/Cmd + wheel', label: t.value.shortcutsHelp.zoomCanvas },
+      { keys: 'Ctrl/Cmd + wheel, +, −, 0', label: t.value.shortcutsHelp.zoomCanvas },
     ],
   },
   {

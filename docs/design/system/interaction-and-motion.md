@@ -48,7 +48,7 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 ## Open canvas and Frame (v16)
 
 - **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag and the Hand tool show the grab cursor, and the grabbing cursor while dragging.
-- **Zoom** (⌘ or Ctrl + wheel, pinch, the strip's buttons) keeps the point under the pointer still. It stops at the 10% Zoom floor on every screen.
+- **Zoom** (⌘ or Ctrl + wheel, pinch, ⌘ or Ctrl + plus, minus and 0, the strip's buttons) is Canvas zoom, the only zoom: Page zoom is locked (ADR 0034), so a pinch, double-tap or ⌘ or Ctrl + wheel that starts outside the canvas does nothing, and one that drifts onto it stays inert. It keeps the point under the pointer still. It stops at the 10% Zoom floor on every screen.
 - **Set Frame:** the Frame follows the drag and snaps to whole beads with no animation; its size tag updates as it moves.
 - **Bring into view** (the Frame number) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
 - **Margin:** its dashed outline fades in over `--duration-fast` while the Frame is set, moved or resized and after a refused press, and out again; opacity only. Beads moved out of it appear in their new place with no travel animation.

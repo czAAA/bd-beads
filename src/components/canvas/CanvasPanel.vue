@@ -511,6 +511,7 @@ function techniqueWord(technique: Technique): string {
   box-sizing: border-box;
   min-width: 0;
   overflow: auto;
+  overscroll-behavior: none;
 }
 
 /* When no Project is open the scroll panel stretches to fill the whole row so the dot board covers it edge to edge. */

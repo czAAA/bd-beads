@@ -34,6 +34,10 @@ export interface AppShortcutTableDeps {
   onToggleRowDirection: () => void
   onMoveRow: (delta: number) => void
   openShortcutsHelp: () => void
+  /** Ctrl/⌘ + plus, minus and 0: Canvas zoom in, out and Fit (ticket 316). */
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onFit: () => void
 }
 
 function isUndoShortcut(event: KeyboardEvent): boolean {
@@ -56,6 +60,9 @@ function isPlainKey(event: KeyboardEvent): boolean {
 function isPlainLetterKey(event: KeyboardEvent, key: string): boolean {
   return event.key.toLowerCase() === key.toLowerCase() && isPlainKey(event) && !event.shiftKey
 }
+
+/** The keys of Ctrl/⌘ + plus, minus and 0 (the plus sits on the equals key, and shifted, on most layouts). */
+const ZOOM_KEYS: Record<string, 'in' | 'out' | 'fit'> = { '+': 'in', '=': 'in', '-': 'out', _: 'out', '0': 'fit' }
 
 /**
  * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox or Progress bar button has
@@ -117,6 +124,25 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         if (deps.activeTool() !== 'paint') {
           deps.onSelectTool('paint')
         }
+      },
+    },
+    {
+      /*
+       * Ticket 316 (ADR 0034): Page zoom is locked, so these chords drive Canvas zoom instead. They are claimed from the
+       * browser everywhere, in a text field and under a dialog too, so the page never zooms; only the zoom itself waits
+       * for the dialog to close.
+       */
+      matches: (event) => (event.metaKey || event.ctrlKey) && !event.altKey && ZOOM_KEYS[event.key] !== undefined,
+      allowWhileTyping: true,
+      action: (event) => {
+        event.preventDefault()
+        if (!noModalOpen()) {
+          return
+        }
+        const zoom = ZOOM_KEYS[event.key]
+        if (zoom === 'in') deps.onZoomIn()
+        else if (zoom === 'out') deps.onZoomOut()
+        else deps.onFit()
       },
     },
     {

@@ -8,7 +8,8 @@
     <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- viewport-fit=cover (ticket 166; responsive.md "Screen edges and height") lets env(safe-area-inset-*) read real insets. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- maximum-scale=1, user-scalable=no lock Page zoom (ticket 316, ADR 0034); iOS Safari ignores them, usePageZoomLock covers it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>bd-beads</title>
     <!-- Before first paint: the theme (src/theme/theme.ts has the same rules) and the language, so neither flashes. -->
     <script>

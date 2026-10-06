@@ -21,6 +21,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body {
+  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, and no overscroll bounce moves the page. */
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
 }

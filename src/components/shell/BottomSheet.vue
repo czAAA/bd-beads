@@ -144,6 +144,7 @@ onBeforeUnmount(() => {
   max-height: 80dvh;
   padding: var(--space-8) var(--space-20) calc(var(--space-20) + env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: none;
   background: var(--panel);
   border-top: 1px solid var(--panel-line);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;

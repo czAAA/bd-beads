@@ -144,6 +144,7 @@ onBeforeUnmount(() => {
   max-width: 100%;
   max-height: 100%;
   overflow-y: auto;
+  overscroll-behavior: none;
   padding: var(--space-24);
   font: var(--type-body);
   color: var(--body);
