@@ -288,7 +288,7 @@ const mmPerScreenPx = computed(() => ({
   y: props.bead.heightMm / (CELL_SIZE_PX * fitScale.value),
 }))
 
-const drag = ref<{ x: number; y: number; pan: PanFraction } | null>(null)
+const drag = ref<{ pointerId: number; x: number; y: number; pan: PanFraction } | null>(null)
 
 function clampFraction(value: number): number {
   return Math.min(1, Math.max(0, value))
@@ -299,9 +299,9 @@ function clampFraction(value: number): number {
  * fraction (0 is the picture's own left edge against the frame's). An axis the picture can't move along stays put
  * rather than dividing by a zero range.
  */
-function onDragMove(event: MouseEvent): void {
+function onDragMove(event: PointerEvent): void {
   const started = drag.value
-  if (!started) {
+  if (!started || event.pointerId !== started.pointerId) {
     return
   }
 
@@ -315,10 +315,14 @@ function onDragMove(event: MouseEvent): void {
   })
 }
 
-function endDrag(): void {
+function endDrag(event?: PointerEvent): void {
+  if (event && drag.value && event.pointerId !== drag.value.pointerId) {
+    return
+  }
   drag.value = null
-  window.removeEventListener('mousemove', onDragMove)
-  window.removeEventListener('mouseup', endDrag)
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
   if (dragging.value) {
     // Back at rest: the exact colors, for whatever the pan is now.
     dragging.value = false
@@ -326,13 +330,26 @@ function endDrag(): void {
   }
 }
 
-/** The button can be released anywhere, so the drag is followed on the window rather than on the preview itself. */
-function onDragStart(event: MouseEvent): void {
+/**
+ * Mouse, touch and pen all drag the same way. The pointer can be released anywhere, so the drag is followed on the
+ * window rather than on the preview itself, and the box captures the pointer so a finger that slides off it is still
+ * followed. A second finger ends the drag rather than moving the picture from a second place.
+ */
+function onDragStart(event: PointerEvent): void {
+  if (drag.value) {
+    endDrag()
+    return
+  }
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return
+  }
   event.preventDefault()
-  drag.value = { x: event.clientX, y: event.clientY, pan: { ...props.pan } }
+  ;(event.currentTarget as Element | null)?.setPointerCapture?.(event.pointerId)
+  drag.value = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, pan: { ...props.pan } }
   dragging.value = true
-  window.addEventListener('mousemove', onDragMove)
-  window.addEventListener('mouseup', endDrag)
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
 }
 
 onBeforeUnmount(() => {
@@ -348,7 +365,7 @@ onBeforeUnmount(() => {
     hint on the picture, bottom-left. The controls take the Progress bar's place.
   -->
   <section class="convert-image-frame" :aria-label="t.convertImage.heading" data-testid="convert-image-frame">
-    <div class="convert-image-frame__box" data-testid="convert-image-box" :style="boxStyle" @mousedown.left="onDragStart">
+    <div class="convert-image-frame__box" data-testid="convert-image-box" :style="boxStyle" @pointerdown="onDragStart">
       <canvas
         ref="canvasEl"
         class="convert-image-frame__canvas"
@@ -435,6 +452,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-radius: var(--radius-md);
   cursor: grab;
+  /* A touch or pen drag moves the picture; it must not pan or scroll the page or canvas. */
+  touch-action: none;
 }
 
 .convert-image-frame__box:active {
