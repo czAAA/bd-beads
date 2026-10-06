@@ -7,6 +7,6 @@
 **Status:** ready-for-agent
 
 - [ ] Fixtures hold real v1 QR payloads (dense `cells`, at least one non-loom Technique and one with Row progress), in the shape the old encoder wrote, with a comment naming the commit they come from
-- [ ] Both the bare JSON and the link form of each fixture open through `parseProjectFromQr` as the expected current Project
+- [ ] Both the bare JSON and the link form of each fixture open as the expected current Project through `parseProjectFromQr` (what importing a QR picture calls), and the link form also through `projectFromShareLink` (what a camera scan of the code lands on)
 - [ ] The misleading existing test is renamed or replaced so its name matches what it checks
 - [ ] Any reading bug the fixtures expose is fixed in the same change
