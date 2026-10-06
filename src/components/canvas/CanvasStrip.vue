@@ -62,20 +62,21 @@ const framed = computed(() => !props.title && props.project?.frame !== undefined
 
 const heading = computed(() => props.title ?? (props.project ? (framed.value ? t.value.canvas.stripTitle : t.value.canvas.canvasTitle) : t.value.canvas.stripTitle))
 
-const sizeMeta = computed(() => {
-  if (props.size) return sizeText(props.size)
+/** The size line: what always shows, and the printed-size estimate, which gives way first when the strip is narrow (ticket 315). */
+const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() => {
+  if (props.size) return { main: sizeText(props.size) }
   const project = props.project
   if (!project) return undefined
-  if (project.frame) return [sizeText(project.frame), estimate.value].filter(Boolean).join(' · ')
-  return `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}`
+  if (project.frame) return { main: sizeText(project.frame), estimate: estimate.value }
+  return { main: `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}` }
 })
 </script>
 
 <template>
   <div class="canvas-strip" data-testid="canvas-strip">
-    <AppIcon name="grid" :size="16" />
+    <AppIcon class="canvas-strip__icon" name="grid" :size="16" />
     <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
-    <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta }}</span>
+    <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta.main }}<span v-if="sizeMeta.estimate" class="canvas-strip__estimate"> · {{ sizeMeta.estimate }}</span></span>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
     <IconButton
       v-if="rulers !== undefined"
@@ -110,6 +111,7 @@ const sizeMeta = computed(() => {
   gap: var(--space-12);
   box-sizing: border-box;
   height: var(--strip-height);
+  container-type: inline-size;
   padding: 0 var(--space-10) 0 var(--space-16);
   color: var(--ink);
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
@@ -117,6 +119,7 @@ const sizeMeta = computed(() => {
 
 .canvas-strip__title {
   font: var(--type-control);
+  white-space: nowrap;
 }
 
 .canvas-strip__meta {
@@ -127,6 +130,25 @@ const sizeMeta = computed(() => {
   color: var(--box-muted);
   text-transform: lowercase;
   white-space: nowrap;
+}
+
+/* A narrow strip (the desktop layout at 1024px) gives up the printed-size estimate first, then the decorative icon and some of the spacing, so the size still reads whole in English and Russian (ticket 315). */
+@container (max-width: 799px) {
+  .canvas-strip__estimate {
+    display: none;
+  }
+}
+
+@container (max-width: 699px) {
+  /* The strip is the container, so its own gap can't change: the title and size sit closer by pulling in their end margins. */
+  .canvas-strip__title,
+  .canvas-strip__meta {
+    margin-inline-end: calc(var(--space-10) * -1);
+  }
+
+  .canvas-strip__icon {
+    display: none;
+  }
 }
 
 .canvas-strip__hint {
