@@ -12,8 +12,8 @@ A small script or a one-off search is fine for finding them; adding another perm
 
 **Status:** done
 
-- [ ] Unused translation keys are removed from the interface, English and Russian together; dynamically chosen keys are kept, and the PR lists how they were checked
-- [ ] Unused CSS classes and app-side custom properties are removed; the visual check is unchanged
-- [ ] Unused props, emits and exposed members are removed, with their tests
-- [ ] The PR description lists what was removed in each category, and what was kept on purpose and why
-- [ ] Typecheck, lint, unit tests, the text fit check and the visual check pass in CI
+- [x] Unused translation keys are removed from the interface, English and Russian together; dynamically chosen keys are kept, and the PR lists how they were checked
+- [x] Unused CSS classes and app-side custom properties are removed; the visual check is unchanged
+- [x] Unused props, emits and exposed members are removed, with their tests
+- [x] The PR description lists what was removed in each category, and what was kept on purpose and why
+- [x] Typecheck, lint, unit tests, the text fit check and the visual check pass in CI
