@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadCount, beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
-import { createProject, type Project } from './project'
+import { createProject, rowProgressPosition, setRowProgressEnabled, type Project } from './project'
 import { piecesOf } from './pieces'
 import { rotateProject, rotatedFrame } from './rotate'
 
@@ -117,5 +117,40 @@ describe('rotateProject', () => {
 describe('rotatedFrame', () => {
   it('turns a square Frame in place', () => {
     expect(rotatedFrame(base, { row: 4, column: 7, rows: 5, columns: 5 })).toEqual({ row: 4, column: 7, rows: 5, columns: 5 })
+  })
+
+  describe('Row progress pointers', () => {
+    const progress = (currentRow: number, currentColumn: number, direction: 'rows' | 'columns' = 'rows') => ({
+      enabled: true,
+      direction,
+      currentRow,
+      currentColumn,
+    })
+    const tall = (rowProgress: Project['rowProgress']) =>
+      withBeads({}, { frame: { row: 0, column: 0, rows: 50, columns: 30 }, rowProgress })
+
+    it('keeps both pointers inside the turned Frame', () => {
+      for (const direction of ['rows', 'columns'] as const) {
+        const result = rotateProject(tall(progress(40, 25, direction)))!.project
+        expect(result.frame).toMatchObject({ rows: 30, columns: 50 })
+        expect(result.rowProgress.currentRow).toBeLessThan(30)
+        expect(result.rowProgress.currentColumn).toBeLessThan(50)
+      }
+    })
+
+    it('never reports every row as finished after Row progress is switched back on', () => {
+      const rotated = rotateProject(tall({ ...progress(40, 0), enabled: false }))!.project
+      const on = setRowProgressEnabled(rotated, true)
+      expect(on.rowProgress.currentRow).toBeLessThan(on.frame!.rows + 1)
+      expect(rowProgressPosition(on).current).toBeLessThanOrEqual(rowProgressPosition(on).total)
+    })
+
+    it('leaves pointers alone when they already fit both orientations', () => {
+      let project = tall(progress(10, 12))
+      for (let turn = 0; turn < 4; turn++) {
+        project = rotateProject(project)!.project
+      }
+      expect(project.rowProgress).toMatchObject({ currentRow: 10, currentColumn: 12 })
+    })
   })
 })
