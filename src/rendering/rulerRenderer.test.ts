@@ -49,7 +49,7 @@ const view = { technique: 'loom' as const, rotation: 0 as const, zoom: 1, scroll
 
 describe('drawRulers', () => {
   const { frame: _frame, ...open } = base
-  const twoPieces = { ...open, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }, { row: 10, column: 10, color: '#00ff00' }]) }
+  const twoPieces = { ...open, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) }
 
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()

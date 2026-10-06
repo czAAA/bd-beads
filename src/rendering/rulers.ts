@@ -1,6 +1,6 @@
 import type { Frame } from '../domain/canvas'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
-import { pieceAreasOf } from '../domain/pieces'
+import { pieceAreasOf, PIECE_AREA_MIN_BEADS } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
 import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
 import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
@@ -70,12 +70,14 @@ export interface RulerView {
 /** What decides which boxes carry rulers. */
 export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }
 
-/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area (those near the viewport are chosen by the caller). */
+/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of at least 3x3 beads (those near the viewport are chosen by the caller). */
 export function ruledBoxes(project: RuledProject): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
   }
-  return pieceAreasOf(project.beads, project.technique).map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
+  return pieceAreasOf(project.beads, project.technique)
+    .filter((area) => area.rows >= PIECE_AREA_MIN_BEADS && area.columns >= PIECE_AREA_MIN_BEADS)
+    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
 }
 
 /** A box's rectangle in viewport px: where its beads are, without the outset. */

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A Piece area 2x2 or smaller (by its drawn rectangle) shows no rectangle and no rulers; 3x3 and larger show both
 - [ ] Joined Piece areas are measured as the joined rectangle
