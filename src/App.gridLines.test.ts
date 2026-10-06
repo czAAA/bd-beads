@@ -67,14 +67,39 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     expect(selectedBeadCount(wrapper)).toBe(4)
   })
 
-  it('works regardless of which tool is active — not just under Select', async () => {
+  it('hands over to the Select tool from any other tool (ticket 313)', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 5)
-    // Paint is the default active tool; a ruler click still marks a Selection.
+    // Paint is the default active tool; a ruler click selects through Select.
 
     await pressRulerNumber(wrapper, 'row', 0)
 
     expect(selectedBeadCount(wrapper)).toBe(4)
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('is dropped when Paint is chosen to draw (ticket 313)', async () => {
+    const wrapper = mount(App)
+    await createInBeads(wrapper, 4, 5)
+    await pressRulerNumber(wrapper, 'row', 0)
+
+    await wrapper.find('[data-testid="tool-paint"]').trigger('click')
+
+    expect(selectedBeadCount(wrapper)).toBe(0)
+  })
+
+  it('is emptied by an Eraser click, as one undo step (ticket 313)', async () => {
+    const wrapper = mount(App)
+    await createInBeads(wrapper, 3, 3)
+    await paint(wrapper, 3)
+    await paint(wrapper, 4, 'blue')
+    await pressRulerNumber(wrapper, 'row', 1)
+
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+
+    expect(beadColors(wrapper)[1]).toEqual([null, null, null])
+    await undo(wrapper)
+    expect(beadColors(wrapper)[1]).toEqual([RED, BLUE, null])
   })
 
   it('replaces whatever was copied, the same as a new drag-marked Selection does', async () => {

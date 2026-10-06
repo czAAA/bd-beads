@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
 import { createProject, moveToRow, setRowProgressEnabled, type Project, type Technique } from './project'
-import { removeLineRefusal, removeSelectedLine, selectedFrameLine } from './removeLine'
+import { removeLineRefusal, removeSelectedLine, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
 
 /** A Project whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
@@ -16,17 +16,17 @@ function numbered(columns: number, rows: number, technique: Technique = 'loom'):
 const rowOf = (project: Project, index: number): Selection => ({ top: project.frame!.row + index, left: project.frame!.column, rows: 1, columns: project.frame!.columns })
 const columnOf = (project: Project, index: number): Selection => ({ top: project.frame!.row, left: project.frame!.column + index, rows: project.frame!.rows, columns: 1 })
 
-describe('selectedFrameLine', () => {
+describe('selectedAreaLine', () => {
   it('reads a whole row or column of the Frame, and nothing else', () => {
     const project = numbered(3, 4)
-    expect(selectedFrameLine(project.frame, rowOf(project, 2))).toEqual({ axis: 'row', index: 2 })
-    expect(selectedFrameLine(project.frame, columnOf(project, 1))).toEqual({ axis: 'column', index: 1 })
-    expect(selectedFrameLine(project.frame, { top: 10, left: 20, rows: 2, columns: 2 })).toBeUndefined()
+    expect(selectedAreaLine(project.frame, rowOf(project, 2))).toEqual({ axis: 'row', index: 2 })
+    expect(selectedAreaLine(project.frame, columnOf(project, 1))).toEqual({ axis: 'column', index: 1 })
+    expect(selectedAreaLine(project.frame, { top: 10, left: 20, rows: 2, columns: 2 })).toBeUndefined()
     // A row of another width, or one that is off the Frame, is not the Frame's.
-    expect(selectedFrameLine(project.frame, { top: 10, left: 20, rows: 1, columns: 2 })).toBeUndefined()
-    expect(selectedFrameLine(project.frame, { top: 99, left: 20, rows: 1, columns: 3 })).toBeUndefined()
-    expect(selectedFrameLine(undefined, rowOf(project, 0))).toBeUndefined()
-    expect(selectedFrameLine(project.frame, undefined)).toBeUndefined()
+    expect(selectedAreaLine(project.frame, { top: 10, left: 20, rows: 1, columns: 2 })).toBeUndefined()
+    expect(selectedAreaLine(project.frame, { top: 99, left: 20, rows: 1, columns: 3 })).toBeUndefined()
+    expect(selectedAreaLine(undefined, rowOf(project, 0))).toBeUndefined()
+    expect(selectedAreaLine(project.frame, undefined)).toBeUndefined()
   })
 })
 
@@ -86,11 +86,6 @@ describe('removeSelectedLine', () => {
     expect(removeSelectedLine(project, { top: 10, left: 20, rows: 2, columns: 2 })).toBe(project)
   })
 
-  it('is refused with no Frame', () => {
-    const { frame: _frame, ...open } = numbered(3, 4)
-    expect(removeLineRefusal(open as Project, { top: 10, left: 20, rows: 1, columns: 3 })).toBe('no-line')
-  })
-
   it('is refused while Row progress is on', () => {
     const woven = setRowProgressEnabled(numbered(3, 4), true)
     expect(removeLineRefusal(woven, rowOf(woven, 0))).toBe('locked')
@@ -107,5 +102,39 @@ describe('removeSelectedLine', () => {
     const before = { ...moveToRow(setRowProgressEnabled(numbered(3, 4), true), 3) }
     const off: Project = { ...before, rowProgress: { ...before.rowProgress, enabled: false } }
     expect(removeSelectedLine(off, rowOf(off, 0)).rowProgress.currentRow).toBe(2)
+  })
+})
+
+describe('removeSelectedLine with no Frame (ticket 313)', () => {
+  /** Two Piece areas far apart: a 3×3 block at (0, 0) numbered by position, and one bead at (20, 20). */
+  function unframed(): Project {
+    const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+    const colors = Array.from({ length: 3 }, (_row, r) => Array.from({ length: 3 }, (_cell, c) => `#0${r}0${c}00`))
+    const block = beadsFromColors(colors, { row: 0, column: 0 })
+    const beads = { ...block, 20: { 20: '#ffffff' } }
+    return { ...base, frame: undefined, beads }
+  }
+
+  it('cuts the Piece area\'s line, closes the gap and leaves other areas alone', () => {
+    const before = unframed()
+    const removed = removeSelectedLine(before, { top: 1, left: 0, rows: 1, columns: 3 })
+    expect(colorAt(removed.beads, 0, 0)).toBe('#000000')
+    expect(colorAt(removed.beads, 1, 0)).toBe('#020000')
+    expect(colorAt(removed.beads, 2, 0)).toBeNull()
+    expect(colorAt(removed.beads, 20, 20)).toBe('#ffffff')
+    expect(removed.frame).toBeUndefined()
+  })
+
+  it('removes a column the same way', () => {
+    const removed = removeSelectedLine(unframed(), { top: 0, left: 0, rows: 3, columns: 1 })
+    expect(colorAt(removed.beads, 0, 0)).toBe('#000100')
+    expect(colorAt(removed.beads, 0, 2)).toBeNull()
+  })
+
+  it('refuses a Selection that is not a whole line of a Piece area, or a Frame-less Selection off any area', () => {
+    const before = unframed()
+    expect(removeLineRefusal(before, { top: 1, left: 0, rows: 1, columns: 2 })).toBe('no-line')
+    expect(removeLineRefusal(before, { top: 1, left: 0, rows: 1, columns: 3 })).toBeUndefined()
+    expect(removeLineRefusal(before, { top: 50, left: 0, rows: 1, columns: 3 })).toBe('no-line')
   })
 })

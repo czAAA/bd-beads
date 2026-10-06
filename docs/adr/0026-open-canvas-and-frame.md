@@ -22,6 +22,6 @@ A Pattern was a fixed `columns × rows` grid made before the first bead. That fo
 
 ## Consequences
 
-- The Size group, Change size, Add/remove row-column, the board and the whole-grid rulers are removed, with their code and strings. Remove line (the selected whole row or column) stays, as the design system's Tools group and Tour still have it, and now works on the Frame: its beads after the line close the gap, the Frame shrinks by one, beads outside it stay put.
+- The Size group, Change size, Add/remove row-column, the board and the whole-grid rulers are removed, with their code and strings. Remove line (the selected whole row or column) stays, as the design system's Tools group and Tour still have it, and now works on the Frame: its beads after the line close the gap, the Frame shrinks by one, beads outside it stay put. Ticket 313 extends it to a Piece area while there is no Frame: the area's beads after the line close the gap and the area ends one line shorter.
 - Fill is bounded on open space (it stops at the edge of the painted region plus one bead of margin) and never runs away.
 - Everything that read `columns`, `rows` and a dense `grid` now reads the Frame or the bead map; this lands in steps, each leaving the app working.

@@ -1,24 +1,31 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
+import { pieceAreasOf } from './pieces'
 import { withFrame, type Project } from './project'
 import type { Selection } from './selection'
 
 /**
- * Remove line (CONTEXT.md, ADR 0026): takes one whole row or column out of the Frame, closing the gap. The Frame's beads
- * after the line shift up or left by one and the Frame loses a row or column; every bead outside the Frame stays where it
- * is. The line is the Selection when it is exactly one row or column of the Frame, which a ruler number picks out.
+ * Remove line (CONTEXT.md, ADR 0026, ticket 313): takes one whole row or column out of the Frame, or with no Frame out of
+ * a Piece area, closing the gap. The area's beads after the line shift up or left by one and the area loses a row or
+ * column; every bead outside the area stays where it is. The line is the Selection when it is exactly one row or column
+ * of the area, which a ruler number picks out.
  */
 
-/** What a Selection reads as: the axis the line runs along and its index counted from the Frame's first row or column. */
-export interface FrameLine {
+/** What a Selection reads as: the axis the line runs along and its index counted from the area's first row or column. */
+export interface AreaLine {
   axis: 'row' | 'column'
   index: number
 }
 
+/** An AreaLine and the rectangle it is a line of: the Frame, or with no Frame the Piece area. */
+interface ProjectLine extends AreaLine {
+  area: Frame
+}
+
 /**
- * Which whole line of the Frame a Selection covers exactly, or undefined when it is neither. On a one-bead Frame the
+ * Which whole line of an area a Selection covers exactly, or undefined when it is neither. On a one-bead area the
  * single bead fits both readings; it is called a row, an arbitrary but fixed tiebreak.
  */
-export function selectedFrameLine(frame: Frame | undefined, selection: Selection | undefined): FrameLine | undefined {
+export function selectedAreaLine(frame: Frame | undefined, selection: Selection | undefined): AreaLine | undefined {
   if (!frame || !selection) {
     return undefined
   }
@@ -31,9 +38,21 @@ export function selectedFrameLine(frame: Frame | undefined, selection: Selection
   return undefined
 }
 
+/** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
+function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
+  const areas = project.frame ? [project.frame] : pieceAreasOf(project.beads, project.technique)
+  for (const area of areas) {
+    const line = selectedAreaLine(area, selection)
+    if (line) {
+      return { ...line, area }
+    }
+  }
+  return undefined
+}
+
 /** Why Remove line would not apply, or undefined when it would. */
 export type RemoveLineRefusal =
-  /** The Selection isn't exactly one whole row or column of the Frame (or there is no Frame): nothing for it to act on. */
+  /** The Selection isn't exactly one whole row or column of the Frame, or with no Frame of a Piece area: nothing for it to act on. */
   | 'no-line'
   /** Row progress is on: the Frame's rows are held still while it is (ADR 0017). */
   | 'locked'
@@ -41,14 +60,14 @@ export type RemoveLineRefusal =
   | 'only-line'
 
 export function removeLineRefusal(project: Project, selection: Selection | undefined): RemoveLineRefusal | undefined {
-  const line = selectedFrameLine(project.frame, selection)
-  if (!line || !project.frame) {
+  const line = selectedProjectLine(project, selection)
+  if (!line) {
     return 'no-line'
   }
   if (project.rowProgress.enabled) {
     return 'locked'
   }
-  if ((line.axis === 'row' ? project.frame.rows : project.frame.columns) <= 1) {
+  if (project.frame && (line.axis === 'row' ? project.frame.rows : project.frame.columns) <= 1) {
     return 'only-line'
   }
   return undefined
@@ -56,18 +75,18 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
 
 /** The Project without the line the Selection marks out, or the same Project, unchanged, when that is refused. */
 export function removeSelectedLine(project: Project, selection: Selection | undefined): Project {
-  const line = selectedFrameLine(project.frame, selection)
-  const frame = project.frame
-  if (!line || !frame || removeLineRefusal(project, selection)) {
+  const line = selectedProjectLine(project, selection)
+  if (!line || removeLineRefusal(project, selection)) {
     return project
   }
+  const area = line.area
 
   const beads: BeadMap = {}
   forEachBead(project.beads, (row, column, color) => {
     let newRow = row
     let newColumn = column
-    if (frameContains(frame, { row, column })) {
-      const relative = line.axis === 'row' ? row - frame.row : column - frame.column
+    if (frameContains(area, { row, column })) {
+      const relative = line.axis === 'row' ? row - area.row : column - area.column
       if (relative === line.index) {
         return
       }
@@ -80,6 +99,9 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
     beads[newRow]![newColumn] = color
   })
 
-  const smaller = { ...frame, rows: line.axis === 'row' ? frame.rows - 1 : frame.rows, columns: line.axis === 'column' ? frame.columns - 1 : frame.columns }
+  if (!project.frame) {
+    return { ...project, beads }
+  }
+  const smaller = { ...area, rows: line.axis === 'row' ? area.rows - 1 : area.rows, columns: line.axis === 'column' ? area.columns - 1 : area.columns }
   return { ...withFrame(project, smaller), beads }
 }
