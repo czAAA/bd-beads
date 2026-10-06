@@ -2,19 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { withColors } from '../../domain/canvas'
 import { createProject, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
 
 function setup(project: Project | null = sized) {
+  const harness = editHarness(project ?? undefined, { mirrorAxisCounts: { columns: 1, rows: 0 } })
   const deps = {
-    currentProject: () => project ?? undefined,
-    replaceProject: vi.fn(),
-    recordHistory: vi.fn(),
-    mirrorAxisCounts: () => ({ columns: 1, rows: 0 }),
-    clearMirrorAxisCounts: vi.fn(),
-    clearSelectionAndHover: vi.fn(),
+    currentProject: harness.currentProject,
+    edit: harness.edit,
     announce: vi.fn(),
     showToast: vi.fn(),
     onUndo: vi.fn(),
@@ -22,7 +20,7 @@ function setup(project: Project | null = sized) {
     locale: () => 'en' as const,
     centreOn: vi.fn(),
   }
-  return { deps, ...useFrameFlow(deps) }
+  return { deps: { ...deps, replaceProject: harness.replaceProject, harness }, ...useFrameFlow(deps) }
 }
 
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
@@ -41,8 +39,11 @@ describe('useFrameFlow', () => {
     release()
     expect(draft.value).toBeUndefined()
     expect(lastFrame(deps)).toEqual({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({ beads: open.beads, rowProgress: open.rowProgress, size: { frame: undefined, mirrorAxisCounts: { columns: 1, rows: 0 } } })
+    expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toBeUndefined()
+    expect(deps.harness.history.canUndo.value).toBe(false)
+    expect(deps.harness.mirrorAxisCounts.current).toEqual({ columns: 1, rows: 0 })
     expect(deps.announce).toHaveBeenCalledWith('Frame set, 5 columns, 4 rows')
   })
 
@@ -63,7 +64,7 @@ describe('useFrameFlow', () => {
     expect(draft.value).toBeDefined()
     release()
     expect(deps.replaceProject).not.toHaveBeenCalled()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
+    expect(deps.harness.history.canUndo.value).toBe(false)
   })
 
   it('moves the Frame by dragging inside it', () => {
@@ -87,7 +88,7 @@ describe('useFrameFlow', () => {
     press({ kind: 'inside' }, { row: 1, column: 1 })
     drag({ row: 1, column: 1 })
     release()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
+    expect(deps.harness.history.canUndo.value).toBe(false)
     expect(deps.replaceProject).not.toHaveBeenCalled()
   })
 
@@ -170,7 +171,7 @@ describe('useFrameFlow', () => {
       expect(onKey(key('ArrowRight'))).toBe(true)
       expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1 })
       expect(onKey(key('ArrowDown', { shiftKey: true }))).toBe(true)
-      expect(lastFrame(deps)).toEqual({ ...sized.frame, rows: 4 })
+      expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1, rows: 4 })
     })
 
     it('starts a one-bead Frame with an arrow when there is none', () => {
@@ -205,11 +206,12 @@ describe('useFrameFlow', () => {
     drag({ row: 3, column: 3 })
     release()
 
-    const updated = deps.replaceProject.mock.calls.at(-1)?.[0]
+    const updated = deps.replaceProject.mock.calls.at(-1)![0]
     expect(updated.beads[5]?.[5]).toBeUndefined()
     expect(Object.values<Record<number, string>>(updated.beads).flatMap((row) => Object.values(row))).toEqual(['#ff0000'])
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory.mock.calls[0]?.[0].beads).toBe(crowded.beads)
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.beads).toEqual(crowded.beads)
+    expect(deps.harness.history.canUndo.value).toBe(false)
     expect(deps.showToast).toHaveBeenCalledWith('frame-margin-cleared', 'Frame set. 1 piece was in the margin and moved outside it.', 'info', expect.anything())
     expect(deps.announce).not.toHaveBeenCalled()
   })

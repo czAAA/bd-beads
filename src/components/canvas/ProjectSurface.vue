@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { inMargin } from '../../domain/margin'
+import { mayPlace } from '../../domain/margin'
 import { changedPositions, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -379,7 +379,7 @@ function beadUnder(event: PointerEvent): GridPosition | undefined {
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
-  return props.blocksMargin === true && bead !== undefined && inMargin(props.project.frame, bead)
+  return props.blocksMargin === true && bead !== undefined && !mayPlace(props.project, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {

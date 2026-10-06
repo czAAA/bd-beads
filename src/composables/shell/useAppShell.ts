@@ -13,6 +13,7 @@ import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
 import { useConvertImage } from '../import/useConvertImage'
+import { useEdit } from '../project/useEdit'
 import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
 import { useFrameFlow } from '../project/useFrameFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
@@ -146,16 +147,28 @@ function wireAppShell(services: Services) {
     canRedo,
     record: recordHistory,
     reset: resetHistory,
-    commitGridChange,
     onUndo,
     onRedo,
   } = useUndoHistory({
     currentProject,
+    mirrorAxisCounts: () => mirrorAxisCounts.value,
+    restore: (snapshot) => editing.restore(snapshot),
+  })
+
+  /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Mirror and Selection state declared below, through lazy arrows only called at runtime. */
+  const editing = useEdit({
+    currentProject,
     replaceProject,
+    recordHistory,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     restoreMirrorAxisCounts: (counts) => restoreMirrorAxisCounts(counts),
-    clearSelectionAndHover,
+    resetAfterFrameChange: () => {
+      clearMirrorAxisCounts()
+      clearSelectionAndHover()
+    },
+    flushPendingSave,
   })
+  const { edit } = editing
 
   /**
    * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations. Ticket 174 hid
@@ -171,7 +184,7 @@ function wireAppShell(services: Services) {
     restoreAxisCounts: restoreMirrorAxisCounts,
     clearAxisCounts: clearMirrorAxisCounts,
     reset: resetMirrorState,
-  } = useMirrorState(currentProject, commitGridChange)
+  } = useMirrorState(currentProject, edit)
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that isn't tied to a tool. */
   const {
@@ -188,7 +201,7 @@ function wireAppShell(services: Services) {
     pastePreviewCells,
     clearSelection: resetSelection,
     pasteProjectionActive,
-  } = useSelectionGesture(currentProject, commitGridChange, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
+  } = useSelectionGesture(currentProject, edit, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
 
   /** A Selection (or hover) that no longer fits after a step or a size change changed the grid. */
   function clearSelectionAndHover() {
@@ -283,14 +296,11 @@ function wireAppShell(services: Services) {
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
   const { strokeMode, endStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
     currentProject,
-    replaceProject,
+    edit: editing,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     mirrorCopyMode: () => mirrorCopyMode.value,
     activeTool: () => activeTool.value,
-    commitGridChange,
-    recordHistory,
     endSelectPress,
-    flushPendingSave,
   })
 
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
@@ -380,16 +390,12 @@ function wireAppShell(services: Services) {
   })
 
   /** Delete all and its confirmation (tickets 42, 198). */
-  const deleteAll = useDeleteAllFlow({ currentProject, replaceProject, recordHistory })
+  const deleteAll = useDeleteAllFlow({ currentProject, edit })
 
   /** Set Frame and the Toolbox's Frame row: drawing, moving and resizing the Frame, Fit to drawing and Remove Frame (ticket 233). */
   const frameFlow = useFrameFlow({
     currentProject,
-    replaceProject,
-    recordHistory,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    clearMirrorAxisCounts,
-    clearSelectionAndHover,
+    edit,
     announce,
     showToast,
     onUndo,
@@ -400,12 +406,7 @@ function wireAppShell(services: Services) {
 
   /** Rotate: the Frame and its beads a quarter turn, with a Message when a Piece had to move (ticket 233). */
   const rotateFlow = useRotateFlow({
-    currentProject,
-    replaceProject,
-    recordHistory,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    clearMirrorAxisCounts,
-    clearSelectionAndHover,
+    edit,
     announce,
     showToast,
     onUndo,
@@ -416,16 +417,12 @@ function wireAppShell(services: Services) {
   /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */
   const removeLine = useRemoveLineFlow({
     currentProject,
-    replaceProject,
-    recordHistory,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    clearMirrorAxisCounts,
+    edit,
     selection: () => selection.value,
-    clearSelectionAndHover,
   })
 
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
-  const replaceBead = useReplaceBeadFlow({ currentProject, replaceProject, recordHistory, messages, locale: currentLocale })
+  const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale })
 
   /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
   const importSwitch = useImportSwitchFlow({
@@ -502,7 +499,7 @@ function wireAppShell(services: Services) {
     selectedColorId: () => selectedColorId.value,
     selection: () => selection.value,
     pasteArmed: () => pasteProjectionActive.value,
-    commitGridChange,
+    edit,
     replaceProject,
     undo: onUndo,
     clearSelection: clearSelectionAndHover,

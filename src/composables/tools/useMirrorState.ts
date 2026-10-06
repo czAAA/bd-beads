@@ -3,6 +3,7 @@ import type { GridPosition } from '../../domain/grid'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
 import { keepAllowedEdits } from '../../domain/margin'
 import { changedPositions, mirrorCurrent, type Project, projectDimensions } from '../../domain/project'
+import type { EditFn } from '../project/useEdit'
 
 /** Which "Mirror current" button an interaction names -- grid-space-neutral, since screen left-right/top-bottom is a view-layer concern (Toolbox.vue) that swaps under rotation. */
 export type MirrorCurrentAxis = 'horizontal' | 'vertical'
@@ -18,13 +19,13 @@ function gridAxisOf(axis: MirrorCurrentAxis): 'columns' | 'rows' {
  * Project; it's an editing-session aid like the undo stack, reset through the app shell's existing single reset
  * point (see reset()) rather than watching the open Project itself.
  *
- * `currentProject` and `commitGridChange` are read from the app shell rather than owned here: axis-count clamping
- * needs the open Project's live size, and "Mirror current" commits through the shell's shared grid-change/undo path
- * (the same one Fill uses) rather than a private copy of its own.
+ * `currentProject` and `edit` are read from the app shell rather than owned here: axis-count clamping
+ * needs the open Project's live size, and "Mirror current" commits as a drawing Edit (ADR 0036, the same path Fill
+ * uses) rather than a private copy of its own.
  */
 export function useMirrorState(
   currentProject: () => Project | undefined,
-  commitGridChange: (project: Project, updated: Project) => void,
+  edit: EditFn,
 ) {
   /** Per-direction axis counts, in grid space (see domain/mirror.ts). */
   const axisCounts = ref<MirrorAxisCounts>({ ...NO_MIRROR_AXES })
@@ -85,17 +86,12 @@ export function useMirrorState(
   /**
    * One-time reflect of whatever's currently painted across one direction (ADR 0006, ticket 46): the strip with the
    * most painted cells becomes the source, using that direction's own axis count and honouring copy mode; a count of
-   * 0 still acts as a single center axis, so the button always does something. Commits through the shell's shared
-   * commitGridChange rather than a private copy, per the ticket 62 decision.
+   * 0 still acts as a single center axis, so the button always does something. Commits as a drawing Edit rather than a
+   * private copy, per the ticket 62 decision.
    */
   function mirrorCurrentAction(axis: MirrorCurrentAxis) {
-    const project = currentProject()
-    if (!project) {
-      return
-    }
-
     const gridAxis = gridAxisOf(axis)
-    commitGridChange(project, mirrorCurrent(project, gridAxis, axisCounts.value[gridAxis], copyMode.value))
+    edit('drawing', (project) => mirrorCurrent(project, gridAxis, axisCounts.value[gridAxis], copyMode.value))
   }
 
   /** Restores axis counts from an Undo/Redo snapshot (SizeSnapshot.mirrorAxisCounts) -- not a Project field, so restoreSnapshot alone can't apply it. */

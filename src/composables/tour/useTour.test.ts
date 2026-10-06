@@ -34,7 +34,11 @@ function setup(initial: { status?: TourStatus; progress?: TourProgress; projects
     selectedColorId: () => undefined,
     selection: () => undefined,
     pasteArmed: () => false,
-    commitGridChange: (_project, updated) => replace(updated),
+    edit: (_kind, command) => {
+      const project = current()
+      if (project) replace(command(project) as Project)
+      return { kind: 'applied', moved: 0 }
+    },
     replaceProject: replace,
     undo,
     clearSelection: () => undefined,

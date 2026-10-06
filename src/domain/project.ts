@@ -446,45 +446,33 @@ export function moveToRow(project: Project, row: number): Project {
   })
 }
 
-/** Swaps in a whole new set of beads (e.g. to restore a prior snapshot on undo), returning a new Project rather than mutating the one passed in. */
+/** Swaps in a whole new set of beads, returning a new Project rather than mutating the one passed in. */
 export function restoreBeads(project: Project, beads: BeadMap): Project {
   return touch(project, { beads })
 }
 
 /**
- * What a change of the Frame (Set Frame, Remove line, Rotate; ADR 0026) alters alongside the beads, bundled onto one
- * UndoEntry: the Frame, plus Mirror's axis counts, which such a change resets. Mirror's counts are an editing-session setting App.vue owns, not a Project field, so
- * restoreSnapshot leaves applying them to the caller — bundled here only so a single history entry carries everything
- * one Undo/Redo step needs.
+ * One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change, so every Undo and
+ * Redo step restores the same things whichever command made it: the beads, Row progress, the Bead, the Frame, and
+ * Mirror's axis counts. Mirror's counts are an editing-session setting, not a Project field, so restoreSnapshot leaves
+ * applying them to the caller. All of it is immutable, so a snapshot shares structure with the Project it came from.
  */
-interface SizeSnapshot {
+export interface UndoEntry {
+  beads: BeadMap
+  rowProgress: RowProgress
+  beadId: string
   frame: Frame | undefined
   mirrorAxisCounts: MirrorAxisCounts
 }
 
-/**
- * One entry on the editing-session undo stack (App.vue): the beads to restore, plus whatever else the command that
- * made it also changed, so a single Undo brings it all back together — Row progress for Delete all (ticket 42, see
- * deleteAll) and a change of the Frame (which may clamp its pointers), the Bead for Replace Bead (ticket 48, see replaceBead), the
- * Frame for Set Frame, Remove line and Rotate. Every other drawing command's entry carries only beads, leaving the rest as Undo finds it.
- */
-export interface UndoEntry {
-  beads: BeadMap
-  rowProgress?: RowProgress
-  /** Present only for Replace Bead (ticket 48): the Bead to go back to. */
-  beadId?: string
-  /** Present only for a change of the Frame (ADR 0026) — see SizeSnapshot. */
-  size?: SizeSnapshot
+/** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
+export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, mirrorAxisCounts }
 }
 
-/** Restores beads, and Row progress/Bead/Frame alongside them when the undo entry carries them (see UndoEntry) — otherwise the same as restoreBeads. */
+/** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  return touch(project, {
-    beads: entry.beads,
-    ...(entry.rowProgress ? { rowProgress: entry.rowProgress } : {}),
-    ...(entry.beadId ? { beadId: entry.beadId } : {}),
-    ...(entry.size ? { frame: entry.size.frame } : {}),
-  })
+  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame })
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */

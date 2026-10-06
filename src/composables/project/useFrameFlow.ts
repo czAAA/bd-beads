@@ -2,21 +2,17 @@ import { computed, ref } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, movedFrame, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { changeFrame } from '../../domain/changeFrame'
-import type { Project, UndoEntry } from '../../domain/project'
+import type { Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import type { EditFn } from './useEdit'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
-  replaceProject: (project: Project) => void
-  recordHistory: (entry: UndoEntry) => void
-  mirrorAxisCounts: () => MirrorAxisCounts
-  clearMirrorAxisCounts: () => void
-  clearSelectionAndHover: () => void
+  edit: EditFn
   announce: (message: string) => void
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   onUndo: () => void
@@ -59,23 +55,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** Commits a new Frame (or none) as one undo step; a no-change is no step. The action names what happened in the margin Message. */
   function commit(frame: Frame | undefined, action: FrameAction = 'set', announce = true): void {
-    const project = deps.currentProject()
-    if (!project) return
-    const result = changeFrame(project, frame ? { set: frame } : { remove: true })
-    if (result.kind !== 'changed') return
     // Pieces in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
-    const { project: updated, moved } = result
-    deps.recordHistory({
-      beads: project.beads,
-      rowProgress: project.rowProgress,
-      size: { frame: project.frame, mirrorAxisCounts: deps.mirrorAxisCounts() },
-    })
-    deps.replaceProject(updated)
-    deps.clearMirrorAxisCounts()
-    deps.clearSelectionAndHover()
-    if (moved > 0) {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? { set: frame } : { remove: true }))
+    if (outcome.kind !== 'applied') return
+    if (outcome.moved > 0) {
       const t = deps.messages()
-      const text = `${t.frame.marginLead[action]} ${plural(deps.locale(), moved, t.frame.marginClearedMessage)}`
+      const text = `${t.frame.marginLead[action]} ${plural(deps.locale(), outcome.moved, t.frame.marginClearedMessage)}`
       deps.showToast('frame-margin-cleared', text, 'info', {
         label: t.palette.undoButton,
         run: deps.onUndo,

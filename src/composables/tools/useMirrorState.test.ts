@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorState } from './useMirrorState'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
@@ -113,17 +114,15 @@ describe('useMirrorState', () => {
   })
 
   describe('mirrorCurrent', () => {
-    it('commits through the given commitGridChange, not a private copy', () => {
-      let project = makeProject()
-      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-      const commitGridChange = vi.fn()
-      const mirror = useMirrorState(() => project, commitGridChange)
+    it('commits as a drawing Edit, not a private copy, so Undo brings the grid back', () => {
+      const project = paintCells(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      const harness = editHarness(project)
+      const mirror = useMirrorState(harness.currentProject, harness.edit)
 
       mirror.mirrorCurrent('horizontal')
 
-      expect(commitGridChange).toHaveBeenCalledTimes(1)
-      const [committedProject, updated] = commitGridChange.mock.calls[0]!
-      expect(committedProject).toBe(project)
+      expect(harness.replaceProject).toHaveBeenCalledTimes(1)
+      const updated = harness.project
       expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
         '#e63746',
         null,
@@ -133,16 +132,15 @@ describe('useMirrorState', () => {
     })
 
     it('uses that direction own axis count and copy mode', () => {
-      let project = makeProject()
-      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-      const commitGridChange = vi.fn()
-      const mirror = useMirrorState(() => project, commitGridChange)
+      const project = paintCells(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      const harness = editHarness(project)
+      const mirror = useMirrorState(harness.currentProject, harness.edit)
       mirror.setAxisCount('columns', 1)
       mirror.toggleCopyMode()
 
       mirror.mirrorCurrent('horizontal')
 
-      const [, updated] = commitGridChange.mock.calls[0]!
+      const updated = harness.project
       // Copy mode on, 1 axis (2 strips of 2): column 2 (same relative offset in the other strip) takes the color.
       expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([
         '#e63746',
@@ -153,12 +151,12 @@ describe('useMirrorState', () => {
     })
 
     it('does nothing with no Project open', () => {
-      const commitGridChange = vi.fn()
-      const mirror = useMirrorState(() => undefined, commitGridChange)
+      const harness = editHarness(undefined)
+      const mirror = useMirrorState(harness.currentProject, harness.edit)
 
       mirror.mirrorCurrent('vertical')
 
-      expect(commitGridChange).not.toHaveBeenCalled()
+      expect(harness.replaceProject).not.toHaveBeenCalled()
     })
   })
 

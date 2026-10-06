@@ -10,6 +10,7 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
+import type { EditFn } from '../project/useEdit'
 
 /**
  * The Select tool's whole gesture (ticket 63, architecture review): the Selection itself, the in-session clipboard,
@@ -19,15 +20,14 @@ import {
  * tool is active -- see leaveSelectTool), and Escape/right-click precedence against confirmation modals and an
  * expanded Tool group stays in the app shell, which calls this module's cancel() last.
  *
- * `currentProject` and `commitGridChange` are read from the app shell for the same reason useMirrorState reads
- * them: Paste commits through the shell's shared grid-change/undo path (the same one Fill and "Mirror current"
- * use) rather than a private copy of its own. `mirrorAxisCounts`/`mirrorCopyMode` come from ticket 62's own module
+ * `currentProject` and `edit` are read from the app shell for the same reason useMirrorState reads them: Paste and
+ * Delete commit as drawing Edits (ADR 0036), the same path Fill and "Mirror current" use, rather than a private copy. `mirrorAxisCounts`/`mirrorCopyMode` come from ticket 62's own module
  * (useMirrorState) rather than from the app shell directly, per the ticket 63 decision -- this module doesn't need
  * to know useMirrorState exists, only that something supplies its current axis counts and copy mode.
  */
 export function useSelectionGesture(
   currentProject: () => Project | undefined,
-  commitGridChange: (project: Project, updated: Project) => void,
+  edit: EditFn,
   mirrorAxisCounts: () => MirrorAxisCounts,
   mirrorCopyMode: () => boolean,
 ) {
@@ -98,10 +98,8 @@ export function useSelectionGesture(
       return
     }
 
-    commitGridChange(
-      project,
-      mirroredPasteBlock(project, copiedBlock.value!, press.anchor, mirrorAxisCounts(), mirrorCopyMode()),
-    )
+    const block = copiedBlock.value!
+    edit('drawing', (current) => mirroredPasteBlock(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /** A new Selection (drag or ruler click) is one of the two things that clear the clipboard (ADR 0016), the other being a new Copy replacing it. */
@@ -178,10 +176,8 @@ export function useSelectionGesture(
       return false
     }
 
-    commitGridChange(
-      project,
-      mirroredPasteBlock(project, copiedBlock.value, cell, mirrorAxisCounts(), mirrorCopyMode()),
-    )
+    const block = copiedBlock.value
+    edit('drawing', (current) => mirroredPasteBlock(current, block, cell, mirrorAxisCounts(), mirrorCopyMode()))
     return true
   }
 
@@ -205,7 +201,7 @@ export function useSelectionGesture(
       }
     }
 
-    commitGridChange(project, paintCells(project, positions, null, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintCells(current, positions, null, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /**

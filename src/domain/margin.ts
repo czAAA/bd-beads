@@ -1,6 +1,6 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, positionKey, type GridPosition } from './grid'
-import { changedPositions, keepFinishedRows, type Project } from './project'
+import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } from './project'
 import { touching } from './pieces'
 
 /**
@@ -15,6 +15,11 @@ export const MARGIN = 3
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Frame): Frame {
   return { row: frame.row - MARGIN, column: frame.column - MARGIN, rows: frame.rows + 2 * MARGIN, columns: frame.columns + 2 * MARGIN }
+}
+
+/** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is refused. */
+export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame'>, position: GridPosition): boolean {
+  return !isInFinishedRow(project, position) && !inMargin(project.frame, position)
 }
 
 /** What a drawing command did, minus what it did to finished rows (ticket 33) and what it painted in the margin; `before` itself when nothing is left. */

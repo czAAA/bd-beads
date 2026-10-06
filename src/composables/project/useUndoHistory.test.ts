@@ -1,23 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { createProject, type Project, frameGrid, withFrameGrid } from '../../domain/project'
-import { useUndoHistory } from './useUndoHistory'
-
-function setup(initial: Project) {
-  let project: Project | undefined = initial
-  const restoreMirrorAxisCounts = vi.fn()
-  const clearSelectionAndHover = vi.fn()
-  const history = useUndoHistory({
-    currentProject: () => project,
-    replaceProject: (p) => {
-      project = p
-    },
-    mirrorAxisCounts: () => NO_MIRROR_AXES,
-    restoreMirrorAxisCounts,
-    clearSelectionAndHover,
-  })
-  return { history, get project() { return project! }, restoreMirrorAxisCounts, clearSelectionAndHover, clear: () => { project = undefined } }
-}
+import { editHarness } from '../../testUtils/editHarness'
 
 function newProject(): Project {
   return createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
@@ -31,17 +15,17 @@ function painted(project: Project): Project {
 
 describe('useUndoHistory', () => {
   it('starts with nothing to undo or redo', () => {
-    const { history } = setup(newProject())
+    const { history } = editHarness(newProject())
     expect(history.canUndo.value).toBe(false)
     expect(history.canRedo.value).toBe(false)
   })
 
-  it('commits a grid change as one undo step, then undoes and redoes it', () => {
-    const ctx = setup(newProject())
+  it('undoes and redoes an Edit step by step', () => {
+    const ctx = editHarness(newProject())
     const before = ctx.project
     const after = painted(before)
 
-    ctx.history.commitGridChange(before, after)
+    ctx.edit('drawing', () => after)
     expect(frameGrid(ctx.project)).toEqual(frameGrid(after))
     expect(ctx.history.canUndo.value).toBe(true)
 
@@ -54,36 +38,37 @@ describe('useUndoHistory', () => {
     expect(ctx.history.canRedo.value).toBe(false)
   })
 
-  it('records nothing when the change leaves the Project unchanged', () => {
-    const ctx = setup(newProject())
-    ctx.history.commitGridChange(ctx.project, ctx.project)
-    expect(ctx.history.canUndo.value).toBe(false)
-  })
-
   it('does nothing without an open Project', () => {
-    const ctx = setup(newProject())
-    ctx.history.commitGridChange(ctx.project, painted(ctx.project))
-    ctx.clear()
+    const ctx = editHarness(undefined)
     ctx.history.onUndo()
     ctx.history.onRedo()
-    expect(ctx.history.canUndo.value).toBe(true)
+    expect(ctx.replaceProject).not.toHaveBeenCalled()
   })
 
-  it('restores Mirror axis counts and clears Selection when a step changes the grid size', () => {
-    const ctx = setup(newProject())
-    const before = ctx.project
+  it('restores Mirror axis counts from the snapshot, and clears the Selection when the Frame differs', () => {
+    const ctx = editHarness(newProject())
     ctx.history.record({
-      beads: before.beads,
-      size: { frame: { row: 0, column: 0, columns: 5, rows: 5 }, mirrorAxisCounts: NO_MIRROR_AXES },
+      beads: ctx.project.beads,
+      rowProgress: ctx.project.rowProgress,
+      beadId: ctx.project.beadId,
+      frame: { row: 0, column: 0, columns: 5, rows: 5 },
+      mirrorAxisCounts: NO_MIRROR_AXES,
     })
     ctx.history.onUndo()
     expect(ctx.restoreMirrorAxisCounts).toHaveBeenCalledWith(NO_MIRROR_AXES)
-    expect(ctx.clearSelectionAndHover).toHaveBeenCalled()
+    expect(ctx.resetAfterFrameChange).toHaveBeenCalled()
+  })
+
+  it('leaves the Selection alone when the Frame is the same', () => {
+    const ctx = editHarness(newProject())
+    ctx.edit('drawing', painted)
+    ctx.history.onUndo()
+    expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
   })
 
   it('reset empties both stacks', () => {
-    const ctx = setup(newProject())
-    ctx.history.commitGridChange(ctx.project, painted(ctx.project))
+    const ctx = editHarness(newProject())
+    ctx.edit('drawing', painted)
     ctx.history.reset()
     expect(ctx.history.canUndo.value).toBe(false)
   })

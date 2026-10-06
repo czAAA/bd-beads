@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createProject, moveToRow, setRowProgressEnabled, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { editHarness } from '../../testUtils/editHarness'
 import { useDeleteAllFlow } from './useDeleteAllFlow'
 
 const blank = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
@@ -9,13 +10,11 @@ const painted: Project = withFrameGrid(
 )
 
 function setup(project: Project | null = painted) {
-  const deps = {
-    currentProject: () => project ?? undefined,
-    replaceProject: vi.fn(),
-    recordHistory: vi.fn(),
-  }
-  return { deps, ...useDeleteAllFlow(deps) }
+  const harness = editHarness(project ?? undefined)
+  return { harness, ...useDeleteAllFlow({ currentProject: harness.currentProject, edit: harness.edit }) }
 }
+
+const isEmpty = (project: Project) => frameGrid(project).flat().every((cell) => !cell.color)
 
 describe('useDeleteAllFlow', () => {
   it('opens the confirmation only with a Project open', () => {
@@ -29,39 +28,41 @@ describe('useDeleteAllFlow', () => {
   })
 
   it('closes on cancel without touching the Project', () => {
-    const { deps, deleteAllConfirmOpen, onRequestDeleteAll, onCancelDeleteAll } = setup()
+    const { harness, deleteAllConfirmOpen, onRequestDeleteAll, onCancelDeleteAll } = setup()
     onRequestDeleteAll()
     onCancelDeleteAll()
     expect(deleteAllConfirmOpen.value).toBe(false)
-    expect(deps.replaceProject).not.toHaveBeenCalled()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
+    expect(harness.project).toBe(painted)
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('confirming clears the grid as one undo step carrying the grid and Row progress', () => {
-    const { deps, deleteAllConfirmOpen, onRequestDeleteAll, onConfirmDeleteAll } = setup()
+  it('confirming clears the grid, and Undo brings the grid back', () => {
+    const { harness, deleteAllConfirmOpen, onRequestDeleteAll, onConfirmDeleteAll } = setup()
     onRequestDeleteAll()
     onConfirmDeleteAll()
     expect(deleteAllConfirmOpen.value).toBe(false)
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({ beads: painted.beads, rowProgress: painted.rowProgress })
-    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-    const replaced = deps.replaceProject.mock.calls[0]![0] as Project
-    expect(frameGrid(replaced).flat().every((cell) => !cell.color)).toBe(true)
+    expect(isEmpty(harness.project)).toBe(true)
+
+    harness.history.onUndo()
+    expect(frameGrid(harness.project)).toEqual(frameGrid(painted))
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('ignores the Row progress lock: progress resets along with the grid', () => {
+  it('ignores the Row progress lock: progress resets along with the grid, and Undo restores both', () => {
     const inProgress = moveToRow(setRowProgressEnabled(painted, true), 2)
-    const { deps, onConfirmDeleteAll } = setup(inProgress)
+    const { harness, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
-    const replaced = deps.replaceProject.mock.calls[0]![0] as Project
-    expect(frameGrid(replaced).flat().every((cell) => !cell.color)).toBe(true)
-    expect(replaced.rowProgress).not.toEqual(inProgress.rowProgress)
+    expect(isEmpty(harness.project)).toBe(true)
+    expect(harness.project.rowProgress).not.toEqual(inProgress.rowProgress)
+
+    harness.history.onUndo()
+    expect(harness.project.rowProgress).toEqual(inProgress.rowProgress)
   })
 
   it('is not an undo step when there is nothing to clear', () => {
-    const { deps, onConfirmDeleteAll } = setup(blank)
+    const { harness, onConfirmDeleteAll } = setup(blank)
     onConfirmDeleteAll()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
-    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(harness.replaceProject).not.toHaveBeenCalled()
   })
 })

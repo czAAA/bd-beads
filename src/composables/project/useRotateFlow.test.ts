@@ -2,42 +2,35 @@ import { describe, expect, it, vi } from 'vitest'
 import { withColors } from '../../domain/canvas'
 import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFlow } from './useRotateFlow'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
 function setup(project: Project | null = base) {
+  const harness = editHarness(project ?? undefined, { mirrorAxisCounts: { columns: 1, rows: 0 } })
   const deps = {
-    currentProject: () => project ?? undefined,
-    replaceProject: vi.fn(),
-    recordHistory: vi.fn(),
-    mirrorAxisCounts: () => ({ columns: 1, rows: 0 }),
-    clearMirrorAxisCounts: vi.fn(),
-    clearSelectionAndHover: vi.fn(),
+    edit: harness.edit,
     announce: vi.fn(),
     showToast: vi.fn(),
     onUndo: vi.fn(),
     messages: () => en,
     locale: () => 'en' as const,
   }
-  return { deps, ...useRotateFlow(deps) }
+  return { deps, harness, ...useRotateFlow(deps) }
 }
 
 describe('useRotateFlow', () => {
-  it('turns the Frame as one undo step that carries the beads, Row progress and the old Frame', () => {
-    const { deps, onRotate } = setup()
+  it('turns the Frame as one undo step, resets the session, and Undo brings the old Frame back', () => {
+    const { harness, onRotate } = setup()
     onRotate()
 
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({
-      beads: base.beads,
-      rowProgress: base.rowProgress,
-      size: { frame: base.frame, mirrorAxisCounts: { columns: 1, rows: 0 } },
-    })
-    const turned = deps.replaceProject.mock.calls[0]![0] as Project
-    expect(turned.frame).toMatchObject({ rows: 3, columns: 2 })
-    expect(deps.clearMirrorAxisCounts).toHaveBeenCalled()
-    expect(deps.clearSelectionAndHover).toHaveBeenCalled()
+    expect(harness.project.frame).toMatchObject({ rows: 3, columns: 2 })
+    expect(harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
+
+    harness.history.onUndo()
+    expect(harness.project.frame).toEqual(base.frame)
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
   it('only announces it when nothing was in the way', () => {
@@ -62,16 +55,15 @@ describe('useRotateFlow', () => {
     expect(action.label).toBe('Undo')
     action.run()
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
   })
 
   it('does nothing without a Frame, while Row progress is on, or with no Project', () => {
     const { frame: _frame, ...open } = base
     for (const project of [open as Project, setRowProgressEnabled(base, true), null]) {
-      const { deps, onRotate } = setup(project)
+      const { harness, onRotate } = setup(project)
       onRotate()
-      expect(deps.replaceProject).not.toHaveBeenCalled()
-      expect(deps.recordHistory).not.toHaveBeenCalled()
+      expect(harness.replaceProject).not.toHaveBeenCalled()
+      expect(harness.history.canUndo.value).toBe(false)
     }
   })
 })
