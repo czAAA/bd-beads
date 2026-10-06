@@ -411,7 +411,7 @@
     {
       "name": "ZoomPill",
       "group": "Responsive",
-      "summary": "The phone's zoom control: zoom out, the zoom level, zoom in and fit, floating in the bottom-right corner of the Pattern."
+      "summary": "The phone's zoom control: zoom out, the zoom level, zoom in and fit, floating over the Pattern, bottom-right to start with and then wherever the person drops it."
     }
   ],
   "assetGroups": [

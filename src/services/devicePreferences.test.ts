@@ -21,7 +21,7 @@ const blocked: PreferenceStorage = {
 const CASES = [
   { name: 'rulers', key: 'bd-beads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'progressBar', key: 'bd-beads:progress-bar', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
-  { name: 'zoomPillCorner', key: 'bd-beads:zoom-pill', saved: 'top-left', read: 'top-left', other: 'bottom-left', stored: 'bottom-left', invalid: 'middle', fallback: 'bottom-right' },
+  { name: 'zoomPillPlacement', key: 'bd-beads:zoom-pill', saved: 'top-left', read: { x: 0, y: 0 }, other: { x: 0.25, y: 0.5 }, stored: '0.25,0.5', invalid: 'middle', fallback: { x: 1, y: 1 } },
   { name: 'canvasBackground', key: 'bd-beads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
   { name: 'theme', key: 'bd-beads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
   { name: 'locale', key: 'bd-beads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
@@ -33,26 +33,26 @@ describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, s
   })
 
   it('is its default when nothing is saved', () => {
-    expect(createDevicePreferences(memory()).get(name).value).toBe(fallback)
+    expect(createDevicePreferences(memory()).get(name).value).toEqual(fallback)
   })
 
   it('reads what an earlier visit saved under the old key', () => {
-    expect(createDevicePreferences(memory({ [key]: saved })).get(name).value).toBe(read)
+    expect(createDevicePreferences(memory({ [key]: saved })).get(name).value).toEqual(read)
   })
 
   it('is its default when the saved value is not valid', () => {
     if (invalid === null) return // anything but "off" means on, so there is no invalid value
-    expect(createDevicePreferences(memory({ [key]: invalid })).get(name).value).toBe(fallback)
+    expect(createDevicePreferences(memory({ [key]: invalid })).get(name).value).toEqual(fallback)
   })
 
   it('is its default, without crashing, when storage throws', () => {
     const preferences = createDevicePreferences(blocked)
-    expect(preferences.get(name).value).toBe(fallback)
+    expect(preferences.get(name).value).toEqual(fallback)
     expect(() => {
       // @ts-expect-error the table holds a valid value for each name; the union is too wide for the setter
       preferences.get(name).value = other
     }).not.toThrow()
-    expect(preferences.get(name).value).toBe(other)
+    expect(preferences.get(name).value).toEqual(other)
   })
 
   it('saves on change, in the stored format', () => {
@@ -61,7 +61,7 @@ describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, s
     // @ts-expect-error see above
     preference.value = other
     expect(storage.data.get(key)).toBe(stored)
-    expect(createDevicePreferences(storage).get(name).value).toBe(other)
+    expect(createDevicePreferences(storage).get(name).value).toEqual(other)
   })
 })
 
