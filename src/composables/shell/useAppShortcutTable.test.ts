@@ -28,6 +28,9 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onToggleRowDirection: vi.fn(),
     onMoveRow: vi.fn(),
     openShortcutsHelp: vi.fn(),
+    onZoomIn: vi.fn(),
+    onZoomOut: vi.fn(),
+    onFit: vi.fn(),
     ...overrides,
   }
   const wrapper = mount(
@@ -46,6 +49,37 @@ function press(init: KeyboardEventInit) {
 }
 
 describe('useAppShortcutTable', () => {
+  it('Ctrl/⌘ + plus, minus and 0 drive Canvas zoom and never reach the browser, even while typing', () => {
+    const { deps, wrapper } = mountTable()
+    const input = document.createElement('input')
+    document.body.append(input)
+    const keys: KeyboardEventInit[] = [
+      { key: '+', ctrlKey: true, shiftKey: true },
+      { key: '=', metaKey: true },
+      { key: '-', ctrlKey: true },
+      { key: '0', metaKey: true },
+    ]
+    for (const init of keys) {
+      const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init })
+      input.dispatchEvent(event)
+      expect(event.defaultPrevented).toBe(true)
+    }
+    expect(deps.onZoomIn).toHaveBeenCalledTimes(2)
+    expect(deps.onZoomOut).toHaveBeenCalledTimes(1)
+    expect(deps.onFit).toHaveBeenCalledTimes(1)
+    input.remove()
+    wrapper.unmount()
+  })
+
+  it('swallows Ctrl/⌘ + plus without zooming while a dialog is open', () => {
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true })
+    const event = new KeyboardEvent('keydown', { key: '+', ctrlKey: true, cancelable: true })
+    window.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(deps.onZoomIn).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it('F toggles Set Frame only while a Project is open', () => {
     const none = mountTable()
     press({ key: '6' })

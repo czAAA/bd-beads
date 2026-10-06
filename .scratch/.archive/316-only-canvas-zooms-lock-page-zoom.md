@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Viewport meta, `touch-action: manipulation` on the shell, outside-canvas Ctrl/⌘ + wheel and iOS gesture events are cancelled; ones started inside the canvas still zoom it
 - [ ] Double-tap and pinch on header, Toolbox, Dock and sheets do nothing (iPad Safari, finger and Pencil)

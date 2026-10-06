@@ -8,6 +8,7 @@ import type { ZoomPillCorner } from '../../domain/zoomPillCorner'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
+import { usePageZoomLock } from './usePageZoomLock'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
@@ -521,6 +522,7 @@ function wireAppShell(services: Services) {
     }
   }
 
+  usePageZoomLock()
   useAppShortcutTable({
     activeProject: currentProject,
     activeTool: () => activeTool.value,
@@ -556,6 +558,9 @@ function wireAppShell(services: Services) {
     onToggleRowProgress: rowOps.onToggleRowProgress,
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
+    onZoomIn: () => zoomIn(),
+    onZoomOut: () => zoomOut(),
+    onFit: resetZoom,
     openShortcutsHelp: () => {
       shortcutsHelpOpen.value = true
     },

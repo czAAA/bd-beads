@@ -49,7 +49,7 @@ Devices (CSS px): 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 256
 
 ## Smallest bead
 
-The Zoom floor is 10% on every size (ADR 0033); zoom out, pinch, wheel and Fit all reach it, and Fit stays capped at 100%. The rulers thin their numbers instead (the Ruler step: every 5, 10, 50, 100 beads as room allows). `bead-min-phone` 16px (12px ruler numbers) and `bead-min-tablet` 15px mark where a number needs more room. See the Rulers card.
+Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034), so the header, Dock and sheets never change size, and ⌘ or Ctrl + plus, minus and 0 zoom the canvas. The Zoom floor is 10% on every size (ADR 0033); zoom out, pinch, wheel and Fit all reach it, and Fit stays capped at 100%. The rulers thin their numbers instead (the Ruler step: every 5, 10, 50, 100 beads as room allows). `bead-min-phone` 16px (12px ruler numbers) and `bead-min-tablet` 15px mark where a number needs more room. See the Rulers card.
 
 ## Fitting longer text
 

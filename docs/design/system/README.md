@@ -122,6 +122,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-06, ticket 316: only the canvas zooms (ADR 0034). Page zoom is locked, so `responsive.md` and `interaction-and-motion.md` say a pinch, double-tap or Ctrl/⌘ + wheel off the canvas does nothing and Ctrl/⌘ + plus, minus and 0 drive Canvas zoom. No token or CSS value changed.
   - Repo, 2026-10-06, ticket 315: the CanvasStrip card says what a narrow strip gives up so the size line never clips: below 800px the printed-size estimate is hidden, below 700px the grid icon too and the title and size sit closer. No token change.
   - Repo, 2026-10-06, ticket 301: the design system's Zoom floor, Ruler step and Ruler dots are checked against the app: the Rulers card, `responsive.md` and `interaction-and-motion.md` describe the 10% Zoom floor, and a visual test shows the rulers at 100, 50, 25 and 10%. No token or CSS change beyond ticket 298's.
   - Repo, 2026-10-05, ticket 303: the Rulers card's Ruler step applies from 50% zoom up; below 50% every ruler (Piece and each Frame side) shows only its last number, still clickable. No token or CSS change.
