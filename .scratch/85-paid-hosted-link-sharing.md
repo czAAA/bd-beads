@@ -2,7 +2,7 @@
 
 **What to build:** The first paid feature: for paid-plan users, QR export offers a hosted-link option (ADR 0015) with no size cap, instead of the compact-encoding QR from ticket 68.
 
-**Blocked by:** 68 (QR export), 84 (Integrate payment processor + subscription/plan gating)
+**Blocked by:** 323 (End-to-End Encryption in the Browser: hosted links are encrypted, the key stays in the link), 68 (QR export), 84 (Integrate payment processor + subscription/plan gating)
 
 **Status:** ready-for-agent
 

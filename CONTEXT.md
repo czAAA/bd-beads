@@ -235,6 +235,18 @@ _Avoid_: grid component, exporter, preview renderer
 What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
 _Avoid_: canvas (that is the panel), bitmap, canvas element
 
+**View link**:
+A hosted, encrypted snapshot of a Project that anyone can create without logging in. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit.
+_Avoid_: share link, public link
+
+**Edit link**:
+For a synced Project (logged-in Pro users), the link whose `#` part is the Project's key; opening it on a device, or scanning its QR, gives that device the same editable Project. Whoever holds it can read and edit the Project.
+_Avoid_: sync link, invite link
+
+**Locked Project**:
+A synced Project listed on a signed-in device that doesn't yet hold its key; it opens only after the Edit link is opened there.
+_Avoid_: encrypted Project, hidden Project
+
 **Overview**:
 The page outside the editor, at its own address, that introduces bd-beads feature by feature to someone new to it. There are no accounts, so "new" means only that this device's Project library is empty.
 _Avoid_: landing page, home page, about page, marketing page
