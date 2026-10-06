@@ -6,10 +6,10 @@ import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { PALETTE } from '../../src/domain/palette'
 import { MAKER_NAME_KEY } from '../../src/services/makerNameStore'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
-import { displayedExtentPx } from '../../src/rendering/projectRenderer'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp } from '../support/app'
 import { fixtureProject } from '../support/projects'
+import { displayedExtentPx } from '../../src/rendering/surfaceView'
 
 /**
  * Tickets 73 and 74: a Project exported as a PNG picture and as a printable PDF, in a real browser, where the canvases

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { gridHeightPx, gridWidthPx } from './grid'
+import { gridHeight, gridWidth } from './grid'
 import {
   BRICK_SLOW_FRAMING_CELLS,
   CENTERED_PAN,
@@ -66,8 +66,8 @@ describe('frameSizeMm', () => {
   it('accounts for an offset technique half-cell overhang and peyote tighter row packing', () => {
     const peyote = frameSizeMm('peyote', { columns: 10, rows: 10 }, cubeBead)
 
-    expect(peyote.widthMm).toBeCloseTo(gridWidthPx('peyote', 10, 1.5))
-    expect(peyote.heightMm).toBeCloseTo(gridHeightPx('peyote', 10, 1.5))
+    expect(peyote.widthMm).toBeCloseTo(gridWidth('peyote', 10, 1.5))
+    expect(peyote.heightMm).toBeCloseTo(gridHeight('peyote', 10, 1.5))
     expect(peyote.heightMm).toBeLessThan(frameSizeMm('loom', { columns: 10, rows: 10 }, cubeBead).heightMm)
   })
 })

@@ -1,13 +1,13 @@
 import { projectDimensions } from '../domain/project'
-import { CELL_SIZE_PX } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { encodePng } from '../domain/pngEncoder'
 import { PRINT_THEME } from './beadLook'
-import { displayedExtentPx, renderProject } from './projectRenderer'
+import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { displayedGrid, planPrint, PRINT_BOARD_PAD, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
+import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 /**
  * Project exports (tickets 73, 74): the Project drawn by the same renderer the editor uses, so an exported bead looks

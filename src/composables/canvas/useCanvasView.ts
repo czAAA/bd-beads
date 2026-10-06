@@ -2,7 +2,8 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
-import { displayedBox, scrollAfterZoom, scrollToCentre, zoomToFit, type Scroll, type Size } from '../../rendering/canvasView'
+import { OPEN_SPACE } from '../../rendering/space'
+import { surfaceView, type Scroll, type Size, type SurfaceView } from '../../rendering/surfaceView'
 
 /** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and BeadBoard cards). */
 export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
@@ -30,6 +31,11 @@ export function useCanvasView(
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
 
+  /** The open canvas as the view stands, or at another zoom. */
+  function surfaceOf(project: Pick<Project, 'technique' | 'rotation'>): SurfaceView {
+    return surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+  }
+
   function measured(): boolean {
     return viewport.value.width > 0 && viewport.value.height > 0
   }
@@ -47,10 +53,10 @@ export function useCanvasView(
       scroll.value = { x: 0, y: 0 }
     } else if (!box) {
       zoom.value = clampZoom(1)
-      scroll.value = scrollToCentre({ x: 0, y: 0, width: 0, height: 0 }, viewport.value)
+      scroll.value = surfaceOf(project).scrollToCentre()
     } else {
-      zoom.value = clampZoom(zoomToFit(project.technique, project.rotation, box, viewport.value, FIT_MARGIN_PX))
-      scroll.value = scrollToCentre(displayedBox(project.technique, project.rotation, box, zoom.value), viewport.value)
+      zoom.value = clampZoom(surfaceOf(project).zoomToFit(box, FIT_MARGIN_PX))
+      scroll.value = surfaceOf(project).scrollToCentre(box)
     }
     isAtFit.value = true
   }
@@ -72,7 +78,7 @@ export function useCanvasView(
     if (!project) {
       return
     }
-    scroll.value = scrollToCentre(displayedBox(project.technique, project.rotation, box, zoom.value), viewport.value)
+    scroll.value = surfaceOf(project).scrollToCentre(box)
     isAtFit.value = false
   }
 
@@ -82,17 +88,16 @@ export function useCanvasView(
     if (!project || !measured()) {
       return
     }
-    const bead = displayedBox(project.technique, project.rotation, { ...position, rows: 1, columns: 1 }, zoom.value)
-    const { x, y } = scroll.value
+    const bead = surfaceOf(project).beadBox({ ...position, rows: 1, columns: 1 })
     const { width, height } = viewport.value
     let dx = 0
     let dy = 0
-    if (bead.x - margin < x) dx = bead.x - margin - x
-    else if (bead.x + bead.width + margin > x + width) dx = bead.x + bead.width + margin - (x + width)
-    if (bead.y - margin < y) dy = bead.y - margin - y
-    else if (bead.y + bead.height + margin > y + height) dy = bead.y + bead.height + margin - (y + height)
+    if (bead.x - margin < 0) dx = bead.x - margin
+    else if (bead.x + bead.width + margin > width) dx = bead.x + bead.width + margin - width
+    if (bead.y - margin < 0) dy = bead.y - margin
+    else if (bead.y + bead.height + margin > height) dy = bead.y + bead.height + margin - height
     if (dx !== 0 || dy !== 0) {
-      scroll.value = { x: x + dx, y: y + dy }
+      scroll.value = { x: scroll.value.x + dx, y: scroll.value.y + dy }
       isAtFit.value = false
     }
   }
@@ -103,7 +108,8 @@ export function useCanvasView(
       return
     }
     const at = anchor ?? { x: viewport.value.width / 2, y: viewport.value.height / 2 }
-    scroll.value = scrollAfterZoom(scroll.value, at, zoom.value, next)
+    // Keeping a point still under a zoom does not depend on what is drawn, so a Project is not needed.
+    scroll.value = surfaceOf(currentProject() ?? { technique: 'loom', rotation: 0 }).scrollAfterZoom(at, next)
     zoom.value = next
     isAtFit.value = false
   }

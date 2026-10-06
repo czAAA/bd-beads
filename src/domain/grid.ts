@@ -61,9 +61,6 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
   return { columns, rows }
 }
 
-/** The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so fit-zoom math lines up with what is drawn. */
-export const CELL_SIZE_PX = 20
-
 /**
  * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Project that needs less gets a
  * box its own shape rather than empty bands inside a fixed square (ticket 18). Raised twice from the original 480:
@@ -75,27 +72,33 @@ export const CELL_SIZE_PX = 20
  */
 export const CANVAS_MAX_PX = 900
 
-/** Horizontal offset (px) for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
-export function rowOffsetPx(technique: Technique, rowIndex: number, cellSize = CELL_SIZE_PX): number {
+/**
+ * Physical geometry (ADR 0010, amended): the real piece, in whatever unit the bead size is given (millimetres for a
+ * Bead's own footprint). Brick rows sit one bead apart with no gap; the 1px seam brick stitch is drawn with belongs to
+ * the Surface view's drawn geometry and is not here.
+ */
+
+/** Horizontal offset for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
+export function rowOffset(technique: Technique, rowIndex: number, cellSize: number): number {
   return isOffsetTechnique(technique) && Math.abs(rowIndex % 2) === 1 ? cellSize / 2 : 0
 }
 
-/** Total rendered grid width in px, including the extra half-cell an offset technique's shifted rows take up. */
-export function gridWidthPx(technique: Technique, columns: number, cellSize = CELL_SIZE_PX): number {
+/** Total grid width, including the extra half-cell an offset technique's shifted rows take up. */
+export function gridWidth(technique: Technique, columns: number, cellSize: number): number {
   return columns * cellSize + (isOffsetTechnique(technique) ? cellSize / 2 : 0)
 }
 
-/** Vertical distance (px) from one row's top to the next. Peyote rows interlock, packing tighter than a full cell (the real stitch's rows nest into each other); brick stitch stacks rows at full height like coursed brickwork, same as loom. */
-export function rowHeightPx(technique: Technique, cellSize = CELL_SIZE_PX): number {
+/** Vertical distance from one row's top to the next. Peyote rows interlock, packing tighter than a full cell (the real stitch's rows nest into each other); brick stitch stacks rows at full height like coursed brickwork, same as loom. */
+export function rowPitch(technique: Technique, cellSize: number): number {
   return technique === 'peyote' ? cellSize * 0.75 : cellSize
 }
 
-/** Total rendered grid height in px, accounting for peyote's tighter row packing. */
-export function gridHeightPx(technique: Technique, rows: number, cellSize = CELL_SIZE_PX): number {
+/** Total grid height, accounting for peyote's tighter row packing. */
+export function gridHeight(technique: Technique, rows: number, cellSize: number): number {
   if (rows === 0) {
     return 0
   }
-  return cellSize + (rows - 1) * rowHeightPx(technique, cellSize)
+  return cellSize + (rows - 1) * rowPitch(technique, cellSize)
 }
 
 export interface GridPosition {
@@ -111,18 +114,18 @@ export interface CellCenter {
 
 /**
  * Where a cell's centre sits inside the grid's own footprint, measured from its top-left corner in the same unit as
- * the cell size passed in — screen px at CELL_SIZE_PX, or real millimetres when called with a Bead's own footprint
+ * the cell size passed in — real millimetres when called with a Bead's own footprint
  * (`beadPitchMm(bead)`/`bead.heightMm`), which is what Convert image samples a picture at (ticket 58, ADR 0010).
  *
  * This is the Technique's real geometry rather than a plain rectangle: peyote's and brick stitch's odd rows are
- * shifted half a cell sideways (rowOffsetPx) and peyote's rows are packed tighter than a full cell (rowHeightPx), so
+ * shifted half a cell sideways (rowOffset) and peyote's rows are packed tighter than a full cell (rowPitch), so
  * a picture sampled through this reproduces the stagger and packing the finished piece will actually have instead of
  * shearing and squashing it invisibly. The two axes take their own cell size, so a non-square footprint like Delica's
  * 1.6 × 1.3mm doesn't distort either.
  *
- * Accumulates exactly the way gridWidthPx/gridHeightPx do: the last row's centre lands half a cell above the height
- * gridHeightPx reports, and a row's last cell half a cell inside gridWidthPx's width — less that row's own stagger,
- * since gridWidthPx's extra half cell is there for the shifted rows.
+ * Accumulates exactly the way gridWidth/gridHeight do: the last row's centre lands half a cell above the height
+ * gridHeight reports, and a row's last cell half a cell inside gridWidth's width — less that row's own stagger,
+ * since gridWidth's extra half cell is there for the shifted rows.
  */
 export function cellCenter(
   technique: Technique,
@@ -131,8 +134,8 @@ export function cellCenter(
   cellHeight: number,
 ): CellCenter {
   return {
-    x: column * cellWidth + cellWidth / 2 + rowOffsetPx(technique, row, cellWidth),
-    y: cellHeight / 2 + row * rowHeightPx(technique, cellHeight),
+    x: column * cellWidth + cellWidth / 2 + rowOffset(technique, row, cellWidth),
+    y: cellHeight / 2 + row * rowPitch(technique, cellHeight),
   }
 }
 
@@ -152,8 +155,8 @@ export function positionKey(position: GridPosition): string {
 
 /** Columns in `toRow` whose cells visually overlap `column` of `fromRow`, given each row's horizontal offset. Loom rows share one offset, so only the same column overlaps; offset techniques' rows interlock, so a row's cell overlaps two columns of a differently-offset neighbor. */
 function overlappingColumns(technique: Technique, fromRow: number, toRow: number, column: number): number[] {
-  const fromOffset = rowOffsetPx(technique, fromRow, 1)
-  const toOffset = rowOffsetPx(technique, toRow, 1)
+  const fromOffset = rowOffset(technique, fromRow, 1)
+  const toOffset = rowOffset(technique, toRow, 1)
 
   if (toOffset > fromOffset) {
     return [column - 1, column]
@@ -214,28 +217,4 @@ export function stepZoom(zoom: number, direction: 1 | -1): number {
 /** Keeps a zoom inside the usable range (MIN_ZOOM to MAX_ZOOM), at whole-percent precision so the displayed level and the applied scale agree. */
 export function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
-}
-
-export interface FitZoomInput extends GridDimensions {
-  maxWidth: number
-  maxHeight: number
-  cellSize?: number
-  technique?: Technique
-}
-
-/**
- * Largest zoom that fits the whole grid within maxWidth x maxHeight, capped at 100% (never zooms in). Rounded down
- * to a whole percent, so the level shown to the user is the level applied and the grid still fits at it.
- */
-export function computeFitZoom({
-  columns,
-  rows,
-  maxWidth,
-  maxHeight,
-  cellSize = CELL_SIZE_PX,
-  technique = 'loom',
-}: FitZoomInput): number {
-  const gridWidth = gridWidthPx(technique, columns, cellSize)
-  const gridHeight = gridHeightPx(technique, rows, cellSize)
-  return Math.floor(Math.min(1, maxWidth / gridWidth, maxHeight / gridHeight) * 100) / 100
 }

@@ -3,10 +3,11 @@ import { onMounted, ref, watch } from 'vue'
 import { framedGrid } from '../domain/project'
 import { TOUR_COLUMNS, TOUR_ROWS, tourFinishedGrid } from '../domain/tour'
 import type { DrawnProject } from '../rendering/projectRenderer'
-import { displayedExtentPx, renderProject } from '../rendering/projectRenderer'
+import { renderProject } from '../rendering/projectRenderer'
 import { PROJECT_THEMES } from '../rendering/beadLook'
 import { spaceOf } from '../rendering/space'
 import { useResolvedTheme } from '../theme/useResolvedTheme'
+import { displayedExtentPx } from '../rendering/surfaceView'
 
 /**
  * The Tour Project lying across the Overview as a band on its `board`, no ruler (ticket 216; Overview card). Drawn by

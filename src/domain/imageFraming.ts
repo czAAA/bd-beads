@@ -1,8 +1,8 @@
 import { beadPitchMm, type Bead } from './beads'
 import {
-  gridHeightPx,
-  gridWidthPx,
-  rowHeightPx,
+  gridHeight,
+  gridWidth,
+  rowPitch,
   type GridDimensions,
   type Technique,
 } from './grid'
@@ -57,8 +57,8 @@ export function frameSizeMm(
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>,
 ): FrameSizeMm {
   return {
-    widthMm: gridWidthPx(technique, dimensions.columns, beadPitchMm(bead)),
-    heightMm: gridHeightPx(technique, dimensions.rows, bead.heightMm),
+    widthMm: gridWidth(technique, dimensions.columns, beadPitchMm(bead)),
+    heightMm: gridHeight(technique, dimensions.rows, bead.heightMm),
   }
 }
 
@@ -237,7 +237,7 @@ export function previewLattice({
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
 
   const wantedColumns = Math.max(0, Math.ceil(overhangX / beadPitchMm(bead)))
-  const wantedRows = Math.max(0, Math.ceil(overhangY / rowHeightPx(technique, bead.heightMm)))
+  const wantedRows = Math.max(0, Math.ceil(overhangY / rowPitch(technique, bead.heightMm)))
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
   const frameColumn = Math.floor(wantedColumns * fit)

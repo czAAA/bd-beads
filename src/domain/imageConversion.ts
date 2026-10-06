@@ -1,5 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
-import { rowHeightPx, rowOffsetPx, type GridDimensions, type Technique } from './grid'
+import { rowPitch, rowOffset, type GridDimensions, type Technique } from './grid'
 import { resolveImageColors } from './imageColors'
 import {
   type FramingView,
@@ -232,11 +232,11 @@ export function sampleLatticePacked({
    * half-cell stagger, which matches because frameRow is always even (see PreviewLattice.frameRow).
    */
   const originXMm = lattice.frameColumn * cellWidth
-  const originYMm = lattice.frameRow * rowHeightPx(technique, cellHeight)
+  const originYMm = lattice.frameRow * rowPitch(technique, cellHeight)
 
   const packed = new Int32Array(lattice.rows * lattice.columns)
   for (let row = 0; row < lattice.rows; row += 1) {
-    const centerY = cellHeight / 2 + row * rowHeightPx(technique, cellHeight)
+    const centerY = cellHeight / 2 + row * rowPitch(technique, cellHeight)
     const sourceY = Math.floor((centerY - originYMm - view.offsetYMm) / view.scaleMm)
     const rowStart = row * lattice.columns
 
@@ -245,7 +245,7 @@ export function sampleLatticePacked({
       continue
     }
 
-    const stagger = rowOffsetPx(technique, row, cellWidth)
+    const stagger = rowOffset(technique, row, cellWidth)
     for (let column = 0; column < lattice.columns; column += 1) {
       const centerX = column * cellWidth + cellWidth / 2 + stagger
       const sourceX = Math.floor((centerX - originXMm - view.offsetXMm) / view.scaleMm)

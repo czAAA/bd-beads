@@ -4,10 +4,11 @@ import { framedGrid, type Grid, type RowProgress, type Technique } from '../../d
 import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
 import { renderOverlay } from '../../rendering/overlayRenderer'
-import { displayedExtentPx, renderProject } from '../../rendering/projectRenderer'
+import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { PROJECT_THEMES, PRINT_THEME } from '../../rendering/beadLook'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
+import { displayedExtentPx } from '../../rendering/surfaceView'
 
 /**
  * Beads on their board for the Overview carousel's examples (ticket 218; Overview card): a grid drawn by the real Project

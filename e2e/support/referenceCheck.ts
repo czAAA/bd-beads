@@ -4,11 +4,12 @@ import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Project } from '../../src/domain/project'
 import { isInFinishedRow, projectFrame } from '../../src/domain/project'
-import { displayedBox } from '../../src/rendering/canvasView'
-import type { Region } from '../../src/rendering/projectRenderer'
+import { OPEN_SPACE } from '../../src/rendering/space'
+import { surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME } from '../../src/rendering/beadLook'
 import { differingBlocks } from './imageDiff'
 import { beadCentre } from './projects'
+import { type Region } from '../../src/rendering/surfaceView'
 
 /**
  * The comparisons that hold the app's drawing of a Project to the reference screenshots in e2e/visual/__screenshots__.
@@ -124,7 +125,7 @@ export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
 /** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
 export function shownRegion(corner: { x: number; y: number }, project: Project, zoom: number): Region {
-  const shown = displayedBox(project.technique, project.rotation, projectFrame(project), zoom)
+  const shown = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom }).beadBox(projectFrame(project))
   return { x: Math.floor(corner.x + shown.x), y: Math.floor(corner.y + shown.y), width: Math.ceil(shown.width), height: Math.ceil(shown.height) }
 }
 

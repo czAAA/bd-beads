@@ -2,17 +2,17 @@ import { beadColorAt, frameGrid, projectDimensions } from '../domain/project'
 import type { VueWrapper } from '@vue/test-utils'
 import { expect } from 'vitest'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
-import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
+import { type GridPosition, type PreviewCell, type Rotation, type Technique } from '../domain/grid'
 import type { Selection } from '../domain/selection'
-import { gridToDisplayed } from '../rendering/canvasView'
+import { OPEN_SPACE } from '../rendering/space'
 import { labelAt, visibleRulerLabels, type RulerLabel } from '../rendering/rulers'
-import { rowShiftPx, rowTopPx } from '../rendering/projectRenderer'
+import { surfaceView } from '../rendering/surfaceView'
 
 /**
  * Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109 and 110). The surface is one
  * element and jsdom does no layout, so a bead is found the way a person's pointer finds it: by where it is. These put a
  * pointer event at the coordinates of a bead, which the surface then hit-tests exactly as it does for a real pointer
- * (see rendering/hitTest.ts), and read what the app did from the state it draws from: the Project, the Selection, the
+ * (see the Surface view's pointToBead), and read what the app did from the state it draws from: the Project, the Selection, the
  * hover preview, Mirror's axes and the dimmed beads are the props the surface is handed.
  *
  * A bead is named by its row and column, or by its index counting along the rows (row-major), which is how a grid of
@@ -51,17 +51,15 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
 /** Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom, rotation and scroll. */
 function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
-  const technique = root.attributes('data-technique') as 'loom' | 'peyote' | 'brick'
+  const technique = root.attributes('data-technique') as Technique
   const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
   const scrollX = Number(root.attributes('data-scroll-x'))
   const scrollY = Number(root.attributes('data-scroll-y'))
   const { row, column } = positionOf(wrapper, at)
 
-  const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2
-  const y = rowTopPx(technique, row) + CELL_SIZE_PX / 2
-  const [displayedX, displayedY] = gridToDisplayed(rotation, x, y, zoom)
-  return { clientX: displayedX - scrollX, clientY: displayedY - scrollY }
+  const point = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
+  return { clientX: point.x, clientY: point.y }
 }
 
 /** Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the test, as it is up to a hand. */
@@ -149,7 +147,7 @@ export function rowProgressView(wrapper: Anywhere) {
 export function rulerNumbers(wrapper: Anywhere): RulerLabel[] {
   const root = surfaceRoot(wrapper)
   return visibleRulerLabels(drawnProject(wrapper), {
-    technique: root.attributes('data-technique') as 'loom' | 'peyote' | 'brick',
+    technique: root.attributes('data-technique') as Technique,
     rotation: Number(root.attributes('data-rotation')) as Rotation,
     zoom: Number(root.attributes('data-zoom')),
     scroll: { x: Number(root.attributes('data-scroll-x')), y: Number(root.attributes('data-scroll-y')) },

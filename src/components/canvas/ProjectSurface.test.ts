@@ -4,9 +4,9 @@ import { nextTick } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject, type Project, type RowProgress, type Technique, frameGrid, withFrameGrid } from '../../domain/project'
 import { DARK_THEME, DEFAULT_THEME } from '../../rendering/beadLook'
-import { gridToDisplayed } from '../../rendering/canvasView'
-import { rowShiftPx, rowTopPx } from '../../rendering/projectRenderer'
+import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
+import { surfaceView } from '../../rendering/surfaceView'
 
 /** A Project of this many beads, with any of its fields changed. */
 function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
@@ -329,10 +329,8 @@ describe('ProjectSurface', () => {
   describe('the pointer', () => {
     /** Where on the screen a bead's centre is, for a surface at the screen's corner, at a zoom and a scroll. */
     function centreOf(project: Project, row: number, column: number, zoom = 1, scroll = { x: 0, y: 0 }): { clientX: number; clientY: number } {
-      const x = rowShiftPx(project.technique, row) + column * 20 + 10
-      const y = rowTopPx(project.technique, row) + 10
-      const [dx, dy] = gridToDisplayed(project.rotation, x, y, zoom)
-      return { clientX: dx - scroll.x, clientY: dy - scroll.y }
+      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
+      return { clientX: at.x, clientY: at.y }
     }
 
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>

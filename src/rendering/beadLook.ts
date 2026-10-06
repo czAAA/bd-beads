@@ -1,5 +1,14 @@
 import { fromHex } from '../domain/color'
+import type { Technique } from '../domain/grid'
 import { cachedSprite, type Sprite } from './sprites'
+
+/** A rounded bead's corners, as a share of its width (BeadBoard card). */
+const ROUNDED_BEAD_CORNER = 0.22
+
+/** How much of a bead's width its corners are rounded by, per Technique: peyote's beads are rounded; loom and brick stitch are square. The one place the look is decided: the Surface view's hit test and the overlay read it too. */
+export function beadRoundness(technique: Technique): number {
+  return technique === 'peyote' ? ROUNDED_BEAD_CORNER : 0
+}
 
 /**
  * How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a

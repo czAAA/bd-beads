@@ -1,7 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import type { FrameEdge } from '../domain/frame'
 import type { Rotation } from '../domain/grid'
-import { boxOnScreen, FRAME_OUTSET_PX, type RulerView } from './rulers'
+import type { SurfaceView } from './surfaceView'
 
 /**
  * The handles a Frame carries while it is being set (Frame card): eight round it with a mouse or pen (9px squares), four
@@ -68,24 +68,15 @@ export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
 /** What a press while setting the Frame grabbed: one of its handles (with the edges it drags), its inside, or the open canvas. */
 export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'inside' } | { kind: 'outside' }
 
-/** How the Frame is placed on screen: the same view the rulers are laid out in. */
-export type FrameView = Pick<RulerView, 'technique' | 'rotation' | 'zoom' | 'scroll'>
-
-/** The Frame's line on screen: its beads' rectangle with the line's outset, which is what the handles stand on. */
-export function frameLineBox(frame: Frame, view: FrameView): { x: number; y: number; width: number; height: number } {
-  const shown = boxOnScreen(frame, view)
-  return { x: shown.x - FRAME_OUTSET_PX, y: shown.y - FRAME_OUTSET_PX, width: shown.width + FRAME_OUTSET_PX * 2, height: shown.height + FRAME_OUTSET_PX * 2 }
-}
-
 /** What a press at a point of the viewport grabs: a handle first, then the inside of the Frame, then the canvas round it. */
-export function framePressAt(frame: Frame | undefined, view: FrameView, point: { x: number; y: number }, touch: boolean): FramePress {
+export function framePressAt(frame: Frame | undefined, surface: Pick<SurfaceView, 'frameBox'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
   if (!frame) {
     return { kind: 'outside' }
   }
-  const box = frameLineBox(frame, view)
+  const box = surface.frameBox(frame)
   const handle = handleAt(frameHandles(box, touch), point)
   if (handle) {
-    return { kind: 'handle', edges: handleEdges(view.rotation, handle.id) }
+    return { kind: 'handle', edges: handleEdges(rotation, handle.id) }
   }
   const inside = point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height
   return { kind: inside ? 'inside' : 'outside' }

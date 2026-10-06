@@ -2,18 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
-import {
-  displayedExtentPx,
-  projectExtentPx,
-  renderProject as renderInSpace,
-  rowPitchPx,
-  rowShiftPx,
-  rowTopPx,
-  visibleBeads,
-  type RenderInput,
-  type Region,
-} from './projectRenderer'
+import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
+import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {

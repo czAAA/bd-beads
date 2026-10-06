@@ -1,9 +1,9 @@
 import type { Frame } from '../domain/canvas'
-import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
+import { type Rotation, type Technique } from '../domain/grid'
 import { pieceAreasOf, PIECE_AREA_MIN_BEADS } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
-import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
-import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
+import { OPEN_SPACE } from './space'
+import { CELL_SIZE_PX, FRAME_OUTSET_PX, rowShiftPx, rowTopPx, surfaceView, type Scroll, type Size, type SurfaceView } from './surfaceView'
 
 /**
  * The rulers and the lines they hang from on the open canvas (Rulers and BeadBoard cards, ADR 0026): every row and
@@ -16,7 +16,6 @@ import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
 
 /** How far a piece's rectangle and the Frame's line sit outside their outermost beads (BeadBoard and Frame cards). */
 const PIECE_OUTSET_PX = 5
-export const FRAME_OUTSET_PX = 7
 /** The gap between a ruler number and the line it hangs from (Rulers card). */
 const RULER_GAP_PX = 3
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
@@ -82,8 +81,12 @@ export function ruledBoxes(project: RuledProject): RuledBox[] {
 
 /** A box's rectangle in viewport px: where its beads are, without the outset. */
 export function boxOnScreen(box: Frame, view: Pick<RulerView, 'technique' | 'rotation' | 'zoom' | 'scroll'>) {
-  const shown = displayedBox(view.technique, view.rotation, box, view.zoom)
-  return { x: shown.x - view.scroll.x, y: shown.y - view.scroll.y, width: shown.width, height: shown.height }
+  return rulerSurface(view).beadBox(box)
+}
+
+/** The Surface view the rulers are laid out in: always the open canvas. */
+export function rulerSurface(view: Pick<RulerView, 'technique' | 'rotation' | 'zoom' | 'scroll'>): SurfaceView {
+  return surfaceView({ space: OPEN_SPACE, ...view })
 }
 
 /** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */
@@ -128,18 +131,19 @@ function labelBox(text: string, turned: boolean, fontPx: number): { width: numbe
  * it by RULER_GAP_PX and on one line whichever way the picture is turned. Numbers stay upright; only a column number from 100 up turns.
  */
 export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
-  const { technique, rotation, zoom, scroll, viewport, fontPx } = view
+  const { technique, zoom, viewport, fontPx } = view
+  const surface = rulerSurface(view)
   const labels: RulerLabel[] = []
   const margin = fontPx * 4
 
   // Unit step outward from a side, in grid space and then once turned.
   const place = (gridX: number, gridY: number, normal: [number, number], text: string, turned: boolean, band: { width: number; height: number }) => {
-    const [dx, dy] = gridToDisplayed(rotation, gridX, gridY, zoom)
-    const [nx, ny] = gridToDisplayed(rotation, normal[0], normal[1], 1)
+    const { x: dx, y: dy } = surface.gridToPoint(gridX, gridY)
+    const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
     const size = labelBox(text, turned, fontPx)
     const reach = RULER_GAP_PX + (Math.abs(nx) * band.width + Math.abs(ny) * band.height) / 2
-    const x = dx - scroll.x + nx * (box.outset + reach)
-    const y = dy - scroll.y + ny * (box.outset + reach)
+    const x = dx + nx * (box.outset + reach)
+    const y = dy + ny * (box.outset + reach)
     return { x, y, ...size }
   }
   const visible = (label: { x: number; y: number; width: number; height: number }) =>
@@ -164,11 +168,10 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   // Every number is centred on the line the dots stand on (see `rulerBeads`), so a 1-digit row number is as far from the beads as a 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
   const rowBand = labelBox(String(box.rows), false, fontPx)
-  const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
-  const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
+  const { column: bead, row: rowStepOnScreen } = surface.beadStep()
   const lastOnly = zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
-  const columnStep = lastOnly ? box.columns : rulerStep({ x: beadX, y: beadY }, columnSizes)
-  const rowStep = lastOnly ? box.rows : rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
+  const columnStep = lastOnly ? box.columns : rulerStep(bead, columnSizes)
+  const rowStep = lastOnly ? box.rows : rulerStep(rowStepOnScreen, [labelBox(String(box.rows), false, fontPx)])
 
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
     for (let index = columnStep - 1; index < box.columns; index += columnStep) {
@@ -235,7 +238,8 @@ export interface RulerDot {
  * unnumbered ones (see `rulerDots`).
  */
 export function rulerBeads(box: RuledBox, view: RulerView): RulerDot[] {
-  const { technique, rotation, zoom, scroll, viewport, fontPx } = view
+  const { technique, zoom, viewport, fontPx } = view
+  const surface = rulerSurface(view)
   const margin = fontPx * 4
   const dots: RulerDot[] = []
 
@@ -244,27 +248,26 @@ export function rulerBeads(box: RuledBox, view: RulerView): RulerDot[] {
   const right = box.column * CELL_SIZE_PX + box.columns * CELL_SIZE_PX + (technique === 'loom' ? 0 : CELL_SIZE_PX / 2)
   const left = box.column * CELL_SIZE_PX
 
-  const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
+  const { column: bead, row: rowStepOnScreen } = surface.beadStep()
   const columnSizes = [labelBox(String(Math.min(box.columns, TURNED_FROM - 1)), false, fontPx)]
   if (box.columns >= TURNED_FROM) {
     columnSizes.push(labelBox(String(box.columns), true, fontPx))
   }
   const lastOnly = zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
-  const columnStep = lastOnly ? box.columns : rulerStep({ x: beadX, y: beadY }, columnSizes)
-  const columnPitch = Math.hypot(beadX, beadY)
-  const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
-  const rowStep = lastOnly ? box.rows : rulerStep({ x: rowX, y: rowY }, [labelBox(String(box.rows), false, fontPx)])
-  const rowPitch = Math.hypot(rowX, rowY)
+  const columnStep = lastOnly ? box.columns : rulerStep(bead, columnSizes)
+  const columnPitch = Math.hypot(bead.x, bead.y)
+  const rowStep = lastOnly ? box.rows : rulerStep(rowStepOnScreen, [labelBox(String(box.rows), false, fontPx)])
+  const rowPitch = Math.hypot(rowStepOnScreen.x, rowStepOnScreen.y)
 
   // The band the numbers fill across each ruler: a row number's width, a turned column number's height, else the font size.
   const columnHalf = Math.max(...columnSizes.map((size) => size.height)) / 2
   const rowHalf = labelBox(String(box.rows), false, fontPx).width / 2
 
   const dotAt = (gridX: number, gridY: number, normal: [number, number], half: number) => {
-    const [dx, dy] = gridToDisplayed(rotation, gridX, gridY, zoom)
-    const [nx, ny] = gridToDisplayed(rotation, normal[0], normal[1], 1)
+    const { x: dx, y: dy } = surface.gridToPoint(gridX, gridY)
+    const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
     const away = box.outset + RULER_GAP_PX + half
-    return { x: dx - scroll.x + nx * away, y: dy - scroll.y + ny * away, normal: [nx, ny] as [number, number] }
+    return { x: dx + nx * away, y: dy + ny * away, normal: [nx, ny] as [number, number] }
   }
   const visible = (spot: { x: number; y: number }) => spot.x > -margin && spot.x < viewport.width + margin && spot.y > -margin && spot.y < viewport.height + margin
 

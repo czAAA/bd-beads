@@ -1,10 +1,10 @@
 import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import type { DrawingContext } from './beadLook'
-import { boxOnScreen, visibleRulerLabels, visibleRulerDots, ruledBoxes, type RulerDot, type RulerLabel, type RulerView, type RuledBox } from './rulers'
+import { boxOnScreen, rulerSurface, visibleRulerLabels, visibleRulerDots, ruledBoxes, type RulerDot, type RulerLabel, type RulerView, type RuledBox } from './rulers'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
-import { frameHandles, frameLineBox } from './frameHandles'
+import { frameHandles } from './frameHandles'
 
 /** The corner radius of a piece's rectangle and of the Frame's line (BeadBoard and Frame cards). */
 const PIECE_RADIUS_PX = 6
@@ -127,7 +127,7 @@ const TOOLTIP_GAP = 10
 export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; view: RulerView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
   const { frame, view, pixelRatio, theme, touch, tooltip } = input
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-  const box = frameLineBox(frame, view)
+  const box = rulerSurface(view).frameBox(frame)
 
   context.setLineDash([])
   context.lineWidth = FRAME_LINE_PX

@@ -6,13 +6,12 @@ import { inMargin } from '../../domain/margin'
 import { changedPositions, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
-import type { Scroll } from '../../rendering/canvasView'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
-import { beadAtOpen, cellAtOpen } from '../../rendering/hitTest'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerPick, visibleRulerLabels } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
+import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
@@ -29,7 +28,7 @@ const props = defineProps<{
   project: Project
   /** How much the canvas is enlarged by; 1 is a bead 20 px across. */
   zoom: number
-  /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see canvasView). */
+  /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see the Surface view). */
   scroll: Scroll
   /** Beads to show a hover preview on (ticket 23): the hovered bead and its live-mirror counterparts, or a whole copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
@@ -195,6 +194,11 @@ function currentRegion() {
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a position is. */
 const space = computed(() => spaceOf(toRaw(props.project), true))
 
+/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles agree with what is drawn. */
+const surface = computed(() =>
+  surfaceView({ space: space.value, technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+)
+
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
   const canvas = baseEl.value
@@ -309,7 +313,7 @@ watch(
 
 /**
  * Pointer events (ticket 60), not mouse events, so a paint or erase stroke works the same by mouse, touch and pen. The
- * surface is one element, so which bead a pointer is on is worked out from where it is (see beadAtOpen) instead of being
+ * surface is one element, so which bead a pointer is on is worked out from where it is (see the Surface view's pointToBead) instead of being
  * told by the bead's own element; and, as an element's pointerenter did, only a change of bead is news. A touch or pen
  * contact keeps its implicit capture on the surface, so the moves of a stroke go on arriving here.
  */
@@ -371,11 +375,7 @@ function beadUnder(event: PointerEvent): GridPosition | undefined {
     return undefined
   }
   const box = root.getBoundingClientRect()
-  return beadAtOpen(
-    { technique: props.project.technique, rotation: props.project.rotation },
-    { x: event.clientX - box.left + props.scroll.x, y: event.clientY - box.top + props.scroll.y },
-    props.zoom,
-  )
+  return surface.value.pointToBead({ x: event.clientX - box.left, y: event.clientY - box.top })
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -408,8 +408,7 @@ function pointInSurface(event: PointerEvent): { x: number; y: number } {
 
 /** The bead position nearest a pointer, wherever it is: dragging a Frame needs one even between beads. */
 function cellUnder(event: PointerEvent): GridPosition {
-  const point = pointInSurface(event)
-  return cellAtOpen({ technique: props.project.technique, rotation: props.project.rotation }, { x: point.x + props.scroll.x, y: point.y + props.scroll.y }, props.zoom)
+  return surface.value.pointToCell(pointInSurface(event))
 }
 
 function onPointerDown(event: PointerEvent): void {
@@ -425,7 +424,7 @@ function onPointerDown(event: PointerEvent): void {
   if (props.settingFrame && !startsDrag(event) && event.button === 0) {
     framing.value = true
     rootEl.value?.setPointerCapture?.(event.pointerId)
-    const target = framePressAt(props.project.frame, { technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll }, pointInSurface(event), touchInput.value)
+    const target = framePressAt(props.project.frame, surface.value, props.project.rotation, pointInSurface(event), touchInput.value)
     emit('frame-press', target, cellUnder(event))
     event.preventDefault()
     return

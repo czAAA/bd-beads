@@ -1,5 +1,5 @@
 import { colorAt, type Frame } from '../domain/canvas'
-import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
+import { type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
@@ -7,16 +7,9 @@ import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } f
 import { inSpace, spaceOf, type Space } from './space'
 import { drawFrameEditing, drawRulers } from './rulerRenderer'
 import { cachedSprite } from './sprites'
-import {
-  projectExtentPx,
-  rowTopPx,
-  beadRoundness,
-  setGridTransform,
-  shiftOf,
-  visibleBeadsInSpace,
-  type DrawnProject,
-  type Region,
-} from './projectRenderer'
+import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
+import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region } from './surfaceView'
+import { beadRoundness } from './beadLook'
 
 /**
  * The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
