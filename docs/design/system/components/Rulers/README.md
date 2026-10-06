@@ -13,6 +13,6 @@ The row and column numbers around the Pattern (approved variant A). Every number
 - **Ruler dots:** every bead without a number gets a dot on the line the numbers' centres follow, 2px across in `ruler`; every 5th is 3.5px across in `body`. Below 6px of bead pitch only the 5th-bead dots are drawn. A dot, like a number, selects its row or column; a press anywhere on the ruler picks the nearest bead along it (a number under the pointer picks its own), so a ruler works at 10%, where a bead is 2px. Dots use the number colours, so they keep the number contrast on every Canvas color.
 - **Contrast:** `ruler` is 5.2:1 in light and 4.9:1 in dark on `box`; `body` is stronger still.
 
-The preview shows the number styles on a v15 board; the BeadBoard and Frame cards show the piece and Frame rulers in place.
+The BeadBoard and Frame cards show the piece and Frame rulers in place.
 
 Hand-written from the approved Rulers design (claude.ai, variant A). Replace this card with the claude.ai one when the design system is next synced (DESIGN.md §6).

@@ -4,9 +4,9 @@
 
 **Blocked by:** 298 (Zoom out to 10% on every screen, with the ruler numbers thinning), 299 (Ruler dots between the numbers, selecting their row or column), 300 (Zoom buttons move 10% at a time).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `bead-min-tablet-lg`, `-laptop` and `-desktop` are removed from `tokens.json`, `bundle.css` and `design-values.css`; the two left are reworded
-- [ ] The Rulers card, `responsive.md` ("Smallest bead") and `interaction-and-motion.md` ("stops at the floor") describe the Zoom floor, Ruler step and Ruler dots
-- [ ] A line in the design system README's Version changelog
-- [ ] A visual test of the rulers at 100, 50, 25 and 10%
+- [x] `bead-min-tablet-lg`, `-laptop` and `-desktop` are removed from `tokens.json`, `bundle.css` and `design-values.css`; the two left are reworded
+- [x] The Rulers card, `responsive.md` ("Smallest bead") and `interaction-and-motion.md` ("stops at the floor") describe the Zoom floor, Ruler step and Ruler dots
+- [x] A line in the design system README's Version changelog
+- [x] A visual test of the rulers at 100, 50, 25 and 10%
