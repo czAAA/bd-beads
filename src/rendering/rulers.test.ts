@@ -54,6 +54,16 @@ describe('the numbers of a ruled box', () => {
     expect(leftOne.x + leftOne.width / 2).toBe(-7 - 3)
   })
 
+  it('line up on the dots\u2019 line, whatever the digits: a 1-digit row number is as far from the beads as a 2-digit one', () => {
+    const tall = { ...box, rows: 12, outset: 7 }
+    const labels = rulerLabels(tall, view())
+    const left = labels.filter((l) => l.axis === 'row' && l.x < 0)
+    const dots = rulerBeads(tall, view()).filter((d) => d.axis === 'row' && d.x < 0)
+
+    expect(new Set(left.map((l) => l.x)).size).toBe(1)
+    expect(left[0]?.x).toBeCloseTo(dots[0]?.x ?? NaN)
+  })
+
   it('mark every 5th, and only each piece’s own start sides have numbers', () => {
     const wide = { ...box, columns: 10, sides: 'start' as const, kind: 'piece' as const, outset: 5 }
     const labels = rulerLabels(wide, view())

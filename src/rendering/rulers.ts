@@ -123,8 +123,8 @@ function labelBox(text: string, turned: boolean, fontPx: number): { width: numbe
 
 /**
  * The numbers of one ruled box that touch the viewport. Each is placed where a grid-space point just outside the box's
- * line lands once turned and zoomed, then pushed away from the line by half its own size, so the number stands clear of
- * it by RULER_GAP_PX whichever way the picture is turned. Numbers stay upright; only a column number from 100 up turns.
+ * line lands once turned and zoomed, then pushed away from the line by half the widest number's size across the ruler, so the numbers stand clear of
+ * it by RULER_GAP_PX and on one line whichever way the picture is turned. Numbers stay upright; only a column number from 100 up turns.
  */
 export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   const { technique, rotation, zoom, scroll, viewport, fontPx } = view
@@ -132,11 +132,11 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   const margin = fontPx * 4
 
   // Unit step outward from a side, in grid space and then once turned.
-  const place = (gridX: number, gridY: number, normal: [number, number], text: string, turned: boolean) => {
+  const place = (gridX: number, gridY: number, normal: [number, number], text: string, turned: boolean, band: { width: number; height: number }) => {
     const [dx, dy] = gridToDisplayed(rotation, gridX, gridY, zoom)
     const [nx, ny] = gridToDisplayed(rotation, normal[0], normal[1], 1)
     const size = labelBox(text, turned, fontPx)
-    const reach = RULER_GAP_PX + (Math.abs(nx) * size.width + Math.abs(ny) * size.height) / 2
+    const reach = RULER_GAP_PX + (Math.abs(nx) * band.width + Math.abs(ny) * band.height) / 2
     const x = dx - scroll.x + nx * (box.outset + reach)
     const y = dy - scroll.y + ny * (box.outset + reach)
     return { x, y, ...size }
@@ -160,6 +160,9 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
   if (box.columns >= TURNED_FROM) {
     columnSizes.push(labelBox(String(box.columns), true, fontPx))
   }
+  // Every number is centred on the line the dots stand on (see `rulerBeads`), so a 1-digit row number is as far from the beads as a 2-digit one.
+  const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
+  const rowBand = labelBox(String(box.rows), false, fontPx)
   const [beadX, beadY] = gridToDisplayed(rotation, CELL_SIZE_PX, 0, zoom)
   const [rowX, rowY] = gridToDisplayed(rotation, 0, rowPitchPx(technique), zoom)
   const lastOnly = zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
@@ -171,7 +174,7 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
       const text = String(index + 1)
       const turned = index + 1 >= TURNED_FROM
       const gridX = rowShiftPx(technique, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
-      const spot = place(gridX, gridY, normal, text, turned)
+      const spot = place(gridX, gridY, normal, text, turned, columnBand)
       if (visible(spot)) {
         labels.push({ text, ...spot, turned, fifth: (index + 1) % 5 === 0, axis: 'column', index, selection: columnSelection(box.column + index), position: box.column + index })
       }
@@ -181,7 +184,7 @@ export function rulerLabels(box: RuledBox, view: RulerView): RulerLabel[] {
     for (let index = rowStep - 1; index < box.rows; index += rowStep) {
       const text = String(index + 1)
       const gridY = rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
-      const spot = place(gridX, gridY, normal, text, false)
+      const spot = place(gridX, gridY, normal, text, false, rowBand)
       if (visible(spot)) {
         labels.push({ text, ...spot, turned: false, fifth: (index + 1) % 5 === 0, axis: 'row', index, selection: rowSelection(box.row + index), position: box.row + index })
       }
