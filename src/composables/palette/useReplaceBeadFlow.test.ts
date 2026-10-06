@@ -1,21 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const other = BEAD_CATALOG.find((bead) => bead.id !== base.beadId)!
 
 function setup(project: Project | null = base) {
+  const harness = editHarness(project ?? undefined)
   const deps = {
-    currentProject: () => project ?? undefined,
-    replaceProject: vi.fn(),
-    recordHistory: vi.fn(),
+    currentProject: harness.currentProject,
+    edit: harness.edit,
     messages: () => en,
     locale: () => 'en' as const,
   }
-  return { deps, ...useReplaceBeadFlow(deps) }
+  return { deps, harness, ...useReplaceBeadFlow(deps) }
 }
 
 /** A stand-in for the select: the flow reads the pick off it and puts it back on the placeholder. */
@@ -62,39 +63,40 @@ describe('useReplaceBeadFlow', () => {
   })
 
   it('cancelling closes the modal and changes nothing', () => {
-    const { deps, replaceBeadPendingBead, onPickReplaceBead, onCancelReplaceBead } = setup()
+    const { harness, replaceBeadPendingBead, onPickReplaceBead, onCancelReplaceBead } = setup()
     onPickReplaceBead(selectWith(other.id))
     onCancelReplaceBead()
     expect(replaceBeadPendingBead.value).toBeUndefined()
-    expect(deps.replaceProject).not.toHaveBeenCalled()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
+    expect(harness.replaceProject).not.toHaveBeenCalled()
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('confirming swaps the Bead and nothing else, as one undo step carrying the grid and the old Bead', () => {
-    const { deps, replaceBeadPendingBead, onPickReplaceBead, onConfirmReplaceBead } = setup()
+  it('confirming swaps the Bead and nothing else, as one undo step that brings the old Bead back', () => {
+    const { harness, replaceBeadPendingBead, onPickReplaceBead, onConfirmReplaceBead } = setup()
     onPickReplaceBead(selectWith(other.id))
     onConfirmReplaceBead()
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({ beads: base.beads, beadId: base.beadId })
-    const replaced = deps.replaceProject.mock.calls[0]![0] as Project
-    expect(replaced.beadId).toBe(other.id)
-    expect(replaced.beads).toBe(base.beads)
-    expect(replaced.rowProgress).toEqual(base.rowProgress)
+    expect(harness.project.beadId).toBe(other.id)
+    expect(harness.project.beads).toBe(base.beads)
+    expect(harness.project.rowProgress).toEqual(base.rowProgress)
+
+    harness.history.onUndo()
+    expect(harness.project.beadId).toBe(base.beadId)
+    expect(harness.history.canUndo.value).toBe(false)
   })
 
   it('is not refused by the Row progress lock, since it does not draw', () => {
-    const { deps, onPickReplaceBead, onConfirmReplaceBead } = setup(setRowProgressEnabled(base, true))
+    const { harness, onPickReplaceBead, onConfirmReplaceBead } = setup(setRowProgressEnabled(base, true))
     onPickReplaceBead(selectWith(other.id))
     onConfirmReplaceBead()
-    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+    expect(harness.project.beadId).toBe(other.id)
   })
 
   it('confirming with nothing pending does nothing', () => {
-    const { deps, onConfirmReplaceBead } = setup()
+    const { harness, onConfirmReplaceBead } = setup()
     onConfirmReplaceBead()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
-    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(harness.replaceProject).not.toHaveBeenCalled()
   })
 })

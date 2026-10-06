@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
@@ -20,14 +21,15 @@ function setup(
   project: Project | null = makeProject(),
   { axes = NO_MIRROR_AXES, copyMode = false }: { axes?: MirrorAxisCounts; copyMode?: boolean } = {},
 ) {
-  const commitGridChange = vi.fn()
+  const harness = editHarness(project ?? undefined)
   const gesture = useSelectionGesture(
-    () => project ?? undefined,
-    commitGridChange,
+    harness.currentProject,
+    harness.edit,
     () => axes,
     () => copyMode,
   )
-  return { gesture, commitGridChange }
+  /** Counts the Edits that landed on the Project. */
+  return { gesture, commitGridChange: harness.replaceProject, harness }
 }
 
 /** Drags a Selection over the top-left cell and copies it, leaving a paste projection armed. */
@@ -116,18 +118,19 @@ describe('useSelectionGesture', () => {
       expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
     })
 
-    it('a click that never moved stamps the copied block through the shared commitGridChange', () => {
+    it('a click that never moved stamps the copied block as an Edit', () => {
       const project = paintedProject()
-      const { gesture, commitGridChange } = setup(project)
+      const { gesture, commitGridChange, harness } = setup(project)
       copyTopLeft(gesture)
 
       gesture.beginPress(2, 3)
       gesture.endPress()
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
-      const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(project)
-      expect(frameGrid(updated)[2]![3]!.color).toBe(RED)
+      expect(frameGrid(harness.project)[2]![3]!.color).toBe(RED)
+
+      harness.history.onUndo()
+      expect(frameGrid(harness.project)[2]![3]!.color).toBeNull()
     })
 
     it('does not start a Selection on a click while a projection is armed', () => {
@@ -166,15 +169,14 @@ describe('useSelectionGesture', () => {
 
     it('stamps every Mirror copy of the block as one commit, using the supplied axis counts and copy mode', () => {
       const project = paintedProject()
-      const { gesture, commitGridChange } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: false })
+      const { gesture, commitGridChange, harness } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: false })
       copyTopLeft(gesture)
 
       gesture.beginPress(0, 0)
       gesture.endPress()
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
-      const [, updated] = commitGridChange.mock.calls[0]!
-      expect(frameGrid(updated)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
+      expect(frameGrid(harness.project)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
     })
   })
 
@@ -251,14 +253,12 @@ describe('useSelectionGesture', () => {
   describe('pasteAt (Ctrl/Cmd+V)', () => {
     it('stamps at the given cell through commitGridChange and reports it pasted', () => {
       const project = paintedProject()
-      const { gesture, commitGridChange } = setup(project)
+      const { gesture, harness } = setup(project)
       copyTopLeft(gesture)
 
       expect(gesture.pasteAt({ row: 3, column: 3 })).toBe(true)
 
-      const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(project)
-      expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
+      expect(frameGrid(harness.project)[3]![3]!.color).toBe(RED)
     })
 
     it('is a no-op with nothing copied', () => {
@@ -305,18 +305,16 @@ describe('useSelectionGesture', () => {
   describe('deleteSelection', () => {
     it('clears the selected cells as one commit, leaving the Selection in place', () => {
       const project = paintCells(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
-      const { gesture, commitGridChange } = setup(project)
+      const { gesture, commitGridChange, harness } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(1, 1)
 
       gesture.deleteSelection()
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
-      const [committed, updated] = commitGridChange.mock.calls[0]!
-      expect(committed).toBe(project)
-      expect(frameGrid(updated)[0]![0]!.color).toBeNull()
-      expect(frameGrid(updated)[1]![1]!.color).toBeNull()
-      expect(frameGrid(updated)[3]![3]!.color).toBe(RED)
+      expect(frameGrid(harness.project)[0]![0]!.color).toBeNull()
+      expect(frameGrid(harness.project)[1]![1]!.color).toBeNull()
+      expect(frameGrid(harness.project)[3]![3]!.color).toBe(RED)
       expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
     })
 

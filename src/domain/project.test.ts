@@ -18,6 +18,7 @@ import {
   resolveProjectBead,
   restoreBeads,
   restoreSnapshot,
+  snapshotOf,
   rowProgressPosition,
   setRowProgressEnabled,
   summarizeProject,
@@ -1015,62 +1016,30 @@ describe('replaceBead', () => {
   })
 })
 
-describe('restoreSnapshot', () => {
-  it('restores just the grid when the undo entry carries no Row progress, leaving Row progress as it is', () => {
-    const project = setRowProgressEnabled(moveToRow(paintCells(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), 2), true)
-    const blankBeads = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    }).beads
+describe('snapshotOf and restoreSnapshot', () => {
+  it('put back everything an Edit can change: the grid, Row progress, the Bead and the Frame', () => {
+    const before = setRowProgressEnabled(
+      moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3),
+      true,
+    )
+    const counts = { columns: 1, rows: 0 }
+    const snapshot = snapshotOf(before, counts)
+    const changed = withFrame(replaceBead(deleteAll(before), cubeBead), { row: 0, column: 0, columns: 2, rows: 5 })
 
-    const restored = restoreSnapshot(project, { beads: blankBeads })
+    const restored = restoreSnapshot(changed, snapshot)
 
-    expect(restored.beads).toBe(blankBeads)
-    expect(restored.rowProgress).toEqual(project.rowProgress)
-  })
-
-  it('restores the grid and Row progress together when the undo entry carries both', () => {
-    const before = setRowProgressEnabled(moveToRow(
-      createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 15, unit: 'mm' } }),
-      3,
-    ), true)
-    const cleared = deleteAll(before)
-
-    const restored = restoreSnapshot(cleared, { beads: before.beads, rowProgress: before.rowProgress })
-
+    expect(snapshot.mirrorAxisCounts).toBe(counts)
     expect(restored.beads).toBe(before.beads)
     expect(restored.rowProgress).toEqual(before.rowProgress)
-  })
-
-  it('restores the Bead id when the undo entry carries it (Replace Bead, ticket 48), leaving the grid as the entry has it', () => {
-    const before = createProject({
-      technique: 'loom',
-      beadId: roundBead.id,
-      size: { width: 8, height: 4, unit: 'beads' },
-    })
-    const replaced = replaceBead(before, cubeBead)
-
-    const restored = restoreSnapshot(replaced, { beads: before.beads, beadId: before.beadId })
-
     expect(restored.beadId).toBe(before.beadId)
-    expect(restored.frame!.columns).toBe(before.frame!.columns)
-    expect(restored.frame!.rows).toBe(before.frame!.rows)
-    expect(restored.beads).toBe(before.beads)
+    expect(restored.frame).toEqual(before.frame)
   })
 
-  it('restores the Frame when the undo entry carries it (ADR 0026)', () => {
-    const before = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const resized = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
+  it('restore a Project that had no Frame', () => {
+    const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
+    const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
-    const restored = restoreSnapshot(resized, {
-      beads: before.beads,
-      size: { frame: before.frame, mirrorAxisCounts: { columns: 0, rows: 0 } },
-    })
-
-    expect(restored.frame!.columns).toBe(4)
-    expect(restored.frame!.rows).toBe(3)
-    expect(restored.beads).toBe(before.beads)
+    expect(restoreSnapshot(framed, snapshotOf(before, { columns: 0, rows: 0 })).frame).toBeUndefined()
   })
 })
 

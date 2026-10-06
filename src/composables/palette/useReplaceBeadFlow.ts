@@ -1,15 +1,14 @@
 import { computed, ref } from 'vue'
 import { BEAD_CATALOG, beadLabel, findBead, type Bead } from '../../domain/beads'
-import { replaceBead, resolveProjectBead, type Project, type UndoEntry } from '../../domain/project'
+import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
+import type { EditFn } from '../project/useEdit'
 
-/** What Replace Bead needs from the app shell: the open Project, its write path, the history's record, and the app's language. */
+/** What Replace Bead needs from the app shell: the open Project, Edit, and the app's language. */
 export interface ReplaceBeadFlowDeps {
   currentProject: () => Project | undefined
-  replaceProject: (project: Project) => void
-  /** useUndoHistory's record: one undo step for the state Replace Bead is about to replace. */
-  recordHistory: (entry: UndoEntry) => void
+  edit: EditFn
   messages: () => Translations
   locale: () => Locale
 }
@@ -80,19 +79,14 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /**
    * Confirms Replace Bead (ticket 48, ADR 0017): swaps the Bead and nothing else, as a single undo step. The grid, Row
    * progress and Mirror all stay as they are, since the grid — the Project's size — is untouched; only its Estimated
-   * size changes. Applied directly rather than through commitGridChange/keepFinishedRows: it doesn't draw, so the Row
-   * progress lock has nothing to guard.
+   * size changes. An exempt Edit: it doesn't draw, so the Row progress lock has nothing to guard.
    */
   function onConfirmReplaceBead() {
-    const project = deps.currentProject()
     const bead = pendingBead.value
     pendingId.value = undefined
-    if (!project || !bead) {
-      return
+    if (bead) {
+      deps.edit('exempt', (project) => replaceBead(project, bead))
     }
-
-    deps.recordHistory({ beads: project.beads, beadId: project.beadId })
-    deps.replaceProject(replaceBead(project, bead))
   }
 
   return {

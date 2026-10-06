@@ -1,12 +1,11 @@
 import { ref } from 'vue'
-import { deleteAll, type Project, type UndoEntry } from '../../domain/project'
+import { deleteAll, type Project } from '../../domain/project'
+import type { EditFn } from './useEdit'
 
-/** What Delete all needs from the app shell: the open Project, its one write path, and the history's record. */
+/** What Delete all needs from the app shell: the open Project and Edit. */
 export interface DeleteAllFlowDeps {
   currentProject: () => Project | undefined
-  replaceProject: (project: Project) => void
-  /** useUndoHistory's record: one undo step for the state Delete all is about to replace. */
-  recordHistory: (entry: UndoEntry) => void
+  edit: EditFn
 }
 
 /** Delete all and its confirmation modal (ticket 42, 198; ADR 0023). Deps are read lazily. */
@@ -26,25 +25,13 @@ export function useDeleteAllFlow(deps: DeleteAllFlowDeps) {
   }
 
   /**
-   * Confirms Delete all (ticket 42): resets the grid and Row progress together as a single undo step. Applied
-   * directly rather than through commitGridChange/keepFinishedRows, since Delete all ignores the Row progress lock
-   * on purpose — clearing progress is the point.
+   * Confirms Delete all (ticket 42): resets the grid and Row progress together as a single undo step. An exempt
+   * Edit, since Delete all ignores the Row progress lock on purpose — clearing progress is the point.
    */
   function onConfirmDeleteAll() {
     deleteAllConfirmOpen.value = false
 
-    const project = deps.currentProject()
-    if (!project) {
-      return
-    }
-
-    const updated = deleteAll(project)
-    if (updated === project) {
-      return
-    }
-
-    deps.recordHistory({ beads: project.beads, rowProgress: project.rowProgress })
-    deps.replaceProject(updated)
+    deps.edit('exempt', deleteAll)
   }
 
   return { deleteAllConfirmOpen, onRequestDeleteAll, onCancelDeleteAll, onConfirmDeleteAll }

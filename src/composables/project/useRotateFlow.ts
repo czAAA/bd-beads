@@ -1,17 +1,11 @@
-import type { MirrorAxisCounts } from '../../domain/mirror'
-import type { Project, UndoEntry } from '../../domain/project'
 import { changeFrame } from '../../domain/changeFrame'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import type { EditFn } from './useEdit'
 
 export interface RotateFlowDeps {
-  currentProject: () => Project | undefined
-  replaceProject: (project: Project) => void
-  recordHistory: (entry: UndoEntry) => void
-  mirrorAxisCounts: () => MirrorAxisCounts
-  clearMirrorAxisCounts: () => void
-  clearSelectionAndHover: () => void
+  edit: EditFn
   announce: (message: string) => void
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   onUndo: () => void
@@ -27,27 +21,14 @@ export interface RotateFlowDeps {
  */
 export function useRotateFlow(deps: RotateFlowDeps) {
   function onRotate(): void {
-    const project = deps.currentProject()
-    if (!project) {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { rotate: true }))
+    if (outcome.kind !== 'applied') {
       return
     }
-    const result = changeFrame(project, { rotate: true })
-    if (result.kind !== 'changed') {
-      return
-    }
-
-    deps.recordHistory({
-      beads: project.beads,
-      rowProgress: project.rowProgress,
-      size: { frame: project.frame, mirrorAxisCounts: deps.mirrorAxisCounts() },
-    })
-    deps.replaceProject(result.project)
-    deps.clearMirrorAxisCounts()
-    deps.clearSelectionAndHover()
 
     const t = deps.messages()
-    if (result.moved > 0) {
-      const text = plural(deps.locale(), result.moved, t.frame.rotatedMessage)
+    if (outcome.moved > 0) {
+      const text = plural(deps.locale(), outcome.moved, t.frame.rotatedMessage)
       deps.showToast('project-rotated', text, 'info', { label: t.palette.undoButton, run: deps.onUndo })
     } else {
       deps.announce(t.frame.announceRotated)

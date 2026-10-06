@@ -26,6 +26,7 @@ import {
 import type { Translations } from '../../i18n/translations'
 import type { TourProgress, TourStatus, TourStore } from '../../services/tourStore'
 import { TOUR_ENABLED } from '../../features'
+import type { EditFn } from '../project/useEdit'
 import type { MessageTone } from '../ui/useToasts'
 
 /** What the Tour reads from and does to the app; every dep is read lazily, so the shell can wire it after the rest. */
@@ -40,7 +41,7 @@ export interface TourDeps {
   selectedColorId: () => string | undefined
   selection: () => Selection | undefined
   pasteArmed: () => boolean
-  commitGridChange: (project: Project, updated: Project) => void
+  edit: EditFn
   replaceProject: (project: Project) => void
   undo: () => void
   clearSelection: () => void
@@ -231,7 +232,7 @@ export function useTour(deps: TourDeps) {
         const stepIndex = { fill: 2, outline: 3, rhombus: 4, eye: 5, copy: 6, finish: 7, erase: 8 }[current]
         if (project && stepIndex) {
           deps.clearSelection()
-          deps.commitGridChange(project, withFrameGrid(project, afterStep(stepIndex)))
+          deps.edit('drawing', (current) => withFrameGrid(current, afterStep(stepIndex)))
         }
         markDone(current)
       }

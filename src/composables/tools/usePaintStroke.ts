@@ -1,46 +1,32 @@
-import { ref, toRaw } from 'vue'
-import type { BeadMap } from '../../domain/canvas'
-import { keepAllowedEdits } from '../../domain/margin'
+import { ref } from 'vue'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import {
-  fillArea,
-  paintCells,
-  type Project,
-  type UndoEntry,
-} from '../../domain/project'
+import { fillArea, paintCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
-import type { ReplaceOptions } from '../project/useProjectLibrary'
+import type { Edit } from '../project/useEdit'
 
-/** What a stroke needs from the app shell: the open Project and its write path, Mirror, the active Tool, and undo. */
+/** What a stroke needs from the app shell: the open Project, Edit and its stroke calls, Mirror and the active Tool. */
 export interface PaintStrokeDeps {
   currentProject: () => Project | undefined
-  replaceProject: (project: Project, options?: ReplaceOptions) => void
+  edit: Pick<Edit, 'edit' | 'beginStroke' | 'strokeStep' | 'endStroke'>
   mirrorAxisCounts: () => MirrorAxisCounts
   mirrorCopyMode: () => boolean
   activeTool: () => Tool
-  /** Fill's one-click commit: a single undo step (useUndoHistory). */
-  commitGridChange: (project: Project, updated: Project) => void
-  /** Pushes a stroke's one undo step (useUndoHistory). */
-  recordHistory: (entry: UndoEntry) => void
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
-  /** Writes the save every painted cell deferred. */
-  flushPendingSave: () => void
 }
 
 /**
- * The Paint-tool drag (tickets 24, 55; ADR 0023): begin a stroke, paint cells as the pointer moves, end it as one undo
- * step and one save. The grid a stroke started from is captured once, in strokeBaseline; every cell touched in between
- * just updates the live Project directly, with its save deferred. Deps are read lazily.
+ * The Paint-tool drag (tickets 24, 55; ADR 0023, 0036): begin a stroke, paint cells as the pointer moves, end it as one
+ * undo step and one save. Edit holds the baseline and the guards; every cell touched in between updates the live
+ * Project directly, with its save deferred. Deps are read lazily.
  */
 export function usePaintStroke(deps: PaintStrokeDeps) {
   /** 'paint'/'erase' while a stroke is in progress, else null. */
   const strokeMode = ref<'paint' | 'erase' | null>(null)
-  const strokeBaseline = ref<BeadMap | null>(null)
 
-  function beginStroke(mode: 'paint' | 'erase', project: Project) {
+  function beginStroke(mode: 'paint' | 'erase') {
     strokeMode.value = mode
-    strokeBaseline.value = project.beads
+    deps.edit.beginStroke()
   }
 
   /**
@@ -51,16 +37,11 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   function endStroke() {
     deps.endSelectPress()
 
-    const project = deps.currentProject()
-    if (strokeBaseline.value && project && project.beads !== strokeBaseline.value) {
-      deps.recordHistory({ beads: strokeBaseline.value })
-    }
     strokeMode.value = null
-    strokeBaseline.value = null
 
-    // The stroke's one write: every cell it painted deferred its save (see paintStrokeCell), so the whole stroke
-    // reaches storage here, once. A no-op when the mouseup wasn't ending a stroke at all.
-    deps.flushPendingSave()
+    // The stroke's one Undo step and one write: every cell it painted deferred its save (see paintStrokeCell). A no-op
+    // when the mouseup wasn't ending a stroke at all.
+    deps.edit.endStroke()
   }
 
   /**
@@ -72,20 +53,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
    * screen and undoable either way — and endStroke turns the whole stroke into a single write.
    */
   function paintStrokeCell(row: number, column: number, color: string | null) {
-    // Worked on as the Project itself, not through the library's reactive wrapper: a stroke step reads a bead or two,
-    // but comparing what it left for finished rows reads them all, and each read through a proxy is many times the cost.
-    const current = deps.currentProject()
-    const project = current && toRaw(current)
-    if (!project) {
-      return
-    }
-
-    const painted = paintCells(project, [{ row, column }], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
-
-    const updated = keepAllowedEdits(project, painted)
-    if (updated !== project) {
-      deps.replaceProject(updated, { deferSave: true })
-    }
+    deps.edit.strokeStep((project) => paintCells(project, [{ row, column }], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode()))
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke, live-mirrored per cell. */
@@ -96,11 +64,11 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     }
 
     if (deps.activeTool() === 'fill') {
-      deps.commitGridChange(project, fillArea(project, row, column, color))
+      deps.edit.edit('drawing', (current) => fillArea(current, row, column, color))
       return
     }
 
-    beginStroke(mode, project)
+    beginStroke(mode)
     paintStrokeCell(row, column, color)
   }
 

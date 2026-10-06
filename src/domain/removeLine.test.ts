@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
 import { createProject, moveToRow, setRowProgressEnabled, type Project, type Technique } from './project'
-import { removeLineRefusal, removeSelectedLine, selectedAreaLine } from './removeLine'
+import { removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
 
 /** A Project whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
@@ -29,6 +29,12 @@ describe('selectedAreaLine', () => {
     expect(selectedAreaLine(project.frame, undefined)).toBeUndefined()
   })
 })
+
+/** The Project after the change, or the same Project when the change did not happen. */
+function removeSelectedLine(project: Project, selection: Parameters<typeof removeLineChange>[1]): Project {
+  const result = removeLineChange(project, selection)
+  return result.kind === 'changed' ? result.project : project
+}
 
 describe('removeSelectedLine', () => {
   it('removes the selected row and shifts the Frame\'s rows below it up', () => {

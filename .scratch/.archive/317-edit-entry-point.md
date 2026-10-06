@@ -24,13 +24,13 @@ No user-visible behaviour changes. Candidate D1 of the architecture review of 20
 
 **Blocked by:** 316 (One Frame change operation).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `useEdit` exists with `edit(kind, command)` returning `unchanged | refused | applied { moved }`, and stroke calls `beginStroke / strokeStep / endStroke`
-- [ ] Paint, Eraser, Fill, Paste, Mirror current, Set/move/resize Frame, Fit to drawing, Remove Frame, Rotate, Remove row/column, Delete all and Replace Bead all go through it; none of their flows depends on `replaceProject`, `recordHistory` or `commitGridChange`
-- [ ] `UndoEntry` is one full-snapshot shape with no optional fields; `useUndoHistory` holds only the stacks and Undo/Redo
-- [ ] Frame changes call `resetAfterFrameChange()` once, from Edit; no flow clears Mirror's axis counts or the Selection itself
-- [ ] `mayPlace` is the only statement of the lock + margin rule; the canvas surface uses it for press feedback
-- [ ] Flow tests drive a real `useEdit` and assert behaviour ("Undo brings it back", "a stroke across finished rows leaves them alone", "a stroke is one Undo step and one save") instead of stubbing `recordHistory` or matching undo-entry literals
-- [ ] ADR 0034, "Every undoable change goes through Edit", records the three kinds, the full-snapshot undo entry, `mayPlace`, and that flows keep only gesture and wording (building on ADR 0023)
+- [x] `useEdit` exists with `edit(kind, command)` returning `unchanged | refused | applied { moved }`, and stroke calls `beginStroke / strokeStep / endStroke`
+- [x] Paint, Eraser, Fill, Paste, Mirror current, Set/move/resize Frame, Fit to drawing, Remove Frame, Rotate, Remove row/column, Delete all and Replace Bead all go through it; none of their flows depends on `replaceProject`, `recordHistory` or `commitGridChange`
+- [x] `UndoEntry` is one full-snapshot shape with no optional fields; `useUndoHistory` holds only the stacks and Undo/Redo
+- [x] Frame changes call `resetAfterFrameChange()` once, from Edit; no flow clears Mirror's axis counts or the Selection itself
+- [x] `mayPlace` is the only statement of the lock + margin rule; the canvas surface uses it for press feedback
+- [x] Flow tests drive a real `useEdit` and assert behaviour ("Undo brings it back", "a stroke across finished rows leaves them alone", "a stroke is one Undo step and one save") instead of stubbing `recordHistory` or matching undo-entry literals
+- [x] ADR 0036 (0034 and 0035 were taken), "Every undoable change goes through Edit", records the three kinds, the full-snapshot undo entry, `mayPlace`, and that flows keep only gesture and wording (building on ADR 0023)
 - [ ] Typecheck, lint, unit tests and the visual check pass in CI

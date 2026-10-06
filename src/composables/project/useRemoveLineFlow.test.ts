@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
+import { editHarness } from '../../testUtils/editHarness'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
@@ -8,16 +9,9 @@ const secondRow: Selection = { top: 1, left: 0, rows: 1, columns: 4 }
 
 function setup(options: { project?: Project | null; selection?: Selection } = {}) {
   const project = options.project === null ? undefined : (options.project ?? base)
-  const deps = {
-    currentProject: () => project,
-    replaceProject: vi.fn(),
-    recordHistory: vi.fn(),
-    mirrorAxisCounts: () => ({ columns: 1, rows: 0 }),
-    clearMirrorAxisCounts: vi.fn(),
-    selection: () => options.selection,
-    clearSelectionAndHover: vi.fn(),
-  }
-  return { deps, ...useRemoveLineFlow(deps) }
+  const harness = editHarness(project)
+  const flow = useRemoveLineFlow({ currentProject: harness.currentProject, edit: harness.edit, selection: () => options.selection })
+  return { harness, ...flow }
 }
 
 describe('useRemoveLineFlow', () => {
@@ -31,25 +25,21 @@ describe('useRemoveLineFlow', () => {
     expect(setup({ project: setRowProgressEnabled(base, true), selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
   })
 
-  it('removes the line as one undo step and resets the session state', () => {
-    const { deps, onRemoveSelectedLine } = setup({ selection: secondRow })
+  it('removes the line, resets the session, and Undo brings the Frame back', () => {
+    const { harness, onRemoveSelectedLine } = setup({ selection: secondRow })
     onRemoveSelectedLine()
 
-    expect(deps.recordHistory).toHaveBeenCalledTimes(1)
-    expect(deps.recordHistory).toHaveBeenCalledWith({
-      beads: base.beads,
-      rowProgress: base.rowProgress,
-      size: { frame: base.frame, mirrorAxisCounts: { columns: 1, rows: 0 } },
-    })
-    expect(deps.replaceProject).toHaveBeenCalledWith(expect.objectContaining({ frame: expect.objectContaining({ columns: 4, rows: 2 }) }))
-    expect(deps.clearMirrorAxisCounts).toHaveBeenCalledTimes(1)
-    expect(deps.clearSelectionAndHover).toHaveBeenCalledTimes(1)
+    expect(harness.project.frame).toMatchObject({ columns: 4, rows: 2 })
+    expect(harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
+
+    harness.history.onUndo()
+    expect(harness.project.frame).toEqual(base.frame)
   })
 
   it('does nothing without a line selected', () => {
-    const { deps, onRemoveSelectedLine } = setup()
+    const { harness, onRemoveSelectedLine } = setup()
     onRemoveSelectedLine()
-    expect(deps.recordHistory).not.toHaveBeenCalled()
-    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(harness.replaceProject).not.toHaveBeenCalled()
   })
 })

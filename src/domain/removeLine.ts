@@ -1,6 +1,6 @@
 import type { Frame } from './canvas'
 import { pieceAreasOf } from './pieces'
-import { beadsWithoutLine, changeFrame, frameChangeRefusal } from './changeFrame'
+import { beadsWithoutLine, changeFrame, frameChangeRefusal, type FrameChangeResult } from './changeFrame'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -81,17 +81,19 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
 }
 
 /**
- * The Project without the line the Selection marks out, or the same Project, unchanged, when that is refused. With a
- * Frame this is a Frame change and goes through changeFrame; with none it is only an edit of a Piece area's beads.
+ * Taking out the line the Selection marks out, as a Frame change's result. With a Frame this is changeFrame's own; with
+ * none it is only an edit of a Piece area's beads, which Row progress still holds still.
  */
-export function removeSelectedLine(project: Project, selection: Selection | undefined): Project {
+export function removeSelectedLine(project: Project, selection: Selection | undefined): FrameChangeResult {
   const line = selectedProjectLine(project, selection)
-  if (!line || removeLineRefusal(project, selection)) {
-    return project
+  if (!line) {
+    return { kind: 'refused', reason: 'no-line' }
   }
   if (project.frame) {
-    const result = changeFrame(project, { removeLine: line })
-    return result.kind === 'changed' ? result.project : project
+    return changeFrame(project, { removeLine: line })
   }
-  return { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
+  if (project.rowProgress.enabled) {
+    return { kind: 'refused', reason: 'locked' }
+  }
+  return { kind: 'changed', project: { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }, moved: 0 }
 }
