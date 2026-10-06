@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Fixtures hold real v1 QR payloads (dense `cells`, at least one non-loom Technique and one with Row progress), in the shape the old encoder wrote, with a comment naming the commit they come from
-- [ ] Both the bare JSON and the link form of each fixture open as the expected current Project through `parseProjectFromQr` (what importing a QR picture calls), and the link form also through `projectFromShareLink` (what a camera scan of the code lands on)
-- [ ] The misleading existing test is renamed or replaced so its name matches what it checks
-- [ ] Any reading bug the fixtures expose is fixed in the same change
+- [x] Fixtures hold real v1 QR payloads (dense `cells`, at least one non-loom Technique and one with Row progress), in the shape the old encoder wrote, with a comment naming the commit they come from
+- [x] Both the bare JSON and the link form of each fixture open as the expected current Project through `parseProjectFromQr` (what importing a QR picture calls), and the link form also through `projectFromShareLink` (what a camera scan of the code lands on)
+- [x] The misleading existing test is renamed or replaced so its name matches what it checks
+- [x] Any reading bug the fixtures expose is fixed in the same change
