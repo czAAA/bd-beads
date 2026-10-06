@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
-import { CANVAS_BACKGROUND_STORAGE_KEY } from '../../services/canvasBackgroundStore'
+import { PREFERENCES } from '../../services/devicePreferences'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import CanvasColorPicker from './CanvasColorPicker.vue'
 
@@ -18,7 +18,7 @@ function open() {
 
 beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'en')
-  localStorage.removeItem(CANVAS_BACKGROUND_STORAGE_KEY)
+  localStorage.removeItem(PREFERENCES.canvasBackground.key)
   setTheme('light')
   useCanvasBackground().setChoice(1)
 })
@@ -66,14 +66,14 @@ describe('CanvasColorPicker', () => {
     const wrapper = open()
     await wrapper.get('[data-testid="canvas-color-button"]').trigger('click')
     await wrapper.get('[data-testid="canvas-color-linen"]').trigger('click')
-    expect(localStorage.getItem(CANVAS_BACKGROUND_STORAGE_KEY)).toBe('2')
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('2')
 
     await wrapper.get('[data-testid="canvas-color-linen"]').trigger('keydown', { key: 'ArrowRight' })
-    expect(localStorage.getItem(CANVAS_BACKGROUND_STORAGE_KEY)).toBe('3')
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('3')
     await wrapper.get('[data-testid="canvas-color-sage"]').trigger('keydown', { key: 'ArrowLeft' })
     await wrapper.get('[data-testid="canvas-color-linen"]').trigger('keydown', { key: 'ArrowLeft' })
     await wrapper.get('[data-testid="canvas-color-studio"]').trigger('keydown', { key: 'ArrowLeft' })
-    expect(localStorage.getItem(CANVAS_BACKGROUND_STORAGE_KEY)).toBe('5')
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('5')
   })
 
   it('shows Studio for a stored 6 in light', async () => {
@@ -81,7 +81,7 @@ describe('CanvasColorPicker', () => {
     const wrapper = open()
     await wrapper.get('[data-testid="canvas-color-button"]').trigger('click')
     expect(wrapper.get('[data-testid="canvas-color-name"]').text()).toContain('Studio')
-    expect(localStorage.getItem(CANVAS_BACKGROUND_STORAGE_KEY)).toBe('6')
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('6')
   })
 
   it('closes on Escape and on a press outside, giving focus back to the button only for Escape', async () => {

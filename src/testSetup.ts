@@ -1,5 +1,6 @@
 import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach } from 'vitest'
+import { browserDevicePreferences } from './services/devicePreferences'
 import { installSurfaceLayout } from './testUtils/surfaceLayout'
 
 /**
@@ -58,3 +59,6 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
       dispatchEvent: () => false,
     }) as unknown as MediaQueryList) as typeof window.matchMedia
 }
+
+/** Device preferences are read once and shared; a test seeds localStorage and then mounts, so each starts from what storage holds. */
+beforeEach(() => browserDevicePreferences.forget())

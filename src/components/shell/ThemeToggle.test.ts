@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { en } from '../../i18n/en'
-import { THEME_STORAGE_KEY } from '../../services/themeStore'
+import { PREFERENCES } from '../../services/devicePreferences'
 import { useThemePick } from '../../theme/useThemePick'
 import ThemeToggle from './ThemeToggle.vue'
 
@@ -49,7 +49,7 @@ describe('ThemeToggle', () => {
 
     expect(root.dataset.theme).toBe('dark')
     expect(root.style.colorScheme).toBe('dark')
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
+    expect(localStorage.getItem(PREFERENCES.theme.key)).toBe('dark')
     expect(option(wrapper, 'dark').attributes('aria-checked')).toBe('true')
   })
 
@@ -60,7 +60,7 @@ describe('ThemeToggle', () => {
 
     await option(wrapper, 'device').trigger('click')
 
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull()
+    expect(localStorage.getItem(PREFERENCES.theme.key)).toBeNull()
     expect(root.dataset.theme).toBe('light') // the test DOM's device is light
   })
 

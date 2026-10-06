@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest'
+import { createDevicePreferences, PREFERENCES, type PreferenceName, type PreferenceStorage } from './devicePreferences'
+
+function memory(initial: Record<string, string> = {}): PreferenceStorage & { data: Map<string, string> } {
+  const data = new Map(Object.entries(initial))
+  return {
+    data,
+    getItem: (key) => data.get(key) ?? null,
+    setItem: (key, value) => void data.set(key, value),
+    removeItem: (key) => void data.delete(key),
+  }
+}
+
+const blocked: PreferenceStorage = {
+  getItem: () => { throw new Error('blocked') },
+  setItem: () => { throw new Error('blocked') },
+  removeItem: () => { throw new Error('blocked') },
+}
+
+/** Each preference: its long-standing key, a saved value that must still read, one that is not valid, and what it is by default. */
+const CASES = [
+  { name: 'rulers', key: 'bd-beads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
+  { name: 'progressBar', key: 'bd-beads:progress-bar', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
+  { name: 'zoomPillCorner', key: 'bd-beads:zoom-pill', saved: 'top-left', read: 'top-left', other: 'bottom-left', stored: 'bottom-left', invalid: 'middle', fallback: 'bottom-right' },
+  { name: 'canvasBackground', key: 'bd-beads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
+  { name: 'theme', key: 'bd-beads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
+  { name: 'locale', key: 'bd-beads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
+] as const satisfies readonly { name: PreferenceName; [k: string]: unknown }[]
+
+describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, stored, invalid, fallback }) => {
+  it('keeps its long-standing storage key', () => {
+    expect(PREFERENCES[name].key).toBe(key)
+  })
+
+  it('is its default when nothing is saved', () => {
+    expect(createDevicePreferences(memory()).get(name).value).toBe(fallback)
+  })
+
+  it('reads what an earlier visit saved under the old key', () => {
+    expect(createDevicePreferences(memory({ [key]: saved })).get(name).value).toBe(read)
+  })
+
+  it('is its default when the saved value is not valid', () => {
+    if (invalid === null) return // anything but "off" means on, so there is no invalid value
+    expect(createDevicePreferences(memory({ [key]: invalid })).get(name).value).toBe(fallback)
+  })
+
+  it('is its default, without crashing, when storage throws', () => {
+    const preferences = createDevicePreferences(blocked)
+    expect(preferences.get(name).value).toBe(fallback)
+    expect(() => {
+      // @ts-expect-error the table holds a valid value for each name; the union is too wide for the setter
+      preferences.get(name).value = other
+    }).not.toThrow()
+    expect(preferences.get(name).value).toBe(other)
+  })
+
+  it('saves on change, in the stored format', () => {
+    const storage = memory()
+    const preference = createDevicePreferences(storage).get(name)
+    // @ts-expect-error see above
+    preference.value = other
+    expect(storage.data.get(key)).toBe(stored)
+    expect(createDevicePreferences(storage).get(name).value).toBe(other)
+  })
+})
+
+describe('the device preferences', () => {
+  it('hands every reader of a preference the same value', () => {
+    const preferences = createDevicePreferences(memory())
+    preferences.get('rulers').value = false
+    expect(preferences.get('rulers').value).toBe(false)
+  })
+
+  it('forgets the saved theme for Match device', () => {
+    const storage = memory({ 'bd-beads:theme': 'dark' })
+    createDevicePreferences(storage).get('theme').value = 'device'
+    expect(storage.data.has('bd-beads:theme')).toBe(false)
+  })
+})

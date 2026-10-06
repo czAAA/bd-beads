@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] One module in `services/` declares the Rulers, Progress bar toggle, Zoom pill corner, Canvas color, theme and language preferences, and is part of `Services`
 - [ ] The per-preference stores and the three 14-line composables are deleted; their callers read the preference from the new module
