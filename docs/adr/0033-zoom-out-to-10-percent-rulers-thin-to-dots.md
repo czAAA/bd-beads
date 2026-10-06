@@ -25,5 +25,6 @@ Ticket 223 made the smallest zoom the smallest bead of the screen's tier, so eve
 
 - The Rulers card, `responsive.md`, `interaction-and-motion.md` and the tokens change in the same commit (DESIGN.md §6).
 - Ruler drawing depends on zoom, so it is redrawn on every zoom change and must stay cheap at 999 columns.
+- Drawing and picking read one Ruler layout per view (ticket 322), so the Ruler step, the dots and the pick cannot drift apart.
 - A click on a ruler at 10% lands within about 2px, so the nearest-bead pick, not a hit box per number, is the target.
 - Hard to reverse: the tokens' meaning and the ruler layout change, and saved zoom preferences below the old floor become reachable.

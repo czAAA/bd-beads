@@ -8,7 +8,8 @@ import { inSpace, spaceOf, type Space } from './space'
 import { drawFrameEditing, drawRulers } from './rulerRenderer'
 import { cachedSprite } from './sprites'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
-import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region } from './surfaceView'
+import type { RulerLayout } from './rulers'
+import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { beadRoundness } from './beadLook'
 
 /**
@@ -66,10 +67,10 @@ export interface OverlayInput {
    */
   space?: Space
   /**
-   * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with their
-   * numbers while `numbers` is on. `fontPx` is the numbers' size and `viewport` the surface's size in px.
+   * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with the
+   * numbers of the Ruler layout while it has them. `surface` is the view the layout was made for and `fontPx` the numbers' size.
    */
-  rulers?: { numbers: boolean; fontPx: number; viewport: { width: number; height: number } }
+  rulers?: { layout: RulerLayout; surface: SurfaceView; fontPx: number }
   /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
@@ -527,22 +528,23 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (ruled && rulers) {
     drawRulers(context, {
       project,
-      view: { technique: project.technique, rotation: project.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      surface: rulers.surface,
+      layout: rulers.layout,
+      fontPx: rulers.fontPx,
       pixelRatio,
       theme,
-      showNumbers: rulers.numbers,
       cursor,
     })
   }
   if (space.open && rulers && frameEditing && project.frame) {
     drawFrameEditing(context, {
       frame: project.frame,
-      view: { technique: project.technique, rotation: project.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },
+      surface: rulers.surface,
       pixelRatio,
       theme,
       touch: frameEditing.touch,
       // A size is a number too: the Rulers toggle hides it with the rest.
-      tooltip: rulers.numbers ? frameEditing.tooltip : '',
+      tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
   }
 }

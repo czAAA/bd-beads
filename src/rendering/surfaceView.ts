@@ -171,6 +171,10 @@ export interface SurfaceViewInput {
 }
 
 export interface SurfaceView {
+  /** The zoom this view is at. */
+  zoom: number
+  /** The viewport's size; 0 by 0 until the surface is measured. */
+  viewport: Size
   /** Where a bead's centre is in the viewport. */
   beadToPoint(position: GridPosition): Scroll
   /** The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on the right. */
@@ -271,6 +275,8 @@ export function surfaceView({ space, technique, rotation, zoom, scroll = { x: 0,
   const centre = (box: Region): Scroll => ({ x: box.x + box.width / 2 - viewport.width / 2, y: box.y + box.height / 2 - viewport.height / 2 })
 
   return {
+    zoom,
+    viewport,
     beadToPoint: ({ row, column }) => {
       const at = displayed(shiftOf(space, technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2, rowTopPx(technique, row) + CELL_SIZE_PX / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }

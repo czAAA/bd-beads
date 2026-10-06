@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/project'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
-import { drawFrameEditing, drawRulers } from './rulerRenderer'
+import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
+import { rulerLayout } from './rulers'
+import { OPEN_SPACE } from './space'
+import { surfaceView } from './surfaceView'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
 function fakeContext() {
@@ -45,7 +48,13 @@ function fakeContext() {
 }
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
-const view = { technique: 'loom' as const, rotation: 0 as const, zoom: 1, scroll: { x: 0, y: 0 }, viewport: { width: 800, height: 600 }, fontPx: 11 }
+const surfaceAt = (zoom: number) => surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, viewport: { width: 800, height: 600 } })
+
+/** What the overlay hands drawRulers: the view's surface and the Ruler layout made for it. */
+function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: number; numbers: boolean }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'fontPx' | 'pixelRatio' | 'theme'> {
+  const surface = surfaceAt(zoom)
+  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), fontPx: 11, pixelRatio: 1, theme: LIGHT_THEME }
+}
 
 describe('drawRulers', () => {
   const { frame: _frame, ...open } = base
@@ -53,26 +62,26 @@ describe('drawRulers', () => {
 
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+    drawRulers(context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.pieceLine, LIGHT_THEME.pieceLine])
   })
 
   it('draws no Piece rectangle with Rulers off, and both rectangles and numbers with Rulers on', () => {
     const off = fakeContext()
-    drawRulers(off.context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    drawRulers(off.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: false }))
     expect(off.strokes).toHaveLength(0)
     expect(off.texts).toHaveLength(0)
 
     const on = fakeContext()
-    drawRulers(on.context, { project: twoPieces as typeof base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+    drawRulers(on.context, drawn(twoPieces as typeof base, { zoom: 1, numbers: true }))
     expect(on.strokes).toHaveLength(2)
     expect(on.texts.length).toBeGreaterThan(0)
   })
 
   it('still draws the Frame\'s line with Rulers off', () => {
     const { context, strokes, texts } = fakeContext()
-    drawRulers(context, { project: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    drawRulers(context, drawn(base, { zoom: 1, numbers: false }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
     expect(texts).toHaveLength(0)
@@ -80,7 +89,7 @@ describe('drawRulers', () => {
 
   it('draws the Frame\'s line in `ink` and no Piece rectangles once there is a Frame', () => {
     const { context, strokes } = fakeContext()
-    drawRulers(context, { project: base, view, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    drawRulers(context, drawn(base, { zoom: 1, numbers: false }))
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
   })
@@ -92,7 +101,7 @@ describe('the Ruler dots', () => {
 
   it('draw a small dot for every bead without a number, in the number colours', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, { project: framed, view: { ...view, zoom: 0.7 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: true }))
 
     expect(new Set(radii(fills))).toEqual(new Set([1]))
     expect(fills.filter((fill) => fill.rect.length === 5).every((fill) => fill.style === LIGHT_THEME.ruler)).toBe(true)
@@ -100,7 +109,7 @@ describe('the Ruler dots', () => {
 
   it('draw only bolder 5th-bead dots under 6px of bead pitch', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, { project: framed, view: { ...view, zoom: 0.1 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: true })
+    drawRulers(context, drawn(framed, { zoom: 0.1, numbers: true }))
 
     expect(radii(fills).length).toBeGreaterThan(0)
     expect(new Set(radii(fills))).toEqual(new Set([1.75]))
@@ -108,7 +117,7 @@ describe('the Ruler dots', () => {
 
   it('draw none with Rulers off', () => {
     const { context, fills } = fakeContext()
-    drawRulers(context, { project: framed, view: { ...view, zoom: 0.7 }, pixelRatio: 1, theme: LIGHT_THEME, showNumbers: false })
+    drawRulers(context, drawn(framed, { zoom: 0.7, numbers: false }))
 
     expect(radii(fills)).toEqual([])
   })
@@ -119,7 +128,7 @@ describe('drawFrameEditing', () => {
 
   it('puts eight 9px handles round the Frame and the size tooltip at its corner', () => {
     const { context, strokes, fills, texts } = fakeContext()
-    drawFrameEditing(context, { frame, view, pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 · 0.5 × 0.5 cm' })
+    drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 · 0.5 × 0.5 cm' })
 
     expect(strokes).toHaveLength(8)
     expect(strokes.every((stroke) => stroke.rect[2] === 9 && stroke.rect[3] === 9)).toBe(true)
@@ -129,7 +138,7 @@ describe('drawFrameEditing', () => {
 
   it('draws no size tooltip when it is empty (the Rulers toggle is off)', () => {
     const { context, fills, texts } = fakeContext()
-    drawFrameEditing(context, { frame, view, pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '' })
+    drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '' })
 
     expect(fills).toHaveLength(8)
     expect(texts).toEqual([])
@@ -137,7 +146,7 @@ describe('drawFrameEditing', () => {
 
   it('puts four 16px handles at the corners on touch', () => {
     const { context, strokes } = fakeContext()
-    drawFrameEditing(context, { frame, view, pixelRatio: 1, theme: LIGHT_THEME, touch: true, tooltip: '' })
+    drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: true, tooltip: '' })
 
     expect(strokes).toHaveLength(4)
     expect(strokes.every((stroke) => stroke.rect[2] === 16 && stroke.rect[3] === 16)).toBe(true)
