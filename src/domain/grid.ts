@@ -195,7 +195,7 @@ export function neighborsOf(
 /** The Zoom floor (ADR 0033): the same on every screen. */
 export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 4
-export const ZOOM_STEP = 0.1
+const ZOOM_STEP = 0.1
 /** The Zoom range as the whole percents the level label and the buttons' disabled states compare against. */
 export const MIN_ZOOM_PERCENT = Math.round(MIN_ZOOM * 100)
 export const MAX_ZOOM_PERCENT = Math.round(MAX_ZOOM * 100)

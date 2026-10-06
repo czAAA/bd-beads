@@ -1,7 +1,7 @@
 import type { TourStatus } from '../services/tourStore'
 
 /** Where the Overview lives under the app's base path: a folder with its own index.html, so a static host serves it (ADR 0022). */
-export const OVERVIEW_PATH = 'overview/'
+const OVERVIEW_PATH = 'overview/'
 
 /** Set for this tab once the visitor has chosen the editor, so the main address doesn't send them straight back. */
 const EDITOR_CHOSEN_KEY = 'bd-beads:editor-chosen'

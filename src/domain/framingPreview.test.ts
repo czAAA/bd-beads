@@ -5,9 +5,8 @@ import { computeGridDimensions, type Technique } from './grid'
 import { nearestColor } from './imageColors'
 import {
   NO_COLOR,
-  convertSampledFrame,
-  previewColorOutsideFrame,
-  sampleLattice,
+  convertPackedFrame,
+  packedToHex,
   sampleLatticePacked,
   type PixelData,
 } from './imageConversion'
@@ -67,7 +66,7 @@ describe('nearestColorLookup', () => {
 
 describe('exactPreviewColors', () => {
   it.each(['loom', 'peyote', 'brick'] as const)(
-    'is what the preview showed before it was drawn by the renderer: the Project inside the frame, the nearest Image color around it (%s)',
+    'shows the Project inside the frame and the nearest Image color around it (%s)',
     (technique: Technique) => {
       const image = busyImage(60, 45)
       const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
@@ -77,21 +76,20 @@ describe('exactPreviewColors', () => {
         const view = framingView(image, frame, 2.5, { x: 0.2, y: 0.7 })
         const lattice = previewLattice({ view, frame, dimensions, bead, technique })
 
-        // The original chain, written out as it was.
-        const sampled = sampleLattice({ image, view, technique, bead, lattice })
-        const converted = convertSampledFrame(sampled, lattice, dimensions, maxColors)
-        const before = Array.from({ length: lattice.rows }, (_row, row) =>
+        const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
+        const converted = convertPackedFrame(packed, lattice, dimensions, maxColors)
+        const expected = Array.from({ length: lattice.rows }, (_row, row) =>
           Array.from({ length: lattice.columns }, (_cell, column) => {
             const inFrame = converted.grid[row - lattice.frameRow]?.[column - lattice.frameColumn]
-            return inFrame
-              ? (inFrame.color ?? undefined)
-              : previewColorOutsideFrame(converted.imageColors, sampled[row]?.[column])
+            const raw = packed[row * lattice.columns + column]!
+            if (inFrame) {
+              return inFrame.color ?? undefined
+            }
+            return raw === NO_COLOR ? undefined : nearestColor(converted.imageColors, packedToHex(raw))
           }),
         ).flat()
 
-        const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
-
-        expect(exactPreviewColors(packed, lattice, dimensions, converted)).toEqual(before)
+        expect(exactPreviewColors(packed, lattice, dimensions, converted)).toEqual(expected)
       }
     },
   )

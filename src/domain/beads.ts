@@ -1,4 +1,4 @@
-export type FormFactor = 'round' | 'cylinder' | 'cube'
+type FormFactor = 'round' | 'cylinder' | 'cube'
 
 export interface Bead {
   id: string

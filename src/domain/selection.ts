@@ -53,16 +53,6 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition): Sel
   }
 }
 
-/** Whether a cell falls inside the Selection — what the marquee is drawn from, cell by cell. */
-export function isWithinSelection(selection: Selection, position: GridPosition): boolean {
-  return (
-    position.row >= selection.top &&
-    position.row < selection.top + selection.rows &&
-    position.column >= selection.left &&
-    position.column < selection.left + selection.columns
-  )
-}
-
 /** Snapshots a Selection's cells — the empty ones included, as holes — into a block Paste can stamp anywhere. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock {
   const colors = Array.from({ length: selection.rows }, (_row, rowOffset) =>

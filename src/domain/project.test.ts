@@ -21,7 +21,6 @@ import {
   rowProgressPosition,
   setRowProgressEnabled,
   summarizeProject,
-  toggleRotated,
   toggleRowDirection,
   type Cell,
   type Project,
@@ -31,6 +30,7 @@ import {
   withFrameGrid,
 } from './project'
 import { BEAD_CATALOG } from './beads'
+import { turnedClockwise } from '../testUtils/rotated'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
@@ -220,7 +220,7 @@ describe('summarizeProject', () => {
   })
 
   it('swaps the dimensions when the rotated view flag is on, describing how the Project currently looks', () => {
-    const project = toggleRotated(
+    const project = turnedClockwise(
       createProject({
         technique: 'loom',
         beadId: cubeBead.id,
@@ -248,45 +248,6 @@ describe('restoreBeads', () => {
     expect(restored.beads).toBe(snapshot)
     expect(restored.updatedAt).toBeGreaterThan(0)
     expect(frameGrid(project)[0]![0]!.color).toBeNull()
-  })
-})
-
-describe('toggleRotated (ticket 171: all four quarter turns)', () => {
-  function makeProject() {
-    return createProject({
-      technique: 'peyote',
-      beadId: cubeBead.id,
-      size: { width: 4.5, height: 3, unit: 'mm' },
-    })
-  }
-
-  it('steps the rotation one quarter turn clockwise without touching anything else — grid, dimensions, and technique all stay exactly as they were', () => {
-    const project = paintCells(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-
-    const rotated = toggleRotated(project)
-
-    expect(rotated.rotation).toBe(90)
-    expect(rotated.beads).toBe(project.beads)
-    expect(rotated.frame!.columns).toBe(project.frame!.columns)
-    expect(rotated.frame!.rows).toBe(project.frame!.rows)
-    expect(rotated.technique).toBe(project.technique)
-  })
-
-  it('cycles through all four positions and wraps back to upright', () => {
-    const project = makeProject()
-
-    expect(toggleRotated(project).rotation).toBe(90)
-    expect(toggleRotated(toggleRotated(project)).rotation).toBe(180)
-    expect(toggleRotated(toggleRotated(toggleRotated(project))).rotation).toBe(270)
-    expect(toggleRotated(toggleRotated(toggleRotated(toggleRotated(project)))).rotation).toBe(0)
-  })
-
-  it('does not mutate the original project', () => {
-    const project = makeProject()
-
-    toggleRotated(project)
-
-    expect(project.rotation).toBe(0)
   })
 })
 
@@ -930,7 +891,7 @@ describe('deleteAll', () => {
       '#e63746',
       { columns: 0, rows: 0 },
     )
-    const rotated = toggleRotated(painted)
+    const rotated = turnedClockwise(painted)
     const turned = toggleRowDirection(rotated)
     return setRowProgressEnabled(moveToRow(turned, 3), true)
   }
@@ -1029,7 +990,7 @@ describe('replaceBead', () => {
   })
 
   it('keeps name, technique and rotation exactly as they were', () => {
-    const before = toggleRotated(distinctlyPainted())
+    const before = turnedClockwise(distinctlyPainted())
 
     const replaced = replaceBead(before, cubeBead)
 

@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { cellCenter, computeGridDimensions, rowHeightPx, type Technique } from './grid'
+import { cellCenter, computeGridDimensions, type GridDimensions, rowHeightPx, type Technique } from './grid'
 import { fromHex } from './imageColors'
-import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, sourcePixelAt, type PreviewLattice } from './imageFraming'
+import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
   ACCEPTED_IMAGE_FORMATS,
   DEFAULT_MAX_IMAGE_COLORS,
@@ -14,16 +14,13 @@ import {
   MAX_IMAGE_COLORS,
   MIN_IMAGE_COLORS,
   clampMaxImageColors,
-  convertImage,
   convertPackedFrame,
-  convertSampledFrame,
+  type ConvertedImage,
   imageInputAccept,
   formatImageLimits,
   NO_COLOR,
   packedToHex,
-  pixelColorAt,
   pixelPackedAt,
-  sampleLattice,
   sampleLatticePacked,
   validateImageFile,
   validateImagePixelCount,
@@ -75,6 +72,44 @@ function coordinateImage(width: number, height: number): PixelData {
 function sampledPixel(hex: string): { x: number; y: number } {
   const { r, g } = fromHex(hex)
   return { x: r, y: g }
+}
+
+/** The color a picture's pixel contributes to a cell as the `#rrggbb` a grid cell stores, or undefined for a pixel too transparent to weave. */
+function pixelColorAt(image: PixelData, x: number, y: number): string | undefined {
+  const packed = pixelPackedAt(image, x, y)
+  return packed === NO_COLOR ? undefined : packedToHex(packed)
+}
+
+/** The picture's raw colors for every cell of a lattice, as `#rrggbb` strings. */
+function sampleLattice(input: Parameters<typeof sampleLatticePacked>[0]): (string | undefined)[][] {
+  const { lattice } = input
+  const packed = sampleLatticePacked(input)
+  return Array.from({ length: lattice.rows }, (_row, row) =>
+    Array.from({ length: lattice.columns }, (_cell, column) => {
+      const color = packed[row * lattice.columns + column]!
+      return color === NO_COLOR ? undefined : packedToHex(color)
+    }),
+  )
+}
+
+/** One Convert image, straight from a picture and a framing view: the frame is the whole lattice. */
+function convertImage(
+  input: Omit<Parameters<typeof sampleLatticePacked>[0], 'lattice'> & { dimensions: GridDimensions; maxColors: number },
+): ConvertedImage {
+  const lattice: PreviewLattice = { columns: input.dimensions.columns, rows: input.dimensions.rows, frameColumn: 0, frameRow: 0 }
+  return convertPackedFrame(sampleLatticePacked({ ...input, lattice }), lattice, input.dimensions, input.maxColors)
+}
+
+/** The pixel of the picture under a point in the frame's own millimetres, as the sampling arithmetic reads it. */
+function sourcePixelAt(
+  view: ReturnType<typeof framingView>,
+  image: PixelData,
+  xMm: number,
+  yMm: number,
+): { x: number; y: number } | undefined {
+  const x = Math.floor((xMm - view.offsetXMm) / view.scaleMm)
+  const y = Math.floor((yMm - view.offsetYMm) / view.scaleMm)
+  return x < 0 || y < 0 || x >= image.width || y >= image.height ? undefined : { x, y }
 }
 
 function convert(
@@ -140,18 +175,6 @@ describe('pixelColorAt', () => {
 })
 
 describe('pixelPackedAt', () => {
-  it('is the same color as pixelColorAt, as a number', () => {
-    const image = pixels(3, 1, [
-      [18, 52, 86, 255],
-      [0, 0, 0, 128],
-      [200, 30, 90, 200],
-    ])
-
-    for (const x of [0, 1, 2]) {
-      expect(packedToHex(pixelPackedAt(image, x, 0))).toBe(pixelColorAt(image, x, 0))
-    }
-  })
-
   it('says NO_COLOR for a pixel below half alpha', () => {
     expect(pixelPackedAt(pixels(1, 1, [[18, 52, 86, 127]]), 0, 0)).toBe(NO_COLOR)
   })
@@ -479,29 +502,6 @@ describe('convertImage', () => {
 })
 
 describe('convertPackedFrame', () => {
-  it('makes the same Project convertSampledFrame does from the same lattice', () => {
-    const image = {
-      width: 40,
-      height: 30,
-      data: new Uint8ClampedArray(
-        Array.from({ length: 40 * 30 }, (_unused, index) => [(index * 7) % 256, (index * 13) % 256, (index * 29) % 256, index % 11 === 0 ? 10 : 255]).flat(),
-      ),
-    }
-    const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, cubeBead)
-    const frame = frameSizeMm('peyote', dimensions, cubeBead)
-    const view = framingView(image, frame, 2, { x: 0.3, y: 0.6 })
-    const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique: 'peyote' })
-    const input = { image, view, technique: 'peyote' as const, bead: cubeBead, lattice }
-
-    for (const maxColors of [2, 5, 14]) {
-      expect(convertPackedFrame(sampleLatticePacked(input), lattice, dimensions, maxColors)).toEqual(
-        convertSampledFrame(sampleLattice(input), lattice, dimensions, maxColors),
-      )
-    }
-  })
-})
-
-describe('sampleLattice with convertSampledFrame', () => {
   it('converts exactly the cells the preview shows inside the frame', () => {
     const image = coordinateImage(40, 20)
     const technique: Technique = 'peyote'
@@ -510,26 +510,12 @@ describe('sampleLattice with convertSampledFrame', () => {
     const view = framingView(image, frame, 1.5, { x: 0.3, y: 0.7 })
     const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique })
 
-    const sampled = sampleLattice({ image, view, technique, bead: cubeBead, lattice })
-    const fromPreview = convertSampledFrame(sampled, lattice, dimensions, 4096)
+    const sampled = sampleLatticePacked({ image, view, technique, bead: cubeBead, lattice })
+    const fromPreview = convertPackedFrame(sampled, lattice, dimensions, 4096)
     const direct = convertImage({ image, view, technique, bead: cubeBead, dimensions, maxColors: 4096 })
 
     expect(lattice.frameColumn).toBeGreaterThan(0)
     expect(fromPreview.grid).toEqual(direct.grid)
     expect(fromPreview.imageColors).toEqual(direct.imageColors)
-  })
-
-  it('has nothing to show for a lattice cell that falls off the picture', () => {
-    const image = coordinateImage(20, 10)
-    const dimensions = { columns: 4, rows: 4 }
-    const frame = frameSizeMm('loom', dimensions, cubeBead)
-    const view = framingView(image, frame, 1, CENTERED_PAN)
-    const lattice = { columns: 12, rows: 12, frameColumn: 4, frameRow: 4 }
-
-    const sampled = sampleLattice({ image, view, technique: 'loom', bead: cubeBead, lattice })
-
-    expect(sampled).toHaveLength(12)
-    expect(sampled[0]![0]).toBeUndefined()
-    expect(sampled[lattice.frameRow]![lattice.frameColumn]).toBeDefined()
   })
 })

@@ -17,7 +17,7 @@ import type { Grid, GridProject, Project } from './project'
  * are then correct, so this table stays inside the beads' own stored value rather than becoming a Project field the
  * two could be confused for.
  */
-export interface EncodedBeads {
+interface EncodedBeads {
   /** Every distinct hex on the canvas, in the order the beads first use it. */
   colors: string[]
   /**

@@ -35,7 +35,7 @@ export function viewArea(region: Region, zoom: number, rotation: Rotation): { le
 }
 
 /** Sets the context to draw in grid space on a viewport onto the open canvas. */
-export function setViewTransform(context: DrawingContext, region: Region, zoom: number, rotation: Rotation, pixelRatio: number): void {
+function setViewTransform(context: DrawingContext, region: Region, zoom: number, rotation: Rotation, pixelRatio: number): void {
   setGridTransform(context, OPEN_EXTENT, region, zoom, rotation, pixelRatio)
 }
 

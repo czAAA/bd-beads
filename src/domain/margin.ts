@@ -31,7 +31,7 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
  * What an edit did, with every bead it newly painted in the margin taken back (erasing there stays). An edit left with
  * nothing to change hands back `before` itself, the same "unchanged" signal the drawing commands give.
  */
-export function keepMarginClear(before: Project, after: Project): Project {
+function keepMarginClear(before: Project, after: Project): Project {
   const frame = before.frame
   if (!frame) {
     return after

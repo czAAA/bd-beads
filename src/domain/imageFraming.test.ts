@@ -17,7 +17,6 @@ import {
   framingView,
   isSlowFramingSize,
   previewLattice,
-  sourcePixelAt,
 } from './imageFraming'
 
 const cubeBead: Bead = {
@@ -128,35 +127,6 @@ describe('framingView', () => {
   it('treats a pan outside 0..1 as the nearest edge', () => {
     expect(framingView(image, frame, 1, { x: -3, y: 0.5 }).offsetXMm).toBeCloseTo(0)
     expect(framingView(image, frame, 1, { x: 9, y: 0.5 }).offsetXMm).toBeCloseTo(-20)
-  })
-})
-
-describe('sourcePixelAt', () => {
-  const image = { width: 100, height: 50 }
-  const frame = { widthMm: 20, heightMm: 20 }
-
-  it('reads the picture pixel under a point measured from the frame own top-left corner', () => {
-    const view = framingView(image, frame, 1, CENTERED_PAN)
-
-    // The frame's left edge sits 10mm into the picture, i.e. 25 pixels in at 0.4mm per pixel.
-    expect(sourcePixelAt(view, image, 0.2, 0.2)).toEqual({ x: 25, y: 0 })
-    expect(sourcePixelAt(view, image, 10, 10)).toEqual({ x: 50, y: 25 })
-  })
-
-  it('has no pixel for a point beyond the picture, which is what the framing preview shows as nothing', () => {
-    const view = framingView(image, frame, 1, CENTERED_PAN)
-
-    expect(sourcePixelAt(view, image, -11, 10)).toBeUndefined()
-    expect(sourcePixelAt(view, image, 10, -1)).toBeUndefined()
-    expect(sourcePixelAt(view, image, 10, 21)).toBeUndefined()
-  })
-
-  it('maps many cells onto one pixel when the picture is smaller than the frame', () => {
-    const tiny = { width: 1, height: 1 }
-    const view = framingView(tiny, frame, 1, CENTERED_PAN)
-
-    expect(sourcePixelAt(view, tiny, 0.5, 0.5)).toEqual({ x: 0, y: 0 })
-    expect(sourcePixelAt(view, tiny, 19.5, 19.5)).toEqual({ x: 0, y: 0 })
   })
 })
 

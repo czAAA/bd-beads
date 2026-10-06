@@ -1,6 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { rowHeightPx, rowOffsetPx, type GridDimensions, type Technique } from './grid'
-import { nearestColor, resolveImageColors } from './imageColors'
+import { resolveImageColors } from './imageColors'
 import {
   type FramingView,
   type ImageSize,
@@ -31,7 +31,7 @@ export interface PixelData extends ImageSize {
  * is not, and 50% is the only non-arbitrary place to put that line. A transparent-background icon therefore converts
  * to a shape rather than to a rectangle with a background.
  */
-export const ALPHA_THRESHOLD = 128
+const ALPHA_THRESHOLD = 128
 
 /** What a packed color holds for a pixel that is too transparent to weave, or a cell that falls off the picture. */
 export const NO_COLOR = -1
@@ -41,8 +41,8 @@ export const NO_COLOR = -1
  * (an empty cell — see ALPHA_THRESHOLD). A partly transparent pixel at or above the line is composited over white, the
  * paper it would be seen against.
  *
- * The same color as pixelColorAt, without making a string of it: sampling a whole framing lattice on every move of a
- * drag is tens of thousands of these, and the preview only ever needs the string for the few distinct colors it holds.
+ * Sampling a whole framing lattice on every move of a drag is tens of thousands of these, so a color stays a number
+ * here, and the preview only ever needs the string for the few distinct colors it holds.
  */
 export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
@@ -62,15 +62,6 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
 /** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores. */
 export function packedToHex(packed: number): string {
   return `#${packed.toString(16).padStart(6, '0')}`
-}
-
-/**
- * The color a picture's pixel contributes to a cell, or undefined for a pixel below half alpha (an empty cell — see
- * ALPHA_THRESHOLD).
- */
-export function pixelColorAt(image: PixelData, x: number, y: number): string | undefined {
-  const packed = pixelPackedAt(image, x, y)
-  return packed === NO_COLOR ? undefined : packedToHex(packed)
 }
 
 /** A picture format Convert image accepts, named the way the file input, the validation and the helper text each need it. */
@@ -266,44 +257,13 @@ export function sampleLatticePacked({
   return packed
 }
 
-/**
- * The same lattice as sampleLatticePacked, as `#rrggbb` strings — undefined where a cell falls off the picture, or on a
- * pixel too transparent to weave.
- *
- * The lattice's frame block is the Project's own cells, so the preview and the Project it will create come out of this
- * one sampling pass: what is inside the frame on screen is not a separate rendering of the same idea, it is the same
- * numbers (see convertSampledFrame).
- */
-export function sampleLattice(
-  input: SamplingInput & { lattice: PreviewLattice },
-): (string | undefined)[][] {
-  const { lattice } = input
-  const packed = sampleLatticePacked(input)
-  const hexes = new Map<number, string>()
-
-  return Array.from({ length: lattice.rows }, (_row, row) =>
-    Array.from({ length: lattice.columns }, (_cell, column) => {
-      const color = packed[row * lattice.columns + column]!
-      if (color === NO_COLOR) {
-        return undefined
-      }
-      let hex = hexes.get(color)
-      if (hex === undefined) {
-        hex = packedToHex(color)
-        hexes.set(color, hex)
-      }
-      return hex
-    }),
-  )
-}
-
 /** The Project a conversion produced: its grid, and the colors it found (frozen onto the Project — ADR 0011). */
 export interface ConvertedImage {
   grid: Grid
   imageColors: string[]
 }
 
-/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the Palette; see convertSampledFrame. */
+/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the Palette; see convertPackedFrame. */
 function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColors: number): ConvertedImage {
   const counts = new Map<string, number>()
   for (const row of raw) {
@@ -323,31 +283,14 @@ function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColor
 }
 
 /**
- * The Project's grid and Image colors, out of an already-sampled lattice: the frame's own block of cells, reduced to at
- * most `maxColors` colors and offered to the Palette for near-exact snapping (see resolveImageColors).
+ * The Project's grid and Image colors, out of an already-sampled lattice (see sampleLatticePacked): the frame's own
+ * block of cells, reduced to at most `maxColors` colors and offered to the Palette for near-exact snapping (see
+ * resolveImageColors).
  *
  * Only the frame's cells take part. The preview's surrounding cells are context for judging the crop, and letting them
  * influence the reduction would mean the colors inside the frame changed as the picture was panned — the opposite of
  * "what is inside the frame is exactly the Project that will be created".
  */
-export function convertSampledFrame(
-  sampled: readonly (readonly (string | undefined)[])[],
-  lattice: PreviewLattice,
-  dimensions: GridDimensions,
-  maxColors: number,
-): ConvertedImage {
-  return reduceFrame(
-    Array.from({ length: dimensions.rows }, (_row, row) =>
-      Array.from(
-        { length: dimensions.columns },
-        (_cell, column) => sampled[row + lattice.frameRow]?.[column + lattice.frameColumn],
-      ),
-    ),
-    maxColors,
-  )
-}
-
-/** convertSampledFrame for a lattice sampled into packed colors (see sampleLatticePacked): the same Project out of the same cells. */
 export function convertPackedFrame(
   sampled: Int32Array,
   lattice: PreviewLattice,
@@ -373,36 +316,6 @@ export function convertPackedFrame(
     ),
     maxColors,
   )
-}
-
-/**
- * One Convert image, straight from a picture and a framing view to the Project's grid and Image colors — the framing
- * preview reaches the same result through sampleLattice + convertSampledFrame, since the frame's cells are a block of
- * the lattice it already sampled.
- */
-export function convertImage(
-  input: SamplingInput & { dimensions: GridDimensions; maxColors: number },
-): ConvertedImage {
-  const lattice: PreviewLattice = {
-    columns: input.dimensions.columns,
-    rows: input.dimensions.rows,
-    frameColumn: 0,
-    frameRow: 0,
-  }
-
-  return convertSampledFrame(sampleLattice({ ...input, lattice }), lattice, input.dimensions, input.maxColors)
-}
-
-/**
- * The color a framing preview shows for a cell outside the frame: the nearest of the Image colors the conversion
- * settled on, so the whole preview reads as one bead picture rather than breaking into a quantized frame surrounded by
- * unquantized pixels. Undefined for a cell off the picture, or when the conversion found no colors at all.
- */
-export function previewColorOutsideFrame(
-  imageColors: readonly string[],
-  hex: string | undefined,
-): string | undefined {
-  return hex === undefined ? undefined : nearestColor(imageColors, hex)
 }
 
 /** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its own. */

@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import type { Rotation, Technique } from '../domain/grid'
-import { beadAt, beadAtOpen, cellAtOpen } from './hitTest'
+import type { GridPosition } from '../domain/grid'
+import { beadAtOpen, cellAtOpen } from './hitTest'
 
 const project = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, columns, rows, rotation })
+
+/** The bead at a point of a Project that has an edge: beadAtOpen, with whatever falls outside the grid left out. */
+function beadAt(
+  grid: ReturnType<typeof project>,
+  point: { x: number; y: number },
+  zoom: number,
+): GridPosition | undefined {
+  const found = beadAtOpen(grid, point, zoom)
+  const inside = found && found.row >= 0 && found.column >= 0 && found.row < grid.rows && found.column < grid.columns
+  return inside ? found : undefined
+}
 
 describe('beadAt on loom', () => {
   const loom = project('loom', 4, 3)
@@ -99,77 +111,6 @@ describe('beadAt on brick stitch', () => {
   })
 })
 
-describe('beadAt when the Project is rotated a quarter clockwise (90°)', () => {
-  it('turns a quarter clockwise: the grid\'s top-left bead is at the displayed top-right', () => {
-    const loom = project('loom', 4, 3, 90)
-
-    // Displayed 60 wide (the rows) and 80 tall (the columns).
-    expect(beadAt(loom, { x: 50, y: 10 }, 1)).toEqual({ row: 0, column: 0 })
-    expect(beadAt(loom, { x: 50, y: 70 }, 1)).toEqual({ row: 0, column: 3 })
-    expect(beadAt(loom, { x: 10, y: 10 }, 1)).toEqual({ row: 2, column: 0 })
-    expect(beadAt(loom, { x: 5, y: 70 }, 1)).toEqual({ row: 2, column: 3 })
-  })
-
-  it('takes the zoom into account as well', () => {
-    const loom = project('loom', 4, 3, 90)
-
-    expect(beadAt(loom, { x: 100, y: 20 }, 2)).toEqual({ row: 0, column: 0 })
-    expect(beadAt(loom, { x: 10, y: 140 }, 2)).toEqual({ row: 2, column: 3 })
-  })
-
-  it('keeps peyote\'s shift and packing: they belong to the Project, not to the screen', () => {
-    const peyote = project('peyote', 3, 4, 90)
-
-    // Unrotated, (15, 25) is row 1 column 0. Turned, that grid point is (height − y, x) = (65 − 25, 15).
-    expect(beadAt(peyote, { x: 40, y: 15 }, 1)).toEqual({ row: 1, column: 0 })
-    // And the gap beside the shifted row is a gap turned too.
-    expect(beadAt(peyote, { x: 40, y: 5 }, 1)).toBeUndefined()
-  })
-
-  it('is on no bead outside the turned Project', () => {
-    const loom = project('loom', 4, 3, 90)
-
-    expect(beadAt(loom, { x: 60.5, y: 10 }, 1)).toBeUndefined()
-    expect(beadAt(loom, { x: 10, y: 80 }, 1)).toBeUndefined()
-    expect(beadAt(loom, { x: -1, y: 10 }, 1)).toBeUndefined()
-  })
-})
-
-describe('beadAt when the Project is upside down (180°, ticket 171)', () => {
-  it('turns the grid\'s top-left bead to the displayed bottom-right, and the top-right to the bottom-left', () => {
-    const loom = project('loom', 4, 3, 180)
-
-    // Still 80 wide, 60 tall: 180° doesn't swap the axes, only reverses both.
-    expect(beadAt(loom, { x: 70, y: 50 }, 1)).toEqual({ row: 0, column: 0 })
-    expect(beadAt(loom, { x: 10, y: 50 }, 1)).toEqual({ row: 0, column: 3 })
-  })
-
-  it('is on no bead outside the turned Project', () => {
-    const loom = project('loom', 4, 3, 180)
-
-    expect(beadAt(loom, { x: 80.5, y: 10 }, 1)).toBeUndefined()
-    expect(beadAt(loom, { x: 10, y: -1 }, 1)).toBeUndefined()
-  })
-})
-
-describe('beadAt when the Project is rotated a quarter counterclockwise (270°, ticket 171)', () => {
-  it('turns the grid\'s top-left bead to the displayed bottom-left, and the top-right to the top-left', () => {
-    const loom = project('loom', 4, 3, 270)
-
-    // Displayed 60 wide (the rows) and 80 tall (the columns), the other way round from 90°.
-    expect(beadAt(loom, { x: 10, y: 70 }, 1)).toEqual({ row: 0, column: 0 })
-    expect(beadAt(loom, { x: 10, y: 10 }, 1)).toEqual({ row: 0, column: 3 })
-    expect(beadAt(loom, { x: 50, y: 70 }, 1)).toEqual({ row: 2, column: 0 })
-  })
-
-  it('is on no bead outside the turned Project', () => {
-    const loom = project('loom', 4, 3, 270)
-
-    expect(beadAt(loom, { x: -1, y: 10 }, 1)).toBeUndefined()
-    expect(beadAt(loom, { x: 10, y: 80.5 }, 1)).toBeUndefined()
-  })
-})
-
 describe('beadAtOpen and cellAtOpen: the open canvas has no edge', () => {
   it('find a bead at negative positions and a long way off', () => {
     expect(beadAtOpen({ technique: 'loom', rotation: 0 }, { x: -30, y: -50 }, 1)).toEqual({ row: -3, column: -2 })
@@ -180,6 +121,14 @@ describe('beadAtOpen and cellAtOpen: the open canvas has no edge', () => {
     expect(beadAtOpen({ technique: 'loom', rotation: 0 }, { x: 70, y: 30 }, 2)).toEqual({ row: 0, column: 1 })
     // Turned a quarter, displayed (x, y) is grid (y, -x): the bead at displayed (-25, 45) is grid (45, 25).
     expect(beadAtOpen({ technique: 'loom', rotation: 90 }, { x: -25, y: 45 }, 1)).toEqual({ row: 1, column: 2 })
+  })
+
+  it('turn a half and three quarters the way the canvas draws them', () => {
+    // Displayed (x, y) is grid (-x, -y) at 180°, and grid (-y, x) at 270°.
+    expect(beadAtOpen({ technique: 'loom', rotation: 180 }, { x: -10, y: -10 }, 1)).toEqual({ row: 0, column: 0 })
+    expect(beadAtOpen({ technique: 'loom', rotation: 180 }, { x: -50, y: -10 }, 1)).toEqual({ row: 0, column: 2 })
+    expect(beadAtOpen({ technique: 'loom', rotation: 270 }, { x: 10, y: -10 }, 1)).toEqual({ row: 0, column: 0 })
+    expect(beadAtOpen({ technique: 'loom', rotation: 270 }, { x: 50, y: -10 }, 1)).toEqual({ row: 2, column: 0 })
   })
 
   it('cellAtOpen names the nearest bead even between beads, which beadAtOpen leaves out', () => {

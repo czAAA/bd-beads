@@ -13,7 +13,7 @@ export interface AddedColorsStore {
   save: (hexes: readonly string[]) => void
 }
 
-export function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): AddedColorsStore {
+function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): AddedColorsStore {
   return {
     load() {
       try {

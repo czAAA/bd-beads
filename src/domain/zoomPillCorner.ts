@@ -3,7 +3,7 @@ export type ZoomPillCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-
 
 export const DEFAULT_ZOOM_PILL_CORNER: ZoomPillCorner = 'bottom-right'
 
-export const ZOOM_PILL_CORNERS: readonly ZoomPillCorner[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+const ZOOM_PILL_CORNERS: readonly ZoomPillCorner[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 
 export interface Box {
   left: number

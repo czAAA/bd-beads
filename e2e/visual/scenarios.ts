@@ -5,7 +5,7 @@ import { gridBox, settle } from '../support/app'
 import { beadCentre } from '../support/projects'
 
 /** What a scenario's steps are working on: the Project as seeded, and the zoom the page is at right now, in percent. */
-export interface Context {
+interface Context {
   project: Project
   zoom: number
 }

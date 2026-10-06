@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
-import { createProject, moveToRow, setRowProgressEnabled, toggleRotated, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { turnedClockwise } from '../../testUtils/rotated'
+import { createProject, moveToRow, setRowProgressEnabled, type Project, frameGrid, withFrameGrid } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
 
@@ -43,7 +44,7 @@ describe('useProjectLabels', () => {
     })
 
     it('swaps the axes once the Project is turned a quarter', () => {
-      expect(setup(toggleRotated(base)).projectLabel.value).toBe('Logo panel, 3 by 4 beads, 0 colors')
+      expect(setup(turnedClockwise(base)).projectLabel.value).toBe('Logo panel, 3 by 4 beads, 0 colors')
     })
 
     it('adds the Row progress once it is on', () => {

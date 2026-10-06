@@ -19,7 +19,7 @@ export const ART_COLORS: Readonly<Record<string, string>> = {
 }
 
 /** A grid from rows of letters; `.` is an empty bead. */
-export function gridFromRows(rows: readonly string[]): Grid {
+function gridFromRows(rows: readonly string[]): Grid {
   return rows.map((row) => [...row].map((letter) => ({ color: ART_COLORS[letter] ?? null })))
 }
 

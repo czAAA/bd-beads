@@ -47,7 +47,7 @@ function fromBase64Url(encoded: string): string {
 
 /**
  * The bytes a QR export's payload weighs: a link to `appUrl` (the address of this app's page, without any fragment
- * of its own) carrying the compactly encoded Project. What fitsInQrCode/projectQrMatrix actually measure against a
+ * of its own) carrying the compactly encoded Project. What projectQrMatrix actually measures against a
  * QR code's real capacity — see createQrCode's own overflow, not a guessed byte count.
  */
 export function serializeProjectForQr(project: Project, appUrl: string): string {
@@ -146,14 +146,6 @@ export function projectQrMatrix(project: Project, appUrl: string): QrMatrix | un
   } catch {
     return undefined
   }
-}
-
-/**
- * Whether a Project's QR payload fits in a single QR code (ticket 68's size cap) — what the export button is guarded
- * by, so it is asked on every change to the open Project, including each cell of a dragged stroke.
- */
-export function fitsInQrCode(project: Project, appUrl: string): boolean {
-  return projectQrMatrix(project, appUrl) !== undefined
 }
 
 /**

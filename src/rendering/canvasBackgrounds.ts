@@ -7,7 +7,7 @@ import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
  * system's `canvas-bg-1` to `canvas-bg-6` tokens, copied here because a canvas can't read CSS; canvasBackgrounds.test.ts
  * keeps them equal to tokens.json. Light has no sixth, so a stored 6 shows Studio there (`canvas-bg-6` light).
  */
-export type CanvasBackgroundId = 'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash'
+type CanvasBackgroundId = 'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash'
 
 export interface CanvasBackground {
   id: CanvasBackgroundId
