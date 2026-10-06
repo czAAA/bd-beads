@@ -25,3 +25,6 @@ export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {
   erase: '4',
   hand: '5',
 }
+
+/** Set Frame's key (ticket 292): a mode rather than a Tool, so it sits beside TOOL_HOTKEYS, not in it. */
+export const FRAME_HOTKEY = '6'

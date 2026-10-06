@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
+import { FRAME_HOTKEY, TOOL_HOTKEYS } from '../tools/toolIcons'
 
 /**
  * The one line in the drawing area's bottom-left corner that says how to move the open canvas and names its shortcuts
- * (CanvasHint card): "scroll or space drag to move · ⌘ scroll to zoom · H Hand · F Set Frame · R Rulers". It does not move
+ * (CanvasHint card): "scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · 6 Set Frame · R Rulers". It does not move
  * with the canvas, is decoration for the eye (the same shortcuts are in Keyboard shortcuts), and is left to the phone,
  * which has no wheel and no keyboard, to leave out. On Windows and Linux the ⌘ chip reads "Ctrl".
  */
@@ -23,10 +24,10 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
     <kbd class="canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</kbd>
     <span>{{ t.canvas.hint.scrollToZoom }}</span>
     <span class="canvas-hint__dot">·</span>
-    <kbd class="canvas-hint__key">H</kbd>
+    <kbd class="canvas-hint__key">{{ TOOL_HOTKEYS.hand }}</kbd>
     <span>{{ t.canvas.hint.hand }}</span>
     <span class="canvas-hint__dot">·</span>
-    <kbd class="canvas-hint__key">F</kbd>
+    <kbd class="canvas-hint__key">{{ FRAME_HOTKEY }}</kbd>
     <span>{{ t.canvas.hint.setFrame }}</span>
     <span class="canvas-hint__dot">·</span>
     <kbd class="canvas-hint__key">R</kbd>

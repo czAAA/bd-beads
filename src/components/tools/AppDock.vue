@@ -6,7 +6,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
-import { TOOL_HOTKEYS, TOOL_ICONS } from './toolIcons'
+import { FRAME_HOTKEY, TOOL_HOTKEYS, TOOL_ICONS } from './toolIcons'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
@@ -38,10 +38,15 @@ const colorHex = computed(() => (props.selectedColorId ? palette.value.find((col
 const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: string; key?: string }[]>(() => [
   { id: 'tool', icon: activeToolInfo.value.icon, label: activeToolInfo.value.label, testid: 'dock-tool', key: TOOL_HOTKEYS[props.activeTool] },
   { id: 'color', icon: 'palette', label: t.value.toolbox.groups.colors, testid: 'dock-color' },
-  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: '6' },
+  { id: 'frame', icon: 'frame', label: t.value.frame.title, testid: 'dock-frame', key: FRAME_HOTKEY },
   { id: 'project', icon: 'pattern', label: t.value.header.projectSheetLabel, testid: 'dock-project' },
   { id: 'menu', icon: 'menu', label: t.value.header.menuButton, testid: 'dock-menu' },
 ])
+
+/** Set Frame is a mode, so the Frame button lights up while it is on (ticket 258). */
+function frameOn(id: string): boolean {
+  return id === 'frame' && !!props.settingFrame
+}
 </script>
 
 <template>
@@ -50,7 +55,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       <button
         type="button"
         class="ui-control dock__item"
-        :class="{ 'dock__item--open': openSheet === item.id || (item.id === 'frame' && settingFrame), 'dock__item--accent': item.id === 'tool', 'dock__item--frame-on': item.id === 'frame' && settingFrame }"
+        :class="{ 'dock__item--open': openSheet === item.id || frameOn(item.id), 'dock__item--accent': item.id === 'tool', 'dock__item--frame-on': frameOn(item.id) }"
         :aria-label="item.label"
         :aria-pressed="openSheet === item.id"
         :aria-keyshortcuts="item.key"
@@ -60,7 +65,7 @@ const items = computed<{ id: PhoneSheet; icon: IconName; label: string; testid: 
       >
         <span v-if="item.id === 'color'" class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
         <AppIcon v-else :name="item.icon" :size="22" />
-        <span v-if="item.key" class="dock__key" :class="{ 'dock__key--accent': item.id === 'tool' || (item.id === 'frame' && settingFrame) }" aria-hidden="true">{{ item.key }}</span>
+        <span v-if="item.key" class="dock__key" :class="{ 'dock__key--accent': item.id === 'tool' || frameOn(item.id) }" aria-hidden="true">{{ item.key }}</span>
       </button>
     </AppTooltip>
   </nav>

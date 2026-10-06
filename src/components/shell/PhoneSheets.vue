@@ -295,13 +295,10 @@ function toolLabel(tool: Tool): string {
 /* The phone ToolSheets' own content (ticket 79; ToolSheet card). */
 .phone-sheet__tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  grid-template-columns: repeat(auto-fill, 56px);
+  justify-content: space-between;
   grid-auto-rows: 72px;
   background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px);
-}
-
-.phone-sheet__tiles :deep(.tool-button) {
-  width: 100%;
 }
 
 .phone-sheet__links {
