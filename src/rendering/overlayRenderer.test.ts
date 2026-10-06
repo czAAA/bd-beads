@@ -5,6 +5,7 @@ import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { displayedExtentPx } from './projectRenderer'
+import { spaceOf } from './space'
 
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
@@ -518,5 +519,80 @@ describe('the bead cursor (ticket 159)', () => {
 
       expect(calls.some((call) => call.name === 'stroke')).toBe(false)
     })
+  })
+})
+
+describe('on the open canvas (ADR 0026)', () => {
+  /** A 3-wide, 4-tall Frame at row 6, column 5: positions are the bead's own row and column, so the Frame is not at the origin. */
+  function openProject(rowProgress: Partial<RowProgress>): Project {
+    const project = projectOf('loom', 3, 4, rowProgress)
+    return { ...project, frame: { row: 6, column: 5, rows: 4, columns: 3 } }
+  }
+  const view = { x: 0, y: 0, width: 400, height: 400 }
+  const overlay = (project: Project, extra: Parameters<typeof renderOverlay>[1] extends infer Input ? Partial<Input> : never) => {
+    const recorded = recordingContext()
+    renderOverlay(recorded.context, { project, space: spaceOf(project, true), region: view, zoom: 1, ...extra })
+    return recorded
+  }
+
+  it('outlines the Row progress marker round the Frame\'s row, wherever the Frame is', () => {
+    const { named } = overlay(openProject({ currentRow: 1 }), {})
+
+    // Frame row 1 is row 7: y 140, and x 100 to 160, 3px out each way.
+    expect(named('roundRect').map((call) => call.args)).toEqual([
+      [97, 137, 66, 26, 5],
+      [99, 139, 62, 22, 3],
+    ])
+  })
+
+  it('draws no Row progress marker with no Frame', () => {
+    const project = { ...openProject({ currentRow: 1 }), frame: undefined }
+
+    expect(overlay(project, {}).named('roundRect')).toEqual([])
+  })
+
+  it('washes a Selection that reaches outside the Frame and into the negative', () => {
+    const { named } = overlay(openProject({ enabled: false }), { selection: { top: -1, left: -1, rows: 1, columns: 2 } })
+
+    const washes = named('fillRect').filter((call) => call.globalAlpha === 0.3)
+    expect(washes.map((call) => call.args)).toEqual([
+      [-19, -19, 18, 18],
+      [1, -19, 18, 18],
+    ])
+  })
+
+  it('shows the hover preview on any bead, Frame or not', () => {
+    const { named } = overlay(openProject({ enabled: false }), { preview: { cells: [{ row: 8, column: 7 }, { row: -2, column: -3 }], color: '#e63746' } })
+
+    expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
+      ['#e63746', 0.6, 141, 161, 18, 18],
+      ['#e63746', 0.6, -59, -39, 18, 18],
+    ])
+  })
+
+  it('rings the keyboard cursor on the bead at its own row and column', () => {
+    const { calls } = overlay(openProject({ enabled: false }), { cursor: { row: 7, column: 6 } })
+
+    const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
+    expect(rects).toEqual([
+      [117, 137, 26, 26],
+      [119, 139, 22, 22],
+    ])
+  })
+})
+
+describe('on its own, in a Project whose first row is odd (regression)', () => {
+  it('shifts the Row progress marker by the bead\'s own row, as the editor does', () => {
+    const project = projectOf('peyote', 2, 3, { currentRow: 0 })
+    // No Frame and beads from row 1 on: the Frame the Project makes for itself starts on an odd row.
+    const odd: Project = { ...project, frame: undefined, beads: { 1: { 0: '#e63746' }, 2: { 0: '#e63746' }, 3: { 0: '#e63746' } } }
+    const { named } = (() => {
+      const recorded = recordingContext()
+      renderOverlay(recorded.context, { project: odd, space: spaceOf(odd, false), region: { x: 0, y: 0, width: 80, height: 80 }, zoom: 1 })
+      return recorded
+    })()
+
+    // The first row is row 1 of the Project: shifted half a bead, so it starts at x 10 (7 with the outset) and not at 0.
+    expect(named('roundRect')[0]!.args).toEqual([7, 0, 23, 23, 5])
   })
 })

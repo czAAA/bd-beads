@@ -5,13 +5,20 @@ import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedC
 import {
   displayedExtentPx,
   projectExtentPx,
-  renderProject,
+  renderProject as renderInSpace,
   rowPitchPx,
   rowShiftPx,
   rowTopPx,
   visibleBeads,
+  type RenderInput,
   type Region,
 } from './projectRenderer'
+import { spaceOf, type Space } from './space'
+
+/** Renders a Project on its own (Frame-only space) unless a space is given. */
+function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
+  renderInSpace(context, { space: spaceOf(input.project, false), ...input })
+}
 
 /** A bead drawer that draws nothing, to leave only what the renderer itself draws. */
 const noBead: BeadDrawer = () => undefined

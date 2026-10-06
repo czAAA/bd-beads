@@ -23,7 +23,7 @@ import {
 
 /**
  * The bead under a point on an open canvas (ADR 0026), or undefined between beads: the same hit test with no edge, for
- * a point in displayed px (turned, zoomed, from the bead at row 0, column 0 — see canvasRenderer), so any position,
+ * a point in displayed px (turned, zoomed, from the bead at row 0, column 0 — see the open Space in space.ts), so any position,
  * negative included, can be found.
  */
 export function beadAtOpen(

@@ -7,15 +7,16 @@ import { changedPositions, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import type { Scroll } from '../../rendering/canvasView'
-import { renderCanvas } from '../../rendering/canvasRenderer'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
 import { beadAtOpen, cellAtOpen } from '../../rendering/hitTest'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
+import { renderProject } from '../../rendering/projectRenderer'
 import { rulerPick, visibleRulerLabels } from '../../rendering/rulers'
+import { spaceOf } from '../../rendering/space'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
- * The open canvas drawn by the canvas renderer (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
+ * The open canvas drawn by the Project renderer in its open space (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
  * drawing area edge to edge with two canvases the size of what is on screen, one for the beads and the dots round them
  * and one over it for what comes and goes with a tool or the pointer (see overlayRenderer). There is no board, no edge
  * and no scroll container: what is shown is decided by the `scroll` and the `zoom` it is given, so a canvas of any size
@@ -191,6 +192,9 @@ function currentRegion() {
   return { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
 }
 
+/** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a position is. */
+const space = computed(() => spaceOf(toRaw(props.project), true))
+
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
   const canvas = baseEl.value
@@ -224,11 +228,11 @@ function drawCells(): void {
       : undefined
 
   if (bands === undefined) {
-    renderCanvas(context, { project, region, zoom: props.zoom, pixelRatio, theme: theme.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value })
     return
   }
   for (const rows of bands) {
-    renderCanvas(context, { project, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
   }
 }
 
@@ -254,11 +258,11 @@ function drawOverlay(): void {
   if (context) {
     renderOverlay(context, {
       project: toRaw(props.project),
+      space: space.value,
       region,
       zoom: props.zoom,
       pixelRatio,
       theme: theme.value,
-      open: true,
       cursor: props.cursor,
       preview: props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,

@@ -1,3 +1,4 @@
+import { fromHex } from '../domain/color'
 import { cachedSprite, type Sprite } from './sprites'
 
 /**
@@ -199,18 +200,14 @@ export function greyscale(color: string): string {
   return `rgb(${grey}, ${grey}, ${grey})`
 }
 
-/** Parses #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
+/** Reads #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
 function parseHex(color: string): [number, number, number] | undefined {
   const rgb = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(color.trim())
   if (rgb) {
     return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
   }
-  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
-  if (!match) {
-    return undefined
-  }
-  const digits = match[1]!.length === 3 ? [...match[1]!].map((digit) => digit + digit).join('') : match[1]!
-  return [0, 2, 4].map((start) => Number.parseInt(digits.slice(start, start + 2), 16)) as [number, number, number]
+  const channels = fromHex(color.trim())
+  return channels && [channels.r, channels.g, channels.b]
 }
 
 /**

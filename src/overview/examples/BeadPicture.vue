@@ -5,6 +5,7 @@ import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
 import { renderOverlay } from '../../rendering/overlayRenderer'
 import { displayedExtentPx, renderProject } from '../../rendering/projectRenderer'
+import { spaceOf } from '../../rendering/space'
 import { PROJECT_THEMES, PRINT_THEME } from '../../rendering/beadLook'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
@@ -40,6 +41,7 @@ const project = computed(() => ({
   rotation: 0 as const,
 }))
 const extent = computed(() => displayedExtentPx(props.technique, props.grid[0]?.length ?? 0, props.grid.length, props.zoom, 0))
+const space = computed(() => spaceOf(project.value, false))
 const hasMarks = computed(() => props.rowProgress.enabled || !!props.selection || !!props.preview)
 
 function size(canvas: HTMLCanvasElement, pixelRatio: number) {
@@ -50,7 +52,7 @@ function size(canvas: HTMLCanvasElement, pixelRatio: number) {
 function draw() {
   const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1)
   const region = { x: 0, y: 0, width: extent.value.width, height: extent.value.height }
-  const input = { project: project.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PROJECT_THEMES[theme.value] }
+  const input = { project: project.value, space: space.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PROJECT_THEMES[theme.value] }
   const picture = pictureEl.value
   const pictureContext = picture?.getContext('2d')
   if (picture && pictureContext) {

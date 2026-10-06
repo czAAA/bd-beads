@@ -5,6 +5,7 @@ import { TOUR_COLUMNS, TOUR_ROWS, tourFinishedGrid } from '../domain/tour'
 import type { DrawnProject } from '../rendering/projectRenderer'
 import { displayedExtentPx, renderProject } from '../rendering/projectRenderer'
 import { PROJECT_THEMES } from '../rendering/beadLook'
+import { spaceOf } from '../rendering/space'
 import { useResolvedTheme } from '../theme/useResolvedTheme'
 
 /**
@@ -36,6 +37,7 @@ function draw() {
   if (!context) return
   renderProject(context, {
     project: PROJECT,
+    space: spaceOf(PROJECT, false),
     region: { x: 0, y: 0, width: EXTENT.width, height: EXTENT.height },
     zoom: ZOOM,
     pixelRatio,

@@ -26,6 +26,7 @@ import AppStepper from '../ui/form/AppStepper.vue'
 import { LIGHT_THEME, type BeadDrawer } from '../../rendering/beadLook'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
 import { projectExtentPx, renderProject, rowPitchPx, rowTopPx } from '../../rendering/projectRenderer'
+import { spaceOf } from '../../rendering/space'
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
@@ -258,6 +259,7 @@ watchPostEffect(() => {
 
   renderProject(context, {
     project: drawnProject.value,
+    space: spaceOf(drawnProject.value, false),
     region: { x: 0, y: 0, width, height },
     zoom: fitScale.value,
     pixelRatio,

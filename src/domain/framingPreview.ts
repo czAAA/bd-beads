@@ -1,4 +1,4 @@
-import { fromHex } from './imageColors'
+import { channelsOf } from './imageColors'
 import { NO_COLOR, type ConvertedImage } from './imageConversion'
 import type { PreviewLattice } from './imageFraming'
 import type { GridDimensions } from './grid'
@@ -22,7 +22,7 @@ export type PreviewColors = (string | undefined)[]
  * nearestColor) reads each of `colors` once rather than once per bead.
  */
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
-  const candidates = colors.map((hex) => fromHex(hex))
+  const candidates = colors.map((hex) => channelsOf(hex))
   const answers = new Map<number, string | undefined>()
 
   return (packed) => {

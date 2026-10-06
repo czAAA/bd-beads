@@ -1,4 +1,5 @@
 import { colorAt } from '../domain/canvas'
+import { fromHex } from '../domain/color'
 import { rotationSwapsAxes } from '../domain/grid'
 import { projectDimensions, projectFrame, type Project } from '../domain/project'
 
@@ -9,12 +10,10 @@ export interface ThumbnailImage {
   data: Uint8ClampedArray
 }
 
-/** "#rrggbb" as [r, g, b]; anything else is left clear. */
+/** A hex as [r, g, b]; anything else is left clear. */
 function rgb(hex: string): [number, number, number] | undefined {
-  const match = /^#([0-9a-f]{6})$/i.exec(hex)
-  if (!match) return undefined
-  const value = Number.parseInt(match[1]!, 16)
-  return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
+  const channels = fromHex(hex)
+  return channels && [channels.r, channels.g, channels.b]
 }
 
 /**
