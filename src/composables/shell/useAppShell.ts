@@ -3,6 +3,8 @@ import type { CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
+import { devicePreferencesKey } from '../../services/devicePreferences'
+import type { ZoomPillCorner } from '../../domain/zoomPillCorner'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
@@ -16,9 +18,6 @@ import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
-import { useProgressBarToggle } from '../canvas/useProgressBarToggle'
-import { useZoomPillCorner } from '../canvas/useZoomPillCorner'
-import { useRulers } from '../canvas/useRulers'
 import { useMirrorState } from '../tools/useMirrorState'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import { useOverlayVisibility } from './useOverlayVisibility'
@@ -48,9 +47,9 @@ import { useUndoHistory } from '../project/useUndoHistory'
  * from the root component's setup (see provideAppShell).
  */
 function wireAppShell(services: Services) {
-  const { t, locale } = provideI18n(services.localeStore)
-  // The theme pick is shared by the header's controls; this is where it is first read, from this device's store.
-  useThemePick(services.themePickStore)
+  const { t, locale } = provideI18n(services.devicePreferences)
+  // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
+  useThemePick(services.devicePreferences)
 
   /**
    * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
@@ -119,13 +118,16 @@ function wireAppShell(services: Services) {
   })
 
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
-  const { showRulers, toggleRulers } = useRulers(services.rulersStore)
+  const showRulers = services.devicePreferences.get('rulers')
+  const toggleRulers = () => void (showRulers.value = !showRulers.value)
 
   /** The Zoom pill's Row progress toggle: whether the Progress bar shows under 1024px (ticket 296). */
-  const { showProgressBar, toggleProgressBar } = useProgressBarToggle(services.progressBarStore)
+  const showProgressBar = services.devicePreferences.get('progressBar')
+  const toggleProgressBar = () => void (showProgressBar.value = !showProgressBar.value)
 
   /** The corner the Zoom pill rests in under 1024px (ticket 297). */
-  const { zoomPillCorner, setZoomPillCorner } = useZoomPillCorner(services.zoomPillStore)
+  const zoomPillCorner = services.devicePreferences.get('zoomPillCorner')
+  const setZoomPillCorner = (corner: ZoomPillCorner) => void (zoomPillCorner.value = corner)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
@@ -694,6 +696,7 @@ const appShellKey: InjectionKey<AppShellContext> = Symbol('appShell')
 export function provideAppShell(services: Services = browserServices): AppShellContext {
   const context = wireAppShell(services)
   provide(appShellKey, context)
+  provide(devicePreferencesKey, services.devicePreferences)
   return context
 }
 

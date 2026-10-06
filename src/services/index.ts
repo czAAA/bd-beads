@@ -3,12 +3,8 @@ import { downloadFile, type DownloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
 import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsStore'
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
-import { browserLocaleStore, type LocaleStore } from './localeStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
-import { browserProgressBarStore, type ProgressBarStore } from './progressBarStore'
-import { browserZoomPillStore, type ZoomPillStore } from './zoomPillStore'
-import { browserRulersStore, type RulersStore } from './rulersStore'
-import { browserThemePickStore, type ThemePickStore } from './themeStore'
+import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserTourStore, type TourStore } from './tourStore'
 
 /**
@@ -22,12 +18,8 @@ export interface Services {
   decodeImage: DecodeImage
   makerNameStore: MakerNameStore
   addedColorsStore: AddedColorsStore
-  themePickStore: ThemePickStore
-  localeStore: LocaleStore
+  devicePreferences: DevicePreferences
   tourStore: TourStore
-  rulersStore: RulersStore
-  progressBarStore: ProgressBarStore
-  zoomPillStore: ZoomPillStore
 }
 
 export const browserServices: Services = {
@@ -36,10 +28,6 @@ export const browserServices: Services = {
   decodeImage: decodeImageFile,
   makerNameStore: browserMakerNameStore,
   addedColorsStore: browserAddedColorsStore,
-  themePickStore: browserThemePickStore,
-  localeStore: browserLocaleStore,
+  devicePreferences: browserDevicePreferences,
   tourStore: browserTourStore,
-  rulersStore: browserRulersStore,
-  progressBarStore: browserProgressBarStore,
-  zoomPillStore: browserZoomPillStore,
 }
