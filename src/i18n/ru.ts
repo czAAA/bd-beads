@@ -285,6 +285,10 @@ export const ru: Translations = {
     limitReached: 'Палитра заполнена: цвет нарисован, но в палитру не добавлен.',
     removed: 'Цвет удалён из палитры.',
     removeSwatch: 'Убрать {hex} из палитры',
+    removeConfirmTitle: 'Убрать цвет?',
+    removeConfirmMessage: 'Цвет {hex} уйдёт из палитры. Закрашенные ячейки сохранят свой цвет.',
+    removeConfirmButton: 'Убрать',
+    removeCancelButton: 'Отмена',
   },
   tools: {
     paintLabel: 'Кисть',

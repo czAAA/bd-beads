@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
@@ -18,43 +18,30 @@ const gridEl = ref<HTMLElement>()
 const roving = useRovingFocus(gridEl, '.palette-picker__swatch')
 const removeAdded = useRemoveAddedColor()
 
-/** The swatch (or its × badge) holding focus, so the × shows on a focused added swatch as well as a selected one. */
-const focusedColorId = ref<string>()
-
-function onCellFocusin(colorId: string) {
-  focusedColorId.value = colorId
-}
-
-function onCellFocusout(event: FocusEvent, colorId: string) {
-  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null) && focusedColorId.value === colorId) focusedColorId.value = undefined
-}
-
 function isStop(colorId: string, index: number): boolean {
   const selected = palette.value.some((color) => color.id === props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
 /**
- * An added swatch is removed (ticket 228; PaletteSwatches card): by the × on the selected one, or Delete or Backspace on
- * a focused one, which is how the keyboard reaches it. Focus lands on the swatch before it, since the pressed one is gone.
+ * An added swatch asks to be removed (tickets 228, 304; PaletteSwatches card): by its ×, or Delete or Backspace on a
+ * focused one, which is how the keyboard reaches it. The app shell confirms before anything goes.
  */
-async function remove(colorId: string, index: number) {
+function remove(colorId: string) {
   removeAdded?.(colorId)
-  await nextTick()
-  gridEl.value?.querySelectorAll<HTMLElement>('.palette-picker__swatch')[Math.max(0, index - 1)]?.focus()
 }
 
-function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
+function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
   if (!removeAdded || !isAddedColorId(colorId) || (event.key !== 'Delete' && event.key !== 'Backspace')) return
   event.preventDefault()
   event.stopPropagation()
-  void remove(colorId, index)
+  remove(colorId)
 }
 </script>
 
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
-    <span v-for="(color, index) in palette" :key="color.id" class="palette-picker__cell" @focusin="onCellFocusin(color.id)" @focusout="onCellFocusout($event, color.id)">
+    <span v-for="(color, index) in palette" :key="color.id" class="palette-picker__cell">
       <button
         type="button"
         class="ui-control palette-picker__swatch"
@@ -69,16 +56,16 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
         :data-tour="`color-${color.id}`"
         :data-color-id="color.id"
         @click="emit('select', color.id)"
-        @keydown="onSwatchKeydown($event, color.id, index)"
+        @keydown="onSwatchKeydown($event, color.id)"
       />
       <button
-        v-if="removeAdded && isAddedColorId(color.id) && (color.id === selectedColorId || color.id === focusedColorId)"
+        v-if="removeAdded && isAddedColorId(color.id)"
         type="button"
         class="ui-control palette-picker__remove"
         :aria-label="t.palette.removeSwatch.replace('{hex}', color.hex)"
         tabindex="-1"
         data-testid="palette-swatch-remove"
-        @click="remove(color.id, index)"
+        @click="remove(color.id)"
       >
         <AppIcon class="palette-picker__remove-icon" name="close" :size="14" />
       </button>
@@ -126,7 +113,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, index: number) {
   outline-offset: 2px;
 }
 
-/* The removal × (PaletteSwatches card): a 16px round badge on the swatch's top-right corner, on an added swatch while it is selected or has focus. */
+/* The removal × (PaletteSwatches card): a 16px round badge on the swatch's top-right corner, on every added swatch. */
 .palette-picker__remove {
   position: absolute;
   top: -6px;

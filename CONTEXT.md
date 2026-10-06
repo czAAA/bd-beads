@@ -94,7 +94,7 @@ Who made the Projects on this device: an optional name, at most 40 characters, p
 _Avoid_: author, owner, signature, user name
 
 **Palette**:
-A free-standing set of colors used to paint project cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 28, so at most 40 swatches), in the order they were first used. An added swatch can be removed again (never a built-in one); painted cells keep their color, and an Undo toast puts it back. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Project; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
+A free-standing set of colors used to paint project cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 28, so at most 40 swatches), in the order they were first used. An added swatch can be removed again (never a built-in one): every added swatch always shows a × (and Delete or Backspace works on a focused one), which asks for confirmation first; painted cells keep their color, and an Undo toast puts it back. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Project; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
 _Avoid_: color scheme, fixed palette
 
 **Bead**:

@@ -13,6 +13,9 @@ const {
   deleteAllConfirmOpen,
   onCancelDeleteAll,
   onConfirmDeleteAll,
+  pendingColorRemovalHex,
+  onCancelRemoveAddedColor,
+  onConfirmRemoveAddedColor,
   replaceBeadPendingBead,
   replaceBeadConfirmMessage,
   onCancelReplaceBead,
@@ -49,6 +52,17 @@ const {
     :cancel-label="t.deleteAll.cancelButton"
     @confirm="onConfirmDeleteAll"
     @cancel="onCancelDeleteAll"
+  />
+
+  <ConfirmModal
+    v-if="pendingColorRemovalHex"
+    data-testid="remove-color-modal"
+    :title="t.palette.removeConfirmTitle"
+    :message="t.palette.removeConfirmMessage.replace('{hex}', pendingColorRemovalHex)"
+    :confirm-label="t.palette.removeConfirmButton"
+    :cancel-label="t.palette.removeCancelButton"
+    @confirm="onConfirmRemoveAddedColor"
+    @cancel="onCancelRemoveAddedColor"
   />
 
   <ConfirmModal

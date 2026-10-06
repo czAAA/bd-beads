@@ -262,6 +262,11 @@ export interface Translations {
     removed: string
     /** A removal button's accessible name; `{hex}` is the swatch's color. */
     removeSwatch: string
+    /** The confirmation before an added swatch is removed (ticket 304); `{hex}` in the message is the swatch's color. */
+    removeConfirmTitle: string
+    removeConfirmMessage: string
+    removeConfirmButton: string
+    removeCancelButton: string
   }
   tools: {
     paintLabel: string
