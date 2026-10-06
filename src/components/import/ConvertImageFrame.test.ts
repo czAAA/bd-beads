@@ -5,10 +5,11 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ConvertImageFrame from './ConvertImageFrame.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { CELL_SIZE_PX, gridWidthPx, rowHeightPx } from '../../domain/grid'
+import { rowPitch } from '../../domain/grid'
 import { DEFAULT_MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
 import { CENTERED_PAN, frameSizeMm, framingView } from '../../domain/imageFraming'
 import { installFakeCanvas } from '../../testUtils/fakeCanvas'
+import { CELL_SIZE_PX, projectExtentPx } from '../../rendering/surfaceView'
 
 // Whether a block is too big to draw bead by bead is the draft renderer's own rule (tested there); here it is made to
 // answer as a huge one would, and what is drawn is what is watched.
@@ -81,7 +82,7 @@ describe('ConvertImageFrame', () => {
     const wrapper = mountFrame({ dimensions: { columns: 4, rows: 6 } })
 
     const outline = wrapper.find('[data-testid="convert-image-frame-outline"]')
-    expect(outline.attributes('style')).toContain(`width: ${gridWidthPx('loom', 4)}px`)
+    expect(outline.attributes('style')).toContain(`width: ${projectExtentPx('loom', 4, 1).width}px`)
   })
 
   it('reaches out past the frame when the picture hangs over it, and offsets the frame accordingly', () => {
@@ -104,9 +105,9 @@ describe('ConvertImageFrame', () => {
     expect(columns(zoomed)).toBeGreaterThan(columns(wrapper))
     // The frame is still 4 x 4 cells at 4 x 4 cells: zoom moves the picture, not the frame.
     expect(zoomed.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
-      `width: ${gridWidthPx('loom', 4)}px`,
+      `width: ${projectExtentPx('loom', 4, 1).width}px`,
     )
-    expect(before).toContain(`width: ${gridWidthPx('loom', 4)}px`)
+    expect(before).toContain(`width: ${projectExtentPx('loom', 4, 1).width}px`)
   })
 
   it('follows the Technique own geometry, staggering peyote rows and rounding its beads', () => {
@@ -232,7 +233,7 @@ describe('ConvertImageFrame', () => {
 
   describe('a vertical drag follows the pointer (ticket 308)', () => {
     // The picture is drawn by the Project renderer, so a screen pixel down the page is 1/rowPitchPx of a row.
-    const rowPitch = { loom: 20, brick: 21, peyote: 15 } as const
+    const drawnRowPitch = { loom: 20, brick: 21, peyote: 15 } as const
 
     it.each(['loom', 'brick', 'peyote'] as const)('moves the picture by the millimetres the pointer covered, in %s', async (technique) => {
       const image = twoBlocks(8, 32)
@@ -246,8 +247,8 @@ describe('ConvertImageFrame', () => {
       window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
 
       const pan = wrapper.emitted('pan')![0]![0] as { y: number }
-      const rowMm = rowHeightPx(technique, cubeBead.heightMm)
-      const expectedMovedMm = (10 / rowPitch[technique]) * rowMm
+      const rowMm = rowPitch(technique, cubeBead.heightMm)
+      const expectedMovedMm = (10 / drawnRowPitch[technique]) * rowMm
       expect((0.5 - pan.y) * rangeYMm).toBeCloseTo(expectedMovedMm, 6)
     })
   })

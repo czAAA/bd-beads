@@ -15,15 +15,15 @@ No visible change: the refactor is pixel-neutral (308 has already fixed the bric
 
 **Blocked by:** 318 (shared `Space`, transform helpers moved), 308 (brick drag ratio).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `rendering/surfaceView.ts` answers bead → point/box and point → bead/cell behind one interface built from a `Space`; rotation, row shift and row pitch are private to it
-- [ ] `canvasView.ts`, `hitTest.ts`, the Frame-only `beadAt` and `computeFitZoom` are gone; `frameHandles.ts` keeps only handle layout
-- [ ] `ProjectSurface`, `useCanvasView`, the renderer, the overlay, the rulers and `ConvertImageFrame` take their geometry from the Surface view
-- [ ] Convert image's fit scale comes from `zoomToFit` and its drag ratio from the Bead's mm footprint over `beadStep()`
-- [ ] `domain/grid.ts` has no px defaults or `Px` names; `CELL_SIZE_PX` lives in the Surface view module
-- [ ] A round-trip table test over Technique × rotation × space × zoom/scroll checks `pointToBead(beadToPoint(b)) == b`, and that points on a brick seam or in a half-bead gap give no bead; it replaces the `canvasView` and `hitTest` tests
-- [ ] `beadPoint` in `testUtils/beads.ts` uses `beadToPoint`; the surface's `data-*` attributes stay for e2e
-- [ ] ADR 0010 has an amendment note on physical vs drawn geometry; CONTEXT.md has a "Surface view" entry and the seam sentence
-- [ ] The visual check passes with no screenshot changes
-- [ ] Typecheck, lint, unit tests and the visual check pass in CI
+- [x] `rendering/surfaceView.ts` answers bead → point/box and point → bead/cell behind one interface built from a `Space`; rotation, row shift and row pitch are private to it
+- [x] `canvasView.ts`, `hitTest.ts`, the Frame-only `beadAt` and `computeFitZoom` are gone; `frameHandles.ts` keeps only handle layout
+- [x] `ProjectSurface`, `useCanvasView`, the renderer, the overlay, the rulers and `ConvertImageFrame` take their geometry from the Surface view
+- [x] Convert image's fit scale comes from `zoomToFit` and its drag ratio from the Bead's mm footprint over `beadStep()`
+- [x] `domain/grid.ts` has no px defaults or `Px` names; `CELL_SIZE_PX` lives in the Surface view module
+- [x] A round-trip table test over Technique × rotation × space × zoom/scroll checks `pointToBead(beadToPoint(b)) == b`, and that points on a brick seam or in a half-bead gap give no bead; it replaces the `canvasView` and `hitTest` tests
+- [x] `beadPoint` in `testUtils/beads.ts` uses `beadToPoint`; the surface's `data-*` attributes stay for e2e
+- [x] ADR 0010 has an amendment note on physical vs drawn geometry; CONTEXT.md has a "Surface view" entry and the seam sentence
+- [x] The visual check passes with no screenshot changes
+- [x] Typecheck, lint, unit tests and the visual check pass in CI

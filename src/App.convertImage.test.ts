@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { beadColor, drawnProject, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { gridWidthPx } from './domain/grid'
+import { projectExtentPx } from './rendering/surfaceView'
 import type { PixelData } from './domain/imageConversion'
 import { ImageConversionError } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
@@ -115,11 +115,11 @@ describe('App Convert image framing (ticket 58)', () => {
     await startFraming(wrapper)
 
     const outline = () => wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')
-    expect(outline()).toContain(`width: ${gridWidthPx('loom', 10)}px`)
+    expect(outline()).toContain(`width: ${projectExtentPx('loom', 10, 1).width}px`)
 
     await wrapper.find('[data-testid="width-input"]').setValue('8')
 
-    expect(outline()).toContain(`width: ${gridWidthPx('loom', 5)}px`)
+    expect(outline()).toContain(`width: ${projectExtentPx('loom', 5, 1).width}px`)
   })
 
   it('follows the Technique as it is changed, staggering the beads for peyote', async () => {
@@ -146,7 +146,7 @@ describe('App Convert image framing (ticket 58)', () => {
 
     // 15mm across a 1.6mm Delica is 9 columns, not the 1.5mm cube's 10.
     expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
-      `width: ${gridWidthPx('loom', 9)}px`,
+      `width: ${projectExtentPx('loom', 9, 1).width}px`,
     )
   })
 
@@ -201,7 +201,7 @@ describe('App Convert image framing (ticket 58)', () => {
     // 200% still means "twice the scale that covers this frame", whatever the frame has become.
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('125%')
     expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
-      `width: ${gridWidthPx('loom', 40)}px`,
+      `width: ${projectExtentPx('loom', 40, 1).width}px`,
     )
   })
 })

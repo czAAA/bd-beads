@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { cellCenter, computeGridDimensions, type GridDimensions, rowHeightPx, type Technique } from './grid'
+import { cellCenter, computeGridDimensions, type GridDimensions, rowPitch, type Technique } from './grid'
 import { channelsOf } from './imageColors'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
@@ -195,7 +195,7 @@ describe('sampleLatticePacked', () => {
     lattice: ReturnType<typeof previewLattice>,
   ): (string | undefined)[] {
     const originXMm = lattice.frameColumn * bead.widthMm
-    const originYMm = lattice.frameRow * rowHeightPx(technique, bead.heightMm)
+    const originYMm = lattice.frameRow * rowPitch(technique, bead.heightMm)
     const cells: (string | undefined)[] = []
     for (let row = 0; row < lattice.rows; row += 1) {
       for (let column = 0; column < lattice.columns; column += 1) {

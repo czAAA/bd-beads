@@ -1,10 +1,9 @@
-import { CELL_SIZE_PX } from '../../src/domain/grid'
 import type { Rotation, Technique } from '../../src/domain/grid'
 import { PALETTE } from '../../src/domain/palette'
 import { framedGrid, type Cell, type Project, type RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
-import { gridToDisplayed } from '../../src/rendering/canvasView'
-import { rowShiftPx, rowTopPx } from '../../src/rendering/projectRenderer'
+import { OPEN_SPACE } from '../../src/rendering/space'
+import { surfaceView } from '../../src/rendering/surfaceView'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by writing it directly. */
 const STORAGE_KEY = 'bd-beads:patterns'
@@ -79,8 +78,6 @@ export function beadCentre(
   { row, column }: { row: number; column: number },
   scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
-  const x = rowShiftPx(project.technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2
-  const y = rowTopPx(project.technique, row) + CELL_SIZE_PX / 2
-  const [displayedX, displayedY] = gridToDisplayed(project.rotation, x, y, zoom)
-  return { x: box.x + displayedX - scroll.x, y: box.y + displayedY - scroll.y }
+  const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
+  return { x: box.x + at.x, y: box.y + at.y }
 }

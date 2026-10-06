@@ -4,8 +4,8 @@ import { createProject, withFrameGrid, type Project, type RowProgress, type Tech
 import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
-import { displayedExtentPx } from './projectRenderer'
 import { spaceOf } from './space'
+import { displayedExtentPx } from './surfaceView'
 
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })

@@ -247,6 +247,10 @@ _Avoid_: sync link, invite link
 A synced Project listed on a signed-in device that doesn't yet hold its key; it opens only after the Edit link is opened there.
 _Avoid_: encrypted Project, hidden Project
 
+**Surface view**:
+How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch. It measures the drawing, not the piece: brick stitch's 1px seam between rows exists only in the drawing, so a Surface view's rows are a pixel further apart than the physical geometry Convert image samples with (ADR 0010, amended).
+_Avoid_: hit test, canvas view, grid geometry
+
 **Overview**:
 The page outside the editor, at its own address, that introduces bd-beads feature by feature to someone new to it. There are no accounts, so "new" means only that this device's Project library is empty.
 _Avoid_: landing page, home page, about page, marketing page

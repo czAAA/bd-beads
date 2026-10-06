@@ -1,7 +1,7 @@
 import { projectDimensions } from '../domain/project'
-import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
+import { rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
 import type { Project } from '../domain/project'
-import { displayedExtentPx, rowPitchPx, type Region } from './projectRenderer'
+import { CELL_SIZE_PX, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
 /**
  * How the PDF for printing is laid out (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards, the

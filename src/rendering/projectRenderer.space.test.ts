@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
+import { type Rotation, type Technique } from '../domain/grid'
 import { createProject, type Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { DEFAULT_THEME, finishedColor, type BeadShape } from './beadLook'
-import { gridToRegion, renderProject, rowShiftPx, rowTopPx, type Region } from './projectRenderer'
+import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
+import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {

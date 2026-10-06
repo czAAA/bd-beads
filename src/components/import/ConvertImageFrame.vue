@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
 import { beadPitchMm, type Bead } from '../../domain/beads'
-import {
-  CELL_SIZE_PX,
-  CANVAS_MAX_PX,
-  computeFitZoom,
-  rowHeightPx,
-  type GridDimensions,
-  type Technique,
-} from '../../domain/grid'
+import { CANVAS_MAX_PX, rowPitch, type GridDimensions, type Technique } from '../../domain/grid'
 import { approximatePreviewColors, exactPreviewColors } from '../../domain/framingPreview'
 import {
   MAX_IMAGE_COLORS,
@@ -25,8 +18,9 @@ import AppButton from '../ui/AppButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { LIGHT_THEME, type BeadDrawer } from '../../rendering/beadLook'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
-import { projectExtentPx, renderProject, rowPitchPx, rowTopPx } from '../../rendering/projectRenderer'
+import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
+import { surfaceView } from '../../rendering/surfaceView'
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
@@ -180,8 +174,14 @@ const drawnProject = computed(() => {
   }
 })
 
+/** The lattice on its own, as the Frame alone (ADR 0018): the one space the preview is drawn in and measured in. */
+const latticeSpace = computed(() => spaceOf(drawnProject.value, false))
+
+/** The lattice seen upright and unscaled, with no scroll: where its beads are in the preview's own px. */
+const unscaledView = computed(() => surfaceView({ space: latticeSpace.value, technique: props.technique, rotation: 0, zoom: 1 }))
+
 /** The lattice at its natural bead size, in unscaled px. */
-const latticeExtent = computed(() => projectExtentPx(props.technique, lattice.value.columns, lattice.value.rows))
+const latticeExtent = computed(() => latticeSpace.value.extent)
 
 /** The space kept round the preview inside the canvas panel, in px. */
 const PREVIEW_PADDING_PX = 14
@@ -192,24 +192,19 @@ const PREVIEW_PADDING_PX = 14
  * see the zoom prop).
  */
 const fitScale = computed(() =>
-  computeFitZoom({
-    columns: lattice.value.columns,
-    rows: lattice.value.rows,
-    maxWidth: (props.availableWidth || CANVAS_MAX_PX) - PREVIEW_PADDING_PX * 2,
-    maxHeight: Infinity,
+  surfaceView({
+    space: latticeSpace.value,
     technique: props.technique,
-  }),
+    rotation: 0,
+    zoom: 1,
+    viewport: { width: props.availableWidth || CANVAS_MAX_PX, height: Infinity },
+  }).zoomToFit({ row: 0, column: 0, rows: lattice.value.rows, columns: lattice.value.columns }, { width: PREVIEW_PADDING_PX, height: 0 }),
 )
 
 /** The frame drawn over the beads: the lattice cells that are the Project, outlined and left undimmed. */
 const frameStyle = computed(() => {
-  const { width, height } = projectExtentPx(props.technique, props.dimensions.columns, props.dimensions.rows)
-  return {
-    left: `${lattice.value.frameColumn * CELL_SIZE_PX}px`,
-    top: `${rowTopPx(props.technique, lattice.value.frameRow)}px`,
-    width: `${width}px`,
-    height: `${height}px`,
-  }
+  const box = unscaledView.value.beadBox({ row: lattice.value.frameRow, column: lattice.value.frameColumn, rows: props.dimensions.rows, columns: props.dimensions.columns })
+  return { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` }
 })
 
 /** The scaled preview has no layout size of its own (a transform doesn't reflow), so the box states it. */
@@ -259,7 +254,7 @@ watchPostEffect(() => {
 
   renderProject(context, {
     project: drawnProject.value,
-    space: spaceOf(drawnProject.value, false),
+    space: latticeSpace.value,
     region: { x: 0, y: 0, width, height },
     zoom: fitScale.value,
     pixelRatio,
@@ -282,15 +277,15 @@ const panRangeMm = computed(() => ({
 }))
 
 /**
- * Millimetres of picture per screen pixel dragged. A bead is CELL_SIZE_PX wide on screen (before the fit scale) and
- * the Bead's own footprint in millimetres in that direction. Down the page, a row is the pitch the Project renderer
- * draws it at (`rowPitchPx`, which for brick stitch includes the seam) and the Technique's row spacing in millimetres,
- * so the point under the pointer stays under it whichever Technique the rows are packed for.
+ * Millimetres of picture per screen pixel dragged: how far a step is on screen (the Surface view's beadStep, at the fit
+ * scale) against how far it is on the piece. Along a row, a step is the Bead's own width in millimetres; down the page,
+ * the Technique's row spacing in millimetres, whatever the Technique's rows are drawn at (brick stitch's seam is a
+ * drawing choice only), so the point under the pointer stays under it whichever Technique the rows are packed for.
  */
-const mmPerScreenPx = computed(() => ({
-  x: beadPitchMm(props.bead) / (CELL_SIZE_PX * fitScale.value),
-  y: rowHeightPx(props.technique, props.bead.heightMm) / (rowPitchPx(props.technique) * fitScale.value),
-}))
+const mmPerScreenPx = computed(() => {
+  const step = surfaceView({ space: latticeSpace.value, technique: props.technique, rotation: 0, zoom: fitScale.value }).beadStep()
+  return { x: beadPitchMm(props.bead) / step.column.x, y: rowPitch(props.technique, props.bead.heightMm) / step.row.y }
+})
 
 const drag = ref<{ pointerId: number; x: number; y: number; pan: PanFraction } | null>(null)
 

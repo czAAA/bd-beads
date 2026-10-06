@@ -1,6 +1,7 @@
 import type { GridPosition } from '../domain/grid'
 import { projectDimensions, projectFrame } from '../domain/project'
-import { OPEN_EXTENT, projectExtentPx, type DrawnProject, type Extent } from './projectRenderer'
+import { type DrawnProject } from './projectRenderer'
+import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
 
 /**
  * Where a Project's positions live (ADR 0018, ADR 0026), the one thing the Project renderer and the overlay both need
@@ -39,3 +40,6 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
 export function inSpace(space: Space, row: number, column: number): boolean {
   return space.open || (row >= 0 && row < space.rows && column >= 0 && column < space.columns)
 }
+
+/** The open canvas with no Project to measure: every position real, none yet drawn. For the layers that only need its geometry (the rulers). */
+export const OPEN_SPACE: Space = { open: true, origin: { row: 0, column: 0 }, columns: 0, rows: 0, hasFrame: false, toAbsolute: { row: 0, column: 0 }, extent: OPEN_EXTENT }

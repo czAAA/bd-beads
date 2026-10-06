@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { projectExtentPx } from './projectRenderer'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MAX_PIXELS, PNG_MARGIN_PX, pngBoardRect, pngZoom } from './projectExport'
 import { PRINT_BOARD_PAD } from './printPlan'
 import type { Rotation, Technique } from '../domain/grid'
+import { projectExtentPx } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows } })
 

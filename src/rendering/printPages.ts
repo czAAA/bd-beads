@@ -1,10 +1,10 @@
 import { projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
-import { CELL_SIZE_PX, rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
 import { PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
-import { displayedExtentPx, renderProject } from './projectRenderer'
+import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import {
   PRINT_BOARD_PAD,
@@ -23,6 +23,7 @@ import {
   type PrintPlan,
 } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
+import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 /**
  * Drawing the printed pages (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards). The chart comes

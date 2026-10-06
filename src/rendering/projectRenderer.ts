@@ -1,8 +1,9 @@
-import { CELL_SIZE_PX, isOffsetTechnique, rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
+import type { Rotation, Technique } from '../domain/grid'
 import { colorAt, frameContains } from '../domain/canvas'
 import { inMargin } from '../domain/margin'
 import { isInFinishedRow, type Project } from '../domain/project'
 import {
+  beadRoundness,
   DEFAULT_THEME,
   drawFlatBead,
   finishedColor,
@@ -11,6 +12,18 @@ import {
   type ProjectTheme,
 } from './beadLook'
 import type { Space } from './space'
+import {
+  CELL_SIZE_PX,
+  gridToRegion,
+  regionInGridSpace,
+  rowPitchPx,
+  rowShiftPx,
+  rowTopPx,
+  SEAM_PX,
+  setGridTransform,
+  shiftOf,
+  type Region,
+} from './surfaceView'
 
 /**
  * The Project renderer (CONTEXT.md, ADR 0018): the one thing that draws a Project's beads onto a drawing surface, for
@@ -29,144 +42,6 @@ import type { Space } from './space'
  * as the Frame alone with its first bead at the origin (the exports, the Convert image preview, the Overview), or on
  * the open canvas, an endless field of positions measured from row 0, column 0 (the editor).
  */
-
-/** Brick stitch's seam between rows, in grid px: a rule the full width of the row that takes 1px of height of its own. */
-const SEAM_PX = 1
-
-/** A rounded bead's corners, as a share of its width (BeadBoard card). */
-const ROUNDED_BEAD_CORNER = 0.22
-
-/** How much of a bead's width its corners are rounded by, per Technique: peyote's beads are rounded; loom and brick stitch are square. The one place the look is decided: the hit-test and the overlay read it too. */
-export function beadRoundness(technique: Technique): number {
-  return technique === 'peyote' ? ROUNDED_BEAD_CORNER : 0
-}
-
-/**
- * The distance from one row's top to the next, in grid px. Peyote rows nest into each other, so they sit closer than a
- * bead is tall; brick stitch rows are a full bead apart plus their seam; loom rows stack.
- *
- * Deliberately not `rowHeightPx` in domain/grid: that is the height the layout maths (the rulers, the box around the
- * Project) has always used, and it leaves out the seam's pixel, so for brick stitch the DOM grid has always been a
- * pixel per row taller than that maths says. This is what was actually drawn, and the renderer keeps to it.
- */
-export function rowPitchPx(technique: Technique): number {
-  if (technique === 'peyote') {
-    return CELL_SIZE_PX * 0.75
-  }
-  return technique === 'brick' ? CELL_SIZE_PX + SEAM_PX : CELL_SIZE_PX
-}
-
-/** Where a row's beads start from the top of the Project, in grid px. */
-export function rowTopPx(technique: Technique, row: number): number {
-  return row * rowPitchPx(technique)
-}
-
-/** How far a space's row has its beads shifted sideways, in grid px: by the bead's own row, whichever space the row is numbered in (a Project with no Frame may start on an odd row). */
-export function shiftOf(space: Space, technique: Technique, row: number): number {
-  return rowShiftPx(technique, space.toAbsolute.row + row)
-}
-
-/** How far a row's beads are shifted sideways, in grid px: every other row in peyote and brick stitch, by half a bead. */
-export function rowShiftPx(technique: Technique, row: number): number {
-  return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? CELL_SIZE_PX / 2 : 0
-}
-
-export interface Extent {
-  width: number
-  height: number
-}
-
-/** The size of the drawn Project in grid px, before zoom and rotation. */
-export function projectExtentPx(technique: Technique, columns: number, rows: number): Extent {
-  return {
-    width: columns * CELL_SIZE_PX + (isOffsetTechnique(technique) ? CELL_SIZE_PX / 2 : 0),
-    height: rows === 0 ? 0 : rowTopPx(technique, rows - 1) + CELL_SIZE_PX,
-  }
-}
-
-/** The size of the drawn Project as displayed: scaled by the zoom, and swapped at a quarter turn either way. */
-export function displayedExtentPx(technique: Technique, columns: number, rows: number, zoom: number, rotation: Rotation): Extent {
-  const { width, height } = projectExtentPx(technique, columns, rows)
-  return rotationSwapsAxes(rotation) ? { width: height * zoom, height: width * zoom } : { width: width * zoom, height: height * zoom }
-}
-
-export interface Region {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-/**
- * The transform from grid space to the displayed region's own coordinates (see the note at the top): zoom, then
- * rotation, then moving the region to the origin. Each quarter turn clockwise carries the grid point (x, y) to
- * (height − y, x) — composing that with itself gives 180° and 270° (ticket 171).
- */
-export function gridToRegion(extent: Extent, region: Region, zoom: number, rotation: Rotation): [number, number, number, number, number, number] {
-  switch (rotation) {
-    case 90:
-      return [0, zoom, -zoom, 0, extent.height * zoom - region.x, -region.y]
-    case 180:
-      return [-zoom, 0, 0, -zoom, extent.width * zoom - region.x, extent.height * zoom - region.y]
-    case 270:
-      return [0, -zoom, zoom, 0, -region.x, extent.width * zoom - region.y]
-    default:
-      return [zoom, 0, 0, zoom, -region.x, -region.y]
-  }
-}
-
-/** Sets the context's transform to draw in grid space, on a surface showing `region` of the displayed Project, on a screen of the given pixel density. */
-export function setGridTransform(
-  context: DrawingContext,
-  extent: Extent,
-  region: Region,
-  zoom: number,
-  rotation: Rotation,
-  pixelRatio: number,
-): void {
-  const [a, b, c, d, e, f] = gridToRegion(extent, region, zoom, rotation)
-  context.setTransform(a * pixelRatio, b * pixelRatio, c * pixelRatio, d * pixelRatio, e * pixelRatio, f * pixelRatio)
-}
-
-/** The part of grid space a displayed region covers: the inverse of gridToRegion's own mapping, one case per quarter turn. */
-function regionInGridSpace(extent: Extent, region: Region, zoom: number, rotation: Rotation): { left: number; right: number; top: number; bottom: number } {
-  switch (rotation) {
-    case 90:
-      return {
-        left: region.y / zoom,
-        right: (region.y + region.height) / zoom,
-        top: extent.height - (region.x + region.width) / zoom,
-        bottom: extent.height - region.x / zoom,
-      }
-    case 180:
-      return {
-        left: extent.width - (region.x + region.width) / zoom,
-        right: extent.width - region.x / zoom,
-        top: extent.height - (region.y + region.height) / zoom,
-        bottom: extent.height - region.y / zoom,
-      }
-    case 270:
-      return {
-        left: extent.width - (region.y + region.height) / zoom,
-        right: extent.width - region.y / zoom,
-        top: region.x / zoom,
-        bottom: (region.x + region.width) / zoom,
-      }
-    default:
-      return {
-        left: region.x / zoom,
-        right: (region.x + region.width) / zoom,
-        top: region.y / zoom,
-        bottom: (region.y + region.height) / zoom,
-      }
-  }
-}
-
-/**
- * The extent of the open canvas: nothing. It has no first bead to measure from, so displayed space is measured from the
- * bead at row 0, column 0 and a region may reach into the negative; a quarter turn is about the origin instead of a box.
- */
-export const OPEN_EXTENT: Extent = { width: 0, height: 0 }
 
 /**
  * The rows and, for each, the columns of beads that touch a stretch of grid space. Exported for the tests; the renderer's
