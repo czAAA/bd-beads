@@ -7,20 +7,13 @@ import type { QrMatrix } from '../../domain/qrExport'
  * zone margin, rather than a canvas or an `<img>`, so the code stays crisp at any display size and needs no async
  * image decode of its own to show.
  */
-const props = withDefaults(
-  defineProps<{
-    matrix: QrMatrix
-    moduleSize?: number
-    /** Blank modules of margin on every side -- a real scanner needs one to lock onto the code at all. */
-    quietZoneModules?: number
-  }>(),
-  {
-    moduleSize: 4,
-    quietZoneModules: 4,
-  },
-)
+const props = defineProps<{ matrix: QrMatrix }>()
 
-const side = computed(() => (props.matrix.size + props.quietZoneModules * 2) * props.moduleSize)
+const MODULE_SIZE = 4
+/** Blank modules of margin on every side -- a real scanner needs one to lock onto the code at all. */
+const QUIET_ZONE_MODULES = 4
+
+const side = computed(() => (props.matrix.size + QUIET_ZONE_MODULES * 2) * MODULE_SIZE)
 
 const darkModules = computed(() => {
   const cells: { x: number; y: number }[] = []
@@ -28,8 +21,8 @@ const darkModules = computed(() => {
     for (let column = 0; column < props.matrix.size; column++) {
       if (props.matrix.isDark(row, column)) {
         cells.push({
-          x: (column + props.quietZoneModules) * props.moduleSize,
-          y: (row + props.quietZoneModules) * props.moduleSize,
+          x: (column + QUIET_ZONE_MODULES) * MODULE_SIZE,
+          y: (row + QUIET_ZONE_MODULES) * MODULE_SIZE,
         })
       }
     }
@@ -53,8 +46,8 @@ const darkModules = computed(() => {
       :key="index"
       :x="cell.x"
       :y="cell.y"
-      :width="moduleSize"
-      :height="moduleSize"
+      :width="MODULE_SIZE"
+      :height="MODULE_SIZE"
       fill="#000000"
       data-testid="qr-code-module"
     />

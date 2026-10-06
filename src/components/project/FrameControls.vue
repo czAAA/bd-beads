@@ -213,10 +213,4 @@ const tipOpen = ref(false)
   line-height: 1.35;
   opacity: 0.75;
 }
-
-.frame-controls__note--error {
-  color: var(--danger);
-  font-weight: 700;
-  opacity: 1;
-}
 </style>

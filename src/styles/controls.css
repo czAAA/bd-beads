@@ -70,8 +70,6 @@
   --context-bar-radius: 0.875rem;
   /* ZoomPill card: its own 36px buttons, bigger than the reference tier's zoom cluster */
   --zoom-pill-button: 2.25rem;
-  /* responsive.md's phone-landscape header (44px); header-height-phone (52px) is portrait-only */
-  --header-height-phone-landscape: 2.75rem;
 }
 
 /*

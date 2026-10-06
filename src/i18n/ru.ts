@@ -13,7 +13,6 @@ export const ru: Translations = {
     techniqueLoom: 'Ткачество',
     techniquePeyote: 'Мозаичное плетение',
     techniqueBrick: 'Кирпичное плетение',
-    sizePlaceholder: '20',
     widthLabel: 'Ширина',
     heightLabel: 'Высота',
     decreaseWidthButton: 'Уменьшить ширину',
@@ -135,13 +134,11 @@ export const ru: Translations = {
       'Не удалось сохранить на этом устройстве. Последние изменения есть только на экране. Освободите место в браузере или экспортируйте проект в файл, чтобы его сохранить.',
   },
   header: {
-    toolsButton: 'Инструменты',
     menuButton: 'Меню',
     overviewItem: 'Обзор',
     tourItem: 'Пройти обучение',
     sourceItem: 'Исходный код',
     projectSheetLabel: 'Проект',
-    newProjectSheetTitle: 'Новый проект',
   },
   overview: {
     pageTitle: 'Обзор',
@@ -308,10 +305,6 @@ export const ru: Translations = {
     removeLineShort: 'Удалить линию',
     removeLineName: 'Удалить линию',
   },
-  rulers: {
-    selectRowLabel: 'Выделить ряд {number}',
-    selectColumnLabel: 'Выделить столбец {number}',
-  },
   rowProgress: {
     enabledLabel: 'Показывать прогресс по рядам',
     directionButton: 'Повернуть направление рядов',
@@ -392,10 +385,7 @@ export const ru: Translations = {
     importLabel: 'Импортировать файл',
     importedLabel: 'Проектов импортировано',
     importErrorLabel: 'Не удалось импортировать этот файл',
-    exportQrButton: 'Экспортировать как QR-код',
     qrTooLargeMessage: 'Слишком велик для одного QR-кода. Используйте экспорт проекта.',
-    exportPngButton: 'Экспортировать как PNG-изображение',
-    exportPdfButton: 'Экспортировать в PDF для печати',
     closeQrButton: 'Закрыть',
     importQrLabel: 'Импортировать QR-код',
     qrImportedLabel: 'Проект импортирован из QR-кода',
