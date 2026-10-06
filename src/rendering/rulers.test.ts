@@ -12,6 +12,8 @@ const view = (extra: Partial<RulerView> = {}): RulerView => ({
   fontPx: 11,
   ...extra,
 })
+const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
+  Array.from({ length: rows * columns }, (_, i) => [row + Math.floor(i / columns), column + (i % columns)])
 const project = (positions: [number, number][], frame?: { row: number; column: number; rows: number; columns: number }) => ({
   technique: 'loom' as const,
   frame,
@@ -20,12 +22,26 @@ const project = (positions: [number, number][], frame?: { row: number; column: n
 
 describe('which boxes carry rulers', () => {
   it('is each piece, with only the start sides, until a Frame is set', () => {
-    const boxes = ruledBoxes(project([[0, 0], [10, 10]]))
+    const boxes = ruledBoxes(project([...block(0, 0), ...block(10, 10)]))
     expect(boxes.map((box) => [box.kind, box.sides, box.outset])).toEqual([['piece', 'start', 5], ['piece', 'start', 5]])
   })
 
+  it('leaves out a Piece area of 2x2 or smaller, in either direction, and keeps 3x3 and larger', () => {
+    expect(ruledBoxes(project([[0, 0]]))).toEqual([])
+    expect(ruledBoxes(project(block(0, 0, 2, 2)))).toEqual([])
+    expect(ruledBoxes(project(block(0, 0, 2, 9)))).toEqual([])
+    expect(ruledBoxes(project(block(0, 0, 9, 2)))).toEqual([])
+    expect(ruledBoxes(project(block(0, 0, 3, 3)))).toHaveLength(1)
+    expect(ruledBoxes(project(block(0, 0, 3, 8)))).toHaveLength(1)
+  })
+
+  it('measures joined Piece areas as the joined rectangle', () => {
+    const boxes = ruledBoxes(project([[0, 0], [0, 2], [2, 0], [2, 2]]))
+    expect(boxes.map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))).toEqual([{ row: 0, column: 0, rows: 3, columns: 3 }])
+  })
+
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
-    const boxes = ruledBoxes(project([[0, 0], [10, 10]], { row: 2, column: 3, rows: 4, columns: 5 }))
+    const boxes = ruledBoxes(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
     expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'all' }])
   })
 })
@@ -110,7 +126,7 @@ describe('the numbers of a ruled box', () => {
   })
 
   it('leave out the numbers far off screen, and find the one under a point', () => {
-    const labels = visibleRulerLabels(project([[0, 0], [0, 1], [900, 900]]), view())
+    const labels = visibleRulerLabels(project([...block(0, 0), ...block(900, 900)]), view())
 
     expect(labels.some((l) => l.text === '1' && l.axis === 'row')).toBe(true)
     expect(labels.length).toBeLessThan(10)

@@ -114,24 +114,33 @@ describe('drawing anywhere', () => {
 })
 
 describe('the rulers of pieces', () => {
+  /** A 3×3 Piece and a lone bead: only the Piece is big enough to show an area. */
+  const bigAndSmall = () =>
+    openCanvas({
+      beads: withColors({}, [
+        ...[0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: RED }))),
+        { row: 10, column: 10, color: RED },
+      ]),
+    })
+
   it('number each piece from 1 above and to the left, and nothing below or right of it', async () => {
-    saveProjects([openCanvas()])
+    saveProjects([bigAndSmall()])
     const wrapper = mountApp()
     await flushPromises()
 
     const numbers = rulerNumbers(wrapper)
-    // Piece one is 2 columns × 2 rows (beads (0,0), (0,1), (1,1)); piece two is the lone bead at (10, 10).
-    expect(numbers.filter((n) => n.axis === 'column').map((n) => n.text).sort()).toEqual(['1', '1', '2'])
-    expect(numbers.filter((n) => n.axis === 'row').map((n) => n.text).sort()).toEqual(['1', '1', '2'])
+    // The 3×3 piece is numbered 1 to 3; the lone bead at (10, 10) is too small for an area, so it has no numbers.
+    expect(numbers.filter((n) => n.axis === 'column').map((n) => n.text).sort()).toEqual(['1', '2', '3'])
+    expect(numbers.filter((n) => n.axis === 'row').map((n) => n.text).sort()).toEqual(['1', '2', '3'])
   })
 
   it('select the whole row of a piece when its number is pressed', async () => {
-    saveProjects([openCanvas()])
+    saveProjects([bigAndSmall()])
     const wrapper = mountApp()
     await flushPromises()
 
     await pressRulerNumber(wrapper, 'row', 0)
-    expect(selectedBeadCount(wrapper)).toBe(2) // the first piece is 2 beads wide
+    expect(selectedBeadCount(wrapper)).toBe(3) // the first piece is 3 beads wide
   })
 
   it('are hidden by the Rulers toggle and by R, and come back', async () => {
