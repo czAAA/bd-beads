@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A failing test first reproduces the case above in `rotate.test.ts` (pointer beyond the turned Frame after Rotate) and passes after the fix
 - [ ] After Rotate, `currentRow` and `currentColumn` both lie inside the turned Frame, for both Row directions
