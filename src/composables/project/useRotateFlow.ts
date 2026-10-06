@@ -1,6 +1,6 @@
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import type { Project, UndoEntry } from '../../domain/project'
-import { rotateProject } from '../../domain/rotate'
+import { changeFrame } from '../../domain/changeFrame'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -21,18 +21,18 @@ export interface RotateFlowDeps {
 
 /**
  * Rotate (CONTEXT.md, ADR 0026): a quarter turn of the Frame and its beads about its centre, as one Undo step that
- * restores the beads, the Frame and any Piece it had to move. It needs a Frame, and is refused while Row progress is on
- * (its rows are the Frame's, which a turn would change). A Piece the turned Frame covers moves clear of it, and a
+ * restores the beads, the Frame and any Piece it had to move. changeFrame refuses it without a Frame or while Row
+ * progress is on. A Piece the turned Frame covers moves clear of it, and a
  * Message says how many, with Undo. Deps are read lazily.
  */
 export function useRotateFlow(deps: RotateFlowDeps) {
   function onRotate(): void {
     const project = deps.currentProject()
-    if (!project?.frame || project.rowProgress.enabled) {
+    if (!project) {
       return
     }
-    const result = rotateProject(project)
-    if (!result) {
+    const result = changeFrame(project, { rotate: true })
+    if (result.kind !== 'changed') {
       return
     }
 

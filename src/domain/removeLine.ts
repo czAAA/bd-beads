@@ -1,6 +1,7 @@
-import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
+import type { Frame } from './canvas'
 import { pieceAreasOf } from './pieces'
-import { withFrame, type Project } from './project'
+import { beadsWithoutLine, changeFrame, frameChangeRefusal } from './changeFrame'
+import type { Project } from './project'
 import type { Selection } from './selection'
 
 /**
@@ -59,49 +60,38 @@ export type RemoveLineRefusal =
   /** The Frame has only the one row or column the Selection names, and a Frame is never empty. */
   | 'only-line'
 
+/** With a Frame the refusals are changeFrame's, so Remove line and the Frame's other changes agree on them. */
 export function removeLineRefusal(project: Project, selection: Selection | undefined): RemoveLineRefusal | undefined {
   const line = selectedProjectLine(project, selection)
   if (!line) {
     return 'no-line'
   }
-  if (project.rowProgress.enabled) {
-    return 'locked'
+  if (!project.frame) {
+    // No Frame, so not a Frame change; Row progress still holds the area still.
+    return project.rowProgress.enabled ? 'locked' : undefined
   }
-  if (project.frame && (line.axis === 'row' ? project.frame.rows : project.frame.columns) <= 1) {
-    return 'only-line'
+  switch (frameChangeRefusal(project, { removeLine: line })) {
+    case 'locked':
+      return 'locked'
+    case 'only-line':
+      return 'only-line'
+    default:
+      return undefined
   }
-  return undefined
 }
 
-/** The Project without the line the Selection marks out, or the same Project, unchanged, when that is refused. */
+/**
+ * The Project without the line the Selection marks out, or the same Project, unchanged, when that is refused. With a
+ * Frame this is a Frame change and goes through changeFrame; with none it is only an edit of a Piece area's beads.
+ */
 export function removeSelectedLine(project: Project, selection: Selection | undefined): Project {
   const line = selectedProjectLine(project, selection)
   if (!line || removeLineRefusal(project, selection)) {
     return project
   }
-  const area = line.area
-
-  const beads: BeadMap = {}
-  forEachBead(project.beads, (row, column, color) => {
-    let newRow = row
-    let newColumn = column
-    if (frameContains(area, { row, column })) {
-      const relative = line.axis === 'row' ? row - area.row : column - area.column
-      if (relative === line.index) {
-        return
-      }
-      if (relative > line.index) {
-        newRow = line.axis === 'row' ? row - 1 : row
-        newColumn = line.axis === 'column' ? column - 1 : column
-      }
-    }
-    beads[newRow] ??= {}
-    beads[newRow]![newColumn] = color
-  })
-
-  if (!project.frame) {
-    return { ...project, beads }
+  if (project.frame) {
+    const result = changeFrame(project, { removeLine: line })
+    return result.kind === 'changed' ? result.project : project
   }
-  const smaller = { ...area, rows: line.axis === 'row' ? area.rows - 1 : area.rows, columns: line.axis === 'column' ? area.columns - 1 : area.columns }
-  return { ...withFrame(project, smaller), beads }
+  return { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
 }

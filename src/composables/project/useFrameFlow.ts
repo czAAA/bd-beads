@@ -3,8 +3,8 @@ import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, movedFrame, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { clearMargin } from '../../domain/margin'
-import { withFrame, type Project, type UndoEntry } from '../../domain/project'
+import { changeFrame } from '../../domain/changeFrame'
+import type { Project, UndoEntry } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -60,11 +60,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Commits a new Frame (or none) as one undo step; a no-change is no step. The action names what happened in the margin Message. */
   function commit(frame: Frame | undefined, action: FrameAction = 'set', announce = true): void {
     const project = deps.currentProject()
-    if (!project || locked.value) return
-    const framed = withFrame(project, frame)
-    if (framed === project) return
-    // Beads in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
-    const { project: updated, moved } = clearMargin(framed)
+    if (!project) return
+    const result = changeFrame(project, frame ? { set: frame } : { remove: true })
+    if (result.kind !== 'changed') return
+    // Pieces in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
+    const { project: updated, moved } = result
     deps.recordHistory({
       beads: project.beads,
       rowProgress: project.rowProgress,
@@ -156,7 +156,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Remove Frame, leaving Set Frame on so a new Frame can be drawn straight away (ticket 258). */
   function remove(): void {
     const project = deps.currentProject()
-    if (!project?.frame || locked.value) return
+    if (!project?.frame) return
     commit(undefined)
     start()
   }

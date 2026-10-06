@@ -216,6 +216,15 @@ function clampRow(row: number, rows: number): number {
   return Math.max(0, Math.min(rows - 1, row))
 }
 
+/** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
+export function clampPointer(rowProgress: Project['rowProgress'], frame: Frame): Project['rowProgress'] {
+  return {
+    ...rowProgress,
+    currentRow: clampRow(rowProgress.currentRow, frame.rows),
+    currentColumn: clampRow(rowProgress.currentColumn, frame.columns),
+  }
+}
+
 /**
  * The Project's Frame, or — for a canvas that has none — the smallest box round its beads (nothing at all for an empty
  * one). What the parts of the app that still think in a Project's extent read: with a Frame it is the Project itself.
@@ -354,13 +363,7 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
     return project
   }
   const { frame: _previous, ...rest } = project
-  const rowProgress = frame
-    ? {
-        ...project.rowProgress,
-        currentRow: clampRow(project.rowProgress.currentRow, frame.rows),
-        currentColumn: clampRow(project.rowProgress.currentColumn, frame.columns),
-      }
-    : project.rowProgress
+  const rowProgress = frame ? clampPointer(project.rowProgress, frame) : project.rowProgress
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
 }
 
