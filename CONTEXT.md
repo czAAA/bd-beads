@@ -69,6 +69,14 @@ _Avoid_: pan mode, grab tool
 The button (and R, and the phone's zoom pill) that shows or hides every ruler and size marking on the canvas, and the Piece areas' rectangles — each Piece area's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece area, from 1, or the Frame's on all four sides once a Frame is set.
 _Avoid_: ruler switch, numbers toggle
 
+**Canvas zoom**:
+The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the header, the Toolbox, the Dock and every sheet keep their size ([ADR 0034](docs/adr/0034-only-the-canvas-zooms-page-zoom-is-locked.md)).
+_Avoid_: scale, magnify, page zoom (a different thing)
+
+**Page zoom**:
+The browser's own whole-page zoom (pinch on the page, double-tap, Ctrl/⌘ + wheel outside the canvas, the browser's zoom menu). The app locks it so the chrome never changes size.
+_Avoid_: UI scale, browser scale
+
 **Zoom floor**:
 The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit all stop there, so a Pattern wider or taller than the screen can be seen whole. Fit never goes above 100%.
 _Avoid_: min zoom, bead-min floor
