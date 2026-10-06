@@ -12,7 +12,7 @@ Config notes from the trial run: the Overview is a second Vite entry (`overview/
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `knip` is a dev dependency with a checked-in config naming both Vite entries, the Vitest and Playwright test entries, and any deliberate ignores, each with a one-line reason
 - [ ] `npm run knip` exits 0 on the branch and runs as a step of the "Typecheck and lint" CI job; no required check is renamed

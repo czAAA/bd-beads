@@ -15,7 +15,6 @@ import {
 import { sameFrame } from './frame'
 import {
   neighborsOf,
-  nextRotation as nextRotationOf,
   positionKey,
   rotationSwapsAxes,
   type GridDimensions,
@@ -29,7 +28,7 @@ import { gridFromSize, type StatedSize } from './projectSize'
 
 export type { MirrorAxisCounts } from './mirror'
 
-export type { Rotation, Technique } from './grid'
+export type { Technique } from './grid'
 
 export interface Cell {
   color: string | null
@@ -43,7 +42,7 @@ export type Grid = Cell[][]
  * from Project.rotation, which only turns the picture: rotating changes which grid axis runs across the screen, so
  * the weaver flips this too, but neither setting ever changes the other.
  */
-export type RowDirection = 'rows' | 'columns'
+type RowDirection = 'rows' | 'columns'
 
 /** Which row the weaver is on, and whether the editor is showing that overlay (see CONTEXT.md's Row progress entry). */
 export interface RowProgress {
@@ -374,11 +373,6 @@ export function setRowProgressEnabled(project: Project, enabled: boolean): Proje
   return touch(project, { rowProgress: { ...project.rowProgress, enabled } })
 }
 
-/** Steps the view-only rotation (see Project.rotation) one quarter turn clockwise, wrapping 270° back to 0° (ticket 171) — like rotating a photo, without touching the grid itself. */
-export function toggleRotated(project: Project): Project {
-  return touch(project, { rotation: nextRotationOf(project.rotation) })
-}
-
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
 export function toggleRowDirection(project: Project): Project {
   const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
@@ -460,7 +454,7 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
  * restoreSnapshot leaves applying them to the caller — bundled here only so a single history entry carries everything
  * one Undo/Redo step needs.
  */
-export interface SizeSnapshot {
+interface SizeSnapshot {
   frame: Frame | undefined
   mirrorAxisCounts: MirrorAxisCounts
 }
@@ -734,7 +728,7 @@ export function resolveProjectBead(project: Project): Bead | undefined {
 }
 
 /** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */
-export function lastSaved(project: Project): number {
+function lastSaved(project: Project): number {
   return project.savedAt ?? project.updatedAt
 }
 

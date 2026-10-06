@@ -126,32 +126,6 @@ export function framingView(
   }
 }
 
-/** A pixel of the source picture. */
-export interface SourcePixel {
-  x: number
-  y: number
-}
-
-/**
- * The picture pixel under a point given in the frame's own millimetres (the frame's top-left corner is the origin, and
- * a point outside the frame is perfectly meaningful — that is how the framing preview shows the picture around it).
- * Undefined when the point falls outside the picture altogether.
- */
-export function sourcePixelAt(
-  view: FramingView,
-  image: ImageSize,
-  xMm: number,
-  yMm: number,
-): SourcePixel | undefined {
-  const x = Math.floor((xMm - view.offsetXMm) / view.scaleMm)
-  const y = Math.floor((yMm - view.offsetYMm) / view.scaleMm)
-
-  if (x < 0 || y < 0 || x >= image.width || y >= image.height) {
-    return undefined
-  }
-  return { x, y }
-}
-
 /**
  * How many bead cells the framing preview renders at most. The preview shows the picture around the frame as beads
  * too, so that the crop can be judged, and at a high zoom the picture reaches far past the frame — a 60 × 90 frame at

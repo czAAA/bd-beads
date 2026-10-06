@@ -6,7 +6,6 @@ import { createProject, framedGrid, withFrameGrid, type Project } from './projec
 import { encodeProject } from './projectEncoding'
 import {
   decodeQrText,
-  fitsInQrCode,
   parseProjectFromQr,
   parseProjectFromQrImage,
   projectFromShareLink,
@@ -161,11 +160,10 @@ describe('what a QR code carries (ticket 233)', () => {
   })
 })
 
-describe('projectQrMatrix / fitsInQrCode', () => {
+describe('projectQrMatrix', () => {
   it('fits an ordinary small Project in a single QR code', () => {
     const project = smallProject()
 
-    expect(fitsInQrCode(project, APP_URL)).toBe(true)
     const matrix = projectQrMatrix(project, APP_URL)
     expect(matrix).toBeDefined()
     expect(matrix!.size).toBeGreaterThanOrEqual(21) // smallest possible QR (version 1) is 21x21
@@ -195,7 +193,6 @@ describe('projectQrMatrix / fitsInQrCode', () => {
 
     // Same shape ADR 0009 measures as its own worst case; well past a QR code's ~2.9KB capacity even RLE-compressed.
     expect(serializeProjectForQr(project, APP_URL).length).toBeGreaterThan(3000)
-    expect(fitsInQrCode(project, APP_URL)).toBe(false)
     expect(projectQrMatrix(project, APP_URL)).toBeUndefined()
   })
 })

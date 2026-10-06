@@ -1,7 +1,6 @@
 import { CELL_SIZE_PX } from '../domain/grid'
-import type { GridDimensions, GridPosition, Technique } from '../domain/grid'
+import type { GridPosition, Technique } from '../domain/grid'
 import {
-  projectExtentPx,
   beadRoundness,
   rowPitchPx,
   rowShiftPx,
@@ -21,40 +20,6 @@ import {
  *  - brick stitch's seam between rows, and anything outside the beads (the gaps beside a shifted row, the outline),
  *    is on no bead at all.
  */
-
-/**
- * The bead at a point of the displayed Project: `point` is in the displayed Project's px (zoomed, and turned when the
- * Project is rotated) measured from its first bead's top-left, which is where a surface's own coordinates start.
- */
-export function beadAt(
-  project: Pick<DrawnProject, 'technique' | 'rotation'> & GridDimensions,
-  point: { x: number; y: number },
-  zoom: number,
-): GridPosition | undefined {
-  const { technique, columns, rows } = project
-  const extent = projectExtentPx(technique, columns, rows)
-
-  // Back into the Project's own space: undo whichever quarter turn is on (see gridToRegion's own forward version).
-  const [gridX, gridY] = ((): [number, number] => {
-    const x = point.x / zoom
-    const y = point.y / zoom
-    switch (project.rotation) {
-      case 90:
-        return [y, extent.height - x]
-      case 180:
-        return [extent.width - x, extent.height - y]
-      case 270:
-        return [extent.width - y, x]
-      default:
-        return [x, y]
-    }
-  })()
-  if (gridX < 0 || gridY < 0 || gridY >= extent.height) {
-    return undefined
-  }
-
-  return beadInGrid(technique, gridX, gridY, { firstRow: 0, lastRow: rows - 1, columns })
-}
 
 /**
  * The bead under a point on an open canvas (ADR 0026), or undefined between beads: the same hit test with no edge, for

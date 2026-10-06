@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MirrorControls from './MirrorControls.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, toggleRotated, type Project } from '../../domain/project'
+import { turnedClockwise } from '../../testUtils/rotated'
+import { createProject, type Project } from '../../domain/project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 function makeProject(rotated = false): Project {
   const project = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
-  return rotated ? toggleRotated(project) : project
+  return rotated ? turnedClockwise(project) : project
 }
 
 function mountControls(project: Project, mirrorAxisCounts = { columns: 2, rows: 1 }) {

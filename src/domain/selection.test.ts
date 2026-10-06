@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   copySelection,
-  isWithinSelection,
   mirroredPasteBlock,
   mirroredPastedCells,
   pastedCells,
@@ -76,31 +75,6 @@ describe('selectionBetween', () => {
       rows: 9,
       columns: 4,
     })
-  })
-})
-
-describe('isWithinSelection', () => {
-  const selection = { top: 1, left: 2, rows: 2, columns: 3 }
-
-  it('accepts the cells inside the rectangle, corners included', () => {
-    for (const position of [
-      { row: 1, column: 2 },
-      { row: 2, column: 4 },
-      { row: 1, column: 3 },
-    ]) {
-      expect(isWithinSelection(selection, position)).toBe(true)
-    }
-  })
-
-  it('rejects the cells just outside it on every side', () => {
-    for (const position of [
-      { row: 0, column: 3 },
-      { row: 3, column: 3 },
-      { row: 1, column: 1 },
-      { row: 1, column: 5 },
-    ]) {
-      expect(isWithinSelection(selection, position)).toBe(false)
-    }
   })
 })
 

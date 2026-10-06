@@ -56,7 +56,7 @@ export interface Doodle extends Placement {
   bead: number
   big?: boolean
 }
-export interface Mark extends Placement {
+interface Mark extends Placement {
   /** The X1 mark's size in px. */
   size: number
 }

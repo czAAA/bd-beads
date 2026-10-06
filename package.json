@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "vue-tsc -b --noEmit",
     "lint": "eslint . --max-warnings=0",
+    "knip": "knip",
     "visual": "playwright test",
     "visual:update": "playwright test --update-snapshots",
     "perf": "playwright test -c playwright.perf.config.ts"
@@ -31,6 +32,7 @@
     "eslint": "^10.10.0",
     "eslint-plugin-vue": "^10.11.0",
     "jsdom": "^30.0.1",
+    "knip": "^6.40.0",
     "pngjs": "^7.0.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.70.0",

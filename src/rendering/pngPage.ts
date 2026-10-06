@@ -12,9 +12,9 @@ import type { PrintText } from './printText'
  */
 
 /** The gap between the chart and the story, and between the story's own blocks. */
-export const PNG_GUTTER = mm(8)
+const PNG_GUTTER = mm(8)
 /** The story column's width beside a typical Project. */
-export const PNG_STORY_WIDTH = mm(58)
+const PNG_STORY_WIDTH = mm(58)
 const ROW = mm(6.5)
 const SWATCH = mm(3.2)
 

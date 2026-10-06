@@ -20,7 +20,7 @@ export const PRINT_BEAD_BASE_MM = 4.6
 export const PRINT_BEAD_MAX_MM = 7
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(16)
-export const PRINT_FOOTER = mm(8)
+const PRINT_FOOTER = mm(8)
 export const PRINT_NAME_BAND = mm(12)
 export const PRINT_LEGEND_WIDTH = mm(48)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
@@ -38,8 +38,6 @@ export interface PageSize {
 /** A4 at 150 dpi. */
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
 export const A4_LANDSCAPE: PageSize = { width: 1754, height: 1240 }
-/** @deprecated use `A4_PORTRAIT`, or `orientedPage` to pick the orientation the Project wants. */
-export const A4 = A4_PORTRAIT
 
 /** What a chart page leaves for the beads themselves: inside the margins, header, name band, footer, rulers and board. */
 export function chartArea(page: PageSize): PageSize {
@@ -82,7 +80,7 @@ export interface PrintPlan {
 }
 
 /** Wider than tall, as displayed (a turned Project's rows run across). */
-export function isProjectWide(project: Shape): boolean {
+function isProjectWide(project: Shape): boolean {
   const { width, height } = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
   return width > height
 }

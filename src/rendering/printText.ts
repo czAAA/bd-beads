@@ -9,7 +9,7 @@ import { plural } from '../i18n/plural'
 import type { Locale, Translations } from '../i18n/translations'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
-export interface PrintedColor {
+interface PrintedColor {
   hex: string
   name: string
   beads: string

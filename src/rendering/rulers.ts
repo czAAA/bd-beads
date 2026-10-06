@@ -2,7 +2,6 @@ import type { Frame } from '../domain/canvas'
 import { CELL_SIZE_PX, type Rotation, type Technique } from '../domain/grid'
 import { pieceAreasOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
-import type { ProjectTheme } from './beadLook'
 import { displayedBox, gridToDisplayed, type Scroll, type Size } from './canvasView'
 import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
 
@@ -16,18 +15,18 @@ import { rowPitchPx, rowShiftPx, rowTopPx } from './projectRenderer'
  */
 
 /** How far a piece's rectangle and the Frame's line sit outside their outermost beads (BeadBoard and Frame cards). */
-export const PIECE_OUTSET_PX = 5
+const PIECE_OUTSET_PX = 5
 export const FRAME_OUTSET_PX = 7
 /** The gap between a ruler number and the line it hangs from (Rulers card). */
-export const RULER_GAP_PX = 3
+const RULER_GAP_PX = 3
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
-export const TURNED_FROM = 100
+const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
 const MONO_ADVANCE = 0.6
 /** The clear space kept between two neighbouring numbers when the Ruler step is chosen (ADR 0033). */
-export const RULER_NUMBER_GAP_PX = 4
+const RULER_NUMBER_GAP_PX = 4
 /** Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the step applies. */
-export const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
+const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
 export interface RuledBox extends Frame {
@@ -207,7 +206,7 @@ const NEAR_VIEWPORT_PX = 40
 const PICK_SLACK_PX = 2
 
 /** Below this bead pitch (px) a dot per bead would run together into a line, so only every 5th bead keeps its dot (ADR 0033). */
-export const DOT_EVERY_BEAD_FROM_PX = 6
+const DOT_EVERY_BEAD_FROM_PX = 6
 
 /** A bead's mark on a ruler: where it sits in the viewport, and what a click on it selects. */
 export interface RulerDot {
@@ -374,6 +373,3 @@ export function visibleRulerLabels(
     return near ? rulerLabels(box, view) : []
   })
 }
-
-/** What the rulers are drawn in: the numbers and the lines. */
-export type RulerTheme = Pick<ProjectTheme, 'ruler' | 'rulerStrong' | 'marker' | 'cursor' | 'frameLine' | 'pieceLine'>

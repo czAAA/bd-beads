@@ -124,7 +124,7 @@ export const DARK_THEME: ProjectTheme = {
 }
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
-export const CONTRAST_THEME: ProjectTheme = {
+const CONTRAST_THEME: ProjectTheme = {
   canvas: '#ffffff',
   dot: '#b8b0a8',
   pieceLine: '#000000',
@@ -180,10 +180,10 @@ export interface BeadShape {
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
 
 /** The gap between two beads is twice this: each bead stands this far in from its cell on every side, in the Project's own px. */
-export const GAP_PX = 1
+const GAP_PX = 1
 
 /** Width of the faint rim inside each bead's edge, in the Project's own px. */
-export const RIM_PX = 0.75
+const RIM_PX = 0.75
 
 /**
  * A color's grey, worked out directly. A finished row is drawn as its greyscale at reduced opacity, and canvas filters

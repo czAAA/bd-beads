@@ -1,0 +1,20 @@
+// knip (ticket 311): unused files, exports and dependencies. `npm run knip` runs in CI's "Typecheck and lint" job.
+// A test that reads an export counts as a use, so test-only code is found by hand, not by this run.
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  // The Vite config's two pages (the editor and the Overview, ADR 0022) are the app's entries; Vitest and Playwright
+  // entries come from their plugins. These are the helpers those find no importer for.
+  "entry": ["index.html", "overview/index.html", "src/testUtils/*.ts", "e2e/support/*.ts"],
+  "project": ["src/**/*.{ts,vue}", "e2e/**/*.ts", "*.ts"],
+  "ignore": [
+    // The switched-off Tour (ticket 80, TOUR_ENABLED in src/features.ts) is left alone until it is decided.
+    "src/composables/tour/**",
+    "src/domain/tour.ts"
+  ],
+  "rules": {
+    // Deliberate aliases: the three per-Technique slow-framing thresholds (imageFraming.ts), DEFAULT_THEME (beadLook.ts).
+    "duplicates": "off"
+  }
+  // Unused exported types are reported on purpose: a type nothing imports is a public name nothing needs, and the
+  // fix is one word (drop `export`). MirrorControls.vue needs no ignore: its test imports it, so knip counts it used.
+}

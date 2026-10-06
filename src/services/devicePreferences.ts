@@ -70,7 +70,7 @@ export const PREFERENCES = {
 }
 
 export type PreferenceName = keyof typeof PREFERENCES
-export type PreferenceValue<N extends PreferenceName> = (typeof PREFERENCES)[N] extends Preference<infer T> ? T : never
+type PreferenceValue<N extends PreferenceName> = (typeof PREFERENCES)[N] extends Preference<infer T> ? T : never
 
 export type PreferenceStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
