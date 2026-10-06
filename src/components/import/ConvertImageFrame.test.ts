@@ -5,9 +5,9 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ConvertImageFrame from './ConvertImageFrame.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { CELL_SIZE_PX, gridWidthPx } from '../../domain/grid'
+import { CELL_SIZE_PX, gridWidthPx, rowHeightPx } from '../../domain/grid'
 import { DEFAULT_MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
-import { CENTERED_PAN } from '../../domain/imageFraming'
+import { CENTERED_PAN, frameSizeMm, framingView } from '../../domain/imageFraming'
 import { installFakeCanvas } from '../../testUtils/fakeCanvas'
 
 // Whether a block is too big to draw bead by bead is the draft renderer's own rule (tested there); here it is made to
@@ -228,6 +228,28 @@ describe('ConvertImageFrame', () => {
     expect((panned[0]![0] as { x: number }).x).toBeLessThan(0.5)
 
     window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
+  })
+
+  describe('a vertical drag follows the pointer (ticket 308)', () => {
+    // The picture is drawn by the Project renderer, so a screen pixel down the page is 1/rowPitchPx of a row.
+    const rowPitch = { loom: 20, brick: 21, peyote: 15 } as const
+
+    it.each(['loom', 'brick', 'peyote'] as const)('moves the picture by the millimetres the pointer covered, in %s', async (technique) => {
+      const image = twoBlocks(8, 32)
+      const dimensions = { columns: 4, rows: 4 }
+      const wrapper = mountFrame({ technique, image, dimensions, pan: { x: 0.5, y: 0.5 } })
+      const frame = frameSizeMm(technique, dimensions, cubeBead)
+      const rangeYMm = framingView(image, frame, 1, { x: 0.5, y: 0.5 }).pictureHeightMm - frame.heightMm
+
+      await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 100, clientY: 100 })
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 100, clientY: 110 }))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
+
+      const pan = wrapper.emitted('pan')![0]![0] as { y: number }
+      const rowMm = rowHeightPx(technique, cubeBead.heightMm)
+      const expectedMovedMm = (10 / rowPitch[technique]) * rowMm
+      expect((0.5 - pan.y) * rangeYMm).toBeCloseTo(expectedMovedMm, 6)
+    })
   })
 
   it('leaves a picture that covers the frame exactly where it is when dragged', async () => {
