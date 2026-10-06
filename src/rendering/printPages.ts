@@ -5,6 +5,7 @@ import type { Project } from '../domain/project'
 import { PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { displayedExtentPx, renderProject } from './projectRenderer'
+import { spaceOf } from './space'
 import {
   PRINT_BOARD_PAD,
   PRINT_HEADER,
@@ -172,7 +173,7 @@ function drawBoard(context: CanvasRenderingContext2D, project: Project, region: 
   tile.height = Math.max(1, Math.ceil(region.height))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  renderProject(tileContext, { project, region, zoom, theme: PRINT_THEME })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom, theme: PRINT_THEME })
   context.drawImage(tile, at.x, at.y)
 }
 

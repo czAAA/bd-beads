@@ -1,3 +1,4 @@
+import { fromHex, type Rgb } from './color'
 import { PALETTE } from './palette'
 
 /**
@@ -9,11 +10,6 @@ import { PALETTE } from './palette'
  * Palette colors every other Project paints with, rather than a closed set of picture-only hexes.
  */
 
-export interface Rgb {
-  r: number
-  g: number
-  b: number
-}
 
 function channelHex(value: number): string {
   return Math.round(value).toString(16).padStart(2, '0')
@@ -24,9 +20,9 @@ export function toHex({ r, g, b }: Rgb): string {
   return `#${channelHex(r)}${channelHex(g)}${channelHex(b)}`
 }
 
-export function fromHex(hex: string): Rgb {
-  const value = Number.parseInt(hex.slice(1), 16)
-  return { r: (value >> 16) & 0xff, g: (value >> 8) & 0xff, b: value & 0xff }
+/** A hex's channels; every hex a Project stores is well formed, and anything else reads as black. */
+export function channelsOf(hex: string): Rgb {
+  return fromHex(hex) ?? { r: 0, g: 0, b: 0 }
 }
 
 /**
@@ -40,12 +36,12 @@ export function colorDistance(a: Rgb, b: Rgb): number {
 
 /** The closest of `colors` to `hex`, or undefined when there are none to choose from. */
 export function nearestColor(colors: readonly string[], hex: string): string | undefined {
-  const target = fromHex(hex)
+  const target = channelsOf(hex)
   let best: string | undefined
   let bestDistance = Infinity
 
   for (const candidate of colors) {
-    const distance = colorDistance(target, fromHex(candidate))
+    const distance = colorDistance(target, channelsOf(candidate))
     if (distance < bestDistance) {
       best = candidate
       bestDistance = distance
@@ -187,7 +183,7 @@ export function resolveImageColors(
   counts: ReadonlyMap<string, number>,
   maxColors: number,
 ): ResolvedImageColors {
-  const sampled: WeightedColor[] = [...counts].map(([hex, count]) => ({ hex, rgb: fromHex(hex), count }))
+  const sampled: WeightedColor[] = [...counts].map(([hex, count]) => ({ hex, rgb: channelsOf(hex), count }))
   if (sampled.length === 0) {
     return { mapping: new Map(), colors: [] }
   }

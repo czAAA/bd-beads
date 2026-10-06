@@ -1,3 +1,4 @@
+import { fromHex } from '../domain/color'
 import { isOffsetTechnique, type Technique } from '../domain/grid'
 import type { ProjectTheme } from './beadLook'
 
@@ -34,8 +35,8 @@ const rgbOf = new Map<string, readonly [number, number, number]>()
 function channels(color: string): readonly [number, number, number] {
   let known = rgbOf.get(color)
   if (!known) {
-    const digits = color.length === 4 ? [...color.slice(1)].map((digit) => digit + digit).join('') : color.slice(1)
-    known = [0, 2, 4].map((start) => Number.parseInt(digits.slice(start, start + 2), 16)) as [number, number, number]
+    const { r, g, b } = fromHex(color) ?? { r: 0, g: 0, b: 0 }
+    known = [r, g, b]
     rgbOf.set(color, known)
   }
   return known

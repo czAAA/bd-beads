@@ -19,14 +19,14 @@ No other visible change: the refactor is pixel-neutral apart from those two fixe
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] One `renderProject` taking a shared `Space` draws the editor, the exports, the Convert image preview and the Overview; `canvasRenderer.ts` is gone
-- [ ] `Space` / `spaceOf` are exported from one module in `rendering/`, and the overlay takes the same value as the renderer
-- [ ] Renderer tests are a table of space (open, Frame-only) × Technique, with rotation where it matters, and cover the band redraw in both spaces
-- [ ] Overlay tests gain open-space cases for what the editor uses: Row progress marker, Selection, hover preview, cursor
-- [ ] Regression tests for the two bugs above: seam fading with a Frame past column 0, and row shift parity for a no-Frame Project whose top bead is on an odd row
-- [ ] One `fromHex` in `domain/color.ts` (accepting `#rgb` and `#rrggbb`) replaces the four parsers, with its own tests
-- [ ] ADR 0026's wording about the open canvas renderer and CONTEXT.md's "Project renderer" entry say it is one renderer over two spaces
+- [x] One `renderProject` taking a shared `Space` draws the editor, the exports, the Convert image preview and the Overview; `canvasRenderer.ts` is gone
+- [x] `Space` / `spaceOf` are exported from one module in `rendering/`, and the overlay takes the same value as the renderer
+- [x] Renderer tests are a table of space (open, Frame-only) × Technique, with rotation where it matters, and cover the band redraw in both spaces
+- [x] Overlay tests gain open-space cases for what the editor uses: Row progress marker, Selection, hover preview, cursor
+- [x] Regression tests for the two bugs above: seam fading with a Frame past column 0, and row shift parity for a no-Frame Project whose top bead is on an odd row
+- [x] One `fromHex` in `domain/color.ts` (accepting `#rgb` and `#rrggbb`) replaces the four parsers, with its own tests
+- [x] ADR 0026's wording about the open canvas renderer and CONTEXT.md's "Project renderer" entry say it is one renderer over two spaces
 - [ ] The visual check passes; the PR names any screenshot it updates and why
 - [ ] Typecheck, lint, unit tests and the visual check pass in CI

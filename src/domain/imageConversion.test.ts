@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { cellCenter, computeGridDimensions, type GridDimensions, rowHeightPx, type Technique } from './grid'
-import { fromHex } from './imageColors'
+import { channelsOf } from './imageColors'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
   ACCEPTED_IMAGE_FORMATS,
@@ -70,7 +70,7 @@ function coordinateImage(width: number, height: number): PixelData {
 
 /** Which pixel a cell of a coordinateImage conversion sampled. */
 function sampledPixel(hex: string): { x: number; y: number } {
-  const { r, g } = fromHex(hex)
+  const { r, g } = channelsOf(hex)
   return { x: r, y: g }
 }
 

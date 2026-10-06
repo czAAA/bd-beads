@@ -1,21 +1,19 @@
 import { colorAt, type Frame } from '../domain/canvas'
-import { projectDimensions, projectFrame } from '../domain/project'
 import { CELL_SIZE_PX, type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import type { Selection } from '../domain/selection'
 import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
-import { OPEN_EXTENT, viewArea } from './canvasRenderer'
+import { inSpace, spaceOf, type Space } from './space'
 import { drawFrameEditing, drawRulers } from './rulerRenderer'
 import { cachedSprite } from './sprites'
 import {
   projectExtentPx,
-  rowShiftPx,
   rowTopPx,
   beadRoundness,
   setGridTransform,
-  visibleBeadsIn,
-  visibleBeadsOpen,
+  shiftOf,
+  visibleBeadsInSpace,
   type DrawnProject,
   type Region,
 } from './projectRenderer'
@@ -69,11 +67,11 @@ export interface OverlayInput {
   /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
   tourMarks?: TourMarks
   /**
-   * Whether the region is a viewport onto the open canvas (ADR 0026), measured from the bead at row 0, column 0, with no
-   * edge: any position can carry a preview, a Selection or the cursor. Otherwise the Project is the Frame alone, drawn
-   * from its first bead, as an export or a picture shows it.
+   * Where positions live, from `spaceOf`, the same value the base layer was drawn with. On the open canvas (ADR 0026)
+   * any position can carry a preview, a Selection or the cursor; in Frame-only space, the default, the Project is the
+   * Frame alone, drawn from its first bead, as an export or a picture shows it.
    */
-  open?: boolean
+  space?: Space
   /**
    * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with their
    * numbers while `numbers` is on. `fontPx` is the numbers' size and `viewport` the surface's size in px.
@@ -89,35 +87,6 @@ export interface OverlayInput {
 export interface TourMarks {
   cells: readonly GridPosition[]
   boxes: readonly Selection[]
-}
-
-/**
- * Where an overlay's positions live. On the open canvas every position is real and the Frame, when there is one, sits
- * where it is; drawn on its own (an export, a picture) the Project is the Frame and its first bead is position (0, 0).
- */
-interface Space {
-  open: boolean
-  /** The Frame's first row and column in the coordinates grid space uses, and its size. */
-  origin: GridPosition
-  columns: number
-  rows: number
-  hasFrame: boolean
-}
-
-function spaceOf(project: DrawnProject, open: boolean): Space {
-  const { columns, rows } = projectDimensions(project)
-  const frame = projectFrame(project)
-  return { open, origin: open ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }, columns, rows, hasFrame: !open || project.frame !== undefined }
-}
-
-/** Whether a position can be drawn on: anywhere on the open canvas, inside the Project otherwise. */
-function inSpace(space: Space, row: number, column: number): boolean {
-  return space.open || (row >= 0 && row < space.rows && column >= 0 && column < space.columns)
-}
-
-/** The beads in view, with no edge on the open canvas. */
-function visibleIn(project: DrawnProject, space: Space, region: Region, zoom: number): ReturnType<typeof visibleBeadsIn> {
-  return space.open ? visibleBeadsOpen(project.technique, viewArea(region, zoom, project.rotation)) : visibleBeadsIn(project, region, zoom)
 }
 
 /** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
@@ -143,10 +112,10 @@ function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: S
 
   const row = space.origin.row + relative
   const first = space.origin.column * CELL_SIZE_PX
-  const extent = space.open ? undefined : projectExtentPx(technique, columns, rows)
-  const left = rowShiftPx(technique, row) + first - ROW_OUTLINE_OUTSET_PX
+  const extent = space.open ? undefined : space.extent
+  const left = shiftOf(space, technique, row) + first - ROW_OUTLINE_OUTSET_PX
   const top = rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX
-  const right = rowShiftPx(technique, row) + first + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
+  const right = shiftOf(space, technique, row) + first + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
   const bottom = rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
   // Drawn on its own the Project's surface ends at its extent, so the first and last rows' outlines stay inside it.
   const clippedLeft = extent ? Math.max(0, left) : left
@@ -181,7 +150,7 @@ function drawCurrentColumn(context: DrawingContext, project: DrawnProject, space
   const size = CELL_SIZE_PX + 2
   for (let offset = 0; offset < rows; offset += 1) {
     const row = space.origin.row + offset
-    const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX - 1
+    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX - 1
     const y = rowTopPx(technique, row) - 1
 
     if (technique === 'loom') {
@@ -240,7 +209,7 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     if (!inSpace(space, cell.row, cell.column)) {
       continue
     }
-    const x = rowShiftPx(technique, cell.row) + cell.column * CELL_SIZE_PX + 1
+    const x = shiftOf(space, technique, cell.row) + cell.column * CELL_SIZE_PX + 1
     const y = rowTopPx(technique, cell.row) + 1
     const color = cell.color ?? preview.color
 
@@ -295,7 +264,7 @@ function drawSelection(
   theme: ProjectTheme,
 ): void {
   const { technique } = project
-  const visible = visibleIn(project, space, region, zoom)
+  const visible = visibleBeadsInSpace(technique, space, region, zoom, project.rotation)
   const size = CELL_SIZE_PX - 2
   const rounded = technique === 'peyote'
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
@@ -309,7 +278,7 @@ function drawSelection(
   for (let row = firstRow; row <= lastRow; row += 1) {
     const { first, last } = visible.columnsOf(row)
     for (let column = Math.max(first, selection.left); column <= Math.min(last, right); column += 1) {
-      const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + 1
+      const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
       const y = rowTopPx(technique, row) + 1
       if (sprite) {
         context.drawImage(sprite, x, y, size, size)
@@ -336,7 +305,7 @@ function drawSelection(
         [column === right, size - OUTLINE_PX, 0, OUTLINE_PX, size],
       ] as const
 
-      const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + 1
+      const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
       const y = rowTopPx(technique, row) + 1
       if (rounded) {
         // The outline follows the bead's rounded inside, as an inset shadow does.
@@ -373,7 +342,7 @@ function drawDimmed(
   theme: ProjectTheme,
 ): void {
   const { technique, beads } = project
-  const visible = visibleIn(project, space, region, zoom)
+  const visible = visibleBeadsInSpace(technique, space, region, zoom, project.rotation)
   const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
 
   for (const { row, column } of cells) {
@@ -381,7 +350,7 @@ function drawDimmed(
       continue
     }
     drawFlatBead(context, {
-      x: rowShiftPx(technique, row) + column * CELL_SIZE_PX,
+      x: shiftOf(space, technique, row) + column * CELL_SIZE_PX,
       y: rowTopPx(technique, row),
       size: CELL_SIZE_PX,
       cornerRadius,
@@ -406,7 +375,7 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   // The bead stands a pixel in from its cell (its gap); the ring starts 2px outside that.
   const offset = 2 - 1
   const width = theme.cursorWidth
-  const x = rowShiftPx(technique, cursor.row) + cursor.column * CELL_SIZE_PX - offset
+  const x = shiftOf(space, technique, cursor.row) + cursor.column * CELL_SIZE_PX - offset
   const y = rowTopPx(technique, cursor.row) - offset
   const size = CELL_SIZE_PX + offset * 2
   const radius = beadRoundness(technique) * CELL_SIZE_PX + offset
@@ -464,7 +433,7 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
     if (!inSpace(space, row, column)) {
       continue
     }
-    const x = rowShiftPx(technique, row) + column * CELL_SIZE_PX + 1
+    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
     const y = rowTopPx(technique, row) + 1
     strokeTourMark(context, theme, () => {
       context.beginPath()
@@ -476,7 +445,7 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
   for (const box of marks.boxes) {
     const bottom = (space.open ? box.top + box.rows : Math.min(box.top + box.rows, rows)) - 1
     const right = (space.open ? box.left + box.columns : Math.min(box.left + box.columns, columns)) - 1
-    const left = rowShiftPx(technique, box.top) + box.left * CELL_SIZE_PX
+    const left = shiftOf(space, technique, box.top) + box.left * CELL_SIZE_PX
     const top = rowTopPx(technique, box.top)
     const width = (right - box.left + 1) * CELL_SIZE_PX
     const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - top
@@ -512,7 +481,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, open = false, rulers, frameEditing, marginOutline = 0 } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, marginOutline = 0 } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -521,14 +490,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
-  const ruled = open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
+  const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
   if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !(marginOutline > 0)) {
     return
   }
 
-  const space = spaceOf(project, open)
-  const extent = open ? OPEN_EXTENT : projectExtentPx(project.technique, space.columns, space.rows)
-  setGridTransform(context, extent, region, zoom, project.rotation, pixelRatio)
+  setGridTransform(context, space.extent, region, zoom, project.rotation, pixelRatio)
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 
@@ -574,7 +541,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       cursor,
     })
   }
-  if (open && rulers && frameEditing && project.frame) {
+  if (space.open && rulers && frameEditing && project.frame) {
     drawFrameEditing(context, {
       frame: project.frame,
       view: { technique: project.technique, rotation: project.rotation, zoom, scroll: { x: region.x, y: region.y }, viewport: rulers.viewport, fontPx: rulers.fontPx },

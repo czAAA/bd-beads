@@ -1,13 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { PALETTE } from './palette'
-import { colorDistance, fromHex, nearestColor, resolveImageColors, snapToPalette, toHex } from './imageColors'
+import { colorDistance, channelsOf, nearestColor, resolveImageColors, snapToPalette, toHex } from './imageColors'
 
 function counts(entries: Record<string, number>): Map<string, number> {
   return new Map(Object.entries(entries))
 }
 
-describe('toHex / fromHex', () => {
+describe('toHex / channelsOf', () => {
   it('writes a lowercase six-digit hex, padding single digits', () => {
     expect(toHex({ r: 0, g: 0, b: 0 })).toBe('#000000')
     expect(toHex({ r: 255, g: 255, b: 255 })).toBe('#ffffff')
@@ -15,22 +15,22 @@ describe('toHex / fromHex', () => {
   })
 
   it('reads a hex back to its channels', () => {
-    expect(fromHex('#010203')).toEqual({ r: 1, g: 2, b: 3 })
-    expect(fromHex('#E63746')).toEqual({ r: 230, g: 55, b: 70 })
+    expect(channelsOf('#010203')).toEqual({ r: 1, g: 2, b: 3 })
+    expect(channelsOf('#E63746')).toEqual({ r: 230, g: 55, b: 70 })
   })
 
   it('round-trips every Palette color', () => {
     for (const color of PALETTE) {
-      expect(toHex(fromHex(color.hex))).toBe(color.hex)
+      expect(toHex(channelsOf(color.hex))).toBe(color.hex)
     }
   })
 })
 
 describe('colorDistance', () => {
   it('is zero for the same color and symmetric otherwise', () => {
-    expect(colorDistance(fromHex('#123456'), fromHex('#123456'))).toBe(0)
-    expect(colorDistance(fromHex('#000000'), fromHex('#010101'))).toBeCloseTo(
-      colorDistance(fromHex('#010101'), fromHex('#000000')),
+    expect(colorDistance(channelsOf('#123456'), channelsOf('#123456'))).toBe(0)
+    expect(colorDistance(channelsOf('#000000'), channelsOf('#010101'))).toBeCloseTo(
+      colorDistance(channelsOf('#010101'), channelsOf('#000000')),
     )
   })
 

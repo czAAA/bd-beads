@@ -5,6 +5,7 @@ import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { encodePng } from '../domain/pngEncoder'
 import { PRINT_THEME } from './beadLook'
 import { displayedExtentPx, renderProject } from './projectRenderer'
+import { spaceOf } from './space'
 import { displayedGrid, planPrint, PRINT_BOARD_PAD, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
 
@@ -131,6 +132,7 @@ export async function exportProjectPng(source: Project, words: PrintText): Promi
     clipToPngBoard(context, 0, 0, chart.width, chart.height, y)
     renderProject(context, {
       project,
+      space: spaceOf(project, false),
       region: { x: -PNG_MARGIN_PX, y: y - PNG_MARGIN_PX, width: chart.width, height: canvas.height },
       zoom,
       theme: PRINT_THEME,

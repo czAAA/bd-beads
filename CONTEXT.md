@@ -228,7 +228,7 @@ The set of colors one Convert image produced, saved with that Project and offere
 _Avoid_: extracted palette, pattern palette, image palette, pattern colors
 
 **Project renderer**:
-The one thing that draws a Project's cells — for the editor, the Convert image preview and the exports — so a bead looks the same wherever it appears. Draws whatever part of the Project is in view, at the current zoom and rotation, in the Technique's geometry.
+The one thing that draws a Project's cells — for the editor, the Convert image preview and the exports — so a bead looks the same wherever it appears. Draws whatever part of the Project is in view, at the current zoom and rotation, in the Technique's geometry. One renderer over two spaces: the open canvas of the editor, where every position is real and the Frame sits where it is, and the Frame alone of the exports, the Convert image preview and the Overview, where the Frame's first bead is position (0, 0). The overlay layer is drawn in the same space.
 _Avoid_: grid component, exporter, preview renderer
 
 **Drawing surface**:
