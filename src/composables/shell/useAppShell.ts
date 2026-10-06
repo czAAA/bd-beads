@@ -5,6 +5,8 @@ import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillCorner } from '../../domain/zoomPillCorner'
+import type { Selection } from '../../domain/selection'
+import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
@@ -181,7 +183,7 @@ function wireAppShell(services: Services) {
     copy: onCopy,
     pasteAt: pasteAtCell,
     deleteSelection: onDeleteSelection,
-    selectLine: onSelectLine,
+    selectLine,
     pastePreviewCells,
     clearSelection: resetSelection,
     pasteProjectionActive,
@@ -204,13 +206,30 @@ function wireAppShell(services: Services) {
     selectedImageColor,
     selectedColorHex,
     previewColor,
-    onSelectTool,
+    onSelectTool: selectTool,
     onSelectColor,
     onSelectCustomColor,
     onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value, onToolChosen: () => frameFlow.done() })
+
+  /**
+   * Choosing a tool. Choosing the Eraser while a Selection exists empties the Selection's beads first (ticket 313), the
+   * same as Del under Select; leaving Select then drops the Selection, as it does for every other tool.
+   */
+  function onSelectTool(tool: Tool) {
+    if (tool === 'erase' && selection.value) {
+      onDeleteSelection()
+    }
+    selectTool(tool)
+  }
+
+  /** A ruler number was pressed (ticket 313): selecting a line is the Select tool's job, so it becomes the active tool. */
+  function onSelectLine(newSelection: Selection) {
+    selectTool('select')
+    selectLine(newSelection)
+  }
 
   /**
    * An added swatch is removed (ticket 228): painted cells keep their hex, so only the swatch goes. Removing the active

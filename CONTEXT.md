@@ -47,7 +47,7 @@ A set of beads that touch by a side or a corner. Pieces form, merge and split as
 _Avoid_: island, cluster, group, shape
 
 **Piece area**:
-The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. Each Piece's area counts as everything within one bead outside its own bounds; Piece areas whose rectangles overlap, lie inside or touch once that margin is included join, repeated until none do, so Pieces with one empty bead between them share one rectangle and one set of rulers while two or more empty beads keep them apart, and a large Piece never shows smaller Pieces' rectangles inside or against its own. The margin only decides what joins; the drawn rectangle stays around the beads. Forms, merges and splits as beads are painted and erased. The Rulers toggle shows or hides it; the Frame is never hidden by it.
+The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. Each Piece's area counts as everything within one bead outside its own bounds; Piece areas whose rectangles overlap, lie inside or touch once that margin is included join, repeated until none do, so Pieces with one empty bead between them share one rectangle and one set of rulers while two or more empty beads keep them apart, and a large Piece never shows smaller Pieces' rectangles inside or against its own. The margin only decides what joins; the drawn rectangle stays around the beads. Forms, merges and splits as beads are painted and erased. With no Frame, a whole row or column of one can be selected by its ruler number and removed with Remove row/column. The Rulers toggle shows or hides it; the Frame is never hidden by it.
 _Avoid_: group, cluster, island
 
 **Frame**:
@@ -188,7 +188,7 @@ The grams of beads a Pattern needs, per color and in total, shown in Beads neede
 _Avoid_: real weight, exact weight
 
 **Remove row/column**:
-A Tools-group tool, next to Eraser, that removes the specific row or column of the Frame the Selection marks out, from any index, shifting the Frame's beads after it to close the gap and shrinking the Frame by one, as one undo step. Beads outside the Frame stay where they are. Enabled only when the Selection is exactly one whole row or column of the Frame (a ruler number selects one; see Selection); refused while Row progress is on, which holds the Frame's rows still.
+A Tools-group tool, next to Eraser, that removes the specific row or column the Selection marks out, from any index, shifting the beads after it to close the gap, as one undo step. With a Frame it acts on the Frame and shrinks it by one; with no Frame it acts on the Piece area the line belongs to, which ends one line shorter, with a new empty line outside it. Beads outside the Frame or Piece area stay where they are. Enabled only when the Selection is exactly one whole row or column of the Frame or Piece area (a ruler number selects one; see Selection); refused while Row progress is on, which holds the Frame's rows still.
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
@@ -200,7 +200,7 @@ A paint color chosen freely with the color picker in the Colors group. The first
 _Avoid_: user color, extra palette color, one-off color
 
 **Selection**:
-A rectangular area of a Project's cells, marked out by dragging with the Select tool, or by clicking a number on the row or column ruler (which marks out that whole row/column, from any tool), and left highlighted once made. Exactly one is active at a time: a new drag or ruler click replaces the previous one, and leaving the Select tool, switching or creating a Project, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it (an Escape with no Selection, paste preview or open disclosure left to dismiss switches to the Paint tool instead). It marks out cells, it does not change them — selecting never paints anything.
+A rectangular area of a Project's cells, marked out by dragging with the Select tool, or by clicking a number on the row or column ruler (which marks out that whole row/column and makes Select the active tool, so selecting a line is Select's job too), and left highlighted once made. Choosing Paint, Fill or Hand drops it; Del, or choosing the Eraser, empties every bead in it as one undo step. Exactly one is active at a time: a new drag or ruler click replaces the previous one, and leaving the Select tool, switching or creating a Project, making a Copy, or right-clicking the canvas or pressing Escape while nothing is copied clears it (an Escape with no Selection, paste preview or open disclosure left to dismiss switches to the Paint tool instead). It marks out cells, it does not change them — selecting never paints anything.
 _Avoid_: region, highlighted area, selected block
 
 **Copy**:
