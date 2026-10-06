@@ -568,8 +568,6 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
 })
-
-defineExpose({ measure })
 </script>
 
 <template>

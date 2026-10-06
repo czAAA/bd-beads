@@ -10,7 +10,7 @@ A small script or a one-off search is fine for finding them; adding another perm
 
 **Blocked by:** 311 (knip's cleanup first, so this pass sees only what knip can't).
 
-**Status:** needs-triage
+**Status:** done
 
 - [ ] Unused translation keys are removed from the interface, English and Russian together; dynamically chosen keys are kept, and the PR lists how they were checked
 - [ ] Unused CSS classes and app-side custom properties are removed; the visual check is unchanged

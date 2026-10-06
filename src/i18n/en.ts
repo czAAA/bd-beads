@@ -11,7 +11,6 @@ export const en: Translations = {
     techniqueLoom: 'Loom',
     techniquePeyote: 'Peyote',
     techniqueBrick: 'Brick stitch',
-    sizePlaceholder: '20',
     widthLabel: 'Width',
     heightLabel: 'Height',
     decreaseWidthButton: 'Decrease width',
@@ -133,13 +132,11 @@ export const en: Translations = {
       "Couldn't save on this device. Your latest change is only on screen. Free up space in the browser, or export the Project to a file to keep it.",
   },
   header: {
-    toolsButton: 'Tools',
     menuButton: 'Menu',
     overviewItem: 'Overview',
     tourItem: 'Take the tour',
     sourceItem: 'Source code',
     projectSheetLabel: 'Project',
-    newProjectSheetTitle: 'New Project',
   },
   overview: {
     pageTitle: 'Overview',
@@ -306,10 +303,6 @@ export const en: Translations = {
     removeLineShort: 'Remove line',
     removeLineName: 'Remove line',
   },
-  rulers: {
-    selectRowLabel: 'Select row {number}',
-    selectColumnLabel: 'Select column {number}',
-  },
   rowProgress: {
     enabledLabel: 'Show row progress',
     directionButton: 'Turn row direction',
@@ -390,10 +383,7 @@ export const en: Translations = {
     importLabel: 'Import a file',
     importedLabel: 'Projects imported',
     importErrorLabel: 'Could not import that file',
-    exportQrButton: 'Export as QR code',
     qrTooLargeMessage: 'Too large for a single QR code. Use Export Project instead.',
-    exportPngButton: 'Export as PNG image',
-    exportPdfButton: 'Export as PDF for printing',
     closeQrButton: 'Close',
     importQrLabel: 'Import QR code',
     qrImportedLabel: 'Project imported from QR code',

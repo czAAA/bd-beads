@@ -23,7 +23,6 @@ export interface Translations {
     techniqueLoom: string
     techniquePeyote: string
     techniqueBrick: string
-    sizePlaceholder: string
     widthLabel: string
     heightLabel: string
     /** Stepper buttons beside Width and Height (ticket 181), each named for screen readers like Stepper's own. */
@@ -157,9 +156,8 @@ export interface Translations {
   storage: {
     saveFailedMessage: string
   }
-  /** The header's own additions at the iPad mini tier (ticket 168): the Tools button that opens the Drawer, and the More button (OverflowMenu card). */
+  /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
-    toolsButton: string
     menuButton: string
     overviewItem: string
     tourItem: string
@@ -167,7 +165,6 @@ export interface Translations {
     sourceItem: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Projects, New Project, Import. */
     projectSheetLabel: string
-    newProjectSheetTitle: string
   }
   /** The Tour (ticket 80; TourStep card): the step card's words, step by step, and what it says when it moves. */
   tour: {
@@ -294,12 +291,6 @@ export interface Translations {
     removeLineShort: string
     removeLineName: string
   }
-  /** The row and column rulers (ticket 123): each number is now a button that selects that whole line, the same Selection a Select-tool drag across it would leave. */
-  rulers: {
-    /** `{number}` is the 1-based row/column number shown. */
-    selectRowLabel: string
-    selectColumnLabel: string
-  }
   rowProgress: {
     enabledLabel: string
     directionButton: string
@@ -399,13 +390,8 @@ export interface Translations {
     importLabel: string
     importedLabel: string
     importErrorLabel: string
-    /** Encodes the open Project as a single scannable QR code (compact encoding, ADR 0009), shown inline below. */
-    exportQrButton: string
     /** Shown instead of the code when the Project doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Project above as the fallback rather than duplicating a download of its own. */
     qrTooLargeMessage: string
-    /** Picture and print exports of the open Project (tickets 73, 74). */
-    exportPngButton: string
-    exportPdfButton: string
     /** With {page} and {pages}. */
     /** With {across}, {acrossTotal}, {down} and {downTotal}: which piece of a chart cut over several pages this is. */
     closeQrButton: string

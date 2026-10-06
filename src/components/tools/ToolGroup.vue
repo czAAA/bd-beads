@@ -82,7 +82,7 @@ function collapse(): boolean {
   return was
 }
 
-defineExpose({ expanded, collapse })
+defineExpose({ collapse })
 </script>
 
 <template>

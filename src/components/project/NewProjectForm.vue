@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useId, watch } from 'vue'
-import { BEAD_CATALOG, beadLabel, type Bead } from '../../domain/beads'
+import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
 import type { SizeUnit, Technique } from '../../domain/grid'
 import {
@@ -33,7 +33,6 @@ const { t, locale } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    beads?: readonly Bead[]
     /**
      * How a chosen picture is turned into pixels (ticket 58). The app shell hands over the browser's own decoding
      * (ADR 0020); a test hands over synthetic pixel data instead, since jsdom decodes no image bytes.
@@ -47,7 +46,6 @@ const props = withDefaults(
     slowFramingCellThresholds?: Record<Technique, number>
   }>(),
   {
-    beads: () => BEAD_CATALOG,
     slowFramingCellThresholds: () => SLOW_FRAMING_CELLS,
   },
 )
@@ -64,7 +62,7 @@ const emit = defineEmits<{
 }>()
 
 const name = ref('')
-const beadId = ref(props.beads[0]!.id)
+const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>('loom')
 const widthText = ref('')
 const heightText = ref('')
@@ -78,7 +76,7 @@ const tourReset = useTourFormReset()
 if (tourReset) {
   watch(tourReset, () => {
     technique.value = 'loom'
-    beadId.value = props.beads[0]!.id
+    beadId.value = BEAD_CATALOG[0]!.id
     unit.value = 'beads'
     widthText.value = String(TOUR_COLUMNS)
     heightText.value = String(TOUR_ROWS)
@@ -97,7 +95,7 @@ onMounted(() => {
 
 const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
-const selectedBead = computed(() => props.beads.find((candidate) => candidate.id === beadId.value))
+const selectedBead = computed(() => BEAD_CATALOG.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
 /** Whether either size field has been filled: with both empty the Project is an open canvas with no Frame, and with one the other is required. */
@@ -307,7 +305,7 @@ function onDropImage(file: File) {
 
     <FormField :label="t.form.beadLabel" label-for="bead-select">
       <FieldSelect id="bead-select" v-model="beadId" data-testid="bead-select">
-        <option v-for="bead in beads" :key="bead.id" :value="bead.id">
+        <option v-for="bead in BEAD_CATALOG" :key="bead.id" :value="bead.id">
           {{ bead.brand }} {{ bead.name }} {{ bead.size }}
         </option>
       </FieldSelect>

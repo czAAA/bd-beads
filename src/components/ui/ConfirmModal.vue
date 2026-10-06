@@ -16,16 +16,12 @@ withDefaults(
     message: string
     confirmLabel: string
     cancelLabel: string
-    /** Turns the confirm button off while what the modal asks for isn't valid yet (a form inside the modal, say). */
-    confirmDisabled?: boolean
     /** Styles the confirm as a destructive action; off for a confirmation that only moves the person along (ticket 154). */
     confirmDanger?: boolean
     /** A third, side action shown before Cancel (Import's "Save current", ticket 154); absent means there is none. */
     extraLabel?: string
-    /** Shows the message as a problem, in the danger color and announced at once. */
-    messageError?: boolean
   }>(),
-  { confirmDisabled: false, confirmDanger: true, extraLabel: undefined, messageError: false },
+  { confirmDanger: true, extraLabel: undefined },
 )
 
 const emit = defineEmits<{
@@ -50,8 +46,6 @@ const messageId = useId()
     <p
       :id="messageId"
       class="confirm-modal__message"
-      :class="{ 'confirm-modal__message--error': messageError }"
-      :role="messageError ? 'alert' : undefined"
       data-testid="confirm-modal-message"
     >
       {{ message }}
@@ -66,7 +60,6 @@ const messageId = useId()
       <AppButton
         :variant="confirmDanger ? 'danger' : 'primary'"
         data-testid="confirm-modal-confirm"
-        :disabled="confirmDisabled"
         @click="emit('confirm')"
       >
         {{ confirmLabel }}
@@ -79,10 +72,6 @@ const messageId = useId()
 .confirm-modal__message {
   font: var(--type-body);
   color: var(--body);
-}
-
-.confirm-modal__message--error {
-  color: var(--danger);
 }
 
 /* A side action sits apart from the pair it doesn't belong to. */

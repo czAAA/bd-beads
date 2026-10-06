@@ -108,11 +108,11 @@ describe('ToolGroup expand in place (ticket 41)', () => {
     expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
   })
 
-  it('exposes its expanded state and a collapse() that App.vue calls for Escape, ahead of Paste-cancel/Selection-clear', async () => {
+  it('exposes a collapse() that App.vue calls for Escape, ahead of Paste-cancel/Selection-clear', async () => {
     const wrapper = mountWithControls(17)
 
     await wrapper.trigger('mouseenter')
-    expect(wrapper.vm.expanded).toBe(true)
+    expect(wrapper.classes()).toContain('tool-group--expanded')
 
     // Escape reaches this via Toolbox's collapseExpandedGroup (see Toolbox.vue/App.vue) rather than a keydown
     // listener of its own here, so this is what that call site exercises.
@@ -120,7 +120,7 @@ describe('ToolGroup expand in place (ticket 41)', () => {
     await wrapper.vm.$nextTick()
 
     expect(wasExpanded).toBe(true)
-    expect(wrapper.vm.expanded).toBe(false)
+    expect(wrapper.classes()).not.toContain('tool-group--expanded')
     expect(wrapper.find('[data-testid="control-16"]').exists()).toBe(false)
   })
 
@@ -128,7 +128,7 @@ describe('ToolGroup expand in place (ticket 41)', () => {
     const wrapper = mountWithControls(17)
 
     expect(wrapper.vm.collapse()).toBe(false)
-    expect(wrapper.vm.expanded).toBe(false)
+    expect(wrapper.classes()).not.toContain('tool-group--expanded')
   })
 
   it('keeps a full-row control (e.g. Row progress’s readout) out of the 16-slot count', () => {
