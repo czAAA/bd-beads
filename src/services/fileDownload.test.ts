@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { downloadFile } from './fileDownload'
+import { downloadFile, sharesFromTap } from './fileDownload'
 
 const IPAD_UA = 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
@@ -91,5 +91,20 @@ describe('downloadFile', () => {
 
     expect(share).not.toHaveBeenCalled()
     expect(linkClicks).toEqual(['a.json'])
+  })
+})
+
+describe('sharesFromTap', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('is true only on an iPad that can share the file', () => {
+    stubBrowser(IPAD_UA, { share: vi.fn().mockResolvedValue(undefined), canShare: () => true })
+    expect(sharesFromTap('a.png', 'image/png')).toBe(true)
+
+    stubBrowser(IPAD_UA, { share: vi.fn().mockResolvedValue(undefined), canShare: () => false })
+    expect(sharesFromTap('a.png', 'image/png')).toBe(false)
+
+    stubBrowser('Mozilla/5.0 (X11; Linux x86_64) Chrome/120', { share: vi.fn().mockResolvedValue(undefined), canShare: () => true })
+    expect(sharesFromTap('a.png', 'image/png')).toBe(false)
   })
 })

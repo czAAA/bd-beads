@@ -13,7 +13,7 @@ import { denselyColoredGrid } from './testUtils/denselyColoredGrid'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
-vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const PROJECTS_KEY = 'bd-beads:patterns'

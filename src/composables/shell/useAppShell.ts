@@ -425,6 +425,7 @@ function wireAppShell(services: Services) {
     locale: currentLocale,
     downloadFile: services.downloadFile,
     makerNameStore: services.makerNameStore,
+    showToast,
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */

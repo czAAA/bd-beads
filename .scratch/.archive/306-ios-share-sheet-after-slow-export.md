@@ -6,7 +6,7 @@ Fix: when the file had to be made first and the device takes the share path, sho
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A unit test with a fake download adapter (no module mocks of `fileDownload`) shows that on the share path `navigator.share` is called only inside the toast action's handler, never after an await in the export click
 - [ ] On the share path, the toast appears once the PNG/PDF is ready, and its action opens the share sheet; dismissing the toast shares nothing

@@ -4,8 +4,9 @@ import { libraryFileName, projectExportFileName, projectFileName, serializeLibra
 import type { Locale, Translations } from '../../i18n/translations'
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
-import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
+import { downloadFile as browserDownloadFile, sharesFromTap as browserSharesFromTap, type DownloadFile } from '../../services/fileDownload'
 import { browserMakerNameStore, type MakerNameStore } from '../../services/makerNameStore'
+import type { MessageTone, Toast } from '../ui/useToasts'
 import { useQrExport } from './useQrExport'
 
 /** What exporting needs from the app shell: the open Project and the library, the code's settled Project, and the app's language. */
@@ -19,6 +20,10 @@ export interface ExportFlowDeps {
   /** How a file is handed over, and where the maker's name is kept (ADR 0020); the browser's by default. */
   downloadFile?: DownloadFile
   makerNameStore?: MakerNameStore
+  /** Whether handing over this file opens a share sheet, which only a fresh tap may start (ticket 306); the browser's by default. */
+  sharesFromTap?: (fileName: string, type: string) => boolean
+  /** Shows a toast with an action (useToasts). */
+  showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
 }
 
 /**
@@ -27,6 +32,7 @@ export interface ExportFlowDeps {
  */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
+  const sharesFromTap = deps.sharesFromTap ?? browserSharesFromTap
   const makerNameStore = deps.makerNameStore ?? browserMakerNameStore
 
   /**
@@ -60,7 +66,18 @@ export function useExportFlow(deps: ExportFlowDeps) {
     exporting.value = extension
     try {
       // Read as the Project itself, as the QR export does: drawing reads every bead.
-      downloadFile(projectExportFileName(project, extension), await make(toRaw(project)), type)
+      const fileName = projectExportFileName(project, extension)
+      const blob = await make(toRaw(project))
+      if (deps.showToast && sharesFromTap(fileName, type)) {
+        // Drawing took the tap that began the export, and Safari shares only from a tap: so the toast's action is the new tap.
+        const { saveBox } = deps.messages()
+        deps.showToast(`export-${extension}`, extension === 'png' ? saveBox.readyPng : saveBox.readyPdf, 'success', {
+          label: saveBox.readySave,
+          run: () => downloadFile(fileName, blob, type),
+        })
+      } else {
+        downloadFile(fileName, blob, type)
+      }
     } finally {
       exporting.value = undefined
     }

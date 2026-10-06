@@ -375,6 +375,10 @@ export interface Translations {
     /** While an export is drawn (Loading card): what is happening, to which Project. */
     makingPng: string
     makingPdf: string
+    /** The toast once a PNG or PDF is made where sharing needs a fresh tap (iPhone, iPad; ticket 306), and its action. */
+    readyPng: string
+    readyPdf: string
+    readySave: string
     /** The way out when a Project is too large for a QR code, or a save fails: the Project as a file. */
     exportProjectFile: string
     /** The Export menu's last row and its modal (NameOnExports card). */

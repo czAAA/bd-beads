@@ -143,3 +143,61 @@ describe('useExportFlow', () => {
     })
   })
 })
+
+describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
+  function setupShare(sharesFromTap: boolean) {
+    const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
+    const flow = useExportFlow({
+      currentProject: () => project,
+      projects: () => [project],
+      shareableProject: () => project,
+      messages: () => en,
+      locale: () => 'en' as const,
+      downloadFile,
+      sharesFromTap: () => sharesFromTap,
+      showToast: (id, text, _tone, action) => toasts.push({ id, text, action }),
+    })
+    return { flow, toasts }
+  }
+
+  it('hands the file over only from the toast action, never after the wait', async () => {
+    const { flow, toasts } = setupShare(true)
+    await flow.onExportPng()
+
+    expect(downloadFile).not.toHaveBeenCalled()
+    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyPng])
+    toasts[0]!.action!.run()
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+  })
+
+  it('shares nothing when the toast is dismissed', async () => {
+    const { flow } = setupShare(true)
+    await flow.onExportPdf()
+
+    expect(downloadFile).not.toHaveBeenCalled()
+  })
+
+  it('names the PDF in its toast', async () => {
+    const { flow, toasts } = setupShare(true)
+    await flow.onExportPdf()
+
+    expect(toasts[0]!.text).toBe(en.saveBox.readyPdf)
+  })
+
+  it('downloads at once, with no toast, off the share path', async () => {
+    const { flow, toasts } = setupShare(false)
+    await flow.onExportPng()
+
+    expect(downloadFile).toHaveBeenCalledOnce()
+    expect(toasts).toEqual([])
+  })
+
+  it('leaves the Project file and library exports alone', () => {
+    const { flow, toasts } = setupShare(true)
+    flow.onExportProjectFile()
+    flow.onExportLibraryFile()
+
+    expect(downloadFile).toHaveBeenCalledTimes(2)
+    expect(toasts).toEqual([])
+  })
+})
