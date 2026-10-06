@@ -9,7 +9,7 @@ import type { ProjectTheme } from '../../rendering/beadLook'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
-import { rulerPick, visibleRulerLabels } from '../../rendering/rulers'
+import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -199,6 +199,17 @@ const surface = computed(() =>
   surfaceView({ space: space.value, technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
+/** The numbers' size: 11px, 12px on a phone (Rulers card). */
+function rulerFontPx(): number {
+  return window.innerWidth <= 743 ? 12 : 11
+}
+
+/** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two cannot disagree. */
+const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
+
+// Tests read what was drawn from the layout the surface built.
+defineExpose({ rulerLayout: rulers })
+
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
   const canvas = baseEl.value
@@ -243,11 +254,6 @@ function drawCells(): void {
 /** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
 const marginOpacity = ref(0)
 
-/** The numbers' size: 11px, 12px on a phone (Rulers card). */
-function rulerFontPx(): number {
-  return window.innerWidth <= 743 ? 12 : 11
-}
-
 /** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
 function drawOverlay(): void {
   const canvas = overlayEl.value
@@ -275,11 +281,7 @@ function drawOverlay(): void {
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
-      rulers: {
-        numbers: props.showRulers ?? true,
-        fontPx: rulerFontPx(),
-        viewport: size.value,
-      },
+      rulers: { layout: rulers.value, surface: surface.value, fontPx: rulerFontPx() },
     })
   }
 }
@@ -442,12 +444,7 @@ function onPointerDown(event: PointerEvent): void {
   // A ruler number or dot selects its whole row or column, from any tool, instead of reaching the beads under it.
   // A second finger of a pinch is not a press on a ruler.
   if (event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary)) {
-    // The numbers are laid out again for the press, from the same maths that drew them. A surface not yet measured (no layout) has no edge to cut them at.
-    const viewport = size.value.width > 0 ? size.value : { width: Infinity, height: Infinity }
-    const view = { technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport, fontPx: rulerFontPx() }
-    const rulered = props.showRulers !== false
-    const labels = rulered ? visibleRulerLabels(toRaw(props.project), view) : []
-    const picked = rulered ? rulerPick(toRaw(props.project), view, labels, pointInSurface(event)) : undefined
+    const picked = props.showRulers !== false ? rulers.value.pick(pointInSurface(event)) : undefined
     if (picked) {
       emit('select-line', picked)
       return

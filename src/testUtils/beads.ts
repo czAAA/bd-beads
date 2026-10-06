@@ -1,11 +1,10 @@
 import { beadColorAt, frameGrid, projectDimensions } from '../domain/project'
 import type { VueWrapper } from '@vue/test-utils'
-import { expect } from 'vitest'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation, type Technique } from '../domain/grid'
 import type { Selection } from '../domain/selection'
 import { OPEN_SPACE } from '../rendering/space'
-import { labelAt, visibleRulerLabels, type RulerLabel } from '../rendering/rulers'
+import type { RulerLabel } from '../rendering/rulers'
 import { surfaceView } from '../rendering/surfaceView'
 
 /**
@@ -143,17 +142,9 @@ export function rowProgressView(wrapper: Anywhere) {
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
 }
 
-/** Every ruler number the open canvas lays out for the view the surface is in (a surface with no layout has no edge to cut them at). */
+/** Every ruler number the surface drew: the numbers of the Ruler layout it built for its view. */
 export function rulerNumbers(wrapper: Anywhere): RulerLabel[] {
-  const root = surfaceRoot(wrapper)
-  return visibleRulerLabels(drawnProject(wrapper), {
-    technique: root.attributes('data-technique') as Technique,
-    rotation: Number(root.attributes('data-rotation')) as Rotation,
-    zoom: Number(root.attributes('data-zoom')),
-    scroll: { x: Number(root.attributes('data-scroll-x')), y: Number(root.attributes('data-scroll-y')) },
-    viewport: { width: Infinity, height: Infinity },
-    fontPx: 11,
-  })
+  return surface(wrapper).vm.rulerLayout.labels
 }
 
 /**
@@ -168,6 +159,5 @@ export async function pressRulerNumber(wrapper: Anywhere, axis: 'row' | 'column'
   if (!label || (edge === 'end' && matches.length < 2)) {
     throw new Error(`No ${edge} ${axis} ruler number ${index + 1} to press`)
   }
-  expect(labelAt(rulerNumbers(wrapper), { x: label.x, y: label.y })).toBeDefined()
   await surfaceRoot(wrapper).trigger('pointerdown', { clientX: label.x, clientY: label.y, button: 0, buttons: 1 })
 }

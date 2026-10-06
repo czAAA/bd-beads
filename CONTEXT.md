@@ -89,6 +89,10 @@ _Avoid_: label interval, tick spacing
 The small mark a ruler draws for a bead that has no number at the current Ruler step; every 5th is a bolder dot, and a dot, like a number, selects its whole row or column when clicked. At a bead pitch too small for a dot per bead, only the 5th-bead dots remain.
 _Avoid_: tick, marker
 
+**Ruler layout**:
+Everything the rulers are for one view of the open canvas, worked out once from the Project and the Surface view: the boxes that carry rulers, the numbers and Ruler dots to draw, and what a point of the viewport selects. The overlay draws it and a press asks it, so what is drawn and what is picked cannot disagree; the Ruler step is chosen once per axis per box inside it. The print rulers (fixed step, no dots, no picking) are not part of it.
+_Avoid_: ruler view, ruler geometry
+
 **Canvas color**:
 The background of the drawing area, picked by the person from the Canvas color button in the canvas strip: five in light, six in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. High contrast has one white canvas and no button.
 _Avoid_: board color, background theme

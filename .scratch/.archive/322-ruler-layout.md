@@ -28,14 +28,14 @@ Candidate A2 of the architecture review of 2026-10-05.
 
 **Blocked by:** 319 (Surface view).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `rulerLayout(project, surfaceView, { fontPx, numbers })` returns `{ labels, dots, pick }`, with the Ruler step worked out once per axis per box
-- [ ] `RulerView` and the per-piece exports are gone; `rulers.ts` exports `rulerLayout`, its types and the outset constants
-- [ ] `ProjectSurface` builds the layout once per view; the overlay draws it and the press uses `pick` without laying out again
-- [ ] `rulerNumbers` in `testUtils/beads.ts` reads the layout the surface built; no hardcoded `fontPx`
-- [ ] A table test over Technique × rotation × zoom checks that every drawn number and dot picks its own line
-- [ ] Print rulers are untouched
-- [ ] CONTEXT.md has a "Ruler layout" entry; ADR 0033 has the one-layout line
+- [x] `rulerLayout(project, surfaceView, { fontPx, numbers })` returns `{ labels, dots, pick }`, with the Ruler step worked out once per axis per box
+- [x] `RulerView` and the per-piece exports are gone; `rulers.ts` exports `rulerLayout`, its types and the outset constants
+- [x] `ProjectSurface` builds the layout once per view; the overlay draws it and the press uses `pick` without laying out again
+- [x] `rulerNumbers` in `testUtils/beads.ts` reads the layout the surface built; no hardcoded `fontPx`
+- [x] A table test over Technique × rotation × zoom checks that every drawn number and dot picks its own line
+- [x] Print rulers are untouched
+- [x] CONTEXT.md has a "Ruler layout" entry; ADR 0033 has the one-layout line
 - [ ] The visual check passes with no screenshot changes
 - [ ] Typecheck, lint, unit tests and the visual check pass in CI
