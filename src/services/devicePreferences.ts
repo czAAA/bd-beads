@@ -1,6 +1,6 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
-import { DEFAULT_ZOOM_PILL_CORNER, isZoomPillCorner, type ZoomPillCorner } from '../domain/zoomPillCorner'
+import { DEFAULT_ZOOM_PILL_PLACEMENT, formatPlacement, parsePlacement, type ZoomPillPlacement } from '../domain/zoomPillPlacement'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 
@@ -36,12 +36,12 @@ export const PREFERENCES = {
   rulers: onUntilOff('bd-beads:rulers'),
   /** Whether the Zoom pill's Row progress toggle shows the Progress bar (ticket 296: on by default). */
   progressBar: onUntilOff('bd-beads:progress-bar'),
-  /** The corner the phone's Zoom pill rests in (ticket 297). */
-  zoomPillCorner: preference<ZoomPillCorner>({
+  /** Where the phone's Zoom pill rests (tickets 297, 321). Corner names saved before 321 still load, as their corner's placement. */
+  zoomPillPlacement: preference<ZoomPillPlacement>({
     key: 'bd-beads:zoom-pill',
-    fallback: DEFAULT_ZOOM_PILL_CORNER,
-    parse: (raw) => (isZoomPillCorner(raw) ? raw : undefined),
-    write: (corner) => corner,
+    fallback: DEFAULT_ZOOM_PILL_PLACEMENT,
+    parse: parsePlacement,
+    write: formatPlacement,
   }),
   /** The Canvas color (ticket 252): a number, 1 to 6, so it survives a change of theme. */
   canvasBackground: preference({

@@ -4,7 +4,7 @@ import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
-import type { ZoomPillCorner } from '../../domain/zoomPillCorner'
+import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
@@ -128,9 +128,9 @@ function wireAppShell(services: Services) {
   const showProgressBar = services.devicePreferences.get('progressBar')
   const toggleProgressBar = () => void (showProgressBar.value = !showProgressBar.value)
 
-  /** The corner the Zoom pill rests in under 1024px (ticket 297). */
-  const zoomPillCorner = services.devicePreferences.get('zoomPillCorner')
-  const setZoomPillCorner = (corner: ZoomPillCorner) => void (zoomPillCorner.value = corner)
+  /** Where the Zoom pill rests under 1024px (tickets 297, 321). */
+  const zoomPillPlacement = services.devicePreferences.get('zoomPillPlacement')
+  const setZoomPillPlacement = (placement: ZoomPillPlacement) => void (zoomPillPlacement.value = placement)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
@@ -628,8 +628,8 @@ function wireAppShell(services: Services) {
     showRulers,
     toggleRulers,
     showProgressBar,
-    zoomPillCorner,
-    setZoomPillCorner,
+    zoomPillPlacement,
+    setZoomPillPlacement,
     toggleProgressBar,
     panBy,
     scrollBy,

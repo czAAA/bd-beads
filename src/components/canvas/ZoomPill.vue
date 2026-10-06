@@ -2,21 +2,21 @@
 import { nextTick, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
-import { clampOffset, nearestCorner, type Box, type ZoomPillCorner } from '../../domain/zoomPillCorner'
+import { DEFAULT_ZOOM_PILL_PLACEMENT, ZOOM_PILL_NUDGE_PX, clampOffset, nudgedPlacement, placementOf, type Box, type ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import IconButton from '../ui/IconButton.vue'
 
 /**
- * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating in the Project's
- * bottom-right corner (rulers · undo · redo · progress bar · out · level · in · fit; ticket 296) -- pinch zooms and two fingers pan, so this is for a fit or an exact
+ * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating over the Project
+ * (rulers · undo · redo · progress bar · out · level · in · fit; ticket 296) -- pinch zooms and two fingers pan, so this is for a fit or an exact
  * step. Same zoom (useProjectZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  *
  * Dragging it from anywhere (ticket 297; 302 took the handle away) moves it anywhere inside its positioned parent, the
- * canvas box's drawing area, once the pointer is past DRAG_THRESHOLD_PX, and on release it snaps to the nearest corner,
- * which the parent keeps (`move`). Alt + an arrow key does the same from the keyboard. The parent places the pill in `corner`; this
- * component only owns the drag's own offset and the glide into the corner.
+ * canvas box's drawing area, once the pointer is past DRAG_THRESHOLD_PX, and on release it stays where it was dropped
+ * (ticket 321), which the parent keeps (`move`). Alt + an arrow key nudges it from the keyboard. The parent places the
+ * pill from `placement` (CSS `--zoom-pill-x` / `--zoom-pill-y`); this component only owns the drag's own offset.
  */
-const props = defineProps<{ corner?: ZoomPillCorner; zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
+const props = defineProps<{ placement?: ZoomPillPlacement; zoomPercent: number; rulers?: boolean; progressBar?: boolean; canUndo?: boolean; canRedo?: boolean }>()
 const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
@@ -25,14 +25,13 @@ const emit = defineEmits<{
   'toggle-progress-bar': []
   undo: []
   redo: []
-  move: [corner: ZoomPillCorner]
+  move: [placement: ZoomPillPlacement]
 }>()
 const { t } = useI18n()
 
 const pill = ref<HTMLElement>()
 const offset = ref<{ x: number; y: number }>()
 const dragging = ref(false)
-const gliding = ref(false)
 const announcement = ref('')
 /** The pointer is down on the pill; `moved` once it has gone past DRAG_THRESHOLD_PX and the pill follows it. */
 let drag: { pointerId: number; startX: number; startY: number; pill: Box; area: Box; moved: boolean } | undefined
@@ -61,7 +60,6 @@ function onPointerMove(event: PointerEvent): void {
     // Captured only now, so a tap still reaches the button under it.
     pill.value?.setPointerCapture?.(event.pointerId)
     drag.moved = true
-    gliding.value = false
     dragging.value = true
   }
   offset.value = clampOffset(drag.pill, drag.area, dx, dy)
@@ -76,9 +74,10 @@ async function onPointerUp(event: PointerEvent): Promise<void> {
   dragging.value = false
   swallowClick = true
   setTimeout(() => (swallowClick = false))
-  const dropped = { ...start, left: start.left + at.x, top: start.top + at.y }
-  emit('move', nearestCorner(dropped, area))
-  await settleInto(dropped)
+  emit('move', placementOf({ ...start, left: start.left + at.x, top: start.top + at.y }, area))
+  // The parent now places the pill where it was dropped, so the drag's offset is done with.
+  await nextTick()
+  offset.value = undefined
 }
 
 /** A drag that began on a button never presses it. */
@@ -89,45 +88,23 @@ function onClickCapture(event: MouseEvent): void {
   event.preventDefault()
 }
 
-/** The pill now sits in its new corner: start it where it was dropped and let it glide across (not at all with reduced motion). */
-async function settleInto(dropped: Box): Promise<void> {
-  await nextTick()
+const NUDGES: Record<string, [number, number]> = {
+  ArrowLeft: [-ZOOM_PILL_NUDGE_PX, 0],
+  ArrowRight: [ZOOM_PILL_NUDGE_PX, 0],
+  ArrowUp: [0, -ZOOM_PILL_NUDGE_PX],
+  ArrowDown: [0, ZOOM_PILL_NUDGE_PX],
+}
+
+/** The keyboard move: Alt + an arrow key, with focus anywhere in the pill, nudges it a step, never out of the canvas box. */
+function onKeydown(event: KeyboardEvent): void {
   const element = pill.value
-  if (!element) return
-  const now = element.getBoundingClientRect()
-  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (reduced || (now.left === dropped.left && now.top === dropped.top)) {
-    offset.value = undefined
-    return
-  }
-  offset.value = { x: dropped.left - now.left, y: dropped.top - now.top }
-  await nextTick()
-  void element.offsetWidth
-  gliding.value = true
-  offset.value = { x: 0, y: 0 }
-}
-
-function onGlideEnd(): void {
-  gliding.value = false
-  offset.value = undefined
-}
-
-const NEXT_CORNER: Record<string, Partial<Record<ZoomPillCorner, ZoomPillCorner>>> = {
-  ArrowLeft: { 'top-right': 'top-left', 'bottom-right': 'bottom-left' },
-  ArrowRight: { 'top-left': 'top-right', 'bottom-left': 'bottom-right' },
-  ArrowUp: { 'bottom-left': 'top-left', 'bottom-right': 'top-right' },
-  ArrowDown: { 'top-left': 'bottom-left', 'top-right': 'bottom-right' },
-}
-
-/** The keyboard move: Alt + an arrow key, with focus anywhere in the pill, sends it to the corner next to it. */
-function onKeydown(event: KeyboardEvent, current: ZoomPillCorner): void {
-  if (!event.altKey) return
-  const next = NEXT_CORNER[event.key]?.[current]
-  if (!next) return
+  const area = element?.offsetParent
+  const nudge = NUDGES[event.key]
+  if (!event.altKey || !nudge || !element || !area) return
   event.preventDefault()
   announcement.value = ''
-  void nextTick(() => (announcement.value = t.value.canvas.zoomPillMovedAnnouncement[next]))
-  emit('move', next)
+  void nextTick(() => (announcement.value = t.value.canvas.zoomPillMovedAnnouncement))
+  emit('move', nudgedPlacement(toBox(element.getBoundingClientRect()), toBox(area.getBoundingClientRect()), nudge[0], nudge[1]))
 }
 </script>
 
@@ -135,16 +112,15 @@ function onKeydown(event: KeyboardEvent, current: ZoomPillCorner): void {
   <div
     ref="pill"
     class="zoom-pill"
-    :class="{ 'zoom-pill--dragging': dragging, 'zoom-pill--gliding': gliding }"
-    :style="offset ? { transform: `translate(${offset.x}px, ${offset.y}px)` } : undefined"
+    :class="{ 'zoom-pill--dragging': dragging }"
+    :style="{ '--zoom-pill-x': (placement ?? DEFAULT_ZOOM_PILL_PLACEMENT).x, '--zoom-pill-y': (placement ?? DEFAULT_ZOOM_PILL_PLACEMENT).y, transform: offset ? `translate(${offset.x}px, ${offset.y}px)` : undefined }"
     data-testid="zoom-pill"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerUp"
     @pointercancel="onPointerUp"
     @click.capture="onClickCapture"
-    @keydown="onKeydown($event, corner ?? 'bottom-right')"
-    @transitionend.self="onGlideEnd"
+    @keydown="onKeydown"
   >
     <span class="zoom-pill__announcer" role="status" aria-live="polite" data-testid="zoom-pill-announcer">{{ announcement }}</span>
     <IconButton
@@ -219,14 +195,9 @@ function onKeydown(event: KeyboardEvent, current: ZoomPillCorner): void {
   display: none !important;
 }
 
-/* Dragged: lifted off the canvas by a deeper shadow, and it follows the pointer without easing. */
+/* Dragged: lifted off the canvas by a deeper shadow. */
 .zoom-pill--dragging {
   box-shadow: var(--elevation-2);
-  transition: none;
-}
-
-.zoom-pill--gliding {
-  transition: transform var(--duration-base) var(--ease-out);
 }
 
 .zoom-pill__level {

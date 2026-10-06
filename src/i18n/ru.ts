@@ -94,12 +94,7 @@ export const ru: Translations = {
     zoomInLabel: 'Увеличить',
     zoomOutLabel: 'Уменьшить',
     zoomResetLabel: 'Сбросить масштаб по размеру схемы',
-    zoomPillMovedAnnouncement: {
-      'top-left': 'Кнопки масштаба перемещены в левый верхний угол',
-      'top-right': 'Кнопки масштаба перемещены в правый верхний угол',
-      'bottom-left': 'Кнопки масштаба перемещены в левый нижний угол',
-      'bottom-right': 'Кнопки масштаба перемещены в правый нижний угол',
-    },
+    zoomPillMovedAnnouncement: 'Кнопки масштаба перемещены',
     stripTitle: 'Схема',
     columnsCount: { one: '{count} столбец', few: '{count} столбца', many: '{count} столбцов', other: '{count} столбца' },
     rowsCount: { one: '{count} ряд', few: '{count} ряда', many: '{count} рядов', other: '{count} ряда' },

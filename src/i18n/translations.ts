@@ -111,8 +111,8 @@ export interface Translations {
     zoomInLabel: string
     zoomOutLabel: string
     zoomResetLabel: string
-    /** Announced once when Alt + an arrow key moves the Zoom pill (ticket 302), by the corner it lands in. */
-    zoomPillMovedAnnouncement: Record<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right', string>
+    /** Announced once when Alt + an arrow key moves the Zoom pill (ticket 302), (ticket 321: no corner to name any more). */
+    zoomPillMovedAnnouncement: string
     /** The canvas strip's title (ticket 143). */
     stripTitle: string
     /** The strip's size meta, "40 columns · 30 rows": each count in its plural form, joined by a spaced middle dot. */

@@ -64,7 +64,7 @@ describe('ZoomPill', () => {
 
     /** A pill 200 x 46 at the bottom right of a 400 x 600 area, in a layout-less DOM. */
     function mountDraggable() {
-      const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, corner: 'bottom-right' }, attachTo: document.body })
+      const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, placement: { x: 1, y: 1 } }, attachTo: document.body })
       const pill = wrapper.get('[data-testid="zoom-pill"]')
       Object.defineProperty(pill.element, 'offsetParent', { value: { getBoundingClientRect: () => rect(0, 0, 400, 600) } })
       ;(pill.element as HTMLElement).getBoundingClientRect = () => rect(184, 538, 200, 46)
@@ -79,27 +79,40 @@ describe('ZoomPill', () => {
       wrapper.unmount()
     })
 
-    it('moves when dragged from a button, and snaps to the nearest corner on release without pressing it', async () => {
+    it('moves when dragged from a button, and stays where it is dropped without pressing it', async () => {
       const { wrapper, pill } = mountDraggable()
       const fit = wrapper.get('[data-testid="zoom-pill-fit"]')
       await fit.trigger('pointerdown', pointer(360, 560))
       await fit.trigger('pointermove', pointer(-2640, -2440))
-      expect(pill.attributes('style')).toContain('translate(-184px, -538px)')
+      expect(pill.attributes('style')).toContain('translate(-168px, -522px)')
       expect(pill.classes()).toContain('zoom-pill--dragging')
       await fit.trigger('pointerup', pointer(-2640, -2440))
       await fit.trigger('click')
-      expect(wrapper.emitted('move')).toEqual([['top-left']])
+      expect(wrapper.emitted('move')).toEqual([[{ x: 0, y: 0 }]])
       expect(wrapper.emitted('reset')).toBeUndefined()
       wrapper.unmount()
     })
 
-    it('moves when dragged from a gap or the zoom level', async () => {
+    it('rests partway, not in a corner, when dropped partway', async () => {
       const { wrapper } = mountDraggable()
       const level = wrapper.get('[data-testid="zoom-pill-level"]')
       await level.trigger('pointerdown', pointer(300, 560))
-      await level.trigger('pointermove', pointer(-3000, 560))
-      await level.trigger('pointerup', pointer(-3000, 560))
-      expect(wrapper.emitted('move')).toEqual([['bottom-left']])
+      await level.trigger('pointermove', pointer(300 - 84, 560 - 261))
+      await level.trigger('pointerup', pointer(300 - 84, 560 - 261))
+      expect(wrapper.emitted('move')).toEqual([[{ x: 0.5, y: 0.5 }]])
+      wrapper.unmount()
+    })
+
+    it('is placed from its placement, and the drag offset is gone once dropped', async () => {
+      const { wrapper, pill } = mountDraggable()
+      await wrapper.setProps({ placement: { x: 0.25, y: 0.75 } })
+      expect(pill.attributes('style')).toContain('--zoom-pill-x: 0.25')
+      expect(pill.attributes('style')).toContain('--zoom-pill-y: 0.75')
+      await pill.trigger('pointerdown', pointer(300, 560))
+      await pill.trigger('pointermove', pointer(250, 500))
+      await pill.trigger('pointerup', pointer(250, 500))
+      await wrapper.vm.$nextTick()
+      expect(pill.attributes('style')).not.toContain('translate(')
       wrapper.unmount()
     })
 
@@ -116,16 +129,20 @@ describe('ZoomPill', () => {
       wrapper.unmount()
     })
 
-    it('moves to the neighbouring corner with Alt + an arrow key from any control, and announces it', async () => {
+    it('nudges a step with Alt + an arrow key from any control, never out of the canvas box, and announces it', async () => {
       const { wrapper } = mountDraggable()
       const out = wrapper.get('[data-testid="zoom-pill-out"]')
       await out.trigger('keydown', { key: 'ArrowLeft', altKey: true })
-      expect(wrapper.emitted('move')).toEqual([['bottom-left']])
+      const [[first]] = wrapper.emitted('move') as [[{ x: number; y: number }]]
+      expect(first.x).toBeCloseTo(6 / 7)
+      expect(first.y).toBe(1)
       await wrapper.vm.$nextTick()
       await wrapper.vm.$nextTick()
-      expect(wrapper.get('[data-testid="zoom-pill-announcer"]').text()).toBe('Zoom controls moved to the bottom left')
-      await out.trigger('keydown', { key: 'ArrowUp', altKey: true })
-      expect(wrapper.emitted('move')).toEqual([['bottom-left'], ['top-right']])
+      expect(wrapper.get('[data-testid="zoom-pill-announcer"]').text()).toBe('Zoom controls moved')
+      await out.trigger('keydown', { key: 'ArrowRight', altKey: true })
+      expect(wrapper.emitted('move')?.[1]).toEqual([{ x: 1, y: 1 }])
+      await out.trigger('keydown', { key: 'ArrowDown', altKey: true })
+      expect(wrapper.emitted('move')?.[2]).toEqual([{ x: 1, y: 1 }])
       wrapper.unmount()
     })
 
