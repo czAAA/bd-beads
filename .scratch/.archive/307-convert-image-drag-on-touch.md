@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A failing test first drives a touch (`pointerType: 'touch'`) drag on the frame box and shows the pan changing; it passes after the fix
-- [ ] Mouse, touch and pen drags move the picture the same distance for the same pointer movement
-- [ ] A second finger or a `pointercancel` ends the drag cleanly, and the preview settles as it does after a mouse release
-- [ ] The page and canvas don't scroll or pan while the frame is being dragged by touch
-- [ ] Existing ConvertImageFrame tests still pass; the visual check is unchanged
+- [x] A failing test first drives a touch (`pointerType: 'touch'`) drag on the frame box and shows the pan changing; it passes after the fix
+- [x] Mouse, touch and pen drags move the picture the same distance for the same pointer movement
+- [x] A second finger or a `pointercancel` ends the drag cleanly, and the preview settles as it does after a mouse release
+- [x] The page and canvas don't scroll or pan while the frame is being dragged by touch
+- [x] Existing ConvertImageFrame tests still pass; the visual check is unchanged

@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ConvertImageFrame from './ConvertImageFrame.vue'
@@ -212,40 +214,97 @@ describe('ConvertImageFrame', () => {
   it('moves the picture under the frame when it is dragged', async () => {
     const wrapper = mountFrame({ image: twoBlocks(16, 8), pan: { x: 0.5, y: 0.5 } })
 
-    await wrapper.find('[data-testid="convert-image-frame"] .convert-image-frame__box').trigger('mousedown', {
+    await wrapper.find('[data-testid="convert-image-frame"] .convert-image-frame__box').trigger('pointerdown', {
+      pointerId: 1,
       button: 0,
       clientX: 100,
       clientY: 100,
     })
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 140, clientY: 100 }))
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 140, clientY: 100 }))
 
     const panned = wrapper.emitted('pan')!
     expect(panned).toHaveLength(1)
     // Dragging the picture to the right shows more of its left-hand side, which is a smaller pan fraction.
     expect((panned[0]![0] as { x: number }).x).toBeLessThan(0.5)
 
-    window.dispatchEvent(new MouseEvent('mouseup'))
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
   })
 
   it('leaves a picture that covers the frame exactly where it is when dragged', async () => {
     const wrapper = mountFrame({ image: twoBlocks(8, 8), pan: { x: 0.5, y: 0.5 } })
 
-    await wrapper.find('.convert-image-frame__box').trigger('mousedown', { button: 0, clientX: 0, clientY: 0 })
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 50, clientY: 50 }))
+    await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 50, clientY: 50 }))
 
     expect(wrapper.emitted('pan')![0]![0]).toEqual({ x: 0.5, y: 0.5 })
 
-    window.dispatchEvent(new MouseEvent('mouseup'))
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
   })
 
-  it('stops following the pointer once the button is released', async () => {
+  it('stops following the pointer once the pointer is released', async () => {
     const wrapper = mountFrame({ image: twoBlocks(16, 8) })
 
-    await wrapper.find('.convert-image-frame__box').trigger('mousedown', { button: 0, clientX: 0, clientY: 0 })
-    window.dispatchEvent(new MouseEvent('mouseup'))
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 200, clientY: 0 }))
+    await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 0, clientY: 0 })
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
+    window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 200, clientY: 0 }))
 
     expect(wrapper.emitted('pan')).toBeUndefined()
+  })
+
+  describe('by touch and pen (ticket 307)', () => {
+    const drag = (pointerType: string) => async () => {
+      const wrapper = mountFrame({ image: twoBlocks(16, 8), pan: { x: 0.5, y: 0.5 } })
+      await wrapper.find('.convert-image-frame__box').trigger('pointerdown', {
+        pointerId: 7,
+        pointerType,
+        button: 0,
+        clientX: 100,
+        clientY: 100,
+      })
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 7, pointerType, clientX: 140, clientY: 100 }))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 7, pointerType }))
+      return (wrapper.emitted('pan')![0]![0] as { x: number }).x
+    }
+
+    it('moves the picture when the box is dragged by touch', async () => {
+      expect(await drag('touch')()).toBeLessThan(0.5)
+    })
+
+    it('moves the picture the same distance for mouse, touch and pen', async () => {
+      const mouse = await drag('mouse')()
+      expect(await drag('touch')()).toBe(mouse)
+      expect(await drag('pen')()).toBe(mouse)
+    })
+
+    it('ignores the movement of a pointer that did not start the drag', async () => {
+      const wrapper = mountFrame({ image: twoBlocks(16, 8), pan: { x: 0.5, y: 0.5 } })
+      await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 0, clientY: 0 })
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 2, clientX: 50, clientY: 0 }))
+      expect(wrapper.emitted('pan')).toBeUndefined()
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
+    })
+
+    it('ends the drag, and settles, when a second finger lands', async () => {
+      const wrapper = mountFrame({ image: twoBlocks(16, 8), pan: { x: 0.5, y: 0.5 } })
+      const box = wrapper.find('.convert-image-frame__box')
+      await box.trigger('pointerdown', { pointerId: 1, pointerType: 'touch', button: 0, clientX: 0, clientY: 0 })
+      await box.trigger('pointerdown', { pointerId: 2, pointerType: 'touch', button: 0, clientX: 90, clientY: 0 })
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 50, clientY: 0 }))
+      expect(wrapper.emitted('pan')).toBeUndefined()
+    })
+
+    it('ends the drag when the browser cancels the pointer', async () => {
+      const wrapper = mountFrame({ image: twoBlocks(16, 8), pan: { x: 0.5, y: 0.5 } })
+      await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 0, clientY: 0 })
+      window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 }))
+      window.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 50, clientY: 0 }))
+      expect(wrapper.emitted('pan')).toBeUndefined()
+    })
+
+    it('keeps the page from panning under a touch drag', () => {
+      const css = readFileSync(resolve(__dirname, 'ConvertImageFrame.vue'), 'utf8')
+      expect(css).toMatch(/\.convert-image-frame__box \{[^}]*touch-action: none/)
+    })
   })
 
   describe('while the picture is being dragged (ticket 104)', () => {
@@ -266,7 +325,7 @@ describe('ConvertImageFrame', () => {
       wrapper.find('[data-testid="convert-image-found-colors"]').text()
 
     async function startDragAt(wrapper: ReturnType<typeof mountFrame>) {
-      await wrapper.find('.convert-image-frame__box').trigger('mousedown', { button: 0, clientX: 0, clientY: 0 })
+      await wrapper.find('.convert-image-frame__box').trigger('pointerdown', { pointerId: 1, button: 0, clientX: 0, clientY: 0 })
     }
 
     it('shows the colors it had when the drag began, whatever the picture moves onto', async () => {
@@ -279,7 +338,7 @@ describe('ConvertImageFrame', () => {
       // Blue is under the frame now, but the beads keep to the red they began with, and so does the count.
       expect(colorsOnScreen()).toEqual(['#e63746'])
       expect(foundColors(wrapper)).toContain('1')
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
     })
 
     it('draws a block too big for beads coarsely while the picture moves, and as beads again once it is at rest (ticket 122)', async () => {
@@ -295,7 +354,7 @@ describe('ConvertImageFrame', () => {
       expect(draft.rendered[0]).toMatchObject({ technique: 'loom' })
       const beadsBefore = canvas.renders()
 
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
       await nextTick()
 
       expect(canvas.renders()).toBe(beadsBefore + 1)
@@ -309,7 +368,7 @@ describe('ConvertImageFrame', () => {
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
 
       expect(draft.rendered).toHaveLength(0)
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
     })
 
     it('works out the exact colors again when the drag ends', async () => {
@@ -317,7 +376,7 @@ describe('ConvertImageFrame', () => {
       await startDragAt(wrapper)
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
 
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
       await nextTick()
 
       expect(colorsOnScreen()).toEqual(['#2f6fed'])
@@ -337,7 +396,7 @@ describe('ConvertImageFrame', () => {
       await wrapper.setProps({ pan: { x: 1, y: 0.5 } })
       expect(colorsOnScreen()).toEqual(['#27ae60'])
 
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
     })
 
     it('does not wait for a pause while the pointer keeps moving', async () => {
@@ -351,14 +410,14 @@ describe('ConvertImageFrame', () => {
       }
 
       expect(colorsOnScreen()).toEqual(['#e63746'])
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
     })
 
     it('creates exactly what a picture at rest in that place creates, however it got there', async () => {
       const dragged = mountFrame({ image: threeBlocks(), pan: { x: 0, y: 0.5 } })
       await startDragAt(dragged)
       await dragged.setProps({ pan: { x: 0.7, y: 0.5 } })
-      window.dispatchEvent(new MouseEvent('mouseup'))
+      window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
       await nextTick()
       const still = mountFrame({ image: threeBlocks(), pan: { x: 0.7, y: 0.5 } })
 
