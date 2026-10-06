@@ -441,8 +441,8 @@ export const en: Translations = {
     },
     marginLead: { set: 'Frame set.', moved: 'Frame moved.', resized: 'Frame resized.' },
     marginClearedMessage: {
-      one: '{count} bead was in the margin and moved outside it.',
-      other: '{count} beads were in the margin and moved outside it.',
+      one: '{count} piece was in the margin and moved outside it.',
+      other: '{count} pieces were in the margin and moved outside it.',
     },
     keyboardHint: 'arrows move the Frame · shift and arrows resize it · enter is done',
   },

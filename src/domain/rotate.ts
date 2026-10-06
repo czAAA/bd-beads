@@ -1,7 +1,7 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { snapRow } from './frame'
 import { relocateFromMargin, type Cell } from './margin'
-import { withFrame, type Project } from './project'
+import { clampPointer, type Project } from './project'
 
 /**
  * Rotate (CONTEXT.md, ADR 0026): a quarter turn clockwise of the Frame and the beads in it, about the Frame's centre. It
@@ -60,6 +60,6 @@ export function rotateProject(project: Project): Rotated | undefined {
   const cleared = withColors(project.beads, changes)
   const beads = withColors(cleared, [...placed, ...rotated])
 
-  // withFrame keeps Row progress's pointers inside the turned Frame, whose rows and columns have swapped.
-  return { project: { ...withFrame({ ...project, beads }, turned), updatedAt: Date.now() }, moved: moving.pieces }
+  // Row progress's pointers stay inside the turned Frame, whose rows and columns have swapped.
+  return { project: { ...project, beads, frame: turned, rowProgress: clampPointer(project.rowProgress, turned), updatedAt: Date.now() }, moved: moving.pieces }
 }

@@ -20,7 +20,7 @@ The flows (Set Frame, Rotate, Remove line) call `changeFrame` and keep only thei
 
 **Blocked by:** None (can start immediately). Ticket 305 should land first, but this ticket doesn't need it to start.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] `changeFrame` is a pure domain function taking the four-variant change above and returning refused / unchanged / changed-with-Pieces-moved
 - [ ] Table tests cover change variant × rule: refused while Row progress is on, per-variant refusals, pointers clamped inside the new Frame for both Row directions, margin left empty with Pieces moved whole, the moved count in Pieces, and no-change returning the same instance

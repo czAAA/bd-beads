@@ -59,7 +59,7 @@ describe('the keep-out margin', () => {
       { row: 8, column: 11, color: '#ff0000' },
     ])
     const { project, moved } = clearMargin({ ...framed, beads })
-    expect(moved).toBe(2)
+    expect(moved).toBe(1)
     expect(count(project.beads)).toBe(3)
     expect(colorAt(project.beads, 12, 11)).toBe('#00ff00')
     for (let row = 0; row < 30; row += 1) {

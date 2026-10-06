@@ -169,7 +169,7 @@ export function relocateFromMargin(
   return { changes, placed, pieces: inTheWay.length }
 }
 
-/** The Project with every bead in the Frame's margin moved clear, and how many beads that was; the same Project when none was. */
+/** The Project with every bead in the Frame's margin moved clear, and how many Pieces that was; the same Project when none was. */
 export function clearMargin(project: Project): { project: Project; moved: number } {
   const frame = project.frame
   if (!frame) {
@@ -187,5 +187,5 @@ export function clearMargin(project: Project): { project: Project; moved: number
     return { project, moved: 0 }
   }
   const beads = withColors(withColors(project.beads, changes), placed)
-  return { project: { ...project, beads, updatedAt: Date.now() }, moved: placed.length }
+  return { project: { ...project, beads, updatedAt: Date.now() }, moved: pieces }
 }
