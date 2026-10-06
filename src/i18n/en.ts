@@ -283,6 +283,10 @@ export const en: Translations = {
     limitReached: 'The Palette is full: this color painted, but it wasn’t added.',
     removed: 'Color removed from the Palette.',
     removeSwatch: 'Remove {hex} from the Palette',
+    removeConfirmTitle: 'Remove color?',
+    removeConfirmMessage: '{hex} will leave the Palette. Painted cells keep their color.',
+    removeConfirmButton: 'Remove',
+    removeCancelButton: 'Cancel',
   },
   tools: {
     paintLabel: 'Paint',

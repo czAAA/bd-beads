@@ -1,4 +1,4 @@
-import { inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import type { CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
@@ -228,7 +228,22 @@ function wireAppShell(services: Services) {
       },
     })
   }
-  provideRemoveAddedColor(onRemoveAddedColor)
+
+  /** The added swatch whose removal awaits confirmation (ticket 304); undefined when no such dialog is open. */
+  const pendingColorRemovalId = ref<string>()
+  const pendingColorRemovalHex = computed(() => palette.value.find((color) => color.id === pendingColorRemovalId.value)?.hex)
+  function onRequestRemoveAddedColor(colorId: string) {
+    pendingColorRemovalId.value = colorId
+  }
+  function onCancelRemoveAddedColor() {
+    pendingColorRemovalId.value = undefined
+  }
+  function onConfirmRemoveAddedColor() {
+    const colorId = pendingColorRemovalId.value
+    pendingColorRemovalId.value = undefined
+    if (colorId) onRemoveAddedColor(colorId)
+  }
+  provideRemoveAddedColor(onRequestRemoveAddedColor)
 
   /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it still paints, and the user is told once per color. */
   let limitToldFor: string | undefined
@@ -491,6 +506,7 @@ function wireAppShell(services: Services) {
     hasOpenLayer,
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||
+      !!pendingColorRemovalId.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
@@ -640,6 +656,9 @@ function wireAppShell(services: Services) {
     ...rowOps,
     onRotate: rotateFlow.onRotate,
     ...deleteAll,
+    pendingColorRemovalHex,
+    onCancelRemoveAddedColor,
+    onConfirmRemoveAddedColor,
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
     frameDraft: frameFlow.draft,
