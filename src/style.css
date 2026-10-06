@@ -24,3 +24,14 @@
 body {
   margin: 0;
 }
+
+/*
+ * The app shell fills the screen and scrolls nothing itself (ticket 141), so the document under it must not scroll
+ * either (ticket 320): on a phone the page otherwise drags past the Dock into the empty band below it. The Overview
+ * page has no shell and scrolls as a document, so it is left alone. overscroll-behavior is ticket 316's.
+ */
+html:has(.app-shell),
+html:has(.app-shell) body {
+  height: 100%;
+  overflow: hidden;
+}

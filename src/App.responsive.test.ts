@@ -115,3 +115,17 @@ describe('everything under 1024px is the phone layout (ticket 295, ADR 0032)', (
     expect(dock).not.toMatch(/max-height/)
   })
 })
+
+describe('the page never scrolls under the app shell (ticket 320)', () => {
+  const base = readFileSync(resolve(__dirname, 'style.css'), 'utf8')
+
+  it('locks the document to the viewport whenever the shell is mounted', () => {
+    const rule = base.match(/html:has\(\.app-shell\),\s*html:has\(\.app-shell\) body\s*\{([^}]*)\}/)
+    expect(rule?.[1]).toMatch(/overflow:\s*hidden/)
+    expect(rule?.[1]).toMatch(/height:\s*100%/)
+  })
+
+  it('leaves the shell scrolling nothing itself', () => {
+    expect(appSource).toMatch(/\.app-shell\s*\{[^}]*overflow:\s*hidden/)
+  })
+})
