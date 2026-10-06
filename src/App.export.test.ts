@@ -10,7 +10,7 @@ import { en } from './i18n/en'
 import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
-vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
 vi.mock('./rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
