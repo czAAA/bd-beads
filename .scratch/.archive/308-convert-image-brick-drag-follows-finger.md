@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A failing test first drags vertically by N screen pixels on a brick Project and checks that the picture moved by exactly the millimetres those pixels show on screen; it passes after the fix
 - [ ] The same test passes for loom and peyote (no change for them if their pitch equals `CELL_SIZE_PX`)

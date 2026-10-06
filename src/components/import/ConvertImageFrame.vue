@@ -5,6 +5,7 @@ import {
   CELL_SIZE_PX,
   CANVAS_MAX_PX,
   computeFitZoom,
+  rowHeightPx,
   type GridDimensions,
   type Technique,
 } from '../../domain/grid'
@@ -24,7 +25,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { LIGHT_THEME, type BeadDrawer } from '../../rendering/beadLook'
 import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
-import { projectExtentPx, renderProject, rowTopPx } from '../../rendering/projectRenderer'
+import { projectExtentPx, renderProject, rowPitchPx, rowTopPx } from '../../rendering/projectRenderer'
 
 /**
  * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
@@ -280,12 +281,13 @@ const panRangeMm = computed(() => ({
 
 /**
  * Millimetres of picture per screen pixel dragged. A bead is CELL_SIZE_PX wide on screen (before the fit scale) and
- * the Bead's own footprint in millimetres in that direction; down the page, a row is the Technique's row pitch on
- * screen and the Technique's row spacing in millimetres, the same ratio however the rows are packed.
+ * the Bead's own footprint in millimetres in that direction. Down the page, a row is the pitch the Project renderer
+ * draws it at (`rowPitchPx`, which for brick stitch includes the seam) and the Technique's row spacing in millimetres,
+ * so the point under the pointer stays under it whichever Technique the rows are packed for.
  */
 const mmPerScreenPx = computed(() => ({
   x: beadPitchMm(props.bead) / (CELL_SIZE_PX * fitScale.value),
-  y: props.bead.heightMm / (CELL_SIZE_PX * fitScale.value),
+  y: rowHeightPx(props.technique, props.bead.heightMm) / (rowPitchPx(props.technique) * fitScale.value),
 }))
 
 const drag = ref<{ pointerId: number; x: number; y: number; pan: PanFraction } | null>(null)
