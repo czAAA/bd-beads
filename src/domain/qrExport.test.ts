@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import type { PixelData } from './imageConversion'
-import { createProject, withFrameGrid, type Project } from './project'
+import { createProject, framedGrid, withFrameGrid, type Project } from './project'
 import { encodeProject } from './projectEncoding'
 import {
   decodeQrText,
@@ -15,6 +15,18 @@ import {
 } from './qrExport'
 import { denselyColoredGrid } from '../testUtils/denselyColoredGrid'
 import { rasterizeQrMatrix } from '../testUtils/rasterizeQrMatrix'
+
+import v1LoomBare from './fixtures/qr-v1-loom.json?raw'
+import v1LoomLink from './fixtures/qr-v1-loom-link.txt?raw'
+import v1PeyoteBare from './fixtures/qr-v1-peyote.json?raw'
+import v1PeyoteLink from './fixtures/qr-v1-peyote-link.txt?raw'
+
+/**
+ * Real version 1 QR payloads (ticket 309): written once by the encoder as it was in commit 7c1c787 (the last build
+ * before the Open canvas, ADR 0026) — dense `cells`, ticket 28's `rotated` boolean — and committed as literal files, so
+ * today's encoder can't rewrite what "an old code" means here.
+ */
+const V1_COLORS: Record<string, string> = { R: '#c81e3c', B: '#1e64c8', K: '#1f1f1f' }
 
 const APP_URL = 'https://czaaa.github.io/bd-beads/'
 
@@ -59,11 +71,60 @@ describe('serializeProjectForQr / parseProjectFromQr', () => {
     expect(parseProjectFromQr(serializeProjectForQr(project, APP_URL))).toEqual(project)
   })
 
-  it('still reads the bare JSON an earlier build wrote to its codes', () => {
+  it('still reads the version 1 envelope today\'s encoder wraps, written bare', () => {
     const project = smallProject()
     const bare = JSON.stringify({ kind: 'bd-beads/qr-pattern', version: 1, pattern: encodeProject(project) })
 
     expect(parseProjectFromQr(bare)).toEqual(project)
+  })
+
+  describe('a real version 1 code, as printed before the Open canvas', () => {
+    const picture = (rows: string[]) => rows.map((row) => [...row].map((letter) => ({ color: V1_COLORS[letter] ?? null })))
+    const expectations: Record<string, { bare: string; link: string; expected: Project }> = {
+      'loom with Row progress': {
+        bare: v1LoomBare,
+        link: v1LoomLink,
+        expected: {
+          id: 'qr-v1-loom',
+          name: 'Loom from a printed code',
+          technique: 'loom',
+          beadId: 'toho-cube-1.5mm',
+          ...framedGrid(picture(['R.B.', '.KR.', 'B..K'])),
+          rowProgress: { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 },
+          rotation: 0,
+          createdAt: 1700000000000,
+          updatedAt: 1700000001000,
+        },
+      },
+      'rotated peyote with Image colors': {
+        bare: v1PeyoteBare,
+        link: v1PeyoteLink,
+        expected: {
+          id: 'qr-v1-peyote',
+          name: 'Peyote strap',
+          technique: 'peyote',
+          beadId: 'toho-cube-1.5mm',
+          ...framedGrid(picture(['RRB..', '.KKR.', 'B...R', '..KBB'])),
+          rowProgress: { enabled: false, direction: 'columns', currentRow: 0, currentColumn: 3 },
+          rotation: 90,
+          imageColors: ['#c81e3c', '#1e64c8', '#1f1f1f'],
+          createdAt: 1700000002000,
+          updatedAt: 1700000003000,
+        },
+      },
+    }
+
+    for (const [label, { bare, link, expected }] of Object.entries(expectations)) {
+      it(`opens the bare JSON of a ${label} as its Project, with the Frame the size of the old grid`, () => {
+        expect(parseProjectFromQr(bare)).toEqual(expected)
+      })
+
+      it(`opens the link of a ${label} as its Project, from a picture and from a camera scan`, () => {
+        const hash = link.slice(link.indexOf('#'))
+        expect(parseProjectFromQr(link)).toEqual(expected)
+        expect(projectFromShareLink(hash)).toEqual(expected)
+      })
+    }
   })
 
   it('rejects a link whose payload is damaged', () => {
