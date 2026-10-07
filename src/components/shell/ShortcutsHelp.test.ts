@@ -35,11 +35,11 @@ describe('ShortcutsHelp', () => {
     const wrapper = mountHelp()
     const text = wrapper.text()
 
-    for (const key of ['1', '2', '3', '4', 'Del', 'Space + drag', '5', '6', 'R', 'Ctrl/Cmd + wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
+    for (const key of ['1', '2', '3', '4', 'Del', 'Space+drag', '5', '6', 'R', 'Ctrl/Cmd+wheel', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V', 'Ctrl/Cmd+S', 'P', 'D']) {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)
-    expect(text).toContain(ru.shortcutsHelp.eraseOrClearSelection)
+    expect(text).toContain(ru.shortcutsHelp.emptySelection)
     expect(text).toContain(ru.shortcutsHelp.panCanvas)
     expect(text).toContain(ru.tools.handLabel)
     expect(text).toContain(ru.canvas.rulersLabel)
@@ -47,6 +47,16 @@ describe('ShortcutsHelp', () => {
     expect(text).toContain(ru.shortcutsHelp.paletteColors)
     expect(text).toContain(ru.tools.pasteLabel)
     expect(text).toContain(ru.tools.saveButton)
+  })
+
+  it('lists the keys the registry lists, one row per action', () => {
+    const wrapper = mountHelp()
+    const rows = wrapper.findAll('.shortcuts-help__row').map((row) => row.find('.shortcuts-help__spoken').text())
+
+    for (const keys of ['Shift+Del', 'Shift+R', 'Ctrl/Cmd+Z', 'Ctrl/Cmd+Shift+Z, Ctrl+Y', 'Enter, Space', 'Esc', '?']) {
+      expect(rows).toContain(keys)
+    }
+    expect(wrapper.text()).toContain(ru.palette.rotateButton)
   })
 
   it('emits close when the close button is clicked', async () => {

@@ -78,7 +78,7 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
     <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
     <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta.main }}<span v-if="sizeMeta.estimate" class="canvas-strip__estimate"> · {{ sizeMeta.estimate }}</span></span>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
-    <IconButton
+    <IconButton tooltip
       v-if="rulers !== undefined"
       class="canvas-strip__rulers"
       icon="ruler"

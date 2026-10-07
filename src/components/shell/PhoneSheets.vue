@@ -142,7 +142,7 @@ function toolLabel(tool: Tool): string {
       @remove="onRemoveFrame"
     />
     <div class="phone-sheet__edit">
-      <IconButton
+      <IconButton tooltip
         icon="rotate"
         variant="toolbox"
         size="lg"
@@ -152,8 +152,8 @@ function toolLabel(tool: Tool): string {
         data-testid="sheet-rotate"
         @click="onRotate"
       />
-      <IconButton icon="copy" variant="toolbox" size="lg" data-tour="copy" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
-      <IconButton
+      <IconButton tooltip icon="copy" variant="toolbox" size="lg" data-tour="copy" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
+      <IconButton tooltip
         icon="paste"
         variant="toolbox"
         size="lg"
@@ -221,7 +221,7 @@ function toolLabel(tool: Tool): string {
         {{ t.projects.newProjectButton }}
       </AppButton>
       <ProjectImport compact :decode-image="decodeImage" :projects="projects" testid-prefix="project-sheet-" @import="onImportProjects" />
-      <IconButton
+      <IconButton tooltip
         icon="library"
         :label="t.projects.heading"
         :disabled="projects.length === 0"

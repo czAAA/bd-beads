@@ -9,6 +9,7 @@ import AppSelect from './AppSelect.vue'
 import AppTooltip from './AppTooltip.vue'
 import ExpandButton from './ExpandButton.vue'
 import IconButton from './IconButton.vue'
+import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
 
 describe('AppButton', () => {
@@ -51,7 +52,7 @@ describe('AppButton', () => {
 
 describe('IconButton', () => {
   it('takes its accessible name from its label and shows it as a tooltip that screen readers skip', () => {
-    const wrapper = mount(IconButton, { props: { icon: 'keyboard', label: 'Keyboard shortcuts', shape: 'round' } })
+    const wrapper = mount(IconButton, { props: { icon: 'keyboard', label: 'Keyboard shortcuts', shape: 'round', tooltip: true } })
     const button = wrapper.get('button')
     expect(button.attributes('aria-label')).toBe('Keyboard shortcuts')
     expect(button.classes()).toContain('icon-btn--round')
@@ -72,7 +73,7 @@ describe('IconButton disabled (ticket 327)', () => {
     const onClick = vi.fn()
     const wrapper = mount(IconButton, {
       attachTo: document.body,
-      props: { icon: 'undo', label: 'Undo', disabled: true, disabledBody: 'Nothing to undo.' },
+      props: { icon: 'undo', label: 'Undo', disabled: true, disabledBody: 'Nothing to undo.', tooltip: true },
       attrs: { onClick },
     })
     const button = wrapper.get('button')
@@ -85,8 +86,59 @@ describe('IconButton disabled (ticket 327)', () => {
   })
 
   it('shows no Tooltip when disabled with no reason given', () => {
-    const wrapper = mount(IconButton, { props: { icon: 'undo', label: 'Undo', disabled: true } })
+    const wrapper = mount(IconButton, { props: { icon: 'undo', label: 'Undo', disabled: true, tooltip: true } })
     expect(wrapper.find('[role="tooltip"]').exists()).toBe(false)
+  })
+})
+
+describe('IconButton variants and registry action (ticket 330)', () => {
+  it('shows no Tooltip unless it is given one', () => {
+    const wrapper = mount(IconButton, { props: { icon: 'zoom-in', label: 'Zoom in' } })
+    expect(wrapper.find('[role="tooltip"]').exists()).toBe(false)
+    expect(wrapper.get('button').attributes('aria-label')).toBe('Zoom in')
+  })
+
+  it('passes a body and a key through to its Tooltip', async () => {
+    const wrapper = mount(IconButton, {
+      attachTo: document.body,
+      props: { icon: 'paint', label: 'Paint', hotkey: '1', tooltip: { body: 'Click or drag to paint.' } },
+    })
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Click or drag to paint.')
+    expect(wrapper.text()).toContain('1')
+  })
+
+  it('draws the tool tab: underline when selected, and the key badge only with showHotkey', () => {
+    const tool = (props: object) => mount(IconButton, { props: { icon: 'paint', label: 'Paint', variant: 'tool', hotkey: '1', ...props } })
+    const selected = tool({ selected: true, showHotkey: true })
+    expect(selected.get('button').classes()).toEqual(expect.arrayContaining(['icon-btn--tool', 'icon-btn--selected']))
+    expect(selected.get('button').attributes('aria-pressed')).toBe('true')
+    expect(selected.get('button').attributes('aria-keyshortcuts')).toBe('1')
+    expect(selected.get('.icon-btn__key').text()).toBe('1')
+    expect(tool({}).find('.icon-btn__key').exists()).toBe(false)
+    expect(tool({ showHotkey: true, hotkey: undefined }).find('.icon-btn__key').exists()).toBe(false)
+  })
+
+  it('reads its name, key and body from a registry action', async () => {
+    const action = CONTROLS.find((c) => c.id === 'tool-paint')!
+    const wrapper = mount(IconButton, { attachTo: document.body, props: { action } })
+    expect(wrapper.get('button').attributes('aria-label')).toBe('Paint')
+    expect(wrapper.get('svg').attributes('data-icon')).toBe('paint')
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
+  })
+
+  it('reads its enabled state and disabled reason from a registry action', async () => {
+    const action = CONTROLS.find((c) => c.id === 'rotate')!
+    const withReason = { ...action, enabled: () => false, disabledBody: () => 'Set a Frame first.' }
+    const onClick = vi.fn()
+    const wrapper = mount(IconButton, { attachTo: document.body, props: { action: withReason, deps: {} as ControlDeps }, attrs: { onClick } })
+    expect(wrapper.get('button').attributes('aria-disabled')).toBe('true')
+    await wrapper.get('button').trigger('click')
+    expect(onClick).not.toHaveBeenCalled()
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Set a Frame first.')
   })
 })
 

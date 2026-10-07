@@ -123,7 +123,7 @@ function onKeydown(event: KeyboardEvent): void {
     @keydown="onKeydown"
   >
     <span class="zoom-pill__announcer" role="status" aria-live="polite" data-testid="zoom-pill-announcer">{{ announcement }}</span>
-    <IconButton
+    <IconButton tooltip
       v-if="rulers !== undefined"
       icon="ruler"
       variant="plain"
@@ -133,9 +133,9 @@ function onKeydown(event: KeyboardEvent): void {
       data-testid="zoom-pill-rulers"
       @click="emit('toggle-rulers')"
     />
-    <IconButton icon="undo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" :disabled="!canUndo" data-testid="zoom-pill-undo" data-tour="undo" @click="emit('undo')" />
-    <IconButton icon="redo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" :disabled="!canRedo" data-testid="zoom-pill-redo" @click="emit('redo')" />
-    <IconButton
+    <IconButton tooltip icon="undo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" :disabled="!canUndo" data-testid="zoom-pill-undo" data-tour="undo" @click="emit('undo')" />
+    <IconButton tooltip icon="redo" variant="plain" :icon-size="18" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" :disabled="!canRedo" data-testid="zoom-pill-redo" @click="emit('redo')" />
+    <IconButton tooltip
       v-if="progressBar !== undefined"
       icon="check"
       variant="plain"
@@ -145,10 +145,10 @@ function onKeydown(event: KeyboardEvent): void {
       data-testid="zoom-pill-progress"
       @click="emit('toggle-progress-bar')"
     />
-    <IconButton icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
+    <IconButton tooltip icon="zoom-out" variant="plain" :icon-size="18" :label="t.canvas.zoomOutLabel" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>
-    <IconButton icon="zoom-in" variant="plain" :icon-size="18" :label="t.canvas.zoomInLabel" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
-    <IconButton icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
+    <IconButton tooltip icon="zoom-in" variant="plain" :icon-size="18" :label="t.canvas.zoomInLabel" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
+    <IconButton tooltip icon="fit" variant="plain" :icon-size="18" :label="t.canvas.zoomResetLabel" data-testid="zoom-pill-fit" @click="emit('reset')" />
   </div>
 </template>
 

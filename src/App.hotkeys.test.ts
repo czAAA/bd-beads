@@ -513,7 +513,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
   })
 })
 
-describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
+describe('App Del key — empties the Selection (tickets 90, 329)', () => {
   async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
     await pressBead(wrapper, indices[0]!)
     for (const index of indices.slice(1)) {
@@ -551,22 +551,23 @@ describe('App Del key — Erase, or clear the Selection (ticket 90)', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('activates Erase when Select is active with no Selection', async () => {
+  it('does nothing without a Selection, and never picks the Eraser', async () => {
     const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
     await pressKey({ key: 'Delete' })
 
-    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('activates Erase when any other tool is active', async () => {
+  it('leaves another tool active', async () => {
     const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressKey({ key: 'Delete' })
 
-    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-fill"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('has no effect while typing in a form field', async () => {

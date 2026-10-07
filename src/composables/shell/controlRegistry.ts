@@ -1,0 +1,356 @@
+import type { IconName } from '../../components/ui/icons'
+import { PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
+import type { Project } from '../../domain/project'
+import type { Tool } from '../../domain/tool'
+import type { Translations } from '../../i18n/translations'
+
+/** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
+export interface ControlDeps {
+  activeProject: () => Project | undefined
+  activeTool: () => Tool
+  hasSelection: () => boolean
+  /** A menu or popover layer is open (useEscapeLayer). */
+  hasOpenLayer: () => boolean
+  /** A confirmation modal, the QR panel or the shortcuts help overlay is open. */
+  anyDialogOpen: () => boolean
+  /** Collapses an expanded Tool group; true if one was open. */
+  collapseExpandedToolGroup: () => boolean
+  /** Dismisses the paste preview, else clears the Selection; true if either was there. */
+  backOutOfSelect: () => boolean
+  onUndo: () => void
+  onRedo: () => void
+  onSelectTool: (tool: Tool) => void
+  onSelectColor: (colorId: string) => void
+  onDeleteSelection: () => void
+  onToggleRulers: () => void
+  /** 6: starts Set Frame, or finishes it. */
+  onToggleFrame: () => void
+  /** Whether the Frame is being set, and the way out of it. */
+  settingFrame: () => boolean
+  finishFrame: () => void
+  onCopy: () => void
+  pasteAtPointer: (event: KeyboardEvent) => void
+  onSave: () => void
+  onRotate: () => void
+  /** Whether Remove row/column applies right now: a whole row or column is selected and Row progress is off. */
+  canRemoveSelectedLine: () => boolean
+  onRemoveSelectedLine: () => void
+  onToggleRowProgress: (enabled: boolean) => void
+  onToggleRowDirection: () => void
+  onMoveRow: (delta: number) => void
+  openShortcutsHelp: () => void
+  /** Ctrl/⌘ + plus, minus and 0: Canvas zoom in, out and Fit (ticket 316). */
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onFit: () => void
+}
+
+/**
+ * One key or combination. `key` (any of the listed `event.key` values, case-insensitively) or `code` (the physical
+ * key, for the digits Shift turns into symbols) picks the key. `mod` is Ctrl or ⌘, `ctrl` is Ctrl alone; a chord with
+ * neither needs both unpressed. `shift` must match exactly, unless it is `'any'` (the key itself needs Shift on some
+ * layouts, like `?` and `+`). `label` is the key as the Keyboard shortcuts dialog and the key chips write it.
+ */
+export interface Chord {
+  key?: string | readonly string[]
+  code?: string
+  mod?: boolean
+  ctrl?: boolean
+  shift?: boolean | 'any'
+  label: string
+}
+
+/** The groups of the Keyboard shortcuts dialog, in order; the first, third, fourth and fifth are the Toolbox's own names. */
+export const CONTROL_GROUPS = ['tools', 'canvas', 'colors', 'edit', 'rowProgress'] as const
+export type ControlGroup = (typeof CONTROL_GROUPS)[number]
+
+/** Whether the action's key runs while a menu or dialog is open: not at all, regardless, or claimed from the browser but not run. */
+type ModalRule = 'block' | 'ignore' | 'claim'
+
+/** An action that can be disabled says why (ADR 0035): both are given, or neither. */
+type Disableable =
+  | { enabled?: undefined; disabledBody?: undefined }
+  | { enabled: (deps: ControlDeps) => boolean; disabledBody: (t: Translations, deps: ControlDeps) => string }
+
+export type ControlAction = Disableable & {
+  id: string
+  icon?: IconName
+  name: (t: Translations) => string
+  body?: (t: Translations) => string
+  group: ControlGroup
+  chords: readonly Chord[]
+  /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole Palette). */
+  help?: { name: (t: Translations) => string; keys: readonly (readonly string[])[] }
+  /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. */
+  run: (deps: ControlDeps, event: KeyboardEvent) => void
+  preventDefault?: boolean
+  allowWhileTyping?: boolean
+  modals?: ModalRule
+  /** Only with a Project open (the key is left to the browser otherwise). */
+  needsProject?: boolean
+  /** Enter and Space give way to a focused Toolbox or Progress bar button, which they press natively. */
+  givesWayToFocusedButton?: boolean
+}
+
+const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translations) => string, group: ControlGroup = 'tools'): ControlAction => ({
+  id: `tool-${id}`,
+  icon,
+  name,
+  group,
+  chords: [{ key, label: key }],
+  run: (deps) => deps.onSelectTool(id),
+})
+
+/**
+ * The control registry (ADR 0035, ticket 329): every action with a key, defined once. The keyboard shortcut table is
+ * built from it (useAppShortcutTable) so a key always runs what the button runs, and the Keyboard shortcuts dialog
+ * lists it. Order is the dialog's order within each group. A test fails if two actions share a key or combination.
+ */
+export const CONTROLS: readonly ControlAction[] = [
+  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel),
+  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel),
+  selectTool('select', '3', 'select', (t) => t.tools.selectLabel),
+  selectTool('erase', '4', 'erase', (t) => t.tools.eraseLabel),
+  {
+    id: 'empty-selection',
+    icon: 'delete',
+    name: (t) => t.shortcutsHelp.emptySelection,
+    group: 'tools',
+    chords: [{ key: 'Delete', label: 'Del' }],
+    run: (deps) => {
+      if (deps.hasSelection()) deps.onDeleteSelection()
+    },
+  },
+  {
+    id: 'back-out',
+    icon: 'close',
+    name: (t) => t.shortcutsHelp.backOut,
+    group: 'tools',
+    chords: [{ key: 'Escape', shift: 'any', label: 'Esc' }],
+    allowWhileTyping: true,
+    run: (deps) => {
+      // An expanded Tool group takes the first Escape (ticket 41), then Set Frame, the paste preview, the Selection.
+      if (deps.collapseExpandedToolGroup()) return
+      if (deps.settingFrame()) {
+        deps.finishFrame()
+        return
+      }
+      if (deps.backOutOfSelect()) return
+      // Ticket 214: with nothing left to dismiss, Escape falls through to Paint.
+      if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
+    },
+  },
+  selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas'),
+  {
+    id: 'set-frame',
+    icon: 'frame',
+    name: (t) => t.frame.setFrame,
+    group: 'canvas',
+    chords: [{ key: '6', label: '6' }],
+    needsProject: true,
+    run: (deps) => deps.onToggleFrame(),
+  },
+  {
+    id: 'rulers',
+    icon: 'ruler',
+    name: (t) => t.canvas.rulersLabel,
+    group: 'canvas',
+    chords: [{ key: 'r', label: 'R' }],
+    run: (deps) => deps.onToggleRulers(),
+  },
+  {
+    id: 'zoom-in',
+    icon: 'zoom-in',
+    name: (t) => t.canvas.zoomInLabel,
+    group: 'canvas',
+    chords: [{ key: ['+', '='], mod: true, shift: 'any', label: '+' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    modals: 'claim',
+    run: (deps) => deps.onZoomIn(),
+  },
+  {
+    id: 'zoom-out',
+    icon: 'zoom-out',
+    name: (t) => t.canvas.zoomOutLabel,
+    group: 'canvas',
+    chords: [{ key: ['-', '_'], mod: true, shift: 'any', label: '−' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    modals: 'claim',
+    run: (deps) => deps.onZoomOut(),
+  },
+  {
+    id: 'zoom-fit',
+    icon: 'fit',
+    name: (t) => t.canvas.zoomResetLabel,
+    group: 'canvas',
+    chords: [{ key: '0', mod: true, shift: 'any', label: '0' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    modals: 'claim',
+    run: (deps) => deps.onFit(),
+  },
+  {
+    id: 'shortcuts-help',
+    icon: 'keyboard',
+    name: (t) => t.shortcutsHelp.title,
+    group: 'canvas',
+    chords: [{ key: '?', shift: 'any', label: '?' }],
+    run: (deps) => deps.openShortcutsHelp(),
+  },
+  {
+    id: 'palette-color',
+    name: (t) => t.palette.colorLabel,
+    group: 'colors',
+    chords: PALETTE_SHORTCUTS.map(({ code, keyLabel }) => ({ code, shift: true, label: keyLabel })),
+    help: { name: (t) => t.shortcutsHelp.paletteColors, keys: [['Shift', '1…9'], ['Shift', '0'], ['Q'], ['W']] },
+    run: (deps, event) => {
+      const color = PALETTE[PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)]
+      if (color) deps.onSelectColor(color.id)
+    },
+  },
+  {
+    id: 'undo',
+    icon: 'undo',
+    name: (t) => t.palette.undoButton,
+    group: 'edit',
+    chords: [{ key: 'z', mod: true, label: 'Z' }],
+    preventDefault: true,
+    modals: 'ignore',
+    run: (deps) => deps.onUndo(),
+  },
+  {
+    id: 'redo',
+    icon: 'redo',
+    name: (t) => t.palette.redoButton,
+    group: 'edit',
+    // Ctrl+Y is the older Windows convention.
+    chords: [
+      { key: 'z', mod: true, shift: true, label: 'Z' },
+      { key: 'y', ctrl: true, label: 'Y' },
+    ],
+    preventDefault: true,
+    modals: 'ignore',
+    run: (deps) => deps.onRedo(),
+  },
+  {
+    id: 'copy',
+    icon: 'copy',
+    name: (t) => t.tools.copyButton,
+    group: 'edit',
+    chords: [{ key: 'c', mod: true, label: 'C' }],
+    preventDefault: true,
+    run: (deps) => deps.onCopy(),
+  },
+  {
+    id: 'paste',
+    icon: 'paste',
+    name: (t) => t.tools.pasteLabel,
+    group: 'edit',
+    chords: [{ key: 'v', mod: true, label: 'V' }],
+    run: (deps, event) => deps.pasteAtPointer(event),
+  },
+  {
+    id: 'save',
+    icon: 'save',
+    name: (t) => t.tools.saveButton,
+    group: 'edit',
+    chords: [{ key: 's', mod: true, label: 'S' }],
+    preventDefault: true,
+    allowWhileTyping: true,
+    needsProject: true,
+    run: (deps) => deps.onSave(),
+  },
+  {
+    id: 'rotate',
+    icon: 'rotate',
+    name: (t) => t.palette.rotateButton,
+    group: 'edit',
+    chords: [{ key: 'r', shift: true, label: 'R' }],
+    run: (deps) => deps.onRotate(),
+  },
+  {
+    id: 'remove-line',
+    icon: 'remove-line',
+    name: (t) => t.tools.removeLineButton,
+    group: 'edit',
+    chords: [{ key: 'Delete', shift: true, label: 'Del' }],
+    run: (deps) => {
+      if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
+    },
+  },
+  {
+    id: 'row-progress',
+    name: (t) => t.rowProgress.enabledLabel,
+    group: 'rowProgress',
+    chords: [{ key: 'p', label: 'P' }],
+    run: (deps) => {
+      const project = deps.activeProject()
+      if (project) deps.onToggleRowProgress(!project.rowProgress.enabled)
+    },
+  },
+  {
+    id: 'row-direction',
+    icon: 'turn-row-direction',
+    name: (t) => t.rowProgress.directionButton,
+    group: 'rowProgress',
+    chords: [{ key: 'd', label: 'D' }],
+    run: (deps) => deps.onToggleRowDirection(),
+  },
+  {
+    id: 'row-done',
+    name: (t) => t.rowProgress.nextButton,
+    group: 'rowProgress',
+    chords: [
+      { key: 'Enter', label: 'Enter' },
+      { key: ' ', label: 'Space' },
+    ],
+    givesWayToFocusedButton: true,
+    run: (deps) => {
+      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(1)
+    },
+  },
+  {
+    id: 'row-not-done',
+    name: (t) => t.rowProgress.previousButton,
+    group: 'rowProgress',
+    chords: [
+      { key: 'Enter', shift: true, label: 'Enter' },
+      { key: ' ', shift: true, label: 'Space' },
+    ],
+    givesWayToFocusedButton: true,
+    run: (deps) => {
+      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)
+    },
+  },
+]
+
+/** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */
+export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translations) => string; keys: readonly (readonly string[])[] }[] = [
+  { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
+  { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [['Ctrl/Cmd', 'wheel']] },
+]
+
+/** A chord's parts as the dialog and the key chips show them: "Ctrl/Cmd", "Shift", then the key. */
+export function chordParts(chord: Chord): string[] {
+  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean)
+}
+
+/** Whether a key press is this chord. */
+export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
+  const modifier = chord.mod ? event.ctrlKey || event.metaKey : chord.ctrl ? event.ctrlKey && !event.metaKey : !event.ctrlKey && !event.metaKey
+  if (!modifier || event.altKey) return false
+  if (chord.shift !== 'any' && event.shiftKey !== !!chord.shift) return false
+  if (chord.code !== undefined) return event.code === chord.code
+  const keys = typeof chord.key === 'string' ? [chord.key] : (chord.key ?? [])
+  return keys.some((key) => key.toLowerCase() === event.key.toLowerCase())
+}
+
+/** Every distinct (modifier, Shift, key) a chord answers to: two actions must share none of them. */
+export function chordSlots(chord: Chord): string[] {
+  const modifiers = chord.mod ? ['ctrl', 'meta'] : chord.ctrl ? ['ctrl'] : ['']
+  const shifts = chord.shift === 'any' ? ['', 'shift'] : [chord.shift ? 'shift' : '']
+  const keys = chord.code !== undefined ? [`code:${chord.code}`] : (typeof chord.key === 'string' ? [chord.key] : (chord.key ?? [])).map((key) => key.toLowerCase())
+  return modifiers.flatMap((modifier) => shifts.flatMap((shift) => keys.map((key) => `${modifier}+${shift}+${key}`)))
+}

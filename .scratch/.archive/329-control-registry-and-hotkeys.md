@@ -15,7 +15,7 @@ CONTEXT.md (Eraser, Remove row/column, Rotate) is already updated.
 
 **Blocked by:** None (can start immediately).
 
-**Status:** needs-triage
+**Status:** done
 
 - [ ] Every action that has a key is defined once in the registry, and the shortcut table is built from it
 - [ ] A unit test fails on a duplicate key or combination

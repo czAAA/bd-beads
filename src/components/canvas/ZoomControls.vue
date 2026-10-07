@@ -21,7 +21,7 @@ const { t } = useI18n()
     buttons with no fill; the level in DM Mono, 48px wide and centered, so the buttons don't shift as it changes.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
-    <IconButton
+    <IconButton tooltip
       icon="zoom-out"
       variant="plain"
       :icon-size="16"
@@ -31,7 +31,7 @@ const { t } = useI18n()
       @click="emit('zoom-out')"
     />
     <span class="zoom-controls__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
-    <IconButton
+    <IconButton tooltip
       icon="zoom-in"
       variant="plain"
       :icon-size="16"
@@ -40,7 +40,7 @@ const { t } = useI18n()
       data-testid="zoom-in"
       @click="emit('zoom-in')"
     />
-    <IconButton
+    <IconButton tooltip
       icon="fit"
       variant="plain"
       :icon-size="16"
