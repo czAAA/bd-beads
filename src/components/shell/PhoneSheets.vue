@@ -23,9 +23,8 @@ import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
 import { TOUR_ENABLED } from '../../features'
-import type { Tool } from '../../domain/tool'
-import ToolButton from '../tools/ToolButton.vue'
-import { TOOL_HOTKEYS, TOOL_ICONS, TOOL_ORDER } from '../tools/toolIcons'
+import { TOOL_HOTKEYS, TOOL_ORDER } from '../tools/toolIcons'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 const {
   t,
@@ -78,38 +77,55 @@ const {
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
-/** The phone Tool sheet's four tiles (ToolSheet card), same order and icons as everywhere else the four tools list themselves. */
 /** The Menu's Overview link and the repository's AGPL-3.0 source link (ADR 0031, ticket 269): the same two the wide header's menu holds. */
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
-const phoneTools = computed(() => TOOL_ORDER.map((id) => ({ id, icon: TOOL_ICONS[id], label: toolLabel(id), hotkey: TOOL_HOTKEYS[id] })))
-
-function toolLabel(tool: Tool): string {
-  return { paint: t.value.tools.paintLabel, fill: t.value.tools.fillLabel, select: t.value.tools.selectLabel, erase: t.value.tools.eraseLabel, hand: t.value.tools.handLabel }[tool]
+/** The phone Tool sheet's tiles (ToolSheet card): the same registry actions, in the same order, as the Toolbox's tabs. */
+const phoneTools = TOOL_ORDER.map((id) => ({ id, action: controlAction(`tool-${id}`), hotkey: TOOL_HOTKEYS[id] }))
+const sheetActions = {
+  removeLine: controlAction('remove-line'),
+  clear: controlAction('clear'),
+  rotate: controlAction('rotate'),
+  copy: controlAction('copy'),
+  paste: controlAction('paste'),
+  newProject: controlAction('new-project'),
+  savedProjects: controlAction('saved-projects'),
+  changeMakerName: controlAction('change-maker-name'),
 }
+
+/** What the actions' enabled states and disabled reasons read (ADR 0035). */
+const deps = computed(() =>
+  controlDeps({
+    activeProject: () => activeProject.value,
+    canRemoveSelectedLine: () => canRemoveSelectedLine.value,
+    hasSelection: () => !!selection.value,
+    hasClipboard: () => pasteProjectionActive.value,
+  }),
+)
 </script>
 
 <template>
   <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
     <div class="phone-sheet__tiles">
-      <ToolButton
+      <IconButton
         v-for="tool in phoneTools"
         :key="tool.id"
-        :icon="tool.icon"
-        :label="tool.label"
+        variant="tool"
+        :action="tool.action"
         :hotkey="tool.hotkey"
-        :active="activeTool === tool.id"
+        show-hotkey
+        :selected="activeTool === tool.id"
         :data-testid="`sheet-tool-${tool.id}`"
         :data-tour="`tool-${tool.id}`"
         @click="onSelectTool(tool.id)"
       />
     </div>
     <div class="phone-sheet__links">
-      <AppButton variant="link" icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" :aria-label="t.tools.removeLineName" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
+      <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
       </AppButton>
-      <AppButton variant="link" icon="delete" danger data-testid="sheet-delete-all" :aria-label="t.deleteAll.confirmButton" @click="onRequestDeleteAll(); openPhoneSheet = null">
+      <AppButton variant="link" icon="delete" danger :action="sheetActions.clear" :deps="deps" data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
         {{ t.deleteAll.button }}
       </AppButton>
     </div>
@@ -141,26 +157,9 @@ function toolLabel(tool: Tool): string {
       @remove="onRemoveFrame"
     />
     <div class="phone-sheet__edit">
-      <IconButton tooltip
-        icon="rotate"
-        variant="toolbox"
-        size="lg"
-        :label="activeProject.frame ? t.palette.rotateButton : t.frame.rotateNeedsFrame"
-        :disabled="!activeProject.frame || activeProject.rowProgress.enabled"
-        :title="activeProject.frame && activeProject.rowProgress.enabled ? t.size.lockedReason : undefined"
-        data-testid="sheet-rotate"
-        @click="onRotate"
-      />
-      <IconButton tooltip icon="copy" variant="toolbox" size="lg" data-tour="copy" :label="t.tools.copyButton" :disabled="!selection" @click="onCopy" />
-      <IconButton tooltip
-        icon="paste"
-        variant="toolbox"
-        size="lg"
-        :label="t.tools.pasteLabel"
-        :disabled="!pasteProjectionActive"
-        data-testid="sheet-paste"
-        @click="openPhoneSheet = null"
-      />
+      <IconButton variant="toolbox" size="lg" :action="sheetActions.rotate" :deps="deps" data-testid="sheet-rotate" @click="onRotate" />
+      <IconButton variant="toolbox" size="lg" :action="sheetActions.copy" :deps="deps" data-tour="copy" @click="onCopy" />
+      <IconButton variant="toolbox" size="lg" :action="sheetActions.paste" :deps="deps" data-testid="sheet-paste" @click="openPhoneSheet = null" />
     </div>
   </BottomSheet>
 
@@ -216,13 +215,10 @@ function toolLabel(tool: Tool): string {
     </template>
     <div class="phone-sheet__project-actions">
       <!-- New Project: never disabled -- with no Projects yet this is the only way to reach the form (the wider tiers show it inline by default). -->
-      <AppButton variant="primary" icon="plus" data-testid="phone-new-project-button" @click="phoneNewProjectOpen = true">
-        {{ t.projects.newProjectButton }}
-      </AppButton>
+      <AppButton variant="primary" icon="plus" :action="sheetActions.newProject" data-testid="phone-new-project-button" @click="phoneNewProjectOpen = true" />
       <ProjectImport compact :decode-image="decodeImage" :projects="projects" testid-prefix="project-sheet-" @import="onImportProjects" />
-      <IconButton tooltip
-        icon="library"
-        :label="t.projects.heading"
+      <IconButton
+        :action="sheetActions.savedProjects"
         :disabled="projects.length === 0"
         data-testid="phone-saved-projects-button"
         @click="phoneSavedProjectsOpen = true"
@@ -266,9 +262,7 @@ function toolLabel(tool: Tool): string {
     </div>
     <div class="phone-sheet__menu-row" data-testid="menu-item-name-on-exports">
       <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>
-      <AppButton variant="in-box" size="sm" data-testid="menu-item-name-on-exports-change" @click="nameOnExportsOpen = true">
-        {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
-      </AppButton>
+      <AppButton variant="in-box" size="sm" :action="sheetActions.changeMakerName" :label="makerName ? undefined : t.saveBox.addName" data-testid="menu-item-name-on-exports-change" @click="nameOnExportsOpen = true" />
     </div>
     <button type="button" class="ui-control phone-sheet__menu-link phone-sheet__menu-shortcuts" data-testid="menu-item-shortcuts" @click="shortcutsHelpOpen = true">
       <AppIcon name="keyboard" :size="16" />

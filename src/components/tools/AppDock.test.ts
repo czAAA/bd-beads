@@ -12,16 +12,16 @@ describe('AppDock', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
     const button = wrapper.get('[data-testid="dock-tool"]')
     expect(button.attributes('aria-label')).toBe('Fill')
-    expect(button.get('.dock__key').text()).toBe('2')
+    expect(button.get('.icon-btn__key').text()).toBe('2')
     expect(button.attributes('aria-keyshortcuts')).toBe('2')
   })
 
   it('shows the Frame button\'s F key, and no key on the group buttons', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.get('[data-testid="dock-frame"]').get('.dock__key').text()).toBe('6')
-    expect(wrapper.find('[data-testid="dock-color"] .dock__key').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-menu"] .dock__key').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-project"] .dock__key').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="dock-frame"]').get('.icon-btn__key').text()).toBe('6')
+    expect(wrapper.find('[data-testid="dock-color"] .icon-btn__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-menu"] .icon-btn__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-project"] .icon-btn__key').exists()).toBe(false)
   })
 
   it('marks whichever sheet is open, and emits select-sheet for each of the five', async () => {

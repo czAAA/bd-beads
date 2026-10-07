@@ -72,12 +72,12 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="frame-set"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').classes()).toContain('dock__item--open')
+    expect(wrapper.find('[data-testid="dock-frame"]').classes()).toContain('icon-btn--selected')
     expect(wrapper.find('[data-testid="context-bar-frame-size"]').text()).toMatch(/^10×20/)
 
     await wrapper.find('[data-testid="context-bar-done-frame"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-frame-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('dock__item--open')
+    expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('icon-btn--selected')
   })
 
   it('has the five tools in the Tool sheet, Hand among them, each with its hotkey corner (ticket 275)', async () => {
@@ -88,7 +88,7 @@ describe('App at the phone tier (ticket 79)', () => {
     for (const [tool, key] of Object.entries(expectedKeys)) {
       const tile = wrapper.find(`[data-testid="sheet-tool-${tool}"]`)
       expect(tile.exists()).toBe(true)
-      expect(tile.get('.tool-button__key').text()).toBe(key)
+      expect(tile.get('.icon-btn__key').text()).toBe(key)
     }
   })
 
@@ -99,7 +99,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="sheet-tool-erase"]').trigger('click')
 
     expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('icon-btn--selected')
 
     await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)

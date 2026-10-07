@@ -3,10 +3,13 @@ import AppButton from '../ui/AppButton.vue'
 import AppDock from '../tools/AppDock.vue'
 import IconButton from '../ui/IconButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
+const newProjectAction = controlAction('new-project')
+const menuAction = controlAction('dock-menu')
+
 const {
-  t,
   settingFrame,
   inputMode,
   inputModeAvailable,
@@ -32,11 +35,9 @@ const {
     button at its bottom right so language and theme stay reachable. Once a Project is open the Dock appears.
   -->
   <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
-    <AppButton variant="primary" icon="plus" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true">
-      {{ t.projects.newProjectButton }}
-    </AppButton>
+    <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true" />
     <ProjectImport :decode-image="decodeImage" compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
-    <IconButton tooltip icon="menu" :label="t.header.menuButton" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
+    <IconButton :action="menuAction" :tooltip="{ placement: 'top' }" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
   </div>
   <AppDock
     v-else-if="!framing && !!activeProject"
