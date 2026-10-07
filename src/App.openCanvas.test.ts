@@ -200,8 +200,8 @@ describe('the Hand tool', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
 
     await key({ key: '5' })
-    expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('tool-button--active')
-    expect(wrapper.findAll('[data-testid="toolbox"] .tool-button')).toHaveLength(6)
+    expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.findAll('[data-testid="toolbox"] .icon-btn--tool')).toHaveLength(6)
 
     const before = JSON.stringify(loadProjects()[0]!.beads)
     const root = surface(wrapper)

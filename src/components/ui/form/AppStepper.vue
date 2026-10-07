@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppTooltip from '../AppTooltip.vue'
 
 /**
@@ -15,20 +16,28 @@ const props = withDefaults(
     increaseLabel: string
     disabled?: boolean
     tooltip?: boolean
+    /** Why the stepper is locked, shown by its buttons' Tooltips; the buttons then stay hoverable (`aria-disabled`). */
+    disabledBody?: string
     decreaseTestid?: string
     increaseTestid?: string
     valueTestid?: string
   }>(),
-  { min: -Infinity, max: Infinity, tooltip: false, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined },
+  { min: -Infinity, max: Infinity, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined },
 )
 const value = defineModel<number>({ required: true })
 
-/** A Tooltip while its button can act: a limit or a locked stepper shows none (a disabled button must give a reason). */
-function tooltipFor(canStep: boolean) {
-  return props.tooltip && !props.disabled && canStep
+/** The Tooltip of one button: its name while it can act, the reason while the stepper is locked (ADR 0035); a limit shows none. */
+function tooltipFor(name: string, canStep: boolean) {
+  if (!props.tooltip) return undefined
+  if (props.disabled) return props.disabledBody === undefined ? undefined : { name, disabled: true as const, disabledBody: props.disabledBody, announce: false }
+  return canStep ? { name, announce: false } : undefined
 }
 
+/** A locked stepper with a reason stays focusable and hoverable, so the reason can be read. */
+const reasoned = computed(() => props.disabled && props.disabledBody !== undefined)
+
 function step(delta: number) {
+  if (props.disabled) return
   const next = Math.min(props.max, Math.max(props.min, value.value + delta))
   if (next !== value.value) value.value = next
 }
@@ -36,12 +45,13 @@ function step(delta: number) {
 
 <template>
   <span class="stepper" :class="{ 'stepper--disabled': disabled }">
-    <component :is="tooltipFor(value > min) ? AppTooltip : 'span'" v-bind="tooltipFor(value > min) ? { name: decreaseLabel, announce: false } : { class: 'stepper__slot' }">
+    <component :is="tooltipFor(decreaseLabel, value > min) ? AppTooltip : 'span'" v-bind="tooltipFor(decreaseLabel, value > min) ?? { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"
         type="button"
         :aria-label="decreaseLabel"
-        :disabled="disabled || value <= min"
+        :disabled="(disabled && !reasoned) || value <= min"
+        :aria-disabled="reasoned || undefined"
         :data-testid="decreaseTestid"
         @click="step(-1)"
       >
@@ -49,12 +59,13 @@ function step(delta: number) {
       </button>
     </component>
     <span class="stepper__value" :data-testid="valueTestid">{{ value }}</span>
-    <component :is="tooltipFor(value < max) ? AppTooltip : 'span'" v-bind="tooltipFor(value < max) ? { name: increaseLabel, announce: false } : { class: 'stepper__slot' }">
+    <component :is="tooltipFor(increaseLabel, value < max) ? AppTooltip : 'span'" v-bind="tooltipFor(increaseLabel, value < max) ?? { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"
         type="button"
         :aria-label="increaseLabel"
-        :disabled="disabled || value >= max"
+        :disabled="(disabled && !reasoned) || value >= max"
+        :aria-disabled="reasoned || undefined"
         :data-testid="increaseTestid"
         @click="step(1)"
       >

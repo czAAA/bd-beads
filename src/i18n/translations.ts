@@ -443,6 +443,7 @@ export interface Translations {
     notSet: string
     /** The number chip's accessible name: pressing it brings the Frame into view. */
     numberLabel: string
+    numberName: string
     fitToDrawing: string
     removeFrame: string
     done: string
@@ -638,6 +639,7 @@ export interface Translations {
     saveProject: string
     changeName: string
     convertImage: string
+    frameChip: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

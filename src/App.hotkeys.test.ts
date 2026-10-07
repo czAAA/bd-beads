@@ -41,7 +41,7 @@ describe('App Toolbox controls (ticket 75)', () => {
 
     await wrapper.find('[data-testid="language-en"]').trigger('click')
     const tab = wrapper.find(`[data-testid="${testId}"]`)
-    expect(tab.classes()).toContain('tool-button')
+    expect(tab.classes()).toContain('icon-btn--tool')
     expect(tab.find('svg').attributes('data-icon')).toBe(icon)
     expect(tab.attributes('aria-label')).toBe(label(en))
     expect(tab.attributes('title')).toBeUndefined()
@@ -73,7 +73,6 @@ describe('App Toolbox controls (ticket 75)', () => {
 
     const removeLine = wrapper.find('[data-testid="tool-remove-line"]')
     expect(removeLine.text()).toBe(en.tools.removeLineShort)
-    expect(removeLine.attributes('title')).toBe(en.tools.removeLineButton)
     const deleteAll = wrapper.find('[data-testid="delete-all-button"]')
     expect(deleteAll.text()).toBe(en.deleteAll.button)
     expect(deleteAll.classes()).toContain('app-button--danger-link')
@@ -94,7 +93,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   it('shows which tool is active', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('icon-btn--selected')
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
   })
 })
@@ -244,10 +243,10 @@ describe('App keyboard shortcuts', () => {
     await wrapper.find('[data-testid="tool-fill"]').trigger('click')
 
     await pressKey({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('icon-btn--selected')
 
     await pressKey({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('icon-btn--selected')
   })
 
   it('works anywhere in the editor, the same as Escape, not just while the canvas has focus', async () => {
@@ -648,7 +647,7 @@ describe('App tool digit keys (ticket 292)', () => {
 
     await pressKey({ key: digit })
 
-    expect(wrapper.find(`[data-testid="${testId}"]`).classes()).toContain('tool-button--active')
+    expect(wrapper.find(`[data-testid="${testId}"]`).classes()).toContain('icon-btn--selected')
   })
 
   it('E, H and F no longer pick a tool', async () => {
@@ -658,8 +657,8 @@ describe('App tool digit keys (ticket 292)', () => {
       await pressKey({ key })
     }
 
-    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('tool-button--active')
-    expect(wrapper.find('[data-testid="tool-frame"]').classes()).not.toContain('tool-button--active')
+    expect(wrapper.find('[data-testid="tool-paint"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="tool-frame"]').classes()).not.toContain('icon-btn--selected')
   })
 })
 

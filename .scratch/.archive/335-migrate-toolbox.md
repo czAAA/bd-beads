@@ -6,7 +6,7 @@
 
 **Blocked by:** 327, 328, 329, 330, 331, 332, 333, 334
 
-**Status:** needs-triage
+**Status:** done
 
 - [ ] Every control in this area comes from a shared component and a registry action, with no per-place copy of its name, Tooltip or key
 - [ ] Tooltips, key chips and disabled reasons match ticket 334's table

@@ -118,11 +118,11 @@ describe('Toolbox', () => {
     const description = (tool: string) => tip(tool).querySelector('.app-tooltip__body')?.textContent
 
     expect([chip('paint'), chip('fill'), chip('select'), chip('erase'), chip('hand')]).toEqual(['1', '2', '3', '4', '5'])
-    expect(description('paint')).toBe(ru.tools.paintHint)
-    expect(description('fill')).toBe(ru.tools.fillHint)
-    expect(description('select')).toBe(ru.tools.selectHint)
-    expect(description('hand')).toBe(ru.tools.handHint)
-    expect(description('erase')).toBeUndefined()
+    expect(description('paint')).toBe(ru.tooltips.paint)
+    expect(description('fill')).toBe(ru.tooltips.fill)
+    expect(description('select')).toBe(ru.tooltips.select)
+    expect(description('hand')).toBe(ru.tooltips.hand)
+    expect(description('erase')).toBe(ru.tooltips.erase)
     expect(tip('erase').querySelector('.app-tooltip__name')?.textContent).toBe(ru.tools.eraseLabel)
   })
 
@@ -174,12 +174,12 @@ describe('Toolbox', () => {
     }
   })
 
-  it("shows the Edit buttons' shortcuts as chips; R is the Rulers now, so Rotate has none (tickets 91, 251)", () => {
+  it("shows the Edit buttons' shortcuts as chips; Shift+R rotates (tickets 91, 251)", () => {
     const wrapper = mountToolbox({ canUndo: true, canRedo: true, canCopy: true })
     const chip = (id: string) =>
       wrapper.get(`[data-testid="${id}"]`).element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent
 
-    expect(chip('rotate-button')).toBeUndefined()
+    expect(chip('rotate-button')).toBe('Shift+R')
     expect(chip('copy-button')).toBe('Ctrl/Cmd+C')
     expect(chip('undo-button')).toBe('Ctrl/Cmd+Z')
     expect(chip('redo-button')).toBe('Ctrl/Cmd+Shift+Z')
@@ -288,8 +288,9 @@ describe('Toolbox Image colors (ticket 58)', () => {
     return { ...makeProject(), imageColors: ['#ff0000', '#00ff00'] }
   }
 
-  it('shows the open Project Image colors in the Colors group, alongside the Palette', () => {
+  it('shows the open Project Image colors in the Colors group, alongside the Palette', async () => {
     const wrapper = mountToolbox({ project: convertedProject() })
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
 
     const colorsGroup = wrapper.findAll('.tool-group')[1]!
     expect(colorsGroup.find('[data-testid="palette-picker"]').exists()).toBe(true)
@@ -312,13 +313,15 @@ describe('Toolbox Image colors (ticket 58)', () => {
   it('emits select-image-color with the clicked hex', async () => {
     const wrapper = mountToolbox({ project: convertedProject() })
 
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
     await wrapper.find('[data-color-hex="#00ff00"]').trigger('click')
 
     expect(wrapper.emitted('select-image-color')).toEqual([['#00ff00']])
   })
 
-  it('shows which Image color is being painted with', () => {
+  it('shows which Image color is being painted with', async () => {
     const wrapper = mountToolbox({ project: convertedProject(), selectedImageColor: '#ff0000' })
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
 
     expect(wrapper.find('[data-color-hex="#ff0000"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-color-hex="#00ff00"]').attributes('aria-pressed')).toBe('false')
@@ -335,8 +338,9 @@ describe('Toolbox Image colors (ticket 58)', () => {
     expect(wrapper.find('[data-testid="custom-color-input"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('takes its own line rather than counting toward the group control cap', () => {
+  it('takes its own line rather than counting toward the group control cap', async () => {
     const wrapper = mountToolbox({ project: convertedProject() })
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="tool-group-colors"] [data-testid="image-colors-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="tool-group-overflow"]').exists()).toBe(false)
@@ -400,12 +404,15 @@ describe('Toolbox disclosure rows (ticket 75)', () => {
 
 describe('Toolbox Rotate (ticket 233)', () => {
   const rotate = (wrapper: ReturnType<typeof mountToolbox>) => wrapper.find('[data-testid="rotate-button"]')
+  /** The disabled reason its Tooltip gives (ADR 0035). */
+  const reason = (wrapper: ReturnType<typeof mountToolbox>) => rotate(wrapper).element.closest('.app-tooltip')!.querySelector('.app-tooltip__body')?.textContent
 
   it('is disabled and named "Rotate, Set Frame first" with no Frame', async () => {
     const { frame: _frame, ...open } = makeProject()
     const wrapper = mountToolbox({ project: open })
     expect(rotate(wrapper).attributes('aria-disabled')).toBeDefined()
-    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.frame.rotateNeedsFrame)
+    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.palette.rotateButton)
+    expect(reason(wrapper)).toBe(ru.tooltips.setFrameFirst)
     await rotate(wrapper).trigger('click')
     expect(wrapper.emitted('rotate')).toBeUndefined()
   })
@@ -413,7 +420,8 @@ describe('Toolbox Rotate (ticket 233)', () => {
   it('waits while Row progress is on, saying why', () => {
     const wrapper = mountToolbox({ project: setRowProgressEnabled(makeProject(), true) })
     expect(rotate(wrapper).attributes('aria-disabled')).toBeDefined()
-    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.size.lockedReason)
+    expect(rotate(wrapper).attributes('aria-label')).toBe(ru.palette.rotateButton)
+    expect(reason(wrapper)).toBe(ru.tooltips.rowProgressLockedRotate)
   })
 
   it('is named "Rotate" and works with a Frame', () => {
@@ -460,7 +468,7 @@ describe('Toolbox Frame row (ticket 233)', () => {
   })
 
   it('steps the Columns and Rows, Fits to drawing and Removes the Frame', async () => {
-    const wrapper = mountToolbox()
+    const wrapper = mountToolbox({ project: { ...makeProject(), beads: { 0: { 0: '#ff0000' } } } })
     const frame = makeProject().frame!
     await frameRow(wrapper).find('button').trigger('click')
 
@@ -522,19 +530,19 @@ describe('Toolbox Frame row (ticket 233)', () => {
     const paint = wrapper.find('[data-testid="tool-paint"]')
     expect(paint.text()).toBe('1')
     expect(paint.attributes('aria-label')).toBeTruthy()
-    const badges = wrapper.findAll('[data-testid^="tool-"] .tool-button__key').map((badge) => badge.text())
+    const badges = wrapper.findAll('[data-testid^="tool-"] .icon-btn__key').map((badge) => badge.text())
     expect(badges).toEqual(['1', '2', '3', '4', '5', '6'])
   })
 
   it('draws the six tools as 34px tabs with their digit in aria-keyshortcuts (tickets 274, 292)', () => {
     const wrapper = mountToolbox()
-    const tiles = wrapper.findAll('.tool-buttons .tool-button')
+    const tiles = wrapper.findAll('.tool-buttons .icon-btn--tool')
     expect(tiles).toHaveLength(6)
     expect(tiles.map((tile) => tile.attributes('aria-keyshortcuts'))).toEqual(['1', '2', '3', '4', '5', '6'])
     // Each tab holds its 34px icon and, apart from it, only the aria-hidden key.
     for (const tile of tiles) {
       expect(tile.find('svg').attributes('style')).toContain('width: 2.125rem')
-      expect(tile.find('.tool-button__key').attributes('aria-hidden')).toBe('true')
+      expect(tile.find('.icon-btn__key').attributes('aria-hidden')).toBe('true')
     }
   })
 })
