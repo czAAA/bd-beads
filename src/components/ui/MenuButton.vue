@@ -26,6 +26,7 @@ type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
  * there is a body that adds something. Attributes and listeners (data-testid) go to the button itself.
  */
 defineOptions({ inheritAttrs: false })
+const emit = defineEmits<{ open: [] }>()
 const props = withDefaults(
   defineProps<{
     /** The button's text, or its accessible name when `iconOnly`. */
@@ -101,6 +102,7 @@ async function show(focus?: 'first' | 'last') {
   buttonEl.value = trigger() ?? undefined
   anchored.follow()
   if (focus) (focus === 'first' ? focusTargets()[0] : focusTargets().at(-1))?.focus()
+  emit('open')
 }
 
 function close(returnFocus = true) {
@@ -115,6 +117,8 @@ function close(returnFocus = true) {
 watch(showsSheet, () => close(false))
 
 provide(MENU_CLOSE, () => close())
+/** ImageColorsButton closes the menu from its own swatch handler. */
+defineExpose({ close })
 useEscapeLayer(() => open.value && !showsSheet.value, () => close())
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownOutside))
 

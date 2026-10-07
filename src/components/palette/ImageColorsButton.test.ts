@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import ImageColorsButton from './ImageColorsButton.vue'
 import { en } from '../../i18n/en'
 
@@ -20,6 +20,8 @@ describe('ImageColorsButton (ticket 151)', () => {
     expect(button.attributes('aria-expanded')).toBe('false')
 
     await button.trigger('click')
+
+    await flushPromises()
 
     expect(shown(wrapper)).toBe(true)
     expect(button.attributes('aria-expanded')).toBe('true')
