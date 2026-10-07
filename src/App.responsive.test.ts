@@ -32,7 +32,7 @@ describe('the iPad 13" tier breakpoint (ticket 167; responsive.md, 1024-1279px)'
   it('docks the column at column-width-tablet-lg, with 16px page padding and a 12px gap between boxes', () => {
     expect(appSource).toContain('grid-template-columns: var(--column-width-tablet-lg) minmax(0, 1fr);')
     expect(appSource).toMatch(
-      /@media \(min-width: 1024px\) and \(max-width: 1279px\) \{\s*\.app-shell__body \{[\s\S]{0,120}?padding: var\(--space-16\);/,
+      /@media \(min-width: 1024px\) and \(max-width: 1279px\) \{\s*\.app-shell__body \{[\s\S]{0,120}?padding: var\(--space-16\) var\(--space-16\) var\(--space-16\) var\(--space-6\);/,
     )
     expect(appSource).toMatch(
       /@media \(min-width: 1024px\) and \(max-width: 1279px\) \{\s*\.app-shell__column \{[\s\S]{0,60}?gap: var\(--space-12\);/,
@@ -60,7 +60,7 @@ describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', ()
   it('grows the column to column-width-desktop (360px) and the page padding to 32 / 40', () => {
     expect(layoutPx('column-width-desktop')).toBe(360)
     expect(appSource).toMatch(
-      /@media \(min-width: 1920px\) \{\s*\.app-shell__body \{\s*grid-template-columns: var\(--column-width-desktop\) minmax\(0, 1fr\);\s*padding: var\(--space-32\) 2\.5rem;/,
+      /@media \(min-width: 1920px\) \{\s*\.app-shell__body \{\s*grid-template-columns: var\(--column-width-desktop\) minmax\(0, 1fr\);\s*padding: var\(--space-32\) 2\.5rem var\(--space-32\) var\(--space-6\);/,
     )
   })
 
