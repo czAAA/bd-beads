@@ -119,7 +119,8 @@ const {
 }
 
 /*
- * The body: the 366px left column (352px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
+ * The body: the left edge is a 6px gutter at every docked tier, not the page padding, so the Toolbox sits close to the
+ * window edge; tooltips stay on screen on their own (AppTooltip clamps to an 8px screen margin). The 366px left column (352px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
  * takes all the remaining width and the full height (ticket 141; `responsive.md`, MacBook Air tier). minmax(0, 1fr)
  * lets the canvas box shrink below its content instead of pushing the page wider.
  */
@@ -129,7 +130,7 @@ const {
   grid-template-columns: var(--column-width) minmax(0, 1fr);
   gap: var(--space-14);
   min-height: 0;
-  padding: var(--space-24) var(--space-32);
+  padding: var(--space-24) var(--space-32) var(--space-24) var(--space-6);
 }
 
 /*
@@ -141,7 +142,7 @@ const {
 @media (min-width: 1024px) and (max-width: 1279px) {
   .app-shell__body {
     grid-template-columns: var(--column-width-tablet-lg) minmax(0, 1fr);
-    padding: var(--space-16);
+    padding: var(--space-16) var(--space-16) var(--space-16) var(--space-6);
   }
 }
 
@@ -153,7 +154,7 @@ const {
 @media (min-width: 1920px) {
   .app-shell__body {
     grid-template-columns: var(--column-width-desktop) minmax(0, 1fr);
-    padding: var(--space-32) 2.5rem;
+    padding: var(--space-32) 2.5rem var(--space-32) var(--space-6);
   }
 
   .app-shell__notices {
