@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from '../../i18n/useI18n'
+import AppSwatch from '../ui/AppSwatch.vue'
 
 /**
  * The open Project's Image colors (CONTEXT.md, ADR 0011) as swatches in the Colors group, alongside the Palette: the
@@ -30,19 +31,15 @@ const { t } = useI18n()
     :aria-label="t.convertImage.imageColorsLabel"
     data-testid="image-colors-picker"
   >
-    <button
+    <AppSwatch
       v-for="hex in colors"
       :key="hex"
-      type="button"
-      class="image-colors-picker__swatch"
-      :class="{ 'image-colors-picker__swatch--selected': hex === selectedColor }"
-      :style="{ backgroundColor: hex }"
-      :title="`${t.convertImage.imageColorsLabel} ${hex}`"
-      :aria-label="`${t.convertImage.imageColorsLabel} ${hex}`"
-      :aria-pressed="hex === selectedColor"
+      :color="hex"
+      :label="`${t.convertImage.imageColorsLabel} ${hex}`"
+      :selected="hex === selectedColor"
       data-testid="image-color-swatch"
       :data-color-hex="hex"
-      @click="emit('select', hex)"
+      @select="emit('select', hex)"
     />
   </div>
 </template>
@@ -50,30 +47,10 @@ const { t } = useI18n()
 <style scoped>
 /* The popover's grid (ColorPickers card): seven columns of square swatches, the chosen one ringed like a Palette swatch. */
 .image-colors-picker {
+  --swatch-size: var(--image-color-size);
+  --swatch-gap: var(--overlay-fill);
   display: grid;
   grid-template-columns: repeat(7, var(--image-color-size));
   gap: var(--space-6);
-}
-
-.image-colors-picker__swatch {
-  width: var(--image-color-size);
-  aspect-ratio: 1;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
-  cursor: pointer;
-}
-
-.image-colors-picker__swatch--selected {
-  box-shadow:
-    inset 0 0 0 1px var(--swatch-edge),
-    0 0 0 2px var(--overlay-fill),
-    0 0 0 4px var(--ring);
-}
-
-.image-colors-picker__swatch:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 3px;
 }
 </style>

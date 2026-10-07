@@ -44,7 +44,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     expect(all).toHaveLength(PALETTE.length + 1)
     const added = all[PALETTE.length]!
     expect(added.attributes('aria-pressed')).toBe('true')
-    expect(added.attributes('title')).not.toContain('Shift+')
+    expect(added.element.closest('.swatch')!.querySelector('.app-tooltip__key')).toBeNull() // an added color has no key chip
     expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456'])
 
     expect(swatches(mount(App, { attachTo: document.body }))).toHaveLength(PALETTE.length + 1)
@@ -74,13 +74,17 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
 describe('an added swatch can be removed (ticket 228)', () => {
   const seed = (hexes: string[]) => localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(hexes))
   const removeButton = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="palette-swatch-remove"]')
+  /** The × shows on the selected added swatch only (ticket 333), so the first added swatch is selected before it is used. */
+  const selectAdded = async (wrapper: ReturnType<typeof mount>, index = 0) => {
+    await swatches(wrapper)[PALETTE.length + index]!.trigger('click')
+  }
 
   it('offers no removal on a built-in swatch', async () => {
     seed(['#123456'])
     const wrapper = mount(App)
     await flushPromises()
     await swatches(wrapper)[0]!.trigger('click')
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1) // the added one's, none on the built-ins
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
     await swatches(wrapper)[0]!.trigger('keydown', { key: 'Delete' })
     expect(wrapper.find('[data-testid="remove-color-modal"]').exists()).toBe(false)
     expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
@@ -89,24 +93,27 @@ describe('an added swatch can be removed (ticket 228)', () => {
   const modal = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="remove-color-modal"]')
   const confirm = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-  it('shows the × on every added swatch without selecting or focusing it, and on no built-in one', async () => {
+  it('shows the × on the selected added swatch only, and on no built-in one (ticket 333)', async () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
     await swatches(wrapper)[0]!.trigger('click')
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(2)
-    expect(wrapper.find('[data-testid="palette-swatch-remove"]').attributes('aria-label')).toBe(en.palette.removeSwatch.replace('{hex}', '#123456'))
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
+    await selectAdded(wrapper, 1)
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
+    expect(removeButton(wrapper).attributes('aria-label')).toBe(en.palette.removeSwatch.replace('{hex}', '#abcdef'))
   })
 
   it('asks before removing: the × opens a confirmation naming the color, and nothing is removed yet', async () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
+    await selectAdded(wrapper)
     await removeButton(wrapper).trigger('click')
     expect(modal(wrapper).exists()).toBe(true)
     expect(wrapper.find('[data-testid="confirm-modal-message"]').text()).toContain('#123456')
     expect(swatches(wrapper)).toHaveLength(PALETTE.length + 2)
-    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
+    expect(swatches(wrapper)[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
     expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456', '#abcdef'])
   })
 
@@ -117,19 +124,12 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456'])
     const wrapper = mount(App)
     await flushPromises()
+    await selectAdded(wrapper)
     await removeButton(wrapper).trigger('click')
     await dismiss(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
     expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
     expect(wrapper.text()).not.toContain(en.palette.removed)
-  })
-
-  it('a click on the × does not select the swatch', async () => {
-    seed(['#123456'])
-    const wrapper = mount(App)
-    await flushPromises()
-    await removeButton(wrapper).trigger('click')
-    expect(swatches(wrapper)[PALETTE.length]!.attributes('aria-pressed')).toBe('false')
   })
 
   it('Confirm removes the selected added swatch, falls back to the default color, keeps it gone after a reload', async () => {

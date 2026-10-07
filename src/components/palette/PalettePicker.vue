@@ -4,7 +4,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
-import AppIcon from '../ui/AppIcon.vue'
+import AppSwatch from '../ui/AppSwatch.vue'
 
 const props = defineProps<{ selectedColorId?: string }>()
 const emit = defineEmits<{
@@ -41,35 +41,24 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
 
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
-    <span v-for="(color, index) in palette" :key="color.id" class="palette-picker__cell">
-      <button
-        type="button"
-        class="ui-control palette-picker__swatch"
-        :class="{ 'palette-picker__swatch--selected': color.id === selectedColorId }"
-        :style="{ backgroundColor: color.hex }"
-        :title="PALETTE_SHORTCUTS[index] ? `${t.palette.colorLabel} ${color.hex} (Shift+${PALETTE_SHORTCUTS[index].keyLabel})` : `${t.palette.colorLabel} ${color.hex}`"
-        :aria-label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${index + 1}, ${t.colorNames[color.id] ?? color.hex}`"
-        :aria-pressed="color.id === selectedColorId"
-        :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
-        :tabindex="roving.tabIndexFor(isStop(color.id, index))"
-        data-testid="palette-swatch"
-        :data-tour="`color-${color.id}`"
-        :data-color-id="color.id"
-        @click="emit('select', color.id)"
-        @keydown="onSwatchKeydown($event, color.id)"
-      />
-      <button
-        v-if="removeAdded && isAddedColorId(color.id)"
-        type="button"
-        class="ui-control palette-picker__remove"
-        :aria-label="t.palette.removeSwatch.replace('{hex}', color.hex)"
-        tabindex="-1"
-        data-testid="palette-swatch-remove"
-        @click="remove(color.id)"
-      >
-        <AppIcon class="palette-picker__remove-icon" name="close" :size="14" />
-      </button>
-    </span>
+    <AppSwatch
+      v-for="(color, index) in palette"
+      :key="color.id"
+      :color="color.hex"
+      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${index + 1}, ${t.colorNames[color.id] ?? color.hex}`"
+      :selected="color.id === selectedColorId"
+      :hotkey="PALETTE_SHORTCUTS[index] ? `Shift+${PALETTE_SHORTCUTS[index].keyLabel}` : undefined"
+      :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
+      class="palette-picker__swatch"
+      :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
+      :tabindex="roving.tabIndexFor(isStop(color.id, index))"
+      data-testid="palette-swatch"
+      :data-tour="`color-${color.id}`"
+      :data-color-id="color.id"
+      @select="emit('select', color.id)"
+      @remove="remove(color.id)"
+      @keydown="onSwatchKeydown($event, color.id)"
+    />
   </div>
 </template>
 
@@ -81,82 +70,6 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
   gap: var(--space-6);
 }
 
-.palette-picker__cell {
-  position: relative;
-  display: block;
-}
-
-.palette-picker__swatch {
-  aspect-ratio: 1;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
-  cursor: pointer;
-  transition: transform var(--duration-instant) var(--ease-standard);
-}
-
-.palette-picker__swatch--selected {
-  box-shadow:
-    inset 0 0 0 1px var(--swatch-edge),
-    0 0 0 2px var(--panel),
-    0 0 0 4px var(--ring);
-}
-
-.palette-picker__swatch:active {
-  transform: scale(0.93);
-}
-
-.palette-picker__swatch:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/* The removal × (PaletteSwatches card): a 16px round badge on the swatch's top-right corner, on every added swatch. */
-.palette-picker__remove {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  z-index: 1;
-  box-sizing: border-box;
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-full);
-  cursor: pointer;
-}
-
-/* The × is drawn at 10px, smaller than the icon set's sizes. */
-.palette-picker__remove-icon {
-  width: 10px;
-  height: 10px;
-}
-
-/* A fingertip needs more than 16px, but the usual 44px zone would cover the neighbouring swatches: 28px instead. */
-@media (pointer: coarse) {
-  .palette-picker__remove::before {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-.palette-picker__remove:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .palette-picker__swatch:active {
-    transform: none;
-  }
-}
-
 /*
  * Touch input (ticket 166): a swatch grows to a real 36px minimum instead of controls.css's usual invisible 44px hit
  * area, which packed this tight (6px apart) would overlap its neighbours.
@@ -165,15 +78,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
   /* The 8-column grid would overflow a narrow column at a real 36px minimum, so columns give way to more rows. */
   .palette-picker {
     grid-template-columns: repeat(auto-fill, minmax(var(--swatch-touch-min), 1fr));
-  }
-
-  .palette-picker__swatch {
-    min-width: var(--swatch-touch-min);
-    min-height: var(--swatch-touch-min);
-  }
-
-  .palette-picker__swatch::before {
-    content: none;
+    --swatch-min: var(--swatch-touch-min);
   }
 }
 </style>

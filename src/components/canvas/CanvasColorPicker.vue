@@ -8,6 +8,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
+import AppSwatch from '../ui/AppSwatch.vue'
 
 /**
  * The Canvas color button and its picker (ticket 252; CanvasStrip and CanvasBackground cards): a round dot showing the
@@ -120,23 +121,20 @@ function onFocusOut(event: FocusEvent) {
       >
         <span class="canvas-color__label">{{ t.canvas.canvasColor.pickerLabel }}</span>
         <div class="canvas-color__swatches" role="radiogroup" :aria-label="t.canvas.canvasColor.label">
-          <button
+          <AppSwatch
             v-for="(swatch, index) in swatches"
             :key="swatch.id"
-            class="canvas-color__swatch"
-            :class="{ 'canvas-color__swatch--chosen': canvas.shown.value === index + 1 }"
-            type="button"
+            :color="swatch.color"
+            :label="swatchLabel(index)"
+            :selected="canvas.shown.value === index + 1"
             role="radio"
-            :aria-checked="canvas.shown.value === index + 1"
-            :aria-label="swatchLabel(index)"
             :tabindex="canvas.shown.value === index + 1 ? 0 : -1"
-            :style="{ background: swatch.color }"
             :data-testid="`canvas-color-${swatch.id}`"
-            @click="choose(index)"
+            @select="choose(index)"
             @keydown="onSwatchKeydown($event, index)"
           >
             <AppIcon v-if="canvas.shown.value === index + 1" class="canvas-color__check" name="check" :size="16" />
-          </button>
+          </AppSwatch>
         </div>
         <span v-if="current" class="canvas-color__name" data-testid="canvas-color-name">
           {{ nameOf(canvas.shown.value - 1) }}
@@ -178,8 +176,7 @@ function onFocusOut(event: FocusEvent) {
   }
 }
 
-.canvas-color__button:focus-visible,
-.canvas-color__swatch:focus-visible {
+.canvas-color__button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -215,6 +212,8 @@ function onFocusOut(event: FocusEvent) {
 }
 
 .canvas-color__swatches {
+  --swatch-size: 32px;
+  --swatch-gap: var(--overlay-fill);
   display: flex;
   gap: var(--space-8);
   /* Room for the 2px ring that sits 2px outside the chosen swatch. */
@@ -222,28 +221,8 @@ function onFocusOut(event: FocusEvent) {
   margin: calc(-1 * var(--space-4));
 }
 
-.canvas-color__swatch {
-  display: inline-flex;
+.canvas-color__swatches > * {
   flex: none;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: var(--ink);
-  border: 1px solid var(--field-line);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-}
-
-.canvas-color__swatch--chosen {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.canvas-color__swatch--chosen:focus-visible {
-  outline-offset: 2px;
 }
 
 .canvas-color__name {
@@ -263,9 +242,8 @@ function onFocusOut(event: FocusEvent) {
     height: 44px;
   }
 
-  .canvas-color__swatch {
-    width: 40px;
-    height: 40px;
+  .canvas-color__swatches {
+    --swatch-size: 40px;
   }
 }
 
