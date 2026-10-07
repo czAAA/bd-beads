@@ -291,6 +291,13 @@ export interface Translations {
     removeLineShort: string
     removeLineName: string
   }
+  /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
+  inputMode: {
+    penLabel: string
+    mouseLabel: string
+    penHint: string
+    mouseHint: string
+  }
   rowProgress: {
     enabledLabel: string
     directionButton: string

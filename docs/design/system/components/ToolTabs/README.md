@@ -11,6 +11,7 @@ The Tools group: six icon tabs (Paint, Fill, Select, Eraser, Hand, Frame) on a r
 - **Eraser:** the fourth tool is named "Eraser", not "Erase" (ticket 250, ticket 176): the verb stays for the action ("Erase the stray bead"). Its icon is `erase`, its key `4`.
 - **Hand** moves the open canvas by dragging; holding Space with any tool does the same.
 - **Frame** is a tab: pressing it, or `6`, starts Set Frame (Esc leaves it). The Frame row in the Toolbox still shows the Frame's number and size (Frame card).
+- **Input mode toggle (ticket 325):** on a touch-capable device a seventh tile follows Frame (so it starts the second row): the Pen mode / Mouse mode toggle, a tab-sized button with `pen-mode` or `pen-mode-off` in `accent` and no underline, `aria-pressed` while in Pen mode. Not a tool: it never changes the active tool.
 - The consumer provides the active tool and handlers; the six tools are fixed. Classes: `bb-tools`, `bb-tool`, `bb-tool-remove`, `bb-tool-actions`.
 - Other tiers: the iPad toolbar, the phone Dock and the ToolSheet use the same icon scale, underline and key where their size allows (see their cards).
 

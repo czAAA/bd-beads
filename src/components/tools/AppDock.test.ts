@@ -35,6 +35,24 @@ describe('AppDock', () => {
     expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['frame'], ['project'], ['menu']])
   })
 
+  it('has no input mode button without an input mode, and a first one with it (ticket 325)', async () => {
+    expect(mount(AppDock, { props: { activeTool: 'paint', openSheet: null } }).find('[data-testid="dock-input-mode"]').exists()).toBe(false)
+
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null, inputMode: 'pen' } })
+    const buttons = wrapper.findAll('button')
+    expect(buttons[0]!.attributes('data-testid')).toBe('dock-input-mode')
+    expect(buttons[0]!.attributes('aria-label')).toBe('Pen mode')
+    expect(buttons[0]!.attributes('aria-pressed')).toBe('true')
+
+    await buttons[0]!.trigger('click')
+    expect(wrapper.emitted('toggle-input-mode')).toHaveLength(1)
+    expect(wrapper.emitted('select-sheet')).toBeUndefined()
+
+    await wrapper.setProps({ inputMode: 'mouse' })
+    expect(wrapper.get('[data-testid="dock-input-mode"]').attributes('aria-label')).toBe('Mouse mode')
+    expect(wrapper.get('[data-testid="dock-input-mode"]').attributes('aria-pressed')).toBe('false')
+  })
+
   it('has no Mirror sheet button left (ticket 174, pending its own redesign)', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
 

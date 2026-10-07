@@ -298,6 +298,12 @@ export const en: Translations = {
     removeLineShort: 'Remove line',
     removeLineName: 'Remove line',
   },
+  inputMode: {
+    penLabel: 'Pen mode',
+    mouseLabel: 'Mouse mode',
+    penHint: 'The pen draws; a finger or mouse moves the canvas. Press to switch to Mouse mode.',
+    mouseHint: 'A finger or mouse draws; the pen moves the canvas. Press to switch to Pen mode.',
+  },
   rowProgress: {
     enabledLabel: 'Show row progress',
     directionButton: 'Turn row direction',

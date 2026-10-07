@@ -65,6 +65,10 @@ _Avoid_: crop, resize, set size
 The tool (5) that moves the view by dragging and never changes a bead. Space + drag does the same from any tool.
 _Avoid_: pan mode, grab tool
 
+**Pen mode** / **Mouse mode**:
+The input mode: which pointer draws with the current Tool and which one moves the canvas. In Pen mode the pen draws, and a finger or mouse drags the canvas like the Hand tool, so a palm resting on an iPad does not paint. In Mouse mode (the default) a finger or mouse draws and the pen drags the canvas. Told apart by each event's pointer type, not by the Tool; two-finger pinch, the wheel and Space + drag work in both. One toggle picks it (after the Frame tool in the Toolbox, first in the phone Dock), offered on touch-capable devices only, and the choice is kept on the device.
+_Avoid_: stylus mode, touch mode, palm rejection
+
 **Rulers toggle**:
 The button (and R, and the phone's zoom pill) that shows or hides every ruler and size marking on the canvas, and the Piece areas' rectangles — each Piece area's, the Frame's and the Frame's size tooltip while it is set — kept as a preference on the device like the theme. Rulers show column numbers above and row numbers left of each Piece area, from 1, or the Frame's on all four sides once a Frame is set.
 _Avoid_: ruler switch, numbers toggle

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { usePalette } from '../../composables/tools/usePalette'
 import type { Tool } from '../../domain/tool'
+import type { InputMode } from '../../domain/inputMode'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
@@ -20,9 +21,11 @@ const props = defineProps<{
   openSheet: PhoneSheet | null
   /** Whether the Frame is being set: its button sits on `panel` like an open sheet's (Dock card). */
   settingFrame?: boolean
+  /** Pen mode or Mouse mode (ticket 325): its toggle is the Dock's first button; absent, the device has no use for it and there is none. */
+  inputMode?: InputMode
 }>()
 
-const emit = defineEmits<{ 'select-sheet': [sheet: PhoneSheet] }>()
+const emit = defineEmits<{ 'select-sheet': [sheet: PhoneSheet]; 'toggle-input-mode': [] }>()
 
 const { t } = useI18n()
 
@@ -51,6 +54,18 @@ function frameOn(id: string): boolean {
 
 <template>
   <nav class="dock" :aria-label="t.a11y.toolsLandmark" data-testid="dock">
+    <AppTooltip v-if="inputMode" class="dock__slot" :text="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel" :description="inputMode === 'pen' ? t.inputMode.penHint : t.inputMode.mouseHint" placement="top" :announce="false">
+      <button
+        type="button"
+        class="ui-control dock__item dock__item--accent dock__item--toggle"
+        :aria-label="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel"
+        :aria-pressed="inputMode === 'pen'"
+        data-testid="dock-input-mode"
+        @click="emit('toggle-input-mode')"
+      >
+        <AppIcon :name="inputMode === 'pen' ? 'pen-mode' : 'pen-mode-off'" :size="22" />
+      </button>
+    </AppTooltip>
     <AppTooltip v-for="item in items" :key="item.id" class="dock__slot" :text="item.label" placement="top" :announce="false">
       <button
         type="button"
@@ -124,7 +139,7 @@ function frameOn(id: string): boolean {
 }
 
 /* The selected tool is marked by the same 2px accent underline as the Toolbox tabs (ticket 292). */
-.dock__item--accent::after,
+.dock__item--accent:not(.dock__item--toggle)::after,
 .dock__item--frame-on::after {
   content: '';
   position: absolute;
