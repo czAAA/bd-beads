@@ -1,6 +1,6 @@
 # 347: Spec: Position marks without the zoom-out freeze
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Tickets:** 347 itself fixes the freeze (the acceptance list at the end). 348 adds the Squares style. 349 is the tiled bitmap cache, written up for later.
 

@@ -40,6 +40,11 @@ export function recordingContext() {
     lineCap: 'butt',
     roundRect: record('roundRect'),
     drawImage: record('drawImage'),
+    createPattern: (...args: unknown[]) => {
+      const pattern = { setTransform: () => {} }
+      record('createPattern')(...args)
+      return pattern
+    },
     imageSmoothingEnabled: true,
     closePath: record('closePath'),
     fill: record('fill'),

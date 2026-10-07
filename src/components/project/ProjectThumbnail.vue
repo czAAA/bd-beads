@@ -29,7 +29,8 @@ onMounted(draw)
 watch(
   () => props.project,
   () => {
-    if (!frame) frame = requestAnimationFrame(draw)
+    if (typeof requestAnimationFrame !== 'function') draw()
+    else if (!frame) frame = requestAnimationFrame(draw)
   },
 )
 </script>

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation, type Technique } from '../domain/grid'
 import { createProject, type Project } from '../domain/project'
@@ -17,6 +17,20 @@ function framedProject(technique: Technique, rotation: Rotation = 0): Project {
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }
+
+// jsdom has no canvas to make the Position marks' tile on: hand it one that records.
+beforeEach(() => {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(recordingContext().context as unknown as CanvasRenderingContext2D)
+})
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+/** The rectangles filled with the Position marks' pattern (an object; everything else is filled with a color). */
+const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknown }[]) =>
+  named('fillRect')
+    .filter((call) => typeof call.fillStyle === 'object')
+    .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
 function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number } = {}) {
   const beads: BeadShape[] = []
@@ -59,15 +73,16 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     })
   })
 
-  it('fills the background only on its own; the open canvas stays transparent and is dotted outside the Frame', () => {
+  it('fills the background only on its own; the open canvas stays transparent and is marked outside the Frame', () => {
     const project = framedProject(technique)
     const onItsOwn = render(project, false)
     const open = render(project, true)
 
     expect(onItsOwn.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.background && call.args[2] === view.width)).toBe(true)
-    expect(onItsOwn.named('arc')).toHaveLength(0)
+    expect(markFills(onItsOwn.named)).toEqual([])
     expect(open.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.background)).toBe(false)
-    expect(open.named('arc').length).toBeGreaterThan(0)
+    expect(markFills(open.named).length).toBeGreaterThan(0)
+    expect(open.named('arc')).toHaveLength(0)
   })
 
   it('fades a finished row toward the board on its own and toward the drawing area when open', () => {
@@ -164,13 +179,50 @@ describe('a Project with no Frame whose top bead is on an odd row (regression)',
 })
 
 describe('the Frame margin on the open canvas (ticket 276)', () => {
-  it('draws no dots in the margin and no band over it, leaving a flat gap', () => {
+  it('fills no marks in the margin or the Frame, leaving a flat gap', () => {
     const project = framedProject('loom')
-    const { calls } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3 } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
+    const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3 } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
 
-    const dotCells = calls.filter((call) => call.name === 'arc').map(({ args }) => ({ column: Math.floor((args[0] as number) / 20), row: Math.floor((args[1] as number) / 20) }))
-    expect(dotCells.length).toBeGreaterThan(0)
-    // The Frame is rows 6 to 9 and columns 6 to 8; its margin is 3 round it, rows 3 to 12 and columns 3 to 11.
-    expect(dotCells.filter(({ row, column }) => row >= 3 && row <= 12 && column >= 3 && column <= 11)).toEqual([])
+    const fills = markFills(named)
+    expect(fills.length).toBeGreaterThan(0)
+    // The Frame is rows 6 to 9 and columns 6 to 8; its margin is 3 round it, rows 3 to 12 and columns 3 to 11: x 60 to 240, y 60 to 260 (the marks' own edge sits 5 in from it).
+    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 245 && right > 65 && top < 260 && bottom > 60)
+    expect(touchesMargin).toEqual([])
+  })
+})
+
+describe('Position marks cost one pattern fill, however far out', () => {
+  it.each<Technique>(['loom', 'peyote', 'brick'])('is the same number of fills at the Zoom floor and at 100% (%s)', (technique) => {
+    const project = { ...framedProject(technique), frame: undefined }
+    const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
+
+    const floor = render(project, true, { region: wide, zoom: 0.1 })
+    const full = render(project, true, { region: wide, zoom: 1 })
+
+    expect(markFills(floor.named)).toHaveLength(1)
+    expect(markFills(full.named)).toHaveLength(1)
+    expect(floor.named('arc')).toHaveLength(0)
+  })
+
+  it('draws only the Frame\'s cells and the painted beads in view, whatever the zoom', () => {
+    const project: Project = { ...framedProject('loom'), beads: withColors(framedProject('loom').beads, [{ row: 40, column: 40, color: '#00f' }, { row: 5000, column: 5000, color: '#00f' }]) }
+    const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
+
+    const { beads } = render(project, true, { region: wide, zoom: 0.1 })
+
+    // 12 Frame cells and the one painted bead in view; the other is a thousand beads out of sight.
+    expect(beads).toHaveLength(13)
+  })
+
+  it.each<{ technique: Technique; rotation: Rotation }>(
+    (['loom', 'peyote', 'brick'] as const).flatMap((technique) => ([0, 90, 180, 270] as const).map((rotation) => ({ technique, rotation }))),
+  )('draws the Frame\'s cells and the beads outside it once each: $technique at $rotation°', ({ technique, rotation }) => {
+    const base = framedProject(technique, rotation)
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
+
+    const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
+
+    // The Frame's 12 cells, and the two beads outside it.
+    expect(beads).toHaveLength(14)
   })
 })

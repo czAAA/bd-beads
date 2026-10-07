@@ -51,6 +51,24 @@ async function mountSurface(project: Project, zoom = 1, scroll = { x: 0, y: 0 },
 const draws = () => context.named('clearRect').length / 2
 
 describe('ProjectSurface', () => {
+  it('redraws each layer once per animation frame, with the last zoom and scroll, however many changes come first', async () => {
+    const frames: (() => void)[] = []
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1)
+    frames.splice(0).forEach((frame) => frame())
+    context.calls.length = 0
+
+    for (const zoom of [0.9, 0.8, 0.7, 0.6]) {
+      await wrapper.setProps({ zoom, scroll: { x: zoom * 10, y: 0 } })
+    }
+    expect(draws()).toBe(0)
+    frames.splice(0).forEach((frame) => frame())
+
+    expect(draws()).toBe(1)
+    expect(wrapper.attributes('data-zoom')).toBe('0.6')
+  })
+
   it('redraws both layers when the theme changes, at the same size', async () => {
     const { wrapper } = await mountSurface(projectOf(20, 10), 1)
     const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element
@@ -110,18 +128,20 @@ describe('ProjectSurface', () => {
     }
   })
 
-  it('draws the dots of empty positions outside the Frame, and full empty beads inside it', async () => {
+  it('fills the empty positions outside the Frame and its margin with marks as patterns, not as a shape each', async () => {
     viewport = { width: 100, height: 100 }
     const framed = projectOf(2, 2)
     const open = { ...framed, frame: undefined }
+    const marks = () => context.named('fillRect').filter((call) => typeof call.fillStyle === 'object')
 
     await mountSurface(open, 1, { x: 0, y: 0 })
-    const dotsOnly = context.named('arc').length
+    const unframed = marks().length
     context.calls.length = 0
     await mountSurface(framed, 1, { x: 0, y: 0 })
 
-    // The four positions the Frame covers are beads now, not dots, and its margin (the other 32 in view) is a gap (ticket 276).
-    expect(dotsOnly - context.named('arc').length).toBe(36)
+    expect(unframed).toBe(1)
+    expect(marks().length).toBeLessThanOrEqual(4)
+    expect(context.named('arc')).toHaveLength(0)
   })
 
   it('draws a bead painted far from the first bead when the view is moved to it', async () => {

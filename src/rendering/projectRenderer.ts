@@ -1,6 +1,6 @@
 import type { Rotation, Technique } from '../domain/grid'
 import { colorAt, frameContains } from '../domain/canvas'
-import { inMargin } from '../domain/margin'
+import { withMargin } from '../domain/margin'
 import { isInFinishedRow, type Project } from '../domain/project'
 import {
   beadRoundness,
@@ -11,6 +11,7 @@ import {
   type DrawingContext,
   type ProjectTheme,
 } from './beadLook'
+import { positionMarkPattern } from './positionMarks'
 import type { Space } from './space'
 import {
   CELL_SIZE_PX,
@@ -128,8 +129,48 @@ export interface RenderInput {
   drawBead?: BeadDrawer
 }
 
-/** The dot that marks an empty position outside a Frame: 1.5px across on screen (BeadBoard card). */
-const DOT_DIAMETER_PX = 1.5
+/**
+ * The open canvas's Position marks (CONTEXT.md): the empty positions outside the Frame and its keep-out margin, as one
+ * pattern fill over what is in view, in up to four strips round the margin's box. The strips' edges sit between the
+ * marks either side of the margin, whichever way the rows are shifted, so no position is tested.
+ */
+function drawPositionMarks(
+  context: DrawingContext,
+  { project, area, zoom, pixelRatio, theme }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+): void {
+  const pattern = positionMarkPattern(context, { technique: project.technique, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.dot })
+  if (!pattern) {
+    return
+  }
+  const pitch = rowPitchPx(project.technique)
+  const box = project.frame && withMargin(project.frame)
+  // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift moves them half a bead right.
+  const hole = box && {
+    left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
+    right: (box.column + box.columns) * CELL_SIZE_PX + CELL_SIZE_PX / 4,
+    top: box.row * pitch + CELL_SIZE_PX / 2 - pitch / 2,
+    bottom: (box.row + box.rows - 1) * pitch + CELL_SIZE_PX / 2 + pitch / 2,
+  }
+  context.fillStyle = pattern
+  // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
+  context.imageSmoothingEnabled = true
+  const strip = (left: number, top: number, right: number, bottom: number) => {
+    if (right > left && bottom > top) {
+      context.fillRect(left, top, right - left, bottom - top)
+    }
+  }
+  if (!hole) {
+    strip(area.left, area.top, area.right, area.bottom)
+  } else {
+    strip(area.left, area.top, area.right, Math.min(hole.top, area.bottom))
+    strip(area.left, Math.max(hole.bottom, area.top), area.right, area.bottom)
+    const top = Math.max(hole.top, area.top)
+    const bottom = Math.min(hole.bottom, area.bottom)
+    strip(area.left, top, Math.min(hole.left, area.right), bottom)
+    strip(Math.max(hole.right, area.left), top, area.right, bottom)
+  }
+  context.imageSmoothingEnabled = false
+}
 
 /** Whether a brick seam runs above this row of the space: between two rows of the Frame, so never on an open canvas with no Frame. */
 function seamAbove(technique: Technique, space: Space, row: number): boolean {
@@ -212,51 +253,52 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const firstRow = band ? Math.max(visible.firstRow, band.first - 1) : visible.firstRow
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow
 
-  const dotRadius = DOT_DIAMETER_PX / 2 / zoom
-  const dots: [number, number][] = []
+  if (space.open) {
+    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme })
+  }
 
-  for (let row = firstRow; row <= lastRow; row += 1) {
-    const top = rowTopPx(technique, row)
-    const shift = shiftOf(space, technique, row)
+  // The Frame's own cells, bead or empty bead, then the painted beads round it.
+  const inFrame = space.hasFrame
+  const frameRows = { first: origin.row, last: origin.row + space.rows - 1 }
+  const frameColumns = { first: origin.column, last: origin.column + space.columns - 1 }
+  const drawAt = (row: number, column: number, color: string | null) => {
+    const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
+    drawBead(context, {
+      x: shiftOf(space, technique, row) + column * CELL_SIZE_PX,
+      y: rowTopPx(technique, row),
+      size: CELL_SIZE_PX,
+      cornerRadius,
+      color: color ?? colorAt(beads, position.row, position.column),
+      dimmed: isInFinishedRow(project, position),
+      deviceScale: zoom * pixelRatio,
+      theme: look,
+    })
+  }
 
+  for (let row = Math.max(firstRow, frameRows.first); inFrame && row <= Math.min(lastRow, frameRows.last); row += 1) {
     if (seamAbove(technique, space, row)) {
       // Whether the seam is faded is asked of a position inside the Frame: the row-wise Row progress fades rows, the column-wise one fades beads down a column and leaves seams alone.
       const inside = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + origin.column }
-      drawSeam(context, shift + origin.column * CELL_SIZE_PX, top - SEAM_PX, space.columns * CELL_SIZE_PX, project.rowProgress.direction === 'rows' && isInFinishedRow(project, inside), look)
+      drawSeam(context, shiftOf(space, technique, row) + origin.column * CELL_SIZE_PX, rowTopPx(technique, row) - SEAM_PX, space.columns * CELL_SIZE_PX, project.rowProgress.direction === 'rows' && isInFinishedRow(project, inside), look)
     }
-
     const { first, last } = visible.columnsOf(row)
-    for (let column = first; column <= last; column += 1) {
-      const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
-      const color = colorAt(beads, position.row, position.column)
-      if (space.open && color === null && !(frame && frameContains(frame, position))) {
-        // The Frame's keep-out margin is a gap in the dots (ticket 276), flat, with nothing drawn in it.
-        if (!inMargin(frame, position)) {
-          dots.push([shift + column * CELL_SIZE_PX + CELL_SIZE_PX / 2, top + CELL_SIZE_PX / 2])
-        }
-        continue
-      }
-      drawBead(context, {
-        x: shift + column * CELL_SIZE_PX,
-        y: top,
-        size: CELL_SIZE_PX,
-        cornerRadius,
-        color,
-        dimmed: isInFinishedRow(project, position),
-        deviceScale: zoom * pixelRatio,
-        theme: look,
-      })
+    for (let column = Math.max(first, frameColumns.first); column <= Math.min(last, frameColumns.last); column += 1) {
+      drawAt(row, column, null)
     }
   }
 
-  if (dots.length > 0) {
-    context.fillStyle = theme.dot
-    context.beginPath()
-    for (const [x, y] of dots) {
-      context.moveTo(x + dotRadius, y)
-      context.arc(x, y, dotRadius, 0, Math.PI * 2)
+  if (space.open) {
+    // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
+    const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
+    for (const row of rowsInView) {
+      const { first, last } = visible.columnsOf(row)
+      const stored = beads[row]!
+      for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
+        if (!(frame && frameContains(frame, { row, column }))) {
+          drawAt(row, column, stored[column]!)
+        }
+      }
     }
-    context.fill()
   }
 
   if (band) {
