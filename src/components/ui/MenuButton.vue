@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots, watch, type ComponentProps } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
@@ -8,6 +8,9 @@ import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 import { menuTooltipBody } from './menuTooltipBody'
+
+type ButtonVariant = InstanceType<typeof AppButton>['$props']['variant']
+type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
 
 /**
  * The one button that opens something (ticket 332, ADR 0035): an IconButton (`icon-only`) or an AppButton with a
@@ -34,7 +37,7 @@ const props = withDefaults(
     /** The Tooltip's body, in place of the list of `items`. */
     tooltip?: string
     /** The look of the AppButton or the IconButton it wraps. */
-    variant?: ComponentProps<typeof AppButton>['variant'] | ComponentProps<typeof IconButton>['variant']
+    variant?: ButtonVariant | IconVariant
     size?: 'md' | 'lg'
     /** Which edge of the button the popover lines up with. */
     align?: 'start' | 'end'
@@ -70,8 +73,8 @@ const buttonEl = ref<HTMLElement>()
 const listId = useId()
 const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align)
 
-const iconVariant = computed(() => props.variant as ComponentProps<typeof IconButton>['variant'])
-const buttonVariant = computed(() => (props.variant ?? 'secondary') as ComponentProps<typeof AppButton>['variant'])
+const iconVariant = computed(() => props.variant as IconVariant)
+const buttonVariant = computed(() => (props.variant ?? 'secondary') as ButtonVariant)
 const popup = computed(() => (props.popover || showsSheet.value ? 'dialog' : 'menu'))
 const tooltipBody = computed(() => props.tooltip ?? (props.items ? menuTooltipBody(props.items) : undefined))
 const tooltipProps = computed(() => (tooltipBody.value === undefined ? true : { body: tooltipBody.value }))
