@@ -326,7 +326,6 @@ export const ru: Translations = {
     weightHeading: 'Вес',
     gramsUnit: 'г',
     totalLabel: 'Всего',
-    weightInfoButton: 'Об оценке веса',
     weightInfo:
       'Вес = число бисеринок × около {grams} г. Среднее из объявлений продавцов, точность не подтверждена. Бисер бывает разным, берите с запасом.',
   },

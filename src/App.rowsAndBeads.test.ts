@@ -879,7 +879,7 @@ describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
     localStorage.setItem('bd-beads:locale', 'en')
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -889,12 +889,12 @@ describe('App estimated weight (ticket 155)', () => {
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('< 0.01 g')
-    expect(wrapper.find('[data-testid="quantities-weight-tooltip"]').text()).toContain('about 0.0091 g')
+    expect(wrapper.find('[data-testid="quantities-weight-note"]').text()).toContain('about 0.0091 g')
 
     await pressBead(wrapper, 0, { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
   })
 
   it('labels the weight in grams or in Russian «г» by the app language, with its own decimal sign (writing.md)', async () => {

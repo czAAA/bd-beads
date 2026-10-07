@@ -36,7 +36,7 @@ const shown = async (page: Page, testid: string): Promise<boolean> => (await vis
 /** Whether the control is there, opening the Toolbox's collapsed Frame row if that is where it is. */
 async function shownOrExpanded(page: Page, testid: string): Promise<boolean> {
   if (await shown(page, testid)) return true
-  if (['frame-fit', 'size-estimate-info'].includes(testid) && (await shown(page, 'tool-group-frame'))) {
+  if (['frame-fit', 'size-estimate-note'].includes(testid) && (await shown(page, 'tool-group-frame'))) {
     await vis(page, 'tool-group-frame').locator('button').first().click()
     await settle(page)
     return shown(page, testid)
@@ -212,12 +212,10 @@ const SCREENS: Screen[] = [
       await measure()
     },
   },
-  ...['quantities-weight-info', 'size-estimate-info'].map((testid): Screen => ({
-    name: `info popover: ${testid}`,
+  ...['quantities-weight-note', 'size-estimate-note'].map((testid): Screen => ({
+    name: `note: ${testid}`,
     visit: async (page, measure) => {
       if (!(await reveal(page, testid))) return false
-      await click(page, testid)
-      await vis(page, testid.replace(/-info$/, '-tooltip')).waitFor()
       await measure()
     },
   })),

@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, useId } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
-import AppIcon from '../ui/AppIcon.vue'
+import AppNote from '../ui/AppNote.vue'
 import ExpandablePanel from '../ui/ExpandablePanel.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 
 /**
- * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g (i)"
- * (ticket 178: the count × the Bead's average weight ≈ the total, with the estimate tooltip trigger right after the
- * final "g" rather than off at the panel header's far right) -- omitted, along with the multiplication and total,
+ * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g"
+ * (ticket 178: the count × the Bead's average weight ≈ the total) -- omitted, along with the multiplication and total,
  * when the Bead has no known weight. Collapsed it shows the three most-needed colors (swatch, name, count, weight);
- * expanded, every color. The rows stay a table, with its column headings for screen readers only.
+ * expanded, every color. Under them, always, a Note (ticket 328) says where the weight comes from. The rows stay a table, with its column headings for screen readers only.
  */
 const props = defineProps<{
   /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
@@ -63,8 +62,6 @@ function colorName(colorId: string | null | undefined, hex: string): string {
 }
 
 const expanded = ref(false)
-const tooltipId = useId()
-const tipOpen = ref(false)
 </script>
 
 <template>
@@ -85,33 +82,12 @@ const tipOpen = ref(false)
           >≈<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span></template
         ></span
       >
-      <span v-if="gramsPerBead !== undefined" class="bead-quantities__part">
-        <span class="bead-quantities__info-wrap">
-          <button
-            type="button"
-            class="ui-control bead-quantities__info"
-            data-testid="quantities-weight-info"
-            :aria-label="t.quantities.weightInfoButton"
-            :aria-describedby="tooltipId"
-            @mouseenter="tipOpen = true"
-            @mouseleave="tipOpen = false"
-            @focus="tipOpen = true"
-            @blur="tipOpen = false"
-            @keydown.escape.stop="tipOpen = false"
-          >
-            <AppIcon name="info" :size="16" />
-          </button>
-          <span
-            v-show="tipOpen"
-            :id="tooltipId"
-            class="bead-quantities__tooltip"
-            role="tooltip"
-            data-testid="quantities-weight-tooltip"
-          >
-            {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
-          </span>
-        </span>
-      </span>
+    </template>
+
+    <template v-if="quantities.length > 0 && gramsPerBead !== undefined" #note>
+      <AppNote class="bead-quantities__note" data-testid="quantities-weight-note">
+        {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
+      </AppNote>
     </template>
 
     <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
@@ -224,55 +200,7 @@ const tipOpen = ref(false)
   color: var(--muted);
 }
 
-/* The tooltip is placed against the panel, not the button, so it stays inside the column however long its text is (ticket 231). */
-.bead-quantities {
-  position: relative;
-}
-
-.bead-quantities__info-wrap {
-  display: inline-flex;
-}
-
-/* The estimate's info button: a plain 16px icon in `muted`, with the design system's tooltip. */
-.bead-quantities__info {
-  display: inline-grid;
-  place-items: center;
-  width: var(--expand-size);
-  height: var(--expand-size);
-  padding: 0;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: var(--radius-full);
-  cursor: help;
-}
-
-@media (hover: hover) {
-  .bead-quantities__info:hover {
-    color: var(--ink);
-    background: var(--hover-fill);
-  }
-}
-
-.bead-quantities__info:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.bead-quantities__tooltip {
-  position: absolute;
-  right: 0;
-  left: 0;
-  z-index: var(--z-tooltip);
-  box-sizing: border-box;
-  max-width: var(--tooltip-wide);
-  margin: calc(var(--expand-size) + var(--space-6)) 0 0 auto;
-  padding: var(--space-6) var(--space-8);
-  font: var(--type-small);
-  line-height: 1rem;
-  color: var(--canvas);
-  white-space: normal;
-  background: var(--ink);
-  border-radius: var(--radius-sm);
+.bead-quantities__note {
+  margin-top: var(--space-10);
 }
 </style>

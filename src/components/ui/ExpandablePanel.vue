@@ -11,7 +11,7 @@ import type { IconName } from './icons'
  * the title (`control`) with an optional muted `suffix`, optional `meta` on the right, then the round expand button.
  * Collapsed, the body is a fixed-height summary (`collapsedHeight`); expanded, the box grows downward to its natural
  * height, never less, pushing the boxes below it down, and shows the `footer`. Escape from inside it, or ↑, collapses
- * it. An empty panel keeps its header, drops the expand button and the fixed height.
+ * it. An optional `note` (ticket 328) sits under the body at every size, collapsed or not. An empty panel keeps its header, drops the expand button and the fixed height.
  */
 const props = withDefaults(
   defineProps<{
@@ -79,6 +79,7 @@ function onKeydown(event: KeyboardEvent) {
     >
       <slot />
     </div>
+    <slot name="note" />
     <div v-if="expanded && expandable && $slots.footer" class="expandable-panel__footer">
       <slot name="footer" />
     </div>

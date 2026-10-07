@@ -6,9 +6,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `Note` renders its text in a gray, borderless block using only role tokens
-- [ ] The size estimate and Bead quantities show their text as a Note, with no (i) button
-- [ ] The custom popup code is removed (knip clean)
-- [ ] The design system has a Note card
+- [x] `Note` renders its text in a gray, borderless block using only role tokens
+- [x] The size estimate and Bead quantities show their text as a Note, with no (i) button
+- [x] The custom popup code is removed (knip clean)
+- [x] The design system has a Note card
