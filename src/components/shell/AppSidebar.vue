@@ -152,7 +152,7 @@ const {
   gap: var(--space-16);
   box-sizing: border-box;
   min-height: 0;
-  padding-right: var(--space-14);
+  padding-right: var(--space-6);
   overflow-y: auto;
   overscroll-behavior: none;
   scrollbar-width: thin;

@@ -119,8 +119,10 @@ const {
 }
 
 /*
- * The body: the left edge is a 6px gutter at every docked tier, not the page padding, so the Toolbox sits close to the
- * window edge; tooltips stay on screen on their own (AppTooltip clamps to an 8px screen margin). The 366px left column (352px boxes plus a 14px gutter for its thin scrollbar) and the canvas box, which
+ * The body: one 6px gap everywhere at every docked tier (ticket 346) -- header to body, window edge to Toolbox,
+ * Toolbox to canvas box (the column's own 6px right padding, so there is no grid gap) and canvas box to window edge --
+ * so the chrome sits close to the edges; tooltips stay on screen on their own (AppTooltip clamps to an 8px screen
+ * margin). The 358px left column (352px boxes plus a 6px gutter for its thin scrollbar) and the canvas box, which
  * takes all the remaining width and the full height (ticket 141; `responsive.md`, MacBook Air tier). minmax(0, 1fr)
  * lets the canvas box shrink below its content instead of pushing the page wider.
  */
@@ -128,33 +130,29 @@ const {
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: var(--column-width) minmax(0, 1fr);
-  gap: var(--space-14);
   min-height: 0;
-  padding: var(--space-24) var(--space-32) var(--space-24) var(--space-6);
+  padding: var(--space-6);
 }
 
 /*
  * iPad 13" tier (ticket 167; responsive.md, `bp-tablet-lg` 1024px to just under `bp-laptop`): the column docks again
- * at 300px (286px boxes, the same 14px scrollbar gutter as the reference tier), page padding drops to 16px all
- * round, and the boxes sit 12px apart instead of 16px. Every other tier below this is built from here down, as a
+ * at 292px (286px boxes, the same 6px scrollbar gutter as the reference tier), and the boxes sit 12px apart instead of 16px. Every other tier below this is built from here down, as a
  * further override at its own literal breakpoint (responsive.md can't be read from a custom property).
  */
 @media (min-width: 1024px) and (max-width: 1279px) {
   .app-shell__body {
     grid-template-columns: var(--column-width-tablet-lg) minmax(0, 1fr);
-    padding: var(--space-16) var(--space-16) var(--space-16) var(--space-6);
   }
 }
 
 /*
- * 24" and larger tier (ticket 83; responsive.md, `bp-desktop` 1920px and up): the column grows to 360px (344px boxes,
- * the same 14px scrollbar gutter) and the page padding to 32 / 40 (there is no 40px spacing token: 2.5rem). Type and
+ * 24" and larger tier (ticket 83; responsive.md, `bp-desktop` 1920px and up): the column grows to 350px (344px boxes,
+ * the same 6px scrollbar gutter) and the header and notices pad to 40 (there is no 40px spacing token: 2.5rem). Type and
  * controls keep their size -- the extra width goes to the canvas box, never to bigger chrome.
  */
 @media (min-width: 1920px) {
   .app-shell__body {
     grid-template-columns: var(--column-width-desktop) minmax(0, 1fr);
-    padding: var(--space-32) 2.5rem var(--space-32) var(--space-6);
   }
 
   .app-shell__notices {

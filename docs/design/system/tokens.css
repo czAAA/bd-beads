@@ -201,9 +201,9 @@
   --bp-tablet-lg: 1024px; /* iPad 13″ tier and up (13″ iPads upright, smaller iPads sideways): the left column docks again. */
   --bp-laptop: 1280px; /* MacBook Air tier and up: the reference layout from DESIGN.md. */
   --bp-desktop: 1920px; /* 24″ displays and larger: wider column, more room for the Pattern. */
-  --column-width-tablet-lg: 300px; /* Left column at the iPad 13″ tier (286px boxes). */
-  --column-width: 366px; /* Left column at the MacBook Air tier (352px boxes plus a 14px scrollbar gutter; five 56px Tool tabs fit a row). */
-  --column-width-desktop: 360px; /* Left column at 24″ and up (344px boxes). */
+  --column-width-tablet-lg: 292px; /* Left column at the iPad 13″ tier (286px boxes plus the 6px gutter). */
+  --column-width: 358px; /* Left column at the MacBook Air tier (352px boxes plus a 6px scrollbar gutter; five 56px Tool tabs fit a row). */
+  --column-width-desktop: 350px; /* Left column at 24″ and up (344px boxes plus the 6px gutter). */
   --header-height: 64px; /* Header at 1024px and up; there is none under it. */
   --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
   --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */

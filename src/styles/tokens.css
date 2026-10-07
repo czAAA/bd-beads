@@ -240,9 +240,9 @@
   --bp-tablet-lg: 1024px;
   --bp-laptop: 1280px;
   --bp-desktop: 1920px;
-  --column-width-tablet-lg: 18.75rem;
-  --column-width: 22.875rem;
-  --column-width-desktop: 22.5rem;
+  --column-width-tablet-lg: 18.25rem;
+  --column-width: 22.375rem;
+  --column-width-desktop: 21.875rem;
   --header-height: 4rem;
   --header-height-phone: 3.25rem;
   --dock-height: 3rem;
