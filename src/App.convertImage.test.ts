@@ -249,6 +249,7 @@ describe('App Convert image creating the Project (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
     const swatches = wrapper.findAll('[data-testid="image-color-swatch"]')
     expect(swatches).toHaveLength(2)
     expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
@@ -259,6 +260,7 @@ describe('App Convert image creating the Project (ticket 58)', () => {
     await startFraming(wrapper)
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
+    await wrapper.find('[data-testid="image-colors-button"]').trigger('click')
     await wrapper.find('[data-color-hex="#2f6fed"]').trigger('click')
     await pressBead(wrapper, 0)
     // A stroke saves when the button is released (ticket 55), so end it before reading storage back.

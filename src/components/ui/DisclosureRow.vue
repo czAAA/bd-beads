@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
 import type { IconName } from './icons'
 
 /**
@@ -16,6 +17,8 @@ defineProps<{
   chip?: string
   /** The chip's name, for a screen reader. */
   chipLabel?: string
+  /** The chip's Tooltip (ADR 0035): its name, and what pressing it does. */
+  chipTooltip?: { name: string; body?: string }
 }>()
 const emit = defineEmits<{ chip: [] }>()
 const open = defineModel<boolean>('open', { required: true })
@@ -29,7 +32,9 @@ const panelId = useId()
         <AppIcon :name="icon" :size="16" />
         <span class="disclosure-row__label">{{ label }}</span>
       </button>
-      <button class="ui-control disclosure-row__chip" type="button" :aria-label="chipLabel" @click="emit('chip')">{{ chip }}</button>
+      <component :is="chipTooltip ? AppTooltip : 'span'" v-bind="chipTooltip ? { ...chipTooltip, announce: false } : {}" class="disclosure-row__chip-wrap">
+        <button class="ui-control disclosure-row__chip" type="button" :aria-label="chipLabel" @click="emit('chip')">{{ chip }}</button>
+      </component>
       <span v-if="summary" class="disclosure-row__summary disclosure-row__summary--after-chip">{{ summary }}</span>
       <AppIcon class="disclosure-row__chevron disclosure-row__chevron--end" :name="open ? 'chevron-up' : 'chevron-down'" :size="16" @click="open = !open" />
     </div>

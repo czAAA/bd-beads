@@ -15,7 +15,6 @@ const NATIVE = 'native, cannot be clipped'
 export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
   [
     'components/export/SaveBox.vue|t.saveBox.saveButton',
-    'components/project/FrameControls.vue|t.size.lockedReason',
     'components/project/NewProjectForm.vue|limitsHint',
     'components/shell/AppHeader.vue|summarizeProject(activeProject)',
     'components/shell/PhoneSheets.vue|t.size.lockedReason',
@@ -29,9 +28,6 @@ export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
     'components/tools/MirrorControls.vue|t.mirror.copyModeLabel',
     'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentHorizontalButton',
     'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentVerticalButton',
-    'components/tools/Toolbox.vue|t.size.lockedReason',
-    'components/tools/Toolbox.vue|t.tools.removeLineButton',
-    'components/tools/Toolbox.vue|t.deleteAll.confirmButton',
     'components/tour/TourLayer.vue|t.tour.backToLoomName',
     'components/ui/ProgressBar.vue|t.rowProgress.previousButton',
     'components/ui/ProgressBar.vue|t.rowProgress.nextButton',

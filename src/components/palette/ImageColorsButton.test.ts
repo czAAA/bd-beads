@@ -9,8 +9,8 @@ afterEach(() => {
 })
 
 const colors = ['#ff0000', '#00ff00', '#0000ff']
-const popover = (wrapper: ReturnType<typeof mount>) => wrapper.find('.image-colors-button__popover')
-const shown = (wrapper: ReturnType<typeof mount>) => (popover(wrapper).element as HTMLElement).style.display !== 'none'
+const popover = (wrapper: ReturnType<typeof mount>) => wrapper.find('[role="dialog"]')
+const shown = (wrapper: ReturnType<typeof mount>) => popover(wrapper).exists()
 
 describe('ImageColorsButton (ticket 151)', () => {
   it('opens the popover of Image colors under it, focus on the chosen color', async () => {
@@ -58,7 +58,7 @@ describe('ImageColorsButton (ticket 151)', () => {
 
     expect(button.attributes('aria-disabled')).toBe('true')
     await button.trigger('click')
-    expect(wrapper.find('.image-colors-button__popover').exists()).toBe(false)
-    expect(wrapper.find('[role="tooltip"]').text()).toBe(en.convertImage.noImageColors)
+    expect(shown(wrapper)).toBe(false)
+    expect(wrapper.find('.app-tooltip__body').text()).toBe(en.tooltips.imageColorsDisabled)
   })
 })

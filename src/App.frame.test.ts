@@ -234,7 +234,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     const wrapper = await mountOpen()
     const rotate = wrapper.find('[data-testid="rotate-button"]')
     expect(rotate.attributes('aria-disabled')).toBeDefined()
-    expect(rotate.attributes('aria-label')).toBe(en.frame.rotateNeedsFrame)
+    expect(rotate.attributes('aria-label')).toBe(en.palette.rotateButton)
   })
 
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {

@@ -359,6 +359,7 @@ export const CONTROLS: readonly ControlAction[] = [
     },
   },
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
+    icon: 'close',
     body: (t) => t.tooltips.removeFrame,
     enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
     disabledBody: (t: Translations, deps: ControlDeps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noFrameToRemove),
@@ -369,7 +370,7 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
   }),
   unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),
-  unkeyed('clear', (t) => t.deleteAll.button, 'edit', { body: (t) => t.tooltips.clear }),
+  unkeyed('clear', (t) => t.deleteAll.button, 'edit', { icon: 'delete', body: (t) => t.tooltips.clear }),
   unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', {
     body: (t) => maxAdded(t.tooltips.customColor),
     enabled: (deps: ControlDeps) => deps.addedColorCount() < MAX_ADDED_COLORS,
@@ -420,4 +421,19 @@ export function chordSlots(chord: Chord): string[] {
   const shifts = chord.shift === 'any' ? ['', 'shift'] : [chord.shift ? 'shift' : '']
   const keys = chord.code !== undefined ? [`code:${chord.code}`] : (typeof chord.key === 'string' ? [chord.key] : (chord.key ?? [])).map((key) => key.toLowerCase())
   return modifiers.flatMap((modifier) => shifts.flatMap((shift) => keys.map((key) => `${modifier}+${shift}+${key}`)))
+}
+
+/** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls passes this, not the handlers. */
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine'>> & Pick<ControlDeps, 'activeProject'>
+
+/** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
+export function controlDeps(state: ControlState): ControlDeps {
+  return state as ControlDeps
+}
+
+/** One action by id, for a control that shows it. */
+export function controlAction(id: string): ControlAction {
+  const action = CONTROLS.find((control) => control.id === id)
+  if (!action) throw new Error(`No control "${id}" in the registry`)
+  return action
 }

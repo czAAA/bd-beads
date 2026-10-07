@@ -4,13 +4,13 @@ import AppButton from '../ui/AppButton.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
 import IconButton from '../ui/IconButton.vue'
-import type { IconName } from '../ui/icons'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 import FrameControls from '../project/FrameControls.vue'
 import ToolButton from './ToolButton.vue'
 import ToolGroup from './ToolGroup.vue'
 import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Tool } from '../../domain/tool'
@@ -66,14 +66,40 @@ const customColorSelected = computed(
   () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
 )
 
-/** The Tools group's six icon tiles (ToolTabs card), with the hotkeys shown as badges and in their hints. */
-const tools = computed<{ id: Tool; icon: IconName; label: string; hotkey?: string; description?: string }[]>(() => [
-  { id: 'paint', icon: 'paint', label: t.value.tools.paintLabel, hotkey: TOOL_HOTKEYS.paint, description: t.value.tools.paintHint },
-  { id: 'fill', icon: 'fill', label: t.value.tools.fillLabel, hotkey: TOOL_HOTKEYS.fill, description: t.value.tools.fillHint },
-  { id: 'select', icon: 'select', label: t.value.tools.selectLabel, hotkey: TOOL_HOTKEYS.select, description: t.value.tools.selectHint },
-  { id: 'erase', icon: 'erase', label: t.value.tools.eraseLabel, hotkey: TOOL_HOTKEYS.erase },
-  { id: 'hand', icon: 'hand', label: t.value.tools.handLabel, hotkey: TOOL_HOTKEYS.hand, description: t.value.tools.handHint },
-])
+/** The Tools group's icon tiles (ToolTabs card): each is a registry action, so its name, Tooltip and key come from there. */
+const tools: { id: Tool; action: ReturnType<typeof controlAction>; hotkey?: string }[] = (['paint', 'fill', 'select', 'erase', 'hand'] as const).map((id) => ({
+  id,
+  action: controlAction(`tool-${id}`),
+  hotkey: TOOL_HOTKEYS[id],
+}))
+/** An Edit button's press is the event of the same name. */
+function onEdit(id: 'undo' | 'redo' | 'rotate' | 'copy') {
+  if (id === 'undo') emit('undo')
+  else if (id === 'redo') emit('redo')
+  else if (id === 'rotate') emit('rotate')
+  else emit('copy')
+}
+const setFrameAction = controlAction('set-frame')
+const toolActions = {
+  removeFrame: controlAction('remove-frame'),
+  removeLine: controlAction('remove-line'),
+  clear: controlAction('clear'),
+  undo: controlAction('undo'),
+  redo: controlAction('redo'),
+  rotate: controlAction('rotate'),
+  copy: controlAction('copy'),
+}
+
+/** What the actions' enabled states and disabled reasons read (ADR 0035). */
+const deps = computed(() =>
+  controlDeps({
+    activeProject: () => props.project,
+    canUndo: () => props.canUndo,
+    canRedo: () => props.canRedo,
+    hasSelection: () => props.canCopy,
+    canRemoveSelectedLine: () => props.canRemoveSelectedLine,
+  }),
+)
 
 /** The tool tabs are one Tab stop, the active tab; the arrows move between them (ticket 159). */
 const tabsEl = ref<HTMLElement>()
@@ -110,13 +136,6 @@ function collapseExpandedGroup(): boolean {
 
 defineExpose({ collapseExpandedGroup })
 
-/** Rotate turns the Frame, so it needs one, and waits while Row progress holds the Frame's rows still (Toolbox card). */
-const rotateAvailable = computed(() => props.project.frame !== undefined && !props.project.rowProgress.enabled)
-const rotateName = computed(() => {
-  if (!props.project.frame) return t.value.frame.rotateNeedsFrame
-  return props.project.rowProgress.enabled ? t.value.size.lockedReason : t.value.palette.rotateButton
-})
-
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
 const frameSummary = computed(() => {
   const frame = props.project.frame
@@ -140,26 +159,26 @@ const frameSummary = computed(() => {
   <div class="toolbox" data-testid="toolbox">
     <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
       <div ref="tabsEl" class="tool-buttons" @keydown="tabsRoving.onKeydown">
-        <ToolButton
+        <IconButton
           v-for="tool in tools"
           :key="tool.id"
-          :icon="tool.icon"
-          :label="tool.label"
+          variant="tool"
+          :action="tool.action"
           :hotkey="tool.hotkey"
-          :description="tool.description"
-          :active="activeTool === tool.id && !settingFrame"
+          show-hotkey
+          :selected="activeTool === tool.id && !settingFrame"
           :data-testid="`tool-${tool.id}`"
           :data-tour="`tool-${tool.id}`"
           :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
           @click="emit('select-tool', tool.id)"
         />
         <!-- The Frame tool (ticket 258): Set Frame is a mode, not a Tool, so it lights up from `settingFrame`; choosing any tool ends it. -->
-        <ToolButton
-          icon="frame"
-          :label="t.frame.setFrame"
+        <IconButton
+          variant="tool"
+          :action="setFrameAction"
           :hotkey="FRAME_HOTKEY"
-          :description="t.frame.setFrameHint"
-          :active="!!settingFrame"
+          show-hotkey
+          :selected="!!settingFrame"
           data-testid="tool-frame"
           :tabindex="tabsRoving.tabIndexFor(!!settingFrame)"
           @click="emit('start-frame')"
@@ -178,29 +197,13 @@ const frameSummary = computed(() => {
         />
       </div>
       <div class="toolbox__links toolbox__links--frame">
-        <AppButton variant="link"
-          icon="close"
-          data-testid="tool-remove-frame"
-          :disabled="!project.frame || project.rowProgress.enabled"
-          :title="project.rowProgress.enabled ? t.size.lockedReason : undefined"
-          @click="emit('remove-frame')"
-        >
-          {{ t.frame.removeFrame }}
-        </AppButton>
+        <AppButton variant="link" :action="toolActions.removeFrame" :deps="deps" data-testid="tool-remove-frame" @click="emit('remove-frame')" />
       </div>
       <div class="toolbox__links">
-        <AppButton variant="link"
-          icon="remove-line"
-          data-testid="tool-remove-line"
-          data-tour="remove-line"
-          :title="t.tools.removeLineButton"
-          :aria-label="t.tools.removeLineName"
-          :disabled="!canRemoveSelectedLine"
-          @click="emit('remove-selected-line')"
-        >
+        <AppButton variant="link" :action="toolActions.removeLine" :deps="deps" data-testid="tool-remove-line" data-tour="remove-line" @click="emit('remove-selected-line')">
           {{ t.tools.removeLineShort }}
         </AppButton>
-        <AppButton variant="link" icon="delete" danger data-testid="delete-all-button" :title="t.deleteAll.confirmButton" :aria-label="t.deleteAll.confirmButton" @click="emit('delete-all')">
+        <AppButton variant="link" danger :action="toolActions.clear" :deps="deps" data-testid="delete-all-button" @click="emit('delete-all')">
           {{ t.deleteAll.button }}
         </AppButton>
       </div>
@@ -229,30 +232,7 @@ const frameSummary = computed(() => {
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton tooltip icon="undo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
-        <IconButton tooltip icon="redo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
-        <IconButton tooltip
-          icon="rotate"
-          variant="toolbox"
-          size="lg"
-          :icon-size="17"
-          :label="rotateName"
-          :disabled="!rotateAvailable"
-          data-testid="rotate-button"
-          @click="emit('rotate')"
-        />
-        <IconButton tooltip
-          icon="copy"
-          variant="toolbox"
-          size="lg"
-          :icon-size="17"
-          :label="t.tools.copyButton"
-          shortcut="Ctrl/Cmd+C"
-          data-testid="copy-button"
-          data-tour="copy"
-          :disabled="!canCopy"
-          @click="emit('copy')"
-        />
+        <IconButton v-for="id in (['undo', 'redo', 'rotate', 'copy'] as const)" :key="id" variant="toolbox" size="lg" :icon-size="17" :action="toolActions[id]" :deps="deps" :data-testid="`${id}-button`" :data-tour="id === 'undo' || id === 'copy' ? id : undefined" @click="onEdit(id)" />
       </div>
     </ToolGroup>
 
@@ -265,6 +245,7 @@ const frameSummary = computed(() => {
         :summary="frameSummary"
         :chip="project.frame ? '1' : undefined"
         :chip-label="t.frame.numberLabel.replace('{number}', '1')"
+        :chip-tooltip="{ name: t.frame.numberName.replace('{number}', '1'), body: t.tooltips.frameChip }"
         data-testid="tool-group-frame"
         data-tour="frame-row"
         @update:open="onFrameOpenChange"

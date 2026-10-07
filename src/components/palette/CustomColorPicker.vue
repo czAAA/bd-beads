@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { usePalette } from '../../composables/tools/usePalette'
+import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
+import AppTooltip from '../ui/AppTooltip.vue'
 
 /**
  * The Custom color button (tickets 75, 151; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
@@ -21,6 +26,19 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 /**
+ * Its Tooltip (ticket 335) comes from the registry's Custom color action: what it adds, and, once the Palette holds its
+ * most added colors, that it is full. A full Palette still lets a color be painted with, so the button stays usable.
+ */
+const palette = usePalette()
+const action = controlAction('custom-color')
+const tooltip = computed(() => {
+  const deps = controlDeps({ activeProject: () => undefined, addedColorCount: () => palette.value.filter((color) => isAddedColorId(color.id)).length })
+  return action.enabled?.(deps) === false
+    ? { name: action.name(t.value), disabled: true as const, disabledBody: action.disabledBody!(t.value, deps), announce: false }
+    : { name: action.name(t.value), body: action.body?.(t.value), announce: false }
+})
+
+/**
  * The native picker reports every change here, including live drag-preview in browsers that fire 'input' while its
  * own dialog is still open — matching the ticket's "choosing a color immediately makes it the paint color".
  */
@@ -30,6 +48,7 @@ function onInput(event: Event) {
 </script>
 
 <template>
+  <AppTooltip v-bind="tooltip" class="custom-color-picker-wrap">
   <label class="custom-color-picker" :class="{ 'custom-color-picker--selected': selected }">
     <input
       type="color"
@@ -43,9 +62,17 @@ function onInput(event: Event) {
     <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
   </label>
+  </AppTooltip>
 </template>
 
 <style scoped>
+/* The Tooltip's wrapper takes the button's place in the row. */
+.custom-color-picker-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: max-content;
+}
+
 /* A Toolbox button (Button card, `toolbox`) holding the swatch and the label. */
 .custom-color-picker {
   position: relative;

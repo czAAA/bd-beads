@@ -416,6 +416,7 @@ export const en: Translations = {
     setFrameHint: 'Drag to mark which beads are the Pattern.',
     notSet: 'not set',
     numberLabel: 'Frame {number}, bring it into view',
+    numberName: 'Frame {number}',
     fitToDrawing: 'Fit to drawing',
     removeFrame: 'Remove Frame',
     done: 'Done',
@@ -565,6 +566,7 @@ export const en: Translations = {
     saveProject: 'Save to a file on this device.',
     changeName: "Change the maker's name printed on exports.",
     convertImage: 'Turn a picture into a Pattern.',
+    frameChip: 'Bring it into view.',
     list: (names) => `${names.join(', ')}.`,
   },
 

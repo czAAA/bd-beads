@@ -418,6 +418,7 @@ export const ru: Translations = {
     setFrameHint: 'Протяните, чтобы отметить, какие бисеринки входят в схему.',
     notSet: 'не задана',
     numberLabel: 'Рамка {number}, показать на экране',
+    numberName: 'Рамка {number}',
     fitToDrawing: 'По рисунку',
     removeFrame: 'Убрать рамку',
     done: 'Готово',
@@ -571,6 +572,7 @@ export const ru: Translations = {
     saveProject: 'Сохранить в файл на этом устройстве.',
     changeName: 'Изменить имя мастера при экспорте.',
     convertImage: 'Превратить картинку в схему.',
+    frameChip: 'Показать её на холсте.',
     list: (names) => `${names.join(', ')}.`,
   },
 

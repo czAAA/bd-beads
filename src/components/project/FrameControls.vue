@@ -2,12 +2,11 @@
 import { computed, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { useI18n } from '../../i18n/useI18n'
-import { FRAME_HOTKEY } from '../tools/toolIcons'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
  * The body of the Frame row (MirrorSizeControls card, ticket 233): Columns and Rows steppers, Fit to drawing and Remove
@@ -51,6 +50,13 @@ const estimate = computed(() => {
 })
 
 const lockedNoteId = useId()
+
+const setFrameAction = controlAction('set-frame')
+const fitAction = controlAction('fit-to-drawing')
+const removeAction = controlAction('remove-frame')
+const deps = computed(() => controlDeps({ activeProject: () => props.project }))
+/** The steppers' reason while Row progress holds the Frame still. */
+const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.value))
 </script>
 
 <template>
@@ -65,6 +71,7 @@ const lockedNoteId = useId()
           :min="1"
           :disabled="locked"
           tooltip
+          :disabled-body="lockedReason"
           :decrease-label="t.frame.fewerColumns"
           :increase-label="t.frame.moreColumns"
           decrease-testid="frame-columns-decrease"
@@ -79,6 +86,7 @@ const lockedNoteId = useId()
           :min="1"
           :disabled="locked"
           tooltip
+          :disabled-body="lockedReason"
           :decrease-label="t.frame.fewerRows"
           :increase-label="t.frame.moreRows"
           decrease-testid="frame-rows-decrease"
@@ -88,19 +96,11 @@ const lockedNoteId = useId()
       </label>
     </template>
 
-    <!-- While Row progress is on the buttons are locked, and the reason is on their title and written below. -->
+    <!-- While Row progress is on the buttons stay hoverable and say why they are locked, and the reason is written below. -->
     <div class="frame-controls__actions">
-      <AppTooltip v-if="withSetFrame" :name="t.frame.setFrame" :hotkey="FRAME_HOTKEY" :body="t.frame.setFrameHint" :announce="false">
-        <AppButton variant="primary" icon="frame" data-testid="frame-set" @click="emit('set-frame')">
-          {{ t.frame.setFrame }}
-        </AppButton>
-      </AppTooltip>
-      <AppButton variant="toolbox" data-testid="frame-fit" :disabled="locked" :title="locked ? t.size.lockedReason : undefined" @click="emit('fit')">
-        {{ t.frame.fitToDrawing }}
-      </AppButton>
-      <AppButton v-if="frame" variant="toolbox" data-testid="frame-remove" :disabled="locked" :title="locked ? t.size.lockedReason : undefined" @click="emit('remove')">
-        {{ t.frame.removeFrame }}
-      </AppButton>
+      <AppButton v-if="withSetFrame" variant="primary" :action="setFrameAction" data-testid="frame-set" @click="emit('set-frame')" />
+      <AppButton variant="toolbox" :action="fitAction" :deps="deps" data-testid="frame-fit" @click="emit('fit')" />
+      <AppButton v-if="frame" variant="toolbox" :action="removeAction" :deps="deps" data-testid="frame-remove" @click="emit('remove')" />
     </div>
     <p v-if="locked" :id="lockedNoteId" class="frame-controls__note" data-testid="frame-locked">{{ t.size.lockedReason }}</p>
 
