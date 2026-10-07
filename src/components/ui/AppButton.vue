@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, mergeProps } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
@@ -83,6 +83,13 @@ const tooltipProps = computed(() => {
   return { name: name.value, hotkey: actionKey(props.action), body, placement: placement.value, announce: false }
 })
 
+const buttonAttrs = computed(() => ({
+  class: ['ui-control', 'app-button', `app-button--${props.variant}`, `app-button--${props.size}`, { 'app-button--selected': props.selected, 'app-button--danger-link': props.danger }],
+  type: props.type,
+  'aria-pressed': props.selected === undefined ? undefined : props.selected,
+  'aria-disabled': isDisabled.value ? true : undefined,
+}))
+
 /** A disabled button swallows the click before any listener the parent attached sees it. */
 function swallowClick(event: MouseEvent) {
   if (!isDisabled.value) return
@@ -92,31 +99,24 @@ function swallowClick(event: MouseEvent) {
 </script>
 
 <template>
-  <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" class="app-button-wrap" :class="{ 'app-button-wrap--bare': !tooltipProps }">
-    <button
-      class="ui-control app-button"
-      :class="[`app-button--${variant}`, `app-button--${size}`, { 'app-button--selected': selected, 'app-button--danger-link': danger }]"
-      :type="type"
-      :aria-pressed="selected === undefined ? undefined : selected"
-      :aria-disabled="isDisabled ? 'true' : undefined"
-      v-bind="$attrs"
-      @click.capture="swallowClick"
-    >
+  <!-- Without a Tooltip the button is the root, so a parent's scoped styles on it still apply. -->
+  <button v-if="!tooltipProps" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
+    <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
+    <slot>{{ name }}</slot>
+    <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
+  </button>
+  <AppTooltip v-else v-bind="tooltipProps" class="app-button-wrap">
+    <button v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
       <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
       <slot>{{ name }}</slot>
       <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
     </button>
-  </component>
+  </AppTooltip>
 </template>
 
 <style scoped>
 .app-button-wrap {
   display: inline-flex;
-}
-
-/* Without a Tooltip the wrapper takes no box, so the button lays out as if it stood alone. */
-.app-button-wrap--bare {
-  display: contents;
 }
 
 .app-button {
