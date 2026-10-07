@@ -33,9 +33,9 @@ withDefaults(
 <template>
   <AppTooltip
     class="tool-button-wrap"
-    :text="label"
-    :shortcut="hotkey"
-    :description="description"
+    :name="label"
+    :hotkey="hotkey"
+    :body="description"
     :announce="!!description"
   >
     <template #default="{ describedby }">

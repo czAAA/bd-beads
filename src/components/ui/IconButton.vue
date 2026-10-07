@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
 import type { IconName, IconSize } from './icons'
@@ -8,9 +9,12 @@ import type { IconName, IconSize } from './icons'
  * (radius full: Keyboard shortcuts), in the secondary, in-box, toolbox or canvas-box (`box`) look, or `plain` (30px, no fill: the canvas
  * strip's zoom buttons). Its accessible name is `label`, which a tooltip also shows on hover and keyboard focus.
  * Attributes and listeners (data-testid, @click) go to the <button> itself, not the tooltip around it.
+ *
+ * A disabled button (ticket 327) is `aria-disabled`, not natively disabled, so it stays hoverable and focusable and a
+ * click does nothing. Its Tooltip says why (`disabledBody`); a disabled button given no reason shows no Tooltip.
  */
 defineOptions({ inheritAttrs: false })
-withDefaults(
+const props = withDefaults(
   defineProps<{
     icon: IconName
     label: string
@@ -22,28 +26,50 @@ withDefaults(
     disabled?: boolean
     /** The Tooltip's key chip (ticket 251): the control's shortcut, as the shortcuts help writes it. */
     shortcut?: string
+    /** Why the button is disabled, shown by its Tooltip in place of the key chip. */
+    disabledBody?: string
   }>(),
-  { shape: 'square', variant: 'secondary', size: 'md', iconSize: 15, selected: undefined, shortcut: undefined },
+  { shape: 'square', variant: 'secondary', size: 'md', iconSize: 15, selected: undefined, shortcut: undefined, disabledBody: undefined },
 )
+
+const tooltip = computed(() =>
+  props.disabled
+    ? props.disabledBody === undefined
+      ? undefined
+      : { name: props.label, disabled: true as const, disabledBody: props.disabledBody, announce: false }
+    : { name: props.label, hotkey: props.shortcut, announce: false },
+)
+
+/** A disabled button swallows the click before any listener the parent attached sees it. */
+function swallowClick(event: MouseEvent) {
+  if (!props.disabled) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+}
 </script>
 
 <template>
-  <AppTooltip :text="label" :shortcut="shortcut" :disabled="disabled" :announce="false">
+  <component :is="tooltip ? AppTooltip : 'span'" v-bind="tooltip ?? { class: 'icon-btn-wrap' }">
     <button
       class="ui-control icon-btn"
       :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${size}`, { 'icon-btn--selected': selected }]"
       type="button"
       :aria-label="label"
       :aria-pressed="selected === undefined ? undefined : selected"
-      :disabled="disabled"
+      :aria-disabled="disabled ? 'true' : undefined"
       v-bind="$attrs"
+      @click.capture="swallowClick"
     >
       <AppIcon :name="icon" :size="iconSize" />
     </button>
-  </AppTooltip>
+  </component>
 </template>
 
 <style scoped>
+.icon-btn-wrap {
+  display: inline-flex;
+}
+
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -112,31 +138,31 @@ withDefaults(
 }
 
 @media (hover: hover) {
-  .icon-btn:hover:not(:disabled) {
+  .icon-btn:hover:not([aria-disabled='true']) {
     background: var(--hover-fill);
   }
 
-  .icon-btn--in-box:hover:not(:disabled),
-  .icon-btn--toolbox:hover:not(:disabled) {
+  .icon-btn--in-box:hover:not([aria-disabled='true']),
+  .icon-btn--toolbox:hover:not([aria-disabled='true']) {
     background: var(--elevated);
     border-color: var(--ink);
   }
 
-  .icon-btn--selected:hover:not(:disabled) {
+  .icon-btn--selected:hover:not([aria-disabled='true']) {
     background: var(--ink);
   }
 }
 
-.icon-btn:active:not(:disabled) {
+.icon-btn:active:not([aria-disabled='true']) {
   background: var(--press-fill);
   transform: scale(var(--press-scale));
 }
 
-.icon-btn--selected:active:not(:disabled) {
+.icon-btn--selected:active:not([aria-disabled='true']) {
   background: var(--ink);
 }
 
-.icon-btn:disabled {
+.icon-btn[aria-disabled='true'] {
   color: var(--faint);
   cursor: not-allowed;
 }
@@ -146,7 +172,7 @@ withDefaults(
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .icon-btn:active:not(:disabled) {
+  .icon-btn:active:not([aria-disabled='true']) {
     transform: none;
   }
 }

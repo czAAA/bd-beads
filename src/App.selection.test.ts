@@ -65,7 +65,7 @@ describe('App select, copy and paste', () => {
     await drag(wrapper, [0, 1, 5])
 
     expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === null)).toBe(true)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('replaces the previous selection when a new drag starts, leaving only one active', async () => {
@@ -84,11 +84,11 @@ describe('App select, copy and paste', () => {
     const wrapper = await mountWithProject(6, 6)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await drag(wrapper, [0, 1])
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(false)
   })
 
   it('previews the copied block in its own colors, following the cursor', async () => {
@@ -143,13 +143,13 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
     await click(wrapper, 10) // (2,2), a real edit
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await drag(wrapper, [0, 1]) // a fresh Selection
     await wrapper.find('[data-testid="copy-button"]').trigger('click') // Copy
     await pressEscape(wrapper) // cancels the pending Paste
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
   })
@@ -228,7 +228,7 @@ describe('App select, copy and paste', () => {
     await pressBead(wrapper, 10, { button: 2 })
 
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await click(wrapper, 10) // (2,2) — would have stamped the motif
 
@@ -247,7 +247,7 @@ describe('App select, copy and paste', () => {
 
     expect(previewedBeads(wrapper)).toHaveLength(0)
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await click(wrapper, 10)
 
@@ -264,7 +264,7 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
 
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('still pastes normally after Copy hides the marquee, but needs a fresh drag to copy the same block again', async () => {
@@ -277,7 +277,7 @@ describe('App select, copy and paste', () => {
 
     // Nothing is left highlighted, so copying the same block again means dragging a new Selection over it first.
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await drag(wrapper, [0, 1, 5]) // re-select the same motif, since copying it again needs a fresh drag
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
@@ -294,7 +294,7 @@ describe('App select, copy and paste', () => {
     await pressEscape(wrapper)
 
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('clears a selection nothing has been copied from on a right-click, without erasing anything', async () => {
@@ -325,7 +325,7 @@ describe('App select, copy and paste', () => {
     await pressEscape(wrapper)
 
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(false)
   })
 
   it.each(['tool-paint', 'tool-fill'])('forgets the selected area when the tool changes to %s', async (tool) => {
@@ -349,7 +349,7 @@ describe('App select, copy and paste', () => {
 
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBeNull()
     expect(selectedCount(wrapper)).toBe(1) // a fresh selection, not a stamp
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(false)
   })
 
   it('keeps the selection when Select is re-chosen while already active', async () => {
@@ -375,7 +375,7 @@ describe('App select, copy and paste', () => {
 
     // The Selection itself still resets on a Project switch, same as before ticket 92.
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
     await click(wrapper, 0)

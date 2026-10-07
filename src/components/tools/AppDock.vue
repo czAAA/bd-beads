@@ -54,7 +54,7 @@ function frameOn(id: string): boolean {
 
 <template>
   <nav class="dock" :aria-label="t.a11y.toolsLandmark" data-testid="dock">
-    <AppTooltip v-if="inputMode" class="dock__slot" :text="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel" :description="inputMode === 'pen' ? t.inputMode.penHint : t.inputMode.mouseHint" placement="top" :announce="false">
+    <AppTooltip v-if="inputMode" class="dock__slot" :name="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel" :body="inputMode === 'pen' ? t.inputMode.penHint : t.inputMode.mouseHint" placement="top" :announce="false">
       <button
         type="button"
         class="ui-control dock__item dock__item--accent dock__item--toggle"
@@ -66,7 +66,7 @@ function frameOn(id: string): boolean {
         <AppIcon :name="inputMode === 'pen' ? 'pen-mode' : 'pen-mode-off'" :size="22" />
       </button>
     </AppTooltip>
-    <AppTooltip v-for="item in items" :key="item.id" class="dock__slot" :text="item.label" placement="top" :announce="false">
+    <AppTooltip v-for="item in items" :key="item.id" class="dock__slot" :name="item.label" placement="top" :announce="false">
       <button
         type="button"
         class="ui-control dock__item"

@@ -233,7 +233,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   it('disables Rotate with no Frame, naming why', async () => {
     const wrapper = await mountOpen()
     const rotate = wrapper.find('[data-testid="rotate-button"]')
-    expect(rotate.attributes('disabled')).toBeDefined()
+    expect(rotate.attributes('aria-disabled')).toBeDefined()
     expect(rotate.attributes('aria-label')).toBe(en.frame.rotateNeedsFrame)
   })
 
@@ -264,7 +264,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await key({ key: '6' })
     await drag(wrapper, { row: 9, column: 9 }, { row: 11, column: 12 })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.find('[data-testid="rotate-button"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="rotate-button"]').attributes('aria-disabled')).toBeDefined()
   })
 })
 

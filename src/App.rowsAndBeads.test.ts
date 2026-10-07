@@ -158,7 +158,7 @@ describe('App row progress', () => {
 
       expect(loadProjects()[0]!.rotation).toBe(0)
       expect(frameGrid(loadProjects()[0]!)).toEqual(gridBefore)
-      expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(true)
       expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
     })
 
@@ -168,13 +168,13 @@ describe('App row progress', () => {
       await pressBead(wrapper, 0)
       await wrapper.trigger('mouseup')
       await wrapper.find('[data-testid="undo-button"]').trigger('click')
-      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+      expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
       await wrapper.find('[data-testid="redo-button"]').trigger('click')
       expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     })
@@ -195,11 +195,11 @@ describe('App finished rows', () => {
   }
 
   function undoDisabled(wrapper: ReturnType<typeof mount>) {
-    return wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled
+    return wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true'
   }
 
   function redoDisabled(wrapper: ReturnType<typeof mount>) {
-    return wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled
+    return wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true'
   }
 
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
@@ -472,7 +472,7 @@ describe('App delete all', () => {
 
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 
@@ -773,7 +773,7 @@ describe('App replace bead', () => {
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
 

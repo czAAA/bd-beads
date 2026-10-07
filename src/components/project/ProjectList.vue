@@ -85,7 +85,7 @@ function sizeOf(project: Project): string {
         data-testid="project-item"
         :class="{ 'project-list__item--active': project.id === activeProjectId }"
       >
-        <AppTooltip :text="project.name" :announce="false">
+        <AppTooltip :name="project.name" :announce="false">
           <button
             type="button"
             class="ui-control project-list__select"

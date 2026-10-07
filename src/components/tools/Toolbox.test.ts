@@ -115,7 +115,7 @@ describe('Toolbox', () => {
     const wrapper = mountToolbox()
     const tip = (tool: string) => wrapper.get(`[data-testid="tool-${tool}"]`).element.closest('.app-tooltip')!
     const chip = (tool: string) => tip(tool).querySelector('.app-tooltip__key')?.textContent
-    const description = (tool: string) => tip(tool).querySelector('.app-tooltip__description')?.textContent
+    const description = (tool: string) => tip(tool).querySelector('.app-tooltip__body')?.textContent
 
     expect([chip('paint'), chip('fill'), chip('select'), chip('erase'), chip('hand')]).toEqual(['1', '2', '3', '4', '5'])
     expect(description('paint')).toBe(ru.tools.paintHint)
@@ -175,7 +175,7 @@ describe('Toolbox', () => {
   })
 
   it("shows the Edit buttons' shortcuts as chips; R is the Rulers now, so Rotate has none (tickets 91, 251)", () => {
-    const wrapper = mountToolbox()
+    const wrapper = mountToolbox({ canUndo: true, canRedo: true, canCopy: true })
     const chip = (id: string) =>
       wrapper.get(`[data-testid="${id}"]`).element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent
 
@@ -241,9 +241,9 @@ describe('Toolbox', () => {
   it('disables Undo, Copy and Redo purely from its own props, not internal state', () => {
     const wrapper = mountToolbox({ canUndo: false, canRedo: false, canCopy: false })
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(true)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('has no Row progress controls of its own (ticket 144)', () => {
@@ -404,7 +404,7 @@ describe('Toolbox Rotate (ticket 233)', () => {
   it('is disabled and named "Rotate, Set Frame first" with no Frame', async () => {
     const { frame: _frame, ...open } = makeProject()
     const wrapper = mountToolbox({ project: open })
-    expect(rotate(wrapper).attributes('disabled')).toBeDefined()
+    expect(rotate(wrapper).attributes('aria-disabled')).toBeDefined()
     expect(rotate(wrapper).attributes('aria-label')).toBe(ru.frame.rotateNeedsFrame)
     await rotate(wrapper).trigger('click')
     expect(wrapper.emitted('rotate')).toBeUndefined()
@@ -412,14 +412,14 @@ describe('Toolbox Rotate (ticket 233)', () => {
 
   it('waits while Row progress is on, saying why', () => {
     const wrapper = mountToolbox({ project: setRowProgressEnabled(makeProject(), true) })
-    expect(rotate(wrapper).attributes('disabled')).toBeDefined()
+    expect(rotate(wrapper).attributes('aria-disabled')).toBeDefined()
     expect(rotate(wrapper).attributes('aria-label')).toBe(ru.size.lockedReason)
   })
 
   it('is named "Rotate" and works with a Frame', () => {
     const wrapper = mountToolbox()
     expect(rotate(wrapper).attributes('aria-label')).toBe(ru.palette.rotateButton)
-    expect(rotate(wrapper).attributes('disabled')).toBeUndefined()
+    expect(rotate(wrapper).attributes('aria-disabled')).toBeUndefined()
   })
 })
 

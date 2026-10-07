@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
 import AppLink from './AppLink.vue'
@@ -8,6 +9,7 @@ import AppSelect from './AppSelect.vue'
 import AppTooltip from './AppTooltip.vue'
 import ExpandButton from './ExpandButton.vue'
 import IconButton from './IconButton.vue'
+import type { TooltipProps } from './tooltipProps'
 
 describe('AppButton', () => {
   it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger'] as const)('draws the %s variant', (variant) => {
@@ -65,11 +67,43 @@ describe('IconButton', () => {
   })
 })
 
+describe('IconButton disabled (ticket 327)', () => {
+  it('is aria-disabled, stays focusable, ignores a click and says why in its Tooltip', async () => {
+    const onClick = vi.fn()
+    const wrapper = mount(IconButton, {
+      attachTo: document.body,
+      props: { icon: 'undo', label: 'Undo', disabled: true, disabledBody: 'Nothing to undo.' },
+      attrs: { onClick },
+    })
+    const button = wrapper.get('button')
+    expect(button.attributes('aria-disabled')).toBe('true')
+    expect(button.attributes('disabled')).toBeUndefined()
+    await button.trigger('click')
+    expect(onClick).not.toHaveBeenCalled()
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Nothing to undo.')
+  })
+
+  it('shows no Tooltip when disabled with no reason given', () => {
+    const wrapper = mount(IconButton, { props: { icon: 'undo', label: 'Undo', disabled: true } })
+    expect(wrapper.find('[role="tooltip"]').exists()).toBe(false)
+  })
+})
+
+describe('AppTooltip props (ticket 327)', () => {
+  it('types `disabledBody` as required when `disabled` is set', () => {
+    const ok: TooltipProps[] = [{ name: 'Undo' }, { name: 'Undo', hotkey: 'Z', body: 'x' }, { name: 'Undo', disabled: true, disabledBody: 'Why' }]
+    // @ts-expect-error a disabled Tooltip has to say why
+    const missing: TooltipProps = { name: 'Undo', disabled: true }
+    expect([ok.length, missing.name]).toEqual([3, 'Undo'])
+  })
+})
+
 describe('AppTooltip', () => {
   function tooltip() {
     return mount(AppTooltip, {
       attachTo: document.body,
-      props: { text: 'An estimate' },
+      props: { name: 'An estimate' },
       slots: { default: '<button type="button" :aria-describedby="params.describedby">?</button>' },
     })
   }
@@ -88,25 +122,49 @@ describe('AppTooltip', () => {
   it('shows the name, a key chip and a description line when given them (ticket 251)', async () => {
     const wrapper = mount(AppTooltip, {
       attachTo: document.body,
-      props: { text: 'Paint', shortcut: '1', description: 'Click or drag to paint.' },
+      props: { name: 'Paint', hotkey: '1', body: 'Click or drag to paint.' },
       slots: { default: '<button type="button">x</button>' },
     })
     await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
 
     expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
     expect(wrapper.get('.app-tooltip__key').text()).toBe('1')
-    expect(wrapper.get('.app-tooltip__description').text()).toBe('Click or drag to paint.')
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Click or drag to paint.')
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
   })
 
-  it('shows nothing for a disabled trigger (ticket 251)', async () => {
+  it('shows the name and the reason, with no key chip, for a disabled trigger (ticket 327)', async () => {
     const wrapper = mount(AppTooltip, {
       attachTo: document.body,
-      props: { text: 'Undo', disabled: true },
-      slots: { default: '<button type="button" disabled>x</button>' },
+      props: { name: 'Undo', hotkey: undefined, body: 'Hidden', disabled: true, disabledBody: 'Nothing to undo.' },
+      slots: { default: '<button type="button" aria-disabled="true">x</button>' },
     })
     await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+    expect(wrapper.get('.app-tooltip__name').text()).toBe('Undo')
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Nothing to undo.')
+    expect(wrapper.get('.app-tooltip__body').classes()).toContain('app-tooltip__body--disabled')
+    expect(wrapper.find('.app-tooltip__key').exists()).toBe(false)
+  })
+
+  it('shows a disabled trigger\'s reason on focus and on a long press', async () => {
+    vi.useFakeTimers()
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { name: 'Undo', disabled: true, disabledBody: 'Nothing to undo.' },
+      slots: { default: '<button type="button" aria-disabled="true">x</button>' },
+    })
+    await wrapper.get('button').trigger('focusin')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+    await wrapper.trigger('focusout')
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+
+    await wrapper.trigger('pointerdown', { pointerType: 'touch' })
+    vi.advanceTimersByTime(500)
+    await nextTick()
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Nothing to undo.')
+    vi.useRealTimers()
   })
 
   it('does not show for a touch', async () => {
@@ -234,7 +292,7 @@ describe('the controls follow the interaction rules and use only tokens', () => 
     const style = styleOf(name)
     expect(style).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i)
     expect(style).not.toMatch(/\d+m?s\b/)
-    expect(style).not.toMatch(/box-shadow|z-index:\s*\d/)
+    expect(style).not.toMatch(/box-shadow:(?!\s*var\()|z-index:\s*\d/)
     // px only for hairline borders and the focus ring's offset.
     for (const px of style.match(/[\d.]+px/g) ?? []) expect(['1px', '2px', '3px']).toContain(px)
   })

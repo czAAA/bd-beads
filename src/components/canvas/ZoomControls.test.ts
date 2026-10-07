@@ -16,7 +16,7 @@ describe('ZoomControls', () => {
 
   it('disables zoom out at the 10% floor and zoom in at the top zoom, and takes the framing step\'s own range', () => {
     const attr = (zoomPercent: number, id: string, extra = {}) =>
-      mount(ZoomControls, { props: { zoomPercent, ...extra } }).get(`[data-testid="${id}"]`).attributes('disabled')
+      mount(ZoomControls, { props: { zoomPercent, ...extra } }).get(`[data-testid="${id}"]`).attributes('aria-disabled')
 
     expect(attr(10, 'zoom-out')).toBeDefined()
     expect(attr(10, 'zoom-in')).toBeUndefined()

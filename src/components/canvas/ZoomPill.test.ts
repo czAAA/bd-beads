@@ -32,17 +32,17 @@ describe('ZoomPill', () => {
 
   it('disables zoom out at 10% and zoom in at 400%', () => {
     const low = mount(ZoomPill, { props: { zoomPercent: 10 } })
-    expect(low.get('[data-testid="zoom-pill-out"]').attributes('disabled')).toBeDefined()
-    expect(low.get('[data-testid="zoom-pill-in"]').attributes('disabled')).toBeUndefined()
+    expect(low.get('[data-testid="zoom-pill-out"]').attributes('aria-disabled')).toBeDefined()
+    expect(low.get('[data-testid="zoom-pill-in"]').attributes('aria-disabled')).toBeUndefined()
     const high = mount(ZoomPill, { props: { zoomPercent: 400 } })
-    expect(high.get('[data-testid="zoom-pill-in"]').attributes('disabled')).toBeDefined()
-    expect(high.get('[data-testid="zoom-pill-out"]').attributes('disabled')).toBeUndefined()
+    expect(high.get('[data-testid="zoom-pill-in"]').attributes('aria-disabled')).toBeDefined()
+    expect(high.get('[data-testid="zoom-pill-out"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('greys Undo and Redo out at the ends of history and emits when they can act', async () => {
     const off = mount(ZoomPill, { props: { zoomPercent: 100 } })
-    expect(off.get('[data-testid="zoom-pill-undo"]').attributes('disabled')).toBeDefined()
-    expect(off.get('[data-testid="zoom-pill-redo"]').attributes('disabled')).toBeDefined()
+    expect(off.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+    expect(off.get('[data-testid="zoom-pill-redo"]').attributes('aria-disabled')).toBeDefined()
 
     const on = mount(ZoomPill, { props: { zoomPercent: 100, canUndo: true, canRedo: true } })
     await on.get('[data-testid="zoom-pill-undo"]').trigger('click')

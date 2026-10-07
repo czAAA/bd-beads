@@ -214,7 +214,7 @@ describe('the Hand tool', () => {
     expect(Number(root.attributes('data-scroll-x'))).toBe(startX + 30)
     expect(JSON.stringify(loadProjects()[0]!.beads)).toBe(before)
     expect(previewedBeads(wrapper)).toEqual([])
-    expect(wrapper.find('[data-testid="undo-button"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled')).toBeDefined()
   })
 
   it('leaves the other tools alone: pressing a bead with Paint still paints', async () => {

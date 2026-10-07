@@ -61,7 +61,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(button.text()).toBe('')
     expect(button.attributes('aria-label')).toBe(label(en))
     expect(button.attributes('title')).toBeUndefined()
-    if (chip) expect(button.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
+    if (chip && button.attributes('aria-disabled') !== 'true') expect(button.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
 
     await wrapper.find('[data-testid="language-ru"]').trigger('click')
     expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))
@@ -609,7 +609,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
 
     await pressKey({ key: 'c', ctrlKey: true })
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true) // hides the marquee, same as a click
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true) // hides the marquee, same as a click
     expect(selectedBeadCount(wrapper)).toBe(0)
   })
 
@@ -619,7 +619,7 @@ describe('App Edit group hotkeys — Copy (Ctrl/Cmd+C) (ticket 91), and R for th
     await pressKey({ key: 'c', ctrlKey: true })
 
     // Nothing to assert directly beyond no error/crash; canCopy stays false either way.
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('has no effect while typing in a form field', async () => {

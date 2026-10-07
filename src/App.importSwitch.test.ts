@@ -154,7 +154,7 @@ describe('App import asks before switching (ticket 154)', () => {
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    const canUndo = () => wrapper.find('[data-testid="undo-button"]').attributes('disabled') === undefined
+    const canUndo = () => wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled') === undefined
     expect(canUndo()).toBe(true)
 
     await pick(wrapper, 'import-file', serializeLibrary([makeProject('Fox')]))
