@@ -1,5 +1,5 @@
 import type { IconName } from '../../components/ui/icons'
-import { PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
+import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
@@ -9,6 +9,11 @@ export interface ControlDeps {
   activeProject: () => Project | undefined
   activeTool: () => Tool
   hasSelection: () => boolean
+  /** What the enabled states read (ticket 334): history, the clipboard and the Palette's added colors. */
+  canUndo: () => boolean
+  canRedo: () => boolean
+  hasClipboard: () => boolean
+  addedColorCount: () => number
   /** A menu or popover layer is open (useEscapeLayer). */
   hasOpenLayer: () => boolean
   /** A confirmation modal, the QR panel or the shortcuts help overlay is open. */
@@ -81,8 +86,8 @@ export type ControlAction = Disableable & {
   chords: readonly Chord[]
   /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole Palette). */
   help?: { name: (t: Translations) => string; keys: readonly (readonly string[])[] }
-  /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. */
-  run: (deps: ControlDeps, event: KeyboardEvent) => void
+  /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is no key: the control's own surface runs it. */
+  run?: (deps: ControlDeps, event: KeyboardEvent) => void
   preventDefault?: boolean
   allowWhileTyping?: boolean
   modals?: ModalRule
@@ -92,14 +97,24 @@ export type ControlAction = Disableable & {
   givesWayToFocusedButton?: boolean
 }
 
-const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translations) => string, group: ControlGroup = 'tools'): ControlAction => ({
+const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translations) => string, group: ControlGroup = 'tools', body?: ControlAction['body']): ControlAction => ({
   id: `tool-${id}`,
   icon,
   name,
+  body,
   group,
   chords: [{ key, label: key }],
   run: (deps) => deps.onSelectTool(id),
 })
+
+
+const frameLocked = (deps: ControlDeps) => deps.activeProject()?.rowProgress.enabled === true
+const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
+const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
+
+/** A control with no key, so it only lists its Tooltip copy (ticket 334); its surface runs it. */
+const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName } = {}): ControlAction =>
+  ({ id, name, group, chords: [], ...rest }) as ControlAction
 
 /**
  * The control registry (ADR 0035, ticket 329): every action with a key, defined once. The keyboard shortcut table is
@@ -107,10 +122,10 @@ const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translation
  * lists it. Order is the dialog's order within each group. A test fails if two actions share a key or combination.
  */
 export const CONTROLS: readonly ControlAction[] = [
-  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel),
-  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel),
-  selectTool('select', '3', 'select', (t) => t.tools.selectLabel),
-  selectTool('erase', '4', 'erase', (t) => t.tools.eraseLabel),
+  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
+  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
+  selectTool('select', '3', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
+  selectTool('erase', '4', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
   {
     id: 'empty-selection',
     icon: 'delete',
@@ -140,11 +155,12 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
     },
   },
-  selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas'),
+  selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
   {
     id: 'set-frame',
     icon: 'frame',
     name: (t) => t.frame.setFrame,
+    body: (t) => t.tooltips.setFrame,
     group: 'canvas',
     chords: [{ key: '6', label: '6' }],
     needsProject: true,
@@ -184,6 +200,7 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'zoom-fit',
     icon: 'fit',
     name: (t) => t.canvas.zoomResetLabel,
+    body: (t) => t.tooltips.zoomFit,
     group: 'canvas',
     chords: [{ key: '0', mod: true, shift: 'any', label: '0' }],
     preventDefault: true,
@@ -214,6 +231,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'undo',
     icon: 'undo',
     name: (t) => t.palette.undoButton,
+    enabled: (deps) => deps.canUndo(),
+    disabledBody: (t) => t.tooltips.nothingToUndo,
     group: 'edit',
     chords: [{ key: 'z', mod: true, label: 'Z' }],
     preventDefault: true,
@@ -224,6 +243,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'redo',
     icon: 'redo',
     name: (t) => t.palette.redoButton,
+    enabled: (deps) => deps.canRedo(),
+    disabledBody: (t) => t.tooltips.nothingToRedo,
     group: 'edit',
     // Ctrl+Y is the older Windows convention.
     chords: [
@@ -238,6 +259,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'copy',
     icon: 'copy',
     name: (t) => t.tools.copyButton,
+    enabled: (deps) => deps.hasSelection(),
+    disabledBody: (t) => t.tooltips.copyDisabled,
     group: 'edit',
     chords: [{ key: 'c', mod: true, label: 'C' }],
     preventDefault: true,
@@ -247,6 +270,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'paste',
     icon: 'paste',
     name: (t) => t.tools.pasteLabel,
+    enabled: (deps) => deps.hasClipboard(),
+    disabledBody: (t) => t.tooltips.pasteDisabled,
     group: 'edit',
     chords: [{ key: 'v', mod: true, label: 'V' }],
     run: (deps, event) => deps.pasteAtPointer(event),
@@ -255,6 +280,7 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'save',
     icon: 'save',
     name: (t) => t.tools.saveButton,
+    body: (t) => t.tooltips.saveProject,
     group: 'edit',
     chords: [{ key: 's', mod: true, label: 'S' }],
     preventDefault: true,
@@ -266,6 +292,9 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'rotate',
     icon: 'rotate',
     name: (t) => t.palette.rotateButton,
+    body: (t) => t.tooltips.rotate,
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.setFrameFirst),
     group: 'edit',
     chords: [{ key: 'r', shift: true, label: 'R' }],
     run: (deps) => deps.onRotate(),
@@ -274,6 +303,9 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'remove-line',
     icon: 'remove-line',
     name: (t) => t.tools.removeLineButton,
+    body: (t) => t.tooltips.removeLine,
+    enabled: (deps) => deps.canRemoveSelectedLine(),
+    disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedRemoveLine : t.tooltips.removeLineDisabled),
     group: 'edit',
     chords: [{ key: 'Delete', shift: true, label: 'Del' }],
     run: (deps) => {
@@ -283,6 +315,8 @@ export const CONTROLS: readonly ControlAction[] = [
   {
     id: 'row-progress',
     name: (t) => t.rowProgress.enabledLabel,
+    enabled: hasFrame,
+    disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'rowProgress',
     chords: [{ key: 'p', label: 'P' }],
     run: (deps) => {
@@ -324,6 +358,39 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)
     },
   },
+  unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
+    body: (t) => t.tooltips.removeFrame,
+    enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t: Translations, deps: ControlDeps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noFrameToRemove),
+  }),
+  unkeyed('fit-to-drawing', (t) => t.frame.fitToDrawing, 'canvas', {
+    body: (t) => t.tooltips.fitToDrawing,
+    enabled: (deps: ControlDeps) => !frameLocked(deps) && Object.keys(deps.activeProject()?.beads ?? {}).length > 0,
+    disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
+  }),
+  unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),
+  unkeyed('clear', (t) => t.deleteAll.button, 'edit', { body: (t) => t.tooltips.clear }),
+  unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', {
+    body: (t) => maxAdded(t.tooltips.customColor),
+    enabled: (deps: ControlDeps) => deps.addedColorCount() < MAX_ADDED_COLORS,
+    disabledBody: (t: Translations) => maxAdded(t.tooltips.customColorFull),
+  }),
+  unkeyed('image-colors', (t) => t.convertImage.imageColorsLabel, 'colors', {
+    enabled: (deps: ControlDeps) => (deps.activeProject()?.imageColors?.length ?? 0) > 0,
+    disabledBody: (t: Translations) => t.tooltips.imageColorsDisabled,
+  }),
+  unkeyed('dock-tool', (t) => t.toolbox.groups.tools, 'tools', {
+    body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.eraseLabel, t.tools.handLabel]),
+  }),
+  unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
+    body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton, t.tools.copyButton, t.tools.pasteLabel]),
+  }),
+  unkeyed('dock-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
+  unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
+  unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),
+  unkeyed('import-qr', (t) => t.transfer.importQrLabel, 'edit', { body: (t) => t.tooltips.importQr }),
+  unkeyed('change-maker-name', (t) => t.saveBox.changeName, 'edit', { body: (t) => t.tooltips.changeName }),
+  unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
 ]
 
 /** The gestures with no key the dialog still lists beside the keys (ticket 95): not actions, so not in CONTROLS. */

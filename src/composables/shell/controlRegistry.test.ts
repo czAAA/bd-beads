@@ -39,6 +39,26 @@ describe('the control registry', () => {
     expect(idsFor('Delete', false)).toEqual(['empty-selection'])
     expect(idsFor('Delete', true)).toEqual(['remove-line'])
     expect(idsFor('r', true)).toEqual(['rotate'])
-    expect(CONTROLS.some((control) => control.id.includes('clear'))).toBe(false)
+    expect(CONTROLS.find((control) => control.id === 'clear')?.chords).toEqual([])
+  })
+
+  it('gives every action that can be disabled a reason, in both languages', () => {
+    for (const control of CONTROLS.filter((c) => c.enabled)) {
+      const project = { rowProgress: { enabled: false }, beads: {} } as never
+      const deps = { activeProject: () => project, addedColorCount: () => 0 } as never
+      for (const t of [en, ru]) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
+    }
+  })
+
+  it('writes every body as one sentence ending in a full stop, without "Click to"', () => {
+    for (const control of CONTROLS) {
+      for (const t of [en, ru]) {
+        const bodies = [control.body?.(t)].filter((body): body is string => body !== undefined)
+        for (const body of bodies) {
+          expect(body, control.id).toMatch(/[.]$/)
+          expect(body, control.id).not.toMatch(/click to/i)
+        }
+      }
+    }
   })
 })
