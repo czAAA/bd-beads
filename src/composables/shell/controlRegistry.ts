@@ -386,6 +386,16 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
     body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton, t.tools.copyButton, t.tools.pasteLabel]),
   }),
+  unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
+    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.transfer.importQrLabel, t.projects.heading]),
+  }),
+  unkeyed('dock-menu', (t) => t.header.menuButton, 'edit', {
+    body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.saveBox.nameOnExports, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
+  }),
+  unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),
+  unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
+  unkeyed('saved-projects', (t) => t.projects.heading, 'edit', { icon: 'library' }),
+  unkeyed('close', (t) => t.a11y.closeMessage, 'edit', { icon: 'close' }),
   unkeyed('dock-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),

@@ -2,8 +2,8 @@
 import { inTourCard } from '../../composables/ui/tourDom'
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
-import { useI18n } from '../../i18n/useI18n'
-import AppIcon from '../ui/AppIcon.vue'
+import IconButton from '../ui/IconButton.vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 
 /**
  * The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. Light (the default --
@@ -19,7 +19,7 @@ import AppIcon from '../ui/AppIcon.vue'
  */
 const props = withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
 const emit = defineEmits<{ close: [] }>()
-const { t } = useI18n()
+const closeAction = controlAction('close')
 
 const titleId = useId()
 const sheetEl = ref<HTMLElement>()
@@ -113,9 +113,7 @@ onBeforeUnmount(() => {
       <h2 :id="titleId" class="bottom-sheet__title">{{ title }}</h2>
       <div class="bottom-sheet__head-actions">
         <slot name="actions" />
-        <button type="button" class="ui-control bottom-sheet__close" :aria-label="t.a11y.closeMessage" data-testid="sheet-close" @click="emit('close')">
-          <AppIcon name="close" :size="16" />
-        </button>
+        <IconButton variant="plain" shape="round" :icon-size="16" :action="closeAction" data-testid="sheet-close" @click="emit('close')" />
       </div>
     </div>
     <div ref="bodyEl" class="bottom-sheet__body">
@@ -197,25 +195,6 @@ onBeforeUnmount(() => {
   margin: 0;
   font: var(--type-title);
   color: var(--ink);
-}
-
-.bottom-sheet__close {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--message-close-size);
-  height: var(--message-close-size);
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-}
-
-.bottom-sheet__close:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 @keyframes bottom-sheet-fade {

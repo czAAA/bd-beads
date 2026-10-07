@@ -9,7 +9,7 @@ import type { IconName, IconSize } from './icons'
 /**
  * The one icon-only button (tickets 157, 330; Button card): `square` (34 × 34, radius 8: Turn row direction) or `round`
  * (radius full: Keyboard shortcuts), in the secondary, in-box, toolbox or canvas-box (`box`) look, `plain` (30px, no fill:
- * the canvas strip's zoom buttons) or `tool` (a Tool tab: a 34px icon in a 56 × 72 cell, selected by a 2px accent
+ * the canvas strip's zoom buttons) or `dock` (one of the phone Dock's five slots: a 22px icon filling its share of the bar, `selected` while its sheet is open, `accent` and `marked` for the active tool) or `tool` (a Tool tab: a 34px icon in a 56 × 72 cell, selected by a 2px accent
  * underline). Its accessible name is `label`. Attributes and listeners (data-testid, @click) go to the <button> itself,
  * not the tooltip around it.
  *
@@ -31,10 +31,14 @@ const props = withDefaults(
     action?: ControlActionLike
     deps?: unknown
     shape?: 'square' | 'round'
-    variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool'
+    variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool' | 'dock'
     size?: 'md' | 'lg'
     iconSize?: IconSize
     selected?: boolean
+    /** A `dock` slot's accent color (the active tool, the input mode toggle). */
+    accent?: boolean
+    /** A `dock` slot's 2px accent underline (the active tool, Set Frame). */
+    marked?: boolean
     disabled?: boolean
     /** The Tooltip's key chip (ticket 251): the control's shortcut, as the shortcuts help writes it. */
     shortcut?: string
@@ -56,6 +60,8 @@ const props = withDefaults(
     size: 'md',
     iconSize: 15,
     selected: undefined,
+    accent: false,
+    marked: false,
     disabled: undefined,
     shortcut: undefined,
     disabledBody: undefined,
@@ -89,7 +95,9 @@ const tooltipProps = computed(() => {
 })
 
 const isTool = computed(() => props.variant === 'tool')
-const size = computed(() => (isTool.value ? 34 : props.iconSize))
+const isDock = computed(() => props.variant === 'dock')
+const keyed = computed(() => isTool.value || isDock.value)
+const size = computed(() => (isTool.value ? 34 : isDock.value ? 22 : props.iconSize))
 
 /** A disabled button swallows the click before any listener the parent attached sees it. */
 function swallowClick(event: MouseEvent) {
@@ -100,20 +108,20 @@ function swallowClick(event: MouseEvent) {
 </script>
 
 <template>
-  <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" :class="{ 'icon-btn-wrap': true, 'icon-btn-wrap--tool': isTool }">
+  <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" :class="{ 'icon-btn-wrap': true, 'icon-btn-wrap--tool': isTool, 'icon-btn-wrap--dock': isDock }">
     <button
       class="ui-control icon-btn"
-      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected }]"
+      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent, 'icon-btn--marked': marked }]"
       type="button"
       :aria-label="name"
       :aria-pressed="selected === undefined ? undefined : selected"
       :aria-disabled="isDisabled ? 'true' : undefined"
-      :aria-keyshortcuts="isTool ? hotkey : undefined"
+      :aria-keyshortcuts="keyed ? hotkey : undefined"
       v-bind="$attrs"
       @click.capture="swallowClick"
     >
-      <AppIcon v-if="iconName" :name="iconName" :size="size" />
-      <span v-if="isTool && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</span>
+      <slot><AppIcon v-if="iconName" :name="iconName" :size="size" /></slot>
+      <span v-if="keyed && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</span>
     </button>
   </component>
 </template>
@@ -196,6 +204,64 @@ function swallowClick(event: MouseEvent) {
   outline-offset: 2px;
 }
 
+.icon-btn-wrap--dock {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* A Dock slot (Dock card): the whole share of the bar, no fill; open, it sits on `panel`. */
+.icon-btn--dock {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.icon-btn--dock.icon-btn--selected {
+  color: var(--ink);
+  background: var(--panel);
+}
+
+.icon-btn--dock.icon-btn--accent,
+.icon-btn--dock.icon-btn--accent.icon-btn--selected {
+  color: var(--accent-strong);
+}
+
+.icon-btn--dock.icon-btn--marked::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent-strong);
+}
+
+.icon-btn--dock:focus-visible {
+  outline-offset: -2px;
+}
+
+/* The hotkey corner (Dock card): DM Mono 12px, 3px from the top, 6px from the right. */
+.icon-btn--dock .icon-btn__key {
+  top: 3px;
+  right: var(--space-6);
+  left: auto;
+  font: var(--type-meta-small);
+}
+
+.icon-btn--dock.icon-btn--selected .icon-btn__key {
+  color: var(--muted);
+}
+
+.icon-btn--dock.icon-btn--accent .icon-btn__key,
+.icon-btn--dock.icon-btn--accent.icon-btn--selected .icon-btn__key {
+  color: var(--accent-strong);
+}
+
 /* A Tool tab (ToolTabs card): no fill, a 2px accent underline over the container's rule marks the selection. */
 .icon-btn--tool {
   position: relative;
@@ -269,6 +335,14 @@ function swallowClick(event: MouseEvent) {
     background: none;
   }
 
+  .icon-btn--dock:hover:not([aria-disabled='true']) {
+    background: none;
+  }
+
+  .icon-btn--dock.icon-btn--selected:hover:not([aria-disabled='true']) {
+    background: var(--panel);
+  }
+
   .icon-btn--tool:hover:not([aria-disabled='true']):not(.icon-btn--selected) {
     color: var(--ink);
   }
@@ -281,6 +355,12 @@ function swallowClick(event: MouseEvent) {
 
 .icon-btn--selected:active:not([aria-disabled='true']) {
   background: var(--ink);
+}
+
+.icon-btn--dock:active:not([aria-disabled='true']),
+.icon-btn--dock.icon-btn--selected:active:not([aria-disabled='true']) {
+  background: var(--press-fill);
+  transform: none;
 }
 
 .icon-btn--tool:active:not([aria-disabled='true']) {
