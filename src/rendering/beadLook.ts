@@ -34,6 +34,7 @@ export type DrawingContext = Pick<
   | 'arc'
   | 'roundRect'
   | 'drawImage'
+  | 'createPattern'
   | 'imageSmoothingEnabled'
   | 'closePath'
   | 'fill'

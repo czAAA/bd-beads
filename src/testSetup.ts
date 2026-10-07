@@ -62,3 +62,13 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
 
 /** Device preferences are read once and shared; a test seeds localStorage and then mounts, so each starts from what storage holds. */
 beforeEach(() => browserDevicePreferences.forget())
+
+/**
+ * jsdom pretends to paint, so it has animation frames, and the Drawing surface waits for one before it draws (at most
+ * once per frame). A test would then have to wait a frame after every change; with none, the surface draws at once. A
+ * test of the waiting installs a fake with vi.stubGlobal('requestAnimationFrame', ...) and unstubs it afterwards.
+ */
+if (typeof window !== 'undefined') {
+  Reflect.deleteProperty(window, 'requestAnimationFrame')
+  Reflect.deleteProperty(window, 'cancelAnimationFrame')
+}

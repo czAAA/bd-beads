@@ -39,6 +39,7 @@ export function installFakeCanvas(): {
     textBaseline: 'alphabetic',
     roundRect: () => undefined,
     drawImage: () => undefined,
+    createPattern: () => null,
     imageSmoothingEnabled: true,
     closePath: () => undefined,
     fill: () => undefined,

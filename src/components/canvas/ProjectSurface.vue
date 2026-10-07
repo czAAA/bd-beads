@@ -213,6 +213,33 @@ const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, {
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers })
 
+/** Animation frames asked for and not yet run, so they can be cancelled with the surface. */
+const pendingFrames = new Set<number>()
+
+/**
+ * A draw that waits for the next animation frame and runs once however many times it is asked first (a fast pinch or
+ * wheel sends many events per frame, each changing zoom or scroll): it then draws what is current. Where there are no
+ * animation frames, it draws at once.
+ */
+function oncePerFrame(draw: () => void): () => void {
+  let frame: number | undefined
+  return () => {
+    if (typeof requestAnimationFrame !== 'function') {
+      draw()
+      return
+    }
+    if (frame !== undefined) {
+      return
+    }
+    frame = requestAnimationFrame(() => {
+      pendingFrames.delete(frame!)
+      frame = undefined
+      draw()
+    })
+    pendingFrames.add(frame)
+  }
+}
+
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
   const canvas = baseEl.value
@@ -291,7 +318,7 @@ function drawOverlay(): void {
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([size, () => props.project, () => props.zoom, () => props.scroll, theme], drawCells, { flush: 'post' })
+watch([size, () => props.project, () => props.zoom, () => props.scroll, theme], oncePerFrame(drawCells), { flush: 'post' })
 watch(
   [
     size,
@@ -312,7 +339,7 @@ watch(
     touchInput,
     theme,
   ],
-  drawOverlay,
+  oncePerFrame(drawOverlay),
   { flush: 'post' },
 )
 
@@ -349,6 +376,7 @@ function reducedMotion(): boolean {
 
 watch(marginOutlineWanted, (wanted) => {
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
+  pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   const target = wanted ? 1 : 0
   if (reducedMotion() || typeof requestAnimationFrame !== 'function') {
     marginOpacity.value = target
@@ -574,6 +602,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(refusedTimer)
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
+  pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
 })
