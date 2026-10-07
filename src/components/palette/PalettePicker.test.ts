@@ -42,14 +42,24 @@ describe('PalettePicker', () => {
     })
   })
 
-  it("shows each swatch's Shift+key shortcut in its tooltip, in Palette order (ticket 88)", () => {
+  it("shows each swatch's Shift+key shortcut as the key chip of its tooltip, in Palette order (tickets 88, 333)", async () => {
     const wrapper = mount(PalettePicker)
-
-    const swatches = wrapper.findAll('[data-testid="palette-swatch"]')
     const shortcuts = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'W']
 
-    swatches.forEach((swatch, index) => {
-      expect(swatch.attributes('title')).toContain(`Shift+${shortcuts[index]}`)
-    })
+    const tooltips = wrapper.findAll('.app-tooltip')
+    for (const [index, tooltip] of tooltips.entries()) {
+      await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+      expect(tooltip.get('.app-tooltip__key').text()).toBe(`Shift+${shortcuts[index]}`)
+    }
+  })
+
+  it('names the tooltip "Color" with the hex as its body (ticket 333)', async () => {
+    const wrapper = mount(PalettePicker)
+    const tooltip = wrapper.get('.app-tooltip')
+
+    await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+
+    expect(tooltip.get('.app-tooltip__name').text()).toBe(ru.palette.colorLabel)
+    expect(tooltip.get('.app-tooltip__body').text()).toBe(PALETTE[0]!.hex)
   })
 })

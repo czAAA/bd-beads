@@ -8,9 +8,9 @@ The remove × (on a selected added color only): a round ×, top-right inside the
 
 **Blocked by:** 327
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `Swatch` covers all three places
-- [ ] The Tooltip shows "Color", the hex and the key chip where there is one
-- [ ] The × is readable on light and dark swatches and has a hit area of at least 24×24
-- [ ] The design-system card and changelog are updated
+- [x] `Swatch` covers all three places
+- [x] The Tooltip shows "Color", the hex and the key chip where there is one
+- [x] The × is readable on light and dark swatches and has a hit area of at least 24×24
+- [x] The design-system card and changelog are updated

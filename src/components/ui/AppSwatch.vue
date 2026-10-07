@@ -1,0 +1,176 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useResolvedTheme } from '../../theme/useResolvedTheme'
+import { useI18n } from '../../i18n/useI18n'
+import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
+import { markOn } from './swatchMark'
+
+/**
+ * One color chip (ticket 333; PaletteSwatches card), for the Palette, the Image colors popover and the Canvas color
+ * popover. Its Tooltip is the name "Color", the hex as the body and, where it has one, the key chip. `label` is the
+ * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
+ *
+ * The remove × (selected added colors only): top-right inside the swatch with no background, drawn in `ink` or
+ * `canvas`, whichever reads better on this hex, in a 24px invisible hit area (WCAG 2.5.8).
+ */
+defineOptions({ inheritAttrs: false })
+
+const props = withDefaults(
+  defineProps<{
+    color: string
+    label: string
+    selected?: boolean
+    /** The Tooltip's key chip, e.g. `Shift+1`. */
+    hotkey?: string
+    /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
+    role?: 'button' | 'radio'
+    /** Asks for the ×; it shows only while the swatch is selected. */
+    removeLabel?: string
+  }>(),
+  { selected: false, hotkey: undefined, role: 'button', removeLabel: undefined },
+)
+const emit = defineEmits<{
+  select: []
+  remove: []
+}>()
+
+const { t } = useI18n()
+const theme = useResolvedTheme()
+const rootEl = ref<HTMLElement>()
+
+/** The mark's token, read from the stylesheet so it follows the theme; a bare DOM (a test) falls back to light. */
+const mark = computed(() => {
+  void theme.value
+  const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
+  const ink = style?.getPropertyValue('--ink').trim() || '#1f1f1f'
+  const canvas = style?.getPropertyValue('--canvas').trim() || '#ffffff'
+  return markOn(props.color, ink, canvas)
+})
+const showRemove = computed(() => props.selected && !!props.removeLabel)
+</script>
+
+<template>
+  <span ref="rootEl" class="swatch">
+    <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
+      <template #default="{ describedby }">
+        <button
+          v-bind="$attrs"
+          type="button"
+          class="swatch__chip"
+          :class="{ 'swatch__chip--selected': selected }"
+          :style="{ backgroundColor: color }"
+          :role="role === 'radio' ? 'radio' : undefined"
+          :aria-label="label"
+          :aria-pressed="role === 'button' ? selected : undefined"
+          :aria-checked="role === 'radio' ? selected : undefined"
+          :aria-describedby="describedby"
+          @click="emit('select')"
+        >
+          <slot />
+        </button>
+      </template>
+    </AppTooltip>
+    <button
+      v-if="showRemove"
+      type="button"
+      class="swatch__remove"
+      :class="`swatch__remove--${mark}`"
+      :aria-label="removeLabel"
+      tabindex="-1"
+      data-testid="palette-swatch-remove"
+      @click="emit('remove')"
+    >
+      <AppIcon class="swatch__remove-icon" name="close" :size="14" />
+    </button>
+  </span>
+</template>
+
+<style scoped>
+/* The chip's size is the parent's to set: `--swatch-size` (the whole cell by default); `--swatch-min` a floor for touch (ticket 166); `--swatch-gap` is the color the
+ * selected ring's gap is drawn in, the surface the swatch sits on. */
+.swatch {
+  position: relative;
+  display: block;
+  width: var(--swatch-size, 100%);
+}
+
+.swatch :deep(.app-tooltip) {
+  display: block;
+}
+
+.swatch__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  width: 100%;
+  min-width: var(--swatch-min, 0);
+  min-height: var(--swatch-min, 0);
+  padding: 0;
+  color: var(--ink);
+  border: 0;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  cursor: pointer;
+  transition: transform var(--duration-instant) var(--ease-standard);
+}
+
+.swatch__chip--selected {
+  box-shadow:
+    inset 0 0 0 1px var(--swatch-edge),
+    0 0 0 2px var(--swatch-gap, var(--panel)),
+    0 0 0 4px var(--ring);
+}
+
+.swatch__chip:active {
+  transform: scale(0.93);
+}
+
+.swatch__chip:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A 24×24 button with no look of its own: only the 10px × shows. */
+.swatch__remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.swatch__remove--ink {
+  color: var(--ink);
+}
+
+.swatch__remove--canvas {
+  color: var(--canvas);
+}
+
+.swatch__remove-icon {
+  width: 10px;
+  height: 10px;
+}
+
+.swatch__remove:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swatch__chip:active {
+    transform: none;
+  }
+}
+</style>
