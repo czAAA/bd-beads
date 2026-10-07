@@ -81,12 +81,12 @@ describe('ProgressBar', () => {
     const project = makeProject()
 
     const atStart = mount(ProgressBar, { props: { project } })
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(true)
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(false)
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').attributes('aria-disabled') === 'true').toBe(true)
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').attributes('aria-disabled') === 'true').toBe(false)
 
     const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').element.disabled).toBe(false)
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').element.disabled).toBe(true)
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').attributes('aria-disabled') === 'true').toBe(false)
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('says which way the rows run after the total', () => {

@@ -406,7 +406,7 @@ function onDropImage(file: File) {
 
     <p v-if="sizeConversion" class="new-project-form__conversion" data-testid="size-conversion">
       <span>{{ sizeConversion }}</span>
-      <AppTooltip :text="t.form.sizeConversionInfo" placement="top">
+      <AppTooltip :name="t.form.sizeConversionInfo" placement="top">
         <template #default="{ describedby }">
           <button
             type="button"

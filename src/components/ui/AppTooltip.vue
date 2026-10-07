@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId } from 'vue'
 import { tooltipOwners } from './tooltipOwner'
+import type { TooltipProps } from './tooltipProps'
 
 /**
- * The design system's Tooltip (ticket 157; Modal card): a short `ink` label that shows while its trigger is hovered
- * with a mouse or focused from the keyboard, and hides on leave, blur or Escape. A pen hovers like a mouse (an Apple
- * Pencil over an iPad). On a finger there is no hover, so a touch or pen press held for LONG_PRESS_MS opens it instead, closing again on release (ticket 166;
- * responsive.md "Input, not width": "tooltips become long-press"). The trigger gets the tooltip's id through the
- * `describedby` slot prop; an icon-only button whose own name already says the same passes `announce: false`, so
- * screen readers don't hear it twice.
+ * The design system's Tooltip (tickets 157, 327; Menu card): a light, slightly see-through bubble (`elevated` at 90%
+ * over a backdrop blur, `ink` text, a `line-soft` edge, `elevation-3`; opaque in High contrast) that shows while its
+ * trigger is hovered with a mouse or focused from the keyboard, and hides on leave, blur or Escape. A pen hovers like a
+ * mouse (an Apple Pencil over an iPad). On a finger there is no hover, so a touch or pen press held for LONG_PRESS_MS
+ * opens it instead, closing again on release (ticket 166; responsive.md "Input, not width": "tooltips become
+ * long-press"). The trigger gets the tooltip's id through the `describedby` slot prop; an icon-only button whose own
+ * name already says the same passes `announce: false`, so screen readers don't hear it twice.
+ *
+ * What it says (ADR 0035): the `name` in bold, an optional `hotkey` as a key chip beside it and an optional `body`
+ * under them. A control shows a Tooltip exactly when it is given one. A disabled control (`aria-disabled`, so it stays
+ * hoverable and focusable) gives a `disabledBody` that replaces the body, in `muted`, with no key chip.
  *
  * The bubble is never clipped (ticket 265): while open it sits in the browser's top layer (a manual popover), outside
  * every ancestor's `overflow`, positioned in screen coordinates from its trigger. It opens on the side that has room
  * (`placement` is the side it prefers), stays inside the screen on all four edges and wraps at a maximum width.
- *
- * A Toolbox button's Tooltip (ticket 251) is richer: the name in bold, the `shortcut` as a key chip beside it and, only
- * where the control needs one, a `description` line below. A `disabled` trigger shows none (forms-and-states).
  */
-const props = withDefaults(
-  defineProps<{
-    text: string
-    placement?: 'top' | 'bottom'
-    announce?: boolean
-    shortcut?: string
-    description?: string
-    disabled?: boolean
-  }>(),
-  { placement: 'bottom', announce: true, shortcut: undefined, description: undefined, disabled: false },
-)
+const props = withDefaults(defineProps<TooltipProps>(), {
+  body: undefined,
+  placement: 'bottom',
+  announce: true,
+})
 
-const rich = computed(() => !!props.shortcut || !!props.description)
+/** What the bubble's second line says: the reason when disabled, the body otherwise. */
+const detail = computed(() => (props.disabled ? props.disabledBody : props.body))
+const key = computed(() => (props.disabled ? undefined : props.hotkey))
+const rich = computed(() => !!detail.value || !!key.value)
 
 /** The bubble's clearance from the screen's edges (ticket 169). */
 const VIEWPORT_MARGIN_PX = 8
@@ -105,7 +105,6 @@ function clearLongPress() {
 }
 
 function show() {
-  if (props.disabled) return
   if (open.value) return
   open.value = true
   follow(true)
@@ -164,13 +163,6 @@ function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && open.value) hide()
 }
 
-watch(
-  () => props.disabled,
-  (disabled) => {
-    if (disabled) hide()
-  },
-)
-
 onBeforeUnmount(hide)
 
 </script>
@@ -204,19 +196,19 @@ onBeforeUnmount(hide)
       >
         <template v-if="rich">
           <span class="app-tooltip__head">
-            <strong class="app-tooltip__name">{{ text }}</strong>
-            <kbd v-if="shortcut" class="app-tooltip__key">{{ shortcut }}</kbd>
+            <strong class="app-tooltip__name">{{ name }}</strong>
+            <kbd v-if="key" class="app-tooltip__key">{{ key }}</kbd>
           </span>
-          <span v-if="description" class="app-tooltip__description">{{ description }}</span>
+          <span v-if="detail" class="app-tooltip__body" :class="{ 'app-tooltip__body--disabled': disabled }">{{ detail }}</span>
         </template>
-        <template v-else>{{ text }}</template>
+        <template v-else>{{ name }}</template>
       </span>
     </Transition>
   </span>
 </template>
 
 <style scoped>
-/* The rich Tooltip (ticket 251): name and key chip on one line, the description under them, on the same `ink` bubble. */
+/* The rich Tooltip (ticket 251): name and key chip on one line, the body under them. */
 .app-tooltip__bubble:has(.app-tooltip__head) {
   display: flex;
   flex-direction: column;
@@ -237,15 +229,17 @@ onBeforeUnmount(hide)
   padding: 0 var(--space-4);
   font: var(--type-meta-tiny);
   line-height: 1rem;
-  color: var(--canvas);
-  border: 1px solid var(--canvas);
+  color: var(--tooltip-muted);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-xs);
-  opacity: 0.85;
 }
 
-.app-tooltip__description {
+.app-tooltip__body {
   font-weight: 500;
-  opacity: 0.85;
+}
+
+.app-tooltip__body--disabled {
+  color: var(--tooltip-muted);
 }
 
 /* Tooltips fade in at the fast duration (Motion card). */
@@ -276,10 +270,12 @@ onBeforeUnmount(hide)
   overflow: visible;
   font: var(--type-small);
   line-height: 1rem;
-  color: var(--canvas);
+  color: var(--ink);
   pointer-events: none;
-  background: var(--ink);
-  border: 0;
+  background: var(--tooltip-fill);
+  backdrop-filter: blur(var(--tooltip-blur));
+  border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
+  box-shadow: var(--elevation-3);
 }
 </style>

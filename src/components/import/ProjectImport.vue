@@ -118,7 +118,7 @@ async function onImportQrImage(event: Event): Promise<void> {
     same label in the design system's own Tooltip instead of a native `title`, so its background matches every other
     icon control's. A fragment, so the controls and their one-line result sit in the header's own row.
   -->
-  <AppTooltip v-if="compact" :text="t.transfer.importLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="t.transfer.importLabel" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="fileInputId">
       <input
         :id="fileInputId"
@@ -145,7 +145,7 @@ async function onImportQrImage(event: Event): Promise<void> {
     <span>{{ t.transfer.importLabel }}</span>
   </label>
 
-  <AppTooltip v-if="compact" :text="t.transfer.importQrLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="t.transfer.importQrLabel" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="qrInputId">
       <input
         :id="qrInputId"

@@ -66,7 +66,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownO
 
 <template>
   <div ref="rootEl" class="image-colors-button">
-    <AppTooltip :text="colors?.length ? t.convertImage.imageColorsLabel : t.convertImage.noImageColors" :announce="!colors?.length">
+    <AppTooltip :name="colors?.length ? t.convertImage.imageColorsLabel : t.convertImage.noImageColors" :announce="!colors?.length">
       <template #default="{ describedby }">
         <button
           class="ui-control image-colors-button__button"

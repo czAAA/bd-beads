@@ -110,12 +110,12 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await pressRulerNumber(wrapper, 'row', 1)
 
     // The new Selection re-enables Copy (a fresh block to copy) rather than leaving the old clipboard armed.
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(false)
   })
 })
 

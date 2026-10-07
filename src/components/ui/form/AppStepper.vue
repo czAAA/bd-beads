@@ -23,6 +23,11 @@ const props = withDefaults(
 )
 const value = defineModel<number>({ required: true })
 
+/** A Tooltip while its button can act: a limit or a locked stepper shows none (a disabled button must give a reason). */
+function tooltipFor(canStep: boolean) {
+  return props.tooltip && !props.disabled && canStep
+}
+
 function step(delta: number) {
   const next = Math.min(props.max, Math.max(props.min, value.value + delta))
   if (next !== value.value) value.value = next
@@ -31,7 +36,7 @@ function step(delta: number) {
 
 <template>
   <span class="stepper" :class="{ 'stepper--disabled': disabled }">
-    <AppTooltip :text="decreaseLabel" :disabled="!tooltip || disabled || value <= min" :announce="false">
+    <component :is="tooltipFor(value > min) ? AppTooltip : 'span'" v-bind="tooltipFor(value > min) ? { name: decreaseLabel, announce: false } : { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"
         type="button"
@@ -42,9 +47,9 @@ function step(delta: number) {
       >
         −
       </button>
-    </AppTooltip>
+    </component>
     <span class="stepper__value" :data-testid="valueTestid">{{ value }}</span>
-    <AppTooltip :text="increaseLabel" :disabled="!tooltip || disabled || value >= max" :announce="false">
+    <component :is="tooltipFor(value < max) ? AppTooltip : 'span'" v-bind="tooltipFor(value < max) ? { name: increaseLabel, announce: false } : { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"
         type="button"
@@ -55,11 +60,15 @@ function step(delta: number) {
       >
         +
       </button>
-    </AppTooltip>
+    </component>
   </span>
 </template>
 
 <style scoped>
+.stepper__slot {
+  display: inline-flex;
+}
+
 .stepper {
   display: inline-flex;
   align-items: stretch;

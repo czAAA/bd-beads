@@ -125,8 +125,8 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('undoes and redoes from the Zoom pill, and the Frame sheet no longer holds them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="zoom-pill-redo"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="zoom-pill-redo"]').attributes('aria-disabled')).toBeDefined()
 
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
@@ -134,7 +134,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
     await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBeNull()
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
 
     await wrapper.get('[data-testid="zoom-pill-redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()

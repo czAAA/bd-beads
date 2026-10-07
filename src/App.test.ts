@@ -548,7 +548,7 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBeNull()
     expect(grid[0]![2]!.color).toBeNull()
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true',
     ).toBe(true)
   })
 
@@ -569,7 +569,7 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
     expect(grid[0]![2]!.color).toBe('#e63746')
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled,
+      wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true',
     ).toBe(true)
   })
 
@@ -710,7 +710,7 @@ describe('App', () => {
   it('disables undo when there is nothing to undo', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(
       true,
     )
 
@@ -718,7 +718,7 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').element.disabled).toBe(
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(
       false,
     )
   })
@@ -767,18 +767,18 @@ describe('App', () => {
   it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('clears the redo history once a new edit actually changes the grid', async () => {
@@ -788,13 +788,13 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-color-id="blue"]').trigger('click')
     await pressBead(wrapper, 1)
     await wrapper.trigger('mouseup')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('switching or creating a Project clears the redo history, the same as the undo stack', async () => {
@@ -805,17 +805,17 @@ describe('App', () => {
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     await createProjectViaForm(wrapper, '6', '6')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
   })
 
   it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {

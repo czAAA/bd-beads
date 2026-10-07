@@ -13,10 +13,10 @@ Change the design system in place: the Tooltip card README, tokens, `bundle.css`
 
 **Blocked by:** None (can start immediately).
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `AppTooltip` takes `name`, `body?`, `hotkey?`, `disabled?` and `disabledBody`, and the type rejects `disabled` without `disabledBody`
-- [ ] A disabled control shows the name and `disabledBody`, with no key chip, on hover, focus and long-press
-- [ ] The new light look is in place in all four themes, opaque in High contrast, and contrast-checked
-- [ ] The design-system card, tokens, `bundle.css`, `design-values.css` and changelog are updated
-- [ ] Existing `AppTooltip` callers keep working, or are moved to the new props
+- [x] `AppTooltip` takes `name`, `body?`, `hotkey?`, `disabled?` and `disabledBody`, and the type rejects `disabled` without `disabledBody`
+- [x] A disabled control shows the name and `disabledBody`, with no key chip, on hover, focus and long-press
+- [x] The new light look is in place in all four themes, opaque in High contrast, and contrast-checked
+- [x] The design-system card, tokens, `bundle.css`, `design-values.css` and changelog are updated
+- [x] Existing `AppTooltip` callers keep working, or are moved to the new props

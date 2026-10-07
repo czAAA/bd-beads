@@ -53,7 +53,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="theme-toggle" role="radiogroup" :aria-label="t.theme.groupLabel" data-testid="theme-toggle" @keydown="onKeydown">
-    <AppTooltip v-for="(option, index) in options" :key="option.value" :text="option.label" :announce="false">
+    <AppTooltip v-for="(option, index) in options" :key="option.value" :name="option.label" :announce="false">
       <button
         ref="buttons"
         class="ui-control theme-toggle__option"

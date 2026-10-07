@@ -90,7 +90,7 @@ function onFocusOut(event: FocusEvent) {
 
 <template>
   <div v-show="swatches.length" ref="rootEl" class="canvas-color">
-    <AppTooltip :text="t.canvas.canvasColor.label" :announce="false">
+    <AppTooltip :name="t.canvas.canvasColor.label" :announce="false">
       <button
         ref="buttonEl"
         class="ui-control canvas-color__button"

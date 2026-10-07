@@ -19,6 +19,9 @@
   --tour-ring-width: 2.5px;
   --tour-glow: 0 0 8px color-mix(in srgb, var(--tour-highlight) 38%, transparent);
   --tour-card-line-width: 1px;
+  --tooltip-fill: color-mix(in srgb, var(--elevated) 92%, transparent);
+  --tooltip-blur: 8px;
+  --tooltip-muted: var(--muted);
 }
 
 :root[data-theme="dark"] {
@@ -36,6 +39,9 @@
   --tour-ring-width: 2.5px;
   --tour-glow: 0 0 8px color-mix(in srgb, var(--tour-highlight) 38%, transparent);
   --tour-card-line-width: 1px;
+  --tooltip-fill: color-mix(in srgb, var(--elevated) 90%, transparent);
+  --tooltip-blur: 8px;
+  --tooltip-muted: var(--body);
 }
 
 :root[data-theme="contrast"] {
@@ -53,6 +59,9 @@
   --tour-ring-width: 3px;
   --tour-glow: none;
   --tour-card-line-width: 2px;
+  --tooltip-fill: var(--elevated);
+  --tooltip-blur: 0;
+  --tooltip-muted: var(--muted);
 }
 
 :root {
