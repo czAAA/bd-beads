@@ -40,7 +40,7 @@ export function useAddedColors(store: AddedColorsStore) {
     }
   }
 
-  return { palette, addUsed, removeAdded }
+  return { palette, addedCount: computed(() => added.value.length), addUsed, removeAdded }
 }
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')

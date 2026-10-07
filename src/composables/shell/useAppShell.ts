@@ -205,6 +205,7 @@ function wireAppShell(services: Services) {
     pastePreviewCells,
     clearSelection: resetSelection,
     pasteProjectionActive,
+    hasClipboard,
   } = useSelectionGesture(currentProject, edit, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
 
   /** A Selection (or hover) that no longer fits after a step or a size change changed the grid. */
@@ -214,7 +215,7 @@ function wireAppShell(services: Services) {
   }
 
   /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
-  const { palette, addUsed, removeAdded } = useAddedColors(services.addedColorsStore)
+  const { palette, addedCount, addUsed, removeAdded } = useAddedColors(services.addedColorsStore)
 
   /** The active tool and which of the three paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -528,6 +529,10 @@ function wireAppShell(services: Services) {
     activeProject: currentProject,
     activeTool: () => activeTool.value,
     hasSelection: () => !!selection.value,
+    canUndo: () => canUndo.value,
+    canRedo: () => canRedo.value,
+    hasClipboard,
+    addedColorCount: () => addedCount.value,
     hasOpenLayer,
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||
