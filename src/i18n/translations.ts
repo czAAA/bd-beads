@@ -321,9 +321,7 @@ export interface Translations {
     weightHeading: string
     gramsUnit: string
     totalLabel: string
-    /** The info icon's accessible name; its tooltip is `weightInfo`. */
-    weightInfoButton: string
-    /** The Estimated weight tooltip (ticket 155); `{grams}` is the Bead's average weight of one bead. */
+    /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
   }
   /** Export/import (CONTEXT.md's Project file), plus QR export/import (ticket 68, ADR 0015). */

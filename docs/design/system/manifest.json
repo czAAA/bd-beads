@@ -33,6 +33,7 @@
     "components/LongerText/README.md",
     "components/Menu/README.md",
     "components/Message/README.md",
+    "components/Note/README.md",
     "components/MirrorSizeControls/README.md",
     "components/Modal/README.md",
     "components/Motion/README.md",
@@ -222,6 +223,11 @@
       "name": "Message",
       "group": "Feedback",
       "summary": "A notice or toast: \"couldn't save\", import results and errors, confirmations of an action."
+    },
+    {
+      "name": "Note",
+      "group": "Feedback",
+      "summary": "A thin, always-visible gray block of helper text under a control or panel; replaces the (i) popups."
     },
     {
       "name": "MirrorSizeControls",

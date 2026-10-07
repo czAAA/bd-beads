@@ -324,7 +324,6 @@ export const en: Translations = {
     weightHeading: 'Weight',
     gramsUnit: 'g',
     totalLabel: 'Total',
-    weightInfoButton: 'About the estimated weight',
     weightInfo:
       'This is bead count × about {grams} g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
   },

@@ -43,11 +43,9 @@ export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
 /**
  * The hand-made hover texts: info popovers, opened by click (or the info button's focus) rather than hover, whose own
  * `role="tooltip"` is not the shared Tooltip's. The text fit check measures them (ticket 229); the hover text check
- * only needs them listed once, here, and seen open. A fourth one made by hand is a failure of the source guard.
+ * only needs them listed once, here, and seen open. Another one made by hand is a failure of the source guard.
  */
 export const INFO_POPOVERS: InfoPopover[] = [
-  { file: 'components/palette/BeadQuantities.vue', testid: 'quantities-weight-tooltip' },
-  { file: 'components/project/FrameControls.vue', testid: 'size-estimate-tooltip' },
   { file: 'components/project/NewProjectForm.vue', testid: 'new-project-estimate-tooltip' },
 ]
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
+import AppNote from '../ui/AppNote.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
@@ -11,7 +11,7 @@ import { FRAME_HOTKEY } from '../tools/toolIcons'
 
 /**
  * The body of the Frame row (MirrorSizeControls card, ticket 233): Columns and Rows steppers, Fit to drawing and Remove
- * Frame, and the Frame's Estimated size with its warning tooltip. With no Frame it says what a Frame is and offers Fit
+ * Frame, and the Frame's Estimated size with its warning as a Note (ticket 328). With no Frame it says what a Frame is and offers Fit
  * to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
  * the reason is written under the controls.
  */
@@ -51,8 +51,6 @@ const estimate = computed(() => {
 })
 
 const lockedNoteId = useId()
-const tooltipId = useId()
-const tipOpen = ref(false)
 </script>
 
 <template>
@@ -108,24 +106,8 @@ const tipOpen = ref(false)
 
     <div v-if="estimate" class="frame-controls__estimate" data-testid="size-estimate-row">
       <span class="frame-controls__estimate-text" role="group" :aria-label="t.size.estimateLabel" data-testid="size-estimate">≈ {{ estimate }}</span>
-      <!-- data-skip-autofocus (ticket 188): the first focusable thing in a sheet or drawer would otherwise pop this tooltip uninvited. -->
-      <button
-        type="button"
-        class="frame-controls__info"
-        data-testid="size-estimate-info"
-        data-skip-autofocus
-        :aria-label="t.size.estimateInfoButton"
-        :aria-describedby="tooltipId"
-        @mouseenter="tipOpen = true"
-        @mouseleave="tipOpen = false"
-        @focus="tipOpen = true"
-        @blur="tipOpen = false"
-        @keydown.escape="tipOpen = false"
-      >
-        <AppIcon name="info" :size="18" />
-      </button>
-      <span v-show="tipOpen" :id="tooltipId" class="frame-controls__tooltip" role="tooltip" data-testid="size-estimate-tooltip">{{ t.size.estimateWarning }}</span>
     </div>
+    <AppNote v-if="estimate" data-testid="size-estimate-note">{{ t.size.estimateWarning }}</AppNote>
   </div>
 </template>
 
@@ -157,8 +139,6 @@ const tipOpen = ref(false)
 }
 
 .frame-controls__estimate {
-  /* A full-width row of the block above, so the tooltip anchored to it is as wide as the rail, not as wide as "≈ 1.5 × 3.0 cm". */
-  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -169,42 +149,6 @@ const tipOpen = ref(false)
   font-weight: 700;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-/* A small glyph, not a full icon-button: it sits in a line of text and carries the tooltip, nothing else. */
-.frame-controls__info {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ink);
-  background: var(--warning);
-  border: 0;
-  border-radius: var(--radius-full);
-}
-
-.frame-controls__info:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-/* The warning color, not an error's: this is a guide, not a fact. Opens below the estimate at the rail's width, over the controls under it — within the rail, since the rail scrolls and would clip anything wider. */
-.frame-controls__tooltip {
-  position: absolute;
-  z-index: var(--z-canvas-overlay);
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  color: var(--ink);
-  background: var(--warning);
-  border: 1px solid var(--ink);
-  border-radius: var(--radius-md);
 }
 
 .frame-controls__note {

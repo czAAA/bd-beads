@@ -104,18 +104,12 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.62 g')
   })
 
-  it('shows the header as count × average weight per bead ≈ the total, with the info trigger right after it (ticket 178)', () => {
+  it('shows the header as count × average weight per bead ≈ the total (ticket 178)', () => {
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
     expect(wrapper.find('[data-testid="quantity-total-count"]').text()).toBe('100')
     expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0.0108g')
     expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.08 g')
-
-    // The info tooltip trigger sits right after the total weight's "g", inside the same suffix, not off at the
-    // panel header's far right (ticket 178).
-    const suffix = wrapper.find('.expandable-panel__suffix')
-    expect(suffix.find('[data-testid="quantities-weight-info"]').exists()).toBe(true)
-    expect(wrapper.find('.expandable-panel__meta [data-testid="quantities-weight-info"]').exists()).toBe(false)
   })
 
   it('shows the average weight per bead with the Russian decimal comma too (ticket 178)', () => {
@@ -141,35 +135,24 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
   })
 
   it('shows no weight for a Project with no colors painted', () => {
     const wrapper = mountQuantities(project())
 
-    expect(wrapper.find('[data-testid="quantities-weight-info"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
   })
 
-  it('explains the estimate in a tooltip on hover and keyboard focus, with the Bead\'s average weight', async () => {
+  it('explains the estimate in an always-visible Note, with the Bead\'s average weight and no (i) button (ticket 328)', () => {
     const wrapper = mountQuantities(wide('toho-round-11-0', 10))
-    const info = wrapper.find('[data-testid="quantities-weight-info"]')
-    const tooltip = wrapper.find('[data-testid="quantities-weight-tooltip"]')
-    const shown = () => (tooltip.element as HTMLElement).style.display !== 'none'
+    const note = wrapper.find('[data-testid="quantities-weight-note"]')
 
-    expect(shown()).toBe(false)
-    await info.trigger('mouseenter')
-    expect(shown()).toBe(true)
-    expect(tooltip.text()).toBe(
+    expect(note.text()).toBe(
       'This is bead count × about 0.0091 g per bead. That average comes from seller listings, not confirmed measurements. Real beads vary, so buy a little extra.',
     )
-    await info.trigger('mouseleave')
-    expect(shown()).toBe(false)
-    await info.trigger('focus')
-    expect(shown()).toBe(true)
-    await info.trigger('keydown', { key: 'Escape' })
-    expect(shown()).toBe(false)
-    expect(info.attributes('aria-describedby')).toBe(tooltip.attributes('id'))
+    expect(wrapper.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
   })
 
   describe('at the 24″ and larger tier (ticket 83; responsive.md, bp-desktop)', () => {
