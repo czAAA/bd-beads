@@ -601,4 +601,44 @@ export interface Translations {
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
     paletteColors: string
   }
+  /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One imperative sentence ending in a full stop; keys never appear (they are the key chip). */
+  tooltips: {
+    paint: string
+    fill: string
+    select: string
+    erase: string
+    hand: string
+    setFrame: string
+    removeFrame: string
+    noFrameToRemove: string
+    /** The one reason shared by every control Row progress locks, each naming what it would change. */
+    rowProgressLockedFrame: string
+    rowProgressLockedRotate: string
+    rowProgressLockedRemoveLine: string
+    removeLine: string
+    removeLineDisabled: string
+    clear: string
+    customColor: string
+    customColorFull: string
+    imageColorsDisabled: string
+    nothingToUndo: string
+    nothingToRedo: string
+    copyDisabled: string
+    pasteDisabled: string
+    rotate: string
+    setFrameFirst: string
+    fitToDrawing: string
+    noBeadsToFit: string
+    zoomFit: string
+    canvasColor: string
+    colors: string
+    newProject: string
+    importFile: string
+    importQr: string
+    saveProject: string
+    changeName: string
+    convertImage: string
+    /** "A, B, C." from the item names. */
+    list: (names: readonly string[]) => string
+  }
 }

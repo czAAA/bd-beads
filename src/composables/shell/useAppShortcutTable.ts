@@ -41,7 +41,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
         if (control.preventDefault) event.preventDefault()
         // Claimed from the browser everywhere (Canvas zoom, ADR 0034), but only run when nothing is open.
         if (modals === 'claim' && !noModalOpen()) return
-        control.run(deps, event)
+        control.run?.(deps, event)
       },
     }
   }

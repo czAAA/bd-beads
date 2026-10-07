@@ -250,5 +250,7 @@ export function useSelectionGesture(
     clearSelection,
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the Selection's own controls once this is true). */
     pasteProjectionActive,
+    /** Whether a block is copied, ready for Ctrl/Cmd+V (the Paste control's enabled state). */
+    hasClipboard: () => copiedBlock.value !== undefined,
   }
 }
