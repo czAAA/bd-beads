@@ -5,6 +5,7 @@ import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
+import { touchCapable } from '../../services/touchCapable'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
@@ -128,6 +129,15 @@ function wireAppShell(services: Services) {
   /** The Zoom pill's Row progress toggle: whether the Progress bar shows under 1024px (ticket 296). */
   const showProgressBar = services.devicePreferences.get('progressBar')
   const toggleProgressBar = () => void (showProgressBar.value = !showProgressBar.value)
+
+  /**
+   * The input mode toggle (ticket 325): which pointer draws and which one moves the canvas. It is offered on a touch-capable
+   * device only (ticket 326 narrows that to a device with a pen); elsewhere every pointer draws, as before.
+   */
+  const inputMode = services.devicePreferences.get('inputMode')
+  const toggleInputMode = () => void (inputMode.value = inputMode.value === 'pen' ? 'mouse' : 'pen')
+  const inputModeAvailable = touchCapable()
+  const surfaceInputMode = computed(() => (inputModeAvailable ? inputMode.value : undefined))
 
   /** Where the Zoom pill rests under 1024px (tickets 297, 321). */
   const zoomPillPlacement = services.devicePreferences.get('zoomPillPlacement')
@@ -625,6 +635,10 @@ function wireAppShell(services: Services) {
     showRulers,
     toggleRulers,
     showProgressBar,
+    inputMode,
+    toggleInputMode,
+    inputModeAvailable,
+    surfaceInputMode,
     zoomPillPlacement,
     setZoomPillPlacement,
     toggleProgressBar,

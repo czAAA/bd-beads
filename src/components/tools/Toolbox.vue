@@ -14,6 +14,7 @@ import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Tool } from '../../domain/tool'
+import type { InputMode } from '../../domain/inputMode'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
@@ -32,6 +33,8 @@ const props = defineProps<{
   canRemoveSelectedLine: boolean
   /** Whether the Frame is being set: the Frame tool shows as the active tool. */
   settingFrame?: boolean
+  /** Pen mode or Mouse mode (ticket 325), shown after the Frame tool when the device can use it. */
+  inputMode?: InputMode
 }>()
 
 const emit = defineEmits<{
@@ -47,6 +50,7 @@ const emit = defineEmits<{
   /** "Remove selected row/column" (ticket 123): the Selection names which one, so it takes no payload of its own. */
   'remove-selected-line': []
   /** The Frame row opened with no Frame: start Set Frame. */
+  'toggle-input-mode': []
   'start-frame': []
   'set-frame-size': [columns: number, rows: number]
   'fit-frame': []
@@ -159,6 +163,18 @@ const frameSummary = computed(() => {
           data-testid="tool-frame"
           :tabindex="tabsRoving.tabIndexFor(!!settingFrame)"
           @click="emit('start-frame')"
+        />
+        <!-- The input mode toggle (ticket 325): its face is the current mode, in the accent colour; it sits right after the Frame tool. -->
+        <ToolButton
+          v-if="inputMode"
+          :icon="inputMode === 'pen' ? 'pen-mode' : 'pen-mode-off'"
+          :label="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel"
+          :description="inputMode === 'pen' ? t.inputMode.penHint : t.inputMode.mouseHint"
+          :active="false"
+          :pressed="inputMode === 'pen'"
+          data-testid="input-mode-toggle"
+          :tabindex="-1"
+          @click="emit('toggle-input-mode')"
         />
       </div>
       <div class="toolbox__links toolbox__links--frame">

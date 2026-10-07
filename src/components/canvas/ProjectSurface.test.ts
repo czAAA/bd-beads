@@ -333,6 +333,66 @@ describe('ProjectSurface', () => {
       return { clientX: at.x, clientY: at.y }
     }
 
+    it('moves the canvas with a finger or mouse, and draws with the pen, in Pen mode (ticket 325)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { inputMode: 'pen' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      for (const pointerType of ['touch', 'mouse']) {
+        await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType, pointerId: 1, button: 0, buttons: 1 })
+        await surface.trigger('pointermove', { clientX: 60, clientY: 50, pointerType, pointerId: 1, buttons: 1 })
+        await surface.trigger('pointerup', { pointerType, pointerId: 1 })
+      }
+      expect(wrapper.emitted('pan')).toEqual([[10, 0], [10, 0]])
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+
+      await surface.trigger('pointerdown', { ...centreOf(project, 0, 0), pointerType: 'pen', pointerId: 2, button: 0, buttons: 1 })
+      expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 0]])
+      expect(wrapper.emitted('pan')).toHaveLength(2)
+    })
+
+    it('moves the canvas with the pen, and draws with a finger or mouse, in Mouse mode (ticket 325)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { inputMode: 'mouse' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType: 'pen', pointerId: 1, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { clientX: 50, clientY: 62, pointerType: 'pen', pointerId: 1, buttons: 1 })
+      await surface.trigger('pointerup', { pointerType: 'pen', pointerId: 1 })
+      expect(wrapper.emitted('pan')).toEqual([[0, 12]])
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+
+      for (const pointerType of ['touch', 'mouse']) {
+        await surface.trigger('pointerdown', { ...centreOf(project, 0, 0), pointerType, pointerId: 2, button: 0, buttons: 1 })
+        await surface.trigger('pointerup', { pointerType, pointerId: 2 })
+      }
+      expect(wrapper.emitted('cell-primary-down')).toEqual([[0, 0], [0, 0]])
+    })
+
+    it('does not hover beads for the pointer that moves the canvas (ticket 325)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { inputMode: 'pen' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 1), pointerType: 'mouse', buttons: 0 })
+      expect(wrapper.emitted('cell-hover')).toBeUndefined()
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 2), pointerType: 'pen', buttons: 0 })
+      expect(wrapper.emitted('cell-hover')).toEqual([[0, 2]])
+    })
+
+    it('draws with every pointer when no input mode is given', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      for (const pointerType of ['pen', 'touch', 'mouse']) {
+        await surface.trigger('pointerdown', { ...centreOf(project, 0, 0), pointerType, pointerId: 1, button: 0, buttons: 1 })
+        await surface.trigger('pointerup', { pointerType, pointerId: 1 })
+      }
+      expect(wrapper.emitted('cell-primary-down')).toHaveLength(3)
+      expect(wrapper.emitted('pan')).toBeUndefined()
+    })
+
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
 

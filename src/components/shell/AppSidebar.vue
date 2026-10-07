@@ -38,6 +38,9 @@ const {
   onRequestDeleteAll,
   onStartSetFrame,
   settingFrame,
+  inputMode,
+  inputModeAvailable,
+  toggleInputMode,
   onSetFrameSize,
   onFitFrame,
   onRemoveFrame,
@@ -93,7 +96,9 @@ const {
       :can-copy="!!selection"
       :can-remove-selected-line="canRemoveSelectedLine"
       :setting-frame="settingFrame"
+      :input-mode="inputModeAvailable ? inputMode : undefined"
       @select-tool="onSelectTool"
+      @toggle-input-mode="toggleInputMode"
       @select-color="onSelectColor"
       @select-custom-color="onSelectCustomColor"
       @select-image-color="onSelectImageColor"

@@ -1,6 +1,7 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
 import { DEFAULT_ZOOM_PILL_PLACEMENT, formatPlacement, parsePlacement, type ZoomPillPlacement } from '../domain/zoomPillPlacement'
+import { DEFAULT_INPUT_MODE, type InputMode } from '../domain/inputMode'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 
@@ -52,6 +53,13 @@ export const PREFERENCES = {
       return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
     },
     write: String,
+  }),
+  /** Which pointer draws and which one moves the canvas (ticket 325): Pen mode or Mouse mode. */
+  inputMode: preference<InputMode>({
+    key: 'bd-beads:input-mode',
+    fallback: DEFAULT_INPUT_MODE,
+    parse: (raw) => (raw === 'pen' || raw === 'mouse' ? raw : undefined),
+    write: (mode) => mode,
   }),
   /** The theme pick (ticket 139). Match device is no pick at all, so it is not kept. */
   theme: preference<ThemePick>({

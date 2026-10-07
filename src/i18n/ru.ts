@@ -300,6 +300,12 @@ export const ru: Translations = {
     removeLineShort: 'Удалить линию',
     removeLineName: 'Удалить линию',
   },
+  inputMode: {
+    penLabel: 'Режим пера',
+    mouseLabel: 'Режим мыши',
+    penHint: 'Рисует перо; палец или мышь двигают холст. Нажмите, чтобы перейти в режим мыши.',
+    mouseHint: 'Рисует палец или мышь; перо двигает холст. Нажмите, чтобы перейти в режим пера.',
+  },
   rowProgress: {
     enabledLabel: 'Показывать прогресс по рядам',
     directionButton: 'Повернуть направление рядов',

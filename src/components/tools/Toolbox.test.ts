@@ -35,6 +35,24 @@ function mountToolbox(overrides: Partial<InstanceType<typeof Toolbox>['$props']>
 }
 
 describe('Toolbox', () => {
+  it('shows the input mode toggle right after the Frame tool, only when it has a mode (ticket 325)', async () => {
+    expect(mountToolbox().find('[data-testid="input-mode-toggle"]').exists()).toBe(false)
+
+    const wrapper = mountToolbox({ inputMode: 'pen' })
+    const ids = wrapper.findAll('.tool-buttons button').map((button) => button.attributes('data-testid'))
+    expect(ids.slice(-2)).toEqual(['tool-frame', 'input-mode-toggle'])
+    const toggle = wrapper.get('[data-testid="input-mode-toggle"]')
+    expect(toggle.attributes('aria-label')).toBe(ru.inputMode.penLabel)
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+
+    await toggle.trigger('click')
+    expect(wrapper.emitted('toggle-input-mode')).toHaveLength(1)
+
+    await wrapper.setProps({ inputMode: 'mouse' })
+    expect(wrapper.get('[data-testid="input-mode-toggle"]').attributes('aria-label')).toBe(ru.inputMode.mouseLabel)
+    expect(wrapper.get('[data-testid="input-mode-toggle"]').attributes('aria-pressed')).toBe('false')
+  })
+
   it('renders Tools, Colors and Edit as groups, then Frame as a disclosure row (tickets 75, 144, 174, 233)', () => {
     const wrapper = mountToolbox()
 

@@ -13,13 +13,13 @@ It needs: a Tooltip and accessible name in English and Russian, an entry in CONT
 
 **Blocked by:** 324 (the two icons).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] In Pen mode a pen stroke draws and a finger or mouse drag moves the canvas; one Undo step per stroke is unchanged
-- [ ] In Mouse mode a finger or mouse stroke draws and a pen drag moves the canvas
-- [ ] Pinch-zoom, wheel and Space + drag are unaffected in both modes
-- [ ] The toggle shows the right icon and `aria-pressed`/label state for the current mode, with a Tooltip and EN/RU names
-- [ ] Placed bottom-left of the Dock on phone and after the Frame tool in the Toolbox on desktop and tablet
-- [ ] The chosen mode is restored after reload
-- [ ] CONTEXT.md defines Pen mode and Mouse mode; the Overview tile question is asked of the user
-- [ ] Tests and visual snapshots updated; text-fit and hover checks pass
+- [x] In Pen mode a pen stroke draws and a finger or mouse drag moves the canvas; one Undo step per stroke is unchanged
+- [x] In Mouse mode a finger or mouse stroke draws and a pen drag moves the canvas
+- [x] Pinch-zoom, wheel and Space + drag are unaffected in both modes
+- [x] The toggle shows the right icon and `aria-pressed`/label state for the current mode, with a Tooltip and EN/RU names
+- [x] Placed bottom-left of the Dock on phone and after the Frame tool in the Toolbox on desktop and tablet
+- [x] The chosen mode is restored after reload
+- [ ] CONTEXT.md defines Pen mode and Mouse mode; the Overview tile question is asked of the user (CONTEXT.md done; the question is left for the human)
+- [x] Tests and visual snapshots updated; text-fit and hover checks pass

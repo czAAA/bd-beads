@@ -8,6 +8,9 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 const {
   t,
   settingFrame,
+  inputMode,
+  inputModeAvailable,
+  toggleInputMode,
   projects,
   activeProject,
   framing,
@@ -42,6 +45,8 @@ const {
     :selected-color-id="selectedColorId"
     :open-sheet="openPhoneSheet"
     :setting-frame="settingFrame"
+    :input-mode="inputModeAvailable ? inputMode : undefined"
+    @toggle-input-mode="toggleInputMode"
     @select-sheet="onSelectPhoneSheet"
   />
 </template>

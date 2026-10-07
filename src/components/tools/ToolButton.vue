@@ -20,11 +20,13 @@ withDefaults(
     icon: IconName
     label: string
     active: boolean
+    /** A toggle, not a tab (ticket 325): `aria-pressed` follows this, and the icon takes the accent colour with no underline. */
+    pressed?: boolean
     /** The tool's single-key shortcut, as shown on its badge ("1", "5", "4"). */
     hotkey?: string
     description?: string
   }>(),
-  { hotkey: undefined, description: undefined },
+  { pressed: undefined, hotkey: undefined, description: undefined },
 )
 </script>
 
@@ -40,10 +42,10 @@ withDefaults(
       <button
         type="button"
         class="ui-control tool-button"
-        :class="{ 'tool-button--active': active }"
+        :class="{ 'tool-button--active': active, 'tool-button--toggle': pressed !== undefined }"
         :aria-label="label"
         :aria-keyshortcuts="hotkey"
-        :aria-pressed="active"
+        :aria-pressed="pressed ?? active"
         :aria-describedby="describedby"
         v-bind="$attrs"
       >
@@ -97,6 +99,11 @@ withDefaults(
 }
 
 .tool-button--active {
+  color: var(--accent-strong);
+}
+
+/* A toggle shows its current face in the accent colour and has no tab underline. */
+.tool-button--toggle {
   color: var(--accent-strong);
 }
 

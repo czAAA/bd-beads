@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
+import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { mayPlace } from '../../domain/margin'
 import { changedPositions, type Project } from '../../domain/project'
@@ -48,6 +49,8 @@ const props = defineProps<{
   label?: string
   /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held). */
   moving?: boolean
+  /** Which pointer draws and which one moves the canvas (ticket 325); absent, every pointer draws. */
+  inputMode?: InputMode
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
   /** Whether the Frame is being set (Set Frame): a drag draws, moves or resizes it instead of drawing beads, and its handles show. */
@@ -397,9 +400,14 @@ function hoversFor(event: PointerEvent): boolean {
   return event.pointerType !== 'touch'
 }
 
-/** A press that moves the canvas instead of drawing: the Hand tool (or Space), or the middle button on any tool. */
+/** Whether this pointer is the one that moves the canvas in the input mode (ticket 325): Pen mode's finger and mouse, Mouse mode's pen. */
+function movesCanvas(event: PointerEvent): boolean {
+  return props.inputMode !== undefined && !pointerDraws(props.inputMode, event.pointerType)
+}
+
+/** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool, or the pointer the input mode keeps for moving. */
 function startsDrag(event: PointerEvent): boolean {
-  return props.moving === true || event.button === 1
+  return props.moving === true || event.button === 1 || movesCanvas(event)
 }
 
 /** The point of the viewport a pointer is at, in px from its top-left corner. */
@@ -491,8 +499,9 @@ function onPointerMove(event: PointerEvent): void {
     lastPoint = { x: event.clientX, y: event.clientY }
     return
   }
-  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame.
-  if (props.moving || props.settingFrame) {
+  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame, nor the
+  // pointer that only moves the canvas.
+  if (props.moving || props.settingFrame || movesCanvas(event)) {
     overBead.value = false
     overRefusedMargin.value = false
     return

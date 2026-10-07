@@ -91,6 +91,7 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
+  surfaceInputMode,
   settledProject,
   onStartSetFrame,
   onDoneSetFrame,
@@ -237,6 +238,7 @@ function techniqueWord(technique: Technique): string {
               :scroll="scroll"
               :show-rulers="showRulers"
               :moving="activeTool === 'hand'"
+              :input-mode="surfaceInputMode"
               :blocks-margin="activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive"
               :preview-cells="previewCells"
               :preview-color="previewColor"
