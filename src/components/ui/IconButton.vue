@@ -70,7 +70,6 @@ function swallowClick(event: MouseEvent) {
   display: inline-flex;
 }
 
-
 .icon-btn {
   display: inline-flex;
   align-items: center;

@@ -28,8 +28,8 @@ const props = withDefaults(defineProps<TooltipProps>(), {
 
 /** What the bubble's second line says: the reason when disabled, the body otherwise. */
 const detail = computed(() => (props.disabled ? props.disabledBody : props.body))
-const key = computed(() => (props.disabled ? undefined : props.hotkey))
-const rich = computed(() => !!detail.value || !!key.value)
+const shownKey = computed(() => (props.disabled ? undefined : props.hotkey))
+const rich = computed(() => !!detail.value || !!shownKey.value)
 
 /** The bubble's clearance from the screen's edges (ticket 169). */
 const VIEWPORT_MARGIN_PX = 8
@@ -197,7 +197,7 @@ onBeforeUnmount(hide)
         <template v-if="rich">
           <span class="app-tooltip__head">
             <strong class="app-tooltip__name">{{ name }}</strong>
-            <kbd v-if="key" class="app-tooltip__key">{{ key }}</kbd>
+            <kbd v-if="shownKey" class="app-tooltip__key">{{ shownKey }}</kbd>
           </span>
           <span v-if="detail" class="app-tooltip__body" :class="{ 'app-tooltip__body--disabled': disabled }">{{ detail }}</span>
         </template>
