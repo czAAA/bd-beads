@@ -17,7 +17,6 @@ export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
     'components/export/SaveBox.vue|t.saveBox.saveButton',
     'components/project/NewProjectForm.vue|limitsHint',
     'components/shell/AppHeader.vue|summarizeProject(activeProject)',
-    'components/shell/PhoneSheets.vue|t.size.lockedReason',
     'components/tools/ContextBar.vue|t.frame.fitToDrawing',
     'components/tools/ContextBar.vue|t.frame.removeFrame',
     'components/tools/ContextBar.vue|rotateOff',
