@@ -34,6 +34,7 @@ const { t } = useI18n()
     <AppSwatch
       v-for="hex in colors"
       :key="hex"
+      class="image-colors-picker__swatch"
       :color="hex"
       :label="`${t.convertImage.imageColorsLabel} ${hex}`"
       :selected="hex === selectedColor"

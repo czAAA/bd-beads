@@ -15,8 +15,6 @@ const NATIVE = 'native, cannot be clipped'
 export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
   [
     'components/export/SaveBox.vue|t.saveBox.saveButton',
-    'components/palette/ImageColorsPicker.vue|t.convertImage.imageColorsLabel',
-    'components/palette/PalettePicker.vue|t.palette.colorLabel',
     'components/project/FrameControls.vue|t.size.lockedReason',
     'components/project/NewProjectForm.vue|limitsHint',
     'components/shell/AppHeader.vue|summarizeProject(activeProject)',
