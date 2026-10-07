@@ -29,11 +29,8 @@ describe('the iPad 13" tier breakpoint (ticket 167; responsive.md, 1024-1279px)'
     expect(appSource).toContain(`@media (min-width: ${min}px) and (max-width: ${maxExclusive - 1}px)`)
   })
 
-  it('docks the column at column-width-tablet-lg, with 16px page padding and a 12px gap between boxes', () => {
+  it('docks the column at column-width-tablet-lg, with a 12px gap between boxes', () => {
     expect(appSource).toContain('grid-template-columns: var(--column-width-tablet-lg) minmax(0, 1fr);')
-    expect(appSource).toMatch(
-      /@media \(min-width: 1024px\) and \(max-width: 1279px\) \{\s*\.app-shell__body \{[\s\S]{0,120}?padding: var\(--space-16\) var\(--space-16\) var\(--space-16\) var\(--space-6\);/,
-    )
     expect(appSource).toMatch(
       /@media \(min-width: 1024px\) and \(max-width: 1279px\) \{\s*\.app-shell__column \{[\s\S]{0,60}?gap: var\(--space-12\);/,
     )
@@ -57,10 +54,16 @@ describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', ()
     expect(appSource).toContain(`@media (min-width: ${min}px)`)
   })
 
-  it('grows the column to column-width-desktop (360px) and the page padding to 32 / 40', () => {
-    expect(layoutPx('column-width-desktop')).toBe(360)
+  it('leaves one 6px gap around the header, the column and the canvas box at every docked tier (ticket 346)', () => {
+    expect(appSource).toMatch(/\.app-shell__body \{[^}]*padding: var\(--space-6\);/)
+    expect(appSource).not.toMatch(/\.app-shell__body \{[^}]*\bgap:/)
+    expect(appSource).toMatch(/\.app-shell__column \{[^}]*padding-right: var\(--space-6\);/)
+  })
+
+  it('grows the column to column-width-desktop (350px)', () => {
+    expect(layoutPx('column-width-desktop')).toBe(350)
     expect(appSource).toMatch(
-      /@media \(min-width: 1920px\) \{\s*\.app-shell__body \{\s*grid-template-columns: var\(--column-width-desktop\) minmax\(0, 1fr\);\s*padding: var\(--space-32\) 2\.5rem var\(--space-32\) var\(--space-6\);/,
+      /@media \(min-width: 1920px\) \{\s*\.app-shell__body \{\s*grid-template-columns: var\(--column-width-desktop\) minmax\(0, 1fr\);/,
     )
   })
 
@@ -76,7 +79,7 @@ describe('the 24" and larger tier (ticket 83; responsive.md, 1920px and up)', ()
 
   it('leaves the MacBook Air tier (1280-1919px) on the reference column', () => {
     expect(appSource).toContain('grid-template-columns: var(--column-width) minmax(0, 1fr);')
-    expect(layoutPx('column-width')).toBe(366)
+    expect(layoutPx('column-width')).toBe(358)
   })
 })
 

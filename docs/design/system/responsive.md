@@ -27,7 +27,7 @@ Devices (CSS px): iPhone 16e 390×844, iPhone 17 · 17 Pro 402×874, iPhone Air 
 
 Devices (CSS px): iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, iPad mini, landscape 1133×744, iPad 11″, landscape 1180×820.
 
-- The left column is docked again, 300px wide (286px boxes), with 16px page padding (6px on the left, next to the column) and 12px between boxes.
+- The left column is docked again, 292px wide (286px boxes plus a 6px scrollbar gutter), with 6px between the header, the column, the canvas box and the screen edges, and 12px between boxes.
 - Beads needed and Saved Patterns start collapsed; the Toolbox and save box stay open.
 - Header 64px with the Bead pill and Replace bead; Import a file and Import QR code are icon buttons with tooltips. Keyboard shortcuts shows when a keyboard or trackpad is attached. No Dock.
 
@@ -35,14 +35,14 @@ Devices (CSS px): iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, iPad min
 
 Devices (CSS px): iPad Air 13″, landscape 1366×1024, DESIGN.md reference 1440×900, MacBook Air 13″ 1470×956, MacBook Air 15″ 1710×1107.
 
-- The layout DESIGN.md defines, unchanged: 366px column (352px boxes), page padding 24 / 32 (6px on the left, next to the column), header 64px with every item and its label.
+- The layout DESIGN.md defines, unchanged: 358px column (352px boxes plus a 6px scrollbar gutter), 6px between the header, the column, the canvas box and the screen edges, header 64px with every item and its label.
 - This is the reference tier: every other tier is described as a change from it.
 
 ### 24″ and larger · 1920 and up px
 
 Devices (CSS px): 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 2560×1440, 32″ 4K 3840×2160.
 
-- The column grows to 360px (344px boxes); page padding 32 / 40 (6px on the left); header padding 0 40.
+- The column grows to 350px (344px boxes plus the gutter); the same 6px gaps; header padding 0 40.
 - Beads needed shows 5 colour rows and Saved Patterns 10 thumbnails before they need expanding.
 - Type and controls keep their size: the extra space goes to the Pattern, never to bigger chrome.
 - Performance: the drawing surface is largest here; ticket 83 checks it on a Core i3-class laptop.

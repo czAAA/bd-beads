@@ -212,7 +212,7 @@ A map for the implementation tickets (136–168, and 75–83).
 | Icons | Icons v1, 23 icons inline in components | Icons v2 with the bead signature, one `Icon` component | 137 |
 | Logo, favicon | a QR-style bead grid favicon, a generic bead glyph | the X1 mark, theme-aware favicon with `.ico`, PNG and Apple touch fallbacks | 138 |
 | Bead drawing | white background, paper rim, grey dimmed rows | the board, per-theme `ProjectTheme`, light rows fade toward the board | 140 |
-| Layout | Toolbox rail or New Pattern form on the left; panels below the canvas; the page scrolls | one 366px left column of four boxes scrolling on its own; the canvas box fills the rest | 141 |
+| Layout | Toolbox rail or New Pattern form on the left; panels below the canvas; the page scrolls | one 358px left column of four boxes scrolling on its own; the canvas box fills the rest | 141 |
 | Header | ticket 02 header | brand, currently editing, Bead pill, Replace bead, imports, New Pattern, EN / RU, theme, shortcuts | 142 |
 | Canvas box | zoom cluster in the panel's corner | strip with zoom, board, background word and curve | 143 |
 | Row progress | toggles in the Toolbox; bar placed by Pattern shape, hidden while off | one Progress bar along the canvas box's bottom, always shown | 144 |
