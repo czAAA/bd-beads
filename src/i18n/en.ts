@@ -534,7 +534,7 @@ export const en: Translations = {
     paint: 'Right-click erases.',
     fill: 'Right-click erases the area.',
     select: 'Then copy and paste, or remove.',
-    erase: 'Delete empties the Selection.',
+    erase: 'Delete empties what is selected.',
     hand: 'Drag to move around the canvas.',
     setFrame: 'Drag to mark which beads are the Pattern.',
     removeFrame: 'Remove the Frame. Beads stay where they are.',
