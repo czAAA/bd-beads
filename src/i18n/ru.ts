@@ -529,8 +529,8 @@ export const ru: Translations = {
   shortcutsHelp: {
     title: 'Горячие клавиши',
     closeButton: 'Закрыть',
-    eraseOrClearSelection: 'Инструмент «Ластик» или очистить выделение',
-    escapeSelectsPaint: 'Вернуться к инструменту «Кисть»',
+    emptySelection: 'Очистить выделение',
+    backOut: 'Выйти из режима',
     panCanvas: 'Двигать холст',
     canvasGroup: 'Холст',
     zoomCanvas: 'Менять масштаб холста',

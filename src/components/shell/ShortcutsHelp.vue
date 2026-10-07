@@ -3,16 +3,13 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
-import { FRAME_HOTKEY, TOOL_HOTKEYS } from '../tools/toolIcons'
+import { CONTROLS, CONTROL_GROUPS, POINTER_HELP, chordParts, type ControlGroup } from '../../composables/shell/controlRegistry'
 
 /**
- * The `?` shortcuts help overlay (ticket 96): every keyboard shortcut from tickets 87, 88, 90, 91, 92, 94, 95, grouped
- * under the same Tool group names the Toolbox itself uses (CONTEXT.md's Tool group entry) -- Del (ticket 90) and
- * Space+drag (ticket 95) are canvas-wide rather than tied to a single button, and are grouped under Tools as the
- * closest fit; Paste (ticket 92) has no Toolbox button of its own, and sits under Edit next to Copy. Mirror's own
- * shortcuts (ticket 93) left with its UI in ticket 174. Key labels (digits, letters, "Ctrl/Cmd+C") are locale-neutral
- * and written out directly here rather than translated, matching the shortcut hints already appended to Toolbox
- * tooltips.
+ * The `?` shortcuts help overlay (ticket 96), generated from the control registry (ADR 0035, ticket 329): every
+ * action with a key, grouped under the same Tool group names the Toolbox itself uses (CONTEXT.md's Tool group entry),
+ * plus the two pointer gestures that have no key (Space+drag, Ctrl/Cmd+wheel). Key labels (digits, letters,
+ * "Ctrl/Cmd+C") are locale-neutral and written out directly rather than translated.
  *
  * The Modal template (ticket 151; ShortcutsHelp card): two columns of groups in the Toolbox's order, each a `label`
  * heading, each row the action and its keys as Kbd chips.
@@ -23,54 +20,42 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const groups = computed(() => [
-  {
-    title: t.value.toolbox.groups.tools,
-    shortcuts: [
-      { keys: '1', label: t.value.tools.paintLabel },
-      { keys: '2', label: t.value.tools.fillLabel },
-      { keys: '3', label: t.value.tools.selectLabel },
-      { keys: TOOL_HOTKEYS.erase!, label: t.value.tools.eraseLabel },
-      { keys: 'Del', label: t.value.shortcutsHelp.eraseOrClearSelection },
-      { keys: 'Esc', label: t.value.shortcutsHelp.escapeSelectsPaint },
-    ],
-  },
-  {
-    title: t.value.shortcutsHelp.canvasGroup,
-    shortcuts: [
-      { keys: TOOL_HOTKEYS.hand!, label: t.value.tools.handLabel },
-      { keys: FRAME_HOTKEY, label: t.value.frame.setFrame },
-      { keys: 'R', label: t.value.canvas.rulersLabel },
-      { keys: 'Space + drag', label: t.value.shortcutsHelp.panCanvas },
-      { keys: 'Ctrl/Cmd + wheel, +, −, 0', label: t.value.shortcutsHelp.zoomCanvas },
-    ],
-  },
-  {
-    title: t.value.toolbox.groups.colors,
-    shortcuts: [{ keys: 'Shift+1…9, Shift+0, Q, W', label: t.value.shortcutsHelp.paletteColors }],
-  },
-  {
-    title: t.value.toolbox.groups.edit,
-    shortcuts: [
-      { keys: 'Ctrl/Cmd+C', label: t.value.tools.copyButton },
-      { keys: 'Ctrl/Cmd+V', label: t.value.tools.pasteLabel },
-      { keys: 'Ctrl/Cmd+S', label: t.value.tools.saveButton },
-    ],
-  },
-  {
-    title: t.value.toolbox.groups.rowProgress,
-    shortcuts: [
-      { keys: 'P', label: t.value.rowProgress.enabledLabel },
-      { keys: 'D', label: t.value.rowProgress.directionButton },
-      { keys: 'Enter, Space', label: t.value.rowProgress.nextButton },
-      { keys: 'Shift+Enter, Shift+Space', label: t.value.rowProgress.previousButton },
-    ],
-  },
-])
+interface HelpRow {
+  id: string
+  label: string
+  /** Alternatives, each a chord of keys. */
+  keys: readonly (readonly string[])[]
+}
 
-/** A shortcut's keys as chips: "Shift+1…9, Shift+0" is two alternatives, each a chord of keys. */
-function chords(keys: string): string[][] {
-  return keys.split(', ').map((chord) => chord.split(/\s*\+\s*/))
+const groupTitles = computed<Record<ControlGroup, string>>(() => ({
+  tools: t.value.toolbox.groups.tools,
+  canvas: t.value.shortcutsHelp.canvasGroup,
+  colors: t.value.toolbox.groups.colors,
+  edit: t.value.toolbox.groups.edit,
+  rowProgress: t.value.toolbox.groups.rowProgress,
+}))
+
+const groups = computed(() =>
+  CONTROL_GROUPS.map((group) => {
+    const rows: HelpRow[] = [
+      ...CONTROLS.filter((control) => control.group === group && control.chords.length > 0).map((control) => ({
+        id: control.id,
+        label: (control.help?.name ?? control.name)(t.value),
+        keys: control.help?.keys ?? control.chords.map(chordParts),
+      })),
+      ...POINTER_HELP.filter((row) => row.group === group).map((row) => ({
+        id: row.keys.flat().join('-'),
+        label: row.name(t.value),
+        keys: row.keys,
+      })),
+    ]
+    return { group, title: groupTitles.value[group], shortcuts: rows }
+  }),
+)
+
+/** A row's keys as one phrase for screen readers and for copying. */
+function spoken(keys: HelpRow['keys']): string {
+  return keys.map((chord) => chord.join('+')).join(', ')
 }
 </script>
 
@@ -94,20 +79,20 @@ function chords(keys: string): string[][] {
     </template>
 
     <div class="shortcuts-help__groups">
-      <section v-for="group in groups" :key="group.title" class="shortcuts-help__group" data-testid="shortcuts-help-group">
+      <section v-for="group in groups" :key="group.group" class="shortcuts-help__group" data-testid="shortcuts-help-group">
         <h3 class="shortcuts-help__group-title">{{ group.title }}</h3>
         <dl class="shortcuts-help__list">
-          <div v-for="shortcut in group.shortcuts" :key="shortcut.keys" class="shortcuts-help__row">
+          <div v-for="shortcut in group.shortcuts" :key="shortcut.id" class="shortcuts-help__row">
             <dt class="shortcuts-help__label">{{ shortcut.label }}</dt>
             <dd class="shortcuts-help__keys">
-              <template v-for="(chord, alternative) in chords(shortcut.keys)" :key="alternative">
+              <template v-for="(chord, alternative) in shortcut.keys" :key="alternative">
                 <span v-if="alternative > 0" class="shortcuts-help__or" aria-hidden="true">,</span>
                 <template v-for="(key, index) in chord" :key="index">
                   <span v-if="index > 0" class="shortcuts-help__plus" aria-hidden="true">+</span>
                   <kbd class="shortcuts-help__kbd" aria-hidden="true">{{ key }}</kbd>
                 </template>
               </template>
-              <span class="shortcuts-help__spoken">{{ shortcut.keys }}</span>
+              <span class="shortcuts-help__spoken">{{ spoken(shortcut.keys) }}</span>
             </dd>
           </div>
         </dl>

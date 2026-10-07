@@ -590,9 +590,9 @@ export interface Translations {
   shortcutsHelp: {
     title: string
     closeButton: string
-    /** Ticket 90: Del either activates Eraser or clears the active Selection, depending on context. */
-    eraseOrClearSelection: string
-    escapeSelectsPaint: string
+    /** Del empties the Selection's beads (ticket 329); Escape is the one Back out action. */
+    emptySelection: string
+    backOut: string
     /** Ticket 95: Space+drag. */
     panCanvas: string
     /** The Canvas group (v16): its title and the zoom shortcut. */

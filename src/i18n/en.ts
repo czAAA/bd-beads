@@ -523,8 +523,8 @@ export const en: Translations = {
   shortcutsHelp: {
     title: 'Keyboard shortcuts',
     closeButton: 'Close',
-    eraseOrClearSelection: 'Eraser tool, or clear the Selection',
-    escapeSelectsPaint: 'Back to the Paint tool',
+    emptySelection: 'Empty the Selection',
+    backOut: 'Back out',
     panCanvas: 'Move the canvas',
     canvasGroup: 'Canvas',
     zoomCanvas: 'Zoom the canvas',
