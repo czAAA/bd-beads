@@ -39,8 +39,16 @@ The beads inside a Project's Frame: what the PNG, PDF and QR exports contain, wh
 _Avoid_: for the whole saved canvas, which is a Project
 
 **Open canvas**:
-What a Project is drawn on: an endless field of bead positions with no board and no fixed size (see [ADR 0026](docs/adr/0026-open-canvas-and-frame.md)). Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
-_Avoid_: board, grid, infinite grid, sheet
+What a Project is drawn on: an endless field of bead positions with no board and no fixed size (see [ADR 0026](docs/adr/0026-open-canvas-and-frame.md)), laid out on the Technique's Grid. Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
+_Avoid_: board, infinite grid, sheet
+
+**Grid**:
+The endless arrangement of positions on the Open canvas set by the Technique: loom rows stack, peyote rows nest, brick stitch rows are offset by half a bead with a seam between them. It has no edge and no size; the Frame, not the Grid, gives a Pattern its size.
+_Avoid_: board, for the beads themselves or for the Pattern
+
+**Position marks**:
+How the Grid's empty positions outside the Frame and its keep-out margin are drawn on the Open canvas, in the style chosen as a preference on the device from the Canvas color popover: **Dots** (a dot at each position, the default) or **Squares** (an outline in the gap round each position with its inside left clear, shaped like the Technique's bead). Inside the Frame an empty position is an empty bead instead; the keep-out margin has none. Never in exports.
+_Avoid_: grid dots, background dots
 
 **Piece**:
 A set of beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and erased. Each Piece belongs to exactly one Piece area.
@@ -55,7 +63,7 @@ The one rectangle per Open canvas, on whole beads, that marks which beads are th
 _Avoid_: border, crop, artboard, page, grid size
 
 **Keep-out margin**:
-The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), drawn flat: a gap in the grid dots, with a dashed outline that shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused; the pointer shows not-allowed there. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message that counts the Pieces moved and one Undo step. Removing the Frame removes the margin. Projects saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
+The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), drawn flat: a gap in the Position marks, with a dashed outline that shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused; the pointer shows not-allowed there. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message that counts the Pieces moved and one Undo step. Removing the Frame removes the margin. Projects saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
 
 **Set Frame**:
 The mode (6, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead; disabled while the canvas has no beads) and Remove Frame, and Width/Height steppers once set.
@@ -98,7 +106,7 @@ Everything the rulers are for one view of the open canvas, worked out once from 
 _Avoid_: ruler view, ruler geometry
 
 **Canvas color**:
-The background of the drawing area, picked by the person from the Canvas color button in the canvas strip: five in light, six in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. High contrast has one white canvas and no button.
+The background of the drawing area, picked by the person from the Canvas color button in the canvas strip: five in light, six in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. The same popover holds the Position marks toggle (Dots | Squares). High contrast has one white canvas, so its button opens the toggle alone, with no swatches.
 _Avoid_: board color, background theme
 
 **Project library**:
