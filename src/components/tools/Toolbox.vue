@@ -229,9 +229,9 @@ const frameSummary = computed(() => {
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton icon="undo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
-        <IconButton icon="redo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
-        <IconButton
+        <IconButton tooltip icon="undo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Z" :label="t.palette.undoButton" data-testid="undo-button" data-tour="undo" :disabled="!canUndo" @click="emit('undo')" />
+        <IconButton tooltip icon="redo" variant="toolbox" size="lg" :icon-size="17" shortcut="Ctrl/Cmd+Shift+Z" :label="t.palette.redoButton" data-testid="redo-button" :disabled="!canRedo" @click="emit('redo')" />
+        <IconButton tooltip
           icon="rotate"
           variant="toolbox"
           size="lg"
@@ -241,7 +241,7 @@ const frameSummary = computed(() => {
           data-testid="rotate-button"
           @click="emit('rotate')"
         />
-        <IconButton
+        <IconButton tooltip
           icon="copy"
           variant="toolbox"
           size="lg"

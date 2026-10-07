@@ -80,7 +80,7 @@ const directionLabel = computed(() =>
       >
         <span class="progress-bar__fill" :style="{ width: `${finishedShare * 100}%` }" />
       </div>
-      <IconButton
+      <IconButton tooltip
         icon="turn-row-direction"
         variant="box"
         :label="t.rowProgress.directionButton"
@@ -100,7 +100,7 @@ const directionLabel = computed(() =>
       >
         {{ t.rowProgress.previousButton }}
       </AppButton>
-      <IconButton
+      <IconButton tooltip
         class="progress-bar__phone-only"
         variant="box"
         icon="chevron-left"
@@ -122,7 +122,7 @@ const directionLabel = computed(() =>
       >
         {{ t.rowProgress.nextButton }}
       </AppButton>
-      <IconButton
+      <IconButton tooltip
         class="progress-bar__phone-only"
         variant="box"
         icon="check"

@@ -112,7 +112,7 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
     <ThemeToggle />
     <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). -->
     <span class="app-header__shortcuts">
-      <IconButton
+      <IconButton tooltip
         icon="keyboard"
         shape="round"
         :label="t.shortcutsHelp.title"

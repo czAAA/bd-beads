@@ -36,7 +36,7 @@ const {
       {{ t.projects.newProjectButton }}
     </AppButton>
     <ProjectImport :decode-image="decodeImage" compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
-    <IconButton icon="menu" :label="t.header.menuButton" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
+    <IconButton tooltip icon="menu" :label="t.header.menuButton" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
   </div>
   <AppDock
     v-else-if="!framing && !!activeProject"
