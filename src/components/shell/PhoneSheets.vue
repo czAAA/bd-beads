@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
-import AppLink from '../ui/AppLink.vue'
 import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
@@ -107,12 +106,12 @@ function toolLabel(tool: Tool): string {
       />
     </div>
     <div class="phone-sheet__links">
-      <AppLink icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" :aria-label="t.tools.removeLineName" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
+      <AppButton variant="link" icon="remove-line" :disabled="!canRemoveSelectedLine" data-testid="sheet-remove-line" :aria-label="t.tools.removeLineName" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
-      </AppLink>
-      <AppLink icon="delete" danger data-testid="sheet-delete-all" :aria-label="t.deleteAll.confirmButton" @click="onRequestDeleteAll(); openPhoneSheet = null">
+      </AppButton>
+      <AppButton variant="link" icon="delete" danger data-testid="sheet-delete-all" :aria-label="t.deleteAll.confirmButton" @click="onRequestDeleteAll(); openPhoneSheet = null">
         {{ t.deleteAll.button }}
-      </AppLink>
+      </AppButton>
     </div>
   </BottomSheet>
 

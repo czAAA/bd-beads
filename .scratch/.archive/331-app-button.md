@@ -6,8 +6,8 @@
 
 **Blocked by:** 327, 329
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] `AppButton` supports a leading icon, a label, `variant="link"` and an optional Tooltip
-- [ ] It takes a registry action or explicit props; disabled uses `aria-disabled` and shows `disabledBody`
-- [ ] `AppLink` is removed after the migrations (knip clean)
+- [x] `AppButton` supports a leading icon, a label, `variant="link"` and an optional Tooltip
+- [x] It takes a registry action or explicit props; disabled uses `aria-disabled` and shows `disabledBody`
+- [x] `AppLink` is removed after the migrations (knip clean)

@@ -76,7 +76,7 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(removeLine.attributes('title')).toBe(en.tools.removeLineButton)
     const deleteAll = wrapper.find('[data-testid="delete-all-button"]')
     expect(deleteAll.text()).toBe(en.deleteAll.button)
-    expect(deleteAll.classes()).toContain('app-link--danger')
+    expect(deleteAll.classes()).toContain('app-button--danger-link')
   })
 
   it('gives the three always-open groups a label and makes Frame a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {

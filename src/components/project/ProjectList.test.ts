@@ -174,7 +174,7 @@ describe('ProjectList exports (ticket 118)', () => {
   it('has no Project to export while none is open, even with some saved', async () => {
     const wrapper = await mountExpanded({ projects: [named('Fox')] })
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-project"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-project"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('asks for the whole library to be exported', async () => {

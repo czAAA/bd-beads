@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import AppLink from '../ui/AppLink.vue'
+import AppButton from '../ui/AppButton.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -178,7 +178,7 @@ const frameSummary = computed(() => {
         />
       </div>
       <div class="toolbox__links toolbox__links--frame">
-        <AppLink
+        <AppButton variant="link"
           icon="close"
           data-testid="tool-remove-frame"
           :disabled="!project.frame || project.rowProgress.enabled"
@@ -186,10 +186,10 @@ const frameSummary = computed(() => {
           @click="emit('remove-frame')"
         >
           {{ t.frame.removeFrame }}
-        </AppLink>
+        </AppButton>
       </div>
       <div class="toolbox__links">
-        <AppLink
+        <AppButton variant="link"
           icon="remove-line"
           data-testid="tool-remove-line"
           data-tour="remove-line"
@@ -199,10 +199,10 @@ const frameSummary = computed(() => {
           @click="emit('remove-selected-line')"
         >
           {{ t.tools.removeLineShort }}
-        </AppLink>
-        <AppLink icon="delete" danger data-testid="delete-all-button" :title="t.deleteAll.confirmButton" :aria-label="t.deleteAll.confirmButton" @click="emit('delete-all')">
+        </AppButton>
+        <AppButton variant="link" icon="delete" danger data-testid="delete-all-button" :title="t.deleteAll.confirmButton" :aria-label="t.deleteAll.confirmButton" @click="emit('delete-all')">
           {{ t.deleteAll.button }}
-        </AppLink>
+        </AppButton>
       </div>
     </ToolGroup>
 

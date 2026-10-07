@@ -79,8 +79,8 @@ describe('App', () => {
     const wrapper = mount(App)
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').element.disabled,
-    ).toBe(true)
+      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').attributes('aria-disabled'),
+    ).toBe('true')
 
     await createProjectViaForm(wrapper, '15', '30')
 

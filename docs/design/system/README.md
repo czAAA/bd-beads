@@ -122,6 +122,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-07, ticket 331: the Button card's Link is the `link` variant of the one labelled button (`AppButton`, which replaces `AppLink`), with an optional leading icon, an optional Tooltip (only a sentence the label doesn't say) and, from a control-registry action, its label, key and disabled reason. A disabled button is `aria-disabled`, still hoverable, its reason in the Tooltip. No token or CSS change.
 
   - Repo, 2026-10-07, ticket 333: one Swatch for the Palette, the Image colors popover and the Canvas color popover, with a Tooltip ("Color", the hex, the key chip where there is one). The remove × is now on the selected added swatch only: a 10px glyph with no background, inside the swatch's top-right corner, in `ink` or `canvas` by contrast with the swatch's hex, in a 24×24 invisible hit area. PaletteSwatches card follows. No token or CSS value changed.
   - Repo, 2026-10-07, ticket 345: the page's left padding is 6px (`space-6`) at every docked tier, so the Toolbox column sits close to the window edge; the other three sides keep their padding. Updates `responsive.md`. No token change.

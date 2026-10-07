@@ -492,7 +492,7 @@ describe('NewProjectForm size in beads (ticket 100)', () => {
       await state(wrapper, { width, height })
       await wrapper.find('form').trigger('submit')
 
-      expect(createButton(wrapper).element.disabled).toBe(true)
+      expect(createButton(wrapper).attributes('aria-disabled')).toBe('true')
       expect(wrapper.emitted('submit')).toBeUndefined()
     },
   )
@@ -511,7 +511,7 @@ describe('NewProjectForm size in beads (ticket 100)', () => {
     await state(wrapper, { unit: 'cm', width: '2.5', height: '4.5' })
 
     expect(wrapper.find('[data-testid="width-input"]').attributes('step')).toBe('any')
-    expect(createButton(wrapper).element.disabled).toBe(false)
+    expect(createButton(wrapper).attributes('aria-disabled')).toBeUndefined()
   })
 
   describe('has no limit on size (ADR 0019)', () => {
@@ -526,7 +526,7 @@ describe('NewProjectForm size in beads (ticket 100)', () => {
 
       await state(wrapper, { width, height })
 
-      expect(createButton(wrapper).element.disabled).toBe(false)
+      expect(createButton(wrapper).attributes('aria-disabled')).toBeUndefined()
       expect(convertInput(wrapper).element.disabled).toBe(false)
       expect(wrapper.find(messageTestId).exists()).toBe(false)
     })
@@ -546,7 +546,7 @@ describe('NewProjectForm size in beads (ticket 100)', () => {
       for (const bead of BEAD_CATALOG) {
         for (const technique of ['loom', 'peyote', 'brick']) {
           await state(wrapper, { unit: 'cm', bead: bead.id, technique, width: '60', height: '60' })
-          expect(createButton(wrapper).element.disabled).toBe(false)
+          expect(createButton(wrapper).attributes('aria-disabled')).toBeUndefined()
           expect(wrapper.find(messageTestId).exists()).toBe(false)
         }
       }
@@ -557,7 +557,7 @@ describe('NewProjectForm size in beads (ticket 100)', () => {
 
       await state(wrapper, { width: '0', height: '250' })
 
-      expect(createButton(wrapper).element.disabled).toBe(true)
+      expect(createButton(wrapper).attributes('aria-disabled')).toBe('true')
     })
   })
 
@@ -731,7 +731,7 @@ describe('NewProjectForm with the Frame optional (ticket 233)', () => {
 
   it('creates an open canvas with no size at all', async () => {
     const wrapper = mount(NewProjectForm)
-    expect(createButton(wrapper).element.disabled).toBe(false)
+    expect(createButton(wrapper).attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.find('form').trigger('submit')
 
@@ -744,7 +744,7 @@ describe('NewProjectForm with the Frame optional (ticket 233)', () => {
     const wrapper = mount(NewProjectForm)
 
     await wrapper.find('[data-testid="width-input"]').setValue('10')
-    expect(createButton(wrapper).element.disabled).toBe(true)
+    expect(createButton(wrapper).attributes('aria-disabled')).toBe('true')
     expect(wrapper.find('[data-testid="height-error"]').text()).toBe(en.form.enterHeight)
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')).toBeUndefined()
@@ -752,7 +752,7 @@ describe('NewProjectForm with the Frame optional (ticket 233)', () => {
     await wrapper.find('[data-testid="width-input"]').setValue('')
     await wrapper.find('[data-testid="height-input"]').setValue('8')
     expect(wrapper.find('[data-testid="width-error"]').text()).toBe(en.form.enterWidth)
-    expect(createButton(wrapper).element.disabled).toBe(true)
+    expect(createButton(wrapper).attributes('aria-disabled')).toBe('true')
   })
 
   it('keeps Convert image waiting for a size, saying a picture needs one', async () => {
