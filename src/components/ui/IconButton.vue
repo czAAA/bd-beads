@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
-import type { Translations } from '../../i18n/translations'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
+import { actionKey, type ControlActionLike } from './controlAction'
 import type { IconName, IconSize } from './icons'
 
 /**
@@ -23,22 +23,12 @@ import type { IconName, IconSize } from './icons'
  */
 defineOptions({ inheritAttrs: false })
 
-/** What an `action` is to this button: the control registry's `ControlAction`, seen structurally (ADR 0024: `ui/`
- * imports from no feature folder). `deps` is whatever the action's `enabled` and `disabledBody` read. */
-interface IconButtonAction {
-  icon?: IconName
-  name: (t: Translations) => string
-  body?: (t: Translations) => string
-  chords: readonly { mod?: boolean; ctrl?: boolean; shift?: boolean | 'any'; label: string }[]
-  enabled?: (deps: never) => boolean
-  disabledBody?: (t: Translations, deps: never) => string
-}
 const props = withDefaults(
   defineProps<{
     icon?: IconName
     label?: string
     /** A registry action: the source of the name, body, key, enabled state and disabled reason. */
-    action?: IconButtonAction
+    action?: ControlActionLike
     deps?: unknown
     shape?: 'square' | 'round'
     variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool'
@@ -83,12 +73,7 @@ const isDisabled = computed(() => props.disabled ?? (props.action?.enabled ? !pr
 const reason = computed(
   () => props.disabledBody ?? (props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),
 )
-const key = computed(() => {
-  if (props.shortcut ?? props.hotkey) return props.shortcut ?? props.hotkey
-  const chord = props.action?.chords[0]
-  if (!chord) return undefined
-  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean).join('+')
-})
+const key = computed(() => props.shortcut ?? props.hotkey ?? actionKey(props.action))
 const body = computed(() => {
   if (typeof props.tooltip === 'object' && props.tooltip.body !== undefined) return props.tooltip.body
   return props.action?.body?.(t.value)

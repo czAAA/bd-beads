@@ -86,10 +86,10 @@ describe('Toolbox', () => {
 
   it('disables "remove selected row/column" unless canRemoveSelectedLine is true, and emits when clicked (ticket 123)', async () => {
     const wrapper = mountToolbox()
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').element.disabled).toBe(true)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').attributes('aria-disabled')).toBe('true')
 
     await wrapper.setProps({ canRemoveSelectedLine: true })
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').element.disabled).toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]').attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.find('[data-testid="tool-remove-line"]').trigger('click')
     expect(wrapper.emitted('remove-selected-line')).toHaveLength(1)
@@ -489,20 +489,20 @@ describe('Toolbox Frame row (ticket 233)', () => {
     expect(wrapper.get('[data-testid="tool-paint"]').attributes('tabindex')).toBe('-1')
 
     await wrapper.setProps({ project: withFrame(makeProject(), undefined) })
-    expect(wrapper.get('[data-testid="tool-remove-frame"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="tool-remove-frame"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('keeps Remove Frame under the tiles, enabled only while there is a Frame (ticket 274)', async () => {
     const wrapper = mountToolbox({ project: withFrame(makeProject(), undefined) })
     const remove = () => wrapper.get<HTMLButtonElement>('[data-testid="tool-remove-frame"]')
-    expect(remove().element.disabled).toBe(true)
+    expect(remove().attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="tool-group-tools"]').element.contains(remove().element)).toBe(true)
 
     await wrapper.setProps({ project: makeProject() })
-    expect(remove().element.disabled).toBe(false)
+    expect(remove().attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.setProps({ project: setRowProgressEnabled(makeProject(), true) })
-    expect(remove().element.disabled).toBe(true)
+    expect(remove().attributes('aria-disabled')).toBe('true')
   })
 
   it('locks the size while Row progress is on, and writes why', async () => {
@@ -511,7 +511,8 @@ describe('Toolbox Frame row (ticket 233)', () => {
     await frameRow(wrapper).find('button').trigger('click')
 
     for (const id of ['frame-columns-increase', 'frame-rows-decrease', 'frame-fit', 'frame-remove']) {
-      expect(frameRow(wrapper).find(`[data-testid="${id}"]`).attributes('disabled')).toBeDefined()
+      const control = frameRow(wrapper).find(`[data-testid="${id}"]`)
+      expect(control.attributes('disabled') !== undefined || control.attributes('aria-disabled') === 'true').toBe(true)
     }
     expect(frameRow(wrapper).find('[data-testid="frame-locked"]').text()).toBe(ru.size.lockedReason)
   })

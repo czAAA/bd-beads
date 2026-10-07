@@ -4,7 +4,6 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
-import AppLink from './AppLink.vue'
 import AppSelect from './AppSelect.vue'
 import AppTooltip from './AppTooltip.vue'
 import ExpandButton from './ExpandButton.vue'
@@ -13,7 +12,7 @@ import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegis
 import type { TooltipProps } from './tooltipProps'
 
 describe('AppButton', () => {
-  it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger'] as const)('draws the %s variant', (variant) => {
+  it.each(['primary', 'secondary', 'in-box', 'toolbox', 'text', 'danger', 'link'] as const)('draws the %s variant', (variant) => {
     const button = mount(AppButton, { props: { variant }, slots: { default: 'Save Project' } }).get('button')
     expect(button.classes()).toContain(`app-button--${variant}`)
     expect(button.classes()).toContain('ui-control')
@@ -33,20 +32,57 @@ describe('AppButton', () => {
 
   it('has the three heights of the Button card', () => {
     for (const size of ['md', 'lg', 'sm'] as const) {
-      expect(mount(AppButton, { props: { size } }).classes()).toContain(`app-button--${size}`)
+      expect(mount(AppButton, { props: { size } }).get('button').classes()).toContain(`app-button--${size}`)
     }
   })
 
   it('announces a selected segment with aria-pressed, and says nothing when it is not a toggle', () => {
-    expect(mount(AppButton, { props: { selected: true } }).attributes('aria-pressed')).toBe('true')
-    expect(mount(AppButton, { props: { selected: false } }).attributes('aria-pressed')).toBe('false')
-    expect(mount(AppButton).attributes('aria-pressed')).toBeUndefined()
+    expect(mount(AppButton, { props: { selected: true } }).get('button').attributes('aria-pressed')).toBe('true')
+    expect(mount(AppButton, { props: { selected: false } }).get('button').attributes('aria-pressed')).toBe('false')
+    expect(mount(AppButton).get('button').attributes('aria-pressed')).toBeUndefined()
   })
 
-  it('does nothing while disabled', async () => {
-    const wrapper = mount(AppButton, { props: { disabled: true }, attrs: { onClick: () => {} } })
-    await wrapper.trigger('click')
-    expect(wrapper.attributes('disabled')).toBeDefined()
+  it('is aria-disabled, stays focusable, ignores a click and says why in its Tooltip', async () => {
+    const onClick = vi.fn()
+    const wrapper = mount(AppButton, {
+      attachTo: document.body,
+      props: { disabled: true, label: 'Remove Frame', disabledBody: 'There is no Frame to remove.' },
+      attrs: { onClick },
+      slots: { default: 'Remove Frame' },
+    })
+    const button = wrapper.get('button')
+    expect(button.attributes('aria-disabled')).toBe('true')
+    expect(button.attributes('disabled')).toBeUndefined()
+    await button.trigger('click')
+    expect(onClick).not.toHaveBeenCalled()
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('There is no Frame to remove.')
+  })
+
+  it('shows no Tooltip unless it is given one, and none when disabled without a reason', () => {
+    expect(mount(AppButton, { slots: { default: 'New Project' } }).find('.app-tooltip').exists()).toBe(false)
+    expect(mount(AppButton, { props: { disabled: true, tooltip: 'Start an empty canvas.' } }).find('.app-tooltip').exists()).toBe(false)
+  })
+
+  it('shows a sentence that adds to the label as its Tooltip', async () => {
+    const wrapper = mount(AppButton, { attachTo: document.body, props: { tooltip: 'Start an empty canvas.' }, slots: { default: 'New Project' } })
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('[role="tooltip"]').text()).toBe('Start an empty canvas.')
+    expect(wrapper.get('button').text()).toBe('New Project')
+  })
+
+  it('draws a link in danger without a box, and takes a registry action for its label and reason', async () => {
+    const link = mount(AppButton, { props: { variant: 'link', icon: 'delete', danger: true }, slots: { default: 'Delete all' } }).get('button')
+    expect(link.classes()).toEqual(expect.arrayContaining(['app-button--link', 'app-button--danger-link']))
+    expect(link.get('svg').attributes('data-icon')).toBe('delete')
+
+    const action = CONTROLS.find((c) => c.id === 'rotate')!
+    const withReason = { ...action, enabled: () => false, disabledBody: () => 'Set a Frame first.' }
+    const wrapper = mount(AppButton, { attachTo: document.body, props: { action: withReason, deps: {} as ControlDeps } })
+    expect(wrapper.get('button').text()).not.toBe('')
+    expect(wrapper.get('button').attributes('aria-disabled')).toBe('true')
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Set a Frame first.')
   })
 })
 
@@ -289,14 +325,6 @@ describe('AppTooltip', () => {
   })
 })
 
-describe('AppLink', () => {
-  it('draws Delete all in danger with its icon', () => {
-    const link = mount(AppLink, { props: { icon: 'delete', danger: true }, slots: { default: 'Delete all' } }).get('button')
-    expect(link.classes()).toContain('app-link--danger')
-    expect(link.get('svg').attributes('data-icon')).toBe('delete')
-  })
-})
-
 describe('AppSelect', () => {
   it('passes its attributes and listeners to the native select and draws its own chevron', async () => {
     let changed = ''
@@ -328,7 +356,7 @@ describe('ExpandButton', () => {
 })
 
 describe('the controls follow the interaction rules and use only tokens', () => {
-  const files = ['AppButton', 'IconButton', 'AppLink', 'AppSelect', 'ExpandButton', 'AppTooltip']
+  const files = ['AppButton', 'IconButton', 'AppSelect', 'ExpandButton', 'AppTooltip']
   const styleOf = (name: string) => {
     const source = readFileSync(resolve(__dirname, `${name}.vue`), 'utf8')
     return /<style scoped>([\s\S]*)<\/style>/.exec(source)![1].replace(/\/\*[\s\S]*?\*\//g, '')
@@ -356,7 +384,7 @@ describe('the controls follow the interaction rules and use only tokens', () => 
     expect(style).not.toMatch(/:focus(?!-visible)/)
   })
 
-  it.each(files.filter((name) => name !== 'AppTooltip' && name !== 'AppSelect' && name !== 'AppLink'))(
+  it.each(files.filter((name) => name !== 'AppTooltip' && name !== 'AppSelect'))(
     '%s drops the pressed shrink under reduced motion',
     (name) => {
       expect(styleOf(name)).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*transform: none/)

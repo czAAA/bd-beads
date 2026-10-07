@@ -58,14 +58,14 @@ describe('App row progress', () => {
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled,
-    ).toBe(true)
+      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled'),
+    ).toBe('true')
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled,
-    ).toBe(true)
+      wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled'),
+    ).toBe('true')
   })
 
   it('remembers where the weaving got to across a reload', async () => {
@@ -118,8 +118,8 @@ describe('App row progress', () => {
 
       expect(position(wrapper)).toMatch(/\b3\D+3\b/)
       expect(
-        wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled,
-      ).toBe(true)
+        wrapper.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled'),
+      ).toBe('true')
     })
 
     it('returns to the row the weaver was on after flipping the direction and back', async () => {

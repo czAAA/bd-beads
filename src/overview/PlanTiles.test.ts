@@ -42,7 +42,7 @@ describe('PlanTiles', () => {
     for (const id of ['plan-free-account', 'plan-pro']) {
       const tile = wrapper.find(`[data-testid="${id}"]`)
       const button = tile.find('button')
-      expect(button.attributes('disabled')).toBeDefined()
+      expect(button.attributes('aria-disabled')).toBe('true')
       expect(tile.text()).toContain('coming later')
       await button.trigger('click')
     }

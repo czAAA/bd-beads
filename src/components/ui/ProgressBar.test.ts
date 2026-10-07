@@ -41,12 +41,12 @@ describe('ProgressBar', () => {
     const project = makeProject()
 
     const atStart = mount(ProgressBar, { props: { project } })
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(true)
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(false)
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBe('true')
+    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBeUndefined()
 
     const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').element.disabled).toBe(false)
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').element.disabled).toBe(true)
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
+    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('names Row not done and Row done in words and keeps their hotkeys in the tooltip (ticket 94, plus Space/Shift+Space from ticket 178)', () => {

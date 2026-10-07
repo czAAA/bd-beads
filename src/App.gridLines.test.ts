@@ -123,13 +123,13 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   it('is disabled with no Selection, or one that is not a whole row/column', async () => {
     const wrapper = mount(App)
     await createInBeads(wrapper, 4, 4)
-    expect(removeLineButton(wrapper).element.disabled).toBe(true)
+    expect(removeLineButton(wrapper).attributes('aria-disabled')).toBe('true')
 
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0) // a single-cell Selection, not a whole row/column
     await wrapper.find('.app-shell').trigger('mouseup')
 
-    expect(removeLineButton(wrapper).element.disabled).toBe(true)
+    expect(removeLineButton(wrapper).attributes('aria-disabled')).toBe('true')
   })
 
   it('enables once a ruler click selects a whole row or column', async () => {
@@ -138,7 +138,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
 
     await pressRulerNumber(wrapper, 'row', 0)
 
-    expect(removeLineButton(wrapper).element.disabled).toBe(false)
+    expect(removeLineButton(wrapper).attributes('aria-disabled')).toBeUndefined()
   })
 
   it('removes exactly the selected row, from any index, and shifts the rest up, as one undo step', async () => {
@@ -195,7 +195,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     await pressRulerNumber(wrapper, 'row', 0)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
-    expect(removeLineButton(wrapper).element.disabled).toBe(true)
+    expect(removeLineButton(wrapper).attributes('aria-disabled')).toBe('true')
 
     // Even a stray click changes nothing: removeSelectedLine itself refuses under the lock.
     await removeLineButton(wrapper).trigger('click')

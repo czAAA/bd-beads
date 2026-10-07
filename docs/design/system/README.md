@@ -122,6 +122,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-07, ticket 331: the Button card's Link is the `link` variant of the one labelled button (`AppButton`, which replaces `AppLink`), with an optional leading icon, an optional Tooltip (only a sentence the label doesn't say) and, from a control-registry action, its label, key and disabled reason. A disabled button is `aria-disabled`, still hoverable, its reason in the Tooltip. No token or CSS change.
 
   - Repo, 2026-10-07, ticket 345: the page's left padding is 6px (`space-6`) at every docked tier, so the Toolbox column sits close to the window edge; the other three sides keep their padding. Updates `responsive.md`. No token change.
   - Repo, 2026-10-07, ticket 330: the Button card gains the Tool tab variant of the icon button (key badge, 2px underline when selected) and says an icon button shows a Tooltip only when given one, or from a control-registry action. No token or CSS change.
