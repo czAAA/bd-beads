@@ -102,7 +102,7 @@ const topBottomMax = computed(() => maxAxisCount(swapped.value ? projectDimensio
   </p>
   <p class="mirror-controls__line">
     <span class="mirror-controls__line-label">{{ t.mirror.copyModeLabel }}</span>
-    <IconButton
+    <IconButton tooltip
       icon="mirror-copy-mode"
       variant="toolbox"
       :label="t.mirror.copyModeLabel"
@@ -114,7 +114,7 @@ const topBottomMax = computed(() => maxAxisCount(swapped.value ? projectDimensio
   </p>
   <p class="mirror-controls__line">
     <span class="mirror-controls__line-label">{{ t.mirror.mirrorCurrentLabel }}</span>
-    <IconButton
+    <IconButton tooltip
       icon="mirror-horizontal"
       variant="toolbox"
       :label="t.mirror.mirrorCurrentHorizontalButton"
@@ -124,7 +124,7 @@ const topBottomMax = computed(() => maxAxisCount(swapped.value ? projectDimensio
       @mouseenter="emit('mirror-current-hover', 'horizontal')"
       @mouseleave="emit('mirror-current-hover', null)"
     />
-    <IconButton
+    <IconButton tooltip
       icon="mirror-vertical"
       variant="toolbox"
       :label="t.mirror.mirrorCurrentVerticalButton"

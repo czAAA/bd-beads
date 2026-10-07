@@ -69,7 +69,7 @@ function spoken(keys: HelpRow['keys']): string {
     @cancel="emit('close')"
   >
     <template #header>
-      <IconButton
+      <IconButton tooltip
         icon="close"
         shape="round"
         :label="t.shortcutsHelp.closeButton"
