@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots } from 'vue'
+import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
@@ -8,6 +8,9 @@ import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 import { menuTooltipBody } from './menuTooltipBody'
+
+type ButtonVariant = InstanceType<typeof AppButton>['$props']['variant']
+type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
 
 /**
  * The one button that opens something (ticket 332, ADR 0035): an IconButton (`icon-only`) or an AppButton with a
@@ -19,7 +22,8 @@ import { menuTooltipBody } from './menuTooltipBody'
  * moves through it and leaving it closes it). A phone shows the `sheet` slot instead, given a `close` function, and
  * falls back to the popover when there is none (ui/ imports no feature folder, ADR 0024, so the BottomSheet itself is
  * the caller's). Its Tooltip body is `tooltip`, or the `items` names written as "A, B, C." (the Dock slots' "Set
- * Frame, Rotate, Copy, Paste."). Attributes and listeners (data-testid) go to the button itself.
+ * Frame, Rotate, Copy, Paste."). An icon-only button always has a Tooltip (its name, ADR 0035), a labelled one only when
+ * there is a body that adds something. Attributes and listeners (data-testid) go to the button itself.
  */
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
@@ -33,7 +37,7 @@ const props = withDefaults(
     /** The Tooltip's body, in place of the list of `items`. */
     tooltip?: string
     /** The look of the AppButton or the IconButton it wraps. */
-    variant?: string
+    variant?: ButtonVariant | IconVariant
     size?: 'md' | 'lg'
     /** Which edge of the button the popover lines up with. */
     align?: 'start' | 'end'
@@ -41,8 +45,6 @@ const props = withDefaults(
     popover?: boolean
     disabled?: boolean
     disabledBody?: string
-    /** The IconButton's `selected` look, for a Dock slot whose sheet is open. */
-    selected?: boolean
   }>(),
   {
     icon: undefined,
@@ -55,16 +57,14 @@ const props = withDefaults(
     popover: false,
     disabled: undefined,
     disabledBody: undefined,
-    selected: undefined,
   },
 )
-const emit = defineEmits<{ open: []; close: [] }>()
 
 /** Under 1024px a menu opens as a sheet. */
 const narrow = useMediaQuery('(max-width: 1023px)')
 const slots = useSlots()
 /** A sheet is what a phone opens, when the caller gave one: it brings its own Escape layer and outside press. */
-const sheeted = computed(() => narrow.value && !!slots.sheet)
+const showsSheet = computed(() => narrow.value && !!slots.sheet)
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
@@ -73,7 +73,9 @@ const buttonEl = ref<HTMLElement>()
 const listId = useId()
 const anchored = useAnchoredPosition(buttonEl, listEl, () => props.align)
 
-const popup = computed(() => (props.popover ? 'dialog' : 'menu'))
+const iconVariant = computed(() => props.variant as IconVariant)
+const buttonVariant = computed(() => (props.variant ?? 'secondary') as ButtonVariant)
+const popup = computed(() => (props.popover || showsSheet.value ? 'dialog' : 'menu'))
 const tooltipBody = computed(() => props.tooltip ?? (props.items ? menuTooltipBody(props.items) : undefined))
 const tooltipProps = computed(() => (tooltipBody.value === undefined ? true : { body: tooltipBody.value }))
 
@@ -81,8 +83,8 @@ function trigger(): HTMLElement | null {
   return rootEl.value?.querySelector<HTMLElement>('[aria-haspopup]') ?? null
 }
 
-function focusable(): HTMLElement[] {
-  const selector = props.popover ? 'button:not(:disabled)' : '[role="menuitem"]:not(:disabled)'
+function focusTargets(): HTMLElement[] {
+  const selector = props.popover ? 'button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])' : '[role="menuitem"]:not(:disabled)'
   return [...(listEl.value?.querySelectorAll<HTMLElement>(selector) ?? [])]
 }
 
@@ -93,36 +95,38 @@ function onPointerDownOutside(event: PointerEvent) {
 async function show(focus?: 'first' | 'last') {
   if (props.disabled) return
   open.value = true
-  emit('open')
-  document.addEventListener('pointerdown', onPointerDownOutside)
+  // A sheet closes itself on a press outside it; its content may sit outside this button's own element.
+  if (!showsSheet.value) document.addEventListener('pointerdown', onPointerDownOutside)
   await nextTick()
   buttonEl.value = trigger() ?? undefined
   anchored.follow()
-  if (focus) (focus === 'first' ? focusable()[0] : focusable().at(-1))?.focus()
+  if (focus) (focus === 'first' ? focusTargets()[0] : focusTargets().at(-1))?.focus()
 }
 
 function close(returnFocus = true) {
   if (!open.value) return
   open.value = false
-  emit('close')
   document.removeEventListener('pointerdown', onPointerDownOutside)
   anchored.stop()
   if (returnFocus) trigger()?.focus()
 }
 
+/** Crossing 1024px while open swaps the popover for a sheet or back: close rather than keep a stale one. */
+watch(showsSheet, () => close(false))
+
 provide(MENU_CLOSE, () => close())
-useEscapeLayer(() => open.value && !sheeted.value, () => close())
+useEscapeLayer(() => open.value && !showsSheet.value, () => close())
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownOutside))
 
 function onButtonClick(event: MouseEvent) {
   if (props.disabled) return
   if (open.value) close(false)
   // A click from the keyboard (Enter or Space) arrives with no pointer detail: focus goes into the popup then.
-  else void show(event.detail === 0 && !sheeted.value ? 'first' : undefined)
+  else void show(event.detail === 0 && !showsSheet.value ? 'first' : undefined)
 }
 
 function onButtonKeydown(event: KeyboardEvent) {
-  if (sheeted.value || props.disabled) return
+  if (showsSheet.value || props.disabled) return
   if (event.key === 'ArrowDown') {
     event.preventDefault()
     void show('first')
@@ -143,7 +147,7 @@ function onListKeydown(event: KeyboardEvent) {
     close(false)
     return
   }
-  const list = focusable()
+  const list = focusTargets()
   const current = list.indexOf(document.activeElement as HTMLElement)
   const last = list.length - 1
   const next =
@@ -163,7 +167,6 @@ function onListKeydown(event: KeyboardEvent) {
   list[next]?.focus()
 }
 
-defineExpose({ close })
 </script>
 
 <template>
@@ -173,22 +176,21 @@ defineExpose({ close })
       v-bind="$attrs"
       :icon="icon"
       :label="label"
-      :variant="(variant as never)"
+      :variant="iconVariant"
       :size="size"
-      :selected="selected ?? (open || undefined)"
       :disabled="disabled"
       :disabled-body="disabledBody"
       :tooltip="tooltipProps"
-      :aria-haspopup="sheeted || popover ? 'dialog' : 'menu'"
+      :aria-haspopup="popup"
       :aria-expanded="open"
-      :aria-controls="open ? listId : undefined"
+      :aria-controls="open && !showsSheet ? listId : undefined"
       @click="onButtonClick"
       @keydown="onButtonKeydown"
     />
     <AppButton
       v-else
       v-bind="$attrs"
-      :variant="(variant as never) ?? 'secondary'"
+      :variant="buttonVariant"
       :size="size"
       :icon="icon"
       trailing-icon="chevron-down"
@@ -196,16 +198,16 @@ defineExpose({ close })
       :disabled="disabled"
       :disabled-body="disabledBody"
       :tooltip="tooltipBody === undefined ? undefined : { body: tooltipBody }"
-      :aria-haspopup="sheeted || popover ? 'dialog' : 'menu'"
+      :aria-haspopup="popup"
       :aria-expanded="open"
-      :aria-controls="open ? listId : undefined"
+      :aria-controls="open && !showsSheet ? listId : undefined"
       @click="onButtonClick"
       @keydown="onButtonKeydown"
     >
       {{ label }}
     </AppButton>
     <template v-if="open">
-      <slot v-if="sheeted" name="sheet" :close="() => close()" />
+      <slot v-if="showsSheet" name="sheet" :close="() => close()" />
       <div
         v-else
         :id="listId"

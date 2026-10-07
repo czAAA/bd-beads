@@ -114,6 +114,72 @@ describe('MenuButton', () => {
     expect(document.activeElement).toBe(button.element)
   })
 
+  it('moves focus with the arrows, Home and End, and closes on Tab', async () => {
+    const wrapper = mountMenu()
+    await wrapper.find('[aria-haspopup]').trigger('keydown', { key: 'ArrowUp' })
+    const qr = wrapper.find('[data-testid="qr"]').element
+    const pdf = wrapper.find('[data-testid="pdf"]').element
+    expect(document.activeElement).toBe(pdf)
+    key(pdf, 'Home')
+    expect(document.activeElement).toBe(qr)
+    key(qr, 'End')
+    expect(document.activeElement).toBe(pdf)
+    key(pdf, 'ArrowDown')
+    expect(document.activeElement).toBe(qr)
+
+    key(qr, 'Tab')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+  })
+
+  it('reports aria-expanded false again once closed', async () => {
+    const wrapper = mountMenu()
+    const button = wrapper.find('[aria-haspopup]')
+    await button.trigger('click')
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('false')
+    expect(button.attributes('aria-controls')).toBeUndefined()
+  })
+
+  it('shows the footer slot', async () => {
+    const wrapper = mount(MenuButton, { props: { label: 'Export' }, slots: { footer: '<p data-testid="footer">x</p>' }, attachTo: document.body })
+    await wrapper.find('[aria-haspopup]').trigger('click')
+    expect(wrapper.find('[data-testid="footer"]').exists()).toBe(true)
+  })
+
+  it('falls back to a popover under 1024px when it has no sheet', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ [NARROW]: true }).matchMedia)
+    const wrapper = mountMenu()
+    await wrapper.find('[aria-haspopup]').trigger('click')
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it('keeps a sheet open for a press inside it, even one outside its own element', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ [NARROW]: true }).matchMedia)
+    const wrapper = mountMenu({}, vi.fn(), true)
+    const button = wrapper.find('[aria-haspopup]')
+    await button.trigger('click')
+    expect(button.attributes('aria-controls')).toBeUndefined()
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="sheet"]').exists()).toBe(true)
+  })
+
+  it('closes when the viewport crosses 1024px while open', async () => {
+    const media = fakeMatchMedia({ [NARROW]: false })
+    vi.stubGlobal('matchMedia', media.matchMedia)
+    const wrapper = mountMenu({}, vi.fn(), true)
+    const button = wrapper.find('[aria-haspopup]')
+    await button.trigger('click')
+
+    media.set(NARROW, true)
+    await wrapper.vm.$nextTick()
+
+    expect(button.attributes('aria-expanded')).toBe('false')
+  })
+
   it('writes the Tooltip body from the names of what it opens', () => {
     expect(menuTooltipBody(['Set Frame', 'Rotate', 'Copy', 'Paste'])).toBe('Set Frame, Rotate, Copy, Paste.')
   })
