@@ -102,7 +102,7 @@ describe('followDeviceTheme', () => {
 
 describe("index.html's pre-paint script", () => {
   const html = readFileSync(resolve(__dirname, '../../index.html'), 'utf8')
-  const script = /<script>([\s\S]*?)<\/script>/.exec(html)?.[1] ?? ''
+  const script = /<script>([\s\S]*?)<\/script\s*>/i.exec(html)?.[1] ?? ''
 
   function runWith(device: { dark: boolean; moreContrast: boolean }) {
     const original = window.matchMedia
