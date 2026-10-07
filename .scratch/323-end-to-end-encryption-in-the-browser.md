@@ -1,6 +1,6 @@
 # 323: End-to-End Encryption in the Browser
 
-**What to build:** The browser encrypts a Project before it leaves the device, so the backend only ever stores and returns ciphertext and can never read a drawing. The decryption key is a random value carried in the part of the link after `#`, which browsers never send to a server. There is no password-derived key, no recovery key and no key escrow: the link is the key. See ADR 0035.
+**What to build:** The browser encrypts a Project before it leaves the device, so the backend only ever stores and returns ciphertext and can never read a drawing. The decryption key is a random value carried in the part of the link after `#`, which browsers never send to a server. There is no password-derived key, no recovery key and no key escrow: the link is the key. See ADR 0037.
 
 Two halves, built in this order:
 
@@ -13,7 +13,7 @@ Two halves, built in this order:
 
 ## Behaviour
 
-- **Encryption:** AES-256-GCM through the browser's Web Crypto API only, no third-party crypto library. One fresh random key per View link and per synced Project. Everything that describes the Project is encrypted: bead grid, Palette, Project name, maker's name, Frame, Technique. The server sees only an opaque blob ID, the ciphertext size, timestamps and (for sync) the account. The ciphertext size reveals roughly how big a Project is; ADR 0035 accepts that.
+- **Encryption:** AES-256-GCM through the browser's Web Crypto API only, no third-party crypto library. One fresh random key per View link and per synced Project. Everything that describes the Project is encrypted: bead grid, Palette, Project name, maker's name, Frame, Technique. The server sees only an opaque blob ID, the ciphertext size, timestamps and (for sync) the account. The ciphertext size reveals roughly how big a Project is; ADR 0037 accepts that.
 - **View link** is a snapshot: later edits don't change it, and it can never be used to edit or to derive the Project's own key. Free users can't list or revoke one (there is no account to own it), so the link has a size cap and anonymous upload limits against abuse. Ticket 85 keeps the paid, unlimited-size part.
 - **Edit link** (Pro): last write wins for the whole Project. The server rejects a write based on a stale version and the losing device is offered its copy as a new Project. Live co-editing is a future Pro feature, not here.
 - **Stop sharing** (Pro): generates a new key, re-encrypts the Project and invalidates the old Edit link. The popover warns that this person's other devices show the Project as locked until the new link is opened there.
