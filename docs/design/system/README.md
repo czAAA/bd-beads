@@ -122,6 +122,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system ([ADR 0030](../../adr/0030-the-repo-owns-the-design-system.md)); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed):
+  - Repo, 2026-10-07, ticket 326: the input mode toggle shows only once a pen has been seen (a pen pointer event; kept on the device), not on every touch-capable device. Dock and ToolTabs cards follow. No token changed.
   - Repo, 2026-10-07, ticket 325: the input mode toggle (Pen mode / Mouse mode) is placed: after the Frame tab in the Toolbox's tab strip, as a tab-sized toggle with no underline, and as the Dock's first slot on a touch-capable phone, a sixth, `accent`, opening no sheet. Dock and ToolTabs cards follow. No token changed.
   - Repo, 2026-10-07, ticket 324: new `pen-mode` (a tablet with a stylus and three square bead pixels under the nib, 2.4 stroke with square caps) and `pen-mode-off` (the same tablet and stylus crossed by a slash), the faces of the input mode toggle: Pen mode and Mouse mode. Icons group: 55 icons. No token changed.
   - Repo, 2026-10-07, ticket 321: the ZoomPill card rests wherever it is dropped (no corner snap, no glide), 16px inside the canvas box at the nearest, kept as a share of its room so it stays fully visible as the box changes; Alt + an arrow key nudges it 24px. No token change. Updates the ZoomPill card, `responsive.md` and `manifest.json`.

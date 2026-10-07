@@ -66,7 +66,7 @@ The tool (5) that moves the view by dragging and never changes a bead. Space + d
 _Avoid_: pan mode, grab tool
 
 **Pen mode** / **Mouse mode**:
-The input mode: which pointer draws with the current Tool and which one moves the canvas. In Pen mode the pen draws, and a finger or mouse drags the canvas like the Hand tool, so a palm resting on an iPad does not paint. In Mouse mode (the default) a finger or mouse draws and the pen drags the canvas. Told apart by each event's pointer type, not by the Tool; two-finger pinch, the wheel and Space + drag work in both. One toggle picks it (after the Frame tool in the Toolbox, first in the phone Dock), offered on touch-capable devices only, and the choice is kept on the device.
+The input mode: which pointer draws with the current Tool and which one moves the canvas. In Pen mode the pen draws, and a finger or mouse drags the canvas like the Hand tool, so a palm resting on an iPad does not paint. In Mouse mode (the default) a finger or mouse draws and the pen drags the canvas. Told apart by each event's pointer type, not by the Tool; two-finger pinch, the wheel and Space + drag work in both. One toggle picks it (after the Frame tool in the Toolbox, first in the phone Dock), offered only once a pen has been seen (the first pen event of a visit, kept on the device), and that first pen switches to Pen mode unless a mode was chosen before; the choice is kept on the device.
 _Avoid_: stylus mode, touch mode, palm rejection
 
 **Rulers toggle**:

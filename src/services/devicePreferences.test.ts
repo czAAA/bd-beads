@@ -23,7 +23,8 @@ const CASES = [
   { name: 'progressBar', key: 'bd-beads:progress-bar', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'zoomPillPlacement', key: 'bd-beads:zoom-pill', saved: 'top-left', read: { x: 0, y: 0 }, other: { x: 0.25, y: 0.5 }, stored: '0.25,0.5', invalid: 'middle', fallback: { x: 1, y: 1 } },
   { name: 'canvasBackground', key: 'bd-beads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
-  { name: 'inputMode', key: 'bd-beads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: 'mouse' },
+  { name: 'inputMode', key: 'bd-beads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
+  { name: 'penSeen', key: 'bd-beads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },
   { name: 'theme', key: 'bd-beads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
   { name: 'locale', key: 'bd-beads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
 ] as const satisfies readonly { name: PreferenceName; [k: string]: unknown }[]

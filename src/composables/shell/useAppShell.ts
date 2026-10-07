@@ -5,11 +5,11 @@ import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
-import { touchCapable } from '../../services/touchCapable'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
+import { usePenInputMode } from './usePenInputMode'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
@@ -130,14 +130,8 @@ function wireAppShell(services: Services) {
   const showProgressBar = services.devicePreferences.get('progressBar')
   const toggleProgressBar = () => void (showProgressBar.value = !showProgressBar.value)
 
-  /**
-   * The input mode toggle (ticket 325): which pointer draws and which one moves the canvas. It is offered on a touch-capable
-   * device only (ticket 326 narrows that to a device with a pen); elsewhere every pointer draws, as before.
-   */
-  const inputMode = services.devicePreferences.get('inputMode')
-  const toggleInputMode = () => void (inputMode.value = inputMode.value === 'pen' ? 'mouse' : 'pen')
-  const inputModeAvailable = touchCapable()
-  const surfaceInputMode = computed(() => (inputModeAvailable ? inputMode.value : undefined))
+  /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
+  const { inputMode, inputModeAvailable, toggleInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
 
   /** Where the Zoom pill rests under 1024px (tickets 297, 321). */
   const zoomPillPlacement = services.devicePreferences.get('zoomPillPlacement')

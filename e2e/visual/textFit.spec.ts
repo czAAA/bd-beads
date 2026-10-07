@@ -89,6 +89,15 @@ const SCREENS: Screen[] = [
     visit: async (_page, measure) => measure(),
   },
   {
+    // The input mode toggle only shows once a pen has been seen (ticket 326): a pen event reveals it.
+    name: 'pen seen',
+    visit: async (page, measure) => {
+      await page.evaluate(() => window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'pen' })))
+      await settle(page)
+      await measure()
+    },
+  },
+  {
     name: 'selection',
     visit: async (page, measure) => {
       if (!(await reveal(page, 'tool-select'))) return false
