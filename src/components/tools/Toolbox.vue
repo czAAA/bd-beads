@@ -72,6 +72,13 @@ const tools: { id: Tool; action: ReturnType<typeof controlAction>; hotkey?: stri
   action: controlAction(`tool-${id}`),
   hotkey: TOOL_HOTKEYS[id],
 }))
+/** An Edit button's press is the event of the same name. */
+function onEdit(id: 'undo' | 'redo' | 'rotate' | 'copy') {
+  if (id === 'undo') emit('undo')
+  else if (id === 'redo') emit('redo')
+  else if (id === 'rotate') emit('rotate')
+  else emit('copy')
+}
 const setFrameAction = controlAction('set-frame')
 const toolActions = {
   removeFrame: controlAction('remove-frame'),
@@ -225,7 +232,7 @@ const frameSummary = computed(() => {
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton v-for="id in (['undo', 'redo', 'rotate', 'copy'] as const)" :key="id" variant="toolbox" size="lg" :icon-size="17" :action="toolActions[id]" :deps="deps" :data-testid="`${id}-button`" :data-tour="id === 'undo' || id === 'copy' ? id : undefined" @click="emit(id)" />
+        <IconButton v-for="id in (['undo', 'redo', 'rotate', 'copy'] as const)" :key="id" variant="toolbox" size="lg" :icon-size="17" :action="toolActions[id]" :deps="deps" :data-testid="`${id}-button`" :data-tour="id === 'undo' || id === 'copy' ? id : undefined" @click="onEdit(id)" />
       </div>
     </ToolGroup>
 
