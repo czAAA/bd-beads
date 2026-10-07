@@ -58,7 +58,7 @@ _Avoid_: border, crop, artboard, page, grid size
 The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), drawn flat: a gap in the grid dots, with a dashed outline that shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused; the pointer shows not-allowed there. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message that counts the Pieces moved and one Undo step. Removing the Frame removes the margin. Projects saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
 
 **Set Frame**:
-The mode (6, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead) and Remove Frame, and Columns/Rows steppers once set.
+The mode (6, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. Also: Fit to drawing (wraps every bead; disabled while the canvas has no beads) and Remove Frame, and Width/Height steppers once set.
 _Avoid_: crop, resize, set size
 
 **Hand tool**:
@@ -125,7 +125,7 @@ _Avoid_: bead shape
 The weaving method used (loom, peyote, brick stitch, etc.), which determines the grid geometry/offset of a project's cells. A project has exactly one technique and one bead catalog entry for its entire grid.
 _Avoid_: stitch, weave type
 
-**Row progress**: With an Open canvas it works on the Frame's rows only (the finished-row lock covers the Frame only); with no Frame the Progress bar says "Set Frame to start" and offers Set Frame.
+**Row progress**: With an Open canvas it works on the Frame's rows only (the finished-row lock covers the Frame only); with no Frame it cannot be turned on: its switch is disabled, its Tooltip says "Set a Frame first.", and the Progress bar offers Set Frame.
 An overlay toggled on top of the project editor (not a separate mode) that tracks which rows have already been woven: a sequential "current row" pointer, movable backward, with finished rows shown dimmed, the current row distinctly highlighted, and remaining rows in normal colors. While it's on, finished rows are locked: no drawing command (Paint, erase, Fill, Paste, Mirror) changes them, though Undo still restores an earlier grid in full. Clear project is the exception: it clears Row progress along with the grid. The Frame cannot be changed, and Rotate waits, while it is on. Saved together with the project. Every control for it — the switch that turns it on, Row direction, the pointer readout and the buttons that move the pointer — lives in the Progress bar along the canvas box's bottom edge (ticket 144).
 _Avoid_: progress bar (as a name for this overlay/mechanic — it isn't a fill/percentage visualization, which is exactly what "Progress bar" is reserved for instead, see Progress bar), completion state
 
@@ -134,7 +134,7 @@ Which way the weaver's rows run across a Project's grid for Row progress: along 
 _Avoid_: progress orientation, row rotation
 
 **Progress bar**:
-The bar along the canvas box's bottom edge that holds every Row progress control (ticket 144): a Show row progress switch, the "Row 12 · of 30 · top to bottom" readout, a track filled with the finished share, Turn row direction, Row not done (moves the pointer back one) and Row done (marks the row finished and moves on). Always there while a Project is open, whatever its shape, because its switch is how Row progress is turned on; while Row progress is off only the switch and its label show, and the bar keeps its height. Separate from the Row progress marker drawn on the grid (the current-row outline).
+The bar along the canvas box's bottom edge that holds every Row progress control (ticket 144): a Show row progress switch, the "Row 12 · of 30 · top to bottom" readout, a track filled with the finished share, Turn row direction, Row not done (moves the pointer back one) and Row done (marks the row finished and moves on). From 1024px up it is always there while a Project is open, whatever its shape, because its switch is how Row progress is turned on; while Row progress is off only the switch and its label show, and the bar keeps its height. Under 1024px it shows exactly while Row progress is on, and the Zoom pill's Row progress button is the switch. The switch's key is `P`. Separate from the Row progress marker drawn on the grid (the current-row outline).
 _Avoid_: progress control, row control
 
 **Mirror**:
@@ -158,17 +158,21 @@ The Dock's last slot: a modal sheet of app-wide settings and links (language, th
 _Avoid_: More, header menu
 
 **Zoom pill**:
-The movable pill floating over the canvas under 1024px: Rulers, Undo, Redo, the Row progress toggle, zoom out, the zoom level, zoom in, Fit. Dragging it from anywhere on it (past about 6px; a tap still presses the button) moves it anywhere inside the canvas box, and it stays exactly where it is dropped, with no snapping; Alt + an arrow key nudges it a step. It is always fully visible: when the canvas box shrinks or the screen turns it is pulled back inside, and it keeps its relative place when the box grows again. The position is kept on the device. The Progress bar shows only while its toggle is on.
+The movable pill floating over the canvas under 1024px: Rulers, Undo, Redo, the Row progress button, zoom out, the zoom level, zoom in, Fit. Dragging it from anywhere on it (past about 6px; a tap still presses the button) moves it anywhere inside the canvas box, and it stays exactly where it is dropped, with no snapping; Alt + an arrow key nudges it a step. It is always fully visible: when the canvas box shrinks or the screen turns it is pulled back inside, and it keeps its relative place when the box grows again. The position is kept on the device. Its Row progress button is the same action as the Progress bar's switch (`P`), not a separate show/hide: turning it on turns Row progress on and shows the Progress bar, turning it off turns Row progress off and hides the bar. The bar cannot be hidden while Row progress stays on.
 
 **Tool button**:
 A Tools-group tool shown as an icon-only tab (Paint is a pencil), 56px wide, five to a row, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
 _Avoid_: tab, tool tab
 
 **Tooltip**:
-The design system's hover (long-press on touch) help for an icon-only control: a bold name, the shortcut as a key chip and, only where the control needs it, a description line. Replaces the browser's native title on Toolbox buttons. A disabled control shows none. A Tooltip is never clipped (ticket 265): its bubble opens in the browser's top layer, outside every column, sheet and canvas that holds its button, on the side of the button that has room (above near the bottom of the screen, below near the top), inside the screen on all four edges, and wraps at a maximum width (the wide-tooltip measure, 15rem) instead of running in one long strip.
+The design system's hover, keyboard-focus and long-press (on touch) help for a control: a name (always), the shortcut as a key chip (optional) and a description line (optional). Any control may have one, icon-only or labelled: a control shows a Tooltip exactly when one is given to it, with no other condition. It replaces the browser's native title everywhere. A disabled control's Tooltip says why it is disabled. It is not an (i) button that has to be clicked; always-visible help text is a Note. A Tooltip is never clipped (ticket 265): its bubble opens in the browser's top layer, outside every column, sheet and canvas that holds its button, on the side of the button that has room (above near the bottom of the screen, below near the top), inside the screen on all four edges, and wraps at a maximum width (the wide-tooltip measure, 15rem) instead of running in one long strip.
+
+**Note**:
+A thin, always-visible gray block of helper text under a control or panel (for example the Estimated size or the Bead quantities explanation). It replaces every (i) button that had to be clicked to show its text.
+_Avoid_: info tip, (i) popup, hint
 
 **Eraser**:
-The 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press. Its key is `4` (ticket 292; it was `E` from ticket 250), alongside `Del`, which also erases a Selection.
+The 4th Tools-group tool, selectable by clicking its own button alongside Paint, Fill and Select: its primary press/tap erases a single bead under the pointer, dragging to erase a line, the same way right-click erase already worked (ticket 176 — renamed from "Erase" and switched from its original flood-erase primary behavior, so it works on touch/phone without needing a right-click). Behaves like every other drawing command — one undo step per stroke, respects the Row progress lock, and honours Mirror (erasing a cell also erases its mirrored counterpart(s)). Right-click erase is still available under Paint and Fill (single-cell/dragged-line under Paint, flood-erase under Fill) for erasing without switching tools; under Eraser itself, right-click is now redundant with the primary press. Its key is `4` (ticket 292; it was `E` from ticket 250). `Del` never picks the Eraser: it only empties the beads of the Selection.
 _Avoid_: erase mode, clear tool
 
 **Clear**:
@@ -176,11 +180,11 @@ Resets the open Project to how it was when first created at its size: every cell
 _Avoid_: delete all, reset, wipe
 
 **Pattern size**:
-How big a Pattern is: its Frame's columns × rows, counted in beads (a Project with no Frame has no Pattern size yet). A size given in mm/cm is converted to whole beads when the Project is created, and is not remembered. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
-_Avoid_: dimensions, resolution, physical size
+How big a Pattern is: its Frame's width × height, counted in beads (a Project with no Frame has no Pattern size yet). It is set in the Frame section, in beads or mm (the unit is remembered on the device, not in the Project); a size in mm always rounds up to the next whole bead and is not remembered. A stepper press adds or removes one bead in either unit. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
+_Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
-Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Disabled, named "Rotate, Set Frame first", with no Frame.
+Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Its key is `Shift+R`. Disabled with no Frame or while Row progress is on, and its Tooltip says which.
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:
@@ -196,7 +200,7 @@ The grams of beads a Pattern needs, per color and in total, shown in Beads neede
 _Avoid_: real weight, exact weight
 
 **Remove row/column**:
-A Tools-group tool, next to Eraser, that removes the specific row or column the Selection marks out, from any index, shifting the beads after it to close the gap, as one undo step. With a Frame it acts on the Frame and shrinks it by one; with no Frame it acts on the Piece area the line belongs to, which ends one line shorter, with a new empty line outside it. Beads outside the Frame or Piece area stay where they are. Enabled only when the Selection is exactly one whole row or column of the Frame or Piece area (a ruler number selects one; see Selection); refused while Row progress is on, which holds the Frame's rows still.
+A Tools-group tool, next to Eraser, that removes the specific row or column the Selection marks out, from any index, shifting the beads after it to close the gap, as one undo step. With a Frame it acts on the Frame and shrinks it by one; with no Frame it acts on the Piece area the line belongs to, which ends one line shorter, with a new empty line outside it. Beads outside the Frame or Piece area stay where they are. Enabled only when the Selection is exactly one whole row or column of the Frame or Piece area (a ruler number selects one; see Selection); refused while Row progress is on, which holds the Frame's rows still. Its key is `Shift+Del`; plain `Del` only empties the Selection's beads and never changes the Frame's size.
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
