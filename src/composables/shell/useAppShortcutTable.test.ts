@@ -24,6 +24,9 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onCopy: vi.fn(),
     pasteAtPointer: vi.fn(),
     onSave: vi.fn(),
+    onRotate: vi.fn(),
+    canRemoveSelectedLine: () => true,
+    onRemoveSelectedLine: vi.fn(),
     onToggleRowProgress: vi.fn(),
     onToggleRowDirection: vi.fn(),
     onMoveRow: vi.fn(),
@@ -129,15 +132,40 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('Delete clears the selection under Select, else picks the eraser', () => {
+  it('Delete empties the Selection and does nothing without one, never picking the eraser', () => {
     const { deps, wrapper } = mountTable({ activeTool: () => 'select', hasSelection: () => true })
     press({ key: 'Delete' })
-    expect(deps.onDeleteSelection).toHaveBeenCalled()
+    expect(deps.onDeleteSelection).toHaveBeenCalledTimes(1)
+    expect(deps.onRemoveSelectedLine).not.toHaveBeenCalled()
     wrapper.unmount()
     const other = mountTable()
     press({ key: 'Delete' })
-    expect(other.deps.onSelectTool).toHaveBeenCalledWith('erase')
+    expect(other.deps.onDeleteSelection).not.toHaveBeenCalled()
+    expect(other.deps.onSelectTool).not.toHaveBeenCalled()
     other.wrapper.unmount()
+  })
+
+  it('Shift+Delete removes the selected row or column, and only when that applies', () => {
+    const { deps, wrapper } = mountTable({ hasSelection: () => true })
+    press({ key: 'Delete', shiftKey: true })
+    expect(deps.onRemoveSelectedLine).toHaveBeenCalledTimes(1)
+    expect(deps.onDeleteSelection).not.toHaveBeenCalled()
+    wrapper.unmount()
+    const refused = mountTable({ canRemoveSelectedLine: () => false })
+    press({ key: 'Delete', shiftKey: true })
+    expect(refused.deps.onRemoveSelectedLine).not.toHaveBeenCalled()
+    refused.wrapper.unmount()
+  })
+
+  it('Shift+R rotates and plain R still toggles the rulers', () => {
+    const { deps, wrapper } = mountTable()
+    press({ key: 'R', shiftKey: true })
+    expect(deps.onRotate).toHaveBeenCalledTimes(1)
+    expect(deps.onToggleRulers).not.toHaveBeenCalled()
+    press({ key: 'r' })
+    expect(deps.onToggleRulers).toHaveBeenCalledTimes(1)
+    expect(deps.onRotate).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 
   it('Escape collapses an expanded Tool group before backing out of Select', () => {
