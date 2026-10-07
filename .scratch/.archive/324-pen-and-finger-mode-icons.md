@@ -6,10 +6,10 @@ Per CLAUDE.md's Design section, the design system is changed in place in this co
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two icon files (Pen mode, Mouse mode) exist in `docs/design/system/`, matching the stroke, grid and corner rules of the existing icons
-- [ ] They are clearly distinguishable from each other and from the pencil (Paint) and Hand tool icons at the Tool button size
-- [ ] They render correctly in light, dark and high contrast themes using role-named tokens only
-- [ ] The design system README documents both icons and the version changelog has a line for them
-- [ ] If an icon registry or spec sheet in the repo lists the icons, both are added there
+- [x] Two icon files (Pen mode, Mouse mode) exist in `docs/design/system/`, matching the stroke, grid and corner rules of the existing icons
+- [x] They are clearly distinguishable from each other and from the pencil (Paint) and Hand tool icons at the Tool button size
+- [x] They render correctly in light, dark and high contrast themes using role-named tokens only
+- [x] The design system README documents both icons and the version changelog has a line for them
+- [x] If an icon registry or spec sheet in the repo lists the icons, both are added there

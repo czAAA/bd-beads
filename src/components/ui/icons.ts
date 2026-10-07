@@ -40,6 +40,8 @@ export const ICON_NAMES = [
   'paste',
   'pattern',
   'pdf',
+  'pen-mode',
+  'pen-mode-off',
   'plus',
   'qr-code',
   'redo',
