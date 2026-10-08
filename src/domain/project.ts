@@ -24,6 +24,7 @@ import {
 } from './grid'
 import { normalizeMakerName } from './makerName'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
+import { passCount, passOf } from './passes'
 import { gridFromSize, type StatedSize } from './projectSize'
 
 export type { MirrorAxisCounts } from './mirror'
@@ -217,11 +218,11 @@ function clampRow(row: number, rows: number): number {
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
-export function clampPointer(rowProgress: Project['rowProgress'], frame: Frame): Project['rowProgress'] {
+export function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
   return {
     ...rowProgress,
-    currentRow: clampRow(rowProgress.currentRow, frame.rows),
-    currentColumn: clampRow(rowProgress.currentColumn, frame.columns),
+    currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),
+    currentColumn: clampRow(rowProgress.currentColumn, passCount(technique, frame.columns)),
   }
 }
 
@@ -339,6 +340,7 @@ export function normalizeProject(project: Project | GridProject): Project {
       }
     : { beads: project.beads ?? {}, ...(project.frame ? { frame: project.frame } : {}) }
   const frame = projectFrame(placed)
+  const technique = project.technique
 
   return {
     ...rest,
@@ -346,8 +348,8 @@ export function normalizeProject(project: Project | GridProject): Project {
     rowProgress: {
       ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
-      currentRow: clampRow(rowProgress.currentRow, frame.rows),
-      currentColumn: clampRow(rowProgress.currentColumn ?? 0, frame.columns),
+      currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(technique, frame.columns)),
     },
     rotation: normalizeRotation(legacy),
   }
@@ -363,7 +365,7 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
     return project
   }
   const { frame: _previous, ...rest } = project
-  const rowProgress = frame ? clampPointer(project.rowProgress, frame) : project.rowProgress
+  const rowProgress = frame ? clampPointer(project.rowProgress, frame, project.technique) : project.rowProgress
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
 }
 
@@ -383,23 +385,27 @@ export function toggleRowDirection(project: Project): Project {
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many rows the Frame has. */
-export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame'>): { current: number; total: number } {
+export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>): { current: number; total: number } {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   return direction === 'rows'
-    ? { current: currentRow, total: frame?.rows ?? 0 }
-    : { current: currentColumn, total: frame?.columns ?? 0 }
+    ? { current: currentRow, total: passCount(project.technique, frame?.rows ?? 0) }
+    : { current: currentColumn, total: passCount(project.technique, frame?.columns ?? 0) }
 }
 
-/** Whether a bead sits in a row the weaver has already finished: before the pointer, counted the way rows run from the Frame's first. Only while the overlay is on and a Frame is set. */
-export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame'>, { row, column }: GridPosition): boolean {
+/** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote) is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a Frame is set. */
+export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
   const { enabled, direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!enabled || !frame || !frameContains(frame, { row, column })) {
     return false
   }
-  return direction === 'rows' ? row - frame.row < currentRow : column - frame.column < currentColumn
+  const relativeRow = row - frame.row
+  const relativeColumn = column - frame.column
+  return direction === 'rows'
+    ? passOf(project.technique, relativeRow, relativeColumn) < currentRow
+    : passOf(project.technique, relativeColumn, relativeRow) < currentColumn
 }
 
 /** Every position whose color differs between two bead maps; a row both share is passed over unread. */

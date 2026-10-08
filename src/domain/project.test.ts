@@ -1299,3 +1299,40 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(setRowProgressEnabled(base, true).rowProgress.enabled).toBe(true)
   })
 })
+
+describe('peyote passes (ticket 347)', () => {
+  /** 3 columns x 7 rows, the reporter's example. */
+  function peyote(direction: 'rows' | 'columns', pass: number) {
+    const project = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } })
+    const down = direction === 'columns' ? toggleRowDirection(setRowProgressEnabled(project, true)) : setRowProgressEnabled(project, true)
+    return moveToRow(down, pass)
+  }
+
+  /** Which beads of the 3 x 7 Frame are finished with the pointer on `pass`, as "row,column". */
+  function finished(project: ReturnType<typeof peyote>): string[] {
+    const beads: string[] = []
+    for (let row = 0; row < 7; row += 1) {
+      for (let column = 0; column < 3; column += 1) {
+        if (isInFinishedRow(project, { row, column })) beads.push(`${row},${column}`)
+      }
+    }
+    return beads
+  }
+
+  it('counts one pass for the first line and two for each later one', () => {
+    expect(rowProgressPosition(peyote('columns', 0)).total).toBe(5)
+    expect(rowProgressPosition(peyote('rows', 0)).total).toBe(13)
+  })
+
+  it('finishes the first column whole, then every other bead of the next one', () => {
+    expect(finished(peyote('columns', 1))).toHaveLength(7)
+    // Pass 2 weaves column 1's beads on even rows: 4 of them, then pass 3 the 3 on odd rows.
+    expect(finished(peyote('columns', 2)).filter((bead) => bead.endsWith(',1'))).toEqual(['0,1', '2,1', '4,1', '6,1'])
+    expect(finished(peyote('columns', 3)).filter((bead) => bead.endsWith(',1'))).toHaveLength(7)
+  })
+
+  it('does the same along the rows', () => {
+    expect(finished(peyote('rows', 1))).toHaveLength(3)
+    expect(finished(peyote('rows', 2)).filter((bead) => bead.startsWith('1,'))).toEqual(['1,0', '1,2'])
+  })
+})

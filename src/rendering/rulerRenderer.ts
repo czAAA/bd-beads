@@ -1,5 +1,6 @@
 import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
+import { lineOfPass } from '../domain/passes'
 import type { DrawingContext } from './beadLook'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import type { SurfaceView } from './surfaceView'
@@ -59,7 +60,8 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const { enabled, direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const current = enabled && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentRow) || (label.axis === 'column' && direction === 'columns' && relative === currentColumn))
+  const currentLine = lineOfPass(project.technique, direction === 'rows' ? currentRow : currentColumn)
+  const current = enabled && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
   const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
 
   const weight = current || onCursor || label.fifth ? 700 : 400
