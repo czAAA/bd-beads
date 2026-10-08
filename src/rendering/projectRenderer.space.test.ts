@@ -90,9 +90,10 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     const fadedOnItsOwn = render(project, false).beads.filter(({ dimmed }) => dimmed)
     const fadedOpen = render(project, true).beads.filter(({ dimmed }) => dimmed)
 
-    // Rows 0 and 1 of the Frame, three beads each.
-    expect(fadedOnItsOwn).toHaveLength(6)
-    expect(fadedOpen).toHaveLength(6)
+    // Rows 0 and 1 of the Frame, three beads each; on peyote pass 2 has row 0 whole and row 1's beads 0 and 2 finished (ticket 347).
+    const finished = technique === 'peyote' ? 5 : 6
+    expect(fadedOnItsOwn).toHaveLength(finished)
+    expect(fadedOpen).toHaveLength(finished)
     expect(fadedOnItsOwn.every(({ theme }) => theme.background === DEFAULT_THEME.background)).toBe(true)
     expect(fadedOpen.every(({ theme }) => theme.background === DEFAULT_THEME.canvas)).toBe(true)
   })

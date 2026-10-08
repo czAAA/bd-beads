@@ -110,9 +110,9 @@ A good test here says what was drawn or what the maker can do, not how: counts a
 
 ## Acceptance (347: the freeze fix)
 
-- [x] Position marks are one pattern fill on the open canvas; no per-position shapes are drawn
-- [x] Only the Frame's cells and the painted beads in view are visited and drawn
-- [x] The keep-out margin and the Frame are free of marks; empty Frame cells are still empty beads
-- [x] Base layer and overlay redraw at most once per animation frame
-- [x] The renderer and surface tests above pass; the visual tests are unchanged
-- [x] Hand check: zooming out to 20% and 10% with a 150 × 30 Project is smooth on the iPad Air 13" and the desktop PC
+- [ ] Position marks are one pattern fill on the open canvas; no per-position shapes are drawn
+- [ ] Only the Frame's cells and the painted beads in view are visited and drawn
+- [ ] The keep-out margin and the Frame are free of marks; empty Frame cells are still empty beads
+- [ ] Base layer and overlay redraw at most once per animation frame
+- [ ] The renderer and surface tests above pass; the visual tests are unchanged
+- [ ] Hand check: zooming out to 20% and 10% with a 150 × 30 Project is smooth on the iPad Air 13" and the desktop PC

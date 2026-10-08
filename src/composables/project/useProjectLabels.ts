@@ -48,8 +48,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
         .replace('{colors}', colorWords),
     ]
     if (project.rowProgress.enabled) {
-      const position = project.rowProgress.direction === 'rows' ? project.rowProgress.currentRow : project.rowProgress.currentColumn
-      const total = rowProgressPosition(project).total
+      const { current: position, total } = rowProgressPosition(project)
       parts.push(t.a11y.progressDone.replace('{row}', String(position)).replace('{total}', String(total)))
     }
     return parts.join(', ')

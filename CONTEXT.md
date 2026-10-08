@@ -138,6 +138,7 @@ An overlay toggled on top of the project editor (not a separate mode) that track
 _Avoid_: progress bar (as a name for this overlay/mechanic — it isn't a fill/percentage visualization, which is exactly what "Progress bar" is reserved for instead, see Progress bar), completion state
 
 **Pass** (ticket 347): what Row progress's pointer counts. A line is a row or a column of the Frame, whichever way the weaver's rows run. On loom and brick stitch a pass is one whole line. On peyote the first line is one pass, and every later line takes two, each adding every other bead of it: the beads at even positions along the line first (the larger half on an odd line), then the odd ones. A 7-bead line is woven as 7, 4, 3, 4, 3, ... beads; an 8-bead line as 8, 4, 4, 4, .... The current-row marker outlines the pass's beads, finished passes dim and lock only their own beads, and the Progress bar and rulers count passes and lines accordingly. A peyote Project saved before this keeps its pointer number, which now counts passes.
+_Avoid_: half-row, sub-row (a pass is the word; "row" and "line" keep meaning the whole row or column)
 
 **Row direction**:
 Which way the weaver's rows run across a Project's grid for Row progress: along the grid's rows, or down its columns. Each direction keeps its own current-row pointer. Independent of rotating the Project, which only turns the picture on screen: after rotating, the weaver flips Row direction too, but neither ever changes the other.

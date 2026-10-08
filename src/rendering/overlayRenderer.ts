@@ -131,9 +131,9 @@ function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: S
  */
 function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
   const { technique } = project
-  const alongRows = project.rowProgress.direction === 'columns'
-  const pass = alongRows ? project.rowProgress.currentColumn : project.rowProgress.currentRow
-  const lines = alongRows ? space.columns : space.rows
+  const columnWise = project.rowProgress.direction === 'columns'
+  const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
+  const lines = columnWise ? space.columns : space.rows
   if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines)) {
     return
   }
@@ -143,13 +143,13 @@ function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: 
 
   context.fillStyle = theme.marker
   const size = CELL_SIZE_PX + 2
-  const length = alongRows ? space.rows : space.columns
+  const length = columnWise ? space.rows : space.columns
   for (let along = 0; along < length; along += 1) {
     if (parity !== undefined && along % 2 !== parity) {
       continue
     }
-    const row = space.origin.row + (alongRows ? along : line)
-    const column = space.origin.column + (alongRows ? line : along)
+    const row = space.origin.row + (columnWise ? along : line)
+    const column = space.origin.column + (columnWise ? line : along)
     const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX - 1
     const y = rowTopPx(technique, row) - 1
     drawRoundedOutline(context, x, y, size, beadRoundness(technique) * size)
