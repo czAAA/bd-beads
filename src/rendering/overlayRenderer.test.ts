@@ -51,19 +51,27 @@ describe('renderOverlay', () => {
       expect(named('fill').map((call) => [call.fillStyle, call.args[0]])).toEqual([[DEFAULT_THEME.marker, 'evenodd']])
     })
 
-    it('follows a shifted row on peyote and brick stitch, and peyote\'s tighter packing', () => {
-      const peyote = projectOf('peyote', 3, 4, { currentRow: 1 })
+    it('follows a shifted row on brick stitch', () => {
       const brick = projectOf('brick', 3, 4, { currentRow: 1 })
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
-      const topLeft = (project: Project) => {
+      // Row 1 is half a bead across and starts 21px down; the outline 3px out.
+      expect(named('roundRect')[0]!.args.slice(0, 2)).toEqual([7, 18])
+    })
+
+    it('outlines the beads of the pass on peyote, every other one after the first line (ticket 347)', () => {
+      const outlined = (currentRow: number) => {
+        const project = projectOf('peyote', 5, 3, { currentRow })
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('roundRect')[0]!.args.slice(0, 2)
+        return named('roundRect').filter((call) => call.args[2] === 22).map((call) => call.args[0])
       }
 
-      // Row 1 is half a bead across in both; it starts 15px down in peyote and 21px in brick stitch; the outline 3px out.
-      expect(topLeft(peyote)).toEqual([7, 12])
-      expect(topLeft(brick)).toEqual([7, 18])
+      // Row 0 is whole; pass 1 is row 1's beads 0, 2, 4 (half a bead across, 20px apart); pass 2 is its beads 1 and 3.
+      expect(outlined(0)).toEqual([-1, 19, 39, 59, 79])
+      expect(outlined(1)).toEqual([9, 49, 89])
+      expect(outlined(2)).toEqual([29, 69])
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -97,16 +105,20 @@ describe('renderOverlay', () => {
     })
 
     it('outlines each bead whole on peyote, rounded, and following the shifted rows', () => {
-      const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn: 1 })
-      const { context, named } = recordingContext()
+      const outline = (currentColumn: number) => {
+        const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn })
+        const { context, named } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1 })
+        return named('roundRect').filter((call) => call.args[2] === 22)
+      }
 
-      renderOverlay(context, { project, region: whole(project), zoom: 1 })
-
-      const outers = named('roundRect').filter((call) => call.args[2] === 22)
-      // Row 0 at x 20, row 1 (shifted half a bead) at x 30 and 15px down; each a pixel out.
-      expect(outers.map((call) => call.args.slice(0, 2))).toEqual([[19, -1], [29, 14]])
-      expect(outers[0]!.args[4]).toBeCloseTo(4.84)
-      expect(named('fill').every((call) => call.args[0] === 'evenodd')).toBe(true)
+      // Column 1 is woven in two passes (ticket 347): row 0's bead at x 20, then row 1's (shifted half a bead) at x 30
+      // and 15px down; each a pixel out.
+      const first = outline(1)
+      const second = outline(2)
+      expect(first.map((call) => call.args.slice(0, 2))).toEqual([[19, -1]])
+      expect(second.map((call) => call.args.slice(0, 2))).toEqual([[29, 14]])
+      expect(first[0]!.args[4]).toBeCloseTo(4.84)
     })
 
     it('outlines each bead whole on brick stitch, square, a seam apart', () => {
@@ -592,7 +604,7 @@ describe('on its own, in a Project whose first row is odd (regression)', () => {
       return recorded
     })()
 
-    // The first row is row 1 of the Project: shifted half a bead, so it starts at x 10 (7 with the outset) and not at 0.
-    expect(named('roundRect')[0]!.args).toEqual([7, 0, 23, 23, 5])
+    // The first row is row 1 of the Project: shifted half a bead, so its first bead's outline starts at x 10 (9 with the outset) and not at 0.
+    expect(named('roundRect')[0]!.args.slice(0, 2)).toEqual([9, -1])
   })
 })

@@ -61,5 +61,5 @@ export function rotateProject(project: Project): Rotated | undefined {
   const beads = withColors(cleared, [...placed, ...rotated])
 
   // Row progress's pointers stay inside the turned Frame, whose rows and columns have swapped.
-  return { project: { ...project, beads, frame: turned, rowProgress: clampPointer(project.rowProgress, turned), updatedAt: Date.now() }, moved: moving.pieces }
+  return { project: { ...project, beads, frame: turned, rowProgress: clampPointer(project.rowProgress, turned, project.technique), updatedAt: Date.now() }, moved: moving.pieces }
 }

@@ -2,6 +2,7 @@ import { colorAt, type Frame } from '../domain/canvas'
 import { type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
+import { lineOfPass, passCount } from '../domain/passes'
 import type { Selection } from '../domain/selection'
 import { DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
@@ -122,6 +123,37 @@ function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: S
   roundedRect(context, clippedLeft, clippedTop, width, height, ROW_OUTLINE_RADIUS_PX)
   roundedRect(context, clippedLeft + MARKER_PX, clippedTop + MARKER_PX, width - MARKER_PX * 2, height - MARKER_PX * 2, ROW_OUTLINE_RADIUS_PX - MARKER_PX)
   context.fill('evenodd')
+}
+
+/**
+ * The marker for the pass being woven now on peyote (ticket 347): the first pass of a line is the whole line, every
+ * later one is every other bead of it, so the beads are outlined one by one, whichever way the rows run.
+ */
+function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
+  const { technique } = project
+  const alongRows = project.rowProgress.direction === 'columns'
+  const pass = alongRows ? project.rowProgress.currentColumn : project.rowProgress.currentRow
+  const lines = alongRows ? space.columns : space.rows
+  if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines)) {
+    return
+  }
+  const line = lineOfPass(technique, pass)
+  // 0: every bead of the line; later passes take the even positions first, then the odd ones.
+  const parity = pass === 0 ? undefined : (pass - 1) % 2
+
+  context.fillStyle = theme.marker
+  const size = CELL_SIZE_PX + 2
+  const length = alongRows ? space.rows : space.columns
+  for (let along = 0; along < length; along += 1) {
+    if (parity !== undefined && along % 2 !== parity) {
+      continue
+    }
+    const row = space.origin.row + (alongRows ? along : line)
+    const column = space.origin.column + (alongRows ? line : along)
+    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX - 1
+    const y = rowTopPx(technique, row) - 1
+    drawRoundedOutline(context, x, y, size, beadRoundness(technique) * size)
+  }
 }
 
 /**
@@ -505,7 +537,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawPreview(context, project, space, preview, theme)
   }
   if (enabled) {
-    if (direction === 'rows') {
+    if (project.technique === 'peyote') {
+      drawCurrentPass(context, project, space, theme)
+    } else if (direction === 'rows') {
       drawCurrentRow(context, project, space, theme)
     } else {
       drawCurrentColumn(context, project, space, theme)
