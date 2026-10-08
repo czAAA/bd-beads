@@ -110,7 +110,9 @@ function onBlur() {
 }
 
 /** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both layers. */
-const theme = useCanvasBackground().projectTheme
+const canvasBackground = useCanvasBackground()
+const theme = canvasBackground.projectTheme
+const positionMarks = canvasBackground.positionMarks
 
 /** Whether the last pointer was a finger: its Frame handles are the four larger corner ones. */
 const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
@@ -135,7 +137,7 @@ function measure(): void {
 }
 
 /** What the cells were last drawn from, to draw only what an edit changed. */
-let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme } | undefined
+let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string } | undefined
 
 /** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each bead holds. */
 function sameLayout(a: Project, b: Project): boolean {
@@ -257,7 +259,7 @@ function drawCells(): void {
   }
 
   const before = drawn
-  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value }
+  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, positionMarks: positionMarks.value }
   const bands =
     !resized &&
     before &&
@@ -268,16 +270,17 @@ function drawCells(): void {
     before.height === region.height &&
     before.pixelRatio === pixelRatio &&
     before.theme === theme.value &&
+    before.positionMarks === positionMarks.value &&
     sameLayout(before.project, project)
       ? changedBands(before.project, project)
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value })
   }
 }
 
@@ -318,7 +321,7 @@ function drawOverlay(): void {
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([size, () => props.project, () => props.zoom, () => props.scroll, theme], oncePerFrame(drawCells), { flush: 'post' })
+watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks], oncePerFrame(drawCells), { flush: 'post' })
 watch(
   [
     size,

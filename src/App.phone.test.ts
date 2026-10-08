@@ -225,7 +225,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const button = sheet.get('[data-testid="canvas-color-button"]')
     expect(button.attributes('aria-label')).toBe('Canvas color')
     await button.trigger('click')
-    expect(sheet.findAll('[role="radio"]')).toHaveLength(5)
+    expect(sheet.findAll('.canvas-color__swatches [role="radio"]')).toHaveLength(5)
     await sheet.get('[data-testid="canvas-color-sage"]').trigger('click')
 
     expect(localStorage.getItem('bd-beads:canvas-background')).toBe('3')

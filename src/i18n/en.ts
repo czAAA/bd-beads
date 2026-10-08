@@ -106,6 +106,7 @@ export const en: Translations = {
       label: 'Canvas color',
       pickerLabel: 'canvas color',
       swatchLabel: '{name}, {n} of {count}',
+      positionMarks: { label: 'Position marks', dots: 'Dots', squares: 'Squares', dotsBody: 'A dot at each empty position.', squaresBody: 'An outline round each empty position.' },
       names: { studio: 'Studio', linen: 'Linen', sage: 'Sage', mist: 'Mist', blush: 'Blush', night: 'Night', ink: 'Ink', midnight: 'Midnight', olive: 'Olive', umber: 'Umber', ash: 'Ash' },
     },
     hint: {

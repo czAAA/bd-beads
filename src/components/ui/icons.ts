@@ -43,6 +43,8 @@ export const ICON_NAMES = [
   'pen-mode',
   'pen-mode-off',
   'plus',
+  'position-dots',
+  'position-squares',
   'qr-code',
   'redo',
   'remove-line',

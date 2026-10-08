@@ -59,6 +59,7 @@
   --canvas-bg-6: #fafafa;
   --bead-rim: rgba(20,20,19,.12);
   --bead-empty: #d8d2cc;
+  --position-mark: #d8d2cc;
   --bead-seam: #1f1f1f;
   --bead-outline: #1f1f1f;
   --tour-highlight: #f2c94c;
@@ -121,6 +122,7 @@
   --canvas-bg-6: #2c2b29;
   --bead-rim: #202020;
   --bead-empty: #3c3c3c;
+  --position-mark: #3c3c3c;
   --bead-seam: #888888;
   --bead-outline: #ffffff;
   --tour-highlight: #f2c94c;
@@ -183,6 +185,7 @@
   --canvas-bg-6: #ffffff;
   --bead-rim: rgba(0,0,0,.35);
   --bead-empty: #b8b0a8;
+  --position-mark: #b8b0a8;
   --bead-seam: #000000;
   --bead-outline: #000000;
   --tour-highlight: #000000;

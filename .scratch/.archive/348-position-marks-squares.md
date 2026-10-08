@@ -6,12 +6,12 @@
 
 **Blocked by:** 347
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Squares tile: an outline in the gap, clear inside, with the Technique's corner radius, aligned with the beads at every rotation
-- [ ] Dots stays the default; the choice applies at once, is stored on the device and is never saved with a Project or exported
-- [ ] Toggle in the Canvas color popover (and wherever it sits in the phone Menu sheet); high contrast shows the button with the toggle alone
-- [ ] `position-mark` token in light, dark and high contrast, used by Dots and Squares
-- [ ] Design-system cards, tokens, bundle, design values and changelog updated in the same commit
-- [ ] The tests related to the changed files pass; add Squares visual baselines
+- [x] Squares tile: an outline in the gap, clear inside, with the Technique's corner radius, aligned with the beads at every rotation
+- [x] Dots stays the default; the choice applies at once, is stored on the device and is never saved with a Project or exported
+- [x] Toggle in the Canvas color popover (and wherever it sits in the phone Menu sheet); high contrast shows the button with the toggle alone
+- [x] `position-mark` token in light, dark and high contrast, used by Dots and Squares
+- [x] Design-system cards, tokens, bundle, design values and changelog updated in the same commit
+- [x] The tests related to the changed files pass; add Squares visual baselines
 - [ ] Hand check on the iPad Air 13" and the desktop PC

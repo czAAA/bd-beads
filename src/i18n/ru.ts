@@ -108,6 +108,7 @@ export const ru: Translations = {
       label: 'Цвет холста',
       pickerLabel: 'цвет холста',
       swatchLabel: '{name}, {n} из {count}',
+      positionMarks: { label: 'Метки позиций', dots: 'Точки', squares: 'Квадраты', dotsBody: 'Точка в каждой пустой позиции.', squaresBody: 'Контур вокруг каждой пустой позиции.' },
       names: { studio: 'Студия', linen: 'Лён', sage: 'Шалфей', mist: 'Дымка', blush: 'Румянец', night: 'Ночь', ink: 'Тушь', midnight: 'Полночь', olive: 'Олива', umber: 'Умбра', ash: 'Пепел' },
     },
     hint: {
