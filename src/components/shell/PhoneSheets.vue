@@ -168,7 +168,7 @@ const deps = computed(() =>
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
   <BottomSheet v-if="openPhoneSheet === 'project'" modal :title="t.header.projectSheetLabel" @close="openPhoneSheet = null; phoneSavedProjectsOpen = false">
-    <!-- Canvas color on the phone (CanvasBackground card): the CanvasStrip is hidden here, so the picker lives in this header, before Close. Hidden in high contrast, and with no Project open there is no canvas to color. -->
+    <!-- Canvas color on the phone (CanvasBackground card): the CanvasStrip is hidden here, so the picker lives in this header, before Close. In high contrast it opens the Position marks choice alone, and with no Project open there is no canvas to color. -->
     <template v-if="activeProject" #actions>
       <CanvasColorPicker />
     </template>

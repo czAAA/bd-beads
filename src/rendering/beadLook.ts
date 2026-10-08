@@ -40,6 +40,7 @@ export type DrawingContext = Pick<
   | 'fill'
   | 'fillStyle'
   | 'globalAlpha'
+  | 'globalCompositeOperation'
   | 'stroke'
   | 'strokeStyle'
   | 'lineWidth'
@@ -61,8 +62,8 @@ export type DrawingContext = Pick<
 export interface ProjectTheme {
   /** The open canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
   canvas: string
-  /** The 1.5px dots that mark empty bead positions on the open canvas (`bead-empty`). */
-  dot: string
+  /** The Position marks on the open canvas, dots or squares (`position-mark`). */
+  positionMark: string
   /** The rectangle round a piece (`line-strong`), and round the piece being drawn (`muted`). */
   pieceLine: string
   /** The Frame's line and handles (`ink`). */
@@ -97,7 +98,7 @@ export interface ProjectTheme {
 /** The light theme (BeadBoard card). */
 export const LIGHT_THEME: ProjectTheme = {
   canvas: '#fafafa',
-  dot: '#d8d2cc',
+  positionMark: '#d8d2cc',
   pieceLine: '#c7c7c7',
   frameLine: '#1f1f1f',
   ruler: '#6a6a6a',
@@ -117,7 +118,7 @@ export const LIGHT_THEME: ProjectTheme = {
 /** The dark theme: no rim, finished rows in grey. */
 export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
-  dot: '#3c3c3c',
+  positionMark: '#3c3c3c',
   pieceLine: '#3a3a3a',
   frameLine: '#ffffff',
   ruler: '#8c8c8c',
@@ -137,7 +138,7 @@ export const DARK_THEME: ProjectTheme = {
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
 const CONTRAST_THEME: ProjectTheme = {
   canvas: '#ffffff',
-  dot: '#b8b0a8',
+  positionMark: '#b8b0a8',
   pieceLine: '#000000',
   frameLine: '#000000',
   ruler: '#3d3d3d',

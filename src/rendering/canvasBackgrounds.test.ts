@@ -58,7 +58,7 @@ describe('Canvas color backgrounds', () => {
 
   it('gives Ash its own greys, and no other background', () => {
     const ash = canvasTheme('dark', 6)
-    expect(ash).toMatchObject({ canvas: '#2c2b29', ruler: '#a0a0a0', emptyBead: '#3d3b38', dot: '#3d3b38', rim: 'rgba(255,255,255,.16)' })
+    expect(ash).toMatchObject({ canvas: '#2c2b29', ruler: '#a0a0a0', emptyBead: '#3d3b38', positionMark: '#3d3b38', rim: 'rgba(255,255,255,.16)' })
     expect(canvasWordColor('dark', 6)).toBe('#353432')
     expect(canvasTheme('dark', 5).rim).toBeNull()
     expect(canvasWordColor('dark', 5)).toBeUndefined()

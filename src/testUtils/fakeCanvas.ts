@@ -45,6 +45,7 @@ export function installFakeCanvas(): {
     fill: () => undefined,
     fillStyle: '#000000',
     globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
     stroke: () => undefined,
     strokeStyle: '#000000',
     lineWidth: 1,

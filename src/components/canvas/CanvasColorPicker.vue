@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, useId } from 'vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import { useI18n } from '../../i18n/useI18n'
@@ -9,12 +10,15 @@ import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import type { PositionMarkStyle } from '../../rendering/positionMarks'
 
 /**
  * The Canvas color button and its picker (ticket 252; CanvasStrip and CanvasBackground cards): a round dot showing the
  * current background opens a popover of swatches, five in light and six in dark, with the chosen one's name and hex under
- * them. The swatches are a radio group: Tab lands on the chosen one, the arrows move and apply at once, and Escape or a
- * press outside closes it and gives focus back to the button. High contrast has one white canvas, so no button at all.
+ * them, and under those the Dots | Squares choice for Position marks (ticket 348). The swatches are a radio group: Tab
+ * lands on the chosen one, the arrows move and apply at once, and Escape or a press outside closes it and gives focus
+ * back to the button. High contrast has one white canvas, so the popover holds the Position marks choice alone.
  */
 const { t } = useI18n()
 const theme = useResolvedTheme()
@@ -22,6 +26,18 @@ const canvas = useCanvasBackground()
 
 const swatches = computed(() => canvasBackgrounds(theme.value))
 const current = computed(() => canvas.background.value)
+
+const marks = computed({
+  get: () => canvas.positionMarks.value,
+  set: (next: PositionMarkStyle) => canvas.setPositionMarks(next),
+})
+const marksOptions = computed(() =>
+  (['dots', 'squares'] as const).map((value) => {
+    const action = controlAction(`position-marks-${value}`)
+    return { value, label: action.name(t.value), icon: action.icon, tooltip: { name: action.name(t.value), body: action.body?.(t.value) } }
+  }),
+)
+const marksLabelId = useId()
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()
@@ -80,7 +96,7 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
   const count = swatches.value.length
   const next = (index + step + count) % count
   choose(next)
-  void nextTick(() => popupEl.value?.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus())
+  void nextTick(() => popupEl.value?.querySelectorAll<HTMLElement>('.canvas-color__swatches [role="radio"]')[next]?.focus())
 }
 
 /** Leaving the popover by Tab or a click elsewhere closes it. */
@@ -90,7 +106,7 @@ function onFocusOut(event: FocusEvent) {
 </script>
 
 <template>
-  <div v-show="swatches.length" ref="rootEl" class="canvas-color">
+  <div ref="rootEl" class="canvas-color">
     <AppTooltip :name="t.canvas.canvasColor.label" :announce="false">
       <button
         ref="buttonEl"
@@ -104,7 +120,7 @@ function onFocusOut(event: FocusEvent) {
         data-testid="canvas-color-button"
         @click="toggle"
       >
-        <span class="canvas-color__dot" :style="{ background: current?.color }" aria-hidden="true" />
+        <span class="canvas-color__dot" :style="{ background: current?.color ?? 'var(--canvas)' }" aria-hidden="true" />
       </button>
     </AppTooltip>
     <Transition name="canvas-color">
@@ -119,8 +135,8 @@ function onFocusOut(event: FocusEvent) {
         data-testid="canvas-color-picker"
         @focusout="onFocusOut"
       >
-        <span class="canvas-color__label">{{ t.canvas.canvasColor.pickerLabel }}</span>
-        <div class="canvas-color__swatches" role="radiogroup" :aria-label="t.canvas.canvasColor.label">
+        <span v-if="swatches.length" class="canvas-color__label">{{ t.canvas.canvasColor.pickerLabel }}</span>
+        <div v-if="swatches.length" class="canvas-color__swatches" role="radiogroup" :aria-label="t.canvas.canvasColor.label">
           <AppSwatch
             v-for="(swatch, index) in swatches"
             :key="swatch.id"
@@ -140,6 +156,8 @@ function onFocusOut(event: FocusEvent) {
           {{ nameOf(canvas.shown.value - 1) }}
           <span class="canvas-color__hex">{{ current.color }}</span>
         </span>
+        <span :id="marksLabelId" class="canvas-color__label">{{ t.canvas.canvasColor.positionMarks.label }}</span>
+        <SegmentedControl v-model="marks" :options="marksOptions" :labelledby="marksLabelId" small data-testid="position-marks" />
       </div>
     </Transition>
   </div>

@@ -65,7 +65,7 @@ export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme 
   const look: ProjectTheme = { ...base, canvas: background.color, background: background.color }
   if (isAsh(theme, choice)) {
     look.ruler = ASH.ruler
-    look.dot = ASH.emptyBead
+    look.positionMark = ASH.emptyBead
     look.emptyBead = ASH.emptyBead
     look.rim = ASH.rim
   }

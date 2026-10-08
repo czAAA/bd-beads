@@ -1,6 +1,7 @@
 import { computed, readonly, type ComputedRef, type Ref } from 'vue'
 import { canvasBackgroundOf, canvasTheme, canvasWordColor, shownChoice, type CanvasBackground } from '../rendering/canvasBackgrounds'
 import type { ProjectTheme } from '../rendering/beadLook'
+import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { useDevicePreferences, type DevicePreferences } from '../services/devicePreferences'
 import { useResolvedTheme } from './useResolvedTheme'
 
@@ -20,8 +21,12 @@ export function useCanvasBackground(preferences: DevicePreferences = useDevicePr
   /** The technique word's own color, where the background needs one. */
   wordColor: ComputedRef<string | undefined>
   setChoice: (next: number) => void
+  /** How the open canvas draws its Position marks, Dots or Squares (ticket 348). */
+  positionMarks: Readonly<Ref<PositionMarkStyle>>
+  setPositionMarks: (next: PositionMarkStyle) => void
 } {
   const choice = preferences.get('canvasBackground')
+  const marks = preferences.get('positionMarks')
   const theme = useResolvedTheme()
   return {
     choice: readonly(choice),
@@ -31,6 +36,10 @@ export function useCanvasBackground(preferences: DevicePreferences = useDevicePr
     wordColor: computed(() => canvasWordColor(theme.value, choice.value)),
     setChoice(next) {
       choice.value = next
+    },
+    positionMarks: readonly(marks),
+    setPositionMarks(next) {
+      marks.value = next
     },
   }
 }

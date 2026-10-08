@@ -13,7 +13,7 @@ const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) =
 const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'finished' | 'cursorWidth'>, string> = {
   background: 'board',
   canvas: 'box',
-  dot: 'bead-empty',
+  positionMark: 'position-mark',
   pieceLine: 'line-strong',
   frameLine: 'ink',
   ruler: 'ruler',

@@ -134,6 +134,8 @@ export interface Translations {
       label: string
       pickerLabel: string
       swatchLabel: string
+      /** The Dots | Squares choice under the swatches (ticket 348). */
+      positionMarks: { label: string; dots: string; squares: string; dotsBody: string; squaresBody: string }
       names: Record<'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash', string>
     }
     /** The hint in the drawing area's bottom-left corner (CanvasHint card), in pieces around its key chips. */

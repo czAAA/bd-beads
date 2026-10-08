@@ -226,3 +226,32 @@ describe('Position marks cost one pattern fill, however far out', () => {
     expect(beads).toHaveLength(14)
   })
 })
+
+describe('Position marks tile styles', () => {
+  function tileCalls(style: 'dots' | 'squares', technique: Technique) {
+    const tile = recordingContext()
+    // A tile is made on a canvas of its own (one per style and Technique): hand it the one that records.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
+    const project = { ...framedProject(technique), frame: undefined }
+    const { context } = recordingContext()
+    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.5 + (style === 'squares' ? 0.01 : 0), positionMarks: style })
+    return tile
+  }
+
+  it('draws dots as arcs and no outlines', () => {
+    const { named } = tileCalls('dots', 'loom')
+    expect(named('arc').length).toBeGreaterThan(0)
+    expect(named('stroke')).toHaveLength(0)
+  })
+
+  it('draws squares as outlines with the Technique\'s corner radius and no arcs', () => {
+    const loom = tileCalls('squares', 'loom')
+    expect(loom.named('arc')).toHaveLength(0)
+    expect(loom.named('stroke').length).toBeGreaterThan(0)
+    // Loom beads are square: the corner arcs have no radius.
+    expect(loom.named('arcTo').every((call) => call.args[4] === 0)).toBe(true)
+
+    const peyote = tileCalls('squares', 'peyote')
+    expect(peyote.named('arcTo').some((call) => (call.args[4] as number) > 0)).toBe(true)
+  })
+})

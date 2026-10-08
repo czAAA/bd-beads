@@ -33,7 +33,7 @@ const props = defineProps<{
   settingFrame?: boolean
   /** Whether ruler numbers show (the Rulers toggle); undefined hides the button. */
   rulers?: boolean
-  /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Hidden in high contrast either way. */
+  /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Shown in high contrast too, where it opens the Position marks choice alone. */
   canvasColor?: boolean
 }>()
 const emit = defineEmits<{

@@ -1,16 +1,19 @@
 <script setup lang="ts" generic="T extends string">
 import { ref } from 'vue'
+import AppIcon from '../AppIcon.vue'
+import AppTooltip from '../AppTooltip.vue'
+import type { IconName } from '../icons'
 
 /**
  * Two or three always-visible choices (ticket 149; SegmentedControl card): Technique, Unit, Change from. A radiogroup
  * that is one tab stop: the arrows, Home and End move the choice, which follows focus. Options are 34px (28px `small`)
  * with a 2px inset; the chosen one is `ink` with `canvas` text. Words are in Inter, values and units (`mono`) in DM
- * Mono. A label that doesn't fit wraps to two lines, and every option keeps the same height. A single word wider than
+ * Mono. An option may carry an `icon` before its label and a `tooltip` (name and body) shown on hover and focus. A label that doesn't fit wraps to two lines, and every option keeps the same height. A single word wider than
  * its share moves the option to the next row instead of being squeezed (ticket 231).
  */
 const props = withDefaults(
   defineProps<{
-    options: readonly { value: T; label: string }[]
+    options: readonly { value: T; label: string; icon?: IconName; tooltip?: { name: string; body?: string } }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -58,20 +61,41 @@ function onKeydown(event: KeyboardEvent) {
     :aria-disabled="disabled || undefined"
     @keydown="onKeydown"
   >
-    <button
-      v-for="option in options"
-      :key="option.value"
-      class="ui-control segmented__option"
-      type="button"
-      role="radio"
-      :aria-checked="option.value === value"
-      :tabindex="option.value === value ? 0 : -1"
-      :data-value="option.value"
-      :disabled="disabled"
-      @click="choose(option.value)"
-    >
-      {{ option.label }}
-    </button>
+    <template v-for="option in options" :key="option.value">
+      <AppTooltip v-if="option.tooltip" class="segmented__tip" :name="option.tooltip.name" :body="option.tooltip.body" :announce="false">
+        <button
+          class="ui-control segmented__option"
+          type="button"
+          role="radio"
+          :aria-checked="option.value === value"
+          :tabindex="option.value === value ? 0 : -1"
+          :data-value="option.value"
+          :disabled="disabled"
+          @click="choose(option.value)"
+        >
+          <span class="segmented__face">
+            <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
+            {{ option.label }}
+          </span>
+        </button>
+      </AppTooltip>
+      <button
+        v-else
+        class="ui-control segmented__option"
+        type="button"
+        role="radio"
+        :aria-checked="option.value === value"
+        :tabindex="option.value === value ? 0 : -1"
+        :data-value="option.value"
+        :disabled="disabled"
+        @click="choose(option.value)"
+      >
+        <span class="segmented__face">
+          <AppIcon v-if="option.icon" :name="option.icon" :size="16" />
+          {{ option.label }}
+        </span>
+      </button>
+    </template>
   </div>
 </template>
 
@@ -86,6 +110,23 @@ function onKeydown(event: KeyboardEvent) {
   background: var(--elevated);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
+}
+
+.segmented__tip {
+  display: flex;
+  flex: 1 1 0;
+  min-width: min-content;
+}
+
+.segmented__face {
+  display: inline-flex;
+  gap: var(--space-6);
+  align-items: center;
+  justify-content: center;
+}
+
+.segmented__tip > .segmented__option {
+  flex: 1 1 auto;
 }
 
 .segmented__option {

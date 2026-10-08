@@ -673,7 +673,8 @@ body {
 
 /* ---------- v16 Open canvas, pieces, the Frame ---------- */
 .bb-open { position: relative; overflow: hidden; background-color: var(--box); }
-.bb-open-grid { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--bead-empty) 0 1.5px, transparent 2.1px); background-size: 18px 18px; }
+.bb-open-grid { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--position-mark) 0 1.5px, transparent 2.1px); background-size: 18px 18px; }
+.bb-open-grid--squares { background-image: linear-gradient(var(--position-mark) 0 1px, transparent 1px), linear-gradient(90deg, var(--position-mark) 0 1px, transparent 1px); }
 .bb-open-cells { position: absolute; background-color: var(--box); background-image: radial-gradient(circle, var(--bead-empty) 0 38%, transparent 42%); background-size: 18px 18px; }
 .bb-open .bb-word { font-size: 160px; bottom: -28px; letter-spacing: -3px; }
 .bb-piece { position: absolute; display: grid; gap: 2px; }

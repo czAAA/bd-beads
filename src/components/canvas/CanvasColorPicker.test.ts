@@ -42,7 +42,7 @@ describe('CanvasColorPicker', () => {
 
     await button.trigger('click')
     expect(button.attributes('aria-expanded')).toBe('true')
-    const swatches = wrapper.findAll('[role="radio"]')
+    const swatches = wrapper.findAll('.canvas-color__swatches [role="radio"]')
     expect(swatches.map((s) => s.attributes('aria-label'))).toEqual(['Studio, 1 of 5', 'Linen, 2 of 5', 'Sage, 3 of 5', 'Mist, 4 of 5', 'Blush, 5 of 5'])
     expect(swatches.map((s) => s.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false', 'false'])
     expect(swatches.map((s) => s.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
@@ -56,7 +56,7 @@ describe('CanvasColorPicker', () => {
     await flush()
     const wrapper = open()
     await wrapper.get('[data-testid="canvas-color-button"]').trigger('click')
-    const swatches = wrapper.findAll('[role="radio"]')
+    const swatches = wrapper.findAll('.canvas-color__swatches [role="radio"]')
     expect(swatches).toHaveLength(6)
     expect(swatches[2].attributes('aria-label')).toBe('Midnight, 3 of 6')
     expect(swatches[2].attributes('aria-checked')).toBe('true')
@@ -99,10 +99,34 @@ describe('CanvasColorPicker', () => {
     expect(wrapper.find('[data-testid="canvas-color-picker"]').exists()).toBe(false)
   })
 
-  it('is hidden in high contrast', async () => {
+  it('chooses Squares at once, keeps the choice on the device and reads it back', async () => {
+    localStorage.removeItem(PREFERENCES.positionMarks.key)
+    useCanvasBackground().setPositionMarks('dots')
+    const wrapper = open()
+    await wrapper.get('[data-testid="canvas-color-button"]').trigger('click')
+    await flush()
+    const options = wrapper.get('[data-testid="position-marks"]').findAll('[role="radio"]')
+    expect(options.map((option) => option.text())).toEqual(['Dots', 'Squares'])
+    expect(options[0].attributes('aria-checked')).toBe('true')
+
+    await options[1].trigger('click')
+
+    expect(useCanvasBackground().positionMarks.value).toBe('squares')
+    expect(wrapper.find('[data-testid="canvas-color-picker"]').exists()).toBe(true)
+    expect(localStorage.getItem(PREFERENCES.positionMarks.key)).toBe('squares')
+  })
+
+  it('shows the button in high contrast, opening the Dots | Squares choice alone', async () => {
     setTheme('contrast')
     await flush()
     const wrapper = open()
-    expect(wrapper.get('.canvas-color').attributes('style')).toContain('display: none')
+    const button = wrapper.get('[data-testid="canvas-color-button"]')
+    expect(wrapper.get('.canvas-color').attributes('style') ?? '').not.toContain('display: none')
+
+    await button.trigger('click')
+    await flush()
+
+    expect(wrapper.find('[data-testid="position-marks"]').exists()).toBe(true)
+    expect(wrapper.find('[role="radiogroup"][aria-label="Canvas color"]').exists()).toBe(false)
   })
 })

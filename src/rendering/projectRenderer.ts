@@ -11,7 +11,7 @@ import {
   type DrawingContext,
   type ProjectTheme,
 } from './beadLook'
-import { positionMarkPattern } from './positionMarks'
+import { positionMarkPattern, type PositionMarkStyle } from './positionMarks'
 import type { Space } from './space'
 import {
   CELL_SIZE_PX,
@@ -125,6 +125,8 @@ export interface RenderInput {
    * repeated edits do not pile up the anti-aliasing at the edges of rounded beads.
    */
   rows?: { first: number; last: number }
+  /** How the open canvas draws its Position marks: the device's choice. Defaults to Dots. */
+  positionMarks?: PositionMarkStyle
   /** How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows, zoom, rotation or what is on screen. */
   drawBead?: BeadDrawer
 }
@@ -136,9 +138,9 @@ export interface RenderInput {
  */
 function drawPositionMarks(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, theme }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+  { project, area, zoom, pixelRatio, theme, style }: { project: DrawnProject; style: PositionMarkStyle; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
-  const pattern = positionMarkPattern(context, { technique: project.technique, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.dot })
+  const pattern = positionMarkPattern(context, { style, technique: project.technique, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
@@ -218,7 +220,7 @@ function bandOnSurface(
  * (the open canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
  */
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots' } = input
   const { technique, beads, frame, rotation } = project
   const { extent, origin } = space
   // A finished row fades toward what is behind it, which on the open canvas is the drawing area, not a board.
@@ -254,7 +256,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow
 
   if (space.open) {
-    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme })
+    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme, style: positionMarks })
   }
 
   // The Frame's own cells, bead or empty bead, then the painted beads round it.
