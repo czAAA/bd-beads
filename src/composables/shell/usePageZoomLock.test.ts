@@ -55,6 +55,18 @@ describe('usePageZoomLock', () => {
     expect(fire(canvas, gesture('gesturechange'))).toBe(false)
   })
 
+  it('cancels iOS gestures over the canvas while fingers are down, so a pinch never zooms the page too', () => {
+    wrapper = mountLock()
+    const canvas = wrapper.get('canvas').element
+    const touch = (type: string, pointerId: number) => new PointerEvent(type, { bubbles: true, pointerId, pointerType: 'touch' })
+    fire(canvas, touch('pointerdown', 1))
+    fire(canvas, touch('pointerdown', 2))
+    expect(fire(canvas, gesture('gesturestart'))).toBe(true)
+    fire(canvas, touch('pointerup', 1))
+    fire(canvas, touch('pointerup', 2))
+    expect(fire(canvas, gesture('gesturestart'))).toBe(false)
+  })
+
   it('stops listening once unmounted', () => {
     wrapper = mountLock()
     const header = wrapper.get('[data-testid="header"]').element
