@@ -23,8 +23,8 @@
 
 html,
 body {
-  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, and no overscroll bounce moves the page. */
-  touch-action: manipulation;
+  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (manipulation allows it on iOS), and no overscroll bounce moves the page. */
+  touch-action: pan-x pan-y;
   overscroll-behavior: none;
 }
 
