@@ -7,6 +7,11 @@ import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
+/** The line the Row progress marker strokes, as its path calls (ticket 369). */
+function markerPath(calls: ReturnType<typeof recordingContext>['calls']): unknown[][] {
+  return calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo' || call.name === 'arcTo').map((call) => [call.name, ...call.args])
+}
+
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   return { ...project, rotation, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
@@ -37,33 +42,34 @@ describe('renderOverlay', () => {
   })
 
   describe('the row being woven (rows along the grid\'s rows)', () => {
-    it('draws one 3px edge along the bottom of the row, the side facing the next row to weave (ticket 352)', () => {
+    it('strokes one 3px line along the bottom of the row, the side facing the next row to weave (ticket 352)', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 2 })
-      const { context, named } = recordingContext()
+      const { context, calls, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      // Row 2 of a 4-wide loom: x 0..80, y 40..60; the edge sits across the seam below it.
-      expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([[DEFAULT_THEME.marker, 0, 58.5, 80, 3]])
-      expect(named('fill')).toHaveLength(0)
+      // Row 2 of a 4-wide loom: x 0..80, y 40..60; the line sits on the seam below it.
+      expect(markerPath(calls)).toEqual([['moveTo', 0, 60], ['lineTo', 80, 60]])
+      expect(named('stroke')).toHaveLength(1)
+      expect(named('fillRect')).toHaveLength(0)
     })
 
-    it('keeps the last row\'s edge inside the Project', () => {
+    it('keeps the last row\'s line inside the Project', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
-      const { context, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('fillRect').map((call) => call.args)).toEqual([[0, 97, 80, 3]])
+      expect(markerPath(calls)).toEqual([['moveTo', 0, 98.5], ['lineTo', 80, 98.5]])
     })
 
     it('follows a shifted row on brick stitch', () => {
       const brick = projectOf('brick', 3, 4, { currentRow: 1 })
-      const { context, named } = recordingContext()
+      const { context, calls } = recordingContext()
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
       // Row 1 is half a bead across and starts 21px down.
-      expect(named('fillRect')[0]!.args).toEqual([10, 39.5, 60, 3])
+      expect(markerPath(calls)).toEqual([['moveTo', 10, 41], ['lineTo', 70, 41]])
     })
 
     it('follows each rounded bead\'s outline on peyote, one stroked border joined from bead to bead (ticket 369)', () => {
@@ -106,48 +112,38 @@ describe('renderOverlay', () => {
   })
 
   describe('the column being woven (rows down the grid\'s columns)', () => {
-    it('draws one 3px edge on the right of loom\'s column, the side facing the next column (ticket 352)', () => {
+    it('strokes one 3px line on the right of loom\'s column, the side facing the next column (ticket 352)', () => {
       const project = projectOf('loom', 4, 3, { direction: 'columns', currentColumn: 1 })
-      const { context, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('fillRect').map((call) => call.args)).toEqual([[38.5, 0, 3, 60]])
+      expect(markerPath(calls)).toEqual([['moveTo', 40, 0], ['lineTo', 40, 60]])
     })
 
-    it('follows the rounded beads\' outlines and steps between the shifted rows on peyote, a pass at a time (ticket 369)', () => {
-      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
+    it('is one line with rounded turns across the shifted rows on peyote, a pass at a time (ticket 369)', () => {
       const border = (currentColumn: number) => {
         const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn })
         const { context, calls } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo' || call.name === 'arcTo').map((call) => [call.name, ...call.args])
+        return markerPath(calls)
       }
 
       // Column 1 is woven in two passes (ticket 347): row 0's bead (right edge at x 40) is in the first; row 1's (shifted half a bead, 15px down)
-      // is still to weave and keeps the border on its left edge at x 30, curving the other way.
-      expect(border(1)).toEqual([
-        ['moveTo', 40 - R, 0],
-        ['arcTo', 40, 0, 40, 20, R],
-        ['arcTo', 40, 20, 40 - R, 20, R],
-        ['lineTo', 40 - R, 20],
-        ['lineTo', 30 + R, 15],
-        ['arcTo', 30, 15, 30, 35, R],
-        ['arcTo', 30, 35, 30 + R, 35, R],
-        ['lineTo', 30 + R, 35],
-      ])
+      // is still to weave and keeps the line on its left edge at x 30. The turns across the seam between them (y 17.5) are rounded.
+      expect(border(1)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 17.5, 30, 17.5, 5], ['arcTo', 30, 17.5, 30, 35, 5], ['lineTo', 30, 35]])
       // Once both are woven, both are on their right edges (x 40 and 50).
-      expect(border(2)[4]).toEqual(['lineTo', 50 - R, 15])
+      expect(border(2)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 17.5, 50, 17.5, 5], ['arcTo', 50, 17.5, 50, 35, 5], ['lineTo', 50, 35]])
     })
 
-    it('steps between the shifted rows on brick stitch', () => {
+    it('steps across the shifted rows on brick stitch, the turns rounded a little', () => {
       const project = projectOf('brick', 3, 2, { direction: 'columns', currentColumn: 0 })
-      const { context, named } = recordingContext()
+      const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       // Row 1 is half a bead across and 21px down.
-      expect(named('fillRect').map((call) => call.args)).toEqual([[18.5, 0, 3, 22], [18.5, 19, 13, 3], [28.5, 19, 3, 22]])
+      expect(markerPath(calls)).toEqual([['moveTo', 20, 0], ['arcTo', 20, 20.5, 30, 20.5, 3], ['arcTo', 30, 20.5, 30, 41, 3], ['lineTo', 30, 41]])
     })
   })
 
@@ -356,8 +352,8 @@ describe('renderOverlay', () => {
       })
 
       const order = calls
-        .filter((call) => call.name === 'fillRect')
-        .map((call) => (call.args[3] === 3 && call.fillStyle === DEFAULT_THEME.marker ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
+        .filter((call) => call.name === 'fillRect' || call.name === 'stroke')
+        .map((call) => (call.name === 'stroke' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
       expect(order.indexOf('wash')).toBeLessThan(order.indexOf('outline'))
       expect(order.indexOf('outline')).toBeLessThan(order.indexOf('preview'))
       expect(order.indexOf('preview')).toBeLessThan(order.indexOf('marker'))
@@ -565,16 +561,16 @@ describe('on the open canvas (ADR 0026)', () => {
   }
 
   it('draws the Row progress marker along the Frame\'s row, wherever the Frame is', () => {
-    const { named } = overlay(openProject({ currentRow: 1 }), {})
+    const { calls } = overlay(openProject({ currentRow: 1 }), {})
 
-    // Frame row 1 is row 7: y 140, and x 100 to 160; the edge across the seam below.
-    expect(named('fillRect').map((call) => call.args)).toEqual([[100, 158.5, 60, 3]])
+    // Frame row 1 is row 7: y 140, and x 100 to 160; the line across the seam below.
+    expect(markerPath(calls)).toEqual([['moveTo', 100, 160], ['lineTo', 160, 160]])
   })
 
   it('draws no Row progress marker with no Frame', () => {
     const project = { ...openProject({ currentRow: 1 }), frame: undefined }
 
-    expect(overlay(project, {}).named('fillRect')).toEqual([])
+    expect(overlay(project, {}).named('stroke')).toEqual([])
   })
 
   it('washes a Selection that reaches outside the Frame and into the negative', () => {

@@ -130,8 +130,8 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
   }
 
   const corner = beadRoundness(technique) * CELL_SIZE_PX
-  if (corner > 0) {
-    drawRoundedBorder(context, beads, columnWise, corner, space.open ? undefined : columnWise ? space.extent.width : space.extent.height, theme)
+  if (!columnWise && corner > 0) {
+    drawRoundedBorder(context, beads, columnWise, corner, space.open ? undefined : space.extent.height, theme)
     return
   }
 
@@ -147,34 +147,41 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
     }
   })
 
-  const extent = space.open ? undefined : space.extent
-  const limit = extent ? (columnWise ? extent.width : extent.height) : undefined
-  const half = MARKER_EDGE_PX / 2
-  /** A bar over `v` from `v0` to `v1` and `along` from `a0` to `a1`, kept inside the extent across the line. */
-  const bar = (v0: number, v1: number, a0: number, a1: number) => {
-    const shift = limit === undefined ? 0 : v0 < 0 ? -v0 : v1 > limit ? limit - v1 : 0
-    const [low, high] = [v0 + shift, v1 + shift]
-    if (columnWise) {
-      context.fillRect(low, a0, high - low, a1 - a0)
-    } else {
-      context.fillRect(a0, low, a1 - a0, high - low)
-    }
+  const limit = space.open ? undefined : columnWise ? space.extent.width : space.extent.height
+  const point = (v: number, along: number): [number, number] => {
+    const kept = limit === undefined ? v : Math.min(Math.max(v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
+    return columnWise ? [kept, along] : [along, kept]
   }
-
-  context.fillStyle = theme.marker
+  // The corners of the line: along each stretch, then across the seam to the next one.
+  const corners: [number, number][] = [point(segments[0]!.v, segments[0]!.from)]
   segments.forEach((segment, index) => {
     const next = segments[index + 1]
-    bar(segment.v - half, segment.v + half, segment.from - (index > 0 ? half : 0), segment.to + (next ? half : 0))
     if (next) {
-      bar(Math.min(segment.v, next.v) - half, Math.max(segment.v, next.v) + half, segment.to - half, segment.to + half)
+      corners.push(point(segment.v, segment.to), point(next.v, segment.to))
+    } else {
+      corners.push(point(segment.v, segment.to))
     }
   })
+  const radius = Math.max(3, beadRoundness(technique) * CELL_SIZE_PX + 1)
+  const distance = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1])
+
+  context.strokeStyle = theme.marker
+  context.lineWidth = MARKER_EDGE_PX
+  context.lineJoin = 'round'
+  context.beginPath()
+  context.moveTo(...corners[0]!)
+  for (let at = 1; at < corners.length - 1; at += 1) {
+    const [before, corner, after] = [corners[at - 1]!, corners[at]!, corners[at + 1]!]
+    context.arcTo(...corner, ...after, Math.min(radius, distance(before, corner) / 2, distance(corner, after) / 2))
+  }
+  context.lineTo(...corners.at(-1)!)
+  context.stroke()
 }
 
 /**
- * The marker on a rounded bead (peyote, ticket 369): the same border, but each bead's piece follows that bead's own
- * outline, its facing edge with the two corners rounded as the bead's are, so the line repeats the bead's shape. The
- * pieces are joined from one bead's end to the next one's start, which is the step across the half-bead shift.
+ * The marker along a row of rounded beads (peyote, ticket 369): each bead's piece follows that bead's own outline, its
+ * facing edge with the two corners rounded as the bead's are, so the line repeats the shape of the row. The pieces are
+ * joined from one bead's end to the next one's start, which is the step between beads still to weave and woven ones.
  */
 function drawRoundedBorder(context: DrawingContext, beads: readonly LineBead[], columnWise: boolean, corner: number, limit: number | undefined, theme: ProjectTheme): void {
   // The border sits on the cell's edge, a pixel out from the bead's, so its curve is a pixel wider than the bead's corner.
