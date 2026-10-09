@@ -120,6 +120,17 @@ export function useEdit(deps: EditDeps) {
     deps.flushPendingSave()
   }
 
+  /** Drops a stroke as if it never began: the baseline goes back, with no Undo step. A no-op when no stroke was running. */
+  function cancelStroke() {
+    const baseline = strokeBaseline
+    const project = deps.currentProject()
+    strokeBaseline = undefined
+    if (baseline && project && project.beads !== baseline.beads) {
+      restore(baseline)
+    }
+    deps.flushPendingSave()
+  }
+
   /** Puts a snapshot back for Undo/Redo: replays history, so no guard applies. Mirror's counts come from the snapshot; a Frame that differs resets the rest. */
   function restore(snapshot: UndoEntry) {
     const project = deps.currentProject()
@@ -133,7 +144,7 @@ export function useEdit(deps: EditDeps) {
     deps.restoreMirrorAxisCounts(snapshot.mirrorAxisCounts)
   }
 
-  return { edit, beginStroke, strokeStep, endStroke, restore }
+  return { edit, beginStroke, strokeStep, endStroke, cancelStroke, restore }
 }
 
 export type Edit = ReturnType<typeof useEdit>
