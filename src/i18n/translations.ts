@@ -589,7 +589,6 @@ export interface Translations {
    * translated here — only the description of what each one does needs a translation. */
   shortcutsHelp: {
     title: string
-    closeButton: string
     /** Del empties the Selection's beads (ticket 329); Escape is the one Back out action. */
     emptySelection: string
     backOut: string

@@ -522,7 +522,6 @@ export const en: Translations = {
   },
   shortcutsHelp: {
     title: 'Keyboard shortcuts',
-    closeButton: 'Close',
     emptySelection: 'Empty the Selection',
     backOut: 'Back out',
     panCanvas: 'Move the canvas',
