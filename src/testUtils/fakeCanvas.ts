@@ -50,6 +50,7 @@ export function installFakeCanvas(): {
     strokeStyle: '#000000',
     lineWidth: 1,
     lineCap: 'butt',
+    lineJoin: 'miter',
     setLineDash: () => undefined,
   }
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D)

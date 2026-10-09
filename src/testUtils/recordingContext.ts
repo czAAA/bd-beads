@@ -38,6 +38,7 @@ export function recordingContext() {
     strokeStyle: '#000000',
     lineWidth: 1,
     lineCap: 'butt',
+    lineJoin: 'miter',
     roundRect: record('roundRect'),
     drawImage: record('drawImage'),
     createPattern: (...args: unknown[]) => {

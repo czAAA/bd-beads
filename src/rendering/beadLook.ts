@@ -45,6 +45,7 @@ export type DrawingContext = Pick<
   | 'strokeStyle'
   | 'lineWidth'
   | 'lineCap'
+  | 'lineJoin'
   | 'setLineDash'
   | 'fillText'
   | 'font'

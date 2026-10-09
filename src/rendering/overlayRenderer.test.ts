@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { createProject, withFrameGrid, type Project, type RowProgress, type Technique } from '../domain/project'
-import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
+import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
-import { displayedExtentPx } from './surfaceView'
+import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
@@ -66,30 +66,32 @@ describe('renderOverlay', () => {
       expect(named('fillRect')[0]!.args).toEqual([10, 39.5, 60, 3])
     })
 
-    it('joins the pieces on peyote into one stepped border: the pass\'s beads on their bottom edge, the beads still to weave on their top (ticket 369)', () => {
+    it('follows each rounded bead\'s outline on peyote, one stroked border joined from bead to bead (ticket 369)', () => {
+      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
       const border = (currentRow: number) => {
         const project = projectOf('peyote', 5, 3, { currentRow })
-        const { context, named } = recordingContext()
-        renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('fillRect').map((call) => call.args)
+        const recorded = recordingContext()
+        renderOverlay(recorded.context, { project, region: whole(project), zoom: 1 })
+        return recorded
       }
 
-      // Row 0 is one whole pass: a straight edge.
-      expect(border(0)).toEqual([[0, 18.5, 100, 3]])
-      // Row 1, first pass: beads 0, 2, 4 (half a bead across, 20px apart) on their bottom edge, 1 and 3 on their top, 20px higher; a step joins each pair.
-      expect(border(1)).toEqual([
-        [10, 33.5, 21.5, 3],
-        [28.5, 13.5, 3, 23],
-        [28.5, 13.5, 23, 3],
-        [48.5, 13.5, 3, 23],
-        [48.5, 33.5, 23, 3],
-        [68.5, 13.5, 3, 23],
-        [68.5, 13.5, 23, 3],
-        [88.5, 13.5, 3, 23],
-        [88.5, 33.5, 21.5, 3],
-      ])
-      // Second pass: the row is complete, so the whole row's bottom edge, straight again.
-      expect(border(2)).toEqual([[10, 33.5, 100, 3]])
+      // Row 0 is one whole pass: every bead on its bottom edge (y 20), a curve of the bead's own corner radius at each end of each.
+      const whole0 = border(0)
+      expect(whole0.named('stroke')).toHaveLength(1)
+      expect(whole0.named('fillRect')).toHaveLength(0)
+      expect(whole0.named('moveTo')[0]!.args).toEqual([0, 20 - R])
+      expect(whole0.named('arcTo')[0]!.args).toEqual([0, 20, 20, 20, R])
+      expect(whole0.named('arcTo')).toHaveLength(10)
+
+      // Row 1, first pass: bead 0 (half a bead across, y 15..35) on its bottom edge, bead 1 still to weave on its top edge (y 15), 20px higher.
+      const first = border(1)
+      expect(first.named('arcTo')[0]!.args).toEqual([10, 35, 30, 35, R])
+      expect(first.named('arcTo')[2]!.args).toEqual([30, 15, 50, 15, R])
+      // The step joins bead 0's end to bead 1's start.
+      expect(first.named('lineTo').map((call) => call.args)).toContainEqual([30, 15 + R])
+
+      // Second pass: the row is complete, so every bead is on its bottom edge again.
+      expect(border(2).named('arcTo')[2]!.args).toEqual([30, 35, 50, 35, R])
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -113,19 +115,29 @@ describe('renderOverlay', () => {
       expect(named('fillRect').map((call) => call.args)).toEqual([[38.5, 0, 3, 60]])
     })
 
-    it('steps between the shifted rows on peyote, a pass at a time (ticket 369)', () => {
+    it('follows the rounded beads\' outlines and steps between the shifted rows on peyote, a pass at a time (ticket 369)', () => {
+      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
       const border = (currentColumn: number) => {
         const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn })
-        const { context, named } = recordingContext()
+        const { context, calls } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('fillRect').map((call) => call.args)
+        return calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo' || call.name === 'arcTo').map((call) => [call.name, ...call.args])
       }
 
-      // Column 1 is woven in two passes (ticket 347): row 0's bead (right edge at x 40) is in the first, row 1's (shifted half a bead, 15px down)
-      // is still to weave and keeps the border on its left edge at x 30; the step joins them.
-      expect(border(1)).toEqual([[38.5, 0, 3, 19], [28.5, 16, 13, 3], [28.5, 16, 3, 19]])
+      // Column 1 is woven in two passes (ticket 347): row 0's bead (right edge at x 40) is in the first; row 1's (shifted half a bead, 15px down)
+      // is still to weave and keeps the border on its left edge at x 30, curving the other way.
+      expect(border(1)).toEqual([
+        ['moveTo', 40 - R, 0],
+        ['arcTo', 40, 0, 40, 20, R],
+        ['arcTo', 40, 20, 40 - R, 20, R],
+        ['lineTo', 40 - R, 20],
+        ['lineTo', 30 + R, 15],
+        ['arcTo', 30, 15, 30, 35, R],
+        ['arcTo', 30, 35, 30 + R, 35, R],
+        ['lineTo', 30 + R, 35],
+      ])
       // Once both are woven, both are on their right edges (x 40 and 50).
-      expect(border(2)).toEqual([[38.5, 0, 3, 19], [38.5, 16, 13, 3], [48.5, 16, 3, 19]])
+      expect(border(2)[4]).toEqual(['lineTo', 50 - R, 15])
     })
 
     it('steps between the shifted rows on brick stitch', () => {
@@ -607,6 +619,6 @@ describe('on its own, in a Project whose first row is odd (regression)', () => {
     })()
 
     // The first row is row 1 of the Project: shifted half a bead, so its first bead's edge starts at x 10 and not at 0.
-    expect(named('fillRect')[0]!.args[0]).toBe(10)
+    expect(named('moveTo')[0]!.args[0]).toBe(10)
   })
 })

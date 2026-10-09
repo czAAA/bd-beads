@@ -80,6 +80,14 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
+/** A bead of the current line: the coordinate of the edge that carries the marker across the line, the way that edge faces (+1 toward the next row to weave, -1 away from it), and the bead's cell along the line. */
+interface LineBead {
+  v: number
+  facing: 1 | -1
+  from: number
+  to: number
+}
+
 /** One stretch of the marker: the border at `v` (across the line) from `from` to `to` (along it). */
 interface MarkerSegment {
   v: number
@@ -108,7 +116,7 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
   // Peyote's later lines take two passes: every other bead first (even positions), then the rest.
   const parity = technique === 'peyote' && pass > 0 ? (pass - 1) % 2 : undefined
 
-  const beads: { v: number; from: number; to: number }[] = []
+  const beads: LineBead[] = []
   const length = columnWise ? space.rows : space.columns
   for (let along = 0; along < length; along += 1) {
     const row = space.origin.row + (columnWise ? along : line)
@@ -118,7 +126,13 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
     // A bead still to weave in the line's first peyote pass keeps the border on its near edge: it is not woven yet.
     const todo = parity === 0 && along % 2 !== 0
     const near = columnWise ? x : y
-    beads.push({ v: todo ? near : near + CELL_SIZE_PX, from: columnWise ? y : x, to: (columnWise ? y : x) + CELL_SIZE_PX })
+    beads.push({ v: todo ? near : near + CELL_SIZE_PX, facing: todo ? -1 : 1, from: columnWise ? y : x, to: (columnWise ? y : x) + CELL_SIZE_PX })
+  }
+
+  const corner = beadRoundness(technique) * CELL_SIZE_PX
+  if (corner > 0) {
+    drawRoundedBorder(context, beads, columnWise, corner, space.open ? undefined : columnWise ? space.extent.width : space.extent.height, theme)
+    return
   }
 
   const segments: MarkerSegment[] = []
@@ -155,6 +169,34 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
       bar(Math.min(segment.v, next.v) - half, Math.max(segment.v, next.v) + half, segment.to - half, segment.to + half)
     }
   })
+}
+
+/**
+ * The marker on a rounded bead (peyote, ticket 369): the same border, but each bead's piece follows that bead's own
+ * outline, its facing edge with the two corners rounded as the bead's are, so the line repeats the bead's shape. The
+ * pieces are joined from one bead's end to the next one's start, which is the step across the half-bead shift.
+ */
+function drawRoundedBorder(context: DrawingContext, beads: readonly LineBead[], columnWise: boolean, corner: number, limit: number | undefined, theme: ProjectTheme): void {
+  // The border sits on the cell's edge, a pixel out from the bead's, so its curve is a pixel wider than the bead's corner.
+  const radius = corner + 1
+  const point = (v: number, along: number): [number, number] => (columnWise ? [v, along] : [along, v])
+  context.strokeStyle = theme.marker
+  context.lineWidth = MARKER_EDGE_PX
+  context.lineJoin = 'round'
+  context.beginPath()
+  beads.forEach((bead, index) => {
+    const v = limit === undefined ? bead.v : Math.min(Math.max(bead.v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
+    const start = point(v - bead.facing * radius, bead.from)
+    if (index === 0) {
+      context.moveTo(...start)
+    } else {
+      context.lineTo(...start)
+    }
+    context.arcTo(...point(v, bead.from), ...point(v, bead.to), radius)
+    context.arcTo(...point(v, bead.to), ...point(v - bead.facing * radius, bead.to), radius)
+    context.lineTo(...point(v - bead.facing * radius, bead.to))
+  })
+  context.stroke()
 }
 
 function roundedRect(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
