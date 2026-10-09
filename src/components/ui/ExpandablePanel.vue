@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
-import ExpandButton from './ExpandButton.vue'
+import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 
 /**
@@ -60,10 +60,16 @@ function onKeydown(event: KeyboardEvent) {
       <span class="expandable-panel__meta">
         <slot name="meta" />
         <kbd v-if="expanded && expandable" class="expandable-panel__kbd" aria-hidden="true">esc</kbd>
-        <ExpandButton
+        <IconButton
           v-if="expandable && !empty"
-          :expanded="expanded"
+          class="expandable-panel__expand"
+          shape="round"
+          variant="plain"
+          :icon="expanded ? 'arrow-up' : 'arrow-down'"
+          :icon-size="14"
           :label="expanded ? t.a11y.collapsePanel : t.a11y.expandPanel"
+          :aria-expanded="expanded"
+          tooltip
           data-testid="panel-expand"
           @click="expanded = !expanded"
         />
@@ -87,6 +93,18 @@ function onKeydown(event: KeyboardEvent) {
 </template>
 
 <style scoped>
+/* Expand button (ticket 157; Button card): 28px round, outlined, no fill. */
+.expandable-panel__expand {
+  width: var(--expand-size);
+  height: var(--expand-size);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-full);
+}
+
+:root[data-theme='contrast'] .expandable-panel__expand {
+  border-width: 2px;
+}
+
 /* Elevation 1 in light; in dark and high contrast the token is none and the `panel` step carries it. */
 .expandable-panel {
   box-sizing: border-box;

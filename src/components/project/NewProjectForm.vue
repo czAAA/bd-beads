@@ -17,6 +17,7 @@ import { MAX_MAKER_NAME } from '../../domain/makerName'
 import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../../domain/projectSize'
 import { useTourFormReset } from '../../composables/tour/useTour'
 import { TOUR_COLUMNS, TOUR_ROWS } from '../../domain/tour'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -223,6 +224,8 @@ function onSubmit() {
 
 /** Why the last chosen picture was turned away, if it was — one of domain/imageConversion's ImageRejection reasons. */
 const convertRejection = ref<ImageRejection | undefined>()
+
+const convertAction = controlAction('convert-image')
 
 /**
  * The advertised limits and every rejection message, filled in from the constants the validation itself enforces (see
@@ -431,20 +434,27 @@ function onDropImage(file: File) {
       way Create does, and says so under it. The limits are always written under it too.
     -->
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
-    <div class="new-project-form__convert" :title="limitsHint" data-testid="convert-image-field">
-      <FileButton
-        id="convert-image-input"
-        :label="t.convertImage.fileLabel"
-        :aria-label="t.convertImage.fileName"
-        icon="image"
-        data-testid="convert-image-input"
-        :accept="imageInputAccept()"
-        :title="limitsHint"
-        :disabled="!isSizeStated"
-        :disabled-reason="t.form.convertNeedsFrame"
-        @change="onConvertImage"
-        @drop-file="onDropImage"
-      />
+    <div class="new-project-form__convert" data-testid="convert-image-field">
+      <AppTooltip
+        class="new-project-form__convert-tip"
+        :name="convertAction.name(t)"
+        :body="convertAction.body?.(t)"
+        placement="top"
+        :announce="false"
+      >
+        <FileButton
+          id="convert-image-input"
+          :label="t.convertImage.fileLabel"
+          :aria-label="t.convertImage.fileName"
+          icon="image"
+          data-testid="convert-image-input"
+          :accept="imageInputAccept()"
+          :disabled="!isSizeStated"
+          :disabled-reason="t.form.convertNeedsFrame"
+          @change="onConvertImage"
+          @drop-file="onDropImage"
+        />
+      </AppTooltip>
       <p class="new-project-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
       <LoadingState v-if="reading" compact :text="t.convertImage.readingPicture" />
       <p v-if="slowFramingWarning" class="new-project-form__warning" data-testid="convert-image-slow-framing-warning">
@@ -460,6 +470,10 @@ function onDropImage(file: File) {
 </template>
 
 <style scoped>
+.new-project-form__convert-tip {
+  flex-direction: column;
+}
+
 /* The Frame group's heading: the label in `control`, "optional" beside it in `meta-small` (FormField's own label row). */
 .new-project-form__frame-heading {
   display: flex;

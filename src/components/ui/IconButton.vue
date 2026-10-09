@@ -35,8 +35,10 @@ const props = withDefaults(
     size?: 'md' | 'lg'
     iconSize?: IconSize
     selected?: boolean
-    /** A `dock` slot's accent color (the active tool, the input mode toggle). */
+    /** A `dock` slot's or `tool` tab's accent color (the active tool, the input mode toggle). */
     accent?: boolean
+    /** A toggle, not a tab or a selection: `aria-pressed` follows this, with no underline (the input mode toggle). */
+    pressed?: boolean
     /** A `dock` slot's 2px accent underline (the active tool, Set Frame). */
     marked?: boolean
     disabled?: boolean
@@ -61,6 +63,7 @@ const props = withDefaults(
     iconSize: 15,
     selected: undefined,
     accent: false,
+    pressed: undefined,
     marked: false,
     disabled: undefined,
     shortcut: undefined,
@@ -114,7 +117,7 @@ function swallowClick(event: MouseEvent) {
       :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent, 'icon-btn--marked': marked }]"
       type="button"
       :aria-label="name"
-      :aria-pressed="selected === undefined ? undefined : selected"
+      :aria-pressed="pressed ?? selected"
       :aria-disabled="isDisabled ? 'true' : undefined"
       :aria-keyshortcuts="keyed ? hotkey : undefined"
       v-bind="$attrs"
@@ -291,6 +294,10 @@ function swallowClick(event: MouseEvent) {
 
 :root[data-theme='contrast'] .icon-btn--tool.icon-btn--selected::after {
   height: 3px;
+}
+
+.icon-btn--tool.icon-btn--accent {
+  color: var(--accent-strong);
 }
 
 .icon-btn--tool:focus-visible {
