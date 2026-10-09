@@ -23,7 +23,7 @@ type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
  * falls back to the popover when there is none (ui/ imports no feature folder, ADR 0024, so the BottomSheet itself is
  * the caller's). Its Tooltip body is `tooltip`, or the `items` names written as "A, B, C." (the Dock slots' "Set
  * Frame, Rotate, Copy, Paste."). An icon-only button always has a Tooltip (its name, ADR 0035), a labelled one only when
- * there is a body that adds something. Attributes and listeners (data-testid) go to the button itself.
+ * there is a body that adds something. An icon-only button may draw its own face in the `icon` slot (the Canvas color dot). Attributes and listeners (data-testid) go to the button itself.
  */
 defineOptions({ inheritAttrs: false })
 const emit = defineEmits<{ open: [] }>()
@@ -190,7 +190,9 @@ function onListKeydown(event: KeyboardEvent) {
       :aria-controls="open && !showsSheet ? listId : undefined"
       @click="onButtonClick"
       @keydown="onButtonKeydown"
-    />
+    >
+      <slot v-if="$slots.icon" name="icon" />
+    </IconButton>
     <AppButton
       v-else
       v-bind="$attrs"

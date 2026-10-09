@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createProject } from '../../domain/project'
 import ZoomPill from './ZoomPill.vue'
+
+const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+const withRowProgress = (enabled: boolean) => ({ ...project, rowProgress: { ...project.rowProgress, enabled } })
 
 describe('ZoomPill', () => {
   it('shows the zoom level and emits out/in/fit', async () => {
@@ -16,7 +20,7 @@ describe('ZoomPill', () => {
   })
 
   it('reads rulers, undo, redo, progress bar, out, level, in, fit', () => {
-    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, rulers: true, progressBar: true } })
+    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, rulers: true, project } })
     const order = wrapper.findAll('[data-testid^="zoom-pill-"]:not([role="status"])').map((element) => element.attributes('data-testid'))
     expect(order).toEqual([
       'zoom-pill-rulers',
@@ -51,12 +55,20 @@ describe('ZoomPill', () => {
     expect(on.emitted('redo')).toHaveLength(1)
   })
 
-  it('shows the Progress bar toggle pressed while the bar shows, and emits on click', async () => {
-    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, progressBar: true } })
+  it('shows the Row progress button pressed while it is on and emits the opposite on click (one action with the Progress bar switch)', async () => {
+    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, project: withRowProgress(true) } })
     const toggle = wrapper.get('[data-testid="zoom-pill-progress"]')
     expect(toggle.attributes('aria-pressed')).toBe('true')
     await toggle.trigger('click')
-    expect(wrapper.emitted('toggle-progress-bar')).toHaveLength(1)
+    expect(wrapper.emitted('toggle-row-progress')).toEqual([[false]])
+  })
+
+  it('disables Row progress with no Frame, and says why in its Tooltip', async () => {
+    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, project: { ...project, frame: undefined } } })
+    const toggle = wrapper.get('[data-testid="zoom-pill-progress"]')
+    expect(toggle.attributes('aria-disabled')).toBe('true')
+    await toggle.trigger('click')
+    expect(wrapper.emitted('toggle-row-progress')).toBeUndefined()
   })
 
   describe('drag from anywhere (ticket 302)', () => {

@@ -101,7 +101,6 @@ export const en: Translations = {
     noFrame: 'no Frame',
     settingFrame: 'setting Frame',
     rulersLabel: 'Rulers',
-    progressBarLabel: 'Progress bar',
     canvasColor: {
       label: 'Canvas color',
       pickerLabel: 'canvas color',

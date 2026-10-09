@@ -20,7 +20,6 @@ const blocked: PreferenceStorage = {
 /** Each preference: its long-standing key, a saved value that must still read, one that is not valid, and what it is by default. */
 const CASES = [
   { name: 'rulers', key: 'bd-beads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
-  { name: 'progressBar', key: 'bd-beads:progress-bar', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'zoomPillPlacement', key: 'bd-beads:zoom-pill', saved: 'top-left', read: { x: 0, y: 0 }, other: { x: 0.25, y: 0.5 }, stored: '0.25,0.5', invalid: 'middle', fallback: { x: 1, y: 1 } },
   { name: 'canvasBackground', key: 'bd-beads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
   { name: 'inputMode', key: 'bd-beads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },

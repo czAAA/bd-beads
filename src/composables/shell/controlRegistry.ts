@@ -314,6 +314,7 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-progress',
+    icon: 'check',
     name: (t) => t.rowProgress.enabledLabel,
     enabled: hasFrame,
     disabledBody: (t) => t.tooltips.setFrameFirst,

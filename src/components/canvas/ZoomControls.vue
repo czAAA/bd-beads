@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
-import { useI18n } from '../../i18n/useI18n'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import IconButton from '../ui/IconButton.vue'
 
 const props = withDefaults(defineProps<{ zoomPercent: number; minPercent?: number; maxPercent?: number }>(), {
@@ -12,7 +12,9 @@ const emit = defineEmits<{
   'zoom-out': []
   reset: []
 }>()
-const { t } = useI18n()
+const zoomOut = controlAction('zoom-out')
+const zoomIn = controlAction('zoom-in')
+const zoomFit = controlAction('zoom-fit')
 </script>
 
 <template>
@@ -21,33 +23,10 @@ const { t } = useI18n()
     buttons with no fill; the level in DM Mono, 48px wide and centered, so the buttons don't shift as it changes.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
-    <IconButton tooltip
-      icon="zoom-out"
-      variant="plain"
-      :icon-size="16"
-      :label="t.canvas.zoomOutLabel"
-      :disabled="props.zoomPercent <= props.minPercent"
-      data-testid="zoom-out"
-      @click="emit('zoom-out')"
-    />
+    <IconButton variant="plain" :icon-size="16" :action="zoomOut" :disabled="props.zoomPercent <= props.minPercent" data-testid="zoom-out" @click="emit('zoom-out')" />
     <span class="zoom-controls__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
-    <IconButton tooltip
-      icon="zoom-in"
-      variant="plain"
-      :icon-size="16"
-      :label="t.canvas.zoomInLabel"
-      :disabled="props.zoomPercent >= props.maxPercent"
-      data-testid="zoom-in"
-      @click="emit('zoom-in')"
-    />
-    <IconButton tooltip
-      icon="fit"
-      variant="plain"
-      :icon-size="16"
-      :label="t.canvas.zoomResetLabel"
-      data-testid="zoom-reset"
-      @click="emit('reset')"
-    />
+    <IconButton variant="plain" :icon-size="16" :action="zoomIn" :disabled="props.zoomPercent >= props.maxPercent" data-testid="zoom-in" @click="emit('zoom-in')" />
+    <IconButton variant="plain" :icon-size="16" :action="zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
   </div>
 </template>
 

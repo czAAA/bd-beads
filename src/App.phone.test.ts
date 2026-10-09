@@ -143,17 +143,18 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
-  it('hides the Progress bar from the Zoom pill toggle and keeps the choice (ticket 296)', async () => {
+  it('turns Row progress on from the Zoom pill and shows the Progress bar with it, off hides both (ticket 338)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.find('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__progress--hidden')
+    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('false')
+
+    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
+    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
+    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
     expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__progress--hidden')
     expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('false')
-    expect(localStorage.getItem('bd-beads:progress-bar')).toBe('off')
-
-    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
   })
 
   it('shows the Project sheet\'s Save box for the open Project', async () => {
