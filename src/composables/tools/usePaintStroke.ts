@@ -7,7 +7,7 @@ import type { Edit } from '../project/useEdit'
 /** What a stroke needs from the app shell: the open Project, Edit and its stroke calls, Mirror and the active Tool. */
 export interface PaintStrokeDeps {
   currentProject: () => Project | undefined
-  edit: Pick<Edit, 'edit' | 'beginStroke' | 'strokeStep' | 'endStroke'>
+  edit: Pick<Edit, 'edit' | 'beginStroke' | 'strokeStep' | 'endStroke' | 'cancelStroke'>
   mirrorAxisCounts: () => MirrorAxisCounts
   mirrorCopyMode: () => boolean
   activeTool: () => Tool
@@ -44,6 +44,13 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.edit.endStroke()
   }
 
+  /** Drops the stroke in progress with what it painted: the first finger of a pinch was never a stroke (usePinchPan). */
+  function cancelStroke() {
+    deps.endSelectPress()
+    strokeMode.value = null
+    deps.edit.cancelStroke()
+  }
+
   /**
    * Paints (or, with a null color, erases) one cell of an in-progress stroke, live-mirrored per the Mirror axis counts,
    * leaving rows already woven alone (ticket 33).
@@ -72,5 +79,5 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCell(row, column, color)
   }
 
-  return { strokeMode, beginStroke, endStroke, paintStrokeCell, beginOrCommitPress }
+  return { strokeMode, beginStroke, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress }
 }

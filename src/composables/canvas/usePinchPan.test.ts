@@ -10,8 +10,8 @@ function setup(zoom = 1) {
     state.zoom = v
   })
   const panBy = vi.fn()
-  const endStroke = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, endStroke }))
+  const cancelStroke = vi.fn()
+  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, cancelStroke }))
 
   const heard: string[] = []
   const child = document.createElement('div')
@@ -23,7 +23,7 @@ function setup(zoom = 1) {
     Object.assign(e, { pointerId: id, clientX: x, clientY: y, pointerType })
     child.dispatchEvent(e)
   }
-  return { state, setZoom, panBy, endStroke, heard, fire }
+  return { state, setZoom, panBy, cancelStroke, heard, fire }
 }
 
 describe('usePinchPan', () => {
@@ -32,14 +32,14 @@ describe('usePinchPan', () => {
     t.fire('pointerdown', 1, 10, 10)
     t.fire('pointermove', 1, 20, 10)
     expect(t.heard).toEqual(['pointerdown', 'pointermove'])
-    expect(t.endStroke).not.toHaveBeenCalled()
+    expect(t.cancelStroke).not.toHaveBeenCalled()
   })
 
-  it('ends the stroke when a second finger lands, and mutes the surface until all are up', () => {
+  it('cancels the stroke when a second finger lands, and mutes the surface until all are up', () => {
     const t = setup()
     t.fire('pointerdown', 1, 10, 10)
     t.fire('pointerdown', 2, 110, 10)
-    expect(t.endStroke).toHaveBeenCalledOnce()
+    expect(t.cancelStroke).toHaveBeenCalledOnce()
     t.fire('pointermove', 1, 0, 10)
     t.fire('pointerup', 2, 110, 10)
     t.fire('pointermove', 1, 5, 10)
@@ -70,7 +70,7 @@ describe('usePinchPan', () => {
     const t = setup()
     t.fire('pointerdown', 1, 0, 0, 'mouse')
     t.fire('pointerdown', 2, 100, 0, 'pen')
-    expect(t.endStroke).not.toHaveBeenCalled()
+    expect(t.cancelStroke).not.toHaveBeenCalled()
     expect(t.heard).toEqual(['pointerdown', 'pointerdown'])
   })
 })

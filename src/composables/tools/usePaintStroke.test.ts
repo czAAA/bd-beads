@@ -24,6 +24,19 @@ function setup(tool: Tool = 'paint', initial?: Project) {
 }
 
 describe('usePaintStroke', () => {
+  it('cancels a stroke: the bead a finger painted before a pinch is taken back, with no undo step', () => {
+    const { stroke, harness, frame, at } = setup()
+    const { row, column } = frame
+
+    stroke.beginOrCommitPress('paint', '#ff0000', row, column)
+    expect(at(0, 0)).toBe('#ff0000')
+    stroke.cancelStroke()
+
+    expect(at(0, 0)).toBeNull()
+    expect(stroke.strokeMode.value).toBeNull()
+    expect(harness.history.canUndo.value).toBe(false)
+  })
+
   it('turns a whole drag into one undo step and one save', () => {
     const { stroke, harness, frame } = setup()
     const { row, column } = frame

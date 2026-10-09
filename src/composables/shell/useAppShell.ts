@@ -295,7 +295,7 @@ function wireAppShell(services: Services) {
   }
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, endStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
@@ -322,8 +322,8 @@ function wireAppShell(services: Services) {
     canvasScrollEl.value = el instanceof HTMLElement ? el : null
   }
 
-  /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress ends when the second lands. */
-  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, endStroke: () => endStroke() })
+  /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress is taken back when the second lands. */
+  usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, cancelStroke: () => cancelStroke() })
 
   /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
   const {
