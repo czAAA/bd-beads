@@ -18,8 +18,8 @@ type Chord = ControlActionLike['chords'][number]
 
 const chordText = (chord: Chord) => [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean).join('+')
 
-/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one; every chord, joined by " / ", when the action asks for it. */
+/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one; every chord, joined by ", ", when the action asks for it. */
 export function actionKey(action: ControlActionLike | undefined): string | undefined {
   if (!action?.chords.length) return undefined
-  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map(chordText).join(' / ')
+  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map(chordText).join(', ')
 }

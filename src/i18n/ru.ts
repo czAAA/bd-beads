@@ -564,8 +564,6 @@ export const ru: Translations = {
     setFrameFirst: 'Сначала задайте рамку.',
     fitToDrawing: 'Подогнать рамку под все бусины.',
     noBeadsToFit: 'Нет бусин, под которые можно подогнать рамку.',
-    firstRow: 'Это первый ряд.',
-    lastRow: 'Это последний ряд.',
     zoomFit: 'Показать всё целиком.',
     canvasColor: 'Задать цвет фона.',
     colors: 'Настройте цвета для рисования.',

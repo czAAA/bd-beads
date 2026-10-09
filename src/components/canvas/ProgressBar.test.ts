@@ -108,20 +108,14 @@ describe('ProgressBar', () => {
     expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
   })
 
-  it('gives Row done and Row not done their keys and, at the ends, a reason (ticket 339)', () => {
-    const project = makeProject()
-    const atStart = mount(ProgressBar, { props: { project } })
-    expect(atStart.text()).toContain(ru.tooltips.firstRow)
-    expect(atStart.text()).not.toContain(ru.tooltips.lastRow)
-
-    const middle = mount(ProgressBar, { props: { project: moveToRow(project, 4) } })
-    expect(middle.text()).toContain('Enter / Space')
-    expect(middle.text()).toContain('Shift+Enter / Shift+Space')
-    expect(middle.text()).toContain('D')
-    expect(middle.find('[title]').exists()).toBe(false)
-
-    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
-    expect(atEnd.text()).toContain(ru.tooltips.lastRow)
+  it('gives every control its key in a Tooltip and no native title (ticket 339)', () => {
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    const text = wrapper.text()
+    expect(text).toContain('Enter, Space')
+    expect(text).toContain('Shift+Enter, Shift+Space')
+    expect(text).toContain('D')
+    expect(text).toContain('P')
+    expect(wrapper.find('[title]').exists()).toBe(false)
   })
 
   it('turns Row progress off from the switch and the row direction from its button', async () => {
@@ -147,6 +141,8 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
     expect(toggle.attributes('aria-disabled')).toBe('true')
     expect(toggle.attributes('aria-checked')).toBe('false')
+    expect(wrapper.text()).toContain(ru.tooltips.setFrameFirst)
+    expect(wrapper.text()).toContain('6')
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
