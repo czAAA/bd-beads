@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
-import { blendOver, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
@@ -15,10 +15,10 @@ function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit
 const noBead: BeadDrawer = () => undefined
 
 /** Renders with a bead drawer that only takes note of each bead it is asked for. */
-function beadsDrawn(project: Project, region: Region, zoom = 1): BeadShape[] {
+function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = false): BeadShape[] {
   const beads: BeadShape[] = []
   const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
-  renderProject(recordingContext().context, { project, region, zoom, drawBead })
+  renderProject(recordingContext().context, { project, region, zoom, showFinished, drawBead })
   return beads
 }
 
@@ -333,6 +333,48 @@ describe('renderProject', () => {
       expect(beadsDrawn(project, whole(project)).some(({ dimmed }) => dimmed)).toBe(false)
     })
 
+    it('draws finished rows at their normal color while they are shown (hover or a tap, ticket 352)', () => {
+      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+      const { context } = recordingContext()
+      const beads: BeadShape[] = []
+
+      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, drawBead: (_context, bead) => beads.push(bead) })
+
+      expect(beads.some(({ dimmed }) => dimmed)).toBe(false)
+    })
+
+    it('leaves a finished brick seam unfaded while finished rows are shown', () => {
+      const project = projectOf('brick', 2, 3, { rowProgress: { ...progress('rows'), currentRow: 2, currentColumn: 0 } })
+      const { context, named } = recordingContext()
+
+      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, drawBead: noBead })
+
+      expect(named('fillRect').slice(1).map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
+    })
+
+    it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
+      const colors = (direction: 'rows' | 'columns', showFinished: boolean) => {
+        const project = projectOf('loom', 3, 3, { rowProgress: progress(direction) })
+        return beadsDrawn(project, whole(project), 1, showFinished).map(({ color }) => color)
+      }
+      const lit = brighten(DEFAULT_THEME.emptyBead, 0.1)
+      expect(lit).not.toBe(DEFAULT_THEME.emptyBead)
+
+      for (const showFinished of [false, true]) {
+        // Empty todo and finished beads carry no color of their own; the current row's are lifted.
+        expect(colors('rows', showFinished)).toEqual([null, null, null, lit, lit, lit, null, null, null])
+        expect(colors('columns', showFinished)).toEqual([null, null, lit, null, null, lit, null, null, lit])
+      }
+    })
+
+    it('brightens only the pass on peyote, not the whole line', () => {
+      const project = projectOf('peyote', 4, 3, { rowProgress: { ...progress('rows'), currentRow: 1 } })
+
+      const lit = beadsDrawn(project, whole(project)).filter(({ color }) => color !== null).length
+
+      expect(lit).toBe(2)
+    })
+
     it('fades nothing while Row progress is off', () => {
       const project = projectOf('loom', 3, 3, { rowProgress: { ...progress('rows'), enabled: false } })
 
@@ -558,24 +600,24 @@ describe('the bead look', () => {
     expect(named('fillRect')[1]!.fillStyle).toBe(DEFAULT_THEME.emptyBead)
   })
 
-  it('draws a finished bead in light as its own color at 28% over the board, opaque', () => {
+  it('draws a finished bead in light as its own color at 60% over the board, opaque', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ dimmed: true }))
 
-    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.28)
+    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.6)
     expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha])).toEqual([
       [blendOver(DEFAULT_THEME.rim!, faded), 1],
       [faded, 1],
     ])
   })
 
-  it('draws a finished bead in dark as its grey at 45% over the board', () => {
+  it('draws a finished bead in dark as its own color at 60% over the board, not grey (ticket 352)', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ dimmed: true, theme: DARK_THEME }))
 
-    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver(greyscale('#e63746'), DARK_THEME.background, 0.45)])
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver('#e63746', DARK_THEME.background, 0.6)])
   })
 
   it('leaves the context as it found it', () => {
@@ -661,7 +703,7 @@ describe('the bead look', () => {
 
       drawFlatBead(context, bead({ dimmed: true, backdrop: '#ffffff' }))
 
-      const faded = fadeOver('#e63746', '#ffffff', 0.28)
+      const faded = fadeOver('#e63746', '#ffffff', 0.6)
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
         [blendOver(DEFAULT_THEME.rim!, faded), 1, 41, 21, 18, 18],
         [faded, 1, 41.75, 21.75, 16.5, 16.5],

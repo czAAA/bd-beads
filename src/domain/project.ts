@@ -408,6 +408,20 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
     : passOf(project.technique, relativeColumn, relativeRow) < currentColumn
 }
 
+/** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the current row is drawn brighter. Only while the overlay is on and a Frame is set. */
+export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
+  const { enabled, direction, currentRow, currentColumn } = project.rowProgress
+  const frame = project.frame
+  if (!enabled || !frame || !frameContains(frame, { row, column })) {
+    return false
+  }
+  const relativeRow = row - frame.row
+  const relativeColumn = column - frame.column
+  return direction === 'rows'
+    ? passOf(project.technique, relativeRow, relativeColumn) === currentRow
+    : passOf(project.technique, relativeColumn, relativeRow) === currentColumn
+}
+
 /** Every position whose color differs between two bead maps; a row both share is passed over unread. */
 export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
   const changed: GridPosition[] = []

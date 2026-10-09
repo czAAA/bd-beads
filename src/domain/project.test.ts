@@ -6,6 +6,7 @@ import {
   createProjectFromImage,
   deleteAll,
   fillArea,
+  isInCurrentRow,
   isInFinishedRow,
   mirrorCurrent,
   mirroredCells,
@@ -1282,6 +1283,18 @@ describe('Image colors are frozen (ADR 0011)', () => {
 describe('Row progress on the Frame (ticket 233)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
   const framed: Project = { ...base, frame: { row: 10, column: 10, rows: 6, columns: 4 }, rowProgress: { ...base.rowProgress, enabled: true, currentRow: 2 } }
+
+  it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
+    expect(isInCurrentRow(framed, { row: 12, column: 10 })).toBe(true)
+    expect(isInCurrentRow(framed, { row: 12, column: 13 })).toBe(true)
+    expect(isInCurrentRow(framed, { row: 11, column: 10 })).toBe(false)
+    expect(isInCurrentRow(framed, { row: 13, column: 10 })).toBe(false)
+    expect(isInCurrentRow(framed, { row: 12, column: 20 })).toBe(false)
+    expect(isInCurrentRow({ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } }, { row: 12, column: 10 })).toBe(false)
+    const columnWise: Project = { ...framed, rowProgress: { ...framed.rowProgress, direction: 'columns', currentColumn: 1 } }
+    expect(isInCurrentRow(columnWise, { row: 15, column: 11 })).toBe(true)
+    expect(isInCurrentRow(columnWise, { row: 15, column: 12 })).toBe(false)
+  })
 
   it('locks the finished rows of the Frame, and nothing outside it', () => {
     expect(isInFinishedRow(framed, { row: 10, column: 10 })).toBe(true)

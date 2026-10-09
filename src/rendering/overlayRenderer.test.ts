@@ -37,18 +37,24 @@ describe('renderOverlay', () => {
   })
 
   describe('the row being woven (rows along the grid\'s rows)', () => {
-    it('outlines the row 3px outside it, 2px thick with rounded corners, kept inside the Project', () => {
+    it('draws one 3px edge along the bottom of the row, the side facing the next row to weave (ticket 352)', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 2 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      // Row 2 of a 4-wide loom: x 0..80, y 40..60; 3px out, but not past the Project's own left and right edges.
-      expect(named('roundRect').map((call) => call.args)).toEqual([
-        [0, 37, 80, 26, 5],
-        [2, 39, 76, 22, 3],
-      ])
-      expect(named('fill').map((call) => [call.fillStyle, call.args[0]])).toEqual([[DEFAULT_THEME.marker, 'evenodd']])
+      // Row 2 of a 4-wide loom: x 0..80, y 40..60; the edge sits across the seam below it.
+      expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([[DEFAULT_THEME.marker, 0, 58.5, 80, 3]])
+      expect(named('fill')).toHaveLength(0)
+    })
+
+    it('keeps the last row\'s edge inside the Project', () => {
+      const project = projectOf('loom', 4, 5, { currentRow: 4 })
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      expect(named('fillRect').map((call) => call.args)).toEqual([[0, 97, 80, 3]])
     })
 
     it('follows a shifted row on brick stitch', () => {
@@ -56,22 +62,22 @@ describe('renderOverlay', () => {
       const { context, named } = recordingContext()
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
-      // Row 1 is half a bead across and starts 21px down; the outline 3px out.
-      expect(named('roundRect')[0]!.args.slice(0, 2)).toEqual([7, 18])
+      // Row 1 is half a bead across and starts 21px down.
+      expect(named('fillRect')[0]!.args).toEqual([10, 39.5, 60, 3])
     })
 
-    it('outlines the beads of the pass on peyote, every other one after the first line (ticket 347)', () => {
-      const outlined = (currentRow: number) => {
+    it('marks the bottom edge of the beads of the pass on peyote, every other one after the first line (ticket 347)', () => {
+      const marked = (currentRow: number) => {
         const project = projectOf('peyote', 5, 3, { currentRow })
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('roundRect').filter((call) => call.args[2] === 22).map((call) => call.args[0])
+        return named('fillRect').map((call) => call.args[0])
       }
 
       // Row 0 is whole; pass 1 is row 1's beads 0, 2, 4 (half a bead across, 20px apart); pass 2 is its beads 1 and 3.
-      expect(outlined(0)).toEqual([-1, 19, 39, 59, 79])
-      expect(outlined(1)).toEqual([9, 49, 89])
-      expect(outlined(2)).toEqual([29, 69])
+      expect(marked(0)).toEqual([0, 20, 40, 60, 80])
+      expect(marked(1)).toEqual([10, 50, 90])
+      expect(marked(2)).toEqual([30, 70])
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -86,51 +92,36 @@ describe('renderOverlay', () => {
   })
 
   describe('the column being woven (rows down the grid\'s columns)', () => {
-    it('draws loom\'s column as two long sides, closed at the first bead and the last', () => {
+    it('draws one 3px edge on the right of each bead of loom\'s column, the side facing the next column (ticket 352)', () => {
       const project = projectOf('loom', 4, 3, { direction: 'columns', currentColumn: 1 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      const rects = named('fillRect').map((call) => call.args)
-      // Each bead: a 22px box a pixel out from the bead, with its left and right 2px.
-      expect(rects).toContainEqual([19, -1, 2, 22])
-      expect(rects).toContainEqual([39, -1, 2, 22])
-      expect(rects).toContainEqual([19, 39, 2, 22])
-      // The top of the first row and the bottom of the last close the strip.
-      expect(rects).toContainEqual([21, -1, 18, 2])
-      expect(rects).toContainEqual([21, 59, 18, 2])
-      // A middle row has sides only.
-      expect(rects.filter((rect) => rect[1] === 19)).toHaveLength(2)
+      expect(named('fillRect').map((call) => call.args)).toEqual([[38.5, 0, 3, 20], [38.5, 20, 3, 20], [38.5, 40, 3, 20]])
     })
 
-    it('outlines each bead whole on peyote, rounded, and following the shifted rows', () => {
-      const outline = (currentColumn: number) => {
+    it('follows the shifted rows on peyote, a pass at a time', () => {
+      const edge = (currentColumn: number) => {
         const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn })
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('roundRect').filter((call) => call.args[2] === 22)
+        return named('fillRect').map((call) => call.args)
       }
 
-      // Column 1 is woven in two passes (ticket 347): row 0's bead at x 20, then row 1's (shifted half a bead) at x 30
-      // and 15px down; each a pixel out.
-      const first = outline(1)
-      const second = outline(2)
-      expect(first.map((call) => call.args.slice(0, 2))).toEqual([[19, -1]])
-      expect(second.map((call) => call.args.slice(0, 2))).toEqual([[29, 14]])
-      expect(first[0]!.args[4]).toBeCloseTo(4.84)
+      // Column 1 is woven in two passes (ticket 347): row 0's bead at x 20, then row 1's (shifted half a bead) at x 30 and 15px down.
+      expect(edge(1)).toEqual([[38.5, 0, 3, 20]])
+      expect(edge(2)).toEqual([[48.5, 15, 3, 20]])
     })
 
-    it('outlines each bead whole on brick stitch, square, a seam apart', () => {
+    it('follows the shifted rows on brick stitch', () => {
       const project = projectOf('brick', 3, 2, { direction: 'columns', currentColumn: 0 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      // Each bead is a 22px square outline (a top and a bottom strip 22px wide; the sides are shorter). Row 1 is half a
-      // bead across and 21px down, a pixel out from its bead: the seam is between the rows, not inside the outline.
-      const tops = named('fillRect').filter((call) => call.args[2] === 22).map((call) => call.args.slice(0, 2))
-      expect(tops).toEqual([[-1, -1], [-1, 19], [9, 20], [9, 40]])
+      // Row 1 is half a bead across and 21px down.
+      expect(named('fillRect').map((call) => call.args)).toEqual([[18.5, 0, 3, 20], [28.5, 21, 3, 20]])
     })
   })
 
@@ -339,8 +330,8 @@ describe('renderOverlay', () => {
       })
 
       const order = calls
-        .filter((call) => call.name === 'fillRect' || (call.name === 'fill' && call.fillStyle === DEFAULT_THEME.marker && call.globalAlpha === 1))
-        .map((call) => (call.name === 'fill' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
+        .filter((call) => call.name === 'fillRect')
+        .map((call) => (call.args[3] === 3 && call.fillStyle === DEFAULT_THEME.marker ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
       expect(order.indexOf('wash')).toBeLessThan(order.indexOf('outline'))
       expect(order.indexOf('outline')).toBeLessThan(order.indexOf('preview'))
       expect(order.indexOf('preview')).toBeLessThan(order.indexOf('marker'))
@@ -431,10 +422,10 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] })
 
-      // The bead's own color at 28% over the board, its faint rim over that: opaque, so it covers what it is over.
-      const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.28)
-      const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.28)
-      expect(red).toBe('rgb(231, 179, 180)')
+      // The bead's own color at 60% over the board, its faint rim over that: opaque, so it covers what it is over.
+      const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.6)
+      const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.6)
+      expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.6))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
         [blendOver(DEFAULT_THEME.rim!, red), 1, 1, 1, 18, 18],
         [red, 1, 1.75, 1.75, 16.5, 16.5],
@@ -449,7 +440,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }] })
 
-      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(DEFAULT_THEME.emptyBead, DEFAULT_THEME.background, 0.28))
+      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(DEFAULT_THEME.emptyBead, DEFAULT_THEME.background, 0.6))
     })
 
     it('draws only the beads named, on screen and in the Project', () => {
@@ -547,20 +538,17 @@ describe('on the open canvas (ADR 0026)', () => {
     return recorded
   }
 
-  it('outlines the Row progress marker round the Frame\'s row, wherever the Frame is', () => {
+  it('draws the Row progress marker along the Frame\'s row, wherever the Frame is', () => {
     const { named } = overlay(openProject({ currentRow: 1 }), {})
 
-    // Frame row 1 is row 7: y 140, and x 100 to 160, 3px out each way.
-    expect(named('roundRect').map((call) => call.args)).toEqual([
-      [97, 137, 66, 26, 5],
-      [99, 139, 62, 22, 3],
-    ])
+    // Frame row 1 is row 7: y 140, and x 100 to 160; the edge across the seam below.
+    expect(named('fillRect').map((call) => call.args)).toEqual([[100, 158.5, 60, 3]])
   })
 
   it('draws no Row progress marker with no Frame', () => {
     const project = { ...openProject({ currentRow: 1 }), frame: undefined }
 
-    expect(overlay(project, {}).named('roundRect')).toEqual([])
+    expect(overlay(project, {}).named('fillRect')).toEqual([])
   })
 
   it('washes a Selection that reaches outside the Frame and into the negative', () => {
@@ -604,7 +592,7 @@ describe('on its own, in a Project whose first row is odd (regression)', () => {
       return recorded
     })()
 
-    // The first row is row 1 of the Project: shifted half a bead, so its first bead's outline starts at x 10 (9 with the outset) and not at 0.
-    expect(named('roundRect')[0]!.args.slice(0, 2)).toEqual([9, -1])
+    // The first row is row 1 of the Project: shifted half a bead, so its first bead's edge starts at x 10 and not at 0.
+    expect(named('fillRect')[0]!.args[0]).toBe(10)
   })
 })

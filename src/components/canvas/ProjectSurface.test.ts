@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject, type Project, type RowProgress, type Technique, frameGrid, withFrameGrid } from '../../domain/project'
-import { DARK_THEME, DEFAULT_THEME } from '../../rendering/beadLook'
+import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
@@ -266,11 +266,11 @@ describe('ProjectSurface', () => {
     const progress = (enabled: boolean): RowProgress => ({ enabled, direction: 'rows', currentRow: 2, currentColumn: 0 })
 
     await mountSurface(projectOf(20, 10, { rowProgress: progress(false) }))
-    expect(context.named('fill').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(false)
+    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(false)
 
     context.calls.length = 0
     await mountSurface(projectOf(20, 10, { rowProgress: progress(true) }))
-    expect(context.named('fill').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
+    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
   })
 
   describe('moving the canvas', () => {
@@ -352,6 +352,86 @@ describe('ProjectSurface', () => {
       const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
       return { clientX: at.x, clientY: at.y }
     }
+
+    describe('finished rows (ticket 352)', () => {
+      /** A red bead in the Frame's first row, and the weaver on the third. */
+      function weaving(): Project {
+        const project = projectOf(20, 10)
+        const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
+        return { ...painted, rowProgress: { enabled: true, direction: 'rows', currentRow: 2, currentColumn: 0 } }
+      }
+      const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
+      const finishedCentre = (project: Project) => centreOf(project, project.frame!.row, project.frame!.column)
+
+      it('dims them by default, keeping the bead\'s own color', async () => {
+        await mountSurface(weaving())
+
+        expect(redShown()).toBe(false)
+        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.6))).toBe(true)
+      })
+
+      it('draws them at normal color while a mouse or a pen hovers the canvas, and dims them again when it leaves', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        context.calls.length = 0
+        await surface.trigger('pointermove', { clientX: 900, clientY: 700, pointerType: 'mouse', buttons: 0 })
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        context.calls.length = 0
+        await surface.trigger('pointerleave', { pointerType: 'mouse' })
+        await nextTick()
+        expect(redShown()).toBe(false)
+      })
+
+      it('does not count a finger\'s touch as a hover', async () => {
+        const { wrapper } = await mountSurface(weaving())
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        context.calls.length = 0
+        await surface.trigger('pointermove', { clientX: 900, clientY: 700, pointerType: 'touch', buttons: 0 })
+        await nextTick()
+
+        expect(redShown()).toBe(false)
+      })
+
+      it('toggles them between dimmed and normal with a press on a finished row, which stays until the next one', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        context.calls.length = 0
+        await surface.trigger('pointerdown', { ...finishedCentre(project), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        // The finger lifts and the toggle holds, hover or not.
+        context.calls.length = 0
+        await surface.trigger('pointerup', { pointerType: 'touch' })
+        await surface.trigger('pointerleave', { pointerType: 'touch' })
+        await nextTick()
+        expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+
+        context.calls.length = 0
+        await surface.trigger('pointerdown', { ...finishedCentre(project), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
+        await nextTick()
+        expect(redShown()).toBe(false)
+      })
+
+      it('leaves them alone for a press on a row still to weave', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        context.calls.length = 0
+        await surface.trigger('pointerdown', { ...centreOf(project, project.frame!.row + 5, project.frame!.column), pointerType: 'touch', pointerId: 1, isPrimary: true, button: 0, buttons: 1 })
+        await nextTick()
+
+        expect(redShown()).toBe(false)
+      })
+    })
 
     it('moves the canvas with a finger or mouse, and draws with the pen, in Pen mode (ticket 325)', async () => {
       const project = projectOf(20, 10)
