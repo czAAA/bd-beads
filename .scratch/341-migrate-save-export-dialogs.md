@@ -4,9 +4,9 @@
 
 **Spec:** 343 (unified controls spec)
 
-**Blocked by:** 340
+**Blocked by:** None (340 merged in #109)
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
 - [ ] Every control in this area comes from a shared component and a registry action, with no per-place copy of its name, Tooltip or key
 - [ ] Tooltips, key chips and disabled reasons match ticket 334's table

@@ -12,7 +12,7 @@ Convert image still asks for a size (ADR 0026), so keep a size step in its own d
 
 **Blocked by:** None (can start immediately).
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
 - [ ] The New Project form has no Frame, Unit or Width & Height sections
 - [ ] The Frame section has the beads | mm switch, remembered on the device
