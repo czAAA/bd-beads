@@ -37,7 +37,8 @@ describe('SaveBox (ticket 148)', () => {
 
     expect(save.text()).toBe(en.saveBox.saveButton)
     expect(save.classes()).toContain('app-button--primary')
-    expect(save.attributes('title')).toContain('Ctrl/Cmd+S')
+    expect(save.attributes('title')).toBeUndefined()
+    expect(wrapper.find('[data-testid="save-button"]').element.closest('.app-tooltip')?.textContent).toContain('Ctrl/Cmd+S')
     await save.trigger('click')
     expect(wrapper.emitted('save')).toHaveLength(1)
   })

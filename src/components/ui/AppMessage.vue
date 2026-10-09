@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
+import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 
 /**
@@ -67,16 +68,16 @@ onBeforeUnmount(() => clearTimeout(timer))
     <AppIcon class="app-message__icon" :name="icon" :size="16" />
     <span class="app-message__text"><slot /></span>
     <span v-if="$slots.actions" class="app-message__actions"><slot name="actions" /></span>
-    <button
+    <IconButton
       v-if="closable"
-      class="ui-control app-message__close"
-      type="button"
-      :aria-label="t.a11y.closeMessage"
+      class="app-message__close"
+      variant="plain"
+      :label="t.a11y.closeMessage"
+      icon="close"
+      :icon-size="16"
       data-testid="message-close"
       @click="emit('close')"
-    >
-      <AppIcon name="close" :size="16" />
-    </button>
+    />
   </div>
 </template>
 
@@ -150,34 +151,16 @@ onBeforeUnmount(() => clearTimeout(timer))
   align-items: center;
 }
 
-.app-message__close {
-  display: grid;
+/* The close button's Tooltip wraps it: the wrapper is the row's flex item and takes the pull into the corner. */
+.app-message > :deep(.icon-btn-wrap) {
   flex: none;
-  place-items: center;
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-8)) calc(-1 * var(--space-4)) 0;
+}
+
+.app-message__close {
   width: var(--message-close-size);
   height: var(--message-close-size);
-  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-8)) calc(-1 * var(--space-4)) 0;
-  padding: 0;
-  color: var(--ink);
-  background: none;
-  border: 0;
   border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
-@media (hover: hover) {
-  .app-message__close:hover {
-    background: var(--hover-fill);
-  }
-}
-
-.app-message__close:active {
-  background: var(--press-fill);
-}
-
-.app-message__close:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
 </style>

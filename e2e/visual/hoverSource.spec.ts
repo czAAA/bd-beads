@@ -10,7 +10,7 @@ import { handMadeTooltips, nativeTitles } from '../support/hoverSource'
 test('hover text is made by the shared Tooltip, not by a native title', () => {
   const used = new Set(nativeTitles().map((title) => `${title.file}|${title.what}`))
   const unlisted = [...used].filter((key) => !(key in NATIVE_TITLES))
-  expect(unlisted, 'a native title is hover text the browser draws, which this check cannot measure: use IconButton, ToolButton or AppTooltip, or list it in NATIVE_TITLES (e2e/support/hoverExemptions.ts) with a reason').toEqual([])
+  expect(unlisted, 'a native title is hover text the browser draws, which this check cannot measure: use IconButton, AppButton or AppTooltip, or list it in NATIVE_TITLES (e2e/support/hoverExemptions.ts) with a reason').toEqual([])
   const stale = Object.keys(NATIVE_TITLES).filter((key) => !used.has(key))
   expect(stale, 'listed in NATIVE_TITLES but gone from the source: remove it').toEqual([])
 })

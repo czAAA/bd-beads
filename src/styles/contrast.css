@@ -70,7 +70,6 @@
   html:root :is(
       .app-button,
       .icon-btn,
-      .expand-btn,
       .segmented,
       .text-field,
       .field-select__control,
@@ -99,7 +98,7 @@
     background: ButtonText;
   }
 
-  html:root .tool-button--active {
+  html:root .icon-btn--tool.icon-btn--selected {
     border: 2px solid Highlight;
   }
 

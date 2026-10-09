@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
 import AppSelect from './AppSelect.vue'
 import AppTooltip from './AppTooltip.vue'
-import ExpandButton from './ExpandButton.vue'
 import IconButton from './IconButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
 import type { TooltipProps } from './tooltipProps'
@@ -343,20 +342,8 @@ describe('AppSelect', () => {
   })
 })
 
-describe('ExpandButton', () => {
-  it('points down while collapsed and up while expanded, and says which', () => {
-    const collapsed = mount(ExpandButton, { props: { expanded: false, label: 'Show every color' } }).get('button')
-    expect(collapsed.attributes('aria-expanded')).toBe('false')
-    expect(collapsed.get('svg').attributes('data-icon')).toBe('arrow-down')
-
-    const expanded = mount(ExpandButton, { props: { expanded: true, label: 'Show every color' } }).get('button')
-    expect(expanded.attributes('aria-expanded')).toBe('true')
-    expect(expanded.get('svg').attributes('data-icon')).toBe('arrow-up')
-  })
-})
-
 describe('the controls follow the interaction rules and use only tokens', () => {
-  const files = ['AppButton', 'IconButton', 'AppSelect', 'ExpandButton', 'AppTooltip']
+  const files = ['AppButton', 'IconButton', 'AppSelect', 'AppTooltip']
   const styleOf = (name: string) => {
     const source = readFileSync(resolve(__dirname, `${name}.vue`), 'utf8')
     return /<style scoped>([\s\S]*)<\/style>/.exec(source)![1].replace(/\/\*[\s\S]*?\*\//g, '')

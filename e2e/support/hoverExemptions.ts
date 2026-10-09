@@ -5,27 +5,11 @@ import type { InfoPopover } from './hoverSource'
  * reviewer would accept, and delete it when the thing it excuses is gone.
  */
 
-const NATIVE = 'native, cannot be clipped'
-
 /**
- * Native `title` attributes that show hover text today, as `file|what` (what names the text: the translation it reads,
- * or the expression). The browser draws them outside the page, so no ancestor can cut them off; they stay until a ticket
- * moves them onto the Tooltip, so that they get its look, its keyboard and touch way in, and this check's measuring.
+ * Native `title` attributes that show hover text, as `file|what`. None are left (ADR 0035, ticket 341): hover text is
+ * the shared Tooltip's, so that it gets its look, its keyboard and touch way in, and this check's measuring.
  */
-export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
-  [
-    'components/export/SaveBox.vue|t.saveBox.saveButton',
-    'components/project/NewProjectForm.vue|limitsHint',
-    'components/tools/MirrorControls.vue|t.mirror.decreaseLeftRightButton',
-    'components/tools/MirrorControls.vue|t.mirror.increaseLeftRightButton',
-    'components/tools/MirrorControls.vue|t.mirror.decreaseTopBottomButton',
-    'components/tools/MirrorControls.vue|t.mirror.increaseTopBottomButton',
-    'components/tools/MirrorControls.vue|t.mirror.copyModeLabel',
-    'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentHorizontalButton',
-    'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentVerticalButton',
-    'components/tour/TourLayer.vue|t.tour.backToLoomName',
-  ].map((key) => [key, NATIVE]),
-)
+export const NATIVE_TITLES: Record<string, string> = {}
 
 /**
  * The hand-made hover texts: info popovers, opened by click (or the info button's focus) rather than hover, whose own

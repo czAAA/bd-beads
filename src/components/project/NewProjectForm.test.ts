@@ -225,7 +225,7 @@ describe('NewProjectForm draft (ticket 58)', () => {
 })
 
 describe('NewProjectForm Convert image (ticket 58)', () => {
-  it('advertises the limits as visible helper text and as the input own title, from the shared constants', async () => {
+  it('advertises the limits as visible helper text and from the shared constants', async () => {
     const wrapper = await mountSizedForm()
     const expected = formatImageLimits(ru.convertImage.limitsHint)
 
@@ -233,16 +233,6 @@ describe('NewProjectForm Convert image (ticket 58)', () => {
     expect(expected).toContain(String(IMAGE_MAX_MEGABYTES))
     expect(expected).toContain(String(IMAGE_MAX_MEGAPIXELS))
     expect(wrapper.find('[data-testid="convert-image-limits"]').text()).toBe(expected)
-    expect(wrapper.find('[data-testid="convert-image-input"]').attributes('title')).toBe(expected)
-  })
-
-  it('still carries the limits in a title while the input is disabled, where a tooltip would not show', () => {
-    const wrapper = mount(NewProjectForm)
-
-    expect(wrapper.find<HTMLInputElement>('[data-testid="convert-image-input"]').element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="convert-image-field"]').attributes('title')).toBe(
-      formatImageLimits(ru.convertImage.limitsHint),
-    )
   })
 
   it('offers the accepted formats to the file picker', async () => {
