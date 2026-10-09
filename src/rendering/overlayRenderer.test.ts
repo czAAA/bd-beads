@@ -66,18 +66,30 @@ describe('renderOverlay', () => {
       expect(named('fillRect')[0]!.args).toEqual([10, 39.5, 60, 3])
     })
 
-    it('marks the bottom edge of the beads of the pass on peyote, every other one after the first line (ticket 347)', () => {
-      const marked = (currentRow: number) => {
+    it('joins the pieces on peyote into one stepped border: the pass\'s beads on their bottom edge, the beads still to weave on their top (ticket 369)', () => {
+      const border = (currentRow: number) => {
         const project = projectOf('peyote', 5, 3, { currentRow })
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
-        return named('fillRect').map((call) => call.args[0])
+        return named('fillRect').map((call) => call.args)
       }
 
-      // Row 0 is whole; pass 1 is row 1's beads 0, 2, 4 (half a bead across, 20px apart); pass 2 is its beads 1 and 3.
-      expect(marked(0)).toEqual([0, 20, 40, 60, 80])
-      expect(marked(1)).toEqual([10, 50, 90])
-      expect(marked(2)).toEqual([30, 70])
+      // Row 0 is one whole pass: a straight edge.
+      expect(border(0)).toEqual([[0, 18.5, 100, 3]])
+      // Row 1, first pass: beads 0, 2, 4 (half a bead across, 20px apart) on their bottom edge, 1 and 3 on their top, 20px higher; a step joins each pair.
+      expect(border(1)).toEqual([
+        [10, 33.5, 21.5, 3],
+        [28.5, 13.5, 3, 23],
+        [28.5, 13.5, 23, 3],
+        [48.5, 13.5, 3, 23],
+        [48.5, 33.5, 23, 3],
+        [68.5, 13.5, 3, 23],
+        [68.5, 13.5, 23, 3],
+        [88.5, 13.5, 3, 23],
+        [88.5, 33.5, 21.5, 3],
+      ])
+      // Second pass: the row is complete, so the whole row's bottom edge, straight again.
+      expect(border(2)).toEqual([[10, 33.5, 100, 3]])
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -92,36 +104,38 @@ describe('renderOverlay', () => {
   })
 
   describe('the column being woven (rows down the grid\'s columns)', () => {
-    it('draws one 3px edge on the right of each bead of loom\'s column, the side facing the next column (ticket 352)', () => {
+    it('draws one 3px edge on the right of loom\'s column, the side facing the next column (ticket 352)', () => {
       const project = projectOf('loom', 4, 3, { direction: 'columns', currentColumn: 1 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(named('fillRect').map((call) => call.args)).toEqual([[38.5, 0, 3, 20], [38.5, 20, 3, 20], [38.5, 40, 3, 20]])
+      expect(named('fillRect').map((call) => call.args)).toEqual([[38.5, 0, 3, 60]])
     })
 
-    it('follows the shifted rows on peyote, a pass at a time', () => {
-      const edge = (currentColumn: number) => {
+    it('steps between the shifted rows on peyote, a pass at a time (ticket 369)', () => {
+      const border = (currentColumn: number) => {
         const project = projectOf('peyote', 3, 2, { direction: 'columns', currentColumn })
         const { context, named } = recordingContext()
         renderOverlay(context, { project, region: whole(project), zoom: 1 })
         return named('fillRect').map((call) => call.args)
       }
 
-      // Column 1 is woven in two passes (ticket 347): row 0's bead at x 20, then row 1's (shifted half a bead) at x 30 and 15px down.
-      expect(edge(1)).toEqual([[38.5, 0, 3, 20]])
-      expect(edge(2)).toEqual([[48.5, 15, 3, 20]])
+      // Column 1 is woven in two passes (ticket 347): row 0's bead (right edge at x 40) is in the first, row 1's (shifted half a bead, 15px down)
+      // is still to weave and keeps the border on its left edge at x 30; the step joins them.
+      expect(border(1)).toEqual([[38.5, 0, 3, 19], [28.5, 16, 13, 3], [28.5, 16, 3, 19]])
+      // Once both are woven, both are on their right edges (x 40 and 50).
+      expect(border(2)).toEqual([[38.5, 0, 3, 19], [38.5, 16, 13, 3], [48.5, 16, 3, 19]])
     })
 
-    it('follows the shifted rows on brick stitch', () => {
+    it('steps between the shifted rows on brick stitch', () => {
       const project = projectOf('brick', 3, 2, { direction: 'columns', currentColumn: 0 })
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       // Row 1 is half a bead across and 21px down.
-      expect(named('fillRect').map((call) => call.args)).toEqual([[18.5, 0, 3, 20], [28.5, 21, 3, 20]])
+      expect(named('fillRect').map((call) => call.args)).toEqual([[18.5, 0, 3, 22], [18.5, 19, 13, 3], [28.5, 19, 3, 22]])
     })
   })
 
