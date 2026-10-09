@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt } from '../../domain/canvas'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, paintCells, setRowProgressEnabled, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
@@ -35,6 +35,23 @@ describe('usePaintStroke', () => {
     expect(at(0, 0)).toBeNull()
     expect(stroke.strokeMode.value).toBeNull()
     expect(harness.history.canUndo.value).toBe(false)
+  })
+
+  it('cancels an erase stroke and a drag over several beads, and ends a Select press', () => {
+    const { stroke, harness, endSelectPress, at, frame } = setup('paint', undefined)
+    const { row, column } = frame
+    harness.edit('drawing', (project) => paintCells(project, [{ row, column }], '#0000ff', NO_MIRROR_AXES, false))
+    const painted = harness.project.beads
+
+    stroke.beginOrCommitPress('erase', null, row, column)
+    stroke.paintStrokeCell(row, column + 1, '#00ff00')
+    stroke.paintStrokeCell(row, column + 2, '#00ff00')
+    expect(at(0, 0)).toBeNull()
+    stroke.cancelStroke()
+
+    expect(harness.project.beads).toEqual(painted)
+    expect(at(0, 0)).toBe('#0000ff')
+    expect(endSelectPress).toHaveBeenCalled()
   })
 
   it('turns a whole drag into one undo step and one save', () => {

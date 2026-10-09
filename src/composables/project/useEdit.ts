@@ -123,8 +123,9 @@ export function useEdit(deps: EditDeps) {
   /** Drops a stroke as if it never began: the baseline goes back, with no Undo step. A no-op when no stroke was running. */
   function cancelStroke() {
     const baseline = strokeBaseline
+    const project = deps.currentProject()
     strokeBaseline = undefined
-    if (baseline) {
+    if (baseline && project && project.beads !== baseline.beads) {
       restore(baseline)
     }
     deps.flushPendingSave()

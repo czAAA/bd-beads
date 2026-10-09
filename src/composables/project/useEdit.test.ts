@@ -118,6 +118,46 @@ describe('useEdit', () => {
     })
   })
 
+  describe('a cancelled stroke', () => {
+    it('puts the baseline back with no Undo step, and keeps what Redo held', () => {
+      const ctx = editHarness(base)
+      ctx.edit('drawing', (project) => paint(project, inside(1, 1)))
+      ctx.history.onUndo()
+      expect(ctx.history.canRedo.value).toBe(true)
+
+      ctx.editing.beginStroke()
+      for (const column of [0, 1, 2]) {
+        ctx.editing.strokeStep((project) => paint(project, inside(0, column)))
+      }
+      ctx.editing.cancelStroke()
+
+      expect(ctx.project.beads).toEqual(base.beads)
+      expect(ctx.history.canUndo.value).toBe(false)
+      expect(ctx.history.canRedo.value).toBe(true)
+      expect(ctx.flushPendingSave).toHaveBeenCalled()
+    })
+
+    it('is a no-op when no stroke is running, or when the stroke changed nothing', () => {
+      const ctx = editHarness(base)
+      ctx.editing.cancelStroke()
+      ctx.editing.beginStroke()
+      ctx.editing.cancelStroke()
+
+      expect(ctx.replaceProject).not.toHaveBeenCalled()
+      expect(ctx.history.canUndo.value).toBe(false)
+    })
+
+    it('leaves nothing for endStroke to record', () => {
+      const ctx = editHarness(base)
+      ctx.editing.beginStroke()
+      ctx.editing.strokeStep((project) => paint(project, inside(0, 0)))
+      ctx.editing.cancelStroke()
+      ctx.editing.endStroke()
+
+      expect(ctx.history.canUndo.value).toBe(false)
+    })
+  })
+
   describe('a stroke', () => {
     it('is one Undo step and one save however many cells it paints', () => {
       const ctx = editHarness(base)

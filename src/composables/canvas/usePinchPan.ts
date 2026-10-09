@@ -6,7 +6,7 @@ interface PinchPanDeps {
   setZoom: (value: number, anchor?: { x: number; y: number }) => void
   /** Moves the canvas under the viewport by a distance on screen. */
   panBy: (dx: number, dy: number) => void
-  /** Drops the paint stroke the first finger began, with the bead it already painted: that finger was the pinch's, not a stroke. */
+  /** Drops the paint stroke the first finger began, with the bead(s) it already painted: that finger was the start of a pinch, not a stroke. */
   cancelStroke: () => void
 }
 
@@ -29,8 +29,8 @@ function distance(a: Point, b: Point): number {
  * for us and this is the whole gesture recognizer.
  *
  * It listens in the capture phase on the canvas panel's scroller, above the drawing surface. The second finger
- * landing takes back the stroke the first began (its bead too), and from then until every finger is up the surface hears nothing, so
- * neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
+ * landing takes back the stroke the first began, with every bead it painted, and from then until every finger is up
+ * the surface hears nothing, so neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
  * and the point between them stays under them as the zoom changes; moving them together scrolls the Project.
  * Only touch takes part: a mouse or pen has no second contact, and the zoom pill and keys cover them.
  */
