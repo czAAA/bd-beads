@@ -97,7 +97,7 @@ export interface ProjectTheme {
 }
 
 /** How much of a finished bead's own color shows over the board while finished rows are dimmed (ticket 352). */
-const FINISHED_OPACITY = 0.6
+const FINISHED_OPACITY = 0.5
 
 /** The light theme (BeadBoard card). */
 export const LIGHT_THEME: ProjectTheme = {

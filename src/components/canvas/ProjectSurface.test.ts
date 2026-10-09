@@ -325,8 +325,8 @@ describe('ProjectSurface', () => {
 
     context.calls.length = 0
     await mountSurface(projectOf(20, 10, { rowProgress: progress(true) }))
-    // The marker is one stroked line, over whatever else the overlay strokes.
-    expect(context.named('stroke')).toHaveLength(without + 1)
+    // The marker is the rings round the beads in the pass and the line joining them (ticket 375), over whatever else the overlay strokes.
+    expect(context.named('stroke')).toHaveLength(without + 2)
   })
 
   describe('moving the canvas', () => {
@@ -423,7 +423,7 @@ describe('ProjectSurface', () => {
         await mountSurface(weaving())
 
         expect(redShown()).toBe(false)
-        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.6))).toBe(true)
+        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(true)
       })
 
       it('draws them at normal color while a mouse or a pen hovers a finished row, and dims them again when it leaves', async () => {
@@ -532,7 +532,7 @@ describe('ProjectSurface', () => {
         await surface.trigger('pointerdown', { clientX: 900, clientY: 700, pointerType: 'mouse', pointerId: 1, isPrimary: true, button: 1, buttons: 4 })
         await moveTo(surface, centreOf(project, project.frame!.row + 5, project.frame!.column))
         await nextTick()
-        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.6))).toBe(false)
+        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(false)
       })
 
       it('does not count a finger\'s touch as a hover', async () => {

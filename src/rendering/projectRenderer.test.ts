@@ -600,24 +600,24 @@ describe('the bead look', () => {
     expect(named('fillRect')[1]!.fillStyle).toBe(DEFAULT_THEME.emptyBead)
   })
 
-  it('draws a finished bead in light as its own color at 60% over the board, opaque', () => {
+  it('draws a finished bead in light as its own color at 50% over the board, opaque', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ dimmed: true }))
 
-    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.6)
+    const faded = fadeOver('#e63746', DEFAULT_THEME.background, 0.5)
     expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha])).toEqual([
       [blendOver(DEFAULT_THEME.rim!, faded), 1],
       [faded, 1],
     ])
   })
 
-  it('draws a finished bead in dark as its own color at 60% over the board, not grey (ticket 352)', () => {
+  it('draws a finished bead in dark as its own color at 50% over the board, not grey (ticket 352)', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ dimmed: true, theme: DARK_THEME }))
 
-    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver('#e63746', DARK_THEME.background, 0.6)])
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver('#e63746', DARK_THEME.background, 0.5)])
   })
 
   it('leaves the context as it found it', () => {
@@ -703,7 +703,7 @@ describe('the bead look', () => {
 
       drawFlatBead(context, bead({ dimmed: true, backdrop: '#ffffff' }))
 
-      const faded = fadeOver('#e63746', '#ffffff', 0.6)
+      const faded = fadeOver('#e63746', '#ffffff', 0.5)
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
         [blendOver(DEFAULT_THEME.rim!, faded), 1, 41, 21, 18, 18],
         [faded, 1, 41.75, 21.75, 16.5, 16.5],
