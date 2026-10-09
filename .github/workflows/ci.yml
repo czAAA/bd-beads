@@ -4,7 +4,7 @@ name: CI
 # by name: "Typecheck and lint", "Unit tests passed" (the aggregate of the unit shards) and "Visual check passed" (the aggregate of the visual shards).
 #
 # `pull_request`, never `pull_request_target`: a pull request's own code runs here, so the token is read-only and no
-# secrets are used (ADR 0039). A PR that only moves tickets or edits Markdown changes nothing checked here, so it is skipped.
+# secrets are used (ADR 0032). A PR that only moves tickets or edits Markdown changes nothing checked here, so it is skipped.
 
 on:
   pull_request:

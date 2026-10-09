@@ -4,7 +4,7 @@ How tests are written in this repo. The commands are in the README's Checks; the
 
 ## Running them
 
-- While working, run only the tests related to your change: `npx vitest related --run <changed files>`. The full unit suite peaks near 1.5 GB of RAM, so its one run is CI's, on every pull request ([ADR 0039](adr/0039-ci-gates-pull-requests-again.md)), even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene).
+- While working, run only the tests related to your change: `npx vitest related --run <changed files>`. The full unit suite peaks near 1.5 GB of RAM, so its one run is CI's, on every pull request, even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene).
 - `npm run typecheck` and `npm run lint` are cheap; run them before pushing.
 
 ## Where a test goes

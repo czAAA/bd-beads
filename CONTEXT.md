@@ -285,7 +285,7 @@ _Avoid_: onboarding, tutorial, walkthrough, guide, coach marks
 
 ## How to run it
 
-`npm install`, then `npm run dev` (Vite) and open the URL it prints; `npm run build` makes `dist/`. Every check (`npm test`, `npm run typecheck`, `npm run lint`, `npm run visual`, `npm run perf`) is in the README's [Checks](README.md#checks). While working, run only the tests related to your change (`npx vitest related --run <files>`), never the full suite by hand; CI runs it on every pull request ([ADR 0039](docs/adr/0039-ci-gates-pull-requests-again.md)). How tests are written: [docs/testing.md](docs/testing.md); what a change must follow: [CODING_STANDARDS.md](CODING_STANDARDS.md).
+`npm install`, then `npm run dev` (Vite) and open the URL it prints; `npm run build` makes `dist/`. Every check (`npm test`, `npm run typecheck`, `npm run lint`, `npm run visual`, `npm run perf`) is in the README's [Checks](README.md#checks). While working, run only the tests related to your change (`npx vitest related --run <files>`), never the full suite by hand; CI runs it on every pull request. How tests are written: [docs/testing.md](docs/testing.md); what a change must follow: [CODING_STANDARDS.md](CODING_STANDARDS.md).
 
 ## Where to start
 

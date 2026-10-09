@@ -13,7 +13,7 @@
 - [x] `CLAUDE.md` links to `CODING_STANDARDS.md` and says outright that "never run the full suite by hand" overrides the `implement` skill's "full test suite once at the end"
 - [x] `CONTEXT.md`: "How to run it" is filled in (or links to README's Checks); "Where to start" is a short map of `src/` (domain, rendering, services, the per-feature composables and components, the UI primitives, i18n, theme, overview) and the key entry files
 - [x] `CONTEXT.md`'s Key concepts holds only domain language: the test-tooling detail in "Text fit check" and the layout detail in "App shell layout" move to a testing doc or a layout doc, with a one-line glossary entry and link left in their place
-- [x] Every ADR number is unique: one of each 0024 pair and one of each 0032 pair is renumbered (next free numbers), and every reference in `CLAUDE.md`, `CONTEXT.md`, `DESIGN.md`, the README, other ADRs, `eslint.config.js` comments and code comments points to the right one
+- [ ] Every ADR number is unique: one of each 0024 pair and one of each 0032 pair is renumbered (next free numbers), and every reference in `CLAUDE.md`, `CONTEXT.md`, `DESIGN.md`, the README, other ADRs, `eslint.config.js` comments and code comments points to the right one *(not done here: a parallel ADR change owns the numbers)*
 - [x] `docs/agents/issue-tracker.md` documents the ticket format in use (heading `# NN: Title`, What to build, Spec, Blocked by, Status, checklist), says how to pick the next number (highest across `.scratch/`, `.archive/` and branch names, plus one), and says tickets stay flat as `.scratch/NN-slug.md`, not in per-feature folders
 
 ### Cleanup (each needs the maintainer's go-ahead)
@@ -26,13 +26,13 @@
 
 ### Done when
 
-- [x] A search for any ADR number or ticket number returns one match
+- [ ] A search for any ADR number or ticket number returns one match *(ticket numbers yes, since 359; ADR numbers wait for the parallel ADR change)*
 - [x] Listing `ready-for-agent` tickets returns no archived work
 - [x] A dry `code-review` run names `CODING_STANDARDS.md` as a standards source
 
 ### Closing notes
 
-- ADRs: `0024-payment-provider-polar` became 0038 and `0032-ci-gates-pull-requests-again` became 0039, the one of each pair with fewer references (the archived tickets' "ADR 0032" all mean the phone layout, which kept its number). References updated in `CLAUDE.md`, the README, `ci.yml` and ADR 0029.
+- ADR numbers are left as they are: a parallel change renumbers them and updates the references, including the ones these docs add (`CODING_STANDARDS.md`, `CONTEXT.md`'s App shell layout entry and Where to start, `docs/layout.md`). No ADR-numbering rule was added to `docs/agents/domain.md` either, for the same reason.
 - Testing went into `docs/testing.md` (linked from `CODING_STANDARDS.md`, `CLAUDE.md` and `CONTEXT.md`), with the Text fit check detail; the App shell layout detail went into `docs/layout.md`.
 - Found on the way and fixed: `eslint.config.js` still listed the `pattern/` feature folder renamed to `project/` by ticket 262, so `components/ui/` could import from `project/` without a lint error. `CLAUDE.md` named the canvas theme `PatternTheme` (it is `ProjectTheme`).
 - Cleanup, with the maintainer's go-ahead: the 35 untracked tickets in the main checkout's `.scratch/` were compared with `.archive/` (33) and the open tickets (353, 354, identical). Every line only in a stray copy was an older draft the archived copy supersedes (unticked boxes, old Status lines, "decide first" questions since answered, two 334 table rows the archive has in full); all 35 were deleted. `bd-beads-346/` and the 17 sibling worktrees whose PRs are merged (337–340, 340b, 347, 347b, 348, 350–357, 359) were removed; their branches are kept.

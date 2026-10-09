@@ -32,7 +32,7 @@ The first run needs the browser: `npx playwright install chromium`. The referenc
 
 ### CI
 
-CI is the gate (ADR 0039). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only `.scratch/` or Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
+CI is the gate (ADR 0032). Every pull request to `main` runs typecheck and lint, the unit tests and the visual check on GitHub, and branch protection requires the aggregate checks "Typecheck and lint", "Unit tests passed" and "Visual check passed". A PR that changes only `.scratch/` or Markdown skips them. A failed visual run uploads its report as an artifact. While working, run only the tests related to your change (`npx vitest related --run <files>`); a full unit run peaks near 1.5 GB of RAM, so leave the full suite to CI.
 
 ### Performance check
 
