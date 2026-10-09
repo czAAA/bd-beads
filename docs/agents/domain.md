@@ -24,6 +24,10 @@ Single-context repo:
 └── src/
 ```
 
+## ADR numbers
+
+A new ADR takes the highest number used on any branch plus one, since an ADR can exist only on an unmerged branch: `git log --all --name-only --format= -- docs/adr | sort -u | tail -1` (renamed and deleted names count too: a number is never reused). Each number names exactly one ADR; a superseded ADR keeps its number and file, with its Status line naming the one that replaces it.
+
 ## Use the glossary's vocabulary
 
 When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.

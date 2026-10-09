@@ -79,7 +79,7 @@ export default tseslint.config(
           patterns: [
             { group: ['**/services', '**/services/*'], message: 'Components emit events or take what they need from props or the app shell (ADR 0020).' },
             {
-              group: ['canvas', 'tools', 'palette', 'export', 'import', 'pattern', 'shell', 'tour'].map((feature) => `**/${feature}/**`),
+              group: ['canvas', 'tools', 'palette', 'export', 'import', 'project', 'shell', 'tour'].map((feature) => `**/${feature}/**`),
               message: 'components/ui/ imports from no feature folder (ADR 0024).',
             },
           ],

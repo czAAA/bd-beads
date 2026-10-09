@@ -1,6 +1,6 @@
 # Tests run locally; GitHub Actions is for deployment
 
-**Status: superseded by ADR 0032.** Ticket 263. Supersedes the sharded CI of tickets 255–257.
+**Status: superseded by ADR 0039.** Ticket 263. Supersedes the sharded CI of tickets 255–257.
 
 ## Context
 
