@@ -98,7 +98,7 @@
     background: ButtonText;
   }
 
-  html:root .icon-btn--tool.icon-btn--selected {
+  html:root .icon-btn-wrap--tool .icon-btn[aria-pressed='true']:not(.icon-btn--accent) {
     border: 2px solid Highlight;
   }
 
