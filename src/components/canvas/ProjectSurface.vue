@@ -243,12 +243,18 @@ function oncePerFrame(draw: () => void): () => void {
 }
 
 /**
- * Whether finished rows are drawn at their normal color (ticket 352): while a mouse or a Pencil hovers the canvas, or
+ * Whether finished rows are drawn at their normal color (ticket 352): while a mouse or a Pencil hovers a finished row, or
  * after a tap on a finished row, which toggles it until the next tap. A view setting, not saved and not an Undo step.
  */
 const hovered = ref(false)
 const finishedRestored = ref(false)
 const showFinished = computed(() => hovered.value || finishedRestored.value)
+/** Where a mouse or a Pencil last was over the surface, so the hover can be asked again when the Project moves under it. */
+let hoverPoint: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
+
+function hoversFinishedRow(bead: GridPosition | undefined): boolean {
+  return bead !== undefined && isInFinishedRow(props.project, bead)
+}
 
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
@@ -327,6 +333,13 @@ function drawOverlay(): void {
     })
   }
 }
+
+// What is under a still pointer changes when the canvas moves or zooms, or the weaver's row does (Undo, the Progress bar).
+watch([() => props.project, () => props.zoom, () => props.scroll], () => {
+  if (hoverPoint) {
+    hovered.value = hoversFinishedRow(beadUnder(hoverPoint))
+  }
+})
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
@@ -414,7 +427,7 @@ function refusePress(): void {
 
 let lastPoint = { x: 0, y: 0 }
 
-function beadUnder(event: PointerEvent): GridPosition | undefined {
+function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPosition | undefined {
   const root = rootEl.value
   if (!root) {
     return undefined
@@ -534,8 +547,6 @@ function onPointerDown(event: PointerEvent): void {
  * primary-move branch covers all three input kinds without checking pointerType.
  */
 function onPointerMove(event: PointerEvent): void {
-  // A finger has no true hover: only a mouse or a Pencil restores the finished rows by being over the canvas.
-  hovered.value = event.pointerType !== 'touch'
   if (framing.value) {
     emit('frame-drag', cellUnder(event))
     return
@@ -545,6 +556,10 @@ function onPointerMove(event: PointerEvent): void {
     lastPoint = { x: event.clientX, y: event.clientY }
     return
   }
+  // A finger has no true hover: only a mouse or a Pencil restores the finished rows, and only by being over one of them.
+  const bead = beadUnder(event)
+  hoverPoint = event.pointerType === 'touch' ? undefined : { clientX: event.clientX, clientY: event.clientY }
+  hovered.value = hoverPoint !== undefined && hoversFinishedRow(bead)
   // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame, nor the
   // pointer that only moves the canvas.
   if (props.moving || props.settingFrame || movesCanvas(event)) {
@@ -553,7 +568,6 @@ function onPointerMove(event: PointerEvent): void {
     return
   }
 
-  const bead = beadUnder(event)
   overBead.value = bead !== undefined
   overRefusedMargin.value = refusesMargin(bead)
   if (isSameBead(bead, lastBead)) {
@@ -583,6 +597,7 @@ function onPointerEnd(): void {
 
 function onPointerLeave(): void {
   hovered.value = false
+  hoverPoint = undefined
   lastBead = undefined
   overBead.value = false
   overRefusedMargin.value = false
