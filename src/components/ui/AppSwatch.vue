@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
@@ -11,8 +10,10 @@ import { markOn } from './swatchMark'
  * popover. Its Tooltip is the name "Color", the hex as the body and, where it has one, the key chip. `label` is the
  * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
  *
- * The remove × (selected added colors only): top-right inside the swatch with no background, drawn in `ink` or
- * `canvas`, whichever reads better on this hex, in a 24px invisible hit area (WCAG 2.5.8).
+ * The remove × (added colors only): shown on the active swatch, while a mouse or an Apple Pencil hovers an added swatch
+ * (touch cannot hover) and while keyboard focus is on it. It sits top-right inside the swatch with no background,
+ * drawn black or white, whichever reads better on this hex, with a thin halo of the other, in a 24px invisible hit
+ * area (WCAG 2.5.8).
  */
 defineOptions({ inheritAttrs: false })
 
@@ -25,7 +26,7 @@ const props = withDefaults(
     hotkey?: string
     /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
     role?: 'button' | 'radio'
-    /** Asks for the ×; it shows only while the swatch is selected. */
+    /** Asks for the ×; it shows while the swatch is selected, hovered or keyboard-focused. */
     removeLabel?: string
   }>(),
   { selected: false, hotkey: undefined, role: 'button', removeLabel: undefined },
@@ -36,22 +37,50 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const theme = useResolvedTheme()
 const rootEl = ref<HTMLElement>()
+/** Keyboard focus is on the swatch (or its ×); a click that merely focuses a button doesn't count. */
+const focused = ref(false)
+const isKeyboardFocus = (target: EventTarget | null) => {
+  try {
+    return (target as HTMLElement).matches(':focus-visible')
+  } catch {
+    return false // an engine without :focus-visible
+  }
+}
+const onFocusIn = (event: FocusEvent) => {
+  focused.value = isKeyboardFocus(event.target)
+}
+const onFocusOut = (event: FocusEvent) => {
+  if (!rootEl.value?.contains(event.relatedTarget as Node | null)) focused.value = false
+}
+/** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
+const hovered = ref(false)
+const onPointerEnter = (event: PointerEvent) => {
+  if (event.pointerType !== 'touch') hovered.value = true
+}
+const onPointerLeave = () => {
+  hovered.value = false
+}
+const onRemove = () => {
+  hovered.value = false
+  emit('remove')
+}
 
-/** The mark's token, read from the stylesheet so it follows the theme; a bare DOM (a test) falls back to light. */
-const mark = computed(() => {
-  void theme.value
-  const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
-  const ink = style?.getPropertyValue('--ink').trim() || '#1f1f1f'
-  const canvas = style?.getPropertyValue('--canvas').trim() || '#ffffff'
-  return markOn(props.color, ink, canvas)
-})
-const showRemove = computed(() => props.selected && !!props.removeLabel)
+/** The × is black or white by the swatch's own hex, whatever the theme. */
+const mark = computed(() => markOn(props.color))
+const showRemove = computed(() => (props.selected || hovered.value || focused.value) && !!props.removeLabel)
 </script>
 
 <template>
-  <span ref="rootEl" class="swatch">
+  <span
+    ref="rootEl"
+    class="swatch"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+    @pointercancel="onPointerLeave"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+  >
     <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
       <template #default="{ describedby }">
         <button
@@ -79,7 +108,7 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
       :aria-label="removeLabel"
       tabindex="-1"
       data-testid="palette-swatch-remove"
-      @click="emit('remove')"
+      @click="onRemove"
     >
       <AppIcon class="swatch__remove-icon" name="close" :size="14" />
     </button>
@@ -130,7 +159,7 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
 
 .swatch__chip:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 /* A 24×24 button with no look of its own: only the 10px × shows. */
@@ -142,30 +171,36 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: var(--hit-min);
+  height: var(--hit-min);
   padding: 0;
   background: none;
   border: 0;
   cursor: pointer;
 }
 
-.swatch__remove--ink {
-  color: var(--ink);
+.swatch__remove--dark {
+  --mark: var(--swatch-mark-dark);
+  --mark-halo: var(--swatch-mark-light);
 }
 
-.swatch__remove--canvas {
-  color: var(--canvas);
+.swatch__remove--light {
+  --mark: var(--swatch-mark-light);
+  --mark-halo: var(--swatch-mark-dark);
 }
 
 .swatch__remove-icon {
-  width: 10px;
-  height: 10px;
+  /* !important: the icon sets its own size inline, in rem, from its `size` prop (14 at least). */
+  width: var(--swatch-remove-size) !important;
+  height: var(--swatch-remove-size) !important;
+  color: var(--mark);
+  stroke-width: var(--swatch-remove-stroke);
+  filter: drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo)) drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo));
 }
 
 .swatch__remove:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--focus-offset));
 }
 
 @media (prefers-reduced-motion: reduce) {

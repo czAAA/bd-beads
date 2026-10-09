@@ -228,7 +228,7 @@ onBeforeUnmount(hide)
 .app-tooltip__key {
   padding: 0 var(--space-4);
   font: var(--type-meta-tiny);
-  line-height: 1rem;
+  line-height: var(--tooltip-line);
   color: var(--tooltip-muted);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-xs);
@@ -264,12 +264,12 @@ onBeforeUnmount(hide)
   box-sizing: border-box;
   width: max-content;
   /* A long tip wraps at the wide-tooltip measure, or at the screen's width where that is narrower (tickets 246, 265). */
-  max-width: min(15rem, calc(100vw - 2 * var(--space-8)));
+  max-width: min(var(--tooltip-max-width), calc(100vw - 2 * var(--space-8)));
   margin: 0;
   padding: var(--space-6) var(--space-8);
   overflow: visible;
   font: var(--type-small);
-  line-height: 1rem;
+  line-height: var(--tooltip-line);
   color: var(--ink);
   pointer-events: none;
   background: var(--tooltip-fill);

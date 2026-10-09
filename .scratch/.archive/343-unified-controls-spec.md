@@ -1,6 +1,6 @@
 # 343: Spec: one control registry, shared controls and Tooltips everywhere
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Tickets:** 327–342 implement this spec. ADR 0035 records the main decision.
 
@@ -59,7 +59,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 29. As a maker, I want Clear to have no key, so that one stray keystroke can never start clearing the whole canvas.
 30. As a maker, I want `R` for Rulers and `D` for Row direction shown in their Tooltips, so that I find them.
 31. As a maker, I want the Row done and Row not done Tooltips to show both of their keys, so that I can use whichever is comfortable.
-32. As a maker, I want Done, Cancel and Clear selection to show `Escape`, so that I know `Escape` backs out of whatever I'm doing.
+32. As a maker, I want Done, Cancel and Clear selection to show `Esc`, so that I know `Esc` backs out of whatever I'm doing.
 33. As a maker, I want the Keyboard shortcuts dialog to list exactly the keys the app has, so that it is never out of date.
 34. As a maker on a phone, I want the Zoom pill's Row progress button to turn Row progress on and off, so that there is one control for one thing.
 35. As a maker on a phone, I want the Progress bar to show exactly while Row progress is on, so that the bar never takes space when I'm not tracking rows.
@@ -69,7 +69,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 39. As a maker on a phone, I want the Project and Menu Tooltips to list what they open, so that I find settings without opening every sheet.
 40. As a maker, I want a palette swatch's Tooltip to say "Color", the hex and its key chip, so that I can pick it by keyboard.
 41. As a maker, I want Image colors and Canvas color swatches to show "Color" and the hex, so that all swatches read alike.
-42. As a maker, I want the remove × on an added swatch to be a small round × in its top-right corner that stays readable on light and dark colors, so that I can remove it without hunting.
+42. As a maker, I want the remove × on an added swatch to be a small round × in its top-right corner that stays readable on light and dark colors, and to show on the active color and when my mouse or Apple Pencil hovers a swatch or keyboard focus is on it, so that I can remove it without hunting.
 43. As a maker, I want the remove × to be easy to hit on touch, so that I don't select the swatch by mistake.
 44. As a maker, I want Custom color to tell me the Palette's added-color limit, and say when the Palette is full, so that I know why no more colors are added.
 45. As a maker, I want Image colors to say "This Project was not made from a picture." when disabled, so that I understand why it's empty.
@@ -103,7 +103,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 ## Implementation Decisions
 
 - **Control registry** (new, deep module). One definition per action: id, icon, name (English and Russian), optional body, zero or more keys, an enabled check, a `disabledBody` (which may depend on the reason: no Frame, Row progress lock, empty canvas) for any action that can be disabled, and the command it runs. The Toolbox, phone sheets, Dock, ContextBar, Zoom pill, Progress bar, header, Menu and the Keyboard shortcuts dialog read from it.
-- **Keyboard handler** is built from the registry's keys. Rule: one key or combination maps to exactly one action. One action may have several keys. Several controls may display the same action's key: `Escape` is one Back out action (Frame editing, then paste, then Selection, then Paint) shown on Done, Cancel and Clear selection. Dialogs keep the browser's own `Escape` for closing, outside the registry. The existing guards stay: no modal open, not while typing (except Save), and Enter/Space giving way to a focused Toolbox button.
+- **Keyboard handler** is built from the registry's keys. Rule: one key or combination maps to exactly one action. One action may have several keys. Several controls may display the same action's key: `Escape` is one Back out action (an expanded Tool group, then Frame editing, then paste, then Selection, then Paint). Done, Cancel and Clear selection show its `Esc` chip without owning the key. Dialogs keep the browser's own `Escape` for closing, outside the registry. The existing guards stay: no modal open, not while typing (except Save), and Enter/Space giving way to a focused Toolbox button.
 - **Key changes:**
   - `Del` empties the Selection's beads and does nothing without a Selection. It never picks the Eraser.
   - `Shift+Del` runs Remove row/column.
@@ -112,19 +112,19 @@ Every control is defined once and looks and behaves the same wherever it appears
   - `P` is the one Row progress action.
 - **Row progress on phones (under 1024px):** the Zoom pill's button is the same action as the Progress bar's switch. Turning it on turns Row progress on and shows the bar. Turning it off turns Row progress off and hides the bar. The separate "show the Progress bar" preference is removed. From 1024px up the bar stays always visible, as now.
 - **Tooltip contract** (`AppTooltip`): `name` is required; `body` and `hotkey` are optional; `disabled` and `disabledBody` go together, and the types require `disabledBody` whenever `disabled` can be true. When disabled it shows the name and `disabledBody` in muted text, with no key chip. A control shows a Tooltip exactly when one is given to it. Opening it, the top-layer placement and the 15rem wrap stay as in ticket 265.
-- **Tooltip look:** the `elevated` surface at about 90% opacity with a backdrop blur, `ink` text, a 1px `line-soft` border and the existing shadow token. Fully opaque in High contrast. It must pass WCAG 4.5:1.
+- **Tooltip look:** the `elevated` surface at about 92% opacity in light and 90% in dark, with a backdrop blur, `ink` text, a 1px `line-soft` border and the existing shadow token. Fully opaque in High contrast. It must pass WCAG 4.5:1.
 - **Disabled controls** use `aria-disabled="true"` instead of the native `disabled`. They stay focusable and hoverable, and activating them does nothing.
 - **Shared controls:**
   - **`IconButton`:** icon, size, optional key badge (`hotkey` and `showHotkey`), selected state, optional Tooltip, or a registry action. It absorbs ToolButton (the underline when selected and the key badge), ExpandButton, the Dock slots, sheet close and the steppers.
   - **`AppButton`:** optional leading icon, label, variants, and a new `link` variant replacing AppLink. Optional Tooltip, or a registry action.
   - **`MenuButton`:** wraps either of the above and opens a popover on desktop or a sheet on a phone. It owns `aria-expanded`, `aria-haspopup`, focus return, and closing on `Escape` or an outside click. Its Tooltip body can be generated from its item names ("A, B, C.").
-  - **`Swatch`:** a color, selected state, an optional key chip, and an optional remove ×. The × is round, top-right inside the swatch, with no background, drawn in `ink` or `canvas` (whichever contrasts more with the swatch, the same logic as the Bead cursor). It is about 10px with a hit area of at least 24×24. The Tooltip is "Color" with the hex as the body.
+  - **`Swatch`:** a color, selected state, an optional key chip, and an optional remove ×, shown on the active color and while a mouse or Apple Pencil hovers an added swatch or keyboard focus is on it (touch cannot hover). The × is round, top-right inside the swatch, with no background, drawn black or white (whichever contrasts more with the swatch's own hex, whatever the theme) with a thin halo of the other color. It is about 10px with a hit area of at least 24×24. The Tooltip is "Color" with the hex as the body.
   - **`Note`:** always-visible helper text on a gray surface, in `meta` type and muted, with no icon.
   - **Kept as they are, wired to the Tooltip:** AppSwitch, SegmentedControl/ThemeToggle, Stepper.
 - **Copy:** the full English and Russian table is in ticket 334. Rules: the name is the control's existing name in sentence case with product nouns capitalized; the body is one imperative sentence with a full stop; keys appear only in chips; never "Click to"; lists are built from item names. Controls the buttons audit marks "none" keep only their accessible name.
 - **New Project form** loses its Frame, Unit and Width & Height sections. The Frame section gains a beads | mm switch remembered on the device. A typed mm value rounds up to the next whole bead. A stepper press is one bead in either unit. Estimated size shows the other unit. Width and Height replace columns and rows wherever a Pattern size is shown. Convert image keeps its own size step (ADR 0026).
 - **Design system:** the Tooltip, Note, Button, PaletteSwatches, Frame, NewPatternForm and NumbersAndUnits cards are updated in the same changes as the code (DESIGN.md §6), using role-named tokens only.
-- **Order:** 327, 328, 329 and 342 can start at once. 330 and 331 follow 327 and 329. 332 follows 330 and 331. 333 follows 327, and 334 follows 329. The migrations (335 Toolbox → 336 Dock and phone sheets → 337 ContextBar → 338 Zoom pill, canvas strip and Canvas color → 339 Progress bar → 340 header, Menu and Overview → 341 Save box, Saved Projects, dialogs and toasts) run one after another. 341 deletes the old components and the last `title`s.
+- **Order:** 327, 328, 329 and 342 can start at once. 330 and 331 follow 327 and 329. 332 follows 330 and 331. 333 follows 327, and 334 follows 329. The migrations (335 Toolbox → 336 Dock and phone sheets → 337 ContextBar → 338 Zoom pill, canvas strip and Canvas color → 339 Progress bar → 340 header, Menu and Overview → 341 Save box, Saved Projects, dialogs and toasts) run one after another. 341 deletes the old components and the last `title`s. Follow-ups 345–348, 372 and 373 touched the same areas.
 
 ## Testing Decisions
 
@@ -135,14 +135,14 @@ Every control is defined once and looks and behaves the same wherever it appears
 - **Seam 2, the shared controls mounted** (prior art: the existing UI controls test file):
   - The Tooltip's name, body and chip; the disabled name, `disabledBody` and no chip; `aria-disabled`, and a click doing nothing.
   - `MenuButton`'s `aria-expanded` and where focus goes when it closes.
-  - The `Swatch` × showing only on a selected added color.
+  - The `Swatch` × showing on the active added color, on a hovered one (mouse or pen) and on a keyboard-focused one, never from touch hover, and never without a remove label.
   - The `Note` rendering its text.
   - The unit rule: rounding up from mm and one bead per stepper press.
 - **Seam 3, the visual check** (existing Playwright visual suite, run by CI):
   - The new Tooltip look in all themes, the Note, the Swatch ×, the Frame section's unit switch, and each migrated area.
   - Baselines are updated only where the look changed on purpose.
 - **Area tests:** the existing Toolbox, Dock, ContextBar and phone sheet tests are adjusted, not duplicated. Following ticket 253, no new app-level tests.
-- **A no-`title` check:** a lint rule or a grep in CI fails if a native `title` attribute appears in the app's components.
+- **A no-`title` check:** the hover-source Playwright spec (`e2e/visual/hoverSource.spec.ts`) fails if a native `title` attribute appears in the app's components.
 - While implementing, run only the related tests (`vitest related`). CI runs the full gate.
 
 ## Out of Scope

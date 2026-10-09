@@ -7,15 +7,13 @@ function luminance(hex: string): number {
   return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
 }
 
-function contrast(a: string, b: string): number {
-  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-  return (light! + 0.05) / (dark! + 0.05)
-}
+/** The luminance where black and white have the same contrast ratio with a color: sqrt(1.05 * 0.05) - 0.05. */
+const BLACK_WHITE_BALANCE = 0.1791
 
 /**
- * Which of the theme's two marks reads on a swatch of this color (ticket 333): `ink` or `canvas`, whichever has more
- * contrast with it. `ink` and `canvas` are the hexes those tokens have in the theme being drawn.
+ * Which mark reads on a swatch of this color (ticket 333): the `dark` one on a light swatch, the `light` one on a dark
+ * swatch, whichever has more contrast with the swatch's own hex. It never looks at the theme.
  */
-export function markOn(swatch: string, ink: string, canvas: string): 'ink' | 'canvas' {
-  return contrast(swatch, canvas) > contrast(swatch, ink) ? 'canvas' : 'ink'
+export function markOn(swatch: string): 'dark' | 'light' {
+  return luminance(swatch) > BLACK_WHITE_BALANCE ? 'dark' : 'light'
 }

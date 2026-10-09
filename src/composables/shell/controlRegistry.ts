@@ -1,3 +1,4 @@
+import { type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
@@ -50,21 +51,6 @@ export interface ControlDeps {
   onFit: () => void
 }
 
-/**
- * One key or combination. `key` (any of the listed `event.key` values, case-insensitively) or `code` (the physical
- * key, for the digits Shift turns into symbols) picks the key. `mod` is Ctrl or ⌘, `ctrl` is Ctrl alone; a chord with
- * neither needs both unpressed. `shift` must match exactly, unless it is `'any'` (the key itself needs Shift on some
- * layouts, like `?` and `+`). `label` is the key as the Keyboard shortcuts dialog and the key chips write it.
- */
-export interface Chord {
-  key?: string | readonly string[]
-  code?: string
-  mod?: boolean
-  ctrl?: boolean
-  shift?: boolean | 'any'
-  label: string
-}
-
 /** The groups of the Keyboard shortcuts dialog, in order; the first, third, fourth and fifth are the Toolbox's own names. */
 export const CONTROL_GROUPS = ['tools', 'canvas', 'colors', 'edit', 'rowProgress'] as const
 export type ControlGroup = (typeof CONTROL_GROUPS)[number]
@@ -84,6 +70,8 @@ export type ControlAction = Disableable & {
   body?: (t: Translations) => string
   group: ControlGroup
   chords: readonly Chord[]
+  /** A key the action shows without owning it (Done, Cancel and Clear selection show Back out's `Esc`). */
+  shownKey?: string
   /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole Palette). */
   help?: { name: (t: Translations) => string; keys: readonly (readonly string[])[] }
   /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is no key: the control's own surface runs it. */
@@ -115,7 +103,7 @@ const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefine
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
 /** A control with no key, so it only lists its Tooltip copy (ticket 334); its surface runs it. */
-const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName } = {}): ControlAction =>
+const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName; shownKey?: string } = {}): ControlAction =>
   ({ id, name, group, chords: [], ...rest }) as ControlAction
 
 /**
@@ -376,9 +364,9 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps) && Object.keys(deps.activeProject()?.beads ?? {}).length > 0,
     disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
   }),
-  unkeyed('done-frame', (t) => t.frame.done, 'canvas', { icon: 'check' }),
-  unkeyed('clear-selection', (t) => t.contextBar.clearButton, 'tools', { icon: 'close' }),
-  unkeyed('cancel-paste', (t) => t.contextBar.cancelButton, 'tools'),
+  unkeyed('done-frame', (t) => t.frame.done, 'canvas', { icon: 'check', shownKey: 'Esc' }),
+  unkeyed('clear-selection', (t) => t.contextBar.clearButton, 'tools', { icon: 'close', shownKey: 'Esc' }),
+  unkeyed('cancel-paste', (t) => t.contextBar.cancelButton, 'tools', { shownKey: 'Esc' }),
   unkeyed('position-marks-dots', (t) => t.canvas.canvasColor.positionMarks.dots, 'canvas', { icon: 'position-dots', body: (t) => t.canvas.canvasColor.positionMarks.dotsBody }),
   unkeyed('position-marks-squares', (t) => t.canvas.canvasColor.positionMarks.squares, 'canvas', { icon: 'position-squares', body: (t) => t.canvas.canvasColor.positionMarks.squaresBody }),
   unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),
@@ -421,11 +409,6 @@ export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translation
   { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
   { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [['Ctrl/Cmd', 'wheel']] },
 ]
-
-/** A chord's parts as the dialog and the key chips show them: "Ctrl/Cmd", "Shift", then the key. */
-export function chordParts(chord: Chord): string[] {
-  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean)
-}
 
 /** Whether a key press is this chord. */
 export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {

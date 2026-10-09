@@ -5,6 +5,7 @@
 
 :root,
 :root[data-theme="light"] {
+  --underline-width: 2px;
   --track-fill: linear-gradient(90deg, #fa520f, #ffa110);
   --scrim: rgba(0, 0, 0, .32);
   --overlay-fill: var(--canvas);
@@ -25,6 +26,7 @@
 }
 
 :root[data-theme="dark"] {
+  --underline-width: 2px;
   --track-fill: #faff69;
   --scrim: rgba(0, 0, 0, .6);
   --overlay-fill: var(--panel);
@@ -62,9 +64,28 @@
   --tooltip-fill: var(--elevated);
   --tooltip-blur: 0;
   --tooltip-muted: var(--muted);
+  --underline-width: 3px;
 }
 
 :root {
+  /* Control geometry (Button, IconButton, Swatch, Tooltip cards): fixed sizes the spacing scale does not cover */
+  --focus-offset: 2px;
+  --border-emphasis: 2px;
+  --hit-min: 24px;
+  --swatch-remove-size: 10px;
+  --swatch-remove-stroke: 3;
+  --swatch-mark-halo: 1px;
+  --swatch-mark-dark: #000000;
+  --swatch-mark-light: #ffffff;
+  --tab-width: 3.5rem;
+  --tab-height: 4.5rem;
+  --key-corner-top: 3px;
+  --tool-key-up: 1.4375rem;
+  --tool-key-right: 0.9375rem;
+  --tooltip-max-width: 15rem;
+  --tooltip-line: 1rem;
+  --link-underline-offset: 3px;
+  --link-underline-thickness: 2px;
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;

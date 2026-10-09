@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
-import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, chordParts, type ControlGroup } from '../../composables/shell/controlRegistry'
+import { chordParts } from '../../domain/chord'
+import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, type ControlGroup } from '../../composables/shell/controlRegistry'
 
 /**
  * The `?` shortcuts help overlay (ticket 96), generated from the control registry (ADR 0035, ticket 329): every

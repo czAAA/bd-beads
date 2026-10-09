@@ -29,7 +29,7 @@ export function nextRotation(rotation: Rotation): Rotation {
 /**
  * Whether this rotation swaps which grid axis (columns or rows) runs across the screen versus down it: true a quarter
  * turn either way (90°/270°), false upright or upside down (0°/180°) — the rule every "which axis is which on screen"
- * mapping in the app shares (Estimated size, Row direction, Mirror's left-right/top-bottom, the Frame's Columns and Rows).
+ * mapping in the app shares (Estimated size, Row direction, Mirror's left-right/top-bottom, the Frame's Width and Height).
  */
 export function rotationSwapsAxes(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 270

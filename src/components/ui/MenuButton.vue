@@ -271,7 +271,7 @@ function onListKeydown(event: KeyboardEvent) {
 }
 
 :root[data-theme='contrast'] .menu-button__list {
-  border-width: 2px;
+  border-width: var(--border-emphasis);
   box-shadow: none;
 }
 
