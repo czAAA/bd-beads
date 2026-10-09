@@ -225,11 +225,12 @@ function onSubmit() {
 /** Why the last chosen picture was turned away, if it was — one of domain/imageConversion's ImageRejection reasons. */
 const convertRejection = ref<ImageRejection | undefined>()
 
+const convertAction = controlAction('convert-image')
+
 /**
  * The advertised limits and every rejection message, filled in from the constants the validation itself enforces (see
  * formatImageLimits), so what this promises and what it refuses can never drift apart.
  */
-const convertAction = controlAction('convert-image')
 const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsHint))
 const convertError = computed(() =>
   convertRejection.value ? formatImageLimits(t.value.convertImage.errors[convertRejection.value]) : undefined,
@@ -434,7 +435,13 @@ function onDropImage(file: File) {
     -->
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
     <div class="new-project-form__convert" data-testid="convert-image-field">
-      <AppTooltip class="new-project-form__convert-tip" :name="convertAction.name(t)" :body="convertAction.body?.(t)" placement="top" :announce="false">
+      <AppTooltip
+        class="new-project-form__convert-tip"
+        :name="convertAction.name(t)"
+        :body="convertAction.body?.(t)"
+        placement="top"
+        :announce="false"
+      >
         <FileButton
           id="convert-image-input"
           :label="t.convertImage.fileLabel"
