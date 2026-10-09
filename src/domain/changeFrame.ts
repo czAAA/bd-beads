@@ -6,7 +6,7 @@ import type { AreaLine } from './removeLine'
 import { rotateProject } from './rotate'
 
 /**
- * The one operation behind every change of the Frame (ticket 316): Set Frame, moving and resizing it, Fit to drawing,
+ * The one operation behind every change of the Frame (ticket 361): Set Frame, moving and resizing it, Fit to drawing,
  * Remove Frame, Rotate and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
  * Row progress's lock, Row progress's pointers ending inside the new Frame, and the keep-out margin left empty with each
  * Piece it reached moved clear, whole (ADR 0027).
