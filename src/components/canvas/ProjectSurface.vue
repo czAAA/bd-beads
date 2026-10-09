@@ -484,7 +484,6 @@ watch(marginOutlineWanted, (wanted) => {
 function refusePress(): void {
   refusedPress.value = true
   clearTimeout(refusedTimer)
-  clearTimeout(settleTimer)
   refusedTimer = setTimeout(() => (refusedPress.value = false), REFUSED_PRESS_MS)
 }
 
@@ -698,6 +697,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimeout(refusedTimer)
+  clearTimeout(settleTimer)
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
   pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   resizeObserver?.disconnect()
