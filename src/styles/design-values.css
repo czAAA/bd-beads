@@ -73,6 +73,9 @@
   --border-emphasis: 2px;
   --hit-min: 24px;
   --swatch-remove-size: 10px;
+  --swatch-remove-stroke: 3;
+  --swatch-mark-dark: #000000;
+  --swatch-mark-light: #ffffff;
   --tab-width: 3.5rem;
   --tab-height: 4.5rem;
   --key-corner-top: 3px;

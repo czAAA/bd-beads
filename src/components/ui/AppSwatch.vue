@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
@@ -12,8 +11,8 @@ import { markOn } from './swatchMark'
  * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
  *
  * The remove × (added colors only): shown on the active swatch and while a mouse or an Apple Pencil hovers any added
- * swatch (not on touch, which cannot hover) and while keyboard focus is on it. Top-right inside the swatch with no background, drawn in `ink` or
- * `canvas`, whichever reads better on this hex, in a 24px invisible hit area (WCAG 2.5.8).
+ * swatch (not on touch, which cannot hover) and while keyboard focus is on it. Top-right inside the swatch with no background, drawn black or
+ * white, whichever reads better on this hex, with a thin halo of the other, in a 24px invisible hit area (WCAG 2.5.8).
  */
 defineOptions({ inheritAttrs: false })
 
@@ -37,7 +36,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const theme = useResolvedTheme()
 const rootEl = ref<HTMLElement>()
 /** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
 const hovered = ref(false)
@@ -51,14 +49,8 @@ const setHover = (event: PointerEvent, over: boolean) => {
   if (event.pointerType !== 'touch') hovered.value = over
 }
 
-/** The mark's token, read from the stylesheet so it follows the theme; a bare DOM (a test, no stylesheet) falls back to `ink`. */
-const mark = computed(() => {
-  void theme.value
-  const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
-  const ink = style?.getPropertyValue('--ink').trim()
-  const canvas = style?.getPropertyValue('--canvas').trim()
-  return ink && canvas ? markOn(props.color, ink, canvas) : 'ink'
-})
+/** The × is black or white by the swatch's own hex, whatever the theme. */
+const mark = computed(() => markOn(props.color))
 const showRemove = computed(() => (props.selected || hovered.value || focused.value) && !!props.removeLabel)
 </script>
 
@@ -162,17 +154,23 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   cursor: pointer;
 }
 
-.swatch__remove--ink {
-  color: var(--ink);
+.swatch__remove--dark {
+  --mark: var(--swatch-mark-dark);
+  --mark-halo: var(--swatch-mark-light);
 }
 
-.swatch__remove--canvas {
-  color: var(--canvas);
+.swatch__remove--light {
+  --mark: var(--swatch-mark-light);
+  --mark-halo: var(--swatch-mark-dark);
 }
 
 .swatch__remove-icon {
-  width: var(--swatch-remove-size);
-  height: var(--swatch-remove-size);
+  /* !important: the icon sets its own size inline, in rem, from its `size` prop (14 at least). */
+  width: var(--swatch-remove-size) !important;
+  height: var(--swatch-remove-size) !important;
+  color: var(--mark);
+  stroke-width: var(--swatch-remove-stroke);
+  filter: drop-shadow(0 0 1px var(--mark-halo)) drop-shadow(0 0 1px var(--mark-halo));
 }
 
 .swatch__remove:focus-visible {
