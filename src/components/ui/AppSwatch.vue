@@ -12,7 +12,7 @@ import { markOn } from './swatchMark'
  * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
  *
  * The remove × (added colors only): shown on the active swatch and while a mouse or an Apple Pencil hovers any added
- * swatch (not on touch, which cannot hover). Top-right inside the swatch with no background, drawn in `ink` or
+ * swatch (not on touch, which cannot hover) and while keyboard focus is on it. Top-right inside the swatch with no background, drawn in `ink` or
  * `canvas`, whichever reads better on this hex, in a 24px invisible hit area (WCAG 2.5.8).
  */
 defineOptions({ inheritAttrs: false })
@@ -26,7 +26,7 @@ const props = withDefaults(
     hotkey?: string
     /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
     role?: 'button' | 'radio'
-    /** Asks for the ×; it shows while the swatch is selected or hovered. */
+    /** Asks for the ×; it shows while the swatch is selected, hovered or keyboard-focused. */
     removeLabel?: string
   }>(),
   { selected: false, hotkey: undefined, role: 'button', removeLabel: undefined },
@@ -41,6 +41,12 @@ const theme = useResolvedTheme()
 const rootEl = ref<HTMLElement>()
 /** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
 const hovered = ref(false)
+/** Keyboard focus is on the swatch (or its ×): a click that merely focuses the button doesn't count. */
+const focused = ref(false)
+const setFocus = (event: FocusEvent, within: boolean) => {
+  if (!within) focused.value = !!rootEl.value?.contains(event.relatedTarget as Node | null)
+  else focused.value = (event.target as HTMLElement).matches(':focus-visible')
+}
 const setHover = (event: PointerEvent, over: boolean) => {
   if (event.pointerType !== 'touch') hovered.value = over
 }
@@ -53,11 +59,11 @@ const mark = computed(() => {
   const canvas = style?.getPropertyValue('--canvas').trim()
   return ink && canvas ? markOn(props.color, ink, canvas) : 'ink'
 })
-const showRemove = computed(() => (props.selected || hovered.value) && !!props.removeLabel)
+const showRemove = computed(() => (props.selected || hovered.value || focused.value) && !!props.removeLabel)
 </script>
 
 <template>
-  <span ref="rootEl" class="swatch" @pointerenter="setHover($event, true)" @pointerleave="setHover($event, false)">
+  <span ref="rootEl" class="swatch" @pointerenter="setHover($event, true)" @pointerleave="setHover($event, false)" @focusin="setFocus($event, true)" @focusout="setFocus($event, false)">
     <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
       <template #default="{ describedby }">
         <button

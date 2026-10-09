@@ -82,6 +82,20 @@ describe('AppSwatch', () => {
     expect(wrapper.find('.swatch__remove').exists()).toBe(true)
   })
 
+  it('shows the × while keyboard focus is on the swatch', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' }, attachTo: document.body })
+    const chip = wrapper.get('.swatch__chip')
+    const original = chip.element.matches.bind(chip.element)
+    chip.element.matches = (selector: string) => (selector === ':focus-visible' ? true : original(selector))
+    await chip.trigger('focusin')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
+    await chip.trigger('focusout')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+    chip.element.matches = () => false
+    await chip.trigger('focusin')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+  })
+
   it('has no × without a remove label, even hovered or selected', async () => {
     const wrapper = mount(AppSwatch, { props: { ...props, selected: true } })
     await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
