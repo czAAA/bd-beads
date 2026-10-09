@@ -69,7 +69,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 39. As a maker on a phone, I want the Project and Menu Tooltips to list what they open, so that I find settings without opening every sheet.
 40. As a maker, I want a palette swatch's Tooltip to say "Color", the hex and its key chip, so that I can pick it by keyboard.
 41. As a maker, I want Image colors and Canvas color swatches to show "Color" and the hex, so that all swatches read alike.
-42. As a maker, I want the remove × on an added swatch to be a small round × in its top-right corner that stays readable on light and dark colors, so that I can remove it without hunting.
+42. As a maker, I want the remove × on an added swatch to be a small round × in its top-right corner that stays readable on light and dark colors, and to show on the active color and when my mouse or Apple Pencil hovers a swatch, so that I can remove it without hunting.
 43. As a maker, I want the remove × to be easy to hit on touch, so that I don't select the swatch by mistake.
 44. As a maker, I want Custom color to tell me the Palette's added-color limit, and say when the Palette is full, so that I know why no more colors are added.
 45. As a maker, I want Image colors to say "This Project was not made from a picture." when disabled, so that I understand why it's empty.
@@ -118,7 +118,7 @@ Every control is defined once and looks and behaves the same wherever it appears
   - **`IconButton`:** icon, size, optional key badge (`hotkey` and `showHotkey`), selected state, optional Tooltip, or a registry action. It absorbs ToolButton (the underline when selected and the key badge), ExpandButton, the Dock slots, sheet close and the steppers.
   - **`AppButton`:** optional leading icon, label, variants, and a new `link` variant replacing AppLink. Optional Tooltip, or a registry action.
   - **`MenuButton`:** wraps either of the above and opens a popover on desktop or a sheet on a phone. It owns `aria-expanded`, `aria-haspopup`, focus return, and closing on `Escape` or an outside click. Its Tooltip body can be generated from its item names ("A, B, C.").
-  - **`Swatch`:** a color, selected state, an optional key chip, and an optional remove ×. The × is round, top-right inside the swatch, with no background, drawn in `ink` or `canvas` (whichever contrasts more with the swatch, the same logic as the Bead cursor). It is about 10px with a hit area of at least 24×24. The Tooltip is "Color" with the hex as the body.
+  - **`Swatch`:** a color, selected state, an optional key chip, and an optional remove ×, shown on the active color and while a mouse or Apple Pencil hovers an added swatch (not on touch). The × is round, top-right inside the swatch, with no background, drawn in `ink` or `canvas` (whichever contrasts more with the swatch, the same logic as the Bead cursor). It is about 10px with a hit area of at least 24×24. The Tooltip is "Color" with the hex as the body.
   - **`Note`:** always-visible helper text on a gray surface, in `meta` type and muted, with no icon.
   - **Kept as they are, wired to the Tooltip:** AppSwitch, SegmentedControl/ThemeToggle, Stepper.
 - **Copy:** the full English and Russian table is in ticket 334. Rules: the name is the control's existing name in sentence case with product nouns capitalized; the body is one imperative sentence with a full stop; keys appear only in chips; never "Click to"; lists are built from item names. Controls the buttons audit marks "none" keep only their accessible name.
@@ -135,7 +135,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 - **Seam 2, the shared controls mounted** (prior art: the existing UI controls test file):
   - The Tooltip's name, body and chip; the disabled name, `disabledBody` and no chip; `aria-disabled`, and a click doing nothing.
   - `MenuButton`'s `aria-expanded` and where focus goes when it closes.
-  - The `Swatch` × showing only on a selected added color.
+  - The `Swatch` × showing on the active added color and on a hovered one (mouse or pen), never from touch hover, and never without a remove label.
   - The `Note` rendering its text.
   - The unit rule: rounding up from mm and one bead per stepper press.
 - **Seam 3, the visual check** (existing Playwright visual suite, run by CI):

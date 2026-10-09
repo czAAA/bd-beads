@@ -49,11 +49,42 @@ describe('AppSwatch', () => {
     expect(wrapper.emitted('select')).toBeUndefined()
   })
 
-  it('draws the × in the mark that reads on its color', () => {
-    const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', selected: true, removeLabel: 'Remove' } })
-    const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', selected: true, removeLabel: 'Remove' } })
+  it('draws the × in the mark that reads on its color', async () => {
+    // A bare DOM has no stylesheet, so the page's two tokens are set by hand.
+    document.documentElement.style.setProperty('--ink', '#1f1f1f')
+    document.documentElement.style.setProperty('--canvas', '#ffffff')
+    const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', selected: true, removeLabel: 'Remove' }, attachTo: document.body })
+    const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', selected: true, removeLabel: 'Remove' }, attachTo: document.body })
+    await Promise.all([dark.vm.$nextTick(), light.vm.$nextTick()])
 
     expect(dark.get('.swatch__remove').classes()).toContain('swatch__remove--canvas')
     expect(light.get('.swatch__remove').classes()).toContain('swatch__remove--ink')
+    document.documentElement.style.removeProperty('--ink')
+    document.documentElement.style.removeProperty('--canvas')
+  })
+
+  it('shows the × on the active swatch and while a mouse or pen hovers an added one, never on touch', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' } })
+    const hover = (type: string, pointerType: string) => wrapper.get('.swatch').trigger(type, { pointerType })
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+
+    await hover('pointerenter', 'touch')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+    await hover('pointerenter', 'mouse')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
+    await hover('pointerleave', 'mouse')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+    await hover('pointerenter', 'pen')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
+
+    await wrapper.setProps({ selected: true })
+    await hover('pointerleave', 'pen')
+    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
+  })
+
+  it('has no × without a remove label, even hovered or selected', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, selected: true } })
+    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
   })
 })

@@ -204,7 +204,7 @@ function swallowClick(event: MouseEvent) {
 
 .icon-btn:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .icon-btn-wrap--dock {
@@ -240,17 +240,17 @@ function swallowClick(event: MouseEvent) {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: var(--underline-width);
   background: var(--accent-strong);
 }
 
 .icon-btn--dock:focus-visible {
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--focus-offset));
 }
 
 /* The hotkey corner (Dock card): DM Mono 12px, 3px from the top, 6px from the right. */
 .icon-btn--dock .icon-btn__key {
-  top: 3px;
+  top: var(--key-corner-top);
   right: var(--space-6);
   left: auto;
   font: var(--type-meta-small);
@@ -268,8 +268,8 @@ function swallowClick(event: MouseEvent) {
 /* A Tool tab (ToolTabs card): no fill, a 2px accent underline over the container's rule marks the selection. */
 .icon-btn--tool {
   position: relative;
-  width: var(--tab-width, 3.5rem);
-  height: var(--tab-height, 4.5rem);
+  width: var(--tab-width);
+  height: var(--tab-height);
   min-width: 0;
   color: var(--muted);
   background: none;
@@ -288,12 +288,8 @@ function swallowClick(event: MouseEvent) {
   right: 0;
   bottom: 0;
   left: 0;
-  height: 2px;
+  height: var(--underline-width);
   background: var(--accent-strong);
-}
-
-:root[data-theme='contrast'] .icon-btn--tool.icon-btn--selected::after {
-  height: 3px;
 }
 
 .icon-btn--tool.icon-btn--accent {
@@ -301,15 +297,16 @@ function swallowClick(event: MouseEvent) {
 }
 
 .icon-btn--tool:focus-visible {
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--focus-offset));
 }
 
 /* The key sits against the icon's top-right corner: DM Mono 11px, `muted`, accent when selected. */
 .icon-btn__key {
   position: absolute;
-  top: calc(50% - 1.4375rem);
-  left: calc(50% + 0.9375rem);
-  font: 400 0.6875rem/1 var(--font-mono);
+  top: calc(50% - var(--tool-key-up));
+  left: calc(50% + var(--tool-key-right));
+  font: var(--type-meta-tiny);
+  line-height: 1;
   color: var(--muted);
 }
 
@@ -380,7 +377,7 @@ function swallowClick(event: MouseEvent) {
 }
 
 :root[data-theme='contrast'] .icon-btn:not(.icon-btn--plain, .icon-btn--tool) {
-  border-width: 2px;
+  border-width: var(--border-emphasis);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -11,7 +11,8 @@ import { markOn } from './swatchMark'
  * popover. Its Tooltip is the name "Color", the hex as the body and, where it has one, the key chip. `label` is the
  * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
  *
- * The remove × (selected added colors only): top-right inside the swatch with no background, drawn in `ink` or
+ * The remove × (added colors only): shown on the active swatch and while a mouse or an Apple Pencil hovers any added
+ * swatch (not on touch, which cannot hover). Top-right inside the swatch with no background, drawn in `ink` or
  * `canvas`, whichever reads better on this hex, in a 24px invisible hit area (WCAG 2.5.8).
  */
 defineOptions({ inheritAttrs: false })
@@ -25,7 +26,7 @@ const props = withDefaults(
     hotkey?: string
     /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
     role?: 'button' | 'radio'
-    /** Asks for the ×; it shows only while the swatch is selected. */
+    /** Asks for the ×; it shows while the swatch is selected or hovered. */
     removeLabel?: string
   }>(),
   { selected: false, hotkey: undefined, role: 'button', removeLabel: undefined },
@@ -38,20 +39,25 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const theme = useResolvedTheme()
 const rootEl = ref<HTMLElement>()
+/** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
+const hovered = ref(false)
+const setHover = (event: PointerEvent, over: boolean) => {
+  if (event.pointerType !== 'touch') hovered.value = over
+}
 
-/** The mark's token, read from the stylesheet so it follows the theme; a bare DOM (a test) falls back to light. */
+/** The mark's token, read from the stylesheet so it follows the theme; a bare DOM (a test, no stylesheet) falls back to `ink`. */
 const mark = computed(() => {
   void theme.value
   const style = rootEl.value ? getComputedStyle(rootEl.value) : undefined
-  const ink = style?.getPropertyValue('--ink').trim() || '#1f1f1f'
-  const canvas = style?.getPropertyValue('--canvas').trim() || '#ffffff'
-  return markOn(props.color, ink, canvas)
+  const ink = style?.getPropertyValue('--ink').trim()
+  const canvas = style?.getPropertyValue('--canvas').trim()
+  return ink && canvas ? markOn(props.color, ink, canvas) : 'ink'
 })
-const showRemove = computed(() => props.selected && !!props.removeLabel)
+const showRemove = computed(() => (props.selected || hovered.value) && !!props.removeLabel)
 </script>
 
 <template>
-  <span ref="rootEl" class="swatch">
+  <span ref="rootEl" class="swatch" @pointerenter="setHover($event, true)" @pointerleave="setHover($event, false)">
     <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
       <template #default="{ describedby }">
         <button
@@ -130,7 +136,7 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
 
 .swatch__chip:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 /* A 24×24 button with no look of its own: only the 10px × shows. */
@@ -142,8 +148,8 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
   box-sizing: border-box;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: var(--hit-min);
+  height: var(--hit-min);
   padding: 0;
   background: none;
   border: 0;
@@ -159,13 +165,13 @@ const showRemove = computed(() => props.selected && !!props.removeLabel)
 }
 
 .swatch__remove-icon {
-  width: 10px;
-  height: 10px;
+  width: var(--swatch-remove-size);
+  height: var(--swatch-remove-size);
 }
 
 .swatch__remove:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--focus-offset));
 }
 
 @media (prefers-reduced-motion: reduce) {

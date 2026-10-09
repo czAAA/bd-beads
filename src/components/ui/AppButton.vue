@@ -152,7 +152,7 @@ function swallowClick(event: MouseEvent) {
 
 .app-button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .app-button__trailing {
@@ -298,7 +298,7 @@ function swallowClick(event: MouseEvent) {
 }
 
 :root[data-theme='contrast'] .app-button:not(.app-button--link) {
-  border-width: 2px;
+  border-width: var(--border-emphasis);
 }
 
 /* High contrast keeps a pressed link at full strength and underlines it instead (accessibility.md). */

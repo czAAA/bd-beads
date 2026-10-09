@@ -1,8 +1,11 @@
+import { chordParts, type Chord } from '../../components/ui/controlAction'
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
+
+export { chordParts, type Chord }
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
@@ -48,21 +51,6 @@ export interface ControlDeps {
   onZoomIn: () => void
   onZoomOut: () => void
   onFit: () => void
-}
-
-/**
- * One key or combination. `key` (any of the listed `event.key` values, case-insensitively) or `code` (the physical
- * key, for the digits Shift turns into symbols) picks the key. `mod` is Ctrl or ⌘, `ctrl` is Ctrl alone; a chord with
- * neither needs both unpressed. `shift` must match exactly, unless it is `'any'` (the key itself needs Shift on some
- * layouts, like `?` and `+`). `label` is the key as the Keyboard shortcuts dialog and the key chips write it.
- */
-export interface Chord {
-  key?: string | readonly string[]
-  code?: string
-  mod?: boolean
-  ctrl?: boolean
-  shift?: boolean | 'any'
-  label: string
 }
 
 /** The groups of the Keyboard shortcuts dialog, in order; the first, third, fourth and fifth are the Toolbox's own names. */
@@ -423,11 +411,6 @@ export const POINTER_HELP: readonly { group: ControlGroup; name: (t: Translation
   { group: 'canvas', name: (t) => t.shortcutsHelp.panCanvas, keys: [['Space', 'drag']] },
   { group: 'canvas', name: (t) => t.shortcutsHelp.zoomCanvas, keys: [['Ctrl/Cmd', 'wheel']] },
 ]
-
-/** A chord's parts as the dialog and the key chips show them: "Ctrl/Cmd", "Shift", then the key. */
-export function chordParts(chord: Chord): string[] {
-  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean)
-}
 
 /** Whether a key press is this chord. */
 export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
