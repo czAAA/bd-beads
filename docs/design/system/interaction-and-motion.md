@@ -9,7 +9,7 @@ How every control answers the pointer, the finger and the keyboard, and how thin
 - **Focus** (`:focus-visible`, keyboard only) is the 2px `focus-ring`, 2px away (3px in high contrast), on every interactive element; fields also take an `ink` border. It is never removed and never replaced by a colour change alone.
 - **Disabled** is `faint` text and icons, no hover, no press, `cursor: not-allowed`; primary uses `accent-disabled-bg` / `accent-disabled-fg`. The reason is written nearby.
 - **Selected** uses the colour of its kind: `accent-strong` for the active tool and the open Saved Pattern, the `ring` for swatches, an `ink` fill for segments and the theme toggle, `panel` for the Dock button whose sheet is open.
-- **On the Pattern**: a hovered bead shows the 2px `bead-outline` (no colour chosen) or the chosen colour at 60% (Paint). The cursor is a crosshair over the board, grab while Space is held, grabbing while panning. Painting has no animation.
+- **On the Pattern**: a hovered bead shows the 2px `bead-outline` (no colour chosen) or the chosen colour at 60% (Paint). The pointer is a bead-shaped marker over the board (90% of a bead, see BeadHover), grab while Space is held, grabbing while panning. Painting has no animation.
 
 ## Motion
 

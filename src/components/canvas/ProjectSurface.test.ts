@@ -843,7 +843,7 @@ describe('ProjectSurface', () => {
       expect(event.defaultPrevented).toBe(true)
     })
 
-    it('shows a crosshair over a bead, and the ordinary cursor elsewhere', async () => {
+    it('hides the OS pointer over a bead, and shows the ordinary cursor elsewhere', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
@@ -853,6 +853,105 @@ describe('ProjectSurface', () => {
 
       await surface.trigger('pointerleave')
       expect(surface.classes()).not.toContain('project-surface--over-bead')
+    })
+  })
+
+  describe('the bead-shaped pointer (ticket 353)', () => {
+    /** The marker's fill: the only translucent fillRect of 90% of a 20px bead at zoom 1. */
+    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 18)
+
+    it('follows a mouse and a hovering pen, centred on the pointer, in the chosen color', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      for (const pointerType of ['mouse', 'pen']) {
+        context.calls.length = 0
+        await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType, buttons: 0 })
+        await vi.waitFor(() => expect(marker().map((call) => [call.fillStyle, call.args[0], call.args[1]])).toEqual([['#e63746', 96, 38]]))
+      }
+    })
+
+    it('is gone when the pen lifts away, and a finger shows none', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType: 'pen', buttons: 0 })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+      context.calls.length = 0
+      await surface.trigger('pointerleave', { pointerType: 'pen' })
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      expect(marker()).toHaveLength(0)
+
+      context.calls.length = 0
+      await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType: 'touch', buttons: 1 })
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(marker()).toHaveLength(0)
+    })
+  })
+
+  describe('the bead-shaped pointer, in the cases that hold it back (ticket 353)', () => {
+    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 18)
+    const hover = { clientX: 105, clientY: 47, buttons: 0 }
+    const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="project-surface"]')
+
+    it('goes while Space is held, and comes back when it is let go', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewColor: '#e63746' })
+      await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'mouse' })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+
+      context.calls.length = 0
+      await wrapper.setProps({ markerHidden: true })
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      expect(marker()).toHaveLength(0)
+
+      context.calls.length = 0
+      await wrapper.setProps({ markerHidden: false })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+    })
+
+    it('belongs to the pointer that draws in the input mode: the mouse in Mouse mode, the pen in Pen mode', async () => {
+      for (const [inputMode, draws, moves] of [['mouse', 'mouse', 'pen'], ['pen', 'pen', 'mouse']] as const) {
+        const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewColor: '#e63746', inputMode })
+        const surface = surfaceOf(wrapper)
+
+        context.calls.length = 0
+        await surface.trigger('pointermove', { ...hover, pointerType: draws })
+        await vi.waitFor(() => expect(marker()).toHaveLength(1))
+
+        await surface.trigger('pointerleave', { pointerType: draws })
+        context.calls.length = 0
+        await surface.trigger('pointermove', { ...hover, pointerType: moves })
+        await new Promise((resolve) => setTimeout(resolve, 50))
+        expect(marker()).toHaveLength(0)
+      }
+    })
+
+    it('goes when the pen is cancelled', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { previewColor: '#e63746' })
+      const surface = surfaceOf(wrapper)
+      await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+
+      context.calls.length = 0
+      await surface.trigger('pointercancel', { pointerType: 'pen' })
+      await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      expect(marker()).toHaveLength(0)
+    })
+
+    it('goes when the canvas moves a refused margin under a still pointer', async () => {
+      const project = projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4 } })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', blocksMargin: true })
+      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
+      const point = { clientX: at.x, clientY: at.y }
+      await surfaceOf(wrapper).trigger('pointermove', { ...point, pointerType: 'mouse', buttons: 0 })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+
+      context.calls.length = 0
+      await wrapper.setProps({ scroll: { x: 0, y: 40 } })
+      await vi.waitFor(() => expect(context.named('clearRect').length).toBeGreaterThan(0))
+      expect(marker()).toHaveLength(0)
     })
   })
 

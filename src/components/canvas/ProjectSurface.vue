@@ -58,6 +58,8 @@ const props = defineProps<{
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
   frameTooltip?: string
+  /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
+  markerHidden?: boolean
   /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
 }>()
@@ -362,6 +364,27 @@ function drawCellsOrMove(): void {
   }, SETTLE_MS)
 }
 
+/**
+ * Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left corner: over the
+ * beads, for a mouse or a hovering pen, with the OS pointer hidden. None over the margin that refuses a bead, with a
+ * tool that moves the canvas, while the Frame is set, or for a finger, which has no hover.
+ */
+const markerAt = ref<{ x: number; y: number }>()
+/** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input mode keeps for moving the canvas. */
+let hoverDraws = false
+
+/** Puts the marker where the hovering pointer is, if it is over a bead it may place; asked again when the canvas moves under a still pointer. */
+function placeMarker(): void {
+  const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
+  markerAt.value = hoverPoint && bead && !refusesMargin(bead) ? pointInSurface(hoverPoint) : undefined
+}
+
+/** Takes the marker away, and keeps it away until the pointer moves again. */
+function hideMarker(): void {
+  hoverDraws = false
+  markerAt.value = undefined
+}
+
 /** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
 const marginOpacity = ref(0)
 
@@ -385,6 +408,7 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       cursor: props.cursor,
+      pointer: markerAt.value && !props.moving && !props.settingFrame && !props.markerHidden ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
@@ -399,6 +423,7 @@ function drawOverlay(): void {
 
 // What is under a still pointer changes when the canvas moves or zooms, or the weaver's row does (Undo, the Progress bar).
 watch([() => props.project, () => props.zoom, () => props.scroll], () => {
+  placeMarker()
   if (hoverPoint) {
     hovered.value = hoversFinishedRow(beadUnder(hoverPoint))
   }
@@ -415,6 +440,7 @@ watch(
     () => props.scroll,
     () => props.previewCells,
     () => props.previewColor,
+    markerAt,
     () => props.selection,
     () => props.mirrorAxisCounts,
     () => props.dimmedCells,
@@ -422,6 +448,8 @@ watch(
     () => props.tourMarks,
     () => props.showRulers,
     () => props.settingFrame,
+    () => props.moving,
+    () => props.markerHidden,
     () => props.frameTooltip,
     marginOpacity,
     touchInput,
@@ -526,7 +554,7 @@ function startsDrag(event: PointerEvent): boolean {
 }
 
 /** The point of the viewport a pointer is at, in px from its top-left corner. */
-function pointInSurface(event: PointerEvent): { x: number; y: number } {
+function pointInSurface(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
   const box = rootEl.value?.getBoundingClientRect()
   return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) }
 }
@@ -548,6 +576,7 @@ function onPointerDown(event: PointerEvent): void {
   }
   if (props.settingFrame && !startsDrag(event) && event.button === 0) {
     framing.value = true
+    hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
     const target = framePressAt(props.project.frame, surface.value, props.project.rotation, pointInSurface(event), touchInput.value)
     emit('frame-press', target, cellUnder(event))
@@ -559,6 +588,7 @@ function onPointerDown(event: PointerEvent): void {
     lastPoint = { x: event.clientX, y: event.clientY }
     lastBead = undefined
     overBead.value = false
+    hideMarker()
     rootEl.value?.setPointerCapture?.(event.pointerId)
     event.preventDefault()
     return
@@ -622,16 +652,19 @@ function onPointerMove(event: PointerEvent): void {
   const bead = beadUnder(event)
   hoverPoint = event.pointerType === 'touch' ? undefined : { clientX: event.clientX, clientY: event.clientY }
   hovered.value = hoverPoint !== undefined && hoversFinishedRow(bead)
+  hoverDraws = hoversFor(event) && !movesCanvas(event)
   // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame, nor the
   // pointer that only moves the canvas.
   if (props.moving || props.settingFrame || movesCanvas(event)) {
     overBead.value = false
     overRefusedMargin.value = false
+    hideMarker()
     return
   }
 
   overBead.value = bead !== undefined
   overRefusedMargin.value = refusesMargin(bead)
+  placeMarker()
   if (isSameBead(bead, lastBead)) {
     return
   }
@@ -657,12 +690,19 @@ function onPointerEnd(): void {
   }
 }
 
+/** A cancelled pointer is a pen gone out of range or a gesture taken over: it has no marker to show. */
+function onPointerCancel(): void {
+  onPointerEnd()
+  hideMarker()
+}
+
 function onPointerLeave(): void {
   hovered.value = false
   hoverPoint = undefined
   lastBead = undefined
   overBead.value = false
   overRefusedMargin.value = false
+  hideMarker()
   emit('hover-end')
 }
 
@@ -733,7 +773,7 @@ onBeforeUnmount(() => {
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
     @pointerup="onPointerEnd"
-    @pointercancel="onPointerEnd"
+    @pointercancel="onPointerCancel"
     @pointerleave="onPointerLeave"
     @wheel="onWheel"
     @contextmenu.prevent
@@ -762,12 +802,12 @@ onBeforeUnmount(() => {
   -webkit-user-select: none;
 }
 
-/* A crosshair over the canvas's beads (BeadHover card). */
+/* Over the canvas's beads the OS pointer is hidden: the overlay draws a bead-shaped marker in its place (BeadHover card, ticket 353). */
 .project-surface--over-bead {
-  cursor: crosshair;
+  cursor: none;
 }
 
-/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the crosshair. */
+/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the bead marker. */
 .project-surface--refused {
   cursor: not-allowed;
 }

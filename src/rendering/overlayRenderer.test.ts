@@ -543,6 +543,68 @@ describe('renderOverlay', () => {
   })
 })
 
+describe('the bead-shaped pointer (ticket 353)', () => {
+  const noProgress = { enabled: false }
+
+  it('is 90% of a bead as drawn, centred on the pointer, in the chosen color at 60%', () => {
+    const project = projectOf('loom', 8, 8, noProgress)
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, region: whole(project, 2), zoom: 2, pointer: { x: 50, y: 40, color: '#e63746' } })
+
+    expect(named('setTransform').at(-1)!.args).toEqual([1, 0, 0, 1, 0, 0])
+    expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 32, 22, 36, 36]])
+  })
+
+  it('scales with the pixel ratio and shows at every zoom', () => {
+    const project = projectOf('loom', 8, 8, noProgress)
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, region: whole(project, 0.5), zoom: 0.5, pixelRatio: 2, pointer: { x: 10, y: 10, color: '#e63746' } })
+
+    expect(named('setTransform').at(-1)!.args).toEqual([2, 0, 0, 2, 0, 0])
+    expect(named('fillRect')[0]!.args).toEqual([5.5, 5.5, 9, 9])
+  })
+
+  it('is a 2px dark outline when there is no color', () => {
+    const project = projectOf('loom', 8, 8, noProgress)
+    const { context, named } = recordingContext()
+
+    renderOverlay(context, { project, region: whole(project), zoom: 1, pointer: { x: 30, y: 30, color: null } })
+
+    expect(named('fill')).toHaveLength(1)
+    expect(named('fill')[0]!.fillStyle).toBe(DEFAULT_THEME.outline)
+    expect(named('fill')[0]!.args).toEqual(['evenodd'])
+    expect(named('fillRect')).toHaveLength(0)
+  })
+
+  it('is rounded in peyote and square otherwise', () => {
+    const peyote = projectOf('peyote', 8, 8, noProgress)
+    const rounded = recordingContext()
+    renderOverlay(rounded.context, { project: peyote, region: whole(peyote), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+    expect(rounded.named('fillRect')).toHaveLength(0)
+    expect(rounded.named('roundRect')[0]!.args.slice(2)).toEqual([18, 18, beadRoundness('peyote') * 18])
+
+    const loom = projectOf('loom', 8, 8, noProgress)
+    const square = recordingContext()
+    renderOverlay(square.context, { project: loom, region: whole(loom), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+    expect(square.named('fillRect')).toHaveLength(1)
+  })
+})
+
+describe('the bead-shaped pointer on a rotated Project (ticket 353)', () => {
+  it('stays upright in the surface\'s own px: the Project turns under it, the marker does not', () => {
+    const project = projectOf('loom', 8, 8, { enabled: false }, 90)
+    const upright = recordingContext()
+    const turned = recordingContext()
+
+    renderOverlay(upright.context, { project: { ...project, rotation: 0 }, region: whole(project), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+    renderOverlay(turned.context, { project, region: whole(project), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+
+    expect(turned.named('fillRect').map((call) => call.args)).toEqual(upright.named('fillRect').map((call) => call.args))
+  })
+})
+
 describe('the bead cursor (ticket 159)', () => {
   it('rings the bead 2px outside it in the focus-ring color, drawn over everything else', () => {
     const project = projectOf('loom', 4, 3, { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 })
