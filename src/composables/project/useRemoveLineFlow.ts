@@ -12,7 +12,7 @@ export interface RemoveLineFlowDeps {
 }
 
 /**
- * "Remove line" (tickets 123, 199; ADR 0023, ADR 0026): takes the selected whole row or column out of the Frame as one
+ * "Remove line" (tickets 123, 199; ADR 0020, ADR 0026): takes the selected whole row or column out of the Frame as one
  * Edit, which resets the Selection and Mirror's axis counts, built against the old lines. Refused while Row progress
  * is on. Deps are read lazily.
  */

@@ -1,7 +1,0 @@
-# Hosting on GitHub Pages
-
-_Superseded by [ADR 0022](0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md): the repository is private, so the build is hosted on the owner's router instead. Kept as history._
-
-bd-beads is deployed as a static build on GitHub Pages, served from `https://czAAA.github.io/bd-beads/`. This fits the app's shape: a client-only SPA with no server and no accounts (see [ADR 0001](0001-local-only-persistence.md)), so there's nothing for a backend to do — GitHub Pages' static hosting is sufficient, and it's free and already tied to the repo. The one constraint it introduces is that Pages serves the repo from a subpath (`/bd-beads/`) rather than the domain root, so the Vite build sets `base: '/bd-beads/'` in production (`vite.config.ts`) to resolve asset URLs correctly; the dev server keeps `base: '/'`. The app has no client-side router, so there's no need for a Pages-specific 404-to-index fallback.
-
-Publishing is done by a GitHub Actions workflow (`.github/workflows/deploy.yml`) that builds and publishes `dist/` on every push to `main`, using the standard `actions/upload-pages-artifact` + `actions/deploy-pages` flow, rather than a manual `npm run deploy` script (e.g. via the `gh-pages` package) — so publishing a change never depends on someone remembering to run a local command.

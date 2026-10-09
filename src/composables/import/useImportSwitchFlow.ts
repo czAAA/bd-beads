@@ -15,7 +15,7 @@ export interface ImportSwitchFlowDeps {
 
 /**
  * Project import and the keep-current / save-and-switch / switch decision when a Project is already open (ticket 154,
- * 200; ADR 0023). Not an undo concern: none of it touches history. Deps are read lazily.
+ * 200; ADR 0020). Not an undo concern: none of it touches history. Deps are read lazily.
  */
 export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
   /**

@@ -13,7 +13,7 @@ export interface StatedSize {
 
 /**
  * The grid a stated size works out to. Beads are the columns and rows directly; mm/cm are converted once, through the
- * chosen Bead's footprint, and then forgotten (ADR 0017) — the Project keeps only the grid this returns.
+ * chosen Bead's footprint, and then forgotten (ADR 0026) — the Project keeps only the grid this returns.
  */
 export function gridFromSize(size: StatedSize, bead: Bead): GridDimensions {
   if (size.unit === 'beads') {
@@ -33,7 +33,7 @@ export interface EstimatedSizeMm {
 }
 
 /**
- * A Project's Estimated size (CONTEXT.md, ADR 0017): one Bead's size multiplied by how many of them there are across
+ * A Project's Estimated size (CONTEXT.md, ADR 0026): one Bead's size multiplied by how many of them there are across
  * and down — the exact inverse of gridFromSize's mm conversion, so a stated 30mm never estimates back to something
  * other than about 30mm. Deliberately not Technique-aware: it ignores peyote's tighter row packing, thread slack and
  * tension, which is why it is only ever shown as an estimate.

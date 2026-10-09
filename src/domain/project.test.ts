@@ -1129,7 +1129,7 @@ describe('normalizeProject', () => {
     })
   })
 
-  it('drops the stored real-world size a Project saved before ADR 0017 still carries, and keeps its grid', () => {
+  it('drops the stored real-world size a Project saved before ADR 0026 still carries, and keeps its grid', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
     const legacy = { ...base, widthMm: 15, heightMm: 30 }
 

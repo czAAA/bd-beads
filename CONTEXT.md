@@ -21,10 +21,10 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **Technique**: determines a Project's grid geometry (loom, peyote, brick stitch)
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Mirror**: a symmetric-drawing aid, live while painting — see [ADR 0006](docs/adr/0006-live-mirror-while-drawing.md)
-- **Pattern size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps the grid — see [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md), which supersedes [ADR 0008](docs/adr/0008-replace-bead-recalculates-grid.md). There is no limit on size beyond what the device can hold ([ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cell cap)
+- **Pattern size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see [ADR 0026](docs/adr/0026-open-canvas-and-frame.md) and [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md). There is no limit on size beyond what the device can hold ([ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cell cap)
 - **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors (with an Estimated weight beside them) — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md)
 - **Project file**: the exported `.json` holding one Project or a whole library — the only way work moves between devices, per [ADR 0001](docs/adr/0001-local-only-persistence.md)
-- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Pattern, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md), amended by [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
+- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Pattern, cropped to the Pattern's real-world size ([ADR 0010](docs/adr/0010-convert-image-fixed-physical-size.md), amended by [ADR 0026](docs/adr/0026-open-canvas-and-frame.md)) with its colors saved as Image colors ([ADR 0011](docs/adr/0011-image-colors-stored-frozen.md))
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v18), entered through [DESIGN.md](DESIGN.md); see [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md), amended by [ADR 0030](docs/adr/0030-the-repo-owns-the-design-system.md). The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
 - **App shell layout**: how the screen is arranged — at 1024px and wider a header, the left column (Toolbox, save box, Beads needed, Saved Projects) and the canvas box; under 1024px the phone layout, with the canvas on top and the Dock below it ([ADR 0021](docs/adr/0021-visual-language-follows-design-md.md), [ADR 0032](docs/adr/0032-everything-under-1024px-is-the-phone-layout.md)). The full arrangement is in [docs/layout.md](docs/layout.md)
 - **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing.md](docs/testing.md#text-fit-check)
@@ -119,12 +119,20 @@ Who made the Projects on this device: an optional name, at most 40 characters, p
 _Avoid_: author, owner, signature, user name
 
 **Palette**:
-A free-standing set of colors used to paint project cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 28, so at most 40 swatches), in the order they were first used. An added swatch can be removed again (never a built-in one): every added swatch always shows a × (and Delete or Backspace works on a focused one), which asks for confirmation first; painted cells keep their color, and an Undo toast puts it back. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Project; only the built-in ones have keyboard shortcuts. See [ADR 0025](docs/adr/0025-palette-grows-with-used-custom-colors.md).
+A free-standing set of colors used to paint project cells: twelve built-in colors, followed by the Custom colors that have joined it (up to 28, so at most 40 swatches), in the order they were first used. An added swatch can be removed again (never a built-in one): every added swatch always shows a × (and Delete or Backspace works on a focused one), which asks for confirmation first; painted cells keep their color, and an Undo toast puts it back. Independent from the bead catalog — a cell's color is not required to correspond to a real bead. The added colors are kept on the device, not in a Project; only the built-in ones have keyboard shortcuts. See [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md).
 _Avoid_: color scheme, fixed palette
 
 **Bead**:
-A catalog entry for a specific real bead: brand, name, size, form factor, and color (e.g. Miyuki Delica 11/0), plus its physical footprint in mm (used to convert an mm/cm size into a grid when a Project is created, and to work out an Estimated size — see ticket 01). Width runs along the thread (the bead's length through its hole) and height across it (its diameter), so TOHO Round 11/0 is 1.5 × 2.2mm, not a 2.2mm ball. A Bead may carry a per-bead width correction (mm added to each column for thread and slack, measured rather than published — currently 0.15mm on TOHO Round 11/0), so a column is `widthMm + widthCorrectionMm` wide. The bead catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), no longer user-editable — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
+A catalog entry for a real bead line: brand, name, size and form factor (e.g. Miyuki Delica 11/0), not a color (that is a Bead color), plus its physical footprint in mm (used to convert an mm/cm size into a grid when a Project is created, and to work out an Estimated size — see ticket 01). Width runs along the thread (the bead's length through its hole) and height across it (its diameter), so TOHO Round 11/0 is 1.5 × 2.2mm, not a 2.2mm ball. A Bead may carry a per-bead width correction (mm added to each column for thread and slack, measured rather than published — currently 0.15mm on TOHO Round 11/0), so a column is `widthMm + widthCorrectionMm` wide. The bead catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), no longer user-editable — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
 _Avoid_: seed bead type, item
+
+**Bead color**:
+One real color of a Bead line, with its maker's code (e.g. TOHO Round 11/0 #25). Decided, not built yet: see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
+_Avoid_: bead shade, catalog color
+
+**Color catalog**:
+Every Bead color of every Bead line, offered for building a Palette; inside a Project it offers the colors of that Project's Bead, so what Beads needed lists can be bought. Open to everyone, a Guest included. Decided, not built yet: see [ADR 0002](docs/adr/0002-palette-separate-from-bead-catalog.md).
+_Avoid_: color library, swatch catalog
 
 **Form factor**:
 The physical shape of a bead (e.g. round, cylinder/Delica, cube), which determines the shape of a project cell.
@@ -192,7 +200,7 @@ Resets the open Project to how it was when first created at its size: every cell
 _Avoid_: delete all, reset, wipe
 
 **Pattern size**:
-How big a Pattern is: its Frame's width × height, counted in beads (a Project with no Frame has no Pattern size yet). It is set in the Frame section, in beads or mm (the unit is remembered on the device, not in the Project); a size in mm always rounds up to the next whole bead and is not remembered. A stepper press adds or removes one bead in either unit. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0017 set).
+How big a Pattern is: its Frame's width × height, counted in beads (a Project with no Frame has no Pattern size yet). It is set in the Frame section, in beads or mm (the unit is remembered on the device, not in the Project); a size in mm always rounds up to the next whole bead and is not remembered. A stepper press adds or removes one bead in either unit. Not limited in size beyond what the device can hold (see [ADR 0019](docs/adr/0019-a-pattern-has-no-size-limit.md), which removed the cap ADR 0026 set).
 _Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
@@ -216,7 +224,7 @@ A Tools-group tool, next to Eraser, that removes the specific row or column the 
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
-Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Pattern size and every painted cell stay as they are, whichever unit the Project was created in — see [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md), superseding [ADR 0008](docs/adr/0008-replace-bead-recalculates-grid.md).
+Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Pattern size and every painted cell stay as they are, whichever unit the Project was created in — see [ADR 0007](docs/adr/0007-one-bead-per-pattern-no-color-mapping.md).
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
@@ -260,11 +268,23 @@ What the Project renderer draws on inside the canvas panel: a base layer holding
 _Avoid_: canvas (that is the panel), bitmap, canvas element
 
 **View link**:
-A hosted, encrypted snapshot of a Project that anyone can create without logging in. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit.
+A hosted, encrypted snapshot of a Project that a Guest or any account can create. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit. It expires 3 days after it was last opened, and every open restarts the clock; an expired link is gone, and the Project has to be shared again, as a new link.
 _Avoid_: share link, public link
 
+**Guest**:
+Someone using the app without signing in. Everything that works on the device works for a Guest, with no limit on Projects or their size; only what needs the backend is offered by account.
+_Avoid_: anonymous user, visitor
+
+**Free account**:
+A signed-in person with no paid plan. Gets what needs little of the backend: the basic settings kept in step across their devices, and one synced Project. The exact set is decided by plan, not fixed here.
+_Avoid_: basic plan, member
+
+**Pro**:
+The paid plan, for someone who would rather not manage their work on each device: what needs more of the backend, such as many synced Projects and Palettes saved to the account. Never needed for anything that works on the device; every feature that runs on the device is there for a Guest too.
+_Avoid_: premium, subscriber, paid user
+
 **Edit link**:
-For a synced Project (logged-in Pro users), the link whose `#` part is the Project's key; opening it on a device, or scanning its QR, gives that device the same editable Project. Whoever holds it can read and edit the Project.
+For a synced Project (a Free account's one, or a Pro's), the link whose `#` part is the Project's key; opening it on a device gives that device the same editable Project. Whoever holds it can read and edit the Project.
 _Avoid_: sync link, invite link
 
 **Locked Project**:
@@ -289,7 +309,7 @@ _Avoid_: onboarding, tutorial, walkthrough, guide, coach marks
 
 ## Where to start
 
-`src/`, by layer ([ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md), feature folders per [ADR 0024](docs/adr/0024-feature-subfolders-inside-the-layers.md)):
+`src/`, by layer ([ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md), feature folders inside the layers):
 
 | Folder | What is there | Start with |
 |---|---|---|
@@ -305,4 +325,4 @@ _Avoid_: onboarding, tutorial, walkthrough, guide, coach marks
 | `overview/` | The Overview page a new visitor lands on (its own entry, `overview/index.html`) | `OverviewPage.vue`, `overviewRoute.ts` |
 | `testUtils/` | Shared test helpers ([docs/testing.md](docs/testing.md)) | `seedProject.ts`, `editHarness.ts` |
 
-Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, [ADR 0023](docs/adr/0023-app-vue-decomposition-boundaries.md)), `src/features.ts` (switched-off features). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).
+Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, [ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md)), `src/features.ts` (switched-off features). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).

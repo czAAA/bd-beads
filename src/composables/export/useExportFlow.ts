@@ -27,7 +27,7 @@ export interface ExportFlowDeps {
 }
 
 /**
- * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0023): as a Project file, a PNG, a PDF or a QR code, and
+ * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020): as a Project file, a PNG, a PDF or a QR code, and
  * the maker's name the PNG and PDF print. QR is useQrExport's own; this composable builds on it. Deps are read lazily.
  */
 export function useExportFlow(deps: ExportFlowDeps) {

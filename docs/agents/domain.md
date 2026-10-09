@@ -35,3 +35,11 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
 
 > _Contradicts ADR-0001 (local-only persistence), but worth reopening because…_
+
+## Writing ADRs
+
+- **An ADR holds the decision as it stands today.** When a decision changes, rewrite the ADR in place: no "Amended by" notes, no superseded paragraphs. Git keeps the history; a rejected earlier version may go in Considered options in a line. Earlier wording is not kept, so every ADR uses today's glossary.
+- **One ADR per decision.** A new decision on the same topic is folded into its ADR, which keeps its number so citations stay valid. An ADR whose decision is gone entirely is deleted, and its citations in `src/`, `e2e/` and the docs are pointed at what replaced it. Archived tickets are left alone.
+- **Decisions only.** Runbooks, work plans and review guidance belong in `docs/`, not `docs/adr/`.
+- **An ADR may lead the code.** A decision that isn't built yet says so in its Status line, with the ticket that builds it: `Code catches up in ticket N.`
+- **Numbers.** A new ADR takes the highest number in `docs/adr/` plus one. A number is never reused, even after its ADR is deleted, so an old citation can't point at the wrong decision.

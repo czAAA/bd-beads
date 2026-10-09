@@ -21,7 +21,7 @@ export type FrameChange =
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
-  /** Row progress is on: its rows are the Frame's, which any change would alter (ADR 0017). */
+  /** Row progress is on: its rows are the Frame's, which any change would alter (ADR 0026). */
   | 'locked'
   /** Rotate and Remove line need a Frame to act on. */
   | 'no-frame'

@@ -2,7 +2,7 @@ import type { Translations } from '../../i18n/translations'
 import type { IconName } from './icons'
 
 /** What a registry `action` is to a shared control: the control registry's `ControlAction`, seen structurally
- * (ADR 0024: `ui/` imports from no feature folder). `deps` is whatever the action's `enabled` and `disabledBody` read. */
+ * (ADR 0020: `ui/` imports from no feature folder). `deps` is whatever the action's `enabled` and `disabledBody` read. */
 export interface ControlActionLike {
   icon?: IconName
   name: (t: Translations) => string

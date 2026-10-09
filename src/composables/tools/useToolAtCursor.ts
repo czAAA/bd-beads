@@ -20,7 +20,7 @@ export interface ToolAtCursorDeps {
 }
 
 /**
- * The active tool at a cursor position (tickets 159, 193; ADR 0023): one press and release, and a Selection stretched
+ * The active tool at a cursor position (tickets 159, 193; ADR 0020): one press and release, and a Selection stretched
  * from the bead the cursor was on. Kept apart from keyboard navigation so other cursor sources (touch) can use it.
  */
 export function useToolAtCursor(deps: ToolAtCursorDeps) {

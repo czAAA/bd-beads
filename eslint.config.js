@@ -67,7 +67,7 @@ export default tseslint.config(
       ],
     },
   },
-  // Feature subfolders (ADR 0020, amended by ADR 0024): components/ui/ holds the primitives every feature builds on, so
+  // Feature subfolders (ADR 0020): components/ui/ holds the primitives every feature builds on, so
   // it imports from no feature folder, in components/ or composables/.
   {
     files: ['src/components/ui/**/*.{ts,vue}'],
@@ -80,7 +80,7 @@ export default tseslint.config(
             { group: ['**/services', '**/services/*'], message: 'Components emit events or take what they need from props or the app shell (ADR 0020).' },
             {
               group: ['canvas', 'tools', 'palette', 'export', 'import', 'project', 'shell', 'tour'].map((feature) => `**/${feature}/**`),
-              message: 'components/ui/ imports from no feature folder (ADR 0024).',
+              message: 'components/ui/ imports from no feature folder (ADR 0020).',
             },
           ],
         },

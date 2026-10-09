@@ -20,7 +20,7 @@ export interface SaveFlowDeps {
  */
 const SAVED_TOAST = 'save-confirmation'
 
-/** Save and its confirmation (tickets 115, 119, 195; ADR 0023). Deps are read lazily. */
+/** Save and its confirmation (tickets 115, 119, 195; ADR 0020). Deps are read lazily. */
 export function useSaveFlow(deps: SaveFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
 
