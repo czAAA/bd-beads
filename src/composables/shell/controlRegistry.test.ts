@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
-import { CONTROLS, chordSlots } from './controlRegistry'
+import { actionKey } from '../../components/ui/controlAction'
+import { CONTROLS, chordSlots, controlAction } from './controlRegistry'
 
 describe('the control registry', () => {
   it('has no two actions that declare the same key or combination', () => {
@@ -59,6 +60,13 @@ describe('the control registry', () => {
           expect(body, control.id).not.toMatch(/click to/i)
         }
       }
+    }
+  })
+
+  it('shows Back out\'s Esc on Done, Cancel and Clear selection without claiming the key twice', () => {
+    for (const id of ['done-frame', 'cancel-paste', 'clear-selection']) {
+      expect(actionKey(controlAction(id))).toBe('Esc')
+      expect(controlAction(id).chords).toEqual([])
     }
   })
 })
