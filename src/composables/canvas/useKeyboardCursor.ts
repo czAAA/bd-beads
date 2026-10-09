@@ -22,7 +22,7 @@ export interface KeyboardCursorDeps {
 }
 
 /**
- * Painting with the keyboard (tickets 159, 194; ADR 0023; BeadCursor card). The Project is one Tab stop with a bead
+ * Painting with the keyboard (tickets 159, 194; ADR 0020; BeadCursor card). The Project is one Tab stop with a bead
  * cursor: arrows move it, Shift + arrows extend a Selection, Home / End go to the row's ends, Page Up / Down move ten
  * rows, Space or Enter uses the current tool through the same handlers (and undo history) as a pointer press, and Escape
  * leaves. The cursor shows only after keyboard focus, and one polite announcement follows each action.

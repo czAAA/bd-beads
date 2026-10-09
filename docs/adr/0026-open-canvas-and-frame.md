@@ -1,28 +1,18 @@
-# A Pattern is an open canvas; a Frame marks which beads are the Pattern
+# A Project is an open canvas; a Frame marks which beads are the Pattern
 
-**Status: accepted.** Supersedes [ADR 0017](0017-grid-is-the-size-mm-is-an-estimate.md)'s "the grid is the size" (the grid no longer exists; the Frame is the size, and the millimetres are still an estimate) and its Size tool group and Resize. Supersedes [ADR 0019](0019-a-pattern-has-no-size-limit.md)'s per-Pattern grid size limit discussion only in that there is no grid to size; its measured limits (speed, storage, memory) still apply to the number of beads. Amends [ADR 0009](0009-compact-grid-encoding.md) (the stored encoding carries positions and a Frame) and [ADR 0010](0010-convert-image-fixed-physical-size.md) (the picture lands in a Frame of the stated size). Ticket 233; spec in design system v16.
+**Status: accepted.** Tickets 233, 313, 318; spec in design system v16.
 
-## Context
+A Project used to be a fixed `columns × rows` grid made before the first bead, which forced the size up front and made "I drew past the edge" a Resize chore. Weavers sketch first and decide the piece's edges later.
 
-A Pattern was a fixed `columns × rows` grid made before the first bead. That forced the person to know the size up front, made "I drew past the edge" a Resize chore (Size group, Change size, add and remove rows and columns), and left the board, its whole-grid rulers and the grid-sized exports tied together. Weavers sketch first and decide the piece's edges later.
+- **An Open canvas**: an endless field of bead positions addressed by integer `(row, column)`, negative included. Only painted positions are stored ([ADR 0009](0009-compact-grid-encoding.md)).
+- Beads that touch by a side or a corner form a **Piece**; without a Frame, each Piece has its own rulers (columns above, rows left, from 1).
+- **At most one Frame per Project**: a rectangle on whole beads that marks which beads are the Pattern ([ADR 0028](0028-a-canvas-is-a-project-a-pattern-is-what-the-frame-holds.md)). It is a line, not a wall: drawing outside it stays possible and is saved, apart from the keep-out margin ([ADR 0027](0027-frame-keep-out-margin.md)). Export, Row progress, Rotate and Beads needed read the Frame. With a Frame, Piece rulers hide and the Frame's rulers show on all four sides.
+- **Set Frame** draws, moves and resizes it; **Fit to drawing** wraps every bead; **Remove Frame** clears it. While Row progress is on, the Frame can't change, since its rows are the Frame's. Frame changes are Undo steps and never change a bead's color ([ADR 0036](0036-every-undoable-change-goes-through-edit.md)).
+- **The Frame is the size; millimetres are an estimate.** A weaver counts beads, and the millimetres are how big that count comes out, which varies with tension and slack. A size given in mm or cm, when creating or resizing, is turned into beads once through the Bead's footprint and forgotten; the **Estimated size** is worked out on demand from the Frame and the Bead (width `columns × (widthMm + widthCorrectionMm)`, height `rows × heightMm`, the exact inverse) and always shown as an estimate. Making it Technique-aware (peyote's tighter rows) is left until the mm-to-beads conversion is too.
+- **Rotate turns the Frame and its beads** a quarter turn about the Frame's centre, changing the data: beads move to new positions. On peyote and brick stitch the way beads touch changes with them, and the Frame's top row snaps to an even row, so four turns can drift by a row; that is accepted. A Piece in the way moves clear, with a Message and one Undo step. Without a Frame, or with Row progress on, it is disabled.
+- **Remove line** removes the selected row or column inside the Frame (the Frame shrinks by one, beads after it close the gap, beads outside stay), or inside a Piece's area without a Frame.
+- **Fill is bounded on open space**: it stops at the edge of the painted region plus one bead, and never runs away.
+- One renderer draws it ([ADR 0018](0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md)), told by a `Space` whether positions are the open canvas's own or the Frame alone.
+- **Old Projects open unchanged**: every Project, file and link written with a fixed grid opens with a Frame the size of that grid; the grid-shaped reader is the one place that still knows a fixed size.
 
-## Decision
-
-- A Pattern is an **open canvas**: an endless field of bead positions addressed by integer `(row, column)`, negative included. Only painted positions are stored.
-- Beads that touch by a side or a corner form a **Piece**; a Piece has a rectangle and, while there is no Frame, its own rulers (columns above, rows left, from 1).
-- At most one **Frame** per canvas: a rectangle on whole beads (`row`, `column`, `columns`, `rows`) that marks which beads are the Pattern. It is a line only; drawing outside it stays possible and is saved. Export, Row progress, Rotate and Beads needed read the Frame. With a Frame, piece rulers hide and the Frame's rulers show on all four sides.
-- **Set Frame** (F, the Frame row in the Toolbox) draws, moves and resizes it; **Fit to drawing** wraps every bead; **Remove Frame** clears it. Frame changes are Undo steps and never change a bead.
-- **Rotate** turns the Frame and the beads about the Frame's centre; a Piece in the way moves clear, with a Message and one Undo. Without a Frame it is disabled.
-- Storage keeps beads by position with the Frame beside them. Every Pattern, Pattern file and QR code written before opens unchanged with a Frame the size of its old grid; the old grid-shaped reader stays, as the one place that still knows a fixed size.
-
-## Considered options
-
-1. **A fixed grid with a Frame drawn on top.** Smallest change, but it keeps the board, the Size group and Resize, and still makes someone choose a grid first; "draw outside the Frame" would mean growing the grid anyway. Rejected.
-2. **An endless canvas with a Frame (chosen).** Removes the size decision from creation and the Resize commands from the product; costs a position-keyed model and a viewport that is not clipped to a board.
-
-## Consequences
-
-- The Size group, Change size, Add/remove row-column, the board and the whole-grid rulers are removed, with their code and strings. Remove line (the selected whole row or column) stays, as the design system's Tools group and Tour still have it, and now works on the Frame: its beads after the line close the gap, the Frame shrinks by one, beads outside it stay put. Ticket 313 extends it to a Piece area while there is no Frame: the area's beads after the line close the gap and the area ends one line shorter.
-- Fill is bounded on open space (it stops at the edge of the painted region plus one bead of margin) and never runs away.
-- Everything that read `columns`, `rows` and a dense `grid` now reads the Frame or the bead map; this lands in steps, each leaving the app working.
-- The open canvas is drawn by the one Project renderer (ADR 0018), not a second one (amended 2026-10-06, ticket 318): it takes a `Space` that says whether positions are the open canvas's own or the Frame alone, and the overlay takes the same value.
+**Considered options**: a fixed grid with a Frame drawn on top (rejected: keeps the board, the Size group and Resize, and still makes someone choose a grid first); keeping a stored real-world size beside the beads (rejected: a second source of truth, wrong the moment anything moves a bead); a view-only Rotate that turns the picture and not the data (built first, tickets 28 and 171, and replaced here; the legacy `rotation` field stays so a Project saved turned still opens turned).

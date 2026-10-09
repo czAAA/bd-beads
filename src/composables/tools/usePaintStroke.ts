@@ -16,7 +16,7 @@ export interface PaintStrokeDeps {
 }
 
 /**
- * The Paint-tool drag (tickets 24, 55; ADR 0023, 0036): begin a stroke, paint cells as the pointer moves, end it as one
+ * The Paint-tool drag (tickets 24, 55; ADR 0020, 0036): begin a stroke, paint cells as the pointer moves, end it as one
  * undo step and one save. Edit holds the baseline and the guards; every cell touched in between updates the live
  * Project directly, with its save deferred. Deps are read lazily.
  */

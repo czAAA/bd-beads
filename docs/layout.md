@@ -12,7 +12,7 @@ The left column holds separate boxes in a fixed order: the Toolbox (or the New P
 
 The header's summary holds the open Project's info alongside New Project and the Import controls. Zoom sits at the canvas box's top-right; the Progress bar runs along the canvas box's bottom edge.
 
-Read [ADR 0021](adr/0021-visual-language-follows-design-md.md), which supersedes the layout parts of [ADR 0004](adr/0004-three-panel-app-shell.md) and [ADR 0005](adr/0005-tools-above-canvas.md), before adding a new screen or control.
+Read [ADR 0021](adr/0021-visual-language-follows-design-md.md) before adding a new screen or control.
 
 ## Under 1024px: the phone layout
 

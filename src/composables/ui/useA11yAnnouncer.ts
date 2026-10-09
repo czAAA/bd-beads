@@ -12,7 +12,7 @@ export interface A11yAnnouncerDeps {
 }
 
 /**
- * Screen-reader announcements (tickets 159, 192; ADR 0023): the one polite live-region message per action -- the bead
+ * Screen-reader announcements (tickets 159, 192; ADR 0020): the one polite live-region message per action -- the bead
  * cursor's place and color, what a key just did. Deps are read lazily.
  */
 export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {

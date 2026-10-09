@@ -25,7 +25,7 @@ export interface CanvasPointerDeps {
 }
 
 /**
- * Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0023): the hovered cell and
+ * Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): the hovered cell and
  * its paint preview, and what a primary or secondary press and drag does under each tool. Deps are read lazily.
  */
 export function useCanvasPointer(deps: CanvasPointerDeps) {

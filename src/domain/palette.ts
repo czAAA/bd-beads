@@ -3,7 +3,7 @@ export interface PaletteColor {
   hex: string
 }
 
-/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that were used join them (ticket 227, ADR 0025). */
+/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that were used join them (ticket 227, ADR 0002). */
 export const PALETTE: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },

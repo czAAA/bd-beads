@@ -11,7 +11,7 @@ export interface CanvasFramingDeps {
 }
 
 /**
- * How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0023): the drawing area's measured size feeding the
+ * How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the drawing area's measured size feeding the
  * Project's fit zoom, the zoom readout, and the strip's size and zoom meta, which follow the framing step while it
  * runs and the open Project otherwise. Deps are read lazily.
  */

@@ -20,7 +20,7 @@ type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
  *
  * What it opens is the default slot: AppMenuItems for a `menu`, or any content for a `popover` (a small dialog: Tab
  * moves through it and leaving it closes it). A phone shows the `sheet` slot instead, given a `close` function, and
- * falls back to the popover when there is none (ui/ imports no feature folder, ADR 0024, so the BottomSheet itself is
+ * falls back to the popover when there is none (ui/ imports no feature folder, ADR 0020, so the BottomSheet itself is
  * the caller's). Its Tooltip body is `tooltip`, or the `items` names written as "A, B, C." (the Dock slots' "Set
  * Frame, Rotate, Copy, Paste."). An icon-only button always has a Tooltip (its name, ADR 0035), a labelled one only when
  * there is a body that adds something. An icon-only button may draw its own face in the `icon` slot (the Canvas color dot). Attributes and listeners (data-testid) go to the button itself.

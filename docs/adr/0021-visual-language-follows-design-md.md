@@ -1,66 +1,17 @@
-# The app's look and layout follow DESIGN.md: two themes, one scrolling left column, the canvas box fills the rest
+# The app's look and layout follow the design system: three themes, one left column, the canvas box fills the rest
 
-The first visual design (ticket 02: flat navy/peppermint color-blocking, thick outlines) grew by accretion, and every
-layout change since has been its own ADR amendment (0004 and 0005 carry eleven between them). For the MVP's "real
-design system" ([ADR 0014](0014-mvp-stays-local-only-hosted-phase-deferred.md)) we rendered 72 editor prototypes, one
-per published design system (tickets 125–134). The user picked five and combined parts of them into one design
-(ticket 135), approving it as two screenshots. That design became the **bd-beads design system** (edited on
-claude.ai, copied into `docs/design/system/`, version 13 at the time of writing), and it is now the single reference
-for tokens, layout, components, copy and artwork. **[DESIGN.md](../../DESIGN.md)** at the repo root is its entry
-point: it says which source wins, maps each topic to its design system file, and holds the app-specific notes the
-design system doesn't carry (the canvas `PatternTheme`, light-only exports, bundled fonts). `docs/design/light.png`
-and `dark.png` stay as the approved reference pictures. UI work follows the design system. A need it doesn't cover is
-added to the design system in repo first and copied to claude.ai only if needed.
+**Status: accepted.** Tickets 14, 125–135, 141–148, 156. Layout detail: `docs/layout.md`; the phone layout: [ADR 0032](0032-everything-under-1024px-is-the-phone-layout.md).
+
+The **bd-beads design system** (`docs/design/system/`, owned by the repo, [ADR 0030](0030-the-repo-owns-the-design-system.md)) is the single reference for tokens, layout, components, copy and artwork, and every UI change follows it. It came from 72 editor prototypes, one per published design system; the user combined parts of five into one design, approved as `docs/design/light.png` and `dark.png`. **[DESIGN.md](../../DESIGN.md)** is its entry point: which source wins, where each topic lives, and the app-specific notes. It restates no token value or component spec, so the two can't drift.
 
 The decisions a later reader might not expect:
 
-- **Dark and high contrast themes as well as light.** The app follows the device's setting until the user picks one
-  with the header's theme control. All three are complete token sets with the same layout. PNG and PDF exports always use the light theme.
-- **One left column, scrolling on its own**, holding four separate boxes in a fixed order: Toolbox, save box, Beads
-  needed, Saved Patterns. The below-canvas panel is gone. The canvas box takes all the remaining width and full
-  height, and the page itself no longer scrolls: the Pattern scrolls inside the canvas box.
-- **Save and Export leave the Toolbox** for a save box of their own, second in the column. Export (QR, PNG, PDF) is a
-  menu there.
-- **The Progress bar is always along the canvas box's bottom edge**, and it holds every Row progress control:
-  - a switch that turns Row progress on and off;
-  - the row readout;
-  - Turn row direction;
-  - Row not done (formerly Previous row);
-  - Row done.
+- **Three themes: light, dark and high contrast**, complete token sets with one layout. The app follows the device (`prefers-color-scheme`, `prefers-contrast: more`) until the person picks one. PNG and PDF exports always use the light theme.
+- **From 1024px, one left column that scrolls on its own**, with separate boxes in a fixed order: Toolbox, save box, Beads needed, Saved Projects. The canvas box takes the rest of the width and the full height. The page itself never scrolls; nothing sits below the canvas.
+- **Zoom sits in the canvas box's header strip; the Progress bar runs along its bottom edge** and holds every Row progress control, its on/off switch included, so it shows even while Row progress is off.
+- **Save and Export have a save box of their own**, second in the column, with Export as a menu.
+- **Saved Projects shows the most recently saved first**, five (ten on the desktop) with a way to show all.
+- **Fonts are bundled**, not loaded from a font CDN, so the app works offline and makes no third-party requests. The bundled fonts cover Latin and Cyrillic ([ADR 0039](0039-languages-and-how-they-are-written.md)).
+- **No chrome borrowed from general drawing apps**: no gallery, layers panel, object library, animation, or clone/flip/shadow controls. bd-beads is a tool for one domain, and a feature gets a place in the layout only when it exists.
 
-  The Toolbox's Row progress group is removed. The Pattern-shape placement (a side column for tall Patterns, a row for
-  wide ones) is dropped: the bar has to be visible while Row progress is off, because its switch is how it's turned
-  on.
-- **Saved Patterns shows the 5 most recently saved Patterns** and expands to all. This needs a last-saved order,
-  which the Pattern library (CONTEXT.md: "a flat set with no ordering") doesn't have yet. The ticket that builds this
-  box adds the order.
-- **Fonts are bundled with the app**, not loaded from a font CDN, so it works offline and makes no third-party
-  requests ([ADR 0001](0001-local-only-persistence.md)). DM Mono and Instrument Serif have no Cyrillic, so the
-  Russian UI falls back to JetBrains Mono and Source Serif 4 for those glyphs.
-
-**Considered options**:
-- Keep ticket 02's look and restyle piecemeal. Rejected: the redesign is an MVP goal, and piecemeal changes are how
-  0004 and 0005 accumulated their amendments.
-- Adopt one published design system wholesale. Rejected: none fitted an editor. Each was built for marketing pages,
-  and the user preferred parts of five.
-- Keep the below-canvas panel and a right column. Rejected in review: it split the chrome across three places and
-  squeezed the canvas; one column leaves the Pattern the whole width.
-- Render only one theme. Rejected: the user wanted both.
-
-**Consequences.**
-- This amends [ADR 0004](0004-three-panel-app-shell.md) (regions) and [ADR 0005](0005-tools-above-canvas.md)
-  (Toolbox contents, Progress bar placement). Until the implementation tickets land, the code still follows them.
-  Each ticket updates the ADRs' and CONTEXT.md's wording for the part it changes (Toolbox, Tool group, Progress bar,
-  Pattern shape, Pattern library).
-- The bead look changes (a board behind the beads, per-theme colors, light finished rows fading toward the board
-  instead of greying). [ADR 0018](0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md)'s "the look does
-  not change" was about the move to the renderer. The renderer's reference images are regenerated for the new look
-  once, deliberately, and are held to the new look from then on.
-- Parts of the design that were not in the approved screenshots (messages, modals, menus, states, Row progress off,
-  the responsive tiers) can be revised in the design system without a new ADR, as long as the copy in the repo is
-  refreshed with them.
-- **Amended (ticket 156):** DESIGN.md no longer restates token values or component specs, so it and the design
-  system can't drift. It keeps only the source rule, the topic map and the app-specific notes.
-- **Amended (ticket 273, [ADR 0030](0030-the-repo-owns-the-design-system.md)):** the design system is no longer edited on
-  claude.ai first. The repo owns it, v18 is the baseline, and a need it doesn't cover is added in `docs/design/system/`
-  in the same commit as the code. claude.ai gets a change back only when it needs one.
+**Considered options**: restyling the first look piecemeal (rejected: that is how the layout ADRs piled up a dozen amendments); adopting one published design system wholesale (rejected: none fitted an editor); a below-canvas panel and a right column (rejected: it split the chrome across three places and squeezed the canvas); one theme (rejected: the user wanted light and dark, and high contrast followed); ticket 02's first layout of a main panel and panels above and below the canvas (replaced: the tools moved next to the canvas and then into the column, as the controls grew).

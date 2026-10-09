@@ -192,10 +192,10 @@ every theme.
 ### 4.7 Decisions
 
 - [ADR 0021](docs/adr/0021-visual-language-follows-design-md.md): the visual language follows this file and the
-  design system; amends [0004](docs/adr/0004-three-panel-app-shell.md) and [0005](docs/adr/0005-tools-above-canvas.md).
+  design system, and the desktop layout.
 - [ADR 0001](docs/adr/0001-local-only-persistence.md): no third-party requests (bundled fonts).
 - [ADR 0012](docs/adr/0012-saving-follows-the-pattern-library.md): the save box reports the Pattern library's save state.
-- [ADR 0017](docs/adr/0017-grid-is-the-size-mm-is-an-estimate.md): measured sizes are estimates.
+- [ADR 0026](docs/adr/0026-open-canvas-and-frame.md): measured sizes are estimates.
 - [ADR 0018](docs/adr/0018-pattern-drawn-by-one-renderer-not-a-dom-cell-per-bead.md): one renderer draws the Project.
 
 ---

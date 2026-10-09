@@ -1,2 +1,2 @@
-/** The active editing tool (ADR 0005): what a click/drag on the canvas does. */
+/** The active editing tool: what a click/drag on the canvas does. */
 export type Tool = 'paint' | 'fill' | 'select' | 'erase' | 'hand'

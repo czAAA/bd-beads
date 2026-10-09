@@ -13,7 +13,7 @@ export interface RowOpsDeps {
 }
 
 /**
- * The Row progress controls (tickets 32, 171, 201; ADR 0023). None of these is a grid edit, so none is an
+ * The Row progress controls (tickets 32, 171, 201; ADR 0020). None of these is a grid edit, so none is an
  * undo step, and this composable has no dependency on history. Deps are read lazily.
  */
 export function useRowOps(deps: RowOpsDeps) {

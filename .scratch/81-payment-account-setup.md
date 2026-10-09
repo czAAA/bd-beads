@@ -1,11 +1,13 @@
-# 81: Create payment processor account + plan structure
+# 81: Create the Polar account and the Free account / Pro plans
 
-**What to build:** Sign up for the payment provider chosen in ticket 72, and define the free/paid plan structure agreed earlier (free tier fully-featured through an MVP promo, then specific features paywalled).
+**What to build:** Sign up for Polar (merchant of record, ADR 0014) and define the plans: a Free account gets the backend features that cost little (basic settings in step, one synced Project), Pro gets more (many synced Projects, Palettes saved to the account). The limits come from ticket 367's cost estimate. There is no free promo period.
 
-**Blocked by:** 78 (Accounts + paired-accounts cross-device sync), 72 (Research: pick a payment provider)
+**Blocked by:** 78 (Accounts and settings sync), 367 (hosting cost estimate, for the limits)
 
 **Status:** ready-for-human
 
-- [ ] A payment processor account exists and is verified for live payments
-- [ ] Plan/pricing structure is defined (free tier, paid tier, what each includes)
-- [ ] API keys are available for ticket 84 to integrate against
+- [ ] Polar pays out to the maintainer's country (Stripe Connect); if not, Paddle is used instead and ADR 0014 says so
+- [ ] A Polar organisation exists and is verified for live payments
+- [ ] The Pro plan and its price are defined, and the Free account and Pro limits are written into ADR 0014
+- [ ] An access token and webhook secret are ready for ticket 84
+- [ ] The ticket is archived in the same change

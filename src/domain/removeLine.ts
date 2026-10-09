@@ -55,7 +55,7 @@ function selectedProjectLine(project: Project, selection: Selection | undefined)
 export type RemoveLineRefusal =
   /** The Selection isn't exactly one whole row or column of the Frame, or with no Frame of a Piece area: nothing for it to act on. */
   | 'no-line'
-  /** Row progress is on: the Frame's rows are held still while it is (ADR 0017). */
+  /** Row progress is on: the Frame's rows are held still while it is (ADR 0026). */
   | 'locked'
   /** The Frame has only the one row or column the Selection names, and a Frame is never empty. */
   | 'only-line'

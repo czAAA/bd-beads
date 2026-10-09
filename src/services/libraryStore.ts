@@ -8,7 +8,7 @@ const STORAGE_KEY = 'bd-beads:patterns'
  * Where loadProjects keeps a stored value it can't read, rather than leaving it to be overwritten. A save always writes
  * the whole library from memory (ADR 0012), so a read that gives up and returns nothing is otherwise one edit away from
  * replacing a real library with an empty one. That only became reachable once the format had versions at all — a build
- * predating a format can't read what a newer one wrote (this app is served from a cache, ADR 0003) — so the bytes are
+ * predating a format can't read what a newer one wrote (this app is served from a cache, ADR 0022) — so the bytes are
  * kept aside for whichever build does understand them.
  */
 const UNREADABLE_KEY = 'bd-beads:patterns:unreadable'
