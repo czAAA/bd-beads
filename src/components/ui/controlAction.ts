@@ -8,13 +8,18 @@ export interface ControlActionLike {
   name: (t: Translations) => string
   body?: (t: Translations) => string
   chords: readonly { mod?: boolean; ctrl?: boolean; shift?: boolean | 'any'; label: string }[]
+  /** The key chip lists every key, not just the first. */
+  chipAllKeys?: boolean
   enabled?: (deps: never) => boolean
   disabledBody?: (t: Translations, deps: never) => string
 }
 
-/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one. */
+type Chord = ControlActionLike['chords'][number]
+
+const chordText = (chord: Chord) => [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean).join('+')
+
+/** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one; every chord, joined by ", ", when the action asks for it. */
 export function actionKey(action: ControlActionLike | undefined): string | undefined {
-  const chord = action?.chords[0]
-  if (!chord) return undefined
-  return [chord.mod ? 'Ctrl/Cmd' : chord.ctrl ? 'Ctrl' : '', chord.shift === true ? 'Shift' : '', chord.label].filter(Boolean).join('+')
+  if (!action?.chords.length) return undefined
+  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map(chordText).join(', ')
 }

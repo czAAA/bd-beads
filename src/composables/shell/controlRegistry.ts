@@ -93,6 +93,8 @@ export type ControlAction = Disableable & {
   modals?: ModalRule
   /** Only with a Project open (the key is left to the browser otherwise). */
   needsProject?: boolean
+  /** The key chip lists every key, not just the first (Row done: Enter, Space). */
+  chipAllKeys?: boolean
   /** Enter and Space give way to a focused Toolbox or Progress bar button, which they press natively. */
   givesWayToFocusedButton?: boolean
 }
@@ -335,12 +337,14 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-done',
+    icon: 'check',
     name: (t) => t.rowProgress.nextButton,
     group: 'rowProgress',
     chords: [
       { key: 'Enter', label: 'Enter' },
       { key: ' ', label: 'Space' },
     ],
+    chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
       if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(1)
@@ -348,12 +352,14 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-not-done',
+    icon: 'chevron-left',
     name: (t) => t.rowProgress.previousButton,
     group: 'rowProgress',
     chords: [
       { key: 'Enter', shift: true, label: 'Enter' },
       { key: ' ', shift: true, label: 'Space' },
     ],
+    chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
       if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)

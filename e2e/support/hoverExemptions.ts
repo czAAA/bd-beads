@@ -25,8 +25,6 @@ export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
     'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentHorizontalButton',
     'components/tools/MirrorControls.vue|t.mirror.mirrorCurrentVerticalButton',
     'components/tour/TourLayer.vue|t.tour.backToLoomName',
-    'components/ui/ProgressBar.vue|t.rowProgress.previousButton',
-    'components/ui/ProgressBar.vue|t.rowProgress.nextButton',
   ].map((key) => [key, NATIVE]),
 )
 
