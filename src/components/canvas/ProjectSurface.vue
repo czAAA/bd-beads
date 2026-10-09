@@ -401,7 +401,6 @@ function reducedMotion(): boolean {
 
 watch(marginOutlineWanted, (wanted) => {
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
-  pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   const target = wanted ? 1 : 0
   if (reducedMotion() || typeof requestAnimationFrame !== 'function') {
     marginOpacity.value = target
