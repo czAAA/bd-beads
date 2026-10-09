@@ -65,13 +65,13 @@ describe('Canvas color backgrounds', () => {
   })
 
   it.each([
-    ['light', 5],
-    ['dark', 6],
-  ] as const)('keeps rulers at 4.8:1 and the row marker at 13:1 on all %s backgrounds', (theme, count) => {
+    ['light', 5, 2.9],
+    ['dark', 6, 13],
+  ] as const)('keeps rulers at 4.8:1 and the row marker at 2.9:1 (light, the accent orange, ticket 352: 2.99 on Blush) or 13:1 (dark) on all %s backgrounds', (theme, count, marker) => {
     for (let choice = 1; choice <= count; choice += 1) {
       const look = canvasTheme(theme, choice)
       expect(contrast(look.ruler, look.canvas), `ruler on ${canvasBackgroundOf(theme, choice)?.id}`).toBeGreaterThanOrEqual(4.8)
-      expect(contrast(look.marker, look.canvas), `marker on ${canvasBackgroundOf(theme, choice)?.id}`).toBeGreaterThanOrEqual(13)
+      expect(contrast(look.marker, look.canvas), `marker on ${canvasBackgroundOf(theme, choice)?.id}`).toBeGreaterThanOrEqual(marker)
     }
   })
 

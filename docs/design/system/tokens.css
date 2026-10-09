@@ -38,7 +38,7 @@
   --switch-off: #858585; /* The Switch track while off (3.5:1 light, 4.1:1 dark on box). */
   --board: #e8e3df; /* The rounded board the beads sit on (PatternTheme background). */
   --ruler: #6a6a6a; /* Row and column numbers on the canvas rulers (5.2:1 light, 4.9:1 dark on box); the current row's number uses marker. */
-  --marker: #1f1f1f; /* Current-row outline and its ruler number; PatternTheme marker. */
+  --marker: #fa520f; /* Current-row border and its ruler number, the Selection and Mirror axes; PatternTheme marker. The accent orange in light (ticket 352). */
   --track: #e5e5e5; /* Progress bar track. */
   --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
   --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
