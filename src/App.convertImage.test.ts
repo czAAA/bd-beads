@@ -48,11 +48,9 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
-async function stateSize(wrapper: ReturnType<typeof mount>, width: string, height: string) {
+/** The New Project form states no size (ticket 342): all it has to settle before a picture is the Bead. */
+async function pickBead(wrapper: ReturnType<typeof mount>) {
   await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(width)
-  await wrapper.find('[data-testid="height-input"]').setValue(height)
 }
 
 async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', type = 'image/png') {
@@ -65,10 +63,20 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', 
   await flushPromises()
 }
 
-/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture. */
+/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture, its size stated in the size step. */
 async function startFraming(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
-  await stateSize(wrapper, width, height)
+  await pickBead(wrapper)
   await chooseImage(wrapper)
+  await stateSizeStep(wrapper, width, height)
+}
+
+/** Fills in the size step a chosen picture opens (ticket 342), in mm, and continues to framing. */
+async function stateSizeStep(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
+  await wrapper.find('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
+  await wrapper.find('[data-testid="width-input"]').setValue(width)
+  await wrapper.find('[data-testid="height-input"]').setValue(height)
+  await wrapper.find('[data-testid="convert-size-continue"]').trigger('click')
+  await flushPromises()
 }
 
 beforeEach(() => {
@@ -105,21 +113,19 @@ describe('App Convert image framing (ticket 58)', () => {
     const wrapper = mount(App)
     await startFraming(wrapper)
 
-    expect(wrapper.find('[data-testid="width-input"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="name-input"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="technique-select"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
   })
 
-  it('moves the frame as the size fields are edited', async () => {
+  it('frames the size stated in the size step, a size in mm rounding up to whole beads (ticket 342)', async () => {
     const wrapper = mount(App)
-    await startFraming(wrapper)
+    await startFraming(wrapper, '15.1', '30')
 
-    const outline = () => wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')
-    expect(outline()).toContain(`width: ${projectExtentPx('loom', 10, 1).width}px`)
-
-    await wrapper.find('[data-testid="width-input"]').setValue('8')
-
-    expect(outline()).toContain(`width: ${projectExtentPx('loom', 5, 1).width}px`)
+    // 15.1mm is 10.07 cubes across: 11 columns.
+    expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
+      `width: ${projectExtentPx('loom', 11, 1).width}px`,
+    )
   })
 
   it('follows the Technique as it is changed, staggering the beads for peyote', async () => {
@@ -139,12 +145,12 @@ describe('App Convert image framing (ticket 58)', () => {
 
   it('follows the Bead as it is changed, since the Bead footprint is what the frame cells are', async () => {
     const wrapper = mount(App)
-    await startFraming(wrapper)
+    await startFraming(wrapper, '14.4', '30')
 
     const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki-delica-11-0')!
     await wrapper.find('[data-testid="bead-select"]').setValue(delica.id)
 
-    // 15mm across a 1.6mm Delica is 9 columns, not the 1.5mm cube's 10.
+    // 14.4mm across a 1.6mm Delica is 9 columns, not the 1.5mm cube's 10 (9.6 rounded up).
     expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
       `width: ${projectExtentPx('loom', 9, 1).width}px`,
     )
@@ -189,20 +195,6 @@ describe('App Convert image framing (ticket 58)', () => {
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
 
     expect(beads()).toBeGreaterThan(atCover)
-  })
-
-  it('stays put when the size fields grow the frame past what the zoom was set for', async () => {
-    const wrapper = mount(App)
-    await startFraming(wrapper)
-
-    await wrapper.find('[data-testid="zoom-in"]').trigger('click')
-    await wrapper.find('[data-testid="width-input"]').setValue('60')
-
-    // 200% still means "twice the scale that covers this frame", whatever the frame has become.
-    expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('125%')
-    expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
-      `width: ${projectExtentPx('loom', 40, 1).width}px`,
-    )
   })
 })
 
@@ -286,7 +278,7 @@ describe('App Convert image creating the Project (ticket 58)', () => {
 
   it('leaves a Project created the ordinary way without Image colors', async () => {
     const wrapper = mount(App)
-    await stateSize(wrapper, '15', '30')
+    await pickBead(wrapper)
 
     await wrapper.find('form').trigger('submit')
 
@@ -309,7 +301,7 @@ describe('App Convert image cancelling (ticket 58)', () => {
 
   it('takes the panel over with a Project already open, and hands it back on Cancel', async () => {
     const wrapper = mount(App)
-    await stateSize(wrapper, '15', '30')
+    await pickBead(wrapper)
     await wrapper.find('form').trigger('submit')
     expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(true)
 
@@ -342,6 +334,7 @@ describe('App Convert image cancelling (ticket 58)', () => {
 
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
     await chooseImage(wrapper)
+    await stateSizeStep(wrapper)
 
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
     expect(wrapper.find('[data-testid="convert-image-max-colors"]').text()).toContain('12')
@@ -351,7 +344,7 @@ describe('App Convert image cancelling (ticket 58)', () => {
 describe('App Convert image rejections (ticket 58)', () => {
   it('says why a picture was turned away and stays on the form', async () => {
     const wrapper = mount(App)
-    await stateSize(wrapper, '15', '30')
+    await pickBead(wrapper)
 
     await chooseImage(wrapper, 'IMG_0001.HEIC', '')
 
@@ -363,7 +356,7 @@ describe('App Convert image rejections (ticket 58)', () => {
   it('says so when the picture cannot be decoded at all', async () => {
     decodeState.error = new ImageConversionError('decodeFailed')
     const wrapper = mount(App)
-    await stateSize(wrapper, '15', '30')
+    await pickBead(wrapper)
 
     await chooseImage(wrapper)
 

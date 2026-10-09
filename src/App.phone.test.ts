@@ -17,12 +17,9 @@ beforeEach(() => {
  * The phone New Project sheet's own form: with it open, the wider tiers' own (hidden but still mounted, ticket 79's
  * own note on AppDrawer) NewProjectForm is a second, earlier `form` in the DOM, so this scopes to the sheet's.
  */
-async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>, width: string, height: string) {
+async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>) {
   const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((s) => s.find('[data-testid="bead-select"]').exists())!
   await sheet.get('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await sheet.get('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await sheet.get('[data-testid="width-input"]').setValue(width)
-  await sheet.get('[data-testid="height-input"]').setValue(height)
   await sheet.get('form').trigger('submit')
 }
 
@@ -38,10 +35,10 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="phone-bar-new-project"]').trigger('click')
 
-    await createProjectViaPhoneSheet(wrapper, '15', '30')
+    await createProjectViaPhoneSheet(wrapper)
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(drawnProject(wrapper).frame!.columns).toBe(10)
+    expect(drawnProject(wrapper).frame).toBeUndefined() // an open canvas: its size is set in the Frame section (ticket 342)
     // After creation the Dock replaces the project-management bar.
     expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(false)
@@ -191,10 +188,10 @@ describe('App at the phone tier (ticket 79)', () => {
   it('closes both the Saved Projects drawer and Project sheet on project select', async () => {
     const wrapper = mount(App)
     // Create two projects so a second one can be selected.
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-new-project-button"]').trigger('click')
-    await createProjectViaPhoneSheet(wrapper, '10', '10')
+    await createProjectViaPhoneSheet(wrapper)
     // Now two projects saved; open the project sheet and the saved-projects drawer.
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')

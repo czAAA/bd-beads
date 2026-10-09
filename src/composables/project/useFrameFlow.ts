@@ -49,8 +49,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function describe(frame: Frame): string {
     const t = deps.messages()
     return t.frame.announceSet
-      .replace('{columns}', plural(deps.locale(), frame.columns, t.canvas.columnsCount))
-      .replace('{rows}', plural(deps.locale(), frame.rows, t.canvas.rowsCount))
+      .replace('{width}', String(frame.columns))
+      .replace('{height}', String(frame.rows))
   }
 
   /** Commits a new Frame (or none) as one undo step; a no-change is no step. The action names what happened in the margin Message. */

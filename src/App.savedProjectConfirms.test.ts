@@ -18,8 +18,6 @@ type Wrapper = ReturnType<typeof mount>
 async function createOpen(wrapper: Wrapper, name: string) {
   await wrapper.find('[data-testid="name-input"]').setValue(name)
   await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="width-input"]').setValue('4')
-  await wrapper.find('[data-testid="height-input"]').setValue('4')
   await wrapper.find('form').trigger('submit')
 }
 
@@ -100,7 +98,7 @@ describe('Saved Projects confirms switching (ticket 232)', () => {
     const { wrapper, otherId } = await twoProjects()
     refuseStorageWrites('bd-beads:patterns')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
+    await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')
 
     await click(wrapper, `select-project-${otherId}`)

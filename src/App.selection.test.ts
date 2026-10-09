@@ -370,16 +370,19 @@ describe('App select, copy and paste', () => {
     await wrapper.find('[data-testid="copy-button"]').trigger('click')
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper, '6', '6')
+    await createProjectViaForm(wrapper)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    const newProject = () => loadProjects().find((p) => p.id !== firstId)!
 
     // The Selection itself still resets on a Project switch, same as before ticket 92.
     expect(selectedCount(wrapper)).toBe(0)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
     // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
-    await click(wrapper, 0)
-    expect(frameGrid(loadProjects().find((p) => p.id !== firstId)!)[0]![0]!.color).toBe('#e63746')
+    // The new Project is an open canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
+    await pressBead(wrapper, { row: 0, column: 0 })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    expect(newProject().beads[0]?.[0]).toBe('#e63746')
   })
 })
 

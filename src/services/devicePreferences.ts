@@ -81,6 +81,13 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : undefined),
     write: (pick) => (pick === 'device' ? null : pick),
   }),
+  /** The unit the Frame section states the Pattern size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
+  sizeUnit: preference<'beads' | 'mm'>({
+    key: 'bd-beads:size-unit',
+    fallback: 'beads',
+    parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
+    write: (unit) => (unit === 'beads' ? null : unit),
+  }),
   /** The app's language. */
   locale: preference<Locale>({
     key: 'bd-beads:locale',

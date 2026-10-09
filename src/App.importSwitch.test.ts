@@ -24,8 +24,6 @@ function makeProject(name: string): Project {
 async function createOpen(wrapper: Wrapper, name: string) {
   await wrapper.find('[data-testid="name-input"]').setValue(name)
   await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="width-input"]').setValue('4')
-  await wrapper.find('[data-testid="height-input"]').setValue('4')
   await wrapper.find('form').trigger('submit')
 }
 
@@ -152,7 +150,7 @@ describe('App import asks before switching (ticket 154)', () => {
     const wrapper = mount(App)
     await createOpen(wrapper, 'Current')
     await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
+    await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')
     const canUndo = () => wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled') === undefined
     expect(canUndo()).toBe(true)
@@ -184,7 +182,7 @@ describe('App import asks before switching (ticket 154)', () => {
       await createOpen(wrapper, 'Current')
       const spy = refuseStorageWrites('bd-beads:patterns')
       await wrapper.find('[data-color-id="red"]').trigger('click')
-      await pressBead(wrapper, 0)
+      await pressBead(wrapper, { row: 0, column: 0 })
       await wrapper.find('.app-shell').trigger('mouseup')
       expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(true)
       return { wrapper, spy }
