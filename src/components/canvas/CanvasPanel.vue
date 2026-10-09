@@ -107,14 +107,6 @@ const {
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
-/** Why Rotate is off, if it is: no Frame to turn, or Row progress holding the Frame's rows still. */
-const rotateOff = computed(() => {
-  const project = activeProject.value
-  if (!project) return undefined
-  if (!project.frame) return t.value.frame.rotateNeedsFrame
-  return project.rowProgress.enabled ? t.value.size.lockedReason : undefined
-})
-
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
   const project = shownProject.value
@@ -293,11 +285,10 @@ function techniqueWord(technique: Technique): string {
         :class="{ 'app-shell__context-bar--frame': settingFrame, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
         :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
         :paste-armed="pasteProjectionActive"
+        :project="activeProject"
         :can-remove-line="canRemoveSelectedLine"
         :setting-frame="settingFrame"
         :frame-summary="frameTooltip"
-        :rotate-off="rotateOff"
-        :has-frame="!!activeProject?.frame && !activeProject.rowProgress.enabled"
         @fit-frame="onFitFrame"
         @remove-frame="onRemoveFrame"
         @done-frame="onDoneSetFrame"

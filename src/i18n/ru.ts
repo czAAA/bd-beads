@@ -438,7 +438,6 @@ export const ru: Translations = {
     exportPromptTitle: 'Задайте рамку для экспорта',
     countNeedsFrame: 'Задайте рамку, чтобы посчитать бисер.',
     progressNeedsFrame: 'Задайте рамку, чтобы начать',
-    rotateNeedsFrame: 'Повернуть: сначала задайте рамку',
     rotatedMessage: {
       one: 'Схема повёрнута. {count} фрагмент мешал и сдвинут за рамку.',
       few: 'Схема повёрнута. {count} фрагмента мешали и сдвинуты за рамку.',
