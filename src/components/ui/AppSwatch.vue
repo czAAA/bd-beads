@@ -10,9 +10,10 @@ import { markOn } from './swatchMark'
  * popover. Its Tooltip is the name "Color", the hex as the body and, where it has one, the key chip. `label` is the
  * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
  *
- * The remove × (added colors only): shown on the active swatch and while a mouse or an Apple Pencil hovers any added
- * swatch (not on touch, which cannot hover) and while keyboard focus is on it. Top-right inside the swatch with no background, drawn black or
- * white, whichever reads better on this hex, with a thin halo of the other, in a 24px invisible hit area (WCAG 2.5.8).
+ * The remove × (added colors only): shown on the active swatch, while a mouse or an Apple Pencil hovers an added swatch
+ * (touch cannot hover) and while keyboard focus is on it. It sits top-right inside the swatch with no background,
+ * drawn black or white, whichever reads better on this hex, with a thin halo of the other, in a 24px invisible hit
+ * area (WCAG 2.5.8).
  */
 defineOptions({ inheritAttrs: false })
 
@@ -37,16 +38,32 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
+/** Keyboard focus is on the swatch (or its ×); a click that merely focuses a button doesn't count. */
+const focused = ref(false)
+const isKeyboardFocus = (target: EventTarget | null) => {
+  try {
+    return (target as HTMLElement).matches(':focus-visible')
+  } catch {
+    return false // an engine without :focus-visible
+  }
+}
+const onFocusIn = (event: FocusEvent) => {
+  focused.value = isKeyboardFocus(event.target)
+}
+const onFocusOut = (event: FocusEvent) => {
+  if (!rootEl.value?.contains(event.relatedTarget as Node | null)) focused.value = false
+}
 /** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
 const hovered = ref(false)
-/** Keyboard focus is on the swatch (or its ×): a click that merely focuses the button doesn't count. */
-const focused = ref(false)
-const setFocus = (event: FocusEvent, within: boolean) => {
-  if (!within) focused.value = !!rootEl.value?.contains(event.relatedTarget as Node | null)
-  else focused.value = (event.target as HTMLElement).matches(':focus-visible')
+const onPointerEnter = (event: PointerEvent) => {
+  if (event.pointerType !== 'touch') hovered.value = true
 }
-const setHover = (event: PointerEvent, over: boolean) => {
-  if (event.pointerType !== 'touch') hovered.value = over
+const onPointerLeave = () => {
+  hovered.value = false
+}
+const onRemove = () => {
+  hovered.value = false
+  emit('remove')
 }
 
 /** The × is black or white by the swatch's own hex, whatever the theme. */
@@ -55,7 +72,15 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
 </script>
 
 <template>
-  <span ref="rootEl" class="swatch" @pointerenter="setHover($event, true)" @pointerleave="setHover($event, false)" @focusin="setFocus($event, true)" @focusout="setFocus($event, false)">
+  <span
+    ref="rootEl"
+    class="swatch"
+    @pointerenter="onPointerEnter"
+    @pointerleave="onPointerLeave"
+    @pointercancel="onPointerLeave"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+  >
     <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
       <template #default="{ describedby }">
         <button
@@ -83,7 +108,7 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
       :aria-label="removeLabel"
       tabindex="-1"
       data-testid="palette-swatch-remove"
-      @click="emit('remove')"
+      @click="onRemove"
     >
       <AppIcon class="swatch__remove-icon" name="close" :size="14" />
     </button>
@@ -170,7 +195,7 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   height: var(--swatch-remove-size) !important;
   color: var(--mark);
   stroke-width: var(--swatch-remove-stroke);
-  filter: drop-shadow(0 0 1px var(--mark-halo)) drop-shadow(0 0 1px var(--mark-halo));
+  filter: drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo)) drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo));
 }
 
 .swatch__remove:focus-visible {

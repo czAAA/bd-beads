@@ -59,7 +59,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 29. As a maker, I want Clear to have no key, so that one stray keystroke can never start clearing the whole canvas.
 30. As a maker, I want `R` for Rulers and `D` for Row direction shown in their Tooltips, so that I find them.
 31. As a maker, I want the Row done and Row not done Tooltips to show both of their keys, so that I can use whichever is comfortable.
-32. As a maker, I want Done, Cancel and Clear selection to show `Escape`, so that I know `Escape` backs out of whatever I'm doing.
+32. As a maker, I want Done, Cancel and Clear selection to show `Esc`, so that I know `Esc` backs out of whatever I'm doing.
 33. As a maker, I want the Keyboard shortcuts dialog to list exactly the keys the app has, so that it is never out of date.
 34. As a maker on a phone, I want the Zoom pill's Row progress button to turn Row progress on and off, so that there is one control for one thing.
 35. As a maker on a phone, I want the Progress bar to show exactly while Row progress is on, so that the bar never takes space when I'm not tracking rows.
@@ -103,7 +103,7 @@ Every control is defined once and looks and behaves the same wherever it appears
 ## Implementation Decisions
 
 - **Control registry** (new, deep module). One definition per action: id, icon, name (English and Russian), optional body, zero or more keys, an enabled check, a `disabledBody` (which may depend on the reason: no Frame, Row progress lock, empty canvas) for any action that can be disabled, and the command it runs. The Toolbox, phone sheets, Dock, ContextBar, Zoom pill, Progress bar, header, Menu and the Keyboard shortcuts dialog read from it.
-- **Keyboard handler** is built from the registry's keys. Rule: one key or combination maps to exactly one action. One action may have several keys. Several controls may display the same action's key: `Escape` is one Back out action (an expanded Tool group, then Frame editing, then paste, then Selection, then Paint). Done, Cancel and Clear selection show its `Esc` chip without owning the key shown on Done, Cancel and Clear selection. Dialogs keep the browser's own `Escape` for closing, outside the registry. The existing guards stay: no modal open, not while typing (except Save), and Enter/Space giving way to a focused Toolbox button.
+- **Keyboard handler** is built from the registry's keys. Rule: one key or combination maps to exactly one action. One action may have several keys. Several controls may display the same action's key: `Escape` is one Back out action (an expanded Tool group, then Frame editing, then paste, then Selection, then Paint). Done, Cancel and Clear selection show its `Esc` chip without owning the key. Dialogs keep the browser's own `Escape` for closing, outside the registry. The existing guards stay: no modal open, not while typing (except Save), and Enter/Space giving way to a focused Toolbox button.
 - **Key changes:**
   - `Del` empties the Selection's beads and does nothing without a Selection. It never picks the Eraser.
   - `Shift+Del` runs Remove row/column.

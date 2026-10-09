@@ -198,7 +198,7 @@ function swallowClick(event: MouseEvent) {
   background: none;
   border: 0;
   border-radius: var(--radius-xs);
-  text-underline-offset: 3px;
+  text-underline-offset: var(--link-underline-offset);
   transition: opacity var(--duration-instant) var(--ease-standard);
 }
 
@@ -305,7 +305,7 @@ function swallowClick(event: MouseEvent) {
 :root[data-theme='contrast'] .app-button--link:active:not([aria-disabled='true']) {
   opacity: 1;
   text-decoration: underline;
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: var(--link-underline-thickness);
 }
 
 @media (prefers-reduced-motion: reduce) {

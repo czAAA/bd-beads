@@ -74,7 +74,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
 describe('an added swatch can be removed (ticket 228)', () => {
   const seed = (hexes: string[]) => localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(hexes))
   const removeButton = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="palette-swatch-remove"]')
-  /** The × shows on the selected added swatch only (ticket 333), so the first added swatch is selected before it is used. */
+  /** The × shows on the active added swatch and on a hovered or focused one (ticket 333), so the swatch is selected before it is used. */
   const selectAdded = async (wrapper: ReturnType<typeof mount>, index = 0) => {
     await swatches(wrapper)[PALETTE.length + index]!.trigger('click')
   }
@@ -93,7 +93,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
   const modal = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="remove-color-modal"]')
   const confirm = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-  it('shows the × on the selected added swatch only, and on no built-in one (ticket 333)', async () => {
+  it('shows the × on the active added swatch, and on no built-in one (ticket 333)', async () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()

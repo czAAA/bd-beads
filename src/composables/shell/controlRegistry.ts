@@ -1,11 +1,9 @@
-import { chordParts, type Chord } from '../../components/ui/controlAction'
+import { type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
-
-export { chordParts, type Chord }
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
