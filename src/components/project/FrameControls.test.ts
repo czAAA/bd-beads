@@ -4,7 +4,15 @@ import FrameControls from './FrameControls.vue'
 import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => {
+  localStorage.clear()
+  localStorage.setItem('bd-beads:locale', 'en')
+})
+
+/** A 10 × 20 bead Frame of Toho Cube 1.5 mm beads: 15 × 30 mm. */
+function framed() {
+  return createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
+}
 
 describe('FrameControls', () => {
   it('shows the Estimated size warning as an always-visible Note, with no (i) button (ticket 328)', () => {
@@ -14,5 +22,38 @@ describe('FrameControls', () => {
     expect(wrapper.find('[data-testid="size-estimate"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="size-estimate-note"]').text()).toBe(en.size.estimateWarning)
     expect(wrapper.find('[data-testid="size-estimate-info"]').exists()).toBe(false)
+  })
+
+  it('labels the size Width and Height, in beads by default, with the Estimated size in mm (ticket 342)', () => {
+    const wrapper = mount(FrameControls, { props: { project: framed() } })
+
+    expect(wrapper.text()).toContain(en.frame.widthLabel)
+    expect(wrapper.text()).toContain(en.frame.heightLabel)
+    expect(wrapper.text()).not.toMatch(/Columns|Rows/)
+    expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('10')
+    expect(wrapper.find('[data-testid="frame-rows"]').text()).toBe('20')
+    expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 1.5 × 3.0 cm')
+  })
+
+  it('switches to mm: the fields show mm, a press moves one bead, and the estimate is the bead count', async () => {
+    const wrapper = mount(FrameControls, { props: { project: framed() } })
+
+    await wrapper.find('[data-testid="frame-unit"] [data-value="mm"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('15')
+    expect(wrapper.find('[data-testid="frame-rows"]').text()).toBe('30')
+    expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 10×20 beads')
+
+    await wrapper.find('[data-testid="frame-columns-increase"]').trigger('click')
+    expect(wrapper.emitted('set-size')).toEqual([[11, 20]])
+  })
+
+  it('remembers the unit on the device, not in the Project (ticket 342)', async () => {
+    const wrapper = mount(FrameControls, { props: { project: framed() } })
+    await wrapper.find('[data-testid="frame-unit"] [data-value="mm"]').trigger('click')
+    expect(localStorage.getItem('bd-beads:size-unit')).toBe('mm')
+
+    const again = mount(FrameControls, { props: { project: framed() } })
+    expect(again.find('[data-testid="frame-columns"]').text()).toBe('15')
   })
 })

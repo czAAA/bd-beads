@@ -21,8 +21,10 @@ const props = withDefaults(
     decreaseTestid?: string
     increaseTestid?: string
     valueTestid?: string
+    /** What the field shows when it is not the number itself, e.g. the width in mm for a count of beads (ticket 342). */
+    display?: string
   }>(),
-  { min: -Infinity, max: Infinity, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined },
+  { min: -Infinity, max: Infinity, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
 )
 const value = defineModel<number>({ required: true })
 
@@ -58,7 +60,7 @@ function step(delta: number) {
         −
       </button>
     </component>
-    <span class="stepper__value" :data-testid="valueTestid">{{ value }}</span>
+    <span class="stepper__value" :data-testid="valueTestid">{{ display ?? value }}</span>
     <component :is="tooltipFor(increaseLabel, value < max) ? AppTooltip : 'span'" v-bind="tooltipFor(increaseLabel, value < max) ?? { class: 'stepper__slot' }">
       <button
         class="ui-control stepper__button"

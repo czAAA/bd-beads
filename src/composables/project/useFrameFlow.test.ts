@@ -44,7 +44,7 @@ describe('useFrameFlow', () => {
     expect(deps.harness.project.frame).toBeUndefined()
     expect(deps.harness.history.canUndo.value).toBe(false)
     expect(deps.harness.mirrorAxisCounts.current).toEqual({ columns: 1, rows: 0 })
-    expect(deps.announce).toHaveBeenCalledWith('Frame set, 5 columns, 4 rows')
+    expect(deps.announce).toHaveBeenCalledWith('Frame set, width 5, height 4')
   })
 
   it('lets go of a drag without committing it when a second finger makes it a pinch', () => {

@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
-import { normalizeProject } from '../../src/domain/project'
+import { createProject, normalizeProject } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import { parseProjectsFile } from '../../src/domain/projectFile'
-import { openApp, projectBox, settle } from '../support/app'
+import { openApp, projectBox, settle, stateConvertSize } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -21,11 +21,9 @@ const SIZES = [
   { columns: 250, rows: 250 },
 ]
 
-async function createProject(page: Page, columns: number, rows: number): Promise<void> {
-  await openApp(page, [])
-  await page.getByTestId('width-input').fill(String(columns))
-  await page.getByTestId('height-input').fill(String(rows))
-  await page.locator('button[type="submit"]').click()
+async function openSized(page: Page, columns: number, rows: number): Promise<void> {
+  // The New Project form states no size any more (ticket 342): the Project starts saved with its Frame, as one reopened.
+  await openApp(page, [createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
   await page.getByTestId('project-surface').scrollIntoViewIfNeeded()
   await settle(page)
@@ -60,7 +58,7 @@ async function savedProject(page: Page) {
 for (const { columns, rows } of SIZES) {
   test.describe(`${columns} × ${rows}`, () => {
     test('is created at that size, with nothing said against it', async ({ page }) => {
-      await createProject(page, columns, rows)
+      await openSized(page, columns, rows)
 
       const saved = await savedProject(page)
       expect([saved.frame!.columns, saved.frame!.rows]).toEqual([columns, rows])
@@ -70,7 +68,7 @@ for (const { columns, rows } of SIZES) {
     })
 
     test('is painted, saved, reloaded and exported as a Project file', async ({ page }) => {
-      await createProject(page, columns, rows)
+      await openSized(page, columns, rows)
 
       const at = await firstBeadPoint(page, 2, 3)
       await page.mouse.click(at.x, at.y)
@@ -96,7 +94,7 @@ for (const { columns, rows } of SIZES) {
     })
 
     test('has a stroke undone, and redone', async ({ page }) => {
-      await createProject(page, columns, rows)
+      await openSized(page, columns, rows)
 
       const start = await firstBeadPoint(page, 2, 3)
       const end = await firstBeadPoint(page, 2, 12)
@@ -114,7 +112,7 @@ for (const { columns, rows } of SIZES) {
     })
 
     test('a full device says the change is not saved, and keeps it on screen', async ({ page }) => {
-      await createProject(page, columns, rows)
+      await openSized(page, columns, rows)
       await page.evaluate(() => {
         Storage.prototype.setItem = () => {
           throw new DOMException('The quota has been exceeded.', 'QuotaExceededError')
@@ -144,9 +142,8 @@ for (const { columns, rows } of SIZES) {
 
 test('Convert image can frame a picture at 250 × 250, where it was once refused', async ({ page }) => {
   await openApp(page, [])
-  await page.getByTestId('width-input').fill('250')
-  await page.getByTestId('height-input').fill('250')
   await page.getByTestId('convert-image-input').setInputFiles({ name: 'picture.png', mimeType: 'image/png', buffer: fixturePicture(480, 320) })
+  await stateConvertSize(page, 250, 250)
 
   const preview = page.getByTestId('convert-image-box')
   await expect(preview).toBeVisible()

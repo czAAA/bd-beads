@@ -26,6 +26,11 @@ export function gridFromSize(size: StatedSize, bead: Bead): GridDimensions {
   )
 }
 
+/** One side of a Pattern in mm, "10.5" / "10,5": at most one decimal, no trailing ".0", in the language's decimal sign (ticket 342). */
+export function formatMm(mm: number, locale: Locale = 'en'): string {
+  return trimmedOneDecimal(mm, decimalSign(locale))
+}
+
 /** A grid's Estimated size in mm (CONTEXT.md): width first, as seen on screen. */
 export interface EstimatedSizeMm {
   widthMm: number
@@ -76,22 +81,26 @@ export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: Siz
   return `${inCentimetres(widthMm, decimal)} × ${inCentimetres(heightMm, decimal)} ${labels.cm}`
 }
 
-/** At most two decimals, with any trailing zeros dropped -- a Bead's own pitch (e.g. 1.65mm from a width correction) shown exactly rather than rounded to one. */
-function trimmedMm(value: number, decimal: string): string {
-  return String(Number(value.toFixed(2))).replace('.', decimal)
+/** The unit a Pattern size is stated in (ticket 342): a count of beads, or mm. */
+export type PatternSizeUnit = 'beads' | 'mm'
+
+/** Whether a stated width and height mean a size: both above zero, and whole numbers when counted in beads. */
+export function isSizeStated(width: number, height: number, unit: PatternSizeUnit): boolean {
+  const stated = width > 0 && height > 0
+  return unit === 'beads' ? stated && Number.isInteger(width) && Number.isInteger(height) : stated
 }
 
 /**
- * The New Project form's Unit picker conversion row (ticket 179): each axis' bead count times that Bead's own
- * millimetre pitch (see beadPitchMm, bead.heightMm), ending in the same combined Estimated size formatSizeMm already
- * renders elsewhere in the form -- "100×1.5 × 100×2.2 ≈ 15.0 × 15.0 cm". The same mathematical-only caveat as
- * estimatedSizeMm (CONTEXT.md's Estimated size) applies: no Technique packing, thread slack or tension, so this is
- * always shown next to a tooltip saying a real result may differ.
+ * A size in the unit it is not stated in (ticket 342): "≈ 3.0 × 2.2 cm" while the unit is beads, "≈ 20×10 beads" while it
+ * is mm. `beadsTemplate` is the translated "≈ {columns}×{rows} beads".
  */
-export function formatSizeConversion(grid: GridDimensions, bead: Bead, labels: SizeUnitLabels, locale: Locale = 'en'): string {
-  const decimal = decimalSign(locale)
-  const beadWidth = trimmedMm(beadPitchMm(bead), decimal)
-  const beadHeight = trimmedMm(bead.heightMm, decimal)
-  const total = formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)
-  return `${grid.columns}×${beadWidth} × ${grid.rows}×${beadHeight} ≈ ${total}`
+export function formatOtherUnit(
+  grid: GridDimensions,
+  bead: Bead,
+  unit: PatternSizeUnit,
+  labels: SizeUnitLabels & { beadsTemplate: string },
+  locale: Locale = 'en',
+): string {
+  if (unit === 'mm') return labels.beadsTemplate.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
+  return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)}`
 }

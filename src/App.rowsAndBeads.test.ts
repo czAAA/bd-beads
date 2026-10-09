@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import App from './App.vue'
 import { hoverBead, pressBead, previewedBeads, rowProgressView } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
@@ -109,7 +110,7 @@ describe('App row progress', () => {
     })
 
     it('will not step past the last column', async () => {
-      const wrapper = await mountWithProject(5, 3) // 3 columns x 2 rows
+      const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
       await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
@@ -524,9 +525,6 @@ describe('App header bead', () => {
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     await wrapper.find('[data-testid="bead-select"]').setValue('miyuki-delica-11-0')
-    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-    await wrapper.find('[data-testid="width-input"]').setValue('15')
-    await wrapper.find('[data-testid="height-input"]').setValue('30')
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe('Miyuki Delica 11/0')
@@ -567,7 +565,7 @@ describe('App header bead', () => {
     const projectId = loadProjects()[0]!.id
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper, '30', '30')
+    await createProjectViaForm(wrapper)
 
     const projectItem = wrapper
       .findAll('[data-testid="project-item"]')
@@ -729,11 +727,9 @@ describe('App replace bead', () => {
   })
 
   it('works on a Project created in beads and painted on', async () => {
+    saveProjects([createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 12, height: 5, unit: 'beads' } })]) // beads: 12x5
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-    await wrapper.find('[data-testid="width-input"]').setValue('12')
-    await wrapper.find('[data-testid="height-input"]').setValue('5')
-    await wrapper.find('form').trigger('submit') // beads: 12x5
+    await nextTick()
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 7)
     await wrapper.find('.app-shell').trigger('mouseup')

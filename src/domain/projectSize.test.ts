@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from './beads'
 import {
   estimatedSizeMm,
-  formatSizeConversion,
+  formatMm,
+  formatOtherUnit,
+  isSizeStated,
   formatSizeMm,
   gridFromSize,
 } from './projectSize'
@@ -107,27 +109,32 @@ describe('formatSizeMm', () => {
   })
 })
 
-describe('formatSizeConversion (ticket 179)', () => {
-  it('shows each axis as bead count × the Bead\'s own mm pitch, ending in the combined Estimated size', () => {
-    expect(formatSizeConversion({ columns: 10, rows: 20 }, cube, units)).toBe('10×1.5 × 20×1.5 ≈ 1.5 × 3.0 cm')
+describe('formatMm (ticket 342)', () => {
+  it('shows at most one decimal and drops a trailing .0', () => {
+    expect(formatMm(10.5)).toBe('10.5')
+    expect(formatMm(15)).toBe('15')
+    expect(formatMm(16.5 * 1.1)).toBe('18.2')
   })
 
-  it("includes TOHO Round 11/0's width correction in the width term, not the raw catalog width", () => {
-    // beadPitchMm is 1.5 + 0.15 = 1.65, trimmed to two decimals rather than rounded to one.
-    expect(formatSizeConversion({ columns: 9, rows: 73 }, round, units)).toBe('9×1.65 × 73×2.2 ≈ 1.5 × 16.1 cm')
+  it("uses the language's decimal sign", () => {
+    expect(formatMm(10.5, 'ru')).toBe('10,5')
   })
+})
 
-  it('drops a trailing zero from a whole-number pitch', () => {
-    expect(formatSizeConversion({ columns: 40, rows: 30 }, cube, units)).toBe('40×1.5 × 30×1.5 ≈ 6.0 × 4.5 cm')
+describe('isSizeStated (ticket 342)', () => {
+  it('wants both sides above zero, and whole numbers in beads', () => {
+    expect(isSizeStated(10, 20, 'beads')).toBe(true)
+    expect(isSizeStated(0, 20, 'beads')).toBe(false)
+    expect(isSizeStated(2.5, 20, 'beads')).toBe(false)
+    expect(isSizeStated(2.5, 20, 'mm')).toBe(true)
   })
+})
 
-  it('uses the Russian decimal comma when locale is ru', () => {
-    expect(formatSizeConversion({ columns: 9, rows: 73 }, round, { mm: 'мм', cm: 'см' }, 'ru')).toBe(
-      '9×1,65 × 73×2,2 ≈ 1,5 × 16,1 см',
-    )
-  })
+describe('formatOtherUnit (ticket 342)', () => {
+  const labels = { ...units, beadsTemplate: '≈ {columns}×{rows} beads' }
 
-  it('updates live with a different Bead, since the pitch comes from it', () => {
-    expect(formatSizeConversion({ columns: 20, rows: 10 }, delica, units)).toBe('20×1.6 × 10×1.3 ≈ 3.2 × 1.3 cm')
+  it('gives mm while the unit is beads, and the bead count while it is mm', () => {
+    expect(formatOtherUnit({ columns: 10, rows: 20 }, cube, 'beads', labels)).toBe('≈ 1.5 × 3.0 cm')
+    expect(formatOtherUnit({ columns: 10, rows: 20 }, cube, 'mm', labels)).toBe('≈ 10×20 beads')
   })
 })
