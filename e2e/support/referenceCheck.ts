@@ -45,13 +45,13 @@ function rgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
 }
 
-/** How much of its own color a finished bead keeps in every theme, over the open canvas (60%, ticket 352). */
-const FINISHED_SHARE = 0.6
+/** How much of its own color a finished bead keeps in every theme, over the open canvas (50%, ticket 375). */
+const FINISHED_SHARE = 0.5
 
 /** How far the current row's beads are lifted toward white (10%, ticket 352). */
 const CURRENT_ROW_LIFT = 0.1
 
-/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 60% over the open canvas; the current row's are 10% brighter. */
+/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 50% over the open canvas; the current row's are 10% brighter. */
 function expectedCentre(project: Project, row: number, column: number): [number, number, number] {
   const color = beadColorAt(project, row, column)
   const own = rgb(color ?? LIGHT_THEME.emptyBead)

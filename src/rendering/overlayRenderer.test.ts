@@ -9,9 +9,16 @@ import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX } from './surfaceView'
 
-/** The line the Row progress marker strokes, as its path calls (ticket 369). */
+/** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
+function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
+  const stroke = calls.findIndex((call) => call.name === 'stroke')
+  const begin = calls.slice(0, stroke).map((call) => call.name).lastIndexOf('beginPath')
+  return calls.slice(begin, stroke).filter((call) => call.name === 'roundRect')
+}
+
+/** The line the Row progress marker strokes, as its path calls (ticket 369): the one after the beads' outlines (ticket 375). */
 function markerPath(calls: ReturnType<typeof recordingContext>['calls']): unknown[][] {
-  return calls.filter((call) => call.name === 'moveTo' || call.name === 'lineTo' || call.name === 'arcTo').map((call) => [call.name, ...call.args])
+  return calls.slice(calls.findIndex((call) => call.name === 'stroke') + 1).filter((call) => call.name === 'moveTo' || call.name === 'lineTo' || call.name === 'arcTo').map((call) => [call.name, ...call.args])
 }
 
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
@@ -52,8 +59,28 @@ describe('renderOverlay', () => {
 
       // Row 2 of a 4-wide loom: x 0..80, y 40..60; the line sits on the seam below it.
       expect(markerPath(calls)).toEqual([['moveTo', 0, 60], ['lineTo', 80, 60]])
-      expect(named('stroke')).toHaveLength(1)
-      expect(named('fillRect')).toHaveLength(0)
+      expect(named('stroke')).toHaveLength(2)
+    })
+
+    it('rings every bead of the row on the edge of its cell (ticket 375)', () => {
+      const project = projectOf('loom', 3, 3, { currentRow: 1 })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      const outline = ringRects(calls)
+      // Row 1 of a 3-wide loom: three beads at x 0, 20, 40 and y 20, each ringed on its cell's edge, the ends kept inside the Project.
+      expect(outline.map((call) => call.args)).toEqual([[1.5, 20, 18.5, 20, 1], [20, 20, 20, 20, 1], [40, 20, 18.5, 20, 1]])
+    })
+
+    it('rings only the peyote beads woven in the current pass (ticket 375)', () => {
+      // Pass 2 is the second half of line 1: the beads at odd positions.
+      const project = projectOf('peyote', 5, 3, { currentRow: 2 })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      expect(ringRects(calls)).toHaveLength(2)
     })
 
     it('keeps the last row\'s line inside the Project', () => {
@@ -85,7 +112,7 @@ describe('renderOverlay', () => {
 
       // Row 0 is one whole pass: every bead on its bottom edge (y 20), a curve of the bead's own corner radius at each end of each.
       const whole0 = border(0)
-      expect(whole0.named('stroke')).toHaveLength(1)
+      expect(whole0.named('stroke')).toHaveLength(2)
       expect(whole0.named('fillRect')).toHaveLength(0)
       expect(whole0.named('moveTo')[0]!.args).toEqual([0, 20 - R])
       expect(whole0.named('arcTo')[0]!.args).toEqual([0, 20, 20, 20, R])
@@ -144,10 +171,10 @@ describe('renderOverlay', () => {
       }
 
       // Column 1 is woven in two passes (ticket 347): row 0's bead (right edge at x 40) is in the first; row 1's (shifted half a bead, 15px down)
-      // is still to weave and keeps the line on its left edge at x 30. The turns across the seam between them (y 17.5) are rounded.
-      expect(border(1)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 17.5, 30, 17.5, 5], ['arcTo', 30, 17.5, 30, 35, 5], ['lineTo', 30, 35]])
-      // Once both are woven, both are on their right edges (x 40 and 50).
-      expect(border(2)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 17.5, 50, 17.5, 5], ['arcTo', 50, 17.5, 50, 35, 5], ['lineTo', 50, 35]])
+      // is still to weave and keeps the line on its left edge at x 30. The step across is made along the edge of the bead in the pass (ticket 375), where its ring turns: at y 20, the end of row 0's bead.
+      expect(border(1)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 20, 30, 20, 5], ['arcTo', 30, 20, 30, 35, 5], ['lineTo', 30, 35]])
+      // In the second pass row 1's bead is the one in it, and the step is made along its top edge, y 15.
+      expect(border(2)).toEqual([['moveTo', 40, 0], ['arcTo', 40, 15, 50, 15, 5], ['arcTo', 50, 15, 50, 35, 5], ['lineTo', 50, 35]])
     })
 
     it('steps across the shifted rows on brick stitch, the turns rounded a little', () => {
@@ -241,9 +268,11 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: '#e63746' } })
 
+      // The row's own beads are lifted first (ticket 375); the preview goes over them, then nothing but the marker.
       const styles = named('fillRect').map((call) => call.fillStyle)
-      expect(styles[0]).toBe('#e63746')
-      expect(styles.slice(1).every((style) => style === DEFAULT_THEME.marker)).toBe(true)
+      const previewAt = styles.indexOf('#e63746')
+      expect(previewAt).toBeGreaterThan(0)
+      expect(styles.slice(previewAt + 1).every((style) => style === DEFAULT_THEME.marker)).toBe(true)
     })
 
     it('clears the layer when it is gone, so a hover leaves nothing behind', () => {
@@ -368,9 +397,11 @@ describe('renderOverlay', () => {
       const order = calls
         .filter((call) => call.name === 'fillRect' || call.name === 'stroke')
         .map((call) => (call.name === 'stroke' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
-      expect(order.indexOf('wash')).toBeLessThan(order.indexOf('outline'))
-      expect(order.indexOf('outline')).toBeLessThan(order.indexOf('preview'))
-      expect(order.indexOf('preview')).toBeLessThan(order.indexOf('marker'))
+      // Beads of the row are lifted before all of it (ticket 375), so look from the first wash on.
+      const fromWash = order.slice(order.indexOf('wash'))
+      expect(fromWash.indexOf('wash')).toBeLessThan(fromWash.indexOf('outline'))
+      expect(fromWash.indexOf('outline')).toBeLessThan(fromWash.indexOf('preview'))
+      expect(fromWash.indexOf('preview')).toBeLessThan(fromWash.indexOf('marker'))
     })
   })
 
@@ -458,10 +489,10 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] })
 
-      // The bead's own color at 60% over the board, its faint rim over that: opaque, so it covers what it is over.
-      const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.6)
-      const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.6)
-      expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.6))
+      // The bead's own color at 50% over the board, its faint rim over that: opaque, so it covers what it is over.
+      const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.5)
+      const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.5)
+      expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.5))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
         [blendOver(DEFAULT_THEME.rim!, red), 1, 1, 1, 18, 18],
         [red, 1, 1.75, 1.75, 16.5, 16.5],
@@ -476,7 +507,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }] })
 
-      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(DEFAULT_THEME.emptyBead, DEFAULT_THEME.background, 0.6))
+      expect(named('fillRect')[1]!.fillStyle).toBe(fadeOver(DEFAULT_THEME.emptyBead, DEFAULT_THEME.background, 0.5))
     })
 
     it('draws only the beads named, on screen and in the Project', () => {
