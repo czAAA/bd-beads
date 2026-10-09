@@ -29,6 +29,9 @@ const MARKER_EDGE_PX = 3
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
 const PREVIEW_OPACITY = 0.6
 
+/** How thick the hover preview's outline is when there is no color to show (BeadHover card): the pointer's marker shares it. */
+const PREVIEW_OUTLINE_PX = 2
+
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
 export interface HoverPreview {
   /** The beads it is on: the hovered one and its live-mirror counterparts, or every bead of a block about to be pasted. */
@@ -39,8 +42,6 @@ export interface HoverPreview {
 
 /** How much of a bead as drawn the pointer's marker is (ticket 353, BeadHover card). */
 const POINTER_SCALE = 0.9
-/** The marker's outline when there is no color to show: the hover preview's 2px. */
-const POINTER_OUTLINE_PX = 2
 
 /** The bead-shaped pointer over the board (ticket 353): where the pointer is, in the surface's own px, and the color it shows. */
 interface BeadPointer {
@@ -260,19 +261,35 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     const color = cell.color ?? preview.color
 
     if (color) {
-      context.globalAlpha = PREVIEW_OPACITY
-      context.fillStyle = color
-      context.fillRect(x, y, size, size)
-      context.globalAlpha = 1
-      continue
+      fillFaintly(context, x, y, size, 0, color)
+    } else {
+      outlineBead(context, x, y, size, roundness, theme)
     }
-
-    context.fillStyle = theme.outline
-    context.beginPath()
-    roundedRect(context, x, y, size, size, Math.max(0, roundness))
-    roundedRect(context, x + 2, y + 2, size - 4, size - 4, Math.max(0, roundness - 2))
-    context.fill('evenodd')
   }
+}
+
+/** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity. */
+function fillFaintly(context: DrawingContext, x: number, y: number, size: number, radius: number, color: string): void {
+  context.globalAlpha = PREVIEW_OPACITY
+  context.fillStyle = color
+  if (radius > 0) {
+    context.beginPath()
+    roundedRect(context, x, y, size, size, radius)
+    context.fill()
+  } else {
+    context.fillRect(x, y, size, size)
+  }
+  context.globalAlpha = 1
+}
+
+/** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's rounded corners. */
+function outlineBead(context: DrawingContext, x: number, y: number, size: number, radius: number, theme: ProjectTheme): void {
+  const inset = PREVIEW_OUTLINE_PX
+  context.fillStyle = theme.outline
+  context.beginPath()
+  roundedRect(context, x, y, size, size, Math.max(0, radius))
+  roundedRect(context, x + inset, y + inset, size - 2 * inset, size - 2 * inset, Math.max(0, radius - inset))
+  context.fill('evenodd')
 }
 
 /**
@@ -288,23 +305,10 @@ function drawPointer(context: DrawingContext, technique: Technique, zoom: number
 
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   if (pointer.color) {
-    context.globalAlpha = PREVIEW_OPACITY
-    context.fillStyle = pointer.color
-    if (radius === 0) {
-      context.fillRect(x, y, size, size)
-    } else {
-      context.beginPath()
-      roundedRect(context, x, y, size, size, radius)
-      context.fill()
-    }
-    context.globalAlpha = 1
-    return
+    fillFaintly(context, x, y, size, radius, pointer.color)
+  } else {
+    outlineBead(context, x, y, size, radius, theme)
   }
-  context.fillStyle = theme.outline
-  context.beginPath()
-  roundedRect(context, x, y, size, size, radius)
-  roundedRect(context, x + POINTER_OUTLINE_PX, y + POINTER_OUTLINE_PX, size - 2 * POINTER_OUTLINE_PX, size - 2 * POINTER_OUTLINE_PX, Math.max(0, radius - POINTER_OUTLINE_PX))
-  context.fill('evenodd')
 }
 
 /** How much of a bead the Selection's wash covers: its inside, the rim left as it is. */

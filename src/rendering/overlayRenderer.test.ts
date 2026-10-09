@@ -561,6 +561,19 @@ describe('the bead-shaped pointer (ticket 353)', () => {
   })
 })
 
+describe('the bead-shaped pointer on a rotated Project (ticket 353)', () => {
+  it('stays upright in the surface\'s own px: the Project turns under it, the marker does not', () => {
+    const project = projectOf('loom', 8, 8, { enabled: false }, 90)
+    const upright = recordingContext()
+    const turned = recordingContext()
+
+    renderOverlay(upright.context, { project: { ...project, rotation: 0 }, region: whole(project), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+    renderOverlay(turned.context, { project, region: whole(project), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
+
+    expect(turned.named('fillRect').map((call) => call.args)).toEqual(upright.named('fillRect').map((call) => call.args))
+  })
+})
+
 describe('the bead cursor (ticket 159)', () => {
   it('rings the bead 2px outside it in the focus-ring color, drawn over everything else', () => {
     const project = projectOf('loom', 4, 3, { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 })

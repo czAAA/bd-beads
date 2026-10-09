@@ -231,6 +231,7 @@ function techniqueWord(technique: Technique): string {
               :scroll="scroll"
               :show-rulers="showRulers"
               :moving="activeTool === 'hand'"
+              :marker-hidden="spaceHeld"
               :input-mode="surfaceInputMode"
               :blocks-margin="activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive"
               :preview-cells="previewCells"
