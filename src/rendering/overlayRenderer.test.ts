@@ -5,7 +5,7 @@ import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
-import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
+import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX } from './surfaceView'
 
 /** The line the Row progress marker strokes, as its path calls (ticket 369). */
 function markerPath(calls: ReturnType<typeof recordingContext>['calls']): unknown[][] {
@@ -547,6 +547,21 @@ describe('the bead cursor (ticket 159)', () => {
       expect(named('setLineDash')[0]!.args[0]).toEqual([2, 1.5])
       const stroke = calls.find((call) => call.name === 'stroke')!
       expect(stroke.globalAlpha).toBe(0.5)
+    })
+
+    // The outline is a 4x4 Frame plus its margin: 10 rows by 10 columns of 20px cells (CELL_SIZE_PX).
+    it.each([
+      ['loom', 200, 200],
+      ['peyote', 210, 155], // rows nest at three quarters of a bead, and shifted rows add half a bead across
+      ['brick', 210, 200 + 9 * SEAM_PX], // rows sit a seam apart, and shifted rows add half a bead across
+    ] as const)('wraps the %s margin as drawn, not as a full-bead grid', (technique, width, height) => {
+      const project = { ...projectOf(technique, 4, 4, { enabled: false }), frame: { row: 5, column: 5, rows: 4, columns: 4 } }
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
+
+      const [, , drawnWidth, drawnHeight] = calls.find((call) => call.name === 'roundRect')!.args as number[]
+      expect({ width: drawnWidth, height: drawnHeight }).toEqual({ width, height })
     })
 
     it('draws nothing while it is faded out', () => {

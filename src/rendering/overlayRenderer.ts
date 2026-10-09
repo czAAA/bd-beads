@@ -422,16 +422,18 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
 const MARGIN_OUTLINE_RADIUS_PX = 12
 
+/** Strokes the box round the margin's drawn extent (ticket 372): peyote rows nest closer than a bead is tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
 function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme): void {
   const outer = withMargin(frame)
   const x = outer.column * CELL_SIZE_PX
+  const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
   context.save()
   context.globalAlpha = opacity
   context.strokeStyle = theme.pieceLine
   context.lineWidth = 1 / zoom
   context.setLineDash(MARGIN_OUTLINE_DASH_PX.map((length) => length / zoom))
   context.beginPath()
-  roundedRect(context, x, rowTopPx(technique, outer.row), outer.columns * CELL_SIZE_PX, outer.rows * CELL_SIZE_PX, MARGIN_OUTLINE_RADIUS_PX / zoom)
+  roundedRect(context, x, rowTopPx(technique, outer.row), width, height, MARGIN_OUTLINE_RADIUS_PX / zoom)
   context.stroke()
   context.restore()
 }
