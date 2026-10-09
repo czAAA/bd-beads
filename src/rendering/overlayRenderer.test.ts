@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { createProject, withFrameGrid, type Project, type RowProgress, type Technique } from '../domain/project'
+import type { Frame } from '../domain/canvas'
+import { withMargin } from '../domain/margin'
 import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
-import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
+import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX } from './surfaceView'
 
 /** The line the Row progress marker strokes, as its path calls (ticket 369). */
 function markerPath(calls: ReturnType<typeof recordingContext>['calls']): unknown[][] {
@@ -547,6 +549,34 @@ describe('the bead cursor (ticket 159)', () => {
       expect(named('setLineDash')[0]!.args[0]).toEqual([2, 1.5])
       const stroke = calls.find((call) => call.name === 'stroke')!
       expect(stroke.globalAlpha).toBe(0.5)
+    })
+
+    // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
+    const outline = (technique: Technique, frame: Frame) => {
+      const project = { ...projectOf(technique, 4, 4, { enabled: false }), frame }
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
+      const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
+      return { x, width, height, outer: withMargin(frame) }
+    }
+    const frame = { row: 5, column: 5, rows: 4, columns: 4 }
+
+    it.each([
+      ['loom', (rows: number, columns: number) => ({ width: columns * 20, height: rows * 20 })],
+      ['peyote', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 15 })], // rows nest at three quarters of a bead; shifted rows add half a bead across
+      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * (20 + SEAM_PX) })], // rows sit a seam apart
+    ] as const)('wraps the %s margin as drawn, not as a full-bead grid', (technique, sizeOf) => {
+      const { width, height, outer } = outline(technique, frame)
+
+      expect({ width, height }).toEqual(sizeOf(outer.rows, outer.columns))
+    })
+
+    it('starts at the margin\'s own column even when its first row is a shifted one', () => {
+      const shiftedFirstRow = { ...frame, row: 6 }
+      const { x, outer } = outline('peyote', shiftedFirstRow)
+
+      expect(outer.row % 2).toBe(1)
+      expect(x).toBe(outer.column * 20)
     })
 
     it('draws nothing while it is faded out', () => {
