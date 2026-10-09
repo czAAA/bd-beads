@@ -359,6 +359,11 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
     disabledBody: (t: Translations, deps: ControlDeps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noFrameToRemove),
   }),
+  unkeyed('change-technique', (t) => t.form.techniqueLabel, 'canvas', {
+    body: (t) => t.tooltips.changeTechnique,
+    enabled: (deps: ControlDeps) => !frameLocked(deps),
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
+  }),
   unkeyed('fit-to-drawing', (t) => t.frame.fitToDrawing, 'canvas', {
     body: (t) => t.tooltips.fitToDrawing,
     enabled: (deps: ControlDeps) => !frameLocked(deps) && Object.keys(deps.activeProject()?.beads ?? {}).length > 0,

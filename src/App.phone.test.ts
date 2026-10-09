@@ -109,6 +109,19 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.get('[data-testid="sheet-paste"] svg').attributes('data-icon')).toBe('paste')
   })
 
+  it('changes the Technique from the Frame sheet as one Undo step (ticket 351)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
+
+    await wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
+
+    expect(drawnProject(wrapper).technique).toBe('peyote')
+    expect(wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').attributes('aria-checked')).toBe('true')
+    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
+    expect(drawnProject(wrapper).technique).toBe('loom')
+  })
+
   it('picks a Palette color from the Colour sheet and paints with it', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-color"]').trigger('click')

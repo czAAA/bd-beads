@@ -51,6 +51,7 @@ describe('useUndoHistory', () => {
       beads: ctx.project.beads,
       rowProgress: ctx.project.rowProgress,
       beadId: ctx.project.beadId,
+      technique: ctx.project.technique,
       frame: { row: 0, column: 0, columns: 5, rows: 5 },
       mirrorAxisCounts: NO_MIRROR_AXES,
     })

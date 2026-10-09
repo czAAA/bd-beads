@@ -12,7 +12,7 @@ import {
   type BeadMap,
   type Frame,
 } from './canvas'
-import { sameFrame } from './frame'
+import { sameFrame, snapRow } from './frame'
 import {
   neighborsOf,
   positionKey,
@@ -369,6 +369,20 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
 }
 
+/**
+ * The Project woven in another Technique (ticket 351): the grid, Bead and cells stay, only the geometry changes. Offset
+ * Techniques start their Frame on an even row, so a Frame that began on an odd one takes in the empty row above it
+ * rather than moving or losing a row.
+ */
+export function withTechnique(project: Project, technique: Technique): Project {
+  const frame = project.frame
+  const top = frame ? snapRow(technique, frame.row) : 0
+  if (!frame || top === frame.row) {
+    return touch(project, { technique })
+  }
+  return touch(project, { technique, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
+}
+
 /** Shows or hides the row-progress overlay, leaving the pointer where it is. */
 export function setRowProgressEnabled(project: Project, enabled: boolean): Project {
   // Row progress counts the Frame's rows, so with no Frame there is nothing to switch on.
@@ -482,17 +496,19 @@ export interface UndoEntry {
   rowProgress: RowProgress
   beadId: string
   frame: Frame | undefined
+  /** The Technique the entry was taken in, so Undo undoes a change of Technique (ticket 351). */
+  technique: Technique
   mirrorAxisCounts: MirrorAxisCounts
 }
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, technique: project.technique, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame })
+  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame, technique: entry.technique })
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */

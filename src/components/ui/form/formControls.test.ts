@@ -84,6 +84,25 @@ describe('SegmentedControl', () => {
     return { wrapper, value }
   }
 
+  it('keeps its choice when disabled, by click or arrow key, and says why on hover', async () => {
+    const wrapper = mount(SegmentedControl, {
+      props: {
+        options: options.map((o) => ({ ...o, tooltip: { name: o.label, body: 'Choose it.', disabledBody: 'Not now.' } })),
+        modelValue: 'loom',
+        disabled: true,
+      },
+      attachTo: document.body,
+    })
+
+    await wrapper.find('[data-value="peyote"]').trigger('click')
+    await wrapper.find('[data-value="loom"]').trigger('keydown', { key: 'ArrowRight' })
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(wrapper.attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-value="peyote"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-value="peyote"]').attributes('disabled')).toBeUndefined()
+  })
+
   it('is a radiogroup with the chosen option checked and the only tab stop', () => {
     const { wrapper } = mountControl('peyote')
 

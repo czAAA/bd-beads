@@ -455,6 +455,8 @@ export interface Translations {
     announceRemoved: string
     /** Fit to drawing with nothing drawn: there is nothing to wrap. */
     announceNothingToFit: string
+    /** `{technique}` is the new Technique's name. */
+    announceTechnique: string
     announceRotated: string
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
@@ -609,6 +611,8 @@ export interface Translations {
     noFrameToRemove: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
+    rowProgressLockedTechnique: string
+    changeTechnique: string
     rowProgressLockedRotate: string
     rowProgressLockedRemoveLine: string
     removeLine: string

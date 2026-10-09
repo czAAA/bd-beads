@@ -1,10 +1,11 @@
 import { computed, ref } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, movedFrame, type FrameEdge } from '../../domain/frame'
-import type { GridPosition } from '../../domain/grid'
+import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
 import type { Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
+import { techniqueName } from '../../i18n/techniqueName'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -33,7 +34,7 @@ type Gesture =
 
 /**
  * Set Frame (CONTEXT.md, ADR 0026): the mode in which dragging draws, moves and resizes the Frame, and the commands that
- * change it from the Toolbox (size steppers, Fit to drawing, Remove Frame). Every change is one Undo step that never
+ * change it from the Toolbox (size steppers, Technique, Fit to drawing, Remove Frame). Every change is one Undo step that never
  * touches a bead, refused while Row progress is on (its rows are the Frame's), and announced.
  */
 export function useFrameFlow(deps: FrameFlowDeps) {
@@ -68,6 +69,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     } else if (announce) {
       deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
     }
+  }
+
+  /** Weaves the open Project in another Technique (ticket 351): the grid, the beads and the Frame stay, one Undo step. */
+  function setTechnique(technique: Technique): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { technique }))
+    if (outcome.kind !== 'applied') return
+    const t = deps.messages()
+    deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
   }
 
   function start(): void {
@@ -184,6 +193,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     release,
     cancel,
     setSize,
+    setTechnique,
     fit,
     remove,
     onKey,

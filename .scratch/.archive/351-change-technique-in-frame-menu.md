@@ -10,12 +10,12 @@ Not in scope: converting the picture so it looks the same in the new geometry (a
 
 **Blocked by:** 336 (Dock and phone sheets on the shared controls), 334 (tooltip copy)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Frame menu on the Dock and on the phone offers Technique with loom, peyote and brick stitch; the current one is marked
-- [ ] Choosing another Technique redraws the canvas in its geometry; columns, rows, Bead, Frame and every cell's row and column are unchanged
-- [ ] One Undo step brings back the previous Technique; Redo reapplies it
-- [ ] With Row progress on the option is disabled and its Tooltip gives the reason, in English and Russian
-- [ ] The new Technique survives save, reload and file export
-- [ ] Copy added to ticket 334's table; `CONTEXT.md` updated
-- [ ] The tests related to the changed files pass; update the visual baselines where the look changed on purpose
+- [x] Frame menu on the Dock and on the phone offers Technique with loom, peyote and brick stitch; the current one is marked
+- [x] Choosing another Technique redraws the canvas in its geometry; columns, rows, Bead, Frame and every cell's row and column are unchanged
+- [x] One Undo step brings back the previous Technique; Redo reapplies it
+- [x] With Row progress on the option is disabled and its Tooltip gives the reason, in English and Russian
+- [x] The new Technique survives save, reload and file export
+- [x] Copy added to ticket 334's table; `CONTEXT.md` updated
+- [x] The tests related to the changed files pass; update the visual baselines where the look changed on purpose

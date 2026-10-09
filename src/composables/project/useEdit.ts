@@ -131,14 +131,14 @@ export function useEdit(deps: EditDeps) {
     deps.flushPendingSave()
   }
 
-  /** Puts a snapshot back for Undo/Redo: replays history, so no guard applies. Mirror's counts come from the snapshot; a Frame that differs resets the rest. */
+  /** Puts a snapshot back for Undo/Redo: replays history, so no guard applies. Mirror's counts come from the snapshot; a Frame or Technique that differs resets the rest. */
   function restore(snapshot: UndoEntry) {
     const project = deps.currentProject()
     if (!project) {
       return
     }
     deps.replaceProject(restoreSnapshot(project, snapshot))
-    if (!sameFrame(snapshot.frame, project.frame)) {
+    if (!sameFrame(snapshot.frame, project.frame) || snapshot.technique !== project.technique) {
       deps.resetAfterFrameChange()
     }
     deps.restoreMirrorAxisCounts(snapshot.mirrorAxisCounts)

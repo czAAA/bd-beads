@@ -12,6 +12,7 @@ import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
+import type { Technique } from '../../domain/grid'
 import type { Tool } from '../../domain/tool'
 import type { InputMode } from '../../domain/inputMode'
 import { resolveProjectBead, type Project } from '../../domain/project'
@@ -52,6 +53,7 @@ const emit = defineEmits<{
   'toggle-input-mode': []
   'start-frame': []
   'set-frame-size': [columns: number, rows: number]
+  'set-technique': [technique: Technique]
   'fit-frame': []
   'remove-frame': []
   /** The Frame number was pressed: bring the Frame into view. */
@@ -255,6 +257,7 @@ const frameSummary = computed(() => {
         <FrameControls
           :project="project"
           @set-size="(columns, rows) => emit('set-frame-size', columns, rows)"
+          @set-technique="(technique) => emit('set-technique', technique)"
           @fit="emit('fit-frame')"
           @remove="emit('remove-frame')"
         />

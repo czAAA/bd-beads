@@ -15,6 +15,7 @@ import {
   moveToRow,
   paintCells,
   setRowProgressEnabled,
+  withTechnique,
   type Project,
   frameGrid,
 } from './project'
@@ -40,6 +41,15 @@ describe('single-Project roundtrip', () => {
     const project = decoratedProject()
 
     expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
+  })
+
+  it('carries a Technique changed on an open Project through the file (ticket 351)', () => {
+    const project = withTechnique(decoratedProject(), 'brick')
+
+    const [restored] = parseProjectsFile(serializeProject(project)).projects
+
+    expect(restored!.technique).toBe('brick')
+    expect(restored).toEqual(project)
   })
 
   it('carries the grid, technique, bead and row progress through the file', () => {

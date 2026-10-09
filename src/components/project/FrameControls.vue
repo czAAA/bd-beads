@@ -4,9 +4,11 @@ import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import { TECHNIQUES, type Technique } from '../../domain/grid'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
@@ -26,6 +28,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'set-size': [columns: number, rows: number]
+  'set-technique': [technique: Technique]
   fit: []
   remove: []
   'set-frame': []
@@ -62,6 +65,22 @@ const estimate = computed(() =>
     : undefined,
 )
 
+const techniqueLabelId = useId()
+const techniqueAction = controlAction('change-technique')
+/** The Technique choice, set on the open Project: choosing another is one Undo step (ticket 351). */
+const technique = computed({
+  get: () => props.project.technique,
+  set: (value: Technique) => emit('set-technique', value),
+})
+const techniqueOptions = computed(() => {
+  const body = techniqueAction.body?.(t.value)
+  const disabledBody = techniqueAction.disabledBody?.(t.value, deps.value)
+  return TECHNIQUES.map((value) => {
+    const name = techniqueName(t.value, value)
+    return { value, label: name, tooltip: { name, body, disabledBody } }
+  })
+})
+
 const lockedNoteId = useId()
 
 const setFrameAction = controlAction('set-frame')
@@ -75,6 +94,18 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
 <template>
   <div class="frame-controls" data-testid="frame-controls">
     <p v-if="!frame" class="frame-controls__note" data-testid="frame-explainer">{{ t.frame.explainer }}</p>
+
+    <div class="frame-controls__technique" data-testid="frame-technique-row">
+      <span :id="techniqueLabelId">{{ t.form.techniqueLabel }}</span>
+      <SegmentedControl
+        v-model="technique"
+        :options="techniqueOptions"
+        :disabled="!techniqueAction.enabled?.(deps)"
+        small
+        :labelledby="techniqueLabelId"
+        data-testid="frame-technique"
+      />
+    </div>
 
     <template v-if="frame">
       <div class="frame-controls__setting">
@@ -148,6 +179,13 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
+  font: var(--type-control);
+}
+
+.frame-controls__technique {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
   font: var(--type-control);
 }
 

@@ -15,6 +15,30 @@ function framed() {
 }
 
 describe('FrameControls', () => {
+  describe('Technique (ticket 351)', () => {
+    it('offers loom, peyote and brick stitch, marking the one the Project uses', () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      const options = wrapper.findAll('[data-testid="frame-technique"] [role="radio"]')
+      expect(options.map((o) => o.text())).toEqual([en.form.techniqueLoom, en.form.techniquePeyote, en.form.techniqueBrick])
+      expect(options.map((o) => o.attributes('aria-checked'))).toEqual(['true', 'false', 'false'])
+    })
+
+    it('emits the Technique that is chosen', async () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      await wrapper.find('[data-testid="frame-technique"] [data-value="brick"]').trigger('click')
+      expect(wrapper.emitted('set-technique')).toEqual([['brick']])
+    })
+
+    it('is disabled while Row progress is on, and does not emit', async () => {
+      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 0, currentColumn: 0 } }
+      const wrapper = mount(FrameControls, { props: { project } })
+      const group = wrapper.find('[data-testid="frame-technique"]')
+      expect(group.attributes('aria-disabled')).toBe('true')
+      await group.find('[data-value="peyote"]').trigger('click')
+      expect(wrapper.emitted('set-technique')).toBeUndefined()
+    })
+  })
+
   it('shows the Estimated size warning as an always-visible Note, with no (i) button (ticket 328)', () => {
     const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
     const wrapper = mount(FrameControls, { props: { project } })

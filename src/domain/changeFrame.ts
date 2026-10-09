@@ -1,7 +1,8 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { sameFrame } from './frame'
+import type { Technique } from './grid'
 import { clearMargin } from './margin'
-import { withFrame, type Project } from './project'
+import { withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 import { rotateProject } from './rotate'
 
@@ -18,6 +19,8 @@ export type FrameChange =
   | { rotate: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
+  /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and column. */
+  | { technique: Technique }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -79,6 +82,13 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
     const beads = beadsWithoutLine(project.beads, frame, change.removeLine)
     return settled({ ...withFrame(project, smaller), beads })
+  }
+
+  if ('technique' in change) {
+    if (change.technique === project.technique) {
+      return { kind: 'unchanged', project }
+    }
+    return settled(withTechnique(project, change.technique))
   }
 
   const next = 'set' in change ? change.set : undefined

@@ -192,6 +192,34 @@ describe('useFrameFlow', () => {
     })
   })
 
+  describe('the Technique (ticket 351)', () => {
+    it('changes the Technique as one undo step, announced, keeping every bead and the Frame', () => {
+      const { deps, setTechnique } = setup()
+      const before = deps.harness.project
+      setTechnique('peyote')
+      expect(deps.harness.project).toMatchObject({ technique: 'peyote', frame: before.frame, beads: before.beads })
+      expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
+      expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.technique).toBe('loom')
+      deps.harness.history.onRedo()
+      expect(deps.harness.project.technique).toBe('peyote')
+    })
+
+    it('is no step when the Technique is the one already used', () => {
+      const { deps, setTechnique } = setup()
+      setTechnique('loom')
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(deps.harness.history.canUndo.value).toBe(false)
+    })
+
+    it('is refused while Row progress is on', () => {
+      const { deps, setTechnique } = setup(setRowProgressEnabled(sized, true))
+      setTechnique('brick')
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+  })
+
   it('brings the Frame into view', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()
