@@ -5,15 +5,16 @@ import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
-import { estimatedSizeMm, formatMm, formatSizeMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
- * The body of the Frame row (MirrorSizeControls card, ticket 233): the beads | mm switch (ticket 342, remembered on this
- * device), Width and Height steppers that move one bead per press in either unit, Fit to drawing and Remove Frame, and
- * the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). With no Frame it says what a Frame is and offers Fit
+ * The body of the Frame row (MirrorSizeControls card, ticket 233): the beads | mm switch (ticket 342, remembered on
+ * this device), Width and Height steppers that move one bead per press in either unit, Fit to drawing and Remove
+ * Frame, and the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). With no Frame it
+ * says what a Frame is and offers Fit
  * to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
  * the reason is written under the controls.
  */
@@ -46,11 +47,7 @@ const rows = computed({
 })
 
 /** The unit the size is stated in: kept on the device, never in the Project (ticket 342). */
-const unit = useSizeUnit()
-const unitOptions = computed(() => [
-  { value: 'beads' as const, label: t.value.form.unitBeads },
-  { value: 'mm' as const, label: t.value.form.unitMm },
-])
+const { unit, unitOptions } = useSizeUnit()
 const unitLabelId = useId()
 
 /** The Frame's width and height in mm, for the steppers' fields while the unit is mm (the beads still step one at a time). */
@@ -59,15 +56,11 @@ const widthDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? forma
 const heightDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? formatMm(sizeMm.value.heightMm, locale.value) : undefined))
 
 /** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
-const estimate = computed(() => {
-  if (!bead.value || !frame.value) {
-    return undefined
-  }
-  if (unit.value === 'mm') {
-    return t.value.form.estimateBeads.replace('{columns}', String(frame.value.columns)).replace('{rows}', String(frame.value.rows))
-  }
-  return `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead.value), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}`
-})
+const estimate = computed(() =>
+  bead.value && frame.value
+    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: t.value.form.estimateBeads }, locale.value)
+    : undefined,
+)
 
 const lockedNoteId = useId()
 

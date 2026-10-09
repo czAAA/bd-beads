@@ -5,6 +5,7 @@ import { type InputMode } from '../domain/inputMode'
 import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
+import type { PatternSizeUnit } from '../domain/projectSize'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
 interface Preference<T> {
@@ -82,7 +83,7 @@ export const PREFERENCES = {
     write: (pick) => (pick === 'device' ? null : pick),
   }),
   /** The unit the Frame section states the Pattern size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
-  sizeUnit: preference<'beads' | 'mm'>({
+  sizeUnit: preference<PatternSizeUnit>({
     key: 'bd-beads:size-unit',
     fallback: 'beads',
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),

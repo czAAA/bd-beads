@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import type { Bead } from '../../domain/beads'
 import type { Technique } from '../../domain/grid'
 import { isSlowFramingSize } from '../../domain/imageFraming'
-import { estimatedSizeMm, formatSizeMm, gridFromSize, type StatedSize } from '../../domain/projectSize'
+import { formatOtherUnit, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -32,13 +32,14 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const unit = useSizeUnit()
-const unitOptions = computed(() => [
-  { value: 'beads' as const, label: t.value.form.unitBeads },
-  { value: 'mm' as const, label: t.value.form.unitMm },
-])
+const { unit, unitOptions } = useSizeUnit()
 
 /** What the fields hold: a number field hands back a number once it is typed into or stepped. */
+/** What the number fields ask for in each unit: whole beads from 1, or any mm above 0. */
+const numberAttrs = computed(() =>
+  unit.value === 'beads' ? { whole: true, min: 1, step: 1, digitsOnly: true } : { whole: false, min: 0, step: 'any' as const, digitsOnly: false },
+)
+
 const widthText = ref<string | number>('')
 const heightText = ref<string | number>('')
 const touched = ref({ width: false, height: false })
@@ -46,25 +47,20 @@ const touched = ref({ width: false, height: false })
 const width = computed(() => Number(widthText.value))
 const height = computed(() => Number(heightText.value))
 
-/** A size in beads is a whole number of them, at least one; mm just has to be positive. */
-const isSizeStated = computed(() => {
-  const stated = String(widthText.value).trim() !== '' && String(heightText.value).trim() !== '' && width.value > 0 && height.value > 0
-  return unit.value === 'beads' ? stated && Number.isInteger(width.value) && Number.isInteger(height.value) : stated
-})
+const isStated = computed(
+  () => String(widthText.value).trim() !== '' && String(heightText.value).trim() !== '' && isSizeStated(width.value, height.value, unit.value),
+)
 
 const dimensions = computed(() =>
-  isSizeStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead) : undefined,
+  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead) : undefined,
 )
 
 /** The stated size in the other unit: "≈ 3.0 × 2.2 cm" for beads, "≈ 20×10 beads" for mm. */
-const estimate = computed(() => {
-  const grid = dimensions.value
-  if (!grid) return undefined
-  if (unit.value === 'mm') {
-    return t.value.form.estimateBeads.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
-  }
-  return `≈ ${formatSizeMm(estimatedSizeMm(grid, props.bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}`
-})
+const estimate = computed(() =>
+  dimensions.value
+    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: t.value.form.estimateBeads }, locale.value)
+    : undefined,
+)
 
 const techniqueLabel = computed<Record<Technique, string>>(() => ({
   loom: t.value.form.techniqueLoom,
@@ -89,7 +85,7 @@ const widthError = computed(() => sizeError(widthText.value, width.value, 'width
 const heightError = computed(() => sizeError(heightText.value, height.value, 'height'))
 
 function onConfirm() {
-  if (!isSizeStated.value) {
+  if (!isStated.value) {
     touched.value = { width: true, height: true }
     return
   }
@@ -117,12 +113,9 @@ function onConfirm() {
             data-testid="width-input"
             testid-prefix="width-input"
             data-autofocus
-            :whole="unit === 'beads'"
+            v-bind="numberAttrs"
             :invalid="!!widthError"
-            :min="unit === 'beads' ? 1 : 0"
-            :step="unit === 'beads' ? 1 : 'any'"
             stepper
-            :digits-only="unit === 'beads'"
             :placeholder="unit"
             :decrease-label="t.form.decreaseWidthButton"
             :increase-label="t.form.increaseWidthButton"
@@ -135,12 +128,9 @@ function onConfirm() {
             v-model="heightText"
             data-testid="height-input"
             testid-prefix="height-input"
-            :whole="unit === 'beads'"
+            v-bind="numberAttrs"
             :invalid="!!heightError"
-            :min="unit === 'beads' ? 1 : 0"
-            :step="unit === 'beads' ? 1 : 'any'"
             stepper
-            :digits-only="unit === 'beads'"
             :placeholder="unit"
             :decrease-label="t.form.decreaseHeightButton"
             :increase-label="t.form.increaseHeightButton"
@@ -158,7 +148,7 @@ function onConfirm() {
       <AppButton variant="in-box" data-testid="convert-size-cancel" @click="emit('cancel')">
         {{ t.convertImage.cancelButton }}
       </AppButton>
-      <AppButton variant="primary" :disabled="!isSizeStated" data-testid="convert-size-continue" @click="onConfirm">
+      <AppButton variant="primary" :disabled="!isStated" data-testid="convert-size-continue" @click="onConfirm">
         {{ t.convertImage.sizeContinue }}
       </AppButton>
     </template>

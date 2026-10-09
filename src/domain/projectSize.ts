@@ -80,3 +80,27 @@ export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: Siz
   }
   return `${inCentimetres(widthMm, decimal)} × ${inCentimetres(heightMm, decimal)} ${labels.cm}`
 }
+
+/** The unit a Pattern size is stated in (ticket 342): a count of beads, or mm. */
+export type PatternSizeUnit = 'beads' | 'mm'
+
+/** Whether a stated width and height mean a size: both above zero, and whole numbers when counted in beads. */
+export function isSizeStated(width: number, height: number, unit: PatternSizeUnit): boolean {
+  const stated = width > 0 && height > 0
+  return unit === 'beads' ? stated && Number.isInteger(width) && Number.isInteger(height) : stated
+}
+
+/**
+ * A size in the unit it is not stated in (ticket 342): "≈ 3.0 × 2.2 cm" while the unit is beads, "≈ 20×10 beads" while it
+ * is mm. `beadsTemplate` is the translated "≈ {columns}×{rows} beads".
+ */
+export function formatOtherUnit(
+  grid: GridDimensions,
+  bead: Bead,
+  unit: PatternSizeUnit,
+  labels: SizeUnitLabels & { beadsTemplate: string },
+  locale: Locale = 'en',
+): string {
+  if (unit === 'mm') return labels.beadsTemplate.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
+  return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)}`
+}
