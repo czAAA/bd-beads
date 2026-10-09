@@ -7,6 +7,16 @@ How tests are written in this repo. The commands are in the README's Checks; the
 - While working, run only the tests related to your change: `npx vitest related --run <changed files>`. The full unit suite peaks near 1.5 GB of RAM, so its one run is CI's, on every pull request, even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene).
 - `npm run typecheck` and `npm run lint` are cheap; run them before pushing.
 
+## CI
+
+CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs typecheck, lint and knip, the unit tests (Vitest shards) and the visual check (Playwright shards over one shared build). GitHub is the proof a change passed; nothing rests on a habit on one machine.
+
+- Each suite ends in one job with a stable name, and branch protection requires those three: "Typecheck and lint", "Unit tests passed", "Visual check passed". The shard counts can change in `ci.yml` without touching branch protection.
+- A pull request that changes only `.scratch/` or Markdown is skipped by `paths-ignore`, so its required checks never start and it waits forever: merge it with an admin override.
+- The workflow uses `pull_request` (never `pull_request_target`), a read-only token and no secrets, and pins every action to a commit SHA.
+- A failed visual shard uploads its `test-results`, and the shards' reports are merged into one HTML report artifact.
+- The performance check (`npm run perf`, README) is run by hand, never in CI: its timings depend on an idle machine.
+
 ## Where a test goes
 
 - A unit or component test sits beside its file as `<name>.test.ts`.

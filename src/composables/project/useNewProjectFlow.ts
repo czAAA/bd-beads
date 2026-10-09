@@ -16,7 +16,7 @@ export interface NewProjectFlowDeps {
   cancelConvertImage: () => void
 }
 
-/** New-Project creation, blank or from Convert image (tickets 58, 196; ADR 0023). Deps are read lazily. */
+/** New-Project creation, blank or from Convert image (tickets 58, 196; ADR 0020). Deps are read lazily. */
 export function useNewProjectFlow(deps: NewProjectFlowDeps) {
   /**
    * The last New Project form state that named a real size (a form with none is an open canvas, which has no frame to follow). The frame follows the form's fields as they're edited

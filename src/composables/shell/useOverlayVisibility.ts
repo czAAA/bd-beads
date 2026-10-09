@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { PhoneSheet } from './phoneSheet'
 
 /**
- * The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0023): the phone layout's Dock sheets, and
+ * The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the phone layout's Dock sheets, and
  * its New Project and Saved Projects sheets. The Shortcuts-help boolean stays in the app
  * shell: a single boolean with no logic isn't worth extracting.
  */

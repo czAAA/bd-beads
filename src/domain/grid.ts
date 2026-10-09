@@ -3,7 +3,7 @@ import { beadPitchMm, type Bead } from './beads'
 /** A real-world length unit. */
 export type PhysicalUnit = 'mm' | 'cm'
 
-/** What a New Project's size can be stated in: a count of beads, or a real-world length converted to beads once (ADR 0017). */
+/** What a New Project's size can be stated in: a count of beads, or a real-world length converted to beads once (ADR 0026). */
 export type SizeUnit = 'beads' | PhysicalUnit
 
 /** The weaving method, which determines a Project's grid geometry. */
@@ -64,7 +64,7 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
 /**
  * The canvas box's largest on-screen size (ticket 16). The box only grows to this: a Project that needs less gets a
  * box its own shape rather than empty bands inside a fixed square (ticket 18). Raised twice from the original 480:
- * once when the editing tools left the left panel (ADR 0005) and the canvas became what reclaims that width, and
+ * once when the editing tools left the left panel (ADR 0021) and the canvas became what reclaims that width, and
  * again here because 640 was still forcing ordinary-sized Projects (a few dozen columns/rows) to open zoomed below
  * 100% for no reason — the box simply wasn't big enough to show them at their natural 1:1 bead size. 900 covers a
  * Project well past 40x40 cells at 100% zoom while staying inside a typical laptop viewport once the header take

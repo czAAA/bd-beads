@@ -1,6 +1,6 @@
 # 341: Move the Save box, Saved Projects, dialogs and toasts to the shared controls
 
-**What to build:** Rebuild the Save box (Save Project, Export menu, export prompt, Name on exports), Saved Projects, the QR dialog, the Name on exports dialog, the confirm dialogs, toasts and messages. After this ticket, delete the old `ToolButton`, `ExpandButton` and `AppLink` components and every native `title` using the shared controls (`IconButton`, `AppButton`, `MenuButton`, `Swatch`, `Note`, `AppTooltip`) and the control registry (ADR 0035), with the copy from ticket 334. Delete the hand-written markup, labels, `title`s and key text it replaces. The migrations run one after another because they touch the same shell files.
+**What to build:** Rebuild the Save box (Save Project, Export menu, export prompt, Name on exports), Saved Projects, the Name on exports dialog, the confirm dialogs, toasts and messages. After this ticket, delete the old `ToolButton`, `ExpandButton` and `AppLink` components and every native `title` using the shared controls (`IconButton`, `AppButton`, `MenuButton`, `Swatch`, `Note`, `AppTooltip`) and the control registry (ADR 0035), with the copy from ticket 334. Delete the hand-written markup, labels, `title`s and key text it replaces. The migrations run one after another because they touch the same shell files.
 
 **Spec:** 343 (unified controls spec)
 

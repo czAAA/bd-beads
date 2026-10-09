@@ -13,7 +13,7 @@ export interface ReplaceBeadFlowDeps {
   locale: () => Locale
 }
 
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0017, 0023). Deps are read lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0023). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The Bead id picked from the Replace bead select, awaiting confirmation (ticket 48); undefined when its modal is closed. */
   const pendingId = ref<string | undefined>()
@@ -31,7 +31,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   })
 
   /**
-   * The modal's message (ticket 48, ADR 0017): the Project's Estimated size with the new Bead next to the one it has
+   * The modal's message (ticket 48, ADR 0007): the Project's Estimated size with the new Bead next to the one it has
    * now, plus the static reassurance that the design and its bead count stay put and that rows and columns can be
    * adjusted afterwards. The grid itself never changes, so there is no new grid size to show.
    */
@@ -77,7 +77,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   }
 
   /**
-   * Confirms Replace Bead (ticket 48, ADR 0017): swaps the Bead and nothing else, as a single undo step. The grid, Row
+   * Confirms Replace Bead (ticket 48, ADR 0007): swaps the Bead and nothing else, as a single undo step. The grid, Row
    * progress and Mirror all stay as they are, since the grid — the Project's size — is untouched; only its Estimated
    * size changes. An exempt Edit: it doesn't draw, so the Row progress lock has nothing to guard.
    */

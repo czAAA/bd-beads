@@ -99,7 +99,7 @@ export function useMirrorState(
     axisCounts.value = counts
   }
 
-  /** A change of the Frame resets just the axis counts (ADR 0017): the Frame they were clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
+  /** A change of the Frame resets just the axis counts (ADR 0036): the Frame they were clamped against no longer matches, but copy mode and hover are unrelated to grid size and are left alone. */
   function clearAxisCounts() {
     axisCounts.value = { ...NO_MIRROR_AXES }
   }

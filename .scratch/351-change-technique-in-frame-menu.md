@@ -16,6 +16,6 @@ Not in scope: converting the picture so it looks the same in the new geometry (a
 - [ ] Choosing another Technique redraws the canvas in its geometry; columns, rows, Bead, Frame and every cell's row and column are unchanged
 - [ ] One Undo step brings back the previous Technique; Redo reapplies it
 - [ ] With Row progress on the option is disabled and its Tooltip gives the reason, in English and Russian
-- [ ] The new Technique survives save, reload, file export and QR share
+- [ ] The new Technique survives save, reload and file export
 - [ ] Copy added to ticket 334's table; `CONTEXT.md` updated
 - [ ] The tests related to the changed files pass; update the visual baselines where the look changed on purpose

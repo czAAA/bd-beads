@@ -106,7 +106,7 @@ describe('projectStorage', () => {
     expect(loadProjects()[0]!.name).toBe('TOHO Cube 1.5mm')
   })
 
-  it('loads a Project saved before ADR 0017 that still carries its millimetre size, ignoring it', () => {
+  it('loads a Project saved before ADR 0026 that still carries its millimetre size, ignoring it', () => {
     const project = makeProject()
     localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...project, widthMm: 15, heightMm: 15 }]))
 

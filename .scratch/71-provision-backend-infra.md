@@ -1,11 +1,13 @@
-# 71: Provision self-hosted backend infra (Pi + managed DB)
+# 71: Provision the backend host and database
 
-**What to build:** Set up the physical, self-hosted server (Raspberry Pi: OS, networking, reachability) and create the managed free-tier database account chosen in ticket 66, ready for the backend app to deploy to. Intentionally not started until after MVP ships, per ADR 0014.
+**What to build:** Set up the host and the managed database that ticket 367 picks, ready for the backend to deploy to, so View links, accounts and sync have somewhere to run (ADR 0014). The Raspberry Pi of the first plan is dropped: a home network and power supply is not a service to sell.
 
-**Blocked by:** 66 (Research: database type + free-tier provider)
+**Blocked by:** 367 (Research: hosting and database for the public release)
 
 **Status:** ready-for-human
 
-- [ ] Raspberry Pi is set up, on the network, and reachable for deployment
-- [ ] A managed free-tier database account (per ticket 66's recommendation) exists and is reachable from the Pi
-- [ ] Basic backup of the database is configured
+- [ ] The host chosen in ticket 367 has an account, and the app's backend can deploy to it
+- [ ] The managed database chosen in ticket 367 exists and is reachable from the host only
+- [ ] The database is backed up
+- [ ] `docs/deploy.md` says how to deploy the backend
+- [ ] The ticket is archived in the same change

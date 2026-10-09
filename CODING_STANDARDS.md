@@ -5,8 +5,8 @@ What a change in this repo must follow, for whoever writes it and whoever review
 ## Where new code goes
 
 - **Layers** ([ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md)): `domain/` is pure TypeScript (no Vue, no browser globals, no `i18n/`); `services/` is the only code that reaches outside the page (storage, files, download); `composables/` call domain and services; `components/` never import services, they emit events or take what they need from props; `rendering/` draws on a canvas with no Vue and no services.
-- **Feature folders** ([ADR 0024](docs/adr/0024-feature-subfolders-inside-the-layers.md)): `components/<feature>/` and `composables/<feature>/`, with features `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell`, `tour` (the ADR's `pattern/` is `project/` since ticket 262). `components/ui/` holds the primitives and imports from no feature folder. No composable imports from a component, types included.
-- **App.vue stays a composition root** ([ADR 0023](docs/adr/0023-app-vue-decomposition-boundaries.md)): new behavior is a composable (a user flow is a `use<Name>Flow`) wired in `useAppShell`, not logic in `App.vue` or `AppShell.vue`. CSS moves with its markup.
+- **Feature folders** ([ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md)): `components/<feature>/` and `composables/<feature>/`, with features `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell`, `tour`. `components/ui/` holds the primitives and imports from no feature folder. No composable imports from a component, types included.
+- **App.vue stays a composition root** ([ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md)): new behavior is a composable (a user flow is a `use<Name>Flow`) wired in `useAppShell`, not logic in `App.vue` or `AppShell.vue`. CSS moves with its markup.
 - Browser-only parts of the theme and language live in `theme/` and `i18n/`; the marketing page in `overview/`.
 
 ## Rules every change keeps

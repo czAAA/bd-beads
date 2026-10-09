@@ -46,7 +46,7 @@ import { provideTourFormReset, useTour } from '../tour/useTour'
 import { useUndoHistory } from '../project/useUndoHistory'
 
 /**
- * The app's composition root (ADR 0023): every composable App.vue's shell components draw on, wired to each other and
+ * The app's composition root (ADR 0020): every composable App.vue's shell components draw on, wired to each other and
  * handed over as one flat context. Nothing here decides anything itself; each concern lives in its own composable,
  * whose deps are lazy arrows so two of them can reference each other (Undo history and Mirror, say). Call it once,
  * from the root component's setup (see provideAppShell).

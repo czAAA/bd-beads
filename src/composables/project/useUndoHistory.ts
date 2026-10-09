@@ -15,7 +15,7 @@ import { snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 /** What the history needs from the app shell: the open Project, Mirror's live axis counts, and Edit's way of putting a snapshot back. */
 export interface UndoHistoryDeps {
   currentProject: () => Project | undefined
-  /** Mirror's live axis counts, recorded with the snapshot of the current state so a Redo/Undo through it round-trips (ADR 0017). */
+  /** Mirror's live axis counts, recorded with the snapshot of the current state so a Redo/Undo through it round-trips (ADR 0036). */
   mirrorAxisCounts: () => MirrorAxisCounts
   /** Edit's restore: writes the snapshot back and runs the session resets, without Edit's guards (ADR 0036). */
   restore: (snapshot: UndoEntry) => void

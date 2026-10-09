@@ -12,7 +12,7 @@ export interface ProjectLabelsDeps {
   locale: () => Locale
 }
 
-/** The words that name the open Project (tickets 37, 159, 206; ADR 0023): its Bead for the header, and its accessible name. Deps are read lazily. */
+/** The words that name the open Project (tickets 37, 159, 206; ADR 0020): its Bead for the header, and its accessible name. Deps are read lazily. */
 export function useProjectLabels(deps: ProjectLabelsDeps) {
   /**
    * The open Project's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a

@@ -112,7 +112,7 @@ export interface CreateProjectInput {
   beadId: string
   /**
    * How big the Project's Frame is, in beads or in mm/cm — the latter converted once to a grid and not remembered
-   * (ADR 0017). Left out, the Project is an open canvas with no Frame (ADR 0026).
+   * (ADR 0026). Left out, the Project is an open canvas with no Frame (ADR 0026).
    */
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
@@ -289,7 +289,7 @@ function isGridProject(project: Project | GridProject): project is GridProject {
 
 /**
  * A Project as an older version of the app may have saved it: still carrying the color-to-bead override field ADR
- * 0007/ticket 36 dropped, the stored real-world size (`widthMm`/`heightMm`) ADR 0017 dropped, and rotation as
+ * 0007/ticket 36 dropped, the stored real-world size (`widthMm`/`heightMm`) ADR 0026 dropped, and rotation as
  * ticket 28's two-position `rotated` boolean rather than ticket 171's four-position `rotation`.
  */
 type ProjectWithLegacyFields = Project & {
@@ -315,7 +315,7 @@ function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
 /**
  * Fills in fields added after a Project was first saved, re-clamps the row pointer, and drops the fields nothing
  * reads anymore — the color-to-bead override a Project saved before ticket 36 may carry (ADR 0007: a Project now has
- * one Bead, not a per-color mapping) and the stored millimetre size (ADR 0017: the grid is the size) — so a Project
+ * one Bead, not a per-color mapping) and the stored millimetre size (ADR 0026: the grid is the size) — so a Project
  * read back from storage or an imported file is safe to use whatever version wrote it, and never re-saves them.
  */
 export function normalizeProject(project: Project | GridProject): Project {
@@ -510,7 +510,7 @@ export function deleteAll(project: Project): Project {
 }
 
 /**
- * Swaps the Project's Bead for a different catalog entry (ticket 48, ADR 0017). Nothing else changes: the grid, its
+ * Swaps the Project's Bead for a different catalog entry (ticket 48, ADR 0007). Nothing else changes: the grid, its
  * columns and rows, every painted cell, Row progress and Mirror all stay exactly as they were, since the grid is the
  * Project's size and only its Estimated size depends on the Bead. Someone who wants the old size back afterwards
  * adds or removes rows and columns (see resizeProject).

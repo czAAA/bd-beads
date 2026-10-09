@@ -15,7 +15,7 @@ export interface ToolAndColorDeps {
 }
 
 /**
- * The active tool and the paint color (tickets 58, 171, 206; ADR 0023): which of the four tools is active, and which
+ * The active tool and the paint color (tickets 58, 171, 206; ADR 0020): which of the four tools is active, and which
  * of the three mutually exclusive paint colors — a Palette swatch, an Image color or the Custom color — is chosen.
  * Deps are read lazily.
  */

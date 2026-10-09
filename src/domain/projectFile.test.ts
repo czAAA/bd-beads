@@ -141,7 +141,7 @@ describe('parseProjectsFile', () => {
     })
   })
 
-  it('still imports a file exported before ADR 0017, ignoring the millimetre size it stored and keeping the grid', () => {
+  it('still imports a file exported before ADR 0026, ignoring the millimetre size it stored and keeping the grid', () => {
     const original = makeProject()
     const file = JSON.parse(serializeProject(original))
     file.patterns[0].widthMm = 15
@@ -156,7 +156,7 @@ describe('parseProjectsFile', () => {
     expect(projects[0]).not.toHaveProperty('heightMm')
   })
 
-  it('writes no millimetre size into a file (ADR 0017)', () => {
+  it('writes no millimetre size into a file (ADR 0026)', () => {
     const [project] = JSON.parse(serializeProject(makeProject())).patterns
 
     expect(project).not.toHaveProperty('widthMm')

@@ -8,7 +8,7 @@ export interface DeleteAllFlowDeps {
   edit: EditFn
 }
 
-/** Delete all and its confirmation modal (ticket 42, 198; ADR 0023). Deps are read lazily. */
+/** Delete all and its confirmation modal (ticket 42, 198; ADR 0020). Deps are read lazily. */
 export function useDeleteAllFlow(deps: DeleteAllFlowDeps) {
   /** Whether the Delete all confirmation modal (ticket 42) is open. The global Escape handler defers to the modal's own while this is true, rather than also backing out of Select. */
   const deleteAllConfirmOpen = ref(false)

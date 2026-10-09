@@ -31,7 +31,7 @@ export interface Translations {
     decreaseHeightButton: string
     increaseHeightButton: string
     unitLabel: string
-    /** The unit a Project's size can be stated in when it is a count of beads (ADR 0017) — the default. */
+    /** The unit a Project's size can be stated in when it is a count of beads (ADR 0026) — the default. */
     unitBeads: string
     unitMm: string
     unitCm: string
@@ -571,7 +571,7 @@ export interface Translations {
       decodeFailed: string
     }
   }
-  /** The Replace Bead control (CONTEXT.md, ADR 0017) next to the open Project's Bead, and its confirmation modal (ticket 48). */
+  /** The Replace Bead control (CONTEXT.md, ADR 0007) next to the open Project's Bead, and its confirmation modal (ticket 48). */
   replaceBead: {
     selectLabel: string
     confirmTitle: string

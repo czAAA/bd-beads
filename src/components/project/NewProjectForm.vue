@@ -69,7 +69,7 @@ const widthText = ref('')
 const heightText = ref('')
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
-/** Beads by default (ADR 0017): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
+/** Beads by default (ADR 0026): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
 const unit = ref<SizeUnit>('beads')
 
 /** The Tour's "Back to loom for your first Project" (ticket 80): Loom, the default Bead and the Tour Project's size, with the Name left as typed. */

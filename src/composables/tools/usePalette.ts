@@ -5,7 +5,7 @@ import type { AddedColorsStore } from '../../services/addedColorsStore'
 const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
 
 /**
- * The Palette as it stands (CONTEXT.md, ticket 227, ADR 0025): the built-in colors plus the Custom colors that joined
+ * The Palette as it stands (CONTEXT.md, ticket 227, ADR 0002): the built-in colors plus the Custom colors that joined
  * by painting a cell, kept on the device. Call once from the app shell; `palette` is what every swatch reads.
  */
 export function useAddedColors(store: AddedColorsStore) {
