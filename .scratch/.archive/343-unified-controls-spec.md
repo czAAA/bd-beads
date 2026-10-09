@@ -1,6 +1,6 @@
 # 343: Spec: one control registry, shared controls and Tooltips everywhere
 
-**Status:** ready-for-agent
+**Status:** done
 
 **Tickets:** 327–342 implement this spec. ADR 0035 records the main decision.
 
