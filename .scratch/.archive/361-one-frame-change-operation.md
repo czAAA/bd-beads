@@ -1,4 +1,4 @@
-# 316: One Frame change operation, with its rules applied once
+# 361: One Frame change operation, with its rules applied once
 
 **What to build:** Every change of the Frame (Set Frame, moving or resizing it, Fit to drawing, Remove Frame, Rotate, Remove row/column) goes through one pure domain operation, `changeFrame`, that owns the rules such a change has to keep. Today each flow assembles its own: Set Frame calls `withFrame` then `clearMargin`, Rotate builds its turned Project without the pointer clamp `withFrame` applies (ticket 305), Remove line checks its own refusal, and the Row progress lock is checked in each flow. The margin Message also counts different things: Set Frame says "N beads were in the margin", Rotate says "N pieces were in the way".
 
