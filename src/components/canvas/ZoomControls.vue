@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
+import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import IconButton from '../ui/IconButton.vue'
 
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   'zoom-out': []
   reset: []
 }>()
+const { t } = useI18n()
 const zoomOut = controlAction('zoom-out')
 const zoomIn = controlAction('zoom-in')
 const zoomFit = controlAction('zoom-fit')
@@ -23,9 +25,9 @@ const zoomFit = controlAction('zoom-fit')
     buttons with no fill; the level in DM Mono, 48px wide and centered, so the buttons don't shift as it changes.
   -->
   <div class="zoom-controls" data-testid="zoom-controls">
-    <IconButton variant="plain" :icon-size="16" :action="zoomOut" :disabled="props.zoomPercent <= props.minPercent" data-testid="zoom-out" @click="emit('zoom-out')" />
+    <IconButton variant="plain" :icon-size="16" :action="zoomOut" :disabled="props.zoomPercent <= props.minPercent" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
     <span class="zoom-controls__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
-    <IconButton variant="plain" :icon-size="16" :action="zoomIn" :disabled="props.zoomPercent >= props.maxPercent" data-testid="zoom-in" @click="emit('zoom-in')" />
+    <IconButton variant="plain" :icon-size="16" :action="zoomIn" :disabled="props.zoomPercent >= props.maxPercent" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
     <IconButton variant="plain" :icon-size="16" :action="zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
   </div>
 </template>

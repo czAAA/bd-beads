@@ -6,8 +6,8 @@ import { canvasBackgrounds } from '../../rendering/canvasBackgrounds'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
-import MenuButton from '../ui/MenuButton.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
+import MenuButton from '../ui/MenuButton.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import type { PositionMarkStyle } from '../../rendering/positionMarks'
 
@@ -16,7 +16,7 @@ import type { PositionMarkStyle } from '../../rendering/positionMarks'
  * current background opens a popover of swatches, five in light and six in dark, with the chosen one's name and hex under
  * them, and under those the Dots | Squares choice for Position marks (ticket 348). The swatches are a radio group: Tab
  * lands on the chosen one, the arrows move and apply at once, and Escape or a press outside closes it and gives focus
- * back to the button (all MenuButton's). High contrast has one white canvas, so the popover holds the Position marks choice alone.
+ * back to the button, all of which MenuButton does. High contrast has one white canvas, so the popover holds the Position marks choice alone.
  */
 const { t } = useI18n()
 const theme = useResolvedTheme()

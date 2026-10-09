@@ -151,9 +151,9 @@ function onKeydown(event: KeyboardEvent): void {
       data-testid="zoom-pill-progress"
       @click="emit('toggle-row-progress', !project.rowProgress.enabled)"
     />
-    <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
+    <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>
-    <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
+    <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-pill-in" @click="emit('zoom-in')" />
     <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-pill-fit" @click="emit('reset')" />
   </div>
 </template>

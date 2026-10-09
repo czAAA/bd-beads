@@ -91,7 +91,7 @@ export const en: Translations = {
   canvas: {
     zoomInLabel: 'Zoom in',
     zoomOutLabel: 'Zoom out',
-    zoomResetLabel: 'Reset zoom to fit',
+    zoomResetLabel: 'Fit',
     zoomPillMovedAnnouncement: 'Zoom controls moved',
     stripTitle: 'Pattern',
     columnsCount: { one: '{count} column', other: '{count} columns' },
@@ -549,6 +549,8 @@ export const en: Translations = {
     customColorFull: 'The Palette is full: {max} added colors.',
     imageColorsDisabled: 'This Project was not made from a picture.',
     nothingToUndo: 'Nothing to undo.',
+    zoomOutLimit: 'Already zoomed out as far as it goes.',
+    zoomInLimit: 'Already zoomed in as far as it goes.',
     nothingToRedo: 'Nothing to redo.',
     copyDisabled: 'Select an area first.',
     pasteDisabled: 'Copy an area first.',

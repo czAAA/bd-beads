@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { piecesOf } from '../../domain/pieces'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
-import { controlAction } from '../../composables/shell/controlRegistry'
 import IconButton from '../ui/IconButton.vue'
 import CanvasColorPicker from './CanvasColorPicker.vue'
 import ZoomControls from './ZoomControls.vue'

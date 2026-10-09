@@ -622,6 +622,8 @@ export interface Translations {
     customColorFull: string
     imageColorsDisabled: string
     nothingToUndo: string
+    zoomOutLimit: string
+    zoomInLimit: string
     nothingToRedo: string
     copyDisabled: string
     pasteDisabled: string
