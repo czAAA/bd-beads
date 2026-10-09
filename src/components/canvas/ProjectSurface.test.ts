@@ -69,6 +69,30 @@ describe('ProjectSurface', () => {
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
   })
 
+  it('keeps redrawing on zoom and scroll after a Frame press fades the margin outline in while a draw is waiting', async () => {
+    const frames = new Map<number, () => void>()
+    let next = 1
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.set(next, callback) && next++)
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id))
+    const flush = () => {
+      const waiting = [...frames.values()]
+      frames.clear()
+      waiting.forEach((frame) => frame())
+    }
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { settingFrame: true })
+    flush()
+    await wrapper.setProps({ zoom: 2 })
+    await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { clientX: 50, clientY: 50, button: 0, buttons: 1 })
+    flush()
+    context.calls.length = 0
+
+    await wrapper.setProps({ zoom: 3, scroll: { x: 30, y: 30 } })
+    flush()
+
+    expect(draws()).toBe(1)
+    wrapper.unmount()
+  })
+
   it('redraws both layers when the theme changes, at the same size', async () => {
     const { wrapper } = await mountSurface(projectOf(20, 10), 1)
     const canvas = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element
