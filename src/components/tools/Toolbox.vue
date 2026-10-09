@@ -7,7 +7,6 @@ import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 import FrameControls from '../project/FrameControls.vue'
-import ToolButton from './ToolButton.vue'
 import ToolGroup from './ToolGroup.vue'
 import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -80,6 +79,9 @@ function onEdit(id: 'undo' | 'redo' | 'rotate' | 'copy') {
   else emit('copy')
 }
 const setFrameAction = controlAction('set-frame')
+/** The input mode toggle's face is the current mode. */
+const inputModeAction = computed(() => (props.inputMode ? controlAction(props.inputMode === 'pen' ? 'pen-mode' : 'mouse-mode') : undefined))
+
 const toolActions = {
   removeFrame: controlAction('remove-frame'),
   removeLine: controlAction('remove-line'),
@@ -184,12 +186,11 @@ const frameSummary = computed(() => {
           @click="emit('start-frame')"
         />
         <!-- The input mode toggle (ticket 325): its face is the current mode, in the accent colour; it sits right after the Frame tool. -->
-        <ToolButton
-          v-if="inputMode"
-          :icon="inputMode === 'pen' ? 'pen-mode' : 'pen-mode-off'"
-          :label="inputMode === 'pen' ? t.inputMode.penLabel : t.inputMode.mouseLabel"
-          :description="inputMode === 'pen' ? t.inputMode.penHint : t.inputMode.mouseHint"
-          :active="false"
+        <IconButton
+          v-if="inputModeAction"
+          variant="tool"
+          :action="inputModeAction"
+          accent
           :pressed="inputMode === 'pen'"
           data-testid="input-mode-toggle"
           :tabindex="-1"

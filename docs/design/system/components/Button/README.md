@@ -10,7 +10,7 @@ Every clickable action in bd-beads: primary, primary select, secondary, secondar
 - **Link** (`bb-link`, `bb-link--danger`; `AppButton variant="link"`, ticket 331, which replaces `AppLink`): Remove line (`ink`), Delete all (`danger`). 14/20 500, 16px icon, gap 6.
 - **Icon** (`bb-btn--icon`, 34 × 34, radius-md) and **round icon** (`bb-btn--round`, radius-full): Turn row direction; Keyboard shortcuts.
 - **Tool tab** (`IconButton` `variant="tool"`, ticket 330): a 34px icon in a 56 × 72 cell, no fill or border, `muted`; selected is `accent-strong` with a 2px `accent-strong` underline (3px in High contrast), and an optional key badge (DM Mono 11px, `muted`, accent when selected) against the icon's top-right corner. It is a tab of the Tools group (ToolTabs card).
-- **Expand** (`bb-expand`): 28 × 28, 1px `line-strong`, radius-full, 14px arrow. Opens an expandable panel.
+- **Expand** (`bb-expand`): 28 × 28, 1px `line-strong`, radius-full, 14px arrow. Opens an expandable panel (`IconButton`, round, with a Tooltip).
 - **Danger fill** (`bb-btn--danger`): the confirm button of a destructive modal only.
 
 ## Anatomy

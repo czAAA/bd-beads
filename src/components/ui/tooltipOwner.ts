@@ -1,7 +1,7 @@
 import type { ComponentInternalInstance } from 'vue'
 
 /** Components that are only a Tooltip around a button: the Tooltip they show belongs to whoever uses them too. */
-const WRAPPERS = ['IconButton', 'ToolButton']
+const WRAPPERS = ['IconButton']
 
 /** The instance whose template wrote this component's tag (Vue's own bookkeeping, not part of its public types). */
 const writer = (instance: ComponentInternalInstance): ComponentInternalInstance | null => (instance.vnode as unknown as { ctx: ComponentInternalInstance | null }).ctx

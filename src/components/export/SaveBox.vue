@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useFitByPriority } from '../../composables/ui/useFitByPriority'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -52,6 +53,7 @@ function fromPrompt(action: 'fit-frame' | 'set-frame') {
 }
 
 const { t, locale } = useI18n()
+const saveAction = controlAction('save')
 
 // Save and Export share one narrow row: when the label doesn't fit beside Export, Save shows its icon alone (ticket 231).
 const buttonsEl = ref<HTMLElement>()
@@ -69,8 +71,7 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
         class="save-box__save"
         variant="primary"
         size="lg"
-        icon="save"
-        :title="`${t.saveBox.saveButton} (Ctrl/Cmd+S)`"
+        :action="saveAction"
         :aria-label="t.saveBox.saveButton"
         data-testid="save-button"
         @click="emit('save')"
@@ -194,6 +195,12 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
 .save-box__save {
   flex: 1 1 auto;
   /* Never squeezed: the row overflows instead, which is what tells useFitByPriority to drop the label. */
+  min-width: min-content;
+}
+
+/* Save's Tooltip wraps the button: the wrapper takes the row's spare width and the button fills it. */
+.save-box__buttons > :deep(.app-button-wrap) {
+  flex: 1 1 auto;
   min-width: min-content;
 }
 

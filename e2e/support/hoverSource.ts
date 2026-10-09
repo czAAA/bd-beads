@@ -50,10 +50,10 @@ export function tags(template: string): Tag[] {
 }
 
 /** Components that are only a Tooltip around a button, so that using one is making a Tooltip. */
-export const TOOLTIP_MAKERS = ['AppTooltip', 'IconButton', 'ToolButton']
+export const TOOLTIP_MAKERS = ['AppTooltip', 'IconButton']
 
 /** Components that hand their attributes (a `title`) on to the native element inside. */
-const PASS_THROUGH = ['AppButton', 'IconButton', 'ToolButton']
+const PASS_THROUGH = ['AppButton', 'IconButton']
 
 /** Every place a native `title` is used, which the browser shows as hover text that nothing can clip, measure or style. */
 export function nativeTitles(): { file: string; what: string }[] {

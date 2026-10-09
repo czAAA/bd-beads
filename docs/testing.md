@@ -70,7 +70,7 @@ Places known to overflow are listed in `e2e/support/textFitPending.ts`, each del
 Three guards keep it exhaustive:
 
 1. *Discovery*, above.
-2. *Reachability*: every component whose template makes a Tooltip (`<AppTooltip>`, `IconButton`, `ToolButton`; the bubble's `data-owner` says which) or an info popover must be seen open somewhere in the run, checked once by the Playwright global teardown after all language-and-width tests (`e2e/support/hoverReach.ts`), so a Tooltip in a state no screen visits fails naming the component: add a `Screen` that reaches it, or list it in `UNREACHED` with a reason (`e2e/support/hoverExemptions.ts`).
+2. *Reachability*: every component whose template makes a Tooltip (`<AppTooltip>`, `IconButton`; the bubble's `data-owner` says which) or an info popover must be seen open somewhere in the run, checked once by the Playwright global teardown after all language-and-width tests (`e2e/support/hoverReach.ts`), so a Tooltip in a state no screen visits fails naming the component: add a `Screen` that reaches it, or list it in `UNREACHED` with a reason (`e2e/support/hoverExemptions.ts`).
 3. *One way to make hover text*: `e2e/visual/hoverSource.spec.ts` reads the templates and fails on a native `title` or a hand-made tooltip that is not listed (`NATIVE_TITLES`, each "native, cannot be clipped" until moved onto the Tooltip; `INFO_POPOVERS`, which text fit measures once).
 
 A partial run (one language or width) skips guard 2.
