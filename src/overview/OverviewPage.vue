@@ -2,8 +2,8 @@
 import { computed, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
 import AppLogo from '../components/ui/AppLogo.vue'
-import AppMenu from '../components/ui/AppMenu.vue'
 import AppMenuItem from '../components/ui/AppMenuItem.vue'
+import MenuButton from '../components/ui/MenuButton.vue'
 import LanguageSwitcher from '../components/shell/LanguageSwitcher.vue'
 import ThemeToggle from '../components/shell/ThemeToggle.vue'
 import DrawnLayer from './DrawnLayer.vue'
@@ -36,6 +36,9 @@ watchEffect(() => {
 const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
 const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
 
+/** The header Menu's items by name; its Tooltip lists them (ticket 334). */
+const menuItems = computed(() => [t.value.header.overviewItem, ...(TOUR_ENABLED ? [t.value.header.tourItem] : [])])
+
 const isNew = computed(() => props.projectCount === 0)
 const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{count}', String(props.projectCount)))
 </script>
@@ -48,14 +51,14 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
         <span class="overview__name">{{ t.app.title }}</span>
       </h1>
       <span class="overview__menu">
-        <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
+        <MenuButton :label="t.header.menuButton" icon="menu" icon-only :items="menuItems" data-testid="header-menu">
           <AppMenuItem icon="bead" :href="overviewHref" current data-testid="menu-item-overview">
             {{ t.header.overviewItem }}
           </AppMenuItem>
           <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="emit('takeTour')">
             {{ t.header.tourItem }}
           </AppMenuItem>
-        </AppMenu>
+        </MenuButton>
       </span>
       <span class="overview__gap" />
       <LanguageSwitcher />

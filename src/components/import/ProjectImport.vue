@@ -4,6 +4,7 @@ import type { DecodeImage } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { importProjects, parseProjectsFile } from '../../domain/projectFile'
 import { parseProjectFromQrImage } from '../../domain/qrExport'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
@@ -51,6 +52,8 @@ const fileInputId = useId()
 const qrInputId = useId()
 
 const { t } = useI18n()
+const importFile = controlAction('import-file')
+const importQr = controlAction('import-qr')
 
 const importedCount = ref<number | null>(null)
 const importFailed = ref(false)
@@ -118,7 +121,7 @@ async function onImportQrImage(event: Event): Promise<void> {
     same label in the design system's own Tooltip instead of a native `title`, so its background matches every other
     icon control's. A fragment, so the controls and their one-line result sit in the header's own row.
   -->
-  <AppTooltip v-if="compact" :name="t.transfer.importLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="importFile.name(t)" :body="importFile.body?.(t)" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="fileInputId">
       <input
         :id="fileInputId"
@@ -132,20 +135,22 @@ async function onImportQrImage(event: Event): Promise<void> {
       <AppIcon name="import" :size="15" />
     </label>
   </AppTooltip>
-  <label v-else class="project-import__button" :for="fileInputId">
-    <input
-      :id="fileInputId"
-      type="file"
-      class="project-import__input"
-      accept="application/json,.json"
-      :data-testid="`${testidPrefix}import-file`"
-      @change="onImportFile"
-    />
-    <AppIcon name="import" :size="15" />
-    <span>{{ t.transfer.importLabel }}</span>
-  </label>
+  <AppTooltip v-else :name="importFile.name(t)" :body="importFile.body?.(t)" :announce="false">
+    <label class="project-import__button" :for="fileInputId">
+      <input
+        :id="fileInputId"
+        type="file"
+        class="project-import__input"
+        accept="application/json,.json"
+        :data-testid="`${testidPrefix}import-file`"
+        @change="onImportFile"
+      />
+      <AppIcon name="import" :size="15" />
+      <span>{{ t.transfer.importLabel }}</span>
+    </label>
+  </AppTooltip>
 
-  <AppTooltip v-if="compact" :name="t.transfer.importQrLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="importQr.name(t)" :body="importQr.body?.(t)" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="qrInputId">
       <input
         :id="qrInputId"
@@ -159,18 +164,20 @@ async function onImportQrImage(event: Event): Promise<void> {
       <AppIcon name="scan" :size="15" />
     </label>
   </AppTooltip>
-  <label v-else class="project-import__button" :for="qrInputId">
-    <input
-      :id="qrInputId"
-      type="file"
-      class="project-import__input"
-      accept="image/*"
-      :data-testid="`${testidPrefix}import-qr`"
-      @change="onImportQrImage"
-    />
-    <AppIcon name="scan" :size="15" />
-    <span>{{ t.transfer.importQrLabel }}</span>
-  </label>
+  <AppTooltip v-else :name="importQr.name(t)" :body="importQr.body?.(t)" :announce="false">
+    <label class="project-import__button" :for="qrInputId">
+      <input
+        :id="qrInputId"
+        type="file"
+        class="project-import__input"
+        accept="image/*"
+        :data-testid="`${testidPrefix}import-qr`"
+        @change="onImportQrImage"
+      />
+      <AppIcon name="scan" :size="15" />
+      <span>{{ t.transfer.importQrLabel }}</span>
+    </label>
+  </AppTooltip>
 
   <!--
     One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
-import AppMenu from '../ui/AppMenu.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppSelect from '../ui/AppSelect.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import IconButton from '../ui/IconButton.vue'
+import MenuButton from '../ui/MenuButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ThemeToggle from './ThemeToggle.vue'
@@ -16,6 +17,7 @@ import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
 import { beadLabel } from '../../domain/beads'
 import { TOUR_ENABLED } from '../../features'
+import { controlAction } from '../../composables/shell/controlRegistry'
 
 const {
   t,
@@ -35,6 +37,12 @@ const {
 /** The header, and whether it has had to drop the imports' labels to stay on one line (ticket 142). */
 const headerEl = ref<HTMLElement>()
 const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activeProject.value])
+
+const shortcutsAction = controlAction('shortcuts-help')
+const newProjectAction = controlAction('new-project')
+
+/** The header Menu's items by name; its Tooltip lists them (ticket 334). */
+const menuItems = computed(() => [t.value.header.overviewItem, ...(TOUR_ENABLED ? [t.value.header.tourItem] : []), t.value.header.sourceItem])
 
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
@@ -59,7 +67,7 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
     </h1>
 
     <!-- The header menu (ticket 210; HeaderMenu card), next to the logo: Overview (ticket 77; Take the tour joins it in ticket 80) and Source code (ticket 269, the repo's own AGPL-3.0 link). -->
-    <AppMenu :label="t.header.menuButton" icon="menu" icon-only data-testid="header-menu">
+    <MenuButton :label="t.header.menuButton" icon="menu" icon-only :items="menuItems" data-testid="header-menu">
       <AppMenuItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">
         {{ t.header.overviewItem }}
       </AppMenuItem>
@@ -70,13 +78,15 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
       <AppMenuItem icon="code" :href="SOURCE_URL" target="_blank" rel="noopener" data-testid="menu-item-source">
         {{ t.header.sourceItem }}
       </AppMenuItem>
-    </AppMenu>
+    </MenuButton>
 
     <template v-if="activeProject">
       <p class="app-header__editing" data-testid="project-info">
-        <span class="app-header__summary" data-testid="current-project-summary" :title="summarizeProject(activeProject)">
-          {{ summarizeProject(activeProject) }}
-        </span>
+        <AppTooltip :name="activeProject.name" :body="activeProject.frame ? summarizeProject(activeProject) : undefined" :announce="false">
+          <span class="app-header__summary" data-testid="current-project-summary" tabindex="0">
+            {{ summarizeProject(activeProject) }}
+          </span>
+        </AppTooltip>
         <BeadPill data-testid="current-project-bead">{{ activeBeadLabel }}</BeadPill>
       </p>
       <AppSelect
@@ -102,20 +112,18 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
     <AppButton
       variant="primary"
       icon="plus"
+      :action="newProjectAction"
       data-testid="new-project-button"
       :disabled="projects.length === 0"
       @click="onNewProject"
-    >
-      {{ t.projects.newProjectButton }}
-    </AppButton>
+    />
     <LanguageSwitcher />
     <ThemeToggle />
     <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). -->
     <span class="app-header__shortcuts">
-      <IconButton tooltip
-        icon="keyboard"
+      <IconButton
+        :action="shortcutsAction"
         shape="round"
-        :label="t.shortcutsHelp.title"
         data-testid="shortcuts-button"
         @click="shortcutsHelpOpen = true"
       />
