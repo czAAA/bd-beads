@@ -84,8 +84,8 @@ export interface ProjectTheme {
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
   /**
-   * How a bead in a finished row is drawn: its own color, or its grey, at `opacity` over the board. Light fades the
-   * color (28%), so a finished row still reads as the Project; dark greys it (45%).
+   * How a bead in a finished row is drawn: its own color at `opacity` over the board, in every theme (ticket 352): slightly
+   * dimmed, never grey. `grey` stays for a theme that wants the greyscale.
    */
   finished: { grey: boolean; opacity: number }
   /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
@@ -94,6 +94,9 @@ export interface ProjectTheme {
   /** The dashed outline the Tour puts on beads to paint and on frames to select or paste into (`tour-highlight`; black in high contrast). */
   tourMark: string
 }
+
+/** How much of a finished bead's own color shows over the board while finished rows are dimmed (ticket 352). */
+const FINISHED_OPACITY = 0.6
 
 /** The light theme (BeadBoard card). */
 export const LIGHT_THEME: ProjectTheme = {
@@ -107,15 +110,15 @@ export const LIGHT_THEME: ProjectTheme = {
   rim: 'rgba(20,20,19,.12)',
   emptyBead: '#d8d2cc',
   seam: '#1f1f1f',
-  marker: '#1f1f1f',
+  marker: '#fa520f',
   outline: '#1f1f1f',
-  finished: { grey: false, opacity: 0.28 },
+  finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#c23604',
   cursorWidth: 2,
   tourMark: '#f2c94c',
 }
 
-/** The dark theme: no rim, finished rows in grey. */
+/** The dark theme: no rim. */
 export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
   positionMark: '#3c3c3c',
@@ -129,7 +132,7 @@ export const DARK_THEME: ProjectTheme = {
   seam: '#888888',
   marker: '#faff69',
   outline: '#ffffff',
-  finished: { grey: true, opacity: 0.45 },
+  finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#faff69',
   cursorWidth: 2,
   tourMark: '#f2c94c',
@@ -149,7 +152,7 @@ const CONTRAST_THEME: ProjectTheme = {
   seam: '#000000',
   marker: '#000000',
   outline: '#000000',
-  finished: { grey: false, opacity: 0.28 },
+  finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#000000',
   cursorWidth: 3,
   tourMark: '#000000',
@@ -209,6 +212,19 @@ export function greyscale(color: string): string {
   }
   const grey = Math.round(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2])
   return `rgb(${grey}, ${grey}, ${grey})`
+}
+
+/** How much brighter the current row's beads are than the todo rows (ticket 352). */
+export const CURRENT_ROW_BRIGHTNESS = 0.1
+
+/** The color lifted toward white by `amount` (0 to 1): the current row's 10% brighter beads (ticket 352). A color it cannot read comes back as it was. */
+export function brighten(color: string, amount: number): string {
+  const rgb = parseHex(color)
+  if (!rgb) {
+    return color
+  }
+  const [r, g, b] = rgb.map((channel) => Math.round(channel + (255 - channel) * amount))
+  return `rgb(${r}, ${g}, ${b})`
 }
 
 /** Reads #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */

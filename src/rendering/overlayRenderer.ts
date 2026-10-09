@@ -23,12 +23,8 @@ import { beadRoundness } from './beadLook'
  * overlay lands on the bead it belongs to at every zoom and rotation.
  */
 
-/** The marker's thickness in the Project's own px (BeadBoard card: a 2px `marker` outline). */
-const MARKER_PX = 2
-
-/** How far outside its row the current-row outline sits, and its corner radius (BeadBoard card). */
-const ROW_OUTLINE_OUTSET_PX = 3
-const ROW_OUTLINE_RADIUS_PX = 5
+/** The Row progress marker's thickness: one edge, a bit thicker than a MARKER_PX outline (ticket 352, BeadBoard card). */
+const MARKER_EDGE_PX = 3
 
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
 const PREVIEW_OPACITY = 0.6
@@ -84,18 +80,27 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
-/** A rectangle's outline, MARKER_PX thick and inside its edges, as four pieces: cheaper than a path, and exact. */
-function outlineRect(context: DrawingContext, x: number, y: number, width: number, height: number): void {
-  context.fillRect(x, y, width, MARKER_PX)
-  context.fillRect(x, y + height - MARKER_PX, width, MARKER_PX)
-  context.fillRect(x, y + MARKER_PX, MARKER_PX, height - MARKER_PX * 2)
-  context.fillRect(x + width - MARKER_PX, y + MARKER_PX, MARKER_PX, height - MARKER_PX * 2)
+/**
+ * The Row progress marker (ticket 352): one border, MARKER_EDGE_PX thick, on the edge of the current row (or column)
+ * that faces the next row to weave -- the bottom edge when rows run along the grid's rows, the right edge when they run
+ * down its columns. It is drawn in the grid's own space, so a rotated Project turns it with the beads: top edge for a
+ * bottom-to-top weaver, left edge for right to left. It sits across the seam between the row and the next, and stays
+ * inside the Project's own extent when drawn on its own, so the last row's edge isn't cut off at the surface's edge.
+ */
+function drawEdge(context: DrawingContext, space: Space, x: number, y: number, length: number, columnWise: boolean): void {
+  const extent = space.open ? undefined : space.extent
+  if (columnWise) {
+    const left = x + CELL_SIZE_PX - MARKER_EDGE_PX / 2
+    context.fillRect(extent ? Math.min(left, extent.width - MARKER_EDGE_PX) : left, y, MARKER_EDGE_PX, length)
+    return
+  }
+  const top = y + CELL_SIZE_PX - MARKER_EDGE_PX / 2
+  context.fillRect(x, extent ? Math.min(top, extent.height - MARKER_EDGE_PX) : top, length, MARKER_EDGE_PX)
 }
 
 /**
- * The outline round the row being woven now, while Row progress is on and rows run along the grid's rows: the row's own
- * rectangle, 3px outside it with rounded corners, so on peyote and brick stitch it follows the row's half-bead shift.
- * It stays inside the Project's own extent, so the first and last rows' outlines aren't cut off at the surface's edge.
+ * The marker for the row being woven now, while rows run along the grid's rows on loom and brick stitch: one edge along
+ * the whole row, shifted with the row on brick stitch.
  */
 function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
   const { technique } = project
@@ -106,28 +111,13 @@ function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: S
   }
 
   const row = space.origin.row + relative
-  const first = space.origin.column * CELL_SIZE_PX
-  const extent = space.open ? undefined : space.extent
-  const left = shiftOf(space, technique, row) + first - ROW_OUTLINE_OUTSET_PX
-  const top = rowTopPx(technique, row) - ROW_OUTLINE_OUTSET_PX
-  const right = shiftOf(space, technique, row) + first + columns * CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
-  const bottom = rowTopPx(technique, row) + CELL_SIZE_PX + ROW_OUTLINE_OUTSET_PX
-  // Drawn on its own the Project's surface ends at its extent, so the first and last rows' outlines stay inside it.
-  const clippedLeft = extent ? Math.max(0, left) : left
-  const clippedTop = extent ? Math.max(0, top) : top
-  const width = (extent ? Math.min(extent.width, right) : right) - clippedLeft
-  const height = (extent ? Math.min(extent.height, bottom) : bottom) - clippedTop
-
   context.fillStyle = theme.marker
-  context.beginPath()
-  roundedRect(context, clippedLeft, clippedTop, width, height, ROW_OUTLINE_RADIUS_PX)
-  roundedRect(context, clippedLeft + MARKER_PX, clippedTop + MARKER_PX, width - MARKER_PX * 2, height - MARKER_PX * 2, ROW_OUTLINE_RADIUS_PX - MARKER_PX)
-  context.fill('evenodd')
+  drawEdge(context, space, shiftOf(space, technique, row) + space.origin.column * CELL_SIZE_PX, rowTopPx(technique, row), columns * CELL_SIZE_PX, false)
 }
 
 /**
  * The marker for the pass being woven now on peyote (ticket 347): the first pass of a line is the whole line, every
- * later one is every other bead of it, so the beads are outlined one by one, whichever way the rows run.
+ * later one is every other bead of it, so the edge is drawn bead by bead, whichever way the rows run.
  */
 function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
   const { technique } = project
@@ -142,7 +132,6 @@ function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: 
   const parity = pass === 0 ? undefined : (pass - 1) % 2
 
   context.fillStyle = theme.marker
-  const size = CELL_SIZE_PX + 2
   const length = columnWise ? space.rows : space.columns
   for (let along = 0; along < length; along += 1) {
     if (parity !== undefined && along % 2 !== parity) {
@@ -150,18 +139,13 @@ function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: 
     }
     const row = space.origin.row + (columnWise ? along : line)
     const column = space.origin.column + (columnWise ? line : along)
-    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX - 1
-    const y = rowTopPx(technique, row) - 1
-    drawRoundedOutline(context, x, y, size, beadRoundness(technique) * size)
+    drawEdge(context, space, shiftOf(space, technique, row) + column * CELL_SIZE_PX, rowTopPx(technique, row), CELL_SIZE_PX, columnWise)
   }
 }
 
 /**
- * The marker for the column being woven now, when rows run down the grid's columns: drawn bead by bead, since the
- * beads of a column don't line up on peyote and brick stitch. It reaches a pixel past each bead onto its rim, so the
- * sides join between beads instead of breaking at every seam. On loom it is the two long sides of the column, closed
- * at the top of the first bead and the bottom of the last, so it reads as one outlined strip; on peyote and brick stitch
- * every bead is outlined whole, which keeps the zigzag readable as one chain.
+ * The marker for the column being woven now, when rows run down the grid's columns on loom and brick stitch: the right
+ * edge of each of its beads, drawn bead by bead since the beads of a column don't line up on brick stitch.
  */
 function drawCurrentColumn(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
   const { technique } = project
@@ -173,40 +157,10 @@ function drawCurrentColumn(context: DrawingContext, project: DrawnProject, space
   const column = space.origin.column + relative
 
   context.fillStyle = theme.marker
-  const size = CELL_SIZE_PX + 2
   for (let offset = 0; offset < rows; offset += 1) {
     const row = space.origin.row + offset
-    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX - 1
-    const y = rowTopPx(technique, row) - 1
-
-    if (technique === 'loom') {
-      context.fillRect(x, y, MARKER_PX, size)
-      context.fillRect(x + size - MARKER_PX, y, MARKER_PX, size)
-      if (offset === 0) {
-        context.fillRect(x + MARKER_PX, y, size - MARKER_PX * 2, MARKER_PX)
-      }
-      if (offset === rows - 1) {
-        context.fillRect(x + MARKER_PX, y + size - MARKER_PX, size - MARKER_PX * 2, MARKER_PX)
-      }
-    } else {
-      drawRoundedOutline(context, x, y, size, beadRoundness(technique) * size)
-    }
+    drawEdge(context, space, shiftOf(space, technique, row) + column * CELL_SIZE_PX, rowTopPx(technique, row), CELL_SIZE_PX, true)
   }
-}
-
-/** A square's outline, MARKER_PX thick and inside its edges, with the corners rounded by `radius` (0 for square): the outer shape and the inner one, filled even-odd. */
-function drawRoundedOutline(context: DrawingContext, x: number, y: number, size: number, radius: number): void {
-  if (radius <= 0) {
-    outlineRect(context, x, y, size, size)
-    return
-  }
-
-  const inner = size - MARKER_PX * 2
-  const innerRadius = Math.max(0, radius - MARKER_PX)
-  context.beginPath()
-  roundedRect(context, x, y, size, size, radius)
-  roundedRect(context, x + MARKER_PX, y + MARKER_PX, inner, inner, innerRadius)
-  context.fill('evenodd')
 }
 
 function roundedRect(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {

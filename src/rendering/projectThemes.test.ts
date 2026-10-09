@@ -38,8 +38,8 @@ describe('ProjectTheme', () => {
   })
 
   it('fades finished rows by the BeadBoard card: light 28% of the color, dark 45% of its grey', () => {
-    expect(PROJECT_THEMES.light.finished).toEqual({ grey: false, opacity: 0.28 })
-    expect(PROJECT_THEMES.dark.finished).toEqual({ grey: true, opacity: 0.45 })
+    expect(PROJECT_THEMES.light.finished).toEqual({ grey: false, opacity: 0.6 })
+    expect(PROJECT_THEMES.dark.finished).toEqual({ grey: false, opacity: 0.6 })
   })
 
   it('prints in light on the print board, whatever the app theme', () => {

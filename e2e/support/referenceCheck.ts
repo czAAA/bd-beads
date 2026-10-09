@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Project } from '../../src/domain/project'
-import { isInFinishedRow, projectFrame } from '../../src/domain/project'
+import { isInCurrentRow, isInFinishedRow, projectFrame } from '../../src/domain/project'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME } from '../../src/rendering/beadLook'
@@ -45,13 +45,19 @@ function rgb(hex: string): [number, number, number] {
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255]
 }
 
-/** How much of its own color a finished bead keeps in the light theme, over the open canvas (28%). */
-const FINISHED_SHARE = 0.28
+/** How much of its own color a finished bead keeps in every theme, over the open canvas (60%, ticket 352). */
+const FINISHED_SHARE = 0.6
 
-/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 28% over the open canvas. */
+/** How far the current row's beads are lifted toward white (10%, ticket 352). */
+const CURRENT_ROW_LIFT = 0.1
+
+/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 60% over the open canvas; the current row's are 10% brighter. */
 function expectedCentre(project: Project, row: number, column: number): [number, number, number] {
   const color = beadColorAt(project, row, column)
   const own = rgb(color ?? LIGHT_THEME.emptyBead)
+  if (isInCurrentRow(project, { row, column })) {
+    return own.map((channel) => channel + (255 - channel) * CURRENT_ROW_LIFT) as [number, number, number]
+  }
   if (!isInFinishedRow(project, { row, column })) {
     return own
   }

@@ -8,7 +8,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The marker is one border on the edge facing the next row to weave, thicker than the current outline, for both Row directions and both pointer directions (top to bottom / bottom to top, left to right / right to left)
 - [ ] Peyote and brick stitch markers still follow each row's half-bead shift; loom is unchanged apart from the single edge
