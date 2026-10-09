@@ -120,7 +120,7 @@ export interface RenderInput {
   /** Device pixels per CSS pixel of the surface, so beads stay crisp on a high-density screen. Defaults to 1. */
   pixelRatio?: number
   theme?: ProjectTheme
-  /** Draw finished rows at their normal color (ticket 352): while the pointer hovers the canvas, or after a tap on a finished row. Off, they are dimmed. */
+  /** Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a finished row. Off, they are dimmed. */
   showFinished?: boolean
   /**
    * Draw only these rows (numbered in the space) again, and what they touch, leaving the rest of the surface as it is:

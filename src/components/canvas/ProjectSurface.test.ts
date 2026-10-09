@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject, type Project, type RowProgress, type Technique, frameGrid, withFrameGrid } from '../../domain/project'
@@ -371,13 +371,13 @@ describe('ProjectSurface', () => {
         expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.6))).toBe(true)
       })
 
-      it('draws them at normal color while a mouse or a pen hovers the canvas, and dims them again when it leaves', async () => {
+      it('draws them at normal color while a mouse or a pen hovers a finished row, and dims them again when it leaves', async () => {
         const project = weaving()
         const { wrapper } = await mountSurface(project)
         const surface = wrapper.find('[data-testid="project-surface"]')
 
         context.calls.length = 0
-        await surface.trigger('pointermove', { clientX: 900, clientY: 700, pointerType: 'mouse', buttons: 0 })
+        await surface.trigger('pointermove', { ...finishedCentre(project), pointerType: 'mouse', buttons: 0 })
         await nextTick()
         expect(redShown()).toBe(true)
 
@@ -385,6 +385,99 @@ describe('ProjectSurface', () => {
         await surface.trigger('pointerleave', { pointerType: 'mouse' })
         await nextTick()
         expect(redShown()).toBe(false)
+      })
+
+      /** Far enough along the finished row to be past the Frame's last column: open canvas, not a bead of the Frame. */
+      const PAST_THE_FRAME = 40
+      const moveTo = (surface: ReturnType<VueWrapper['find']>, at: { clientX: number; clientY: number }) =>
+        surface.trigger('pointermove', { ...at, pointerType: 'mouse', buttons: 0 })
+
+      it('keeps them dimmed while the pointer is on empty canvas or on a row still to weave, and dims them again when it moves off a finished row', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        const todo = centreOf(project, project.frame!.row + 5, project.frame!.column)
+
+        context.calls.length = 0
+        await moveTo(surface, centreOf(project, project.frame!.row, project.frame!.column + PAST_THE_FRAME))
+        await nextTick()
+        expect(redShown()).toBe(false)
+
+        await moveTo(surface, todo)
+        await nextTick()
+        expect(redShown()).toBe(false)
+
+        await moveTo(surface, finishedCentre(project))
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        context.calls.length = 0
+        await moveTo(surface, todo)
+        await nextTick()
+        expect(redShown()).toBe(false)
+      })
+
+      it('follows a finished column when the Row progress runs down the columns', async () => {
+        const project = { ...weaving(), rowProgress: { enabled: true, direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        context.calls.length = 0
+        await moveTo(surface, centreOf(project, project.frame!.row + 5, project.frame!.column + 5))
+        await nextTick()
+        expect(redShown()).toBe(false)
+
+        await moveTo(surface, finishedCentre(project))
+        await nextTick()
+        expect(redShown()).toBe(true)
+      })
+
+      it('asks again what is under a pointer that has not moved when the weaver\'s row changes or the canvas scrolls', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+        const onFirstRow = finishedCentre(project)
+
+        await moveTo(surface, onFirstRow)
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        // Undo to before the first row was finished: the same spot is now a row still to weave.
+        context.calls.length = 0
+        await wrapper.setProps({ project: { ...project, rowProgress: { ...project.rowProgress, currentRow: 0 } } })
+        await nextTick()
+        await nextTick()
+        expect(redShown()).toBe(false)
+
+        // Finished again.
+        context.calls.length = 0
+        await wrapper.setProps({ project })
+        await nextTick()
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        // Scrolled so the pointer is over empty canvas, not the finished row.
+        context.calls.length = 0
+        await wrapper.setProps({ scroll: { x: 0, y: 2000 } })
+        await nextTick()
+        await nextTick()
+        expect(redShown()).toBe(false)
+      })
+
+      it('leaves them as they are while the canvas is being dragged', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project)
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        await moveTo(surface, finishedCentre(project))
+        await nextTick()
+        expect(redShown()).toBe(true)
+
+        context.calls.length = 0
+        await surface.trigger('pointerdown', { clientX: 900, clientY: 700, pointerType: 'mouse', pointerId: 1, isPrimary: true, button: 1, buttons: 4 })
+        await moveTo(surface, centreOf(project, project.frame!.row + 5, project.frame!.column))
+        await nextTick()
+        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.6))).toBe(false)
       })
 
       it('does not count a finger\'s touch as a hover', async () => {
