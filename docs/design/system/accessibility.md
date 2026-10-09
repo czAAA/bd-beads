@@ -9,7 +9,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - **Accent as text or a thin mark** on light surfaces is `accent-strong` (#c23604, 4.9:1 on panel): the active tool label and underline, the open Saved Pattern ring and name, message edges, accent icons, links. `accent` stays for fills, the current row and the logo.
 - The focus ring is `focus-ring`. Fields and Steppers, whose border is their only edge, use `field-line`; the off Switch uses `switch-off`; danger-filled buttons label in `on-danger`.
 - Changed values: `danger` light #c23604; `ruler` #6a6a6a / #8c8c8c; `subtle` light #767676; `muted` and `box-muted` dark #949494.
-- **Rulers** are measured on all eleven canvas backgrounds: regular numbers in `ruler` at 4.8:1 or more (Ash uses a lifted `#a0a0a0`, 5.4:1), every 5th in `body` at 7.9:1 or more, the current row's `marker` at 13:1 or more in dark (in light it is the accent orange, 2.99:1 to 3.3:1 on the canvas backgrounds, ticket 352), and 10.9:1, 16.5:1 and 21:1 in high contrast. The Rulers card has the table. Column numbers from 100 are turned a quarter turn; none is ever thinned.
+- **Rulers** are measured on all eleven canvas backgrounds: regular numbers in `ruler` at 4.8:1 or more (Ash uses a lifted `#a0a0a0`, 5.4:1), every 5th in `body` at 7.9:1 or more, the current row's `marker` at 13:1 or more in dark (in light it is royal blue, 6.0:1 or more on the canvas backgrounds, ticket 369), and 10.9:1, 16.5:1 and 21:1 in high contrast. The Rulers card has the table. Column numbers from 100 are turned a quarter turn; none is ever thinned.
 - The logo on an accent tile (app icon, apple-touch icon, the cover) stays white in light: a graphic needs 3:1 and has 3.3:1.
 
 ## High contrast

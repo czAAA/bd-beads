@@ -80,46 +80,31 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
-/**
- * The Row progress marker (ticket 352): one border, MARKER_EDGE_PX thick, on the edge of the current row (or column)
- * that faces the next row to weave -- the bottom edge when rows run along the grid's rows, the right edge when they run
- * down its columns. It is drawn in the grid's own space, so a rotated Project turns it with the beads: top edge for a
- * bottom-to-top weaver, left edge for right to left. It sits across the seam between the row and the next, and stays
- * inside the Project's own extent when drawn on its own, so the last row's edge isn't cut off at the surface's edge.
- */
-function drawEdge(context: DrawingContext, space: Space, x: number, y: number, length: number, columnWise: boolean): void {
-  const extent = space.open ? undefined : space.extent
-  if (columnWise) {
-    const left = x + CELL_SIZE_PX - MARKER_EDGE_PX / 2
-    context.fillRect(extent ? Math.min(left, extent.width - MARKER_EDGE_PX) : left, y, MARKER_EDGE_PX, length)
-    return
-  }
-  const top = y + CELL_SIZE_PX - MARKER_EDGE_PX / 2
-  context.fillRect(x, extent ? Math.min(top, extent.height - MARKER_EDGE_PX) : top, length, MARKER_EDGE_PX)
+/** A bead of the current line: the coordinate of the edge that carries the marker across the line, the way that edge faces (+1 toward the next row to weave, -1 away from it), and the bead's cell along the line. */
+interface LineBead {
+  v: number
+  facing: 1 | -1
+  from: number
+  to: number
+}
+
+/** One stretch of the marker: the border at `v` (across the line) from `from` to `to` (along it). */
+interface MarkerSegment {
+  v: number
+  from: number
+  to: number
 }
 
 /**
- * The marker for the row being woven now, while rows run along the grid's rows on loom and brick stitch: one edge along
- * the whole row, shifted with the row on brick stitch.
+ * The Row progress marker (tickets 352, 369): one continuous border, MARKER_EDGE_PX thick, between what is woven once
+ * the current pass is done and what is still to weave. Along the current line each bead puts it on the edge facing the
+ * next row to weave (the bottom edge when rows run along the grid's rows, the right edge when they run down its
+ * columns), and where the beads' edges are not in line -- a brick stitch row or a peyote bead half a bead across, or a
+ * peyote bead not in the pass yet, which puts it on its own near edge -- a step along the seam between two beads joins
+ * the pieces, so it reads as one line. It is drawn in the grid's own space, so a rotated Project turns it with the
+ * beads. Drawn on its own the Project's surface ends at its extent, so the border stays inside it.
  */
-function drawCurrentRow(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
-  const { technique } = project
-  const { columns, rows } = space
-  const relative = project.rowProgress.currentRow
-  if (!space.hasFrame || relative < 0 || relative >= rows) {
-    return
-  }
-
-  const row = space.origin.row + relative
-  context.fillStyle = theme.marker
-  drawEdge(context, space, shiftOf(space, technique, row) + space.origin.column * CELL_SIZE_PX, rowTopPx(technique, row), columns * CELL_SIZE_PX, false)
-}
-
-/**
- * The marker for the pass being woven now on peyote (ticket 347): the first pass of a line is the whole line, every
- * later one is every other bead of it, so the edge is drawn bead by bead, whichever way the rows run.
- */
-function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
+function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
   const { technique } = project
   const columnWise = project.rowProgress.direction === 'columns'
   const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
@@ -128,39 +113,97 @@ function drawCurrentPass(context: DrawingContext, project: DrawnProject, space: 
     return
   }
   const line = lineOfPass(technique, pass)
-  // 0: every bead of the line; later passes take the even positions first, then the odd ones.
-  const parity = pass === 0 ? undefined : (pass - 1) % 2
+  // Peyote's later lines take two passes: every other bead first (even positions), then the rest.
+  const parity = technique === 'peyote' && pass > 0 ? (pass - 1) % 2 : undefined
 
-  context.fillStyle = theme.marker
+  const beads: LineBead[] = []
   const length = columnWise ? space.rows : space.columns
   for (let along = 0; along < length; along += 1) {
-    if (parity !== undefined && along % 2 !== parity) {
-      continue
-    }
     const row = space.origin.row + (columnWise ? along : line)
     const column = space.origin.column + (columnWise ? line : along)
-    drawEdge(context, space, shiftOf(space, technique, row) + column * CELL_SIZE_PX, rowTopPx(technique, row), CELL_SIZE_PX, columnWise)
+    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX
+    const y = rowTopPx(technique, row)
+    // A bead still to weave in the line's first peyote pass keeps the border on its near edge: it is not woven yet.
+    const todo = parity === 0 && along % 2 !== 0
+    const near = columnWise ? x : y
+    beads.push({ v: todo ? near : near + CELL_SIZE_PX, facing: todo ? -1 : 1, from: columnWise ? y : x, to: (columnWise ? y : x) + CELL_SIZE_PX })
   }
+
+  const corner = beadRoundness(technique) * CELL_SIZE_PX
+  if (!columnWise && corner > 0) {
+    drawRoundedBorder(context, beads, columnWise, corner, space.open ? undefined : space.extent.height, theme)
+    return
+  }
+
+  const segments: MarkerSegment[] = []
+  beads.forEach((bead, index) => {
+    const start = index === 0 ? bead.from : (beads[index - 1]!.to + bead.from) / 2
+    const end = index === beads.length - 1 ? bead.to : (bead.to + beads[index + 1]!.from) / 2
+    const last = segments.at(-1)
+    if (last && last.v === bead.v) {
+      last.to = end
+    } else {
+      segments.push({ v: bead.v, from: start, to: end })
+    }
+  })
+
+  const limit = space.open ? undefined : columnWise ? space.extent.width : space.extent.height
+  const point = (v: number, along: number): [number, number] => {
+    const kept = limit === undefined ? v : Math.min(Math.max(v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
+    return columnWise ? [kept, along] : [along, kept]
+  }
+  // The corners of the line: along each stretch, then across the seam to the next one.
+  const corners: [number, number][] = [point(segments[0]!.v, segments[0]!.from)]
+  segments.forEach((segment, index) => {
+    const next = segments[index + 1]
+    if (next) {
+      corners.push(point(segment.v, segment.to), point(next.v, segment.to))
+    } else {
+      corners.push(point(segment.v, segment.to))
+    }
+  })
+  const radius = Math.max(3, beadRoundness(technique) * CELL_SIZE_PX + 1)
+  const distance = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1])
+
+  context.strokeStyle = theme.marker
+  context.lineWidth = MARKER_EDGE_PX
+  context.lineJoin = 'round'
+  context.beginPath()
+  context.moveTo(...corners[0]!)
+  for (let at = 1; at < corners.length - 1; at += 1) {
+    const [before, corner, after] = [corners[at - 1]!, corners[at]!, corners[at + 1]!]
+    context.arcTo(...corner, ...after, Math.min(radius, distance(before, corner) / 2, distance(corner, after) / 2))
+  }
+  context.lineTo(...corners.at(-1)!)
+  context.stroke()
 }
 
 /**
- * The marker for the column being woven now, when rows run down the grid's columns on loom and brick stitch: the right
- * edge of each of its beads, drawn bead by bead since the beads of a column don't line up on brick stitch.
+ * The marker along a row of rounded beads (peyote, ticket 369): each bead's piece follows that bead's own outline, its
+ * facing edge with the two corners rounded as the bead's are, so the line repeats the shape of the row. The pieces are
+ * joined from one bead's end to the next one's start, which is the step between beads still to weave and woven ones.
  */
-function drawCurrentColumn(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
-  const { technique } = project
-  const { columns, rows } = space
-  const relative = project.rowProgress.currentColumn
-  if (!space.hasFrame || relative < 0 || relative >= columns) {
-    return
-  }
-  const column = space.origin.column + relative
-
-  context.fillStyle = theme.marker
-  for (let offset = 0; offset < rows; offset += 1) {
-    const row = space.origin.row + offset
-    drawEdge(context, space, shiftOf(space, technique, row) + column * CELL_SIZE_PX, rowTopPx(technique, row), CELL_SIZE_PX, true)
-  }
+function drawRoundedBorder(context: DrawingContext, beads: readonly LineBead[], columnWise: boolean, corner: number, limit: number | undefined, theme: ProjectTheme): void {
+  // The border sits on the cell's edge, a pixel out from the bead's, so its curve is a pixel wider than the bead's corner.
+  const radius = corner + 1
+  const point = (v: number, along: number): [number, number] => (columnWise ? [v, along] : [along, v])
+  context.strokeStyle = theme.marker
+  context.lineWidth = MARKER_EDGE_PX
+  context.lineJoin = 'round'
+  context.beginPath()
+  beads.forEach((bead, index) => {
+    const v = limit === undefined ? bead.v : Math.min(Math.max(bead.v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
+    const start = point(v - bead.facing * radius, bead.from)
+    if (index === 0) {
+      context.moveTo(...start)
+    } else {
+      context.lineTo(...start)
+    }
+    context.arcTo(...point(v, bead.from), ...point(v, bead.to), radius)
+    context.arcTo(...point(v, bead.to), ...point(v - bead.facing * radius, bead.to), radius)
+    context.lineTo(...point(v - bead.facing * radius, bead.to))
+  })
+  context.stroke()
 }
 
 function roundedRect(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
@@ -466,7 +509,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
-  const { enabled, direction } = project.rowProgress
+  const { enabled } = project.rowProgress
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
@@ -491,13 +534,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawPreview(context, project, space, preview, theme)
   }
   if (enabled) {
-    if (project.technique === 'peyote') {
-      drawCurrentPass(context, project, space, theme)
-    } else if (direction === 'rows') {
-      drawCurrentRow(context, project, space, theme)
-    } else {
-      drawCurrentColumn(context, project, space, theme)
-    }
+    drawCurrentLine(context, project, space, theme)
   }
   if (axes) {
     drawMirrorAxes(context, project, space, axes, theme)

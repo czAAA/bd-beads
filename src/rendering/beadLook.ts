@@ -45,6 +45,7 @@ export type DrawingContext = Pick<
   | 'strokeStyle'
   | 'lineWidth'
   | 'lineCap'
+  | 'lineJoin'
   | 'setLineDash'
   | 'fillText'
   | 'font'
@@ -110,7 +111,7 @@ export const LIGHT_THEME: ProjectTheme = {
   rim: 'rgba(20,20,19,.12)',
   emptyBead: '#d8d2cc',
   seam: '#1f1f1f',
-  marker: '#fa520f',
+  marker: '#1d4ed8',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#c23604',

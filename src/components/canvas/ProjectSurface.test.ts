@@ -266,11 +266,12 @@ describe('ProjectSurface', () => {
     const progress = (enabled: boolean): RowProgress => ({ enabled, direction: 'rows', currentRow: 2, currentColumn: 0 })
 
     await mountSurface(projectOf(20, 10, { rowProgress: progress(false) }))
-    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(false)
+    const without = context.named('stroke').length
 
     context.calls.length = 0
     await mountSurface(projectOf(20, 10, { rowProgress: progress(true) }))
-    expect(context.named('fillRect').some((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
+    // The marker is one stroked line, over whatever else the overlay strokes.
+    expect(context.named('stroke')).toHaveLength(without + 1)
   })
 
   describe('moving the canvas', () => {
