@@ -110,15 +110,18 @@ describe('useKeyboardCursor', () => {
     expect(deps.onHoverEnd).toHaveBeenCalled()
   })
 
-  it('hides the cursor during Set Frame, whose arrows move the Frame, and shows it again once the Frame is done (ticket 286)', () => {
+  it('hides the cursor during Set Frame, whose arrows move the Frame, and shows it again only once a key moves it (tickets 286, 354)', () => {
     const settingFrame = ref(true)
-    const { keyboardOnProject, cursorShown, deps, onProjectKeyboardFocus } = setup(false, settingFrame)
+    const { keyboardOnProject, cursorShown, deps, onProjectKeyboardFocus, onProjectKey, hideCursor } = setup(false, settingFrame)
     onProjectKeyboardFocus(true)
     expect(keyboardOnProject.value).toBe(true)
     expect(cursorShown.value).toBe(false)
     expect(deps.onCellHover).not.toHaveBeenCalled()
     expect(deps.announceCursor).not.toHaveBeenCalled()
     settingFrame.value = false
+    hideCursor()
+    expect(cursorShown.value).toBe(false)
+    onProjectKey(press('ArrowRight'))
     expect(cursorShown.value).toBe(true)
   })
 })

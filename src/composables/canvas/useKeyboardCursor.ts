@@ -31,7 +31,16 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
   const keyboardOnProject = ref(false)
   /** The cursor is drawn only with keyboard focus on the Project, and not during Set Frame. */
-  const cursorShown = computed(() => keyboardOnProject.value && !deps.settingFrame?.())
+  const cursorShown = computed(() => keyboardOnProject.value && cursorMoved.value && !deps.settingFrame?.())
+  /**
+   * Whether the cursor has been put somewhere since Set Frame last switched (ticket 354): turning Set Frame on or off
+   * only hides it, so it comes back with the next key that moves it, not on whatever bead it last rested on.
+   */
+  const cursorMoved = ref(true)
+  /** Hides the cursor until a key puts it somewhere again: the app calls this whenever Set Frame switches on or off. */
+  function hideCursor() {
+    cursorMoved.value = false
+  }
   let cursorProjectId: string | undefined
 
   /** Keyboard focus arriving on (or leaving) the Project. */
@@ -47,6 +56,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
       }
       // F focuses the Project for Set Frame's arrows: the cursor stays hidden, so nothing to reveal, hover or announce (ticket 286).
       if (deps.settingFrame?.()) return
+      cursorMoved.value = true
       deps.reveal(beadCursor.value)
       deps.onCellHover(beadCursor.value.row, beadCursor.value.column)
       deps.announceCursor()
@@ -66,6 +76,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
       deps.finishExtending()
     }
     beadCursor.value = next
+    cursorMoved.value = true
     deps.onCellHover(next.row, next.column)
     deps.reveal(next)
     deps.announceCursor()
@@ -123,6 +134,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     } else if (event.key === 'PageDown') {
       moveCursor(row + 10, column, false)
     } else if (event.key === ' ' || event.key === 'Enter') {
+      cursorMoved.value = true
       deps.invokeToolAt(beadCursor.value)
     } else if (event.key === 'Escape' && !deps.hasSelection()) {
       // Leaves the Project; with a Selection up, Escape clears that first (the app's own Escape order).
@@ -139,5 +151,5 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (event.key === 'Shift') deps.finishExtending()
   }
 
-  return { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp }
+  return { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor }
 }

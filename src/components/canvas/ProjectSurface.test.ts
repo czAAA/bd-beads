@@ -800,6 +800,20 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-primary-move']).toEqual([[400, 9000]])
     })
 
+    it('ends the hover and forgets the bead when Set Frame starts, so the same bead hovers again after it (ticket 354)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 0), buttons: 0 })
+      await wrapper.setProps({ settingFrame: true })
+      expect(events(wrapper)['hover-end']).toHaveLength(1)
+      await wrapper.setProps({ settingFrame: false })
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 0), buttons: 0 })
+
+      expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 0]])
+    })
+
     it('says the hover is over when the pointer leaves', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)

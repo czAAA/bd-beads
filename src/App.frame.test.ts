@@ -150,8 +150,11 @@ describe('Set Frame', () => {
     expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.frame.keyboardHint)
 
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
-    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
+    // Ending Set Frame reveals no cursor the person did not move (ticket 354); an arrow key brings it back.
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
     expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.a11y.keyboardHint)
+    await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
   })
 
   it('is refused while Row progress is on', async () => {

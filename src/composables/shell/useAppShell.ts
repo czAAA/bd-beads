@@ -376,7 +376,7 @@ function wireAppShell(services: Services) {
     colorWords,
   })
 
-  const { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
+  const { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor } = useKeyboardCursor({
     currentProject,
     reveal,
     hasSelection: () => !!selection.value,
@@ -404,6 +404,8 @@ function wireAppShell(services: Services) {
     locale: currentLocale,
     centreOn,
   })
+  // Switching Set Frame on or off leaves no keyboard cursor on a bead nobody moved to (ticket 354).
+  watch(frameFlow.settingFrame, hideCursor, { flush: 'sync' })
 
   /** Rotate: the Frame and its beads a quarter turn, with a Message when a Piece had to move (ticket 233). */
   const rotateFlow = useRotateFlow({

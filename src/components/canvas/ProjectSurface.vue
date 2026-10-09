@@ -445,6 +445,18 @@ const dragging = ref(false)
 const framing = ref(false)
 let lastBead: GridPosition | undefined
 
+// Starting Set Frame ends the hover preview and forgets the bead, so leaving it hovers the bead under the pointer afresh (ticket 354).
+watch(
+  () => props.settingFrame,
+  (on) => {
+    if (!on) return
+    lastBead = undefined
+    overBead.value = false
+    overRefusedMargin.value = false
+    emit('hover-end')
+  },
+)
+
 /**
  * The Frame margin's outline (ticket 276, Frame card): shown while a Frame gesture is going on and for 1s after a press
  * in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
