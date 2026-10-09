@@ -81,4 +81,18 @@ describe('the keep-out margin', () => {
     expect(rotated.moved).toBe(1)
     expect(clearMargin(rotated.project).moved).toBe(0)
   })
+
+  it('moves a big drawing clear without freezing the page: a fresh Frame in the middle of a 150x150 drawing', () => {
+    // Each shift tried reads every bead of the Piece, so trying them all on the first ring that clears took tens of seconds at 250x250.
+    const beads: BeadMap = {}
+    for (let row = 0; row < 150; row += 1) {
+      beads[row] = {}
+      for (let column = 0; column < 150; column += 1) beads[row][column] = '#ff0000'
+    }
+    const started = performance.now()
+    const { project, moved } = clearMargin(withFrame({ ...open, beads }, { row: 72, column: 72, rows: 6, columns: 6 }))
+    expect(performance.now() - started).toBeLessThan(2000)
+    expect(moved).toBe(1)
+    expect(count(project.beads)).toBe(150 * 150)
+  })
 })
