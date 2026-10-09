@@ -528,7 +528,6 @@ export const ru: Translations = {
   },
   shortcutsHelp: {
     title: 'Горячие клавиши',
-    closeButton: 'Закрыть',
     emptySelection: 'Очистить выделение',
     backOut: 'Выйти из режима',
     panCanvas: 'Двигать холст',

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
-import { CONTROLS, CONTROL_GROUPS, POINTER_HELP, chordParts, type ControlGroup } from '../../composables/shell/controlRegistry'
+import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, chordParts, type ControlGroup } from '../../composables/shell/controlRegistry'
 
 /**
  * The `?` shortcuts help overlay (ticket 96), generated from the control registry (ADR 0035, ticket 329): every
@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const closeAction = controlAction('close')
 
 interface HelpRow {
   id: string
@@ -69,10 +70,10 @@ function spoken(keys: HelpRow['keys']): string {
     @cancel="emit('close')"
   >
     <template #header>
-      <IconButton tooltip
-        icon="close"
+      <IconButton
+        :action="closeAction"
         shape="round"
-        :label="t.shortcutsHelp.closeButton"
+        shortcut="Escape"
         data-testid="shortcuts-help-close"
         @click="emit('close')"
       />
