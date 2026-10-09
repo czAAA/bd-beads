@@ -16,7 +16,6 @@ export const NATIVE_TITLES: Record<string, string> = Object.fromEntries(
   [
     'components/export/SaveBox.vue|t.saveBox.saveButton',
     'components/project/NewProjectForm.vue|limitsHint',
-    'components/shell/AppHeader.vue|summarizeProject(activeProject)',
     'components/tools/MirrorControls.vue|t.mirror.decreaseLeftRightButton',
     'components/tools/MirrorControls.vue|t.mirror.increaseLeftRightButton',
     'components/tools/MirrorControls.vue|t.mirror.decreaseTopBottomButton',

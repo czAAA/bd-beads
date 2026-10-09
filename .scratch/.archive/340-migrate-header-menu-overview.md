@@ -6,9 +6,9 @@
 
 **Blocked by:** 339
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] Every control in this area comes from a shared component and a registry action, with no per-place copy of its name, Tooltip or key
-- [ ] Tooltips, key chips and disabled reasons match ticket 334's table
-- [ ] No native `title` and no hand-built popup is left in this area
-- [ ] The tests related to the changed files pass; update the visual baselines where the look changed on purpose
+- [x] Every control in this area comes from a shared component and a registry action, with no per-place copy of its name, Tooltip or key
+- [x] Tooltips, key chips and disabled reasons match ticket 334's table
+- [x] No native `title` and no hand-built popup is left in this area
+- [x] The tests related to the changed files pass; update the visual baselines where the look changed on purpose

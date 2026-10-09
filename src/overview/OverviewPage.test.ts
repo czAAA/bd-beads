@@ -100,6 +100,15 @@ describe('OverviewPage', () => {
     expect(item.attributes('href')).toBe('/bd-beads/overview/')
   })
 
+  it('has a header menu that announces whether it is open and lists its items in its Tooltip', async () => {
+    const wrapper = page()
+    const button = wrapper.find('[data-testid="header-menu"]')
+    expect(button.attributes('aria-expanded')).toBe('false')
+    expect(wrapper.text()).toContain('Overview, Take the tour.')
+    await button.trigger('click')
+    expect(button.attributes('aria-expanded')).toBe('true')
+  })
+
   it('switches to Russian with the language switcher, and remembers it', async () => {
     const wrapper = page()
     await wrapper.find('[data-testid="language-switcher"]').trigger('click')

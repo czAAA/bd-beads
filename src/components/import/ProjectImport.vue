@@ -118,7 +118,7 @@ async function onImportQrImage(event: Event): Promise<void> {
     same label in the design system's own Tooltip instead of a native `title`, so its background matches every other
     icon control's. A fragment, so the controls and their one-line result sit in the header's own row.
   -->
-  <AppTooltip v-if="compact" :name="t.transfer.importLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="t.transfer.importLabel" :body="t.tooltips.importFile" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="fileInputId">
       <input
         :id="fileInputId"
@@ -132,7 +132,8 @@ async function onImportQrImage(event: Event): Promise<void> {
       <AppIcon name="import" :size="15" />
     </label>
   </AppTooltip>
-  <label v-else class="project-import__button" :for="fileInputId">
+  <AppTooltip v-else :name="t.transfer.importLabel" :body="t.tooltips.importFile" :announce="false">
+  <label class="project-import__button" :for="fileInputId">
     <input
       :id="fileInputId"
       type="file"
@@ -144,8 +145,9 @@ async function onImportQrImage(event: Event): Promise<void> {
     <AppIcon name="import" :size="15" />
     <span>{{ t.transfer.importLabel }}</span>
   </label>
+  </AppTooltip>
 
-  <AppTooltip v-if="compact" :name="t.transfer.importQrLabel" :announce="false">
+  <AppTooltip v-if="compact" :name="t.transfer.importQrLabel" :body="t.tooltips.importQr" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="qrInputId">
       <input
         :id="qrInputId"
@@ -159,7 +161,8 @@ async function onImportQrImage(event: Event): Promise<void> {
       <AppIcon name="scan" :size="15" />
     </label>
   </AppTooltip>
-  <label v-else class="project-import__button" :for="qrInputId">
+  <AppTooltip v-else :name="t.transfer.importQrLabel" :body="t.tooltips.importQr" :announce="false">
+  <label class="project-import__button" :for="qrInputId">
     <input
       :id="qrInputId"
       type="file"
@@ -171,6 +174,7 @@ async function onImportQrImage(event: Event): Promise<void> {
     <AppIcon name="scan" :size="15" />
     <span>{{ t.transfer.importQrLabel }}</span>
   </label>
+  </AppTooltip>
 
   <!--
     One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
