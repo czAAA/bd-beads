@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppSwatch from './AppSwatch.vue'
 
@@ -85,13 +85,12 @@ describe('AppSwatch', () => {
   it('shows the × while keyboard focus is on the swatch', async () => {
     const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' }, attachTo: document.body })
     const chip = wrapper.get('.swatch__chip')
-    const original = chip.element.matches.bind(chip.element)
-    chip.element.matches = (selector: string) => (selector === ':focus-visible' ? true : original(selector))
+    const matches = vi.spyOn(chip.element, 'matches').mockReturnValue(true)
     await chip.trigger('focusin')
     expect(wrapper.find('.swatch__remove').exists()).toBe(true)
     await chip.trigger('focusout')
     expect(wrapper.find('.swatch__remove').exists()).toBe(false)
-    chip.element.matches = () => false
+    matches.mockReturnValue(false)
     await chip.trigger('focusin')
     expect(wrapper.find('.swatch__remove').exists()).toBe(false)
   })
