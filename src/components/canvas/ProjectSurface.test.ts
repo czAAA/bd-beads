@@ -69,6 +69,37 @@ describe('ProjectSurface', () => {
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
   })
 
+  it('moves the drawn beads of a very large piece while the canvas is zoomed, and draws them sharp once it settles (ticket 349)', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
+      vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
+      const { wrapper } = await mountSurface(projectOf(300, 300), 0.2)
+      vi.advanceTimersByTime(10)
+      const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]')
+      context.calls.length = 0
+
+      await wrapper.setProps({ zoom: 0.1, scroll: { x: 10, y: 20 } })
+      vi.advanceTimersByTime(10)
+      expect(cells.element.style.transform).toBe('translate(-10px, -20px) scale(0.5)')
+      // Only the overlay was drawn.
+      expect(context.named('clearRect')).toHaveLength(1)
+
+      vi.advanceTimersByTime(200)
+      expect(cells.element.style.transform).toBe('')
+      expect(context.named('clearRect')).toHaveLength(2)
+      wrapper.unmount()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('draws a small piece live on every zoom step, as before', async () => {
+    const { wrapper } = await mountSurface(projectOf(20, 10), 0.2)
+    await wrapper.setProps({ zoom: 0.1 })
+    expect(wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element.style.transform).toBe('')
+  })
+
   it('keeps redrawing on zoom and scroll after a Frame press fades the margin outline in while a draw is waiting', async () => {
     const frames = new Map<number, () => void>()
     let next = 1
