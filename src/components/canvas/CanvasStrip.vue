@@ -90,7 +90,7 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
       data-testid="rulers-toggle"
       @click="emit('toggle-rulers')"
     />
-    <CanvasColorPicker v-if="canvasColor" class="canvas-strip__color" />
+    <div v-if="canvasColor" class="canvas-strip__color"><CanvasColorPicker /></div>
     <ZoomControls
       v-if="zoomPercent !== undefined"
       class="canvas-strip__zoom"
@@ -174,6 +174,8 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
 }
 
 .canvas-strip__color {
+  display: flex;
+  flex: none;
   margin-left: auto;
 }
 
