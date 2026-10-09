@@ -436,7 +436,6 @@ export const en: Translations = {
     exportPromptTitle: 'Set Frame to export',
     countNeedsFrame: 'Set Frame to count beads.',
     progressNeedsFrame: 'Set Frame to start',
-    rotateNeedsFrame: 'Rotate, Set Frame first',
     rotatedMessage: {
       one: 'Pattern rotated. {count} piece was in the way and moved outside the Frame.',
       other: 'Pattern rotated. {count} pieces were in the way and moved outside the Frame.',

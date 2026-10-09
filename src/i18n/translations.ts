@@ -469,7 +469,6 @@ export interface Translations {
     countNeedsFrame: string
     progressNeedsFrame: string
     /** Rotate's accessible name while it is disabled for want of a Frame. */
-    rotateNeedsFrame: string
     /** The Message after Rotate moved pieces out of the way ("{count}" of them): the singular and plural of the sentence. */
     rotatedMessage: PluralForms
     /** The lead of the margin Message, by what was done to the Frame. */

@@ -24,7 +24,7 @@ describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
     expect(wrapper.find('[data-testid="context-bar-size"]').text()).toBe('2×1')
-    expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes("aria-disabled")).toBeUndefined()
 
     await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
     // Copying clears the Selection and arms the clipboard -- the bar switches to its "Tap where to paste" state.

@@ -2,7 +2,10 @@
 import { computed, ref } from 'vue'
 import { useDropSteps } from '../../composables/ui/useDropSteps'
 import { useI18n } from '../../i18n/useI18n'
-import AppIcon from '../ui/AppIcon.vue'
+import AppButton from '../ui/AppButton.vue'
+import IconButton from '../ui/IconButton.vue'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import type { Project } from '../../domain/project'
 
 /**
  * The design system's ContextBar (ticket 168; ContextBar card): a floating bar above the Progress bar, on phone and
@@ -18,15 +21,13 @@ const props = defineProps<{
   selectionSize?: { columns: number; rows: number }
   /** Whether a copied block is armed to paste (useSelectionGesture's pasteProjectionActive). */
   pasteArmed: boolean
+  /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
+  project: Project
   canRemoveLine: boolean
   /** Whether the Frame is being set: the bar then holds the Frame's size, Fit to drawing and Done (v16). */
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
   frameSummary?: string
-  /** Whether a Frame is set, so Remove Frame has something to remove (ticket 258). */
-  hasFrame?: boolean
-  /** Why Rotate is off, when it is: it turns the Frame, so it needs one, and waits while Row progress is on. It is named by this too. */
-  rotateOff?: string
 }>()
 
 const emit = defineEmits<{
@@ -45,6 +46,29 @@ const { t } = useI18n()
 const rowEl = ref<HTMLElement>()
 const dropped = useDropSteps(rowEl, 3, [() => props.pasteArmed, () => t.value.contextBar])
 
+/** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there, as in the Toolbox. */
+const actions = {
+  fit: controlAction('fit-to-drawing'),
+  removeFrame: controlAction('remove-frame'),
+  done: controlAction('done-frame'),
+  copy: controlAction('copy'),
+  rotate: controlAction('rotate'),
+  removeLine: controlAction('remove-line'),
+  clear: controlAction('clear-selection'),
+  cancel: controlAction('cancel-paste'),
+}
+
+const deps = computed(() =>
+  controlDeps({
+    activeProject: () => props.project,
+    hasSelection: () => !!props.selectionSize,
+    canRemoveSelectedLine: () => props.canRemoveLine,
+  }),
+)
+
+/** A button whose label has dropped keeps its name in the Tooltip: the icon-only button, over the same action. */
+const labelled = (step: number) => (dropped.value < step ? AppButton : IconButton)
+
 const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.columns}×${props.selectionSize.rows}` : ''))
 </script>
 
@@ -60,72 +84,37 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
   >
     <template v-if="settingFrame">
       <span class="context-bar__size context-bar__frame-size" data-testid="context-bar-frame-size">{{ frameSummary }}</span>
-      <button
-        type="button"
-        class="ui-control context-bar__button"
-        :aria-label="t.frame.fitToDrawing"
-        :title="t.frame.fitToDrawing"
-        data-testid="context-bar-fit-frame"
-        @click="emit('fit-frame')"
-      >
-        <AppIcon name="frame" :size="16" />
-      </button>
-      <button
-        v-if="hasFrame"
-        type="button"
-        class="ui-control context-bar__button"
-        :aria-label="t.frame.removeFrame"
-        :title="t.frame.removeFrame"
+      <IconButton class="context-bar__button" icon="frame" :action="actions.fit" :deps="deps" data-testid="context-bar-fit-frame" @click="emit('fit-frame')" />
+      <IconButton
+        v-if="project.frame"
+        class="context-bar__button"
+        :action="actions.removeFrame"
+        :deps="deps"
         data-testid="context-bar-remove-frame"
         @click="emit('remove-frame')"
-      >
-        <AppIcon name="close" :size="16" />
-      </button>
-      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-done-frame" @click="emit('done-frame')">
-        <AppIcon name="check" :size="16" />
-        <span>{{ t.frame.done }}</span>
-      </button>
+      />
+      <AppButton class="context-bar__button" :action="actions.done" :deps="deps" data-testid="context-bar-done-frame" @click="emit('done-frame')" />
     </template>
     <template v-else-if="!pasteArmed">
       <span class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
-      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')">
-        <AppIcon name="copy" :size="16" />
-        <span v-if="dropped < 3">{{ t.tools.copyButton }}</span>
-      </button>
-      <button type="button" class="ui-control context-bar__button" data-testid="context-bar-rotate" :disabled="!!rotateOff" :aria-label="rotateOff" :title="rotateOff" @click="emit('rotate')">
-        <AppIcon name="rotate" :size="16" />
-        <span v-if="dropped < 2">{{ t.palette.rotateButton }}</span>
-      </button>
-      <button
-        type="button"
-        class="ui-control context-bar__button"
+      <component :is="labelled(3)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
+      <component :is="labelled(2)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
+      <component
+        :is="labelled(1)"
+        class="context-bar__button"
+       
+        :action="actions.removeLine"
+        :deps="deps"
         data-testid="context-bar-remove-line"
         data-tour="remove-line"
-        :disabled="!canRemoveLine"
         @click="emit('remove-line')"
-      >
-        <AppIcon name="remove-line" :size="16" />
-        <span v-if="dropped < 1">{{ t.tools.removeLineShort }}</span>
-      </button>
-      <button
-        type="button"
-        class="ui-control context-bar__button context-bar__button--round"
-        :aria-label="t.contextBar.clearButton"
-        data-testid="context-bar-clear"
-        @click="emit('dismiss')"
-      >
-        <AppIcon name="close" :size="16" />
-      </button>
+      />
+      <IconButton class="context-bar__button" shape="round" :action="actions.clear" :deps="deps" data-testid="context-bar-clear" @click="emit('dismiss')" />
     </template>
     <template v-else>
       <span class="context-bar__hint" data-testid="context-bar-hint">{{ t.contextBar.pasteHint }}</span>
-      <button type="button" class="ui-control context-bar__button context-bar__button--accent" data-testid="context-bar-rotate" :disabled="!!rotateOff" :aria-label="rotateOff" :title="rotateOff" @click="emit('rotate')">
-        <AppIcon name="rotate" :size="16" />
-        <span v-if="dropped < 1">{{ t.palette.rotateButton }}</span>
-      </button>
-      <button type="button" class="ui-control context-bar__button context-bar__button--accent" data-testid="context-bar-cancel" @click="emit('dismiss')">
-        <span>{{ t.contextBar.cancelButton }}</span>
-      </button>
+      <component :is="labelled(1)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
+      <AppButton class="context-bar__button" :action="actions.cancel" :deps="deps" data-testid="context-bar-cancel" @click="emit('dismiss')" />
     </template>
   </div>
 </template>
@@ -166,11 +155,14 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
   text-overflow: ellipsis;
 }
 
-.context-bar__button {
+.context-bar :deep(.context-bar__button) {
   display: flex;
   flex: none;
   align-items: center;
+  justify-content: center;
   gap: var(--space-6);
+  width: auto;
+  min-width: 2.5rem;
   height: 2.5rem;
   padding: 0 var(--space-8);
   font: var(--type-small);
@@ -178,26 +170,32 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
   background: none;
   border: 0;
   border-radius: var(--radius-sm);
-  cursor: pointer;
 }
 
-.context-bar__button--round {
-  padding: 0;
+.context-bar :deep(.icon-btn--round.context-bar__button) {
   width: 2.5rem;
-  justify-content: center;
+  padding: 0;
 }
 
-.context-bar__button:disabled {
+.context-bar :deep(.context-bar__button[aria-disabled='true']) {
+  color: inherit;
+  background: none;
   opacity: 0.5;
-  cursor: not-allowed;
 }
 
-.context-bar__button:focus-visible {
+@media (hover: hover) {
+  .context-bar :deep(.context-bar__button:hover:not([aria-disabled='true'])) {
+    background: none;
+    opacity: 0.8;
+  }
+}
+
+.context-bar :deep(.context-bar__button:focus-visible) {
   outline: var(--focus-width) solid var(--canvas);
   outline-offset: -2px;
 }
 
-.context-bar--armed .context-bar__button:focus-visible {
+.context-bar--armed :deep(.context-bar__button:focus-visible) {
   outline-color: var(--on-accent);
 }
 </style>
