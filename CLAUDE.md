@@ -45,6 +45,5 @@ The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticke
 - Search with grep/glob before reading; read with offset/limit, not whole large files.
 - Don't re-read files already in context unless they changed.
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
-- While implementing, run only the tests related to your change (`npx vitest related --run <changed files>`), never the full suite by hand: it can exhaust this machine's memory. This overrides the `implement` skill's "full test suite once at the end": that run is CI's. CI runs typecheck, lint, the unit tests and the visual check on every pull request and is the gate (ADR 0032); push and let it run them.
 - Never cat lock files, generated files, minified bundles, or large logs.
 - Screenshots and visual-test artifacts (`test-results/`, `e2e/visual/__screenshots__/`) are images: each one read into context stays there for the rest of the session. Trust Playwright's text reporter (pass/fail, pixel-diff count) first; only `Read` an image when a diff genuinely needs visual judgment. Crop to the region under review before reading rather than reading a full-page screenshot. When a visual test fails, read the `diff.png` before reaching for `actual.png`/`expected.png` too.
