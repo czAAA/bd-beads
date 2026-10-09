@@ -80,6 +80,19 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
+/** Where across the line the marker's stroke is centred: `v`, kept far enough inside the Project's own extent (`limit`, when drawn on its own) that the whole stroke shows. */
+function clampAcross(v: number, limit: number | undefined): number {
+  return limit === undefined ? v : Math.min(Math.max(v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
+}
+
+/** Starts the path the marker is stroked along: the marker color, MARKER_EDGE_PX thick, round where it turns. */
+function beginMarkerStroke(context: DrawingContext, theme: ProjectTheme): void {
+  context.strokeStyle = theme.marker
+  context.lineWidth = MARKER_EDGE_PX
+  context.lineJoin = 'round'
+  context.beginPath()
+}
+
 /** A bead of the current line: the coordinate of the edge that carries the marker across the line, the way that edge faces (+1 toward the next row to weave, -1 away from it), and the bead's cell along the line. */
 interface LineBead {
   v: number
@@ -129,6 +142,10 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
     beads.push({ v: todo ? near : near + CELL_SIZE_PX, facing: todo ? -1 : 1, from: columnWise ? y : x, to: (columnWise ? y : x) + CELL_SIZE_PX })
   }
 
+  if (beads.length === 0) {
+    return
+  }
+
   const corner = beadRoundness(technique) * CELL_SIZE_PX
   if (!columnWise && corner > 0) {
     drawRoundedBorder(context, beads, columnWise, corner, space.open ? undefined : space.extent.height, theme)
@@ -148,10 +165,7 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
   })
 
   const limit = space.open ? undefined : columnWise ? space.extent.width : space.extent.height
-  const point = (v: number, along: number): [number, number] => {
-    const kept = limit === undefined ? v : Math.min(Math.max(v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
-    return columnWise ? [kept, along] : [along, kept]
-  }
+  const point = (v: number, along: number): [number, number] => (columnWise ? [clampAcross(v, limit), along] : [along, clampAcross(v, limit)])
   // The corners of the line: along each stretch, then across the seam to the next one.
   const corners: [number, number][] = [point(segments[0]!.v, segments[0]!.from)]
   segments.forEach((segment, index) => {
@@ -162,17 +176,14 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
       corners.push(point(segment.v, segment.to))
     }
   })
-  const radius = Math.max(3, beadRoundness(technique) * CELL_SIZE_PX + 1)
+  const turnRadius = Math.max(3, corner + 1)
   const distance = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1])
 
-  context.strokeStyle = theme.marker
-  context.lineWidth = MARKER_EDGE_PX
-  context.lineJoin = 'round'
-  context.beginPath()
+  beginMarkerStroke(context, theme)
   context.moveTo(...corners[0]!)
   for (let at = 1; at < corners.length - 1; at += 1) {
-    const [before, corner, after] = [corners[at - 1]!, corners[at]!, corners[at + 1]!]
-    context.arcTo(...corner, ...after, Math.min(radius, distance(before, corner) / 2, distance(corner, after) / 2))
+    const [before, turn, after] = [corners[at - 1]!, corners[at]!, corners[at + 1]!]
+    context.arcTo(...turn, ...after, Math.min(turnRadius, distance(before, turn) / 2, distance(turn, after) / 2))
   }
   context.lineTo(...corners.at(-1)!)
   context.stroke()
@@ -185,23 +196,20 @@ function drawCurrentLine(context: DrawingContext, project: DrawnProject, space: 
  */
 function drawRoundedBorder(context: DrawingContext, beads: readonly LineBead[], columnWise: boolean, corner: number, limit: number | undefined, theme: ProjectTheme): void {
   // The border sits on the cell's edge, a pixel out from the bead's, so its curve is a pixel wider than the bead's corner.
-  const radius = corner + 1
+  const curve = corner + 1
   const point = (v: number, along: number): [number, number] => (columnWise ? [v, along] : [along, v])
-  context.strokeStyle = theme.marker
-  context.lineWidth = MARKER_EDGE_PX
-  context.lineJoin = 'round'
-  context.beginPath()
+  beginMarkerStroke(context, theme)
   beads.forEach((bead, index) => {
-    const v = limit === undefined ? bead.v : Math.min(Math.max(bead.v, MARKER_EDGE_PX / 2), limit - MARKER_EDGE_PX / 2)
-    const start = point(v - bead.facing * radius, bead.from)
+    const v = clampAcross(bead.v, limit)
+    const start = point(v - bead.facing * curve, bead.from)
     if (index === 0) {
       context.moveTo(...start)
     } else {
       context.lineTo(...start)
     }
-    context.arcTo(...point(v, bead.from), ...point(v, bead.to), radius)
-    context.arcTo(...point(v, bead.to), ...point(v - bead.facing * radius, bead.to), radius)
-    context.lineTo(...point(v - bead.facing * radius, bead.to))
+    context.arcTo(...point(v, bead.from), ...point(v, bead.to), curve)
+    context.arcTo(...point(v, bead.to), ...point(v - bead.facing * curve, bead.to), curve)
+    context.lineTo(...point(v - bead.facing * curve, bead.to))
   })
   context.stroke()
 }
