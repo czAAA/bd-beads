@@ -4,7 +4,7 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { mayPlace } from '../../domain/margin'
-import { changedPositions, type Project } from '../../domain/project'
+import { changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
@@ -137,7 +137,7 @@ function measure(): void {
 }
 
 /** What the cells were last drawn from, to draw only what an edit changed. */
-let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string } | undefined
+let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string; showFinished: boolean } | undefined
 
 /** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each bead holds. */
 function sameLayout(a: Project, b: Project): boolean {
@@ -242,6 +242,14 @@ function oncePerFrame(draw: () => void): () => void {
   }
 }
 
+/**
+ * Whether finished rows are drawn at their normal color (ticket 352): while a mouse or a Pencil hovers the canvas, or
+ * after a tap on a finished row, which toggles it until the next tap. A view setting, not saved and not an Undo step.
+ */
+const hovered = ref(false)
+const finishedRestored = ref(false)
+const showFinished = computed(() => hovered.value || finishedRestored.value)
+
 /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
 function drawCells(): void {
   const canvas = baseEl.value
@@ -259,7 +267,7 @@ function drawCells(): void {
   }
 
   const before = drawn
-  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, positionMarks: positionMarks.value }
+  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value }
   const bands =
     !resized &&
     before &&
@@ -271,16 +279,17 @@ function drawCells(): void {
     before.pixelRatio === pixelRatio &&
     before.theme === theme.value &&
     before.positionMarks === positionMarks.value &&
+    before.showFinished === showFinished.value &&
     sameLayout(before.project, project)
       ? changedBands(before.project, project)
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
   }
 }
 
@@ -321,7 +330,7 @@ function drawOverlay(): void {
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks], oncePerFrame(drawCells), { flush: 'post' })
+watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks, showFinished], oncePerFrame(drawCells), { flush: 'post' })
 watch(
   [
     size,
@@ -509,6 +518,10 @@ function onPointerDown(event: PointerEvent): void {
   }
 
   if (event.button === 0) {
+    // A press on a finished row never draws (the lock), and toggles the finished rows between dimmed and normal.
+    if (isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+      finishedRestored.value = !finishedRestored.value
+    }
     emit('cell-primary-down', bead.row, bead.column)
   } else if (event.button === 2) {
     emit('cell-secondary-down', bead.row, bead.column)
@@ -521,6 +534,8 @@ function onPointerDown(event: PointerEvent): void {
  * primary-move branch covers all three input kinds without checking pointerType.
  */
 function onPointerMove(event: PointerEvent): void {
+  // A finger has no true hover: only a mouse or a Pencil restores the finished rows by being over the canvas.
+  hovered.value = event.pointerType !== 'touch'
   if (framing.value) {
     emit('frame-drag', cellUnder(event))
     return
@@ -567,6 +582,7 @@ function onPointerEnd(): void {
 }
 
 function onPointerLeave(): void {
+  hovered.value = false
   lastBead = undefined
   overBead.value = false
   overRefusedMargin.value = false
