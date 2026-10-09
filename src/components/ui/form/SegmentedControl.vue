@@ -13,7 +13,7 @@ import type { IconName } from '../icons'
  */
 const props = withDefaults(
   defineProps<{
-    options: readonly { value: T; label: string; icon?: IconName; tooltip?: { name: string; body?: string } }[]
+    options: readonly { value: T; label: string; icon?: IconName; tooltip?: { name: string; body?: string; disabledBody?: string } }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -23,6 +23,14 @@ const props = withDefaults(
 )
 const value = defineModel<T>({ required: true })
 const rootEl = ref<HTMLElement>()
+
+/** What an option's Tooltip says: while the control is disabled and gives a reason, that reason in place of the body (ADR 0035). */
+function tipFor(tooltip: { name: string; body?: string; disabledBody?: string }) {
+  if (props.disabled && tooltip.disabledBody !== undefined) {
+    return { name: tooltip.name, disabled: true as const, disabledBody: tooltip.disabledBody, announce: false }
+  }
+  return { name: tooltip.name, body: tooltip.body, announce: false }
+}
 
 function choose(next: T, focus = false) {
   if (props.disabled) return
@@ -62,7 +70,7 @@ function onKeydown(event: KeyboardEvent) {
     @keydown="onKeydown"
   >
     <template v-for="option in options" :key="option.value">
-      <AppTooltip v-if="option.tooltip" class="segmented__tip" :name="option.tooltip.name" :body="option.tooltip.body" :announce="false">
+      <AppTooltip v-if="option.tooltip" class="segmented__tip" v-bind="tipFor(option.tooltip)">
         <button
           class="ui-control segmented__option"
           type="button"
@@ -70,7 +78,7 @@ function onKeydown(event: KeyboardEvent) {
           :aria-checked="option.value === value"
           :tabindex="option.value === value ? 0 : -1"
           :data-value="option.value"
-          :disabled="disabled"
+          :aria-disabled="disabled || undefined"
           @click="choose(option.value)"
         >
           <span class="segmented__face">
@@ -87,7 +95,7 @@ function onKeydown(event: KeyboardEvent) {
         :aria-checked="option.value === value"
         :tabindex="option.value === value ? 0 : -1"
         :data-value="option.value"
-        :disabled="disabled"
+        :aria-disabled="disabled || undefined"
         @click="choose(option.value)"
       >
         <span class="segmented__face">
@@ -158,7 +166,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 @media (hover: hover) {
-  .segmented__option:hover:not(:disabled, [aria-checked='true']) {
+  .segmented__option:hover:not([aria-disabled='true'], [aria-checked='true']) {
     background: var(--hover-fill);
   }
 }
@@ -178,12 +186,12 @@ function onKeydown(event: KeyboardEvent) {
   border-color: var(--line);
 }
 
-.segmented__option:disabled {
+.segmented__option[aria-disabled='true'] {
   color: var(--faint);
   cursor: not-allowed;
 }
 
-.segmented__option:disabled[aria-checked='true'] {
+.segmented__option[aria-disabled='true'][aria-checked='true'] {
   color: var(--surface);
   background: var(--faint);
 }

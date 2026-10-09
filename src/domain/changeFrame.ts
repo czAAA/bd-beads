@@ -1,5 +1,6 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
-import { sameFrame } from './frame'
+import { sameFrame, snapRow } from './frame'
+import type { Technique } from './grid'
 import { clearMargin } from './margin'
 import { withFrame, type Project } from './project'
 import type { AreaLine } from './removeLine'
@@ -18,6 +19,8 @@ export type FrameChange =
   | { rotate: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
+  /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and column. */
+  | { technique: Technique }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -81,11 +84,30 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return settled({ ...withFrame(project, smaller), beads })
   }
 
+  if ('technique' in change) {
+    if (change.technique === project.technique) {
+      return { kind: 'unchanged', project }
+    }
+    return settled(withTechnique(project, change.technique))
+  }
+
   const next = 'set' in change ? change.set : undefined
   if (sameFrame(project.frame, next)) {
     return { kind: 'unchanged', project }
   }
   return settled(withFrame(project, next))
+}
+
+/**
+ * The Project woven in another Technique. Offset Techniques start their Frame on an even row, so a Frame that began on
+ * an odd one takes in the row above it rather than moving or losing a row.
+ */
+function withTechnique(project: Project, technique: Technique): Project {
+  const frame = project.frame
+  const top = frame ? snapRow(technique, frame.row) : 0
+  const snapped = frame && top !== frame.row ? { ...frame, row: top, rows: frame.rows + frame.row - top } : frame
+  const { frame: _previous, ...rest } = project
+  return { ...rest, ...(snapped ? { frame: snapped } : {}), technique, updatedAt: Date.now() }
 }
 
 /** The framed Project with its margin cleared, as the changed result. */

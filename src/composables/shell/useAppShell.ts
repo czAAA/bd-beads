@@ -704,6 +704,7 @@ function wireAppShell(services: Services) {
     onFrameRelease: frameFlow.release,
     onFrameCancel: frameFlow.cancel,
     onSetFrameSize: frameFlow.setSize,
+    onSetTechnique: frameFlow.setTechnique,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
     onBringFrameIntoView: frameFlow.bringIntoView,

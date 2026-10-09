@@ -53,6 +53,7 @@ const {
   onRequestDeleteAll,
   onStartSetFrame,
   onSetFrameSize,
+  onSetTechnique,
   onFitFrame,
   onRemoveFrame,
   canRemoveSelectedLine,
@@ -153,6 +154,7 @@ const deps = computed(() =>
       with-set-frame
       @set-frame="onStartSetFrame(); openPhoneSheet = null"
       @set-size="onSetFrameSize"
+      @set-technique="onSetTechnique"
       @fit="onFitFrame"
       @remove="onRemoveFrame"
     />

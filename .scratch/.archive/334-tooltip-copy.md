@@ -31,6 +31,7 @@ Russian bodies are drafts: check them in review.
 | Dock: Project / Project sheet | Project | | {the Project sheet's items}. | |
 | Menu (Dock, header, phone bar) | Menu | | {the Menu's items}. | |
 | Remove Frame | Remove Frame | | Remove the Frame. Beads stay where they are. / Убрать рамку. Бусины останутся на месте. | There is no Frame to remove. / Рамки нет. — or: Turn off Row progress to change the Frame. / Выключите прогресс рядов, чтобы менять рамку. |
+| Technique (Frame menu, Dock and phone) | Technique / Техника плетения | | Weave the Pattern in another Technique. Every bead keeps its row and column. / Сплести узор другой техникой. Каждая бусина остаётся в своём ряду и столбце. | Turn off Row progress to change the Technique. / Выключите прогресс рядов, чтобы сменить технику. |
 | Remove row/column | Remove row/column | Shift+Del | Remove the selected row or column and close the gap. / Удалить выбранный ряд или столбец и сдвинуть остальное. | Select one whole row or column first. / Сначала выделите целый ряд или столбец. — or: the Row progress reason |
 | Clear | Clear | | Clear everything from the canvas. / Очистить весь холст. | |
 | Palette swatch, Image color swatch, Canvas color swatch | Color | Shift+key (palette only) | #hex | |

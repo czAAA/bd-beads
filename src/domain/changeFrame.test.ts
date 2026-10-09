@@ -27,6 +27,7 @@ describe('changeFrame', () => {
       ['remove', { remove: true }],
       ['rotate', { rotate: true }],
       ['removeLine', { removeLine: { axis: 'row', index: 0 } }],
+      ['technique', { technique: 'peyote' }],
     ]
     it.each(changes)('refuses %s while Row progress is on', (_name, change) => {
       const project = framed({ rowProgress: woven('rows') })
@@ -110,6 +111,37 @@ describe('changeFrame', () => {
       const beads = withColors(square.beads, [{ row: 0, column: 0, color: '#00ff00' }, { row: 5, column: 1, color: '#ff0000' }])
       const result = changeFrame({ ...square, beads }, { rotate: true })
       expect(result).toMatchObject({ kind: 'changed', moved: 1 })
+    })
+  })
+
+  describe('technique', () => {
+    it('changes only the Technique: grid, beads and Frame keep their rows and columns', () => {
+      const project = framed({ beads: withColors({}, [{ row: 11, column: 11, color: '#111111' }]) })
+      const result = changeFrame(project, { technique: 'peyote' })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.technique).toBe('peyote')
+      expect(result.project.frame).toEqual(frame)
+      expect(result.project.beads).toEqual(project.beads)
+      expect(result.moved).toBe(0)
+    })
+
+    it('is no change to the Technique it already has', () => {
+      const project = framed()
+      const result = changeFrame(project, { technique: 'loom' })
+      expect(result.kind === 'unchanged' && result.project).toBe(project)
+    })
+
+    it('works with no Frame', () => {
+      const none = framed()
+      delete none.frame
+      const result = changeFrame(none, { technique: 'brick' })
+      expect(result.kind === 'changed' && result.project.technique).toBe('brick')
+    })
+
+    it('keeps an offset Technique\'s Frame on an even row, taking in the row above', () => {
+      const odd = framed({ frame: { row: 11, column: 10, rows: 6, columns: 4 } })
+      const result = changeFrame(odd, { technique: 'peyote' })
+      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 10, column: 10, rows: 7, columns: 4 })
     })
   })
 

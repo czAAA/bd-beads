@@ -482,17 +482,19 @@ export interface UndoEntry {
   rowProgress: RowProgress
   beadId: string
   frame: Frame | undefined
+  /** The Technique the entry was taken in, so Undo undoes a change of Technique (ticket 351). */
+  technique: Technique
   mirrorAxisCounts: MirrorAxisCounts
 }
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, technique: project.technique, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame })
+  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame, technique: entry.technique })
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */

@@ -42,6 +42,7 @@ const {
   inputModeAvailable,
   toggleInputMode,
   onSetFrameSize,
+  onSetTechnique,
   onFitFrame,
   onRemoveFrame,
   onBringFrameIntoView,
@@ -109,6 +110,7 @@ const {
       @delete-all="onRequestDeleteAll"
       @start-frame="onStartSetFrame"
       @set-frame-size="onSetFrameSize"
+      @set-technique="onSetTechnique"
       @fit-frame="onFitFrame"
       @remove-frame="onRemoveFrame"
       @bring-frame="onBringFrameIntoView"
