@@ -37,6 +37,19 @@ export interface HoverPreview {
   color: string | null
 }
 
+/** How much of a bead as drawn the pointer's marker is (ticket 353, BeadHover card). */
+const POINTER_SCALE = 0.9
+/** The marker's outline when there is no color to show: the hover preview's 2px. */
+const POINTER_OUTLINE_PX = 2
+
+/** The bead-shaped pointer over the board (ticket 353): where the pointer is, in the surface's own px, and the color it shows. */
+interface BeadPointer {
+  x: number
+  y: number
+  /** The chosen color, shown at 60%; none for the dark outline. */
+  color: string | null
+}
+
 export interface OverlayInput {
   /** The Project whose overlay this is: its Row progress decides the marker. */
   project: DrawnProject
@@ -47,6 +60,8 @@ export interface OverlayInput {
   theme?: ProjectTheme
   /** The hover preview to draw over the beads. */
   preview?: HoverPreview
+  /** The marker that stands for the pointer over the beads (ticket 353), with the OS pointer hidden. */
+  pointer?: BeadPointer
   /** The rectangle the Select tool has marked out (ticket 31): a wash over its beads and an outline that reads as one rectangle. */
   selection?: Selection
   /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */
@@ -258,6 +273,38 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     roundedRect(context, x + 2, y + 2, size - 4, size - 4, Math.max(0, roundness - 2))
     context.fill('evenodd')
   }
+}
+
+/**
+ * The pointer's marker (ticket 353): a bead 90% of the size one is drawn at, centred on the pointer rather than on the
+ * bead under it, looking like the hover preview. Drawn in the surface's own px, so it follows zoom but not rotation; a
+ * pen has no CSS cursor, so one drawn marker serves the mouse and the pen alike.
+ */
+function drawPointer(context: DrawingContext, technique: Technique, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
+  const size = CELL_SIZE_PX * zoom * POINTER_SCALE
+  const x = pointer.x - size / 2
+  const y = pointer.y - size / 2
+  const radius = Math.max(0, beadRoundness(technique) * size)
+
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  if (pointer.color) {
+    context.globalAlpha = PREVIEW_OPACITY
+    context.fillStyle = pointer.color
+    if (radius === 0) {
+      context.fillRect(x, y, size, size)
+    } else {
+      context.beginPath()
+      roundedRect(context, x, y, size, size, radius)
+      context.fill()
+    }
+    context.globalAlpha = 1
+    return
+  }
+  context.fillStyle = theme.outline
+  context.beginPath()
+  roundedRect(context, x, y, size, size, radius)
+  roundedRect(context, x + POINTER_OUTLINE_PX, y + POINTER_OUTLINE_PX, size - 2 * POINTER_OUTLINE_PX, size - 2 * POINTER_OUTLINE_PX, Math.max(0, radius - POINTER_OUTLINE_PX))
+  context.fill('evenodd')
 }
 
 /** How much of a bead the Selection's wash covers: its inside, the rim left as it is. */
@@ -514,7 +561,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, marginOutline = 0 } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, marginOutline = 0, pointer } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -524,7 +571,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !(marginOutline > 0)) {
+  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -581,5 +628,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       // A size is a number too: the Rulers toggle hides it with the rest.
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
+  }
+  if (pointer) {
+    drawPointer(context, project.technique, zoom, pixelRatio, pointer, theme)
   }
 }

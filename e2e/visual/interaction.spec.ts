@@ -222,3 +222,27 @@ test.describe('touch', () => {
     expect(await page.evaluate(() => window.scrollY)).toBe(scrolledBefore)
   })
 })
+
+test.describe('the bead-shaped pointer (ticket 353)', () => {
+  test('hides the OS pointer over the beads, and stands a marker of 90% of a bead centred on the pointer', async ({ page }) => {
+    const project = fixtureProject({ technique: 'loom', blank: true })
+    await openApp(page, [project])
+    await setZoom(page, 100)
+    const centre = await pointOn(page, 'loom', false, 100, 3, 5)
+    // Four px right of the bead's centre, the marker reaches 13px past it: into the next bead, which the preview does not touch.
+    const at = { x: centre.x + 4, y: centre.y }
+    await page.mouse.move(at.x, at.y)
+    await settle(page)
+
+    expect(await page.getByTestId('project-surface').evaluate((element) => getComputedStyle(element).cursor)).toBe('none')
+
+    const shot = PNG.sync.read(await page.screenshot({ clip: { x: at.x - 20, y: at.y - 2, width: 40, height: 4 } }))
+    const pixel = (dx: number) => {
+      const index = (2 * shot.width + 20 + dx) * 4
+      return [shot.data[index]!, shot.data[index + 1]!, shot.data[index + 2]!]
+    }
+    // Inside the marker (8px right of the pointer) the paint color shows through; 12px right of it, past its 9px reach, the bead is as it was.
+    expect(pixel(8)).not.toEqual(pixel(12))
+    expect(pixel(-8)).not.toEqual(pixel(-12))
+  })
+})

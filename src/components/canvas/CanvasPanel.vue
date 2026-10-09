@@ -463,7 +463,7 @@ function techniqueWord(technique: Technique): string {
 
 /*
  * Space+drag panning (ticket 95): a grab cursor while Space is held, switching to grabbing once the drag actually starts
- * (BeadHover card). It wins over the board's own crosshair.
+ * (BeadHover card). It wins over the board's own bead-shaped marker.
  */
 .app-shell__canvas--pan,
 .app-shell__canvas--pan :deep(*) {

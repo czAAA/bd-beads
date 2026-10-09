@@ -15,11 +15,11 @@ Open to the implementer: whether this is a generated CSS cursor image per zoom (
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Mouse over the beads on desktop shows the bead-shaped marker, not a crosshair
-- [ ] The marker is 90% of the on-screen bead size at several zoom levels, and centred on the pointer
-- [ ] The marker's shape follows the Technique (rounded in peyote) and its fill follows the hover preview rules (color at 60%, else dark outline)
-- [ ] A hovering pen shows the same marker and drops it when the pen lifts away or leaves; finger touch shows none
-- [ ] Not-allowed (Frame margin), grab (Hand, Space), and the Set Frame cursors are unchanged
-- [ ] BeadHover card, CONTEXT.md and the design system changelog are updated; tests and the visual check cover the marker
+- [x] Mouse over the beads on desktop shows the bead-shaped marker, not a crosshair
+- [x] The marker is 90% of the on-screen bead size at several zoom levels, and centred on the pointer
+- [x] The marker's shape follows the Technique (rounded in peyote) and its fill follows the hover preview rules (color at 60%, else dark outline)
+- [x] A hovering pen shows the same marker and drops it when the pen lifts away or leaves; finger touch shows none
+- [x] Not-allowed (Frame margin), grab (Hand, Space), and the Set Frame cursors are unchanged
+- [x] BeadHover card, CONTEXT.md and the design system changelog are updated; tests and the visual check cover the marker

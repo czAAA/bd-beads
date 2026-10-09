@@ -264,8 +264,12 @@ The one thing that draws a Project's cells — for the editor, the Convert image
 _Avoid_: grid component, exporter, preview renderer
 
 **Drawing surface**:
-What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
+What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
 _Avoid_: canvas (that is the panel), bitmap, canvas element
+
+**Bead pointer** (ticket 353):
+What the pointer is over the beads of an open Project, for a mouse and a hovering pen alike: a small bead-shaped marker, 90% of a bead as drawn (so it follows zoom), centred on the pointer rather than snapped to the bead under it, rounded in peyote and square otherwise, and looking like the hover preview (the chosen color at 60%, else the 2px dark outline). The OS pointer is hidden there; a pen lifting away or leaving the board drops it, and a finger shows none. The other pointers stay: not-allowed over the Frame's margin, grab for the Hand tool and Space, and the Set Frame cursor.
+_Avoid_: crosshair, cursor (that is the keyboard's bead cursor)
 
 **View link**:
 A hosted, encrypted snapshot of a Project that a Guest or any account can create. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit. It expires 3 days after it was last opened, and every open restarts the clock; an expired link is gone, and the Project has to be shared again, as a new link.
