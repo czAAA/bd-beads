@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import App from './App.vue'
 import { beadColor, drawnProject, hoverBead, pressBead, rulerNumbers } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
@@ -82,7 +83,7 @@ describe('App', () => {
       wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').attributes('aria-disabled'),
     ).toBe('true')
 
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
 
     expect(
       wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').element.disabled,
@@ -125,7 +126,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
 
-    await createProjectViaForm(wrapper, '30', '30')
+    await createProjectViaForm(wrapper)
     expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(2)
     expect(loadProjects()).toHaveLength(2)
   })
@@ -135,7 +136,7 @@ describe('App', () => {
     const firstId = loadProjects()[0]!.id
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper, '30', '30')
+    await createProjectViaForm(wrapper)
 
     await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -148,7 +149,7 @@ describe('App', () => {
     const firstId = loadProjects()[0]!.id
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper, '30', '30')
+    await createProjectViaForm(wrapper)
     const secondId = loadProjects().find((project) => project.id !== firstId)!.id
 
     await wrapper.find(`[data-testid="select-project-${secondId}"]`).trigger('click')
@@ -194,7 +195,7 @@ describe('App', () => {
     expect(topBar.find('[data-testid="new-project-button"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
 
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
 
     expect(topBar.find('[data-testid="current-project-summary"]').exists()).toBe(true)
     expect(column.find('[data-testid="bead-select"]').exists()).toBe(false)
@@ -211,7 +212,7 @@ describe('App', () => {
 
     expect(boxOrder()).toEqual(['new-project-box', 'bead-quantities', 'project-list'])
 
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
     expect(boxOrder()).toEqual(['toolbox', 'save-box', 'bead-quantities', 'project-list'])
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click') // back to no Project open, but one is saved
@@ -259,7 +260,7 @@ describe('App', () => {
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="canvas-backdrop"]').exists()).toBe(false)
 
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
 
     const canvas = wrapper.find('[data-testid="app-canvas"]')
     expect(canvas.element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
@@ -291,13 +292,9 @@ describe('App', () => {
   })
 
   it('paints a cell regardless of the Project\'s Technique', async () => {
+    saveProjects([createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })])
     const wrapper = mount(App)
-    await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
-    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
-    await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-    await wrapper.find('[data-testid="width-input"]').setValue('15')
-    await wrapper.find('[data-testid="height-input"]').setValue('30')
-    await wrapper.find('form').trigger('submit')
+    await nextTick()
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -369,7 +366,7 @@ describe('App', () => {
   })
 
   it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
-    const wrapper = await mountWithProject(5, 3) // 3 columns x 2 rows
+    const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
 
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0) // paint (0,0), the top-left bead
@@ -390,7 +387,7 @@ describe('App', () => {
   })
 
   it('comes back to upright after four turns (ticket 233)', async () => {
-    const wrapper = await mountWithProject(5, 3)
+    const wrapper = await mountWithProject(4.5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -407,7 +404,7 @@ describe('App', () => {
   })
 
   it('is one undo step: Undo turns it back and Redo turns it again', async () => {
-    const wrapper = await mountWithProject(5, 3)
+    const wrapper = await mountWithProject(4.5, 3)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
@@ -808,7 +805,7 @@ describe('App', () => {
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper, '6', '6')
+    await createProjectViaForm(wrapper)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
 
@@ -974,7 +971,7 @@ describe('App', () => {
       'app-header__shortcuts',
     ])
 
-    await createProjectViaForm(wrapper, '15', '30')
+    await createProjectViaForm(wrapper)
 
     expect(order()).toEqual([
       'app-header__brand',
@@ -991,7 +988,8 @@ describe('App', () => {
     const header = wrapper.find('[data-testid="app-topbar"]')
     expect(header.find('h1').text()).toBe('bd-beads')
     expect(header.find('h1 [data-testid="app-logo"]').exists()).toBe(true)
-    expect(header.find('[data-testid="current-project-summary"]').text()).toBe('Project 1 · 10×20'.replace('Project 1', loadProjects()[0]!.name))
+    // A new Project is an open canvas (ticket 342): the summary names the Bead and has no size to add yet.
+    expect(header.find('[data-testid="current-project-summary"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
   it('keeps the two primary actions apart: Replace bead and New Project never sit side by side (ticket 142)', async () => {

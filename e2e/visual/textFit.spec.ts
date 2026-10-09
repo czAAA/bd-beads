@@ -207,6 +207,12 @@ const SCREENS: Screen[] = [
     visit: async (page, measure) => {
       if (!(await openNewProject(page))) return false
       await page.locator('[data-testid="convert-image-field"]:visible input[type="file"]').first().setInputFiles({ name: 'picture.png', mimeType: 'image/png', buffer: fixturePicture() })
+      await vis(page, 'convert-size-dialog').waitFor()
+      await vis(page, 'width-input').fill('16')
+      await vis(page, 'height-input').fill('10')
+      await settle(page)
+      await measure('size step')
+      await click(page, 'convert-size-continue')
       await vis(page, 'convert-image-box').waitFor()
       await settle(page)
       await measure()
@@ -219,15 +225,6 @@ const SCREENS: Screen[] = [
       await measure()
     },
   })),
-  {
-    name: 'info popover: new-project-estimate-info',
-    visit: async (page, measure) => {
-      if (!(await openNewProject(page)) || !(await shown(page, 'new-project-estimate-info'))) return false
-      await click(page, 'new-project-estimate-info')
-      await vis(page, 'new-project-estimate-tooltip').waitFor()
-      await measure()
-    },
-  },
   ...[
     ['Beads needed', 'bead-quantities'],
     ['Saved Projects', 'project-list'],
@@ -267,17 +264,15 @@ const SCREENS: Screen[] = [
   },
 ]
 
-/** The New Project form as a first-time visitor has it (no Project open, so it is in place of the Toolbox), filled in with a size. */
+/** The New Project form as a first-time visitor has it (no Project open, so it is in place of the Toolbox), . */
 async function openNewProject(page: Page): Promise<boolean> {
   await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
   await page.reload()
   await page.getByTestId('app-canvas').waitFor()
-  if (!(await reveal(page, 'width-input'))) {
+  if (!(await reveal(page, 'name-input'))) {
     if (!(await shown(page, 'phone-bar-new-project'))) return false
     await click(page, 'phone-bar-new-project')
   }
-  await vis(page, 'width-input').fill('16')
-  await vis(page, 'height-input').fill('10')
   await settle(page)
   return true
 }

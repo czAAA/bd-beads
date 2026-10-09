@@ -3,14 +3,18 @@ import { computed, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { resolveProjectBead, type Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
+import { useSizeUnit } from '../../composables/project/useSizeUnit'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
- * The body of the Frame row (MirrorSizeControls card, ticket 233): Columns and Rows steppers, Fit to drawing and Remove
- * Frame, and the Frame's Estimated size with its warning as a Note (ticket 328). With no Frame it says what a Frame is and offers Fit
+ * The body of the Frame row (MirrorSizeControls card, ticket 233): the beads | mm switch (ticket 342, remembered on
+ * this device), Width and Height steppers that move one bead per press in either unit, Fit to drawing and Remove
+ * Frame, and the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). With no Frame it
+ * says what a Frame is and offers Fit
  * to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
  * the reason is written under the controls.
  */
@@ -42,12 +46,21 @@ const rows = computed({
   set: (value: number) => emit('set-size', frame.value?.columns ?? 1, value),
 })
 
-const estimate = computed(() => {
-  if (!bead.value || !frame.value) {
-    return undefined
-  }
-  return formatSizeMm(estimatedSizeMm(frame.value, bead.value), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
-})
+/** The unit the size is stated in: kept on the device, never in the Project (ticket 342). */
+const { unit, unitOptions } = useSizeUnit()
+const unitLabelId = useId()
+
+/** The Frame's width and height in mm, for the steppers' fields while the unit is mm (the beads still step one at a time). */
+const sizeMm = computed(() => (bead.value && frame.value ? estimatedSizeMm(frame.value, bead.value) : undefined))
+const widthDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? formatMm(sizeMm.value.widthMm, locale.value) : undefined))
+const heightDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? formatMm(sizeMm.value.heightMm, locale.value) : undefined))
+
+/** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
+const estimate = computed(() =>
+  bead.value && frame.value
+    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: t.value.form.estimateBeads }, locale.value)
+    : undefined,
+)
 
 const lockedNoteId = useId()
 
@@ -64,31 +77,37 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
     <p v-if="!frame" class="frame-controls__note" data-testid="frame-explainer">{{ t.frame.explainer }}</p>
 
     <template v-if="frame">
+      <div class="frame-controls__setting">
+        <span :id="unitLabelId">{{ t.frame.unitLabel }}</span>
+        <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="frame-unit" />
+      </div>
       <label class="frame-controls__setting">
-        <span>{{ t.frame.columnsLabel }}</span>
+        <span>{{ t.frame.widthLabel }}</span>
         <AppStepper
           v-model="columns"
           :min="1"
           :disabled="locked"
           tooltip
           :disabled-body="lockedReason"
-          :decrease-label="t.frame.fewerColumns"
-          :increase-label="t.frame.moreColumns"
+          :display="widthDisplay"
+          :decrease-label="t.frame.decreaseWidth"
+          :increase-label="t.frame.increaseWidth"
           decrease-testid="frame-columns-decrease"
           increase-testid="frame-columns-increase"
           value-testid="frame-columns"
         />
       </label>
       <label class="frame-controls__setting">
-        <span>{{ t.frame.rowsLabel }}</span>
+        <span>{{ t.frame.heightLabel }}</span>
         <AppStepper
           v-model="rows"
           :min="1"
           :disabled="locked"
           tooltip
           :disabled-body="lockedReason"
-          :decrease-label="t.frame.fewerRows"
-          :increase-label="t.frame.moreRows"
+          :display="heightDisplay"
+          :decrease-label="t.frame.decreaseHeight"
+          :increase-label="t.frame.increaseHeight"
           decrease-testid="frame-rows-decrease"
           increase-testid="frame-rows-increase"
           value-testid="frame-rows"
@@ -105,7 +124,7 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
     <p v-if="locked" :id="lockedNoteId" class="frame-controls__note" data-testid="frame-locked">{{ t.size.lockedReason }}</p>
 
     <div v-if="estimate" class="frame-controls__estimate" data-testid="size-estimate-row">
-      <span class="frame-controls__estimate-text" role="group" :aria-label="t.size.estimateLabel" data-testid="size-estimate">≈ {{ estimate }}</span>
+      <span class="frame-controls__estimate-text" role="group" :aria-label="t.size.estimateLabel" data-testid="size-estimate">{{ estimate }}</span>
     </div>
     <AppNote v-if="estimate" data-testid="size-estimate-note">{{ t.size.estimateWarning }}</AppNote>
   </div>

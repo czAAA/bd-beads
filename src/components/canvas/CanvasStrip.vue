@@ -48,7 +48,7 @@ const { t, locale } = useI18n()
 const rulersAction = controlAction('rulers')
 
 const sizeText = (size: { columns: number; rows: number }) =>
-  `${plural(locale.value, size.columns, t.value.canvas.columnsCount)} · ${plural(locale.value, size.rows, t.value.canvas.rowsCount)}`
+  `${t.value.canvas.widthSize.replace('{count}', String(size.columns))} · ${t.value.canvas.heightSize.replace('{count}', String(size.rows))}`
 
 const pieces = computed(() => (props.project ? piecesOf(props.project.beads, props.project.technique) : []))
 

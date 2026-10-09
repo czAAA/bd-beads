@@ -12,11 +12,13 @@ Convert image still asks for a size (ADR 0026), so keep a size step in its own d
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The New Project form has no Frame, Unit or Width & Height sections
-- [ ] The Frame section has the beads | mm switch, remembered on the device
-- [ ] A typed mm value rounds up to whole beads; steppers move one bead at a time
-- [ ] Estimated size shows the other unit
-- [ ] Width and Height are the labels everywhere a Pattern size is shown
-- [ ] The design-system cards and changelog are updated
+- [x] The New Project form has no Frame, Unit or Width & Height sections
+- [x] The Frame section has the beads | mm switch, remembered on the device
+- [x] A typed mm value rounds up to whole beads; steppers move one bead at a time
+- [x] Estimated size shows the other unit
+- [x] Width and Height are the labels everywhere a Pattern size is shown
+- [x] The design-system cards and changelog are updated
+
+**Notes:** the Frame section's unit switch is beads | mm; the stepper field shows the Frame's width or height in mm and a press adds or removes one bead. A typed mm value rounds up in the shared conversion (`computeGridDimensions`), which Convert image's new size dialog (`ConvertImageSizeDialog`) uses. The dialog replaces the form's Frame, Unit and Width & Height sections and its Estimate info popup; the unit conversion row (ticket 179) went with them. The canvas strip, the Frame announcement and the Frame section say Width and Height; the Project's accessible label still reads "N by M beads".

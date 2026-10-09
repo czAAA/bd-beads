@@ -281,16 +281,4 @@ describe('New Project with the Frame optional', () => {
     expect(loadProjects()).toHaveLength(1)
     expect(wrapper.find('[data-testid="project-list"]').exists() || wrapper.text().includes(loadProjects()[0]!.name)).toBe(true)
   })
-
-  it('creates a Project with a Frame of the stated size when one is given', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await flushPromises()
-    await wrapper.find('[data-testid="width-input"]').setValue('6')
-    await wrapper.find('[data-testid="height-input"]').setValue('4')
-    await wrapper.find('form.new-project-form').trigger('submit')
-    await flushPromises()
-
-    expect(savedFrame()).toEqual({ row: 0, column: 0, columns: 6, rows: 4 })
-    expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.stripTitle)
-  })
 })

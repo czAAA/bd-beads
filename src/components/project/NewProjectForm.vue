@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, useId, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import type { SizeUnit, Technique } from '../../domain/grid'
+import type { Technique } from '../../domain/grid'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -12,13 +12,13 @@ import {
   ImageConversionError,
   type DecodeImage,
 } from '../../domain/imageConversion'
-import { isSlowFramingSize, SLOW_FRAMING_CELLS } from '../../domain/imageFraming'
+import { SLOW_FRAMING_CELLS } from '../../domain/imageFraming'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
-import { estimatedSizeMm, formatSizeConversion, formatSizeMm, gridFromSize } from '../../domain/projectSize'
+import type { StatedSize } from '../../domain/projectSize'
 import { useTourFormReset } from '../../composables/tour/useTour'
-import { TOUR_COLUMNS, TOUR_ROWS } from '../../domain/tour'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
+import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
@@ -26,11 +26,10 @@ import FieldSelect from '../ui/form/FieldSelect.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import LoadingState from '../ui/LoadingState.vue'
-import NumberField from '../ui/form/NumberField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -65,22 +64,14 @@ const emit = defineEmits<{
 const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>('loom')
-const widthText = ref('')
-const heightText = ref('')
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
-/** Beads by default (ADR 0026): a weaver counts beads, and mm/cm are converted to a grid once, through the chosen Bead. */
-const unit = ref<SizeUnit>('beads')
-
-/** The Tour's "Back to loom for your first Project" (ticket 80): Loom, the default Bead and the Tour Project's size, with the Name left as typed. */
+/** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as typed. */
 const tourReset = useTourFormReset()
 if (tourReset) {
   watch(tourReset, () => {
     technique.value = 'loom'
     beadId.value = BEAD_CATALOG[0]!.id
-    unit.value = 'beads'
-    widthText.value = String(TOUR_COLUMNS)
-    heightText.value = String(TOUR_ROWS)
   })
 }
 
@@ -94,33 +85,8 @@ onMounted(() => {
   input?.select()
 })
 
-const width = computed(() => Number(widthText.value))
-const height = computed(() => Number(heightText.value))
 const selectedBead = computed(() => BEAD_CATALOG.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
-
-/** Whether either size field has been filled: with both empty the Project is an open canvas with no Frame, and with one the other is required. */
-const sizeEntered = computed(() => widthText.value.trim() !== '' || heightText.value.trim() !== '')
-
-/** A size in beads is a whole number of them, at least one; mm/cm just have to be positive. */
-const isSizeStated = computed(() => {
-  const stated = width.value > 0 && height.value > 0
-  return unit.value === 'beads' ? stated && Number.isInteger(width.value) && Number.isInteger(height.value) : stated
-})
-
-/**
- * The grid the stated size works out to, in whichever unit it was stated: beads are the columns and rows directly, and
- * mm/cm are converted through the chosen Bead. The single source the slow-framing hint and (via the emitted
- * draft, see domain/project's projectGeometry) Convert image's frame all read, so none of them can disagree about it.
- */
-const dimensions = computed(() =>
-  isSizeStated.value && selectedBead.value
-    ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, selectedBead.value)
-    : undefined,
-)
-
-/** Create Project waits only for a size that is half-stated or wrong: no size at all is a canvas to draw on anywhere. */
-const isValid = computed(() => !sizeEntered.value || isSizeStated.value)
 
 const techniqueOptions = computed(() => [
   { value: 'loom' as const, label: t.value.form.techniqueLoom },
@@ -128,98 +94,41 @@ const techniqueOptions = computed(() => [
   { value: 'brick' as const, label: t.value.form.techniqueBrick },
 ])
 
-const unitOptions = computed(() => [
-  { value: 'beads' as const, label: t.value.form.unitBeads },
-  { value: 'mm' as const, label: t.value.form.unitMm },
-  { value: 'cm' as const, label: t.value.form.unitCm },
-])
-
-/** Beside Unit: the stated size in the other unit (NewProjectForm card), "≈ 64 × 48 mm" or "≈ 40×30 beads". */
-const estimate = computed(() => {
-  const grid = dimensions.value
-  const bead = selectedBead.value
-  if (!grid || !bead) return undefined
-  if (unit.value === 'beads') {
-    return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}`
-  }
-  return t.value.form.estimateBeads.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
-})
-
-/**
- * The Unit picker's conversion row (ticket 179): both axes' bead-to-real-world conversion, live off the same
- * `dimensions`/`selectedBead` the rest of the form reads, so it never disagrees with `estimate` above.
- */
-const sizeConversion = computed(() => {
-  const grid = dimensions.value
-  const bead = selectedBead.value
-  if (!grid || !bead) return undefined
-  return formatSizeConversion(grid, bead, { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
-})
-
-/** Ticket 170: the same "this is an estimate, not a measurement" explanation Size gives, on hover/focus of an info button beside it. */
-const estimateTooltipId = useId()
-const estimateTipOpen = ref(false)
-
-/** Which size fields have been left once, so their errors wait until then rather than greeting an empty form. */
-const touched = ref({ width: false, height: false })
-
-/** A size field's error, saying what to enter (`writing.md`, Field error); none until the field has been left. */
-function sizeError(text: string, value: number, field: 'width' | 'height'): string | undefined {
-  // Nothing in either field is an open canvas, not an error; one filled field asks for the other at once.
-  if (!sizeEntered.value) return undefined
-  const missing = text.trim() === ''
-  if (!missing && !touched.value[field]) return undefined
-  if (missing || !(value > 0)) return field === 'width' ? t.value.form.enterWidth : t.value.form.enterHeight
-  if (unit.value === 'beads' && !Number.isInteger(value)) return t.value.form.enterWholeBeads
-  return undefined
-}
-
-const widthError = computed(() => sizeError(String(widthText.value), width.value, 'width'))
-const heightError = computed(() => sizeError(String(heightText.value), height.value, 'height'))
-
-const techniqueLabel = computed<Record<Technique, string>>(() => ({
-  loom: t.value.form.techniqueLoom,
-  peyote: t.value.form.techniquePeyote,
-  brick: t.value.form.techniqueBrick,
-}))
-
-/**
- * The slow-framing heads-up (ticket 61): shown once the current Bead + Technique + size implies a grid at or past
- * that Technique's threshold (see domain/imageFraming's isSlowFramingSize), before any picture is even chosen. Live
- * off the same fields the form's own `draft` emit watches, so it needs no resubmit and no file picked first.
- */
-const slowFramingWarning = computed(() => {
-  if (!isValid.value || !dimensions.value) {
-    return undefined
-  }
-
-  if (!isSlowFramingSize(technique.value, dimensions.value, props.slowFramingCellThresholds)) {
-    return undefined
-  }
-
-  return t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueLabel.value[technique.value])
-})
-
+/** What Create Project makes: an open canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
     beadId: beadId.value,
-    ...(isSizeStated.value ? { size: { width: width.value, height: height.value, unit: unit.value } } : {}),
     makerName: makerName.value.trim(),
   }
 }
 
-watch([name, beadId, technique, widthText, heightText, unit, makerName], () => emit('draft', currentInput()), {
-  immediate: true,
-})
+/** The size Convert image's size step was given; only the framing step reads it, so Create never carries it. */
+const convertSize = ref<StatedSize>()
+
+/** The draft Convert image's frame follows: the form's values plus the size stated in the size step, once there is one. */
+function draftInput(): CreateProjectInput {
+  return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
+}
+
+watch([name, beadId, technique, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
 
 function onSubmit() {
-  if (!isValid.value) {
-    return
-  }
-
   emit('submit', currentInput())
+}
+
+/** A decoded picture waiting for its Pattern size (ticket 342, ADR 0026); the size step is open while there is one. */
+const pendingImage = ref<PixelData>()
+
+/** The size is stated: the draft carries it first, so the frame the shell builds has a size to follow, then framing starts. */
+function onSizeConfirm(size: StatedSize) {
+  const image = pendingImage.value
+  if (!image) return
+  convertSize.value = size
+  pendingImage.value = undefined
+  emit('draft', draftInput())
+  emit('convert-image', image)
 }
 
 /** Why the last chosen picture was turned away, if it was — one of domain/imageConversion's ImageRejection reasons. */
@@ -263,7 +172,7 @@ async function convertFile(file: File): Promise<void> {
   try {
     if (!convertRejection.value) {
       reading.value = true
-      emit('convert-image', await props.decodeImage(file))
+      pendingImage.value = await props.decodeImage(file)
     }
   } catch (error) {
     convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
@@ -275,18 +184,18 @@ async function convertFile(file: File): Promise<void> {
 /** Whether a chosen picture is being read: a big one takes a moment, and says so once it does (ticket 158). */
 const reading = ref(false)
 
-/** A picture dropped on Convert image: only once a size is stated, the same as picking one. */
+/** A picture dropped on Convert image: the same as picking one. */
 function onDropImage(file: File) {
-  if (isSizeStated.value) void convertFile(file)
+  void convertFile(file)
 }
 </script>
 
 <template>
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the left column's first box: Name (optional), Maker's
-    name (ticket 182, also optional and blank by default), Bead, Technique, Width and Height in their Unit with the
-    size in the other unit beside it, a computed bead-to-real-world conversion row for both axes (ticket 179), Create
-    Project, then "or" and Convert image. Create and Convert both wait for a size; its reason is written at the field.
+    name (ticket 182, also optional and blank by default), Bead, Technique, Create Project, then "or" and Convert image.
+    It states no size (ticket 342): a Project starts as an open canvas and its size is set in the Toolbox's Frame
+    section. Convert image still needs one, so choosing a picture opens its own size step before framing.
   -->
   <form ref="formEl" class="new-project-form" data-tour="new-project" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
@@ -323,115 +232,14 @@ function onDropImage(file: File) {
       />
     </FormField>
 
-    <!-- The Frame is optional (NewProjectForm card): Width and Height with their Unit; empty makes a canvas to draw on anywhere. -->
-    <p class="new-project-form__frame-heading" data-testid="new-project-frame-heading">
-      <span class="new-project-form__frame-title">{{ t.form.frameLabel }}</span>
-      <span class="new-project-form__frame-aside">{{ t.form.optional }}</span>
-    </p>
-
-    <FormField :label="t.form.unitLabel" label-id="unit-label">
-      <template v-if="estimate" #aside>
-        <span class="new-project-form__estimate">
-          <span data-testid="new-project-estimate-text">{{ estimate }}</span>
-          <span class="new-project-form__estimate-info-wrap">
-            <button
-              type="button"
-              class="new-project-form__estimate-info"
-              data-testid="new-project-estimate-info"
-              :aria-label="t.size.estimateInfoButton"
-              :aria-describedby="estimateTooltipId"
-              @mouseenter="estimateTipOpen = true"
-              @mouseleave="estimateTipOpen = false"
-              @focus="estimateTipOpen = true"
-              @blur="estimateTipOpen = false"
-              @keydown.escape="estimateTipOpen = false"
-            >
-              <AppIcon name="info" :size="14" />
-            </button>
-            <span
-              v-show="estimateTipOpen"
-              :id="estimateTooltipId"
-              role="tooltip"
-              class="new-project-form__estimate-tooltip"
-              data-testid="new-project-estimate-tooltip"
-            >
-              {{ t.size.estimateWarning }}
-            </span>
-          </span>
-        </span>
-      </template>
-      <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="unit-label" data-testid="unit-select" />
-    </FormField>
-
-    <div class="new-project-form__pair">
-      <FormField :label="t.form.widthLabel" label-for="width-input" :error="widthError" error-testid="width-error">
-        <NumberField
-          id="width-input"
-          v-model="widthText"
-          data-testid="width-input"
-          testid-prefix="width-input"
-          :whole="unit === 'beads'"
-          :invalid="!!widthError"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
-          stepper
-          digits-only
-          :placeholder="unit"
-          :decrease-label="t.form.decreaseWidthButton"
-          :increase-label="t.form.increaseWidthButton"
-          @blur="touched.width = true"
-        />
-      </FormField>
-      
-      <FormField :label="t.form.heightLabel" label-for="height-input" :error="heightError" error-testid="height-error">
-        <NumberField
-          id="height-input"
-          v-model="heightText"
-          data-testid="height-input"
-          testid-prefix="height-input"
-          :whole="unit === 'beads'"
-          :invalid="!!heightError"
-          :min="unit === 'beads' ? 1 : 0"
-          :step="unit === 'beads' ? 1 : 'any'"
-          stepper
-          digits-only
-          :placeholder="unit"
-          :decrease-label="t.form.decreaseHeightButton"
-          :increase-label="t.form.increaseHeightButton"
-          @blur="touched.height = true"
-        />
-      </FormField>
-    </div>
-
-
-
-    <p v-if="!sizeEntered" class="new-project-form__hint" data-testid="new-project-frame-hint">{{ t.form.frameHint }}</p>
-
-    <p v-if="sizeConversion" class="new-project-form__conversion" data-testid="size-conversion">
-      <span>{{ sizeConversion }}</span>
-      <AppTooltip :name="t.form.sizeConversionInfo" placement="top">
-        <template #default="{ describedby }">
-          <button
-            type="button"
-            class="ui-control new-project-form__conversion-info"
-            data-testid="size-conversion-info"
-            :aria-label="t.form.sizeConversionInfoButton"
-            :aria-describedby="describedby"
-          >
-            <AppIcon name="info" :size="14" />
-          </button>
-        </template>
-      </AppTooltip>
-    </p>
-
-    <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" :disabled="!isValid">
+    <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus">
       {{ t.form.submit }}
     </AppButton>
 
     <!--
-      Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty grid, at the
-      size stated above. It needs that size before there is a frame to fit a picture into, so it waits for one the same
-      way Create does, and says so under it. The limits are always written under it too.
+      Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty canvas. It needs
+      a size before there is a frame to fit the picture into, so a chosen picture opens the size step (ticket 342). The
+      limits are always written under it.
     -->
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
     <div class="new-project-form__convert" data-testid="convert-image-field">
@@ -449,23 +257,26 @@ function onDropImage(file: File) {
           icon="image"
           data-testid="convert-image-input"
           :accept="imageInputAccept()"
-          :disabled="!isSizeStated"
-          :disabled-reason="t.form.convertNeedsFrame"
           @change="onConvertImage"
           @drop-file="onDropImage"
         />
       </AppTooltip>
       <p class="new-project-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
       <LoadingState v-if="reading" compact :text="t.convertImage.readingPicture" />
-      <p v-if="slowFramingWarning" class="new-project-form__warning" data-testid="convert-image-slow-framing-warning">
-        <AppIcon name="warning" :size="14" />
-        <span>{{ slowFramingWarning }}</span>
-      </p>
       <p v-if="convertError" class="new-project-form__error" role="alert" data-testid="convert-image-error">
         <AppIcon name="warning" :size="14" />
         <span>{{ convertError }}</span>
       </p>
     </div>
+
+    <ConvertImageSizeDialog
+      v-if="pendingImage && selectedBead"
+      :bead="selectedBead"
+      :technique="technique"
+      :slow-framing-cell-thresholds="slowFramingCellThresholds"
+      @confirm="onSizeConfirm"
+      @cancel="pendingImage = undefined"
+    />
   </form>
 </template>
 
@@ -474,76 +285,15 @@ function onDropImage(file: File) {
   flex-direction: column;
 }
 
-/* The Frame group's heading: the label in `control`, "optional" beside it in `meta-small` (FormField's own label row). */
-.new-project-form__frame-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin: 0 0 calc(var(--space-16) * -0.5);
-}
-
-.new-project-form__frame-title {
-  font: var(--type-control);
-  color: var(--ink);
-}
-
-.new-project-form__frame-aside {
-  font: var(--type-meta-small);
-  color: var(--muted);
-}
-
 .new-project-form {
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
 }
 
-.new-project-form__pair {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-10);
-}
-
 .new-project-form__submit {
   width: 100%;
   height: var(--field-height);
-}
-
-/* The Unit picker's conversion row (ticket 179): the same muted meta line as the hint/warning/error rows below Convert image, plus an inline info tooltip trigger right after the text. */
-.new-project-form__conversion {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  margin: calc(-1 * var(--space-8)) 0 0;
-  font: var(--type-meta);
-  font-family: var(--font-sans);
-  color: var(--muted);
-}
-
-.new-project-form__conversion-info {
-  display: inline-grid;
-  flex: none;
-  place-items: center;
-  width: var(--expand-size);
-  height: var(--expand-size);
-  padding: 0;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: var(--radius-full);
-  cursor: help;
-}
-
-@media (hover: hover) {
-  .new-project-form__conversion-info:hover {
-    color: var(--ink);
-    background: var(--hover-fill);
-  }
-}
-
-.new-project-form__conversion-info:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 /* "or", between two rules. */
@@ -571,7 +321,6 @@ function onDropImage(file: File) {
 }
 
 .new-project-form__hint,
-.new-project-form__warning,
 .new-project-form__error {
   display: flex;
   gap: var(--space-6);
@@ -582,15 +331,6 @@ function onDropImage(file: File) {
   color: var(--muted);
 }
 
-.new-project-form__warning {
-  color: var(--body);
-}
-
-.new-project-form__warning > .icon {
-  margin-top: var(--space-2);
-  color: var(--warning);
-}
-
 .new-project-form__error {
   color: var(--danger);
 }
@@ -599,58 +339,4 @@ function onDropImage(file: File) {
   margin-top: var(--space-2);
 }
 
-/* The Unit field's aside (ticket 170): the size in the other unit, plus Size's own "estimate, not a measurement" info tooltip. */
-.new-project-form__estimate {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.new-project-form__estimate-info-wrap {
-  position: relative;
-  display: inline-flex;
-}
-
-.new-project-form__estimate-info {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--expand-size);
-  height: var(--expand-size);
-  padding: 0;
-  color: var(--muted);
-  background: none;
-  border: 0;
-  border-radius: var(--radius-full);
-  cursor: help;
-}
-
-@media (hover: hover) {
-  .new-project-form__estimate-info:hover {
-    color: var(--ink);
-    background: var(--hover-fill);
-  }
-}
-
-.new-project-form__estimate-info:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.new-project-form__estimate-tooltip {
-  position: absolute;
-  top: calc(100% + var(--space-6));
-  right: 0;
-  z-index: var(--z-tooltip);
-  box-sizing: border-box;
-  width: var(--tooltip-wide);
-  padding: var(--space-6) var(--space-8);
-  font: var(--type-small);
-  line-height: 1rem;
-  color: var(--canvas);
-  text-transform: none;
-  white-space: normal;
-  background: var(--ink);
-  border-radius: var(--radius-sm);
-}
 </style>

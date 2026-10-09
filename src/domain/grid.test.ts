@@ -65,18 +65,25 @@ describe('computeGridDimensions', () => {
 
   it('counts columns in the bead width plus its per-bead correction', () => {
     const correctedBead: Bead = { ...cubeBead, widthMm: 1.5, widthCorrectionMm: 0.15 }
-    // 15 / 1.65 = 9.1 columns, where the bare 1.5mm width would give 10. Rows ignore the correction.
-    expect(computeGridDimensions({ widthMm: 15, heightMm: 15 }, correctedBead)).toEqual({
-      columns: 9,
+    // 16.5 / 1.65 = 10 columns, where the bare 1.5mm width would give 11. Rows ignore the correction.
+    expect(computeGridDimensions({ widthMm: 16.5, heightMm: 15 }, correctedBead)).toEqual({
+      columns: 10,
       rows: 10,
     })
   })
 
-  it('rounds to the nearest whole bead', () => {
-    expect(computeGridDimensions({ widthMm: 17, heightMm: 17 }, cubeBead)).toEqual({
+  it('rounds up to the next whole bead (ticket 342)', () => {
+    expect(computeGridDimensions({ widthMm: 15.1, heightMm: 16 }, cubeBead)).toEqual({
       columns: 11,
       rows: 11,
     })
+  })
+
+  it('keeps an exact multiple of the bead as it is, despite floating-point noise', () => {
+    // 0.3 / 0.1 is 2.9999999999999996 and 0.7 / 0.1 is 6.999999999999999: neither may round up a bead.
+    const fine: Bead = { ...cubeBead, widthMm: 0.1, heightMm: 0.1 }
+    expect(computeGridDimensions({ widthMm: 0.3, heightMm: 0.7 }, fine)).toEqual({ columns: 3, rows: 7 })
+    expect(computeGridDimensions({ widthMm: 0.6, heightMm: 2.1 }, fine)).toEqual({ columns: 6, rows: 21 })
   })
 
   it('never returns fewer than one column or row', () => {

@@ -27,11 +27,8 @@ export async function mountWithProject(widthMm: number, heightMm: number, option
   return wrapper
 }
 
-/** Fills in and submits the New Project form: Toho Cube 1.5mm beads, sized in mm. */
-export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, width: string, height: string) {
+/** Fills in and submits the New Project form: Toho Cube 1.5mm beads. The form states no size (ticket 342), so this makes an open canvas. */
+export async function createProjectViaForm(wrapper: ReturnType<typeof mount>) {
   await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('[data-testid="unit-select"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(width)
-  await wrapper.find('[data-testid="height-input"]').setValue(height)
   await wrapper.find('form').trigger('submit')
 }

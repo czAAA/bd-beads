@@ -9,11 +9,11 @@ beforeEach(() => {
 })
 
 describe('CanvasStrip', () => {
-  it('names the board and its size, joined by a middle dot, with plural forms', () => {
+  it('names the board and its size as Width and Height, joined by a middle dot (ticket 342)', () => {
     const wrapper = mount(CanvasStrip, { props: { size: { columns: 40, rows: 1 }, zoomPercent: 100 } })
 
     expect(wrapper.text()).toContain('Pattern')
-    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('40 columns · 1 row')
+    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('Width 40 · Height 1')
     expect(wrapper.get('svg').attributes('data-icon')).toBe('grid')
   })
 
@@ -26,11 +26,11 @@ describe('CanvasStrip', () => {
     expect(wrapper.text()).not.toMatch(/outside/i)
   })
 
-  it('counts in Russian with one, few and many', () => {
+  it('says Width and Height in Russian too (ticket 342)', () => {
     localStorage.setItem('bd-beads:locale', 'ru')
     const wrapper = mount(CanvasStrip, { props: { size: { columns: 21, rows: 3 } } })
 
-    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('21 столбец · 3 ряда')
+    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('Ширина 21 · Высота 3')
   })
 
   it('holds the zoom, in the order zoom out, level, zoom in, fit, and passes each press on', async () => {

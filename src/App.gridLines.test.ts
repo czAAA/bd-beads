@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import App from './App.vue'
 import { beadColors, drawnProject, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
-import type { Technique } from './domain/project'
-import { loadProjects } from './services/libraryStore'
+import { createProject, type Technique } from './domain/project'
+import { loadProjects, saveProjects } from './services/libraryStore'
 
 /**
  * The ruler-click Selection and "remove selected row/column" Tool (ticket 123): clicking a ruler number selects
@@ -19,12 +20,12 @@ beforeEach(() => {
 const RED = '#e63746'
 const BLUE = '#2f6fed'
 
-async function createInBeads(wrapper: ReturnType<typeof mount>, columns: number, rows: number, technique: Technique = 'loom') {
-  await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find(`[data-testid="technique-select"] [data-value="${technique}"]`).trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(String(columns))
-  await wrapper.find('[data-testid="height-input"]').setValue(String(rows))
-  await wrapper.find('form').trigger('submit')
+/** Mounts the App on a saved Loom/Peyote/Brick Project of Toho Cube 1.5mm beads with a Frame of `columns` x `rows` beads: the New Project form states no size (ticket 342). */
+async function mountSized(columns: number, rows: number, technique: Technique = 'loom') {
+  saveProjects([createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })])
+  const wrapper = mount(App)
+  await nextTick()
+  return wrapper
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = 'red') {
@@ -41,8 +42,7 @@ const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="
 
 describe('Ruler click selects a whole row/column (ticket 123)', () => {
   it('selects the whole row when a row ruler number is clicked', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 5)
+    const wrapper = await mountSized(4, 5)
 
     await pressRulerNumber(wrapper, 'row', 1) // row 2 (index 1)
 
@@ -50,8 +50,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('selects the whole column when a column ruler number is clicked', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 5)
+    const wrapper = await mountSized(4, 5)
 
     await pressRulerNumber(wrapper, 'column', 2) // column 3
 
@@ -59,8 +58,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('works the same from either edge gutter (start or end)', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 5)
+    const wrapper = await mountSized(4, 5)
 
     await pressRulerNumber(wrapper, 'row', 0, 'end')
 
@@ -68,8 +66,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('hands over to the Select tool from any other tool (ticket 313)', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 5)
+    const wrapper = await mountSized(4, 5)
     // Paint is the default active tool; a ruler click selects through Select.
 
     await pressRulerNumber(wrapper, 'row', 0)
@@ -79,8 +76,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('is dropped when Paint is chosen to draw (ticket 313)', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 5)
+    const wrapper = await mountSized(4, 5)
     await pressRulerNumber(wrapper, 'row', 0)
 
     await wrapper.find('[data-testid="tool-paint"]').trigger('click')
@@ -89,8 +85,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('is emptied by an Eraser click, as one undo step (ticket 313)', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 3, 3)
+    const wrapper = await mountSized(3, 3)
     await paint(wrapper, 3)
     await paint(wrapper, 4, 'blue')
     await pressRulerNumber(wrapper, 'row', 1)
@@ -103,8 +98,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
   })
 
   it('replaces whatever was copied, the same as a new drag-marked Selection does', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 4)
+    const wrapper = await mountSized(4, 4)
     await paint(wrapper, 0)
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -121,8 +115,7 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
 
 describe('"Remove selected row/column" Tool (ticket 123)', () => {
   it('is disabled with no Selection, or one that is not a whole row/column', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 4)
+    const wrapper = await mountSized(4, 4)
     expect(removeLineButton(wrapper).attributes('aria-disabled')).toBe('true')
 
     await wrapper.find('[data-testid="tool-select"]').trigger('click')
@@ -133,8 +126,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('enables once a ruler click selects a whole row or column', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 4)
+    const wrapper = await mountSized(4, 4)
 
     await pressRulerNumber(wrapper, 'row', 0)
 
@@ -142,8 +134,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('removes exactly the selected row, from any index, and shifts the rest up, as one undo step', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 3, 4)
+    const wrapper = await mountSized(3, 4)
     await paint(wrapper, 1) // (0,1)
     await paint(wrapper, 10, 'blue') // (3,1), below the row that's about to go
 
@@ -164,8 +155,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('removes exactly the selected column the same way', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 2)
+    const wrapper = await mountSized(4, 2)
     await paint(wrapper, 0) // (0,0)
     await paint(wrapper, 7, 'blue') // (1,3)
 
@@ -180,8 +170,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('clears the Selection once it lands, same as Resize', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 4)
+    const wrapper = await mountSized(4, 4)
     await pressRulerNumber(wrapper, 'row', 0)
 
     await removeLineButton(wrapper).trigger('click')
@@ -190,8 +179,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('is refused while Row progress is on, same as Resize', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 4, 4)
+    const wrapper = await mountSized(4, 4)
     await pressRulerNumber(wrapper, 'row', 0)
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
@@ -203,8 +191,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
   })
 
   it('is drawn as the resized grid', async () => {
-    const wrapper = mount(App)
-    await createInBeads(wrapper, 3, 4)
+    const wrapper = await mountSized(3, 4)
     await pressRulerNumber(wrapper, 'row', 0)
 
     await removeLineButton(wrapper).trigger('click')

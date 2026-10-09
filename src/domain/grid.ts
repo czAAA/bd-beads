@@ -55,9 +55,15 @@ export function toMillimeters(value: number, unit: PhysicalUnit): number {
   return unit === 'cm' ? value * 10 : value
 }
 
+/** Whole beads for a length: always rounded up (ticket 342), so the piece is never smaller than asked; float noise on an exact multiple is not a bead. */
+function beadsFor(lengthMm: number, beadMm: number): number {
+  return Math.max(1, Math.ceil(lengthMm / beadMm - 1e-9))
+}
+
+/** The grid a real-world size needs, a typed mm value always rounding up to the next whole bead (ticket 342). */
 export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDimensions {
-  const columns = Math.max(1, Math.round(size.widthMm / beadPitchMm(bead)))
-  const rows = Math.max(1, Math.round(size.heightMm / bead.heightMm))
+  const columns = beadsFor(size.widthMm, beadPitchMm(bead))
+  const rows = beadsFor(size.heightMm, bead.heightMm)
   return { columns, rows }
 }
 

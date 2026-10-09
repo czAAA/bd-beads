@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openApp, setZoom } from '../support/app'
+import { openApp, setZoom, stateConvertSize } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
 /**
@@ -14,13 +14,12 @@ test.describe('Convert image framing', () => {
     test(technique, async ({ page }) => {
       await openApp(page, [])
       await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
-      await page.getByTestId('width-input').fill('16')
-      await page.getByTestId('height-input').fill('10')
       await page.getByTestId('convert-image-input').setInputFiles({
         name: 'fixture.png',
         mimeType: 'image/png',
         buffer: fixturePicture(),
       })
+      await stateConvertSize(page, 16, 10)
       const preview = page.getByTestId('convert-image-box')
       await preview.waitFor()
 

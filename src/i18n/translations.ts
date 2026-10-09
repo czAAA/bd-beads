@@ -45,18 +45,10 @@ export interface Translations {
     enterWidth: string
     enterHeight: string
     enterWholeBeads: string
-    /** Under Convert image while it waits for a size. */
-    frameLabel: string
-    frameHint: string
-    convertNeedsFrame: string
     /** Between Create Project and Convert image. */
     or: string
-    /** Beside Unit: the stated size in the other unit, "≈ 40×30 beads". */
+    /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
-    /** The Unit picker's conversion row info tooltip trigger's accessible name (ticket 179). */
-    sizeConversionInfoButton: string
-    /** The conversion row's tooltip: it is a mathematical estimate, and a real result may differ (ticket 179). */
-    sizeConversionInfo: string
   }
   /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -115,9 +107,9 @@ export interface Translations {
     zoomPillMovedAnnouncement: string
     /** The canvas strip's title (ticket 143). */
     stripTitle: string
-    /** The strip's size meta, "40 columns · 30 rows": each count in its plural form, joined by a spaced middle dot. */
-    columnsCount: PluralForms
-    rowsCount: PluralForms
+    /** The strip's size meta, "Width 40 · Height 30" (ticket 342): each is one of these with its bead count, joined by a spaced middle dot. */
+    widthSize: string
+    heightSize: string
     /** The strip's title while the canvas has no Frame (CanvasStrip card, v16). */
     canvasTitle: string
     /** "3 pieces": how many Pieces the canvas holds. */
@@ -447,12 +439,14 @@ export interface Translations {
     fitToDrawing: string
     removeFrame: string
     done: string
-    columnsLabel: string
-    rowsLabel: string
-    fewerColumns: string
-    moreColumns: string
-    fewerRows: string
-    moreRows: string
+    /** The Frame section's size controls (ticket 342): the Pattern size is Width and Height, in beads or mm. */
+    widthLabel: string
+    heightLabel: string
+    decreaseWidth: string
+    increaseWidth: string
+    decreaseHeight: string
+    increaseHeight: string
+    unitLabel: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */
@@ -480,7 +474,6 @@ export interface Translations {
     /** Names the Estimated size readout for assistive technology. */
     estimateLabel: string
     /** The info icon's accessible name; its tooltip is `estimateWarning`. */
-    estimateInfoButton: string
     /** The warning tooltip on the Estimated size: it is a guide, not a measurement. */
     estimateWarning: string
     /** Hover/focus text on the Frame's controls while Row progress is on and they are disabled. */
@@ -531,6 +524,10 @@ export interface Translations {
    * limits it applies cannot drift apart. Never write the numbers out here.
    */
   convertImage: {
+    /** The size step Convert image asks for before framing a picture (ADR 0026; ticket 342). */
+    sizeTitle: string
+    sizeMessage: string
+    sizeContinue: string
     /** While a chosen picture is read (Loading card). */
     readingPicture: string
     /** The file input's own label in the New Project form. */

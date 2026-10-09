@@ -1,5 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { openApp, projectBox, settle } from '../support/app'
+import { openApp, projectBox, settle, stateConvertSize } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -252,13 +252,12 @@ for (const slowdown of SLOWDOWNS) {
       test(`framing ${name} at ${slowdown}× slowdown`, async ({ page }) => {
         await openApp(page, [])
         await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
-        await page.getByTestId('width-input').fill(String(size.columns))
-        await page.getByTestId('height-input').fill(String(size.rows))
         await page.getByTestId('convert-image-input').setInputFiles({
           name: 'fixture.png',
           mimeType: 'image/png',
           buffer: fixturePicture(480, 320),
         })
+        await stateConvertSize(page, size.columns, size.rows)
         const preview = page.getByTestId('convert-image-box')
         try {
           await preview.waitFor({ timeout: 10_000 })
