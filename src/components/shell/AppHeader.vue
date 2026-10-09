@@ -39,6 +39,7 @@ const headerEl = ref<HTMLElement>()
 const compactImports = useFitByPriority(headerEl, [() => locale.value, () => !!activeProject.value])
 
 const shortcutsAction = controlAction('shortcuts-help')
+const newProjectAction = controlAction('new-project')
 
 /** The header Menu's items by name; its Tooltip lists them (ticket 334). */
 const menuItems = computed(() => [t.value.header.overviewItem, ...(TOUR_ENABLED ? [t.value.header.tourItem] : []), t.value.header.sourceItem])
@@ -111,13 +112,11 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
     <AppButton
       variant="primary"
       icon="plus"
+      :action="newProjectAction"
       data-testid="new-project-button"
       :disabled="projects.length === 0"
-      :tooltip="t.tooltips.newProject"
       @click="onNewProject"
-    >
-      {{ t.projects.newProjectButton }}
-    </AppButton>
+    />
     <LanguageSwitcher />
     <ThemeToggle />
     <!-- Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). -->
