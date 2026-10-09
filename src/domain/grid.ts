@@ -9,6 +9,9 @@ export type SizeUnit = 'beads' | PhysicalUnit
 /** The weaving method, which determines a Project's grid geometry. */
 export type Technique = 'loom' | 'peyote' | 'brick'
 
+/** Every Technique, in the order the choices are listed. */
+export const TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick']
+
 /** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06 — every other row sits half a bead across. */
 export function isOffsetTechnique(technique: Technique): boolean {
   return technique !== 'loom'

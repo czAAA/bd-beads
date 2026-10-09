@@ -4,10 +4,11 @@ import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
-import type { Technique } from '../../domain/grid'
+import { TECHNIQUES, type Technique } from '../../domain/grid'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
@@ -72,12 +73,12 @@ const technique = computed({
   set: (value: Technique) => emit('set-technique', value),
 })
 const techniqueOptions = computed(() => {
-  const tooltip = (name: string) => ({ name, body: techniqueAction.body?.(t.value), disabledBody: techniqueAction.disabledBody?.(t.value, deps.value) })
-  return [
-    { value: 'loom' as const, label: t.value.form.techniqueLoom, tooltip: tooltip(t.value.form.techniqueLoom) },
-    { value: 'peyote' as const, label: t.value.form.techniquePeyote, tooltip: tooltip(t.value.form.techniquePeyote) },
-    { value: 'brick' as const, label: t.value.form.techniqueBrick, tooltip: tooltip(t.value.form.techniqueBrick) },
-  ]
+  const body = techniqueAction.body?.(t.value)
+  const disabledBody = techniqueAction.disabledBody?.(t.value, deps.value)
+  return TECHNIQUES.map((value) => {
+    const name = techniqueName(t.value, value)
+    return { value, label: name, tooltip: { name, body, disabledBody } }
+  })
 })
 
 const lockedNoteId = useId()

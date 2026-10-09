@@ -11,9 +11,16 @@ import type { IconName } from '../icons'
  * Mono. An option may carry an `icon` before its label and a `tooltip` (name and body) shown on hover and focus. A label that doesn't fit wraps to two lines, and every option keeps the same height. A single word wider than
  * its share moves the option to the next row instead of being squeezed (ticket 231).
  */
+/** An option's Tooltip: the `disabledBody` replaces the body while the whole control is disabled. */
+interface OptionTooltip {
+  name: string
+  body?: string
+  disabledBody?: string
+}
+
 const props = withDefaults(
   defineProps<{
-    options: readonly { value: T; label: string; icon?: IconName; tooltip?: { name: string; body?: string; disabledBody?: string } }[]
+    options: readonly { value: T; label: string; icon?: IconName; tooltip?: OptionTooltip }[]
     labelledby?: string
     mono?: boolean
     small?: boolean
@@ -25,7 +32,7 @@ const value = defineModel<T>({ required: true })
 const rootEl = ref<HTMLElement>()
 
 /** What an option's Tooltip says: while the control is disabled and gives a reason, that reason in place of the body (ADR 0035). */
-function tipFor(tooltip: { name: string; body?: string; disabledBody?: string }) {
+function tipFor(tooltip: OptionTooltip) {
   if (props.disabled && tooltip.disabledBody !== undefined) {
     return { name: tooltip.name, disabled: true as const, disabledBody: tooltip.disabledBody, announce: false }
   }

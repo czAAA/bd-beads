@@ -12,7 +12,7 @@ import {
   type BeadMap,
   type Frame,
 } from './canvas'
-import { sameFrame } from './frame'
+import { sameFrame, snapRow } from './frame'
 import {
   neighborsOf,
   positionKey,
@@ -367,6 +367,20 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
   const { frame: _previous, ...rest } = project
   const rowProgress = frame ? clampPointer(project.rowProgress, frame, project.technique) : project.rowProgress
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
+}
+
+/**
+ * The Project woven in another Technique (ticket 351): the grid, Bead and cells stay, only the geometry changes. Offset
+ * Techniques start their Frame on an even row, so a Frame that began on an odd one takes in the empty row above it
+ * rather than moving or losing a row.
+ */
+export function withTechnique(project: Project, technique: Technique): Project {
+  const frame = project.frame
+  const top = frame ? snapRow(technique, frame.row) : 0
+  if (!frame || top === frame.row) {
+    return touch(project, { technique })
+  }
+  return touch(project, { technique, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
 }
 
 /** Shows or hides the row-progress overlay, leaving the pointer where it is. */

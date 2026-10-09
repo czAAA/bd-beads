@@ -5,6 +5,7 @@ import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
 import type { Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
+import { techniqueName } from '../../i18n/techniqueName'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -75,8 +76,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const outcome = deps.edit('frame', (project) => changeFrame(project, { technique }))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
-    const names: Record<Technique, string> = { loom: t.form.techniqueLoom, peyote: t.form.techniquePeyote, brick: t.form.techniqueBrick }
-    deps.announce(t.frame.announceTechnique.replace('{technique}', names[technique]))
+    deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
   }
 
   function start(): void {

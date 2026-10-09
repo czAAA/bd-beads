@@ -145,6 +145,23 @@ describe('changeFrame', () => {
     })
   })
 
+  describe('technique and the margin', () => {
+    it('takes a bead in the row above an odd-row Frame into the Frame rather than moving it', () => {
+      const odd = framed({ frame: { row: 11, column: 10, rows: 6, columns: 4 }, beads: withColors({}, [{ row: 10, column: 11, color: '#111111' }]) })
+      const result = changeFrame(odd, { technique: 'peyote' })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.moved).toBe(0)
+      expect(colorAt(result.project.beads, 10, 11)).toBe('#111111')
+    })
+
+    it('leaves every bead where it was when the Frame stays', () => {
+      const beads = withColors({}, [{ row: 10, column: 10, color: '#111111' }, { row: 15, column: 13, color: '#222222' }])
+      const result = changeFrame(framed({ beads }), { technique: 'brick' })
+      expect(result.kind === 'changed' && result.project.beads).toEqual(beads)
+      expect(result).toMatchObject({ moved: 0 })
+    })
+  })
+
   describe('variants', () => {
     it('removes the Frame, margin and all', () => {
       const result = changeFrame(framed(), { remove: true })
