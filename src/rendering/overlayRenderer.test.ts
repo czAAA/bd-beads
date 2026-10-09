@@ -100,6 +100,18 @@ describe('renderOverlay', () => {
       expect(border(2).named('arcTo')[2]!.args).toEqual([30, 35, 50, 35, R])
     })
 
+    it('keeps the outline of the last peyote row inside the Project (ticket 369)', () => {
+      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
+      const project = projectOf('peyote', 5, 3, { currentRow: 4 })
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // Row 2 ends at y 50, the Project's own edge: the 3px line is drawn 1.5px in from it.
+      expect(markerPath(calls)[0]).toEqual(['moveTo', 0, 48.5 - R])
+      expect(markerPath(calls)[1]).toEqual(['arcTo', 0, 48.5, 20, 48.5, R])
+    })
+
     it('draws nothing for a row that is not there', () => {
       const project = projectOf('loom', 4, 4, { currentRow: 9 })
       const { context, named } = recordingContext()
