@@ -119,23 +119,22 @@ function clearShift(project: Pick<Project, 'technique'>, cells: readonly Cell[],
   }
 
   for (let distance = 1; distance <= limit; distance += 1) {
-    let best: GridPosition | undefined
-    let bestSquare = Infinity
+    // The ring of shifts `distance` away, nearest first, so the first one that fits is the best: testing a shift reads
+    // every bead of the Piece, which on a big drawing is far too much to do for every shift on the ring.
+    const ring: (GridPosition & { square: number })[] = []
     for (let dRow = -distance; dRow <= distance; dRow += 1) {
       if (dRow % rowStep !== 0) {
         continue
       }
       const edge = Math.abs(dRow) === distance
       for (let dColumn = -distance; dColumn <= distance; dColumn += edge ? 1 : 2 * distance) {
-        const square = dRow * dRow + dColumn * dColumn
-        if (square < bestSquare && fits(dRow, dColumn)) {
-          best = { row: dRow, column: dColumn }
-          bestSquare = square
-        }
+        ring.push({ row: dRow, column: dColumn, square: dRow * dRow + dColumn * dColumn })
       }
     }
+    ring.sort((a, b) => a.square - b.square)
+    const best = ring.find((shift) => fits(shift.row, shift.column))
     if (best) {
-      return best
+      return { row: best.row, column: best.column }
     }
   }
   // Unreachable: the search radius reaches past the Frame and every bead, and beads are finite.
