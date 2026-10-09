@@ -43,8 +43,6 @@ const {
   activeTool,
   showRulers,
   toggleRulers,
-  showProgressBar,
-  toggleProgressBar,
   zoomPillPlacement,
   setZoomPillPlacement,
   canUndo,
@@ -104,6 +102,9 @@ const {
   onFrameCancel,
 } = useAppShell()
 
+/** Under 1024px the Progress bar shows exactly while Row progress is on: the Zoom pill's button is the one Row progress action (ticket 338). */
+const rowProgressOn = computed(() => activeProject.value?.rowProgress.enabled === true)
+
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
@@ -144,7 +145,7 @@ function techniqueWord(technique: Technique): string {
   <main class="app-shell__canvas-column">
     <div
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': !showProgressBar && !framing }"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': !rowProgressOn && !framing }"
       data-testid="app-canvas"
     >
       <!--
@@ -185,11 +186,11 @@ function techniqueWord(technique: Technique): string {
           :placement="zoomPillPlacement"
           :zoom-percent="zoomPercent"
           :rulers="showRulers"
-          :progress-bar="showProgressBar"
+          :project="activeProject"
           :can-undo="canUndo"
           :can-redo="canRedo"
           @toggle-rulers="toggleRulers"
-          @toggle-progress-bar="toggleProgressBar"
+          @toggle-row-progress="onToggleRowProgress"
           @undo="onUndo"
           @redo="onRedo"
           @zoom-in="zoomIn"
@@ -304,7 +305,7 @@ function techniqueWord(technique: Technique): string {
       -->
       <ProgressBar
         v-if="activeProject && !framing"
-        :class="{ 'app-shell__progress--hidden': !showProgressBar }"
+        :class="{ 'app-shell__progress--hidden': !rowProgressOn }"
         :project="activeProject"
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
@@ -370,7 +371,7 @@ function techniqueWord(technique: Technique): string {
   display: none;
 }
 
-/* The Zoom pill's Row progress toggle (ticket 296) hides the bar under 1024px only; the Zoom pill that holds the toggle is not there above. */
+/* Under 1024px the bar shows exactly while Row progress is on (ticket 338); from 1024px up it is always there, as its switch is how Row progress is turned on. */
 @media (max-width: 1023px) {
   .app-shell__progress--hidden {
     display: none;

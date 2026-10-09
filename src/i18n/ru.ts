@@ -93,7 +93,7 @@ export const ru: Translations = {
   canvas: {
     zoomInLabel: 'Увеличить',
     zoomOutLabel: 'Уменьшить',
-    zoomResetLabel: 'Сбросить масштаб по размеру схемы',
+    zoomResetLabel: 'Вписать',
     zoomPillMovedAnnouncement: 'Кнопки масштаба перемещены',
     stripTitle: 'Схема',
     columnsCount: { one: '{count} столбец', few: '{count} столбца', many: '{count} столбцов', other: '{count} столбца' },
@@ -103,7 +103,6 @@ export const ru: Translations = {
     noFrame: 'без рамки',
     settingFrame: 'задаётся рамка',
     rulersLabel: 'Линейки',
-    progressBarLabel: 'Панель прогресса',
     canvasColor: {
       label: 'Цвет холста',
       pickerLabel: 'цвет холста',
@@ -556,6 +555,8 @@ export const ru: Translations = {
     customColorFull: 'Палитра заполнена: добавлено {max} цветов.',
     imageColorsDisabled: 'Этот проект создан не из картинки.',
     nothingToUndo: 'Нечего отменять.',
+    zoomOutLimit: 'Дальше уменьшать некуда.',
+    zoomInLimit: 'Дальше увеличивать некуда.',
     nothingToRedo: 'Нечего повторять.',
     copyDisabled: 'Сначала выделите область.',
     pasteDisabled: 'Сначала скопируйте область.',

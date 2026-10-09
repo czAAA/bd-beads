@@ -36,8 +36,6 @@ function onUntilOff(key: string): Preference<boolean> {
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('bd-beads:rulers'),
-  /** Whether the Zoom pill's Row progress toggle shows the Progress bar (ticket 296: on by default). */
-  progressBar: onUntilOff('bd-beads:progress-bar'),
   /** Where the phone's Zoom pill rests (tickets 297, 321). Corner names saved before 321 still load, as their corner's placement. */
   zoomPillPlacement: preference<ZoomPillPlacement>({
     key: 'bd-beads:zoom-pill',

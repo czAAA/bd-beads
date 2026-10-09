@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { piecesOf } from '../../domain/pieces'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const rulersAction = controlAction('rulers')
 
 const sizeText = (size: { columns: number; rows: number }) =>
   `${plural(locale.value, size.columns, t.value.canvas.columnsCount)} · ${plural(locale.value, size.rows, t.value.canvas.rowsCount)}`
@@ -78,18 +80,17 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
     <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
     <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta.main }}<span v-if="sizeMeta.estimate" class="canvas-strip__estimate"> · {{ sizeMeta.estimate }}</span></span>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
-    <IconButton tooltip
+    <IconButton
       v-if="rulers !== undefined"
       class="canvas-strip__rulers"
-      icon="ruler"
       variant="plain"
       :icon-size="16"
-      :label="t.canvas.rulersLabel"
+      :action="rulersAction"
       :selected="rulers"
       data-testid="rulers-toggle"
       @click="emit('toggle-rulers')"
     />
-    <CanvasColorPicker v-if="canvasColor" class="canvas-strip__color" />
+    <div v-if="canvasColor" class="canvas-strip__color"><CanvasColorPicker /></div>
     <ZoomControls
       v-if="zoomPercent !== undefined"
       class="canvas-strip__zoom"
@@ -173,6 +174,8 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
 }
 
 .canvas-strip__color {
+  display: flex;
+  flex: none;
   margin-left: auto;
 }
 

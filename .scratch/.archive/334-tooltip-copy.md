@@ -51,8 +51,8 @@ Russian bodies are drafts: check them in review.
 | Cancel (paste) | Cancel | Escape | | |
 | Rulers | Rulers | R | | |
 | Row progress (switch and Zoom pill button) | Row progress | P | | Set a Frame first. / Сначала задайте рамку. (disabled while there is no Frame) |
-| Zoom out, Zoom in | Zoom out, Zoom in | | | |
-| Fit (zoom) | Fit | | Zoom to fit everything. / Показать всё целиком. | |
+| Zoom out, Zoom in | Zoom out, Zoom in | Ctrl/Cmd+−, Ctrl/Cmd++ | | Already zoomed out as far as it goes. / Дальше уменьшать некуда. (zoom out at the floor); Already zoomed in as far as it goes. / Дальше увеличивать некуда. (zoom in at the top) |
+| Fit (zoom) | Fit | Ctrl/Cmd+0 | Zoom to fit everything. / Показать всё целиком. | |
 | Canvas color | Canvas color | | Set the background color. / Задать цвет фона. | |
 | Turn row direction | Turn row direction | D | | |
 | Row not done | Row not done | Shift+Enter, Shift+Space | | |

@@ -126,10 +126,6 @@ function wireAppShell(services: Services) {
   const showRulers = services.devicePreferences.get('rulers')
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
 
-  /** The Zoom pill's Row progress toggle: whether the Progress bar shows under 1024px (ticket 296). */
-  const showProgressBar = services.devicePreferences.get('progressBar')
-  const toggleProgressBar = () => void (showProgressBar.value = !showProgressBar.value)
-
   /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
   const { inputMode, inputModeAvailable, toggleInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
 
@@ -636,14 +632,12 @@ function wireAppShell(services: Services) {
     scroll,
     showRulers,
     toggleRulers,
-    showProgressBar,
     inputMode,
     toggleInputMode,
     inputModeAvailable,
     surfaceInputMode,
     zoomPillPlacement,
     setZoomPillPlacement,
-    toggleProgressBar,
     panBy,
     scrollBy,
     setZoom,
