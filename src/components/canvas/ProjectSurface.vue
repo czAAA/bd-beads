@@ -8,6 +8,7 @@ import { changedPositions, isInFinishedRow, type Project } from '../../domain/pr
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
+import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
@@ -299,6 +300,68 @@ function drawCells(): void {
   }
 }
 
+/** How many beads a Project stores: counted once per set of beads, since an edit replaces it. */
+const storedCounts = new WeakMap<object, number>()
+
+function storedBeads(project: Project): number {
+  let count = storedCounts.get(project.beads)
+  if (count === undefined) {
+    count = Object.values(project.beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
+    storedCounts.set(project.beads, count)
+  }
+  return count
+}
+
+let settleTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Puts the beads' canvas back to showing exactly what was drawn on it. */
+function clearMove(): void {
+  clearTimeout(settleTimer)
+  settleTimer = undefined
+  if (baseEl.value) baseEl.value.style.transform = ''
+}
+
+/**
+ * Draws the beads, except while a very large piece is being panned or zoomed (ticket 349): there a redraw per step
+ * would freeze the app, so the bitmap already drawn is moved and scaled to follow the gesture, and drawn sharp once it
+ * has been still for SETTLE_MS. Anything else that changes the picture (an edit, a theme, a rotation, a resize) draws at once.
+ */
+function drawCellsOrMove(): void {
+  const before = drawn
+  const canvas = baseEl.value
+  const project = toRaw(props.project)
+  const pixelRatio = globalThis.devicePixelRatio || 1
+  const onlyViewMoved =
+    before &&
+    canvas &&
+    before.project === project &&
+    before.width === size.value.width &&
+    before.height === size.value.height &&
+    before.pixelRatio === pixelRatio &&
+    before.theme === theme.value &&
+    before.positionMarks === positionMarks.value &&
+    before.showFinished === showFinished.value &&
+    props.zoom > 0 &&
+    before.zoom > 0
+  const heavy =
+    onlyViewMoved &&
+    beadsToDraw(storedBeads(project), project.frame ? project.frame.columns * project.frame.rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
+  if (!heavy || !before) {
+    clearMove()
+    drawCells()
+    return
+  }
+
+  const { scale, x, y } = gestureTransform(before, { zoom: props.zoom, scroll: props.scroll })
+  canvas!.style.transformOrigin = '0 0'
+  canvas!.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+  clearTimeout(settleTimer)
+  settleTimer = setTimeout(() => {
+    clearMove()
+    drawCells()
+  }, SETTLE_MS)
+}
+
 /** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
 const marginOpacity = ref(0)
 
@@ -343,7 +406,7 @@ watch([() => props.project, () => props.zoom, () => props.scroll], () => {
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks, showFinished], oncePerFrame(drawCells), { flush: 'post' })
+watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks, showFinished], oncePerFrame(drawCellsOrMove), { flush: 'post' })
 watch(
   [
     size,
@@ -421,6 +484,7 @@ watch(marginOutlineWanted, (wanted) => {
 function refusePress(): void {
   refusedPress.value = true
   clearTimeout(refusedTimer)
+  clearTimeout(settleTimer)
   refusedTimer = setTimeout(() => (refusedPress.value = false), REFUSED_PRESS_MS)
 }
 
