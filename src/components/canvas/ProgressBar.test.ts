@@ -49,15 +49,15 @@ describe('ProgressBar', () => {
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
 
-  it('names Row not done and Row done in words and keeps their hotkeys in the tooltip (ticket 94, plus Space/Shift+Space from ticket 178)', () => {
+  it('names Row not done and Row done in words (ticket 94); their keys are in the Tooltip, not a title', () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
     const previous = wrapper.find('[data-testid="progress-bar-previous"]')
     const next = wrapper.find('[data-testid="progress-bar-next"]')
     expect(previous.text()).toBe(ru.rowProgress.previousButton)
-    expect(previous.attributes('title')).toContain('Shift+Enter, Shift+Space')
+    expect(previous.attributes('title')).toBeUndefined()
     expect(next.text()).toBe(ru.rowProgress.nextButton)
-    expect(next.attributes('title')).toContain('(Enter, Space)')
+    expect(next.attributes('title')).toBeUndefined()
   })
 
   it('shows a compact "current/total" counter and icon-only Previous/Next with the same hover label and hotkeys (ticket 188)', async () => {
@@ -101,11 +101,27 @@ describe('ProgressBar', () => {
     const wrapper = mount(ProgressBar, { props: { project: setRowProgressEnabled(makeProject(), false) } })
 
     expect(wrapper.findAll('button')).toHaveLength(1)
-    expect(wrapper.text()).toBe(ru.toolbox.groups.rowProgress)
+    expect(wrapper.find('.progress-bar__off-label').text()).toBe(ru.toolbox.groups.rowProgress)
     expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--off')
 
     await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
+  })
+
+  it('gives Row done and Row not done their keys and, at the ends, a reason (ticket 339)', () => {
+    const project = makeProject()
+    const atStart = mount(ProgressBar, { props: { project } })
+    expect(atStart.text()).toContain(ru.tooltips.firstRow)
+    expect(atStart.text()).not.toContain(ru.tooltips.lastRow)
+
+    const middle = mount(ProgressBar, { props: { project: moveToRow(project, 4) } })
+    expect(middle.text()).toContain('Enter / Space')
+    expect(middle.text()).toContain('Shift+Enter / Shift+Space')
+    expect(middle.text()).toContain('D')
+    expect(middle.find('[title]').exists()).toBe(false)
+
+    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
+    expect(atEnd.text()).toContain(ru.tooltips.lastRow)
   })
 
   it('turns Row progress off from the switch and the row direction from its button', async () => {
@@ -129,7 +145,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     const wrapper = mount(ProgressBar, { props: { project: openCanvas() } })
 
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
-    expect(toggle.attributes('disabled')).toBeDefined()
+    expect(toggle.attributes('aria-disabled')).toBe('true')
     expect(toggle.attributes('aria-checked')).toBe('false')
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)

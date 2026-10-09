@@ -1,6 +1,6 @@
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
-import type { Project } from '../../domain/project'
+import { rowProgressPosition, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -93,6 +93,8 @@ export type ControlAction = Disableable & {
   modals?: ModalRule
   /** Only with a Project open (the key is left to the browser otherwise). */
   needsProject?: boolean
+  /** The key chip lists every key, not just the first (Row done: Enter, Space). */
+  chipAllKeys?: boolean
   /** Enter and Space give way to a focused Toolbox or Progress bar button, which they press natively. */
   givesWayToFocusedButton?: boolean
 }
@@ -110,6 +112,11 @@ const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translation
 
 const frameLocked = (deps: ControlDeps) => deps.activeProject()?.rowProgress.enabled === true
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
+/** Where Row progress stands, or undefined without a Project or a Frame to count rows on. */
+const rowPosition = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project?.frame ? rowProgressPosition(project) : undefined
+}
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
 /** A control with no key, so it only lists its Tooltip copy (ticket 334); its surface runs it. */
@@ -335,12 +342,19 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-done',
+    icon: 'check',
     name: (t) => t.rowProgress.nextButton,
+    enabled: (deps) => {
+      const position = rowPosition(deps)
+      return !!position && position.current < position.total - 1
+    },
+    disabledBody: (t) => t.tooltips.lastRow,
     group: 'rowProgress',
     chords: [
       { key: 'Enter', label: 'Enter' },
       { key: ' ', label: 'Space' },
     ],
+    chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
       if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(1)
@@ -348,12 +362,16 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-not-done',
+    icon: 'chevron-left',
     name: (t) => t.rowProgress.previousButton,
+    enabled: (deps) => (rowPosition(deps)?.current ?? 0) > 0,
+    disabledBody: (t) => t.tooltips.firstRow,
     group: 'rowProgress',
     chords: [
       { key: 'Enter', shift: true, label: 'Enter' },
       { key: ' ', shift: true, label: 'Space' },
     ],
+    chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
       if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)

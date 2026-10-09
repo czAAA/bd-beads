@@ -558,6 +558,8 @@ export const en: Translations = {
     setFrameFirst: 'Set a Frame first.',
     fitToDrawing: 'Fit the Frame around every bead.',
     noBeadsToFit: 'There are no beads to fit.',
+    firstRow: 'This is the first row.',
+    lastRow: 'This is the last row.',
     zoomFit: 'Zoom to fit everything.',
     canvasColor: 'Set the background color.',
     colors: 'Set up the colors to paint with.',

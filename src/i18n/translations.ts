@@ -631,6 +631,8 @@ export interface Translations {
     setFrameFirst: string
     fitToDrawing: string
     noBeadsToFit: string
+    firstRow: string
+    lastRow: string
     zoomFit: string
     canvasColor: string
     colors: string
