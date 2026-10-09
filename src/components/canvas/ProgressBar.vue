@@ -62,7 +62,9 @@ const directionLabel = computed(() =>
     <template v-if="!hasFrame">
       <span class="progress-bar__row">{{ t.toolbox.groups.rowProgress }}</span>
       <span class="progress-bar__need" data-testid="progress-bar-needs-frame">{{ t.frame.progressNeedsFrame }}</span>
-      <AppButton class="progress-bar__set-frame" variant="box" :action="actions.setFrame" :deps="deps" data-testid="progress-bar-set-frame" @click="emit('set-frame')" />
+      <span class="progress-bar__set-frame">
+        <AppButton variant="box" :action="actions.setFrame" :deps="deps" data-testid="progress-bar-set-frame" @click="emit('set-frame')" />
+      </span>
     </template>
     <template v-else-if="enabled">
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
@@ -96,42 +98,46 @@ const directionLabel = computed(() =>
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
       />
-      <AppButton
-        class="progress-bar__phone-hide"
-        variant="box"
-        :action="actions.notDone"
-        :disabled="position.current === 0"
-        data-testid="progress-bar-previous"
-        data-tour="progress-previous"
-        @click="emit('move-row', -1)"
-      />
-      <IconButton
-        class="progress-bar__phone-only"
-        variant="box"
-        :action="actions.notDone"
-        :disabled="position.current === 0"
-        data-testid="progress-bar-previous-compact"
-        data-tour="progress-previous"
-        @click="emit('move-row', -1)"
-      />
-      <AppButton
-        class="progress-bar__phone-hide"
-        variant="primary"
-        :action="actions.done"
-        :disabled="position.current === position.total - 1"
-        data-testid="progress-bar-next"
-        data-tour="progress-next"
-        @click="emit('move-row', 1)"
-      />
-      <IconButton
-        class="progress-bar__phone-only"
-        variant="box"
-        :action="actions.done"
-        :disabled="position.current === position.total - 1"
-        data-testid="progress-bar-next-compact"
-        data-tour="progress-next"
-        @click="emit('move-row', 1)"
-      />
+      <span class="progress-bar__phone-hide">
+        <AppButton
+          variant="box"
+          :action="actions.notDone"
+          :disabled="position.current === 0"
+          data-testid="progress-bar-previous"
+          data-tour="progress-previous"
+          @click="emit('move-row', -1)"
+        />
+      </span>
+      <span class="progress-bar__phone-only">
+        <IconButton
+          variant="box"
+          :action="actions.notDone"
+          :disabled="position.current === 0"
+          data-testid="progress-bar-previous-compact"
+          data-tour="progress-previous"
+          @click="emit('move-row', -1)"
+        />
+      </span>
+      <span class="progress-bar__phone-hide">
+        <AppButton
+          variant="primary"
+          :action="actions.done"
+          :disabled="position.current === position.total - 1"
+          data-testid="progress-bar-next"
+          data-tour="progress-next"
+          @click="emit('move-row', 1)"
+        />
+      </span>
+      <span class="progress-bar__phone-only">
+        <IconButton
+          variant="box"
+          :action="actions.done"
+          :disabled="position.current === position.total - 1"
+          data-testid="progress-bar-next-compact"
+          data-tour="progress-next"
+          @click="emit('move-row', 1)"
+        />
+      </span>
     </template>
     <span v-else class="progress-bar__off-label">{{ t.toolbox.groups.rowProgress }}</span>
   </div>
@@ -191,6 +197,12 @@ const directionLabel = computed(() =>
    counter and icon-only ones, same rule as the header's own app-header__phone-only/-hide. */
 .progress-bar__phone-only {
   display: none;
+}
+
+/* The wide and compact buttons sit in these spans: the shared controls take their classes on the button itself, inside a Tooltip wrapper, so the swap has to happen out here. */
+.progress-bar__phone-hide,
+.progress-bar__phone-only {
+  flex: none;
 }
 
 @media (max-width: 1023px) {
