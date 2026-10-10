@@ -7,11 +7,11 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Holding − or + on either stepper repeats, accelerates, and stops on release, leave, or the limit
-- [ ] A held press does not add a step on release; a plain click still steps exactly once
-- [ ] Tapping the Stepper's number lets you type a value; Enter/blur commits, Escape cancels, out-of-range is clamped, invalid reverts
-- [ ] Disabled/locked steppers neither repeat nor open for editing
-- [ ] Works with touch and keyboard, with accessible names; the resting look is unchanged
-- [ ] The tests related to the changed files pass; update the visual baselines only where the look changed on purpose
+- [x] Holding − or + on either stepper repeats, accelerates, and stops on release, leave, or the limit
+- [x] A held press does not add a step on release; a plain click still steps exactly once
+- [x] Tapping the Stepper's number lets you type a value; Enter/blur commits, Escape cancels, out-of-range is clamped, invalid reverts
+- [x] Disabled/locked steppers neither repeat nor open for editing
+- [x] Works with touch and keyboard, with accessible names; the resting look is unchanged
+- [x] The tests related to the changed files pass; update the visual baselines only where the look changed on purpose

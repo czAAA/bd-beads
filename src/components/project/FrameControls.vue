@@ -121,6 +121,7 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
           tooltip
           :disabled-body="lockedReason"
           :display="widthDisplay"
+          :value-label="t.frame.widthLabel"
           :decrease-label="t.frame.decreaseWidth"
           :increase-label="t.frame.increaseWidth"
           decrease-testid="frame-columns-decrease"
@@ -137,6 +138,7 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
           tooltip
           :disabled-body="lockedReason"
           :display="heightDisplay"
+          :value-label="t.frame.heightLabel"
           :decrease-label="t.frame.decreaseHeight"
           :increase-label="t.frame.increaseHeight"
           decrease-testid="frame-rows-decrease"

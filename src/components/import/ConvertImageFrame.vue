@@ -400,6 +400,7 @@ onBeforeUnmount(() => {
               v-model="maxColorsModel"
               :min="MIN_IMAGE_COLORS"
               :max="MAX_IMAGE_COLORS"
+              :value-label="t.convertImage.maxColorsLabel"
               :decrease-label="t.convertImage.decreaseColorsButton"
               :increase-label="t.convertImage.increaseColorsButton"
               decrease-testid="convert-image-colors-decrease"

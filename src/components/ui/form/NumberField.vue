@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
 import AppIcon from '../AppIcon.vue'
 import TextField from './TextField.vue'
 
@@ -8,7 +9,7 @@ import TextField from './TextField.vue'
  * keyboard on touch, `decimal` for a length in mm or cm and `numeric` for a count of beads. Optionally paired with a
  * compact up/down stepper (ticket 181) — narrow enough for the New Project form's own sidebar column, unlike the
  * Stepper card's wide − and + buttons — so a caller that wants the field settable entirely by clicking or tapping can
- * turn it on without giving up typing.
+ * turn it on without giving up typing. Holding either button repeats and speeds up (ticket 355).
  */
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
@@ -72,10 +73,20 @@ function rounded(n: number): number {
   return props.whole ? Math.round(n) : Math.round(n * 100) / 100
 }
 
-function applyStep(direction: 1 | -1): void {
-  const next = currentValue() + direction * stepAmount.value
-  value.value = String(rounded(props.min === undefined ? next : Math.max(props.min, next)))
+/** Steps the value; says whether it moved, so a held press knows when it has reached the minimum. */
+function applyStep(direction: 1 | -1): boolean {
+  if (props.disabled) return false
+  const before = currentValue()
+  const next = before + direction * stepAmount.value
+  const result = rounded(props.min === undefined ? next : Math.max(props.min, next))
+  if (result === before && String(value.value) === String(result)) return false
+  value.value = String(result)
+  return true
 }
+
+const hold = useHoldRepeat(applyStep)
+const increaseHandlers = hold.handlers(1)
+const decreaseHandlers = hold.handlers(-1)
 
 /** Down turns away once a step down would pass the field's own minimum (Stepper card: "at the limit the button turns faint"). */
 const decreaseDisabled = computed(() => props.disabled || (props.min !== undefined && currentValue() - stepAmount.value < props.min))
@@ -104,7 +115,7 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
         :data-testid="testidPrefix && `${testidPrefix}-increase`"
         :aria-label="increaseLabel"
         :disabled="disabled"
-        @click="applyStep(1)"
+        v-on="increaseHandlers"
       >
         <AppIcon name="chevron-up" :size="14" />
       </button>
@@ -114,7 +125,7 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
         :data-testid="testidPrefix && `${testidPrefix}-decrease`"
         :aria-label="decreaseLabel"
         :disabled="decreaseDisabled"
-        @click="applyStep(-1)"
+        v-on="decreaseHandlers"
       >
         <AppIcon name="chevron-down" :size="14" />
       </button>
@@ -156,6 +167,8 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
   background: var(--elevated);
   border: 0;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .number-field__step:not(:last-child) {

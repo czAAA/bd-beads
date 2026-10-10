@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import FileButton from './FileButton.vue'
@@ -136,6 +136,39 @@ describe('SegmentedControl', () => {
   })
 })
 
+describe('NumberField stepper', () => {
+  it('repeats while held, stops at the minimum, and a release adds no step', async () => {
+    vi.useFakeTimers()
+    try {
+      const value = ref<string | number | undefined>('4')
+      const wrapper = mount(NumberField, {
+        props: {
+          modelValue: value.value,
+          'onUpdate:modelValue': (next: string | number | undefined) => {
+            value.value = next
+            void wrapper.setProps({ modelValue: next })
+          },
+          stepper: true,
+          min: 1,
+          decreaseLabel: 'Fewer',
+          increaseLabel: 'More',
+          testidPrefix: 'n',
+        },
+      })
+      const minus = wrapper.find('[data-testid="n-decrease"]')
+      await minus.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+      expect(value.value).toBe('3')
+      await vi.advanceTimersByTimeAsync(3000)
+      expect(value.value).toBe('1')
+      await minus.trigger('pointerup')
+      await minus.trigger('click')
+      expect(value.value).toBe('1')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('AppStepper', () => {
   function mountStepper(start: number, props: Record<string, unknown> = {}) {
     const value = ref(start)
@@ -146,6 +179,7 @@ describe('AppStepper', () => {
           value.value = next
           void wrapper.setProps({ modelValue: next })
         },
+        valueLabel: 'Colors',
         decreaseLabel: 'Fewer colors',
         increaseLabel: 'More colors',
         min: 2,
@@ -158,7 +192,7 @@ describe('AppStepper', () => {
 
   it('steps the value by one, each button named for what it does', async () => {
     const { wrapper, value } = mountStepper(3)
-    const [minus, plus] = wrapper.findAll('button')
+    const [minus, plus] = wrapper.findAll('.stepper__button')
 
     expect(minus!.attributes('aria-label')).toBe('Fewer colors')
     expect(plus!.attributes('aria-label')).toBe('More colors')
@@ -169,7 +203,7 @@ describe('AppStepper', () => {
 
   it('turns a button off at its limit', () => {
     const { wrapper } = mountStepper(2)
-    const [minus, plus] = wrapper.findAll<HTMLButtonElement>('button')
+    const [minus, plus] = wrapper.findAll<HTMLButtonElement>('.stepper__button')
 
     expect(minus!.element.disabled).toBe(true)
     expect(plus!.element.disabled).toBe(false)
@@ -180,6 +214,133 @@ describe('AppStepper', () => {
 
     expect(wrapper.classes()).toContain('stepper--disabled')
     expect(wrapper.findAll<HTMLButtonElement>('button').every((button) => button.element.disabled)).toBe(true)
+  })
+
+  it('repeats while a button is held, and a release adds no step', async () => {
+    vi.useFakeTimers()
+    try {
+      const { wrapper, value } = mountStepper(2, { max: 50 })
+      const plus = wrapper.findAll('.stepper__button')[1]!
+      await plus.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+      expect(value.value).toBe(3)
+      await vi.advanceTimersByTimeAsync(1000)
+      const held = value.value
+      expect(held).toBeGreaterThan(4)
+      await plus.trigger('pointerup')
+      await plus.trigger('click')
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(value.value).toBe(held)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stops repeating at the limit', async () => {
+    vi.useFakeTimers()
+    try {
+      const { wrapper, value } = mountStepper(3)
+      await wrapper.findAll('.stepper__button')[1]!.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+      await vi.advanceTimersByTimeAsync(2000)
+      expect(value.value).toBe(4)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  describe('typing the value', () => {
+    async function open(start = 3, props: Record<string, unknown> = {}) {
+      const mounted = mountStepper(start, props)
+      await mounted.wrapper.find('.stepper__value-button').trigger('click')
+      return { ...mounted, input: mounted.wrapper.find<HTMLInputElement>('input') }
+    }
+
+    it('names the number and opens it as a numeric input with the current value', async () => {
+      const { wrapper, input } = await open()
+      expect(wrapper.find('.stepper__value-button').attributes('aria-label')).toBe('Colors')
+      expect(input.attributes('inputmode')).toBe('numeric')
+      expect(input.attributes('aria-label')).toBe('Colors')
+      expect(input.element.value).toBe('3')
+    })
+
+    it('commits on Enter', async () => {
+      const { input, value } = await open()
+      await input.setValue('4')
+      await input.trigger('keydown', { key: 'Enter' })
+      expect(value.value).toBe(4)
+    })
+
+    it('commits on blur', async () => {
+      const { input, value } = await open(2)
+      await input.setValue('3')
+      await input.trigger('blur')
+      expect(value.value).toBe(3)
+    })
+
+    it('cancels on Escape', async () => {
+      const { wrapper, input, value } = await open()
+      await input.setValue('4')
+      await input.trigger('keydown', { key: 'Escape' })
+      expect(value.value).toBe(3)
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
+
+    it('clamps an out-of-range value', async () => {
+      const first = await open()
+      await first.input.setValue('99')
+      await first.input.trigger('keydown', { key: 'Enter' })
+      expect(first.value.value).toBe(4)
+      const second = await open()
+      await second.input.setValue('-5')
+      await second.input.trigger('keydown', { key: 'Enter' })
+      expect(second.value.value).toBe(2)
+    })
+
+    it('reverts on empty or invalid input', async () => {
+      const first = await open()
+      await first.input.setValue('')
+      await first.input.trigger('keydown', { key: 'Enter' })
+      expect(first.value.value).toBe(3)
+      const second = await open()
+      await second.input.setValue('abc')
+      await second.input.trigger('blur')
+      expect(second.value.value).toBe(3)
+    })
+
+    it('reverts on hex or exponent input', async () => {
+      const { input, value } = await open()
+      await input.setValue('0x4')
+      await input.trigger('keydown', { key: 'Enter' })
+      expect(value.value).toBe(3)
+    })
+
+    it('commits the typed number before a button steps from it', async () => {
+      const { wrapper, input, value } = await open(2, { max: 50 })
+      await input.setValue('10')
+      await wrapper.findAll('.stepper__button')[1]!.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+      await input.trigger('blur')
+      expect(value.value).toBe(11)
+    })
+
+    it('closes when the stepper gets locked', async () => {
+      const { wrapper } = await open()
+      await wrapper.setProps({ disabled: true })
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
+
+    it('keeps the number focusable while locked with a reason, but does not open it', async () => {
+      const { wrapper } = mountStepper(3, { disabled: true, disabledBody: 'Locked.' })
+      const button = wrapper.find<HTMLButtonElement>('.stepper__value-button')
+      expect(button.element.disabled).toBe(false)
+      expect(button.attributes('aria-disabled')).toBe('true')
+      await button.trigger('click')
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
+
+    it('does not open while locked', async () => {
+      const { wrapper } = mountStepper(3, { disabled: true })
+      await wrapper.find('.stepper__value-button').trigger('click')
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
   })
 })
 
