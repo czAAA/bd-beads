@@ -23,8 +23,8 @@ import { beadRoundness } from './beadLook'
  * overlay lands on the bead it belongs to at every zoom and rotation.
  */
 
-/** The Row progress marker's thickness: the ring round a bead in the current pass, a bit thicker than a MARKER_PX outline (tickets 352, 376, BeadBoard card). */
-const MARKER_EDGE_PX = 3
+/** The Row progress marker's thickness: the ring round a bead in the current pass (tickets 375, 376, BeadBoard card). */
+const MARKER_RING_PX = 2
 
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
 const PREVIEW_OPACITY = 0.6
@@ -96,33 +96,34 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
-/** A bead of the current line: its cell, top left, its color (none when empty) and whether this pass weaves it (on peyote's later lines only half the line is). */
-interface LineBead {
+/** A bead the current pass weaves: its cell, top left, and its color (none when empty). */
+interface PassBead {
   x: number
   y: number
   color: string | null
-  inPass: boolean
 }
 
-/** The beads of the current line, in order along it, with where each sits and whether this pass weaves it; none when the Frame has no such pass. */
-function lineBeads(project: DrawnProject, space: Space): LineBead[] | undefined {
+/** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none when the Frame has no such pass. */
+function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   const { technique } = project
   const columnWise = project.rowProgress.direction === 'columns'
   const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
   const lines = columnWise ? space.columns : space.rows
   if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines)) {
-    return undefined
+    return []
   }
   const line = lineOfPass(technique, pass)
 
-  const beads: LineBead[] = []
+  const beads: PassBead[] = []
   const length = columnWise ? space.rows : space.columns
   for (let along = 0; along < length; along += 1) {
     const row = space.origin.row + (columnWise ? along : line)
     const column = space.origin.column + (columnWise ? line : along)
     const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX
     const y = rowTopPx(technique, row)
-    beads.push({ x, y, color: colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column), inPass: passOf(technique, line, along) === pass })
+    if (passOf(technique, line, along) === pass) {
+      beads.push({ x, y, color: colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column) })
+    }
   }
   return beads
 }
@@ -131,35 +132,26 @@ function lineBeads(project: DrawnProject, space: Space): LineBead[] | undefined 
  * The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells, so on peyote
  * and brick stitch, where the next row nests into the gaps, their corners are not covered while they are the row being woven.
  */
-function drawLiftedBeads(context: DrawingContext, project: DrawnProject, space: Space, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
+function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
   const cornerRadius = beadRoundness(project.technique) * CELL_SIZE_PX
-  for (const bead of lineBeads(project, space) ?? []) {
-    if (bead.inPass) {
-      drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color ?? theme.emptyBead, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
-    }
+  for (const bead of beads) {
+    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color ?? theme.emptyBead, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
   }
 }
 
 /**
- * The Row progress marker (tickets 352, 375, 376): a ring, MARKER_EDGE_PX thick, round each bead woven in the current
- * pass, on the edge of its cell and a pixel out from the bead's own rim, so its curve is a pixel wider than the bead's
- * corner. Only the beads in the pass are ringed: no line joins them. Drawn on its own the Project's surface ends at its
- * extent, so a ring stays inside it. One path, one stroke.
+ * The Row progress marker (tickets 352, 375, 376): a ring, MARKER_RING_PX thick, round each bead woven in the current
+ * pass, inside its cell with its outer edge on the cell's edge, so it never reaches a neighbour and two rings side by
+ * side stay two. Only the beads in the pass are ringed: no line joins them. One path, one stroke.
  */
-function drawBeadRings(context: DrawingContext, project: DrawnProject, space: Space, theme: ProjectTheme): void {
-  const beads = lineBeads(project, space)?.filter(({ inPass }) => inPass)
-  if (!beads?.length) {
-    return
-  }
+function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, theme: ProjectTheme): void {
   const corner = beadRoundness(project.technique) * CELL_SIZE_PX
-  const keep = (v: number, size: number) => (space.open ? v : Math.min(Math.max(v, MARKER_EDGE_PX / 2), size - MARKER_EDGE_PX / 2))
+  const half = MARKER_RING_PX / 2
   context.strokeStyle = theme.marker
-  context.lineWidth = MARKER_EDGE_PX
+  context.lineWidth = MARKER_RING_PX
   context.beginPath()
   for (const bead of beads) {
-    const left = keep(bead.x, space.extent.width)
-    const top = keep(bead.y, space.extent.height)
-    roundedRect(context, left, top, keep(bead.x + CELL_SIZE_PX, space.extent.width) - left, keep(bead.y + CELL_SIZE_PX, space.extent.height) - top, corner + 1)
+    roundedRect(context, bead.x + half, bead.y + half, CELL_SIZE_PX - MARKER_RING_PX, CELL_SIZE_PX - MARKER_RING_PX, Math.max(0, corner - half))
   }
   context.stroke()
 }
@@ -519,8 +511,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, the marker lifted above its row, and Mirror's axes above everything.
+  const inPass = enabled ? beadsInPass(project, space) : []
   if (enabled) {
-    drawLiftedBeads(context, project, space, zoom, pixelRatio, theme)
+    drawLiftedBeads(context, inPass, project, zoom, pixelRatio, theme)
   }
   if (dimmed) {
     drawDimmed(context, project, space, dimmed, region, zoom, pixelRatio, theme)
@@ -531,8 +524,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (preview) {
     drawPreview(context, project, space, preview, theme)
   }
-  if (enabled) {
-    drawBeadRings(context, project, space, theme)
+  if (inPass.length > 0) {
+    drawBeadRings(context, inPass, project, theme)
   }
   if (axes) {
     drawMirrorAxes(context, project, space, axes, theme)

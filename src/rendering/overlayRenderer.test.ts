@@ -57,15 +57,15 @@ describe('renderOverlay', () => {
       expect(named('lineTo')).toHaveLength(0)
     })
 
-    it('rings every bead of the row on the edge of its cell (ticket 375)', () => {
+    it('rings every bead of the row inside its cell (tickets 375, 376)', () => {
       const project = projectOf('loom', 3, 3, { currentRow: 1 })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       const outline = ringRects(calls)
-      // Row 1 of a 3-wide loom: three beads at x 0, 20, 40 and y 20, each ringed on its cell's edge, the ends kept inside the Project.
-      expect(outline.map((call) => call.args)).toEqual([[1.5, 20, 18.5, 20, 1], [20, 20, 20, 20, 1], [40, 20, 18.5, 20, 1]])
+      // Row 1 of a 3-wide loom: three beads at x 0, 20, 40 and y 20, each ringed 1px in, so its 2px stroke ends on the cell's edge and no ring reaches a neighbour.
+      expect(outline.map((call) => call.args)).toEqual([[1, 21, 18, 18, 0], [21, 21, 18, 18, 0], [41, 21, 18, 18, 0]])
     })
 
     it('rings only the peyote beads woven in the current pass (ticket 375)', () => {
@@ -78,14 +78,14 @@ describe('renderOverlay', () => {
       expect(ringRects(calls)).toHaveLength(2)
     })
 
-    it('keeps the last row\'s rings inside the Project', () => {
+    it('keeps the last row\'s rings inside the Project, with no clamping needed', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      // Row 4 is y 80..100, the Project's own edge: the 3px ring is kept 1.5px in from it.
-      expect(ringRects(calls)[1]!.args).toEqual([20, 80, 20, 18.5, 1])
+      // Row 4 is y 80..100, the Project's own edge: the ring's outer edge is that edge.
+      expect(ringRects(calls)[1]!.args).toEqual([21, 81, 18, 18, 0])
     })
 
     it('rings a brick stitch row where it sits, half a bead across', () => {
@@ -93,11 +93,11 @@ describe('renderOverlay', () => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
-      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([10, 21])
+      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([11, 22])
     })
 
-    it('rings each peyote bead with its own corner radius, a pixel wider than the bead\'s', () => {
-      const R = beadRoundness('peyote') * CELL_SIZE_PX + 1
+    it('rings each peyote bead with its own corner radius, less the half stroke', () => {
+      const R = beadRoundness('peyote') * CELL_SIZE_PX - 1
       const project = projectOf('peyote', 5, 3, { currentRow: 0 })
       const { context, calls } = recordingContext()
 
@@ -124,7 +124,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
-      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[20, 1.5], [20, 20], [20, 40]])
+      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[21, 1], [21, 21], [21, 41]])
       expect(named('lineTo')).toHaveLength(0)
     })
 
@@ -649,7 +649,7 @@ describe('on the open canvas (ADR 0026)', () => {
     const { calls } = overlay(openProject({ currentRow: 1 }), {})
 
     // Frame row 1 is row 7: y 140, and x 100 to 160.
-    expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[100, 140], [120, 140], [140, 140]])
+    expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[101, 141], [121, 141], [141, 141]])
   })
 
   it('draws no Row progress marker with no Frame', () => {
@@ -699,7 +699,7 @@ describe('on its own, in a Project whose first row is odd (regression)', () => {
       return recorded
     })()
 
-    // The first row is row 1 of the Project: shifted half a bead, so its first bead's ring starts at x 10 and not at 0.
-    expect(ringRects(calls)[0]!.args[0]).toBe(10)
+    // The first row is row 1 of the Project: shifted half a bead, so its first bead's ring starts at x 11 (10 and the half stroke) and not at 0.
+    expect(ringRects(calls)[0]!.args[0]).toBe(11)
   })
 })
