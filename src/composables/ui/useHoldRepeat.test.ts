@@ -78,6 +78,27 @@ describe('useHoldRepeat', () => {
     expect(step).toHaveBeenCalledTimes(4)
   })
 
+  it('does not swallow a later plain click when a press ended without one', () => {
+    const { up, value } = setup()
+    up.pointerdown(mouse)
+    up.pointerup()
+    vi.advanceTimersByTime(500)
+    up.click()
+    expect(value()).toBe(2)
+  })
+
+  it('lets go of a captured touch pointer so leaving the button is seen', () => {
+    const { up } = setup()
+    const releasePointerCapture = vi.fn()
+    up.pointerdown({
+      pointerType: 'touch',
+      button: 0,
+      pointerId: 7,
+      currentTarget: { hasPointerCapture: () => true, releasePointerCapture },
+    } as unknown as PointerEvent)
+    expect(releasePointerCapture).toHaveBeenCalledWith(7)
+  })
+
   it('ignores a secondary mouse button', () => {
     const { up, value } = setup()
     up.pointerdown({ pointerType: 'mouse', button: 2 } as PointerEvent)

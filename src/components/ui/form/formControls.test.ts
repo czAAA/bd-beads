@@ -306,6 +306,36 @@ describe('AppStepper', () => {
       expect(second.value.value).toBe(3)
     })
 
+    it('reverts on hex or exponent input', async () => {
+      const { input, value } = await open()
+      await input.setValue('0x4')
+      await input.trigger('keydown', { key: 'Enter' })
+      expect(value.value).toBe(3)
+    })
+
+    it('commits the typed number before a button steps from it', async () => {
+      const { wrapper, input, value } = await open(2, { max: 50 })
+      await input.setValue('10')
+      await wrapper.findAll('.stepper__button')[1]!.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+      await input.trigger('blur')
+      expect(value.value).toBe(11)
+    })
+
+    it('closes when the stepper gets locked', async () => {
+      const { wrapper } = await open()
+      await wrapper.setProps({ disabled: true })
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
+
+    it('keeps the number focusable while locked with a reason, but does not open it', async () => {
+      const { wrapper } = mountStepper(3, { disabled: true, disabledBody: 'Locked.' })
+      const button = wrapper.find<HTMLButtonElement>('.stepper__value-button')
+      expect(button.element.disabled).toBe(false)
+      expect(button.attributes('aria-disabled')).toBe('true')
+      await button.trigger('click')
+      expect(wrapper.find('input').exists()).toBe(false)
+    })
+
     it('does not open while locked', async () => {
       const { wrapper } = mountStepper(3, { disabled: true })
       await wrapper.find('.stepper__value-button').trigger('click')

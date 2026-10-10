@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
 import AppTooltip from '../AppTooltip.vue'
 
@@ -43,11 +43,22 @@ function tooltipFor(name: string, canStep: boolean) {
 /** A locked stepper with a reason stays focusable and hoverable, so the reason can be read. */
 const reasoned = computed(() => props.disabled && props.disabledBody !== undefined)
 
+const editing = ref(false)
+const draft = ref('')
+const input = useTemplateRef<HTMLInputElement>('input')
+const valueButton = useTemplateRef<HTMLButtonElement>('valueButton')
+
+function clamp(n: number) {
+  return Math.min(props.max, Math.max(props.min, n))
+}
+
 /** Steps by one, clamped to min/max; says whether the value moved, so a held press knows when it has reached a limit. */
 function step(delta: number): boolean {
   if (props.disabled) return false
-  const next = Math.min(props.max, Math.max(props.min, value.value + delta))
-  if (next === value.value) return false
+  // The model updates after the parent re-renders, so a typed number committed just now is the base, not `value`.
+  const base = (editing.value ? closeEditor(true, false) : undefined) ?? value.value
+  const next = clamp(base + delta)
+  if (next === base && base === value.value) return false
   value.value = next
   return true
 }
@@ -55,11 +66,6 @@ function step(delta: number): boolean {
 const hold = useHoldRepeat((direction) => step(direction))
 const decreaseHandlers = hold.handlers(-1)
 const increaseHandlers = hold.handlers(1)
-
-const editing = ref(false)
-const draft = ref('')
-const input = useTemplateRef<HTMLInputElement>('input')
-const valueButton = useTemplateRef<HTMLButtonElement>('valueButton')
 
 /** Opens the number for typing (the click is kept from reaching a surrounding label, which would press the first button). */
 async function startEditing(event: Event) {
@@ -73,15 +79,32 @@ async function startEditing(event: Event) {
   input.value?.select()
 }
 
-/** Keeps a whole number inside min/max; empty or invalid input leaves the value as it was. */
-function finishEditing(commit: boolean, refocus: boolean) {
-  if (!editing.value) return
-  editing.value = false
-  const typed = draft.value.trim()
-  const number = typed === '' ? NaN : Number(typed)
-  if (commit && Number.isFinite(number)) value.value = Math.min(props.max, Math.max(props.min, Math.round(number)))
-  if (refocus) void nextTick(() => valueButton.value?.focus())
+/** A plain number, whole or decimal; hex, exponents and the like are not a value (a decimal is rounded to a whole one). */
+function typedNumber(text: string): number {
+  const typed = text.trim().replace(',', '.')
+  return /^[+-]?\d+(\.\d+)?$/.test(typed) ? Number(typed) : NaN
 }
+
+/** Closes the input and returns the number it committed, if any; it is clamped to min/max, empty or invalid input leaves the value as it was. */
+function closeEditor(commit: boolean, refocus: boolean): number | undefined {
+  if (!editing.value) return undefined
+  editing.value = false
+  const number = typedNumber(draft.value)
+  const committed = commit && Number.isFinite(number) ? clamp(Math.round(number)) : undefined
+  if (committed !== undefined) value.value = committed
+  if (refocus) void nextTick(() => valueButton.value?.focus())
+  return committed
+}
+const commitEdit = () => closeEditor(true, true)
+const cancelEdit = () => closeEditor(false, true)
+const commitOnBlur = () => closeEditor(true, false)
+
+watch(
+  () => props.disabled,
+  (locked) => {
+    if (locked) closeEditor(false, false)
+  },
+)
 </script>
 
 <template>
@@ -108,7 +131,8 @@ function finishEditing(commit: boolean, refocus: boolean) {
         :aria-label="valueLabel"
         :aria-hidden="editing || undefined"
         :tabindex="editing ? -1 : undefined"
-        :disabled="disabled"
+        :disabled="disabled && !reasoned"
+        :aria-disabled="reasoned || undefined"
         @click="startEditing"
       >
         {{ display ?? value }}
@@ -122,9 +146,9 @@ function finishEditing(commit: boolean, refocus: boolean) {
         inputmode="numeric"
         autocomplete="off"
         :aria-label="valueLabel"
-        @keydown.enter.prevent="finishEditing(true, true)"
-        @keydown.esc.prevent.stop="finishEditing(false, true)"
-        @blur="finishEditing(true, false)"
+        @keydown.enter.prevent="commitEdit"
+        @keydown.esc.prevent.stop="cancelEdit"
+        @blur="commitOnBlur"
       />
     </span>
     <component :is="tooltipFor(increaseLabel, value < max) ? AppTooltip : 'span'" v-bind="tooltipFor(increaseLabel, value < max) ?? { class: 'stepper__slot' }">
@@ -211,12 +235,14 @@ function finishEditing(commit: boolean, refocus: boolean) {
   padding: 0;
   font: inherit;
   color: inherit;
+  line-height: inherit;
   background: none;
   border: 0;
   cursor: text;
 }
 
-.stepper__value-button:disabled {
+.stepper__value-button:disabled,
+.stepper__value-button[aria-disabled='true'] {
   cursor: not-allowed;
 }
 
@@ -227,7 +253,7 @@ function finishEditing(commit: boolean, refocus: boolean) {
 .stepper__value-button:focus-visible,
 .stepper__input:focus {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 1px;
+  outline-offset: var(--focus-offset);
 }
 
 .stepper__input {
