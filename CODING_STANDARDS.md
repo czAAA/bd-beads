@@ -20,7 +20,7 @@ What a change in this repo must follow, for whoever writes it and whoever review
 
 ## Naming and comments
 
-- Name things with the glossary's terms (`CONTEXT.md`): Project, Pattern, Frame, Piece, Bead, Palette, Row progress. Code identifiers use US spelling (`color`); UI copy follows `writing.md`.
+- Name things with the glossary's terms (`docs/glossary/`): Project, Pattern, Frame, Piece, Bead, Palette, Row progress. Code identifiers use US spelling (`color`); UI copy follows `writing.md`.
 - Composables are `use<Name>`; a flow's dependencies come in as one `<Name>Deps` object. Components are PascalCase and multi-word.
 - Every exported function, composable and component gets a short `/** */` comment saying what it is for and why, in domain words, citing the ticket or ADR when the reason lives there (see `useRotateFlow.ts`). Don't comment what the code already says; don't leave commented-out code or TODOs without a ticket number.
 - Match the file you're in: long lines (about 120 characters), no semicolons, single quotes, `import type` for types.
