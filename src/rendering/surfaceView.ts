@@ -1,6 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import { isOffsetTechnique, rotationSwapsAxes, type GridPosition, type Rotation, type Technique } from '../domain/grid'
 import { beadRoundness, type DrawingContext } from './beadLook'
+import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 
 /**
@@ -25,9 +26,6 @@ export const CELL_SIZE_PX = 20
 
 /** Brick stitch's seam between rows, in grid px: a rule the full width of the row that takes 1px of height of its own. */
 export const SEAM_PX = 1
-
-/** How far a Frame's line sits outside its outermost beads (Frame card). */
-export const FRAME_OUTSET_PX = 7
 
 export interface Scroll {
   x: number
@@ -299,7 +297,8 @@ export function surfaceView({ space, technique, rotation, zoom, scroll = { x: 0,
     },
     frameBox: (frame) => {
       const shown = inViewport(displayedBox(frame, zoom))
-      return { x: shown.x - FRAME_OUTSET_PX, y: shown.y - FRAME_OUTSET_PX, width: shown.width + FRAME_OUTSET_PX * 2, height: shown.height + FRAME_OUTSET_PX * 2 }
+      const outset = frameOutsetPx(zoom)
+      return { x: shown.x - outset, y: shown.y - outset, width: shown.width + outset * 2, height: shown.height + outset * 2 }
     },
     scrollToCentre: (box) => centre(box ? displayedBox(box, zoom) : { x: 0, y: 0, width: 0, height: 0 }),
     scrollAfterZoom: (anchor, to) => {

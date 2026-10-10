@@ -42,12 +42,15 @@ describe('which boxes carry rulers', () => {
     expect(boxes.map((box) => [box.kind, box.sides, box.outset])).toEqual([['piece', 'start', 5], ['piece', 'start', 5]])
   })
 
-  it('leaves out a Piece area of 2x2 or smaller, in either direction, and keeps 3x3 and larger', () => {
+  it('leaves out a Piece area of 4 beads or fewer in total, and keeps one of 5 or more, whatever its shape', () => {
     const count = (positions: [number, number][]) => layoutOf(project(positions)).boxes.length
     expect(count([[0, 0]])).toBe(0)
     expect(count(block(0, 0, 2, 2))).toBe(0)
-    expect(count(block(0, 0, 2, 9))).toBe(0)
-    expect(count(block(0, 0, 9, 2))).toBe(0)
+    expect(count(block(0, 0, 1, 4))).toBe(0)
+    expect(count(block(0, 0, 1, 5))).toBe(1)
+    expect(count(block(0, 0, 5, 1))).toBe(1)
+    expect(count(block(0, 0, 2, 3))).toBe(1)
+    expect(count(block(0, 0, 2, 9))).toBe(1)
     expect(count(block(0, 0, 3, 3))).toBe(1)
     expect(count(block(0, 0, 3, 8))).toBe(1)
   })
@@ -172,9 +175,9 @@ describe('the Ruler step', () => {
   })
 
   it('measures a ruler running up the screen by its numbers’ height, not their width', () => {
-    // 15px between beads: a 2-digit number is 17.2px wide with its gap, but 15px tall.
-    expect(columnsOnTop({ zoom: 0.75, rotation: 0 }).map((l) => l.index + 1).slice(0, 2)).toEqual([5, 10])
-    expect(columnsOnTop({ zoom: 0.75, rotation: 90 }).map((l) => l.index + 1).slice(0, 2)).toEqual([1, 2])
+    // 16px between beads: a 2-digit number is about 17.6px wide with its gap, but 15.4px tall.
+    expect(columnsOnTop({ zoom: 0.8, rotation: 0 }).map((l) => l.index + 1).slice(0, 2)).toEqual([5, 10])
+    expect(columnsOnTop({ zoom: 0.8, rotation: 90 }).map((l) => l.index + 1).slice(0, 2)).toEqual([1, 2])
   })
 
   it('leaves no two drawn numbers overlapping on a 999-column ruler at 50%, where the step still applies', () => {
@@ -331,5 +334,31 @@ describe('drawing and picking agree', () => {
         }
       }
     }
+  })
+})
+
+describe('the rulers at different zooms (ticket 377)', () => {
+  const frame: Frame = { row: 0, column: 0, rows: 8, columns: 150 }
+
+  it('holds the dots to a 2-digit number’s half band, so a turned 3-digit column number does not push them off the line', () => {
+    const { dots, scale } = framed(frame, { zoom: 0.6 })
+    const columnDots = dots.filter((d) => d.axis === 'column')
+    expect(columnDots.length).toBeGreaterThan(0)
+    for (const dot of columnDots) {
+      expect(dot.half).toBeCloseTo(scale.fontPx * 0.6)
+    }
+  })
+
+  it('draws the Frame’s line closer to the beads zoomed out and further zoomed in than at 100%', () => {
+    const outset = (zoom: number) => framed(frame, { zoom }).boxes[0]!.outset
+    expect(outset(0.2)).toBeLessThan(outset(1))
+    expect(outset(3)).toBeGreaterThan(outset(1))
+  })
+
+  it('makes the numbers bigger zoomed out and zoomed in than at 100%, and the dots bigger zoomed in', () => {
+    const at = (zoom: number) => framed(frame, { zoom }).scale
+    expect(at(0.2).fontPx).toBeGreaterThan(at(1).fontPx)
+    expect(at(3).fontPx).toBeGreaterThan(at(1).fontPx)
+    expect(at(3).dotRadius).toBeGreaterThan(at(1).dotRadius)
   })
 })
