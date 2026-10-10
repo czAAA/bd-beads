@@ -362,3 +362,17 @@ describe('the rulers at different zooms (ticket 377)', () => {
     expect(at(3).dotRadius).toBeGreaterThan(at(1).dotRadius)
   })
 })
+
+describe('the dots below the zoom where only the last number shows (ticket 378)', () => {
+  const frame: Frame = { row: 0, column: 0, rows: 8, columns: 150 }
+
+  it('stand close to the Frame’s line, within a few px of it, not out at the numbers’ band', () => {
+    const { dots, boxes, scale } = framed(frame, { zoom: 0.2 })
+    const top = dots.filter((d) => d.axis === 'column' && d.normal[1] < -0.5)
+    expect(top.length).toBeGreaterThan(0)
+    const frameTop = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 0.2 }).beadBox(frame).y
+    const away = frameTop - top[0]!.y
+    expect(away).toBeCloseTo(boxes[0]!.outset + scale.gap + scale.dotRadius, 5)
+    expect(away).toBeLessThan(7)
+  })
+})

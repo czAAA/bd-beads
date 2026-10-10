@@ -19,36 +19,44 @@ const FAR = -3
 const NEAR = 2
 
 /** `far` at 12.5% zoom and below, `one` at 100%, `near` at 400% and above, steady in between in the zoom's own steps. */
-function across(zoom: number, far: number, one: number, near: number): number {
+function interpolateByZoom(zoom: number, far: number, one: number, near: number): number {
   const power = Math.min(NEAR, Math.max(FAR, Math.log2(Math.max(zoom, 1e-6))))
   return power <= 0 ? far + (one - far) * ((power - FAR) / -FAR) : one + (near - one) * (power / NEAR)
 }
+
+/** How a line's distance from its beads, and a dot's radius, change with the zoom: shared by the Frame, a piece and both kinds of dot. */
+const outsetShare = (zoom: number) => interpolateByZoom(zoom, 0.45, 1, 2)
+const dotShare = (zoom: number) => interpolateByZoom(zoom, 1, 1, 2.5)
 
 /** What the rulers' parts measure at one zoom, in viewport px. */
 export interface RulerScale {
   /** The numbers' size. */
   fontPx: number
+  /** How far the Frame's line sits off its beads. */
   frameOutset: number
+  /** How far a piece's rectangle sits off its beads. */
   pieceOutset: number
-  /** The gap between the numbers and the line they hang from. */
+  /** The gap between the numbers and the line they hang from; the dots keep it too. */
   gap: number
+  /** A Ruler dot's radius. */
   dotRadius: number
+  /** A 5th Ruler dot's radius. */
   fifthDotRadius: number
 }
 
 /** The line of a Frame, off its beads, at this zoom: the Frame's handles and presses use it too. */
 export function frameOutsetPx(zoom: number): number {
-  return FRAME_OUTSET_PX * across(zoom, 0.45, 1, 2)
+  return FRAME_OUTSET_PX * outsetShare(zoom)
 }
 
 /** The rulers' parts at this zoom; `fontPx` is the numbers' size at zoom 1 (11, or 12 on a phone). */
 export function rulerScale(zoom: number, fontPx: number): RulerScale {
   return {
-    fontPx: fontPx * across(zoom, 1.3, 1, 1.6),
+    fontPx: fontPx * interpolateByZoom(zoom, 1.3, 1, 1.6),
     frameOutset: frameOutsetPx(zoom),
-    pieceOutset: PIECE_OUTSET_PX * across(zoom, 0.45, 1, 2),
-    gap: GAP_PX * across(zoom, 1, 1, 3),
-    dotRadius: DOT_RADIUS_PX * across(zoom, 1, 1, 2.5),
-    fifthDotRadius: FIFTH_DOT_RADIUS_PX * across(zoom, 1, 1, 2.5),
+    pieceOutset: PIECE_OUTSET_PX * outsetShare(zoom),
+    gap: GAP_PX * interpolateByZoom(zoom, 0.5, 1, 3),
+    dotRadius: DOT_RADIUS_PX * dotShare(zoom),
+    fifthDotRadius: FIFTH_DOT_RADIUS_PX * dotShare(zoom),
   }
 }
