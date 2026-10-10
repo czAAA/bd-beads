@@ -49,7 +49,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 ## The two layouts
 
-`DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file.
+`DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file. The visual check is built with `VITE_DOCK_LAYOUT=off` (CI's build step, `e2e/support/server.ts`), so it covers the Toolbox layout until the Dock layout gets its own helpers and baselines.
 
 ## The offline shell
 

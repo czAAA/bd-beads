@@ -23,5 +23,7 @@ export const MIRROR_ENABLED = false
  * round from the rest of the file: ON is the new normal. OFF restores the Toolbox layout above 1024px and today's 1024px
  * split (ADR 0032), exactly as before. It is a build-time constant because the layout is decided by CSS media queries, which
  * cannot read a script value; the shell carries `app-shell--dock` on its root while this is on.
+ * `VITE_DOCK_LAYOUT=off` at build time turns it off: the visual check is built that way, because its helpers drive the
+ * Toolbox (Dock-layout visual checks are a follow-up).
  */
-export const DOCK_LAYOUT_ENABLED = true
+export const DOCK_LAYOUT_ENABLED = import.meta.env.VITE_DOCK_LAYOUT !== 'off'
