@@ -23,6 +23,9 @@ export default defineConfig({
     deviceScaleFactor: 1,
     colorScheme: 'light',
     reducedMotion: 'reduce',
+    // The offline shell's worker (ticket 69) would answer from its cache in a browser these checks reuse across a reload; only
+    // offline.spec.ts, which is about it, lets it run.
+    serviceWorkers: 'block',
     locale: 'en-US',
     launchOptions: {
       // Draw like every other machine: no hinting of glyph outlines, no subpixel (LCD) text, and the sRGB profile

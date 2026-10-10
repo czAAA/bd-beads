@@ -116,6 +116,8 @@ export const uk: Translations = {
   shell: {
     canvasPlaceholderHint: 'Створіть його кнопкою «Новий проєкт», відкрийте збережений проєкт або імпортуйте файл.',
     canvasPlaceholder: 'Проєкт ще не відкрито',
+    updateReady: 'Оновлення готове',
+    updateReload: 'Перезавантажити',
   },
   storage: {
     saveFailedMessage:

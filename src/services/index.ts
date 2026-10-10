@@ -5,6 +5,7 @@ import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsSto
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
+import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserTourStore, type TourStore } from './tourStore'
 
 /**
@@ -20,6 +21,7 @@ export interface Services {
   addedColorsStore: AddedColorsStore
   devicePreferences: DevicePreferences
   tourStore: TourStore
+  appUpdates: AppUpdates
 }
 
 export const browserServices: Services = {
@@ -30,4 +32,5 @@ export const browserServices: Services = {
   addedColorsStore: browserAddedColorsStore,
   devicePreferences: browserDevicePreferences,
   tourStore: browserTourStore,
+  appUpdates: browserAppUpdates,
 }

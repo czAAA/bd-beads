@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
+import { offlineShell } from './vite.pwa.ts'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -9,7 +10,8 @@ export default defineConfig(({ mode }) => ({
   // preview alike) resolve assets relative to it. `DEPLOY_BASE` overrides the path per host (ADR 0022); only the dev
   // server stays at /.
   base: resolveBase(mode, process.env.DEPLOY_BASE),
-  plugins: [vue()],
+  // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
+  plugins: [vue(), offlineShell()],
   build: {
     // Two pages: the editor and the Overview (ticket 77), which is a folder with its own index.html so a static host
     // serves /overview/ with no rewrite rules (ADR 0022).

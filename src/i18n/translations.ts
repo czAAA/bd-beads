@@ -141,6 +141,9 @@ export interface Translations {
     /** Under 'No Project open yet': what to do (EmptyCanvas card). */
     canvasPlaceholderHint: string
     canvasPlaceholder: string
+    /** The toast once a newer version of the app is waiting (ticket 69), and its button, which reloads onto it. */
+    updateReady: string
+    updateReload: string
   }
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {

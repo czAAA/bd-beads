@@ -171,6 +171,11 @@ The SVG files carry a fixed `#1f1f1f` stroke because an `<img>` can't inherit co
 them. Every icon in the UI goes through `AppIcon`; no inline `<svg>`. `more` is reserved: no card places it, so the app
 doesn't draw it.
 
+When installed (ticket 69, ADR 0045) the app's icon is `bd-beads-app-icon.svg` and its window frame and launch
+background are the light theme's `surface`; `public/manifest.webmanifest` and the `theme-color` tags in the two HTML
+pages hold those literal values (a manifest and a page's `<head>` can't use CSS tokens), and `src/styles/splash.test.ts`
+checks them against `tokens.json`. The splash in `index.html` is held to the same tokens by that test.
+
 ### 4.6 Tokens in the app's CSS
 
 - The app imports `docs/design/system/tokens.css` (the three theme blocks, the other families and the type classes)

@@ -2,8 +2,11 @@ import type { Locator, Page } from '@playwright/test'
 import { STORAGE_KEY, storedLibrary } from './projects'
 import type { Project } from '../../src/domain/project'
 
-/** Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. */
-export async function openApp(page: Page, projects: Project[]): Promise<void> {
+/**
+ * Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. It
+ * opens at the preview's address, or at `url` where a check serves the build itself.
+ */
+export async function openApp(page: Page, projects: Project[], url = './'): Promise<void> {
   if (projects.length > 0) {
     const stored = storedLibrary(projects)
     await page.addInitScript(
@@ -26,7 +29,7 @@ export async function openApp(page: Page, projects: Project[]): Promise<void> {
     style.textContent = css
     document.documentElement.appendChild(style)
   }, '* { text-rendering: geometricPrecision; font-kerning: normal; font-synthesis: none; -webkit-font-smoothing: antialiased; }')
-  await page.goto('./')
+  await page.goto(url)
   await page.getByTestId('app-canvas').waitFor()
   // The app's line height is 145% of 18px, which puts everything below the first line of text at a fractional pixel
   // and so blurs the edge of every bead by a fraction of a pixel. Pinning it to whole pixels leaves the layout as it is

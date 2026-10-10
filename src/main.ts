@@ -10,6 +10,7 @@ import { currentThemePick } from './theme/useThemePick'
 import App from './App.vue'
 import { loadProjects } from './services/libraryStore'
 import { loadTourStatus } from './services/tourStore'
+import { startOfflineShell } from './services/offlineShell'
 import { isEditorChosen, overviewUrl, shouldOpenOverview } from './overview/overviewRoute'
 
 followDeviceTheme(window, document.documentElement, currentThemePick)
@@ -19,4 +20,7 @@ if (shouldOpenOverview(loadProjects().length === 0, loadTourStatus(), isEditorCh
   location.replace(overviewUrl(import.meta.env.BASE_URL))
 } else {
   createApp(App).mount('#app')
+  // The splash in index.html (ticket 69) has done its job once the app is on screen.
+  document.getElementById('splash')?.remove()
+  startOfflineShell(import.meta.env.BASE_URL)
 }
