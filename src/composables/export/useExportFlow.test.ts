@@ -26,7 +26,6 @@ function setup(options: { open?: boolean } = {}) {
   const deps = {
     currentProject: () => (options.open === false ? undefined : project),
     projects: () => [project],
-    shareableProject: () => (options.open === false ? undefined : project),
     messages: () => en,
     locale: () => 'en' as const,
     downloadFile,
@@ -40,7 +39,6 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
     const flow = useExportFlow({
       currentProject: () => open,
       projects: () => [open],
-      shareableProject: () => open,
       messages: () => en,
       locale: () => 'en' as const,
       downloadFile,
@@ -51,8 +49,6 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
     expect(exportProjectPng).not.toHaveBeenCalled()
     expect(exportProjectPdf).not.toHaveBeenCalled()
     expect(downloadFile).not.toHaveBeenCalled()
-    expect(flow.qrExport.matrix.value).toBeUndefined()
-    expect(flow.qrExport.tooLarge.value).toBe(false)
   })
 })
 
@@ -131,17 +127,6 @@ describe('useExportFlow', () => {
       expect(setup().makerName.value).toBe('Ada')
     })
   })
-
-  describe('QR code', () => {
-    it('follows the settled Project and opens and closes its panel', () => {
-      const { qrExport } = setup()
-      expect(qrExport.panelOpen.value).toBe(false)
-      qrExport.open()
-      expect(qrExport.panelOpen.value).toBe(true)
-      qrExport.close()
-      expect(qrExport.panelOpen.value).toBe(false)
-    })
-  })
 })
 
 describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
@@ -150,7 +135,6 @@ describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
     const flow = useExportFlow({
       currentProject: () => project,
       projects: () => [project],
-      shareableProject: () => project,
       messages: () => en,
       locale: () => 'en' as const,
       downloadFile,

@@ -201,12 +201,6 @@
           "size": 219,
           "type": "image/svg+xml"
         },
-        "qr-code.svg": {
-          "blob": "c1f7e1e0405bd1e4fcb90c921906b72e",
-          "name": "qr-code.svg",
-          "size": 461,
-          "type": "image/svg+xml"
-        },
         "redo.svg": {
           "blob": "837241d556bdebd4c2d3095a382047a3",
           "name": "redo.svg",
@@ -235,12 +229,6 @@
           "blob": "42ee0443e8478c7706f18ba5b9f61dd6",
           "name": "save.svg",
           "size": 383,
-          "type": "image/svg+xml"
-        },
-        "scan.svg": {
-          "blob": "f9d9d3d27c7114e1e9862503c2db0e8f",
-          "name": "scan.svg",
-          "size": 373,
           "type": "image/svg+xml"
         },
         "select.svg": {
@@ -339,8 +327,6 @@
         "save.svg",
         "export.svg",
         "import.svg",
-        "qr-code.svg",
-        "scan.svg",
         "pdf.svg",
         "mirror-horizontal.svg",
         "mirror-vertical.svg",

@@ -87,10 +87,10 @@ describe('the carousel examples', () => {
     expect(wrapper.text()).toMatch(/≈ \d+(\.\d)?\s+g/)
   })
 
-  it('exports: a page with the technique word, and the four ways out', () => {
+  it('exports: a page with the technique word, and the three ways out', () => {
     const wrapper = example('exports')
     expect(wrapper.get('[data-testid="example-word"]').text()).toBe('Loom')
-    expect(wrapper.findAll('.formats__item').map((el) => el.text())).toEqual(['PDF', 'PNG', 'QR', 'Project file'])
+    expect(wrapper.findAll('.formats__item').map((el) => el.text())).toEqual(['PDF', 'PNG', 'Project file'])
   })
 
   it("exports: keeps the word's proportions whatever the width", () => {

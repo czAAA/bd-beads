@@ -19,7 +19,6 @@ const { t } = useI18n()
 const FORMATS: { icon: IconName; label: () => string }[] = [
   { icon: 'pdf', label: () => 'PDF' },
   { icon: 'image', label: () => 'PNG' },
-  { icon: 'scan', label: () => 'QR' },
   { icon: 'save', label: () => t.value.overview.examples.projectFile },
 ]
 

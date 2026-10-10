@@ -316,7 +316,6 @@ export interface Translations {
     /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
   }
-  /** Export/import (CONTEXT.md's Project file), plus QR export/import (ticket 68, ADR 0015). */
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
     /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */
@@ -356,7 +355,6 @@ export interface Translations {
     /** The label row: the library's save state on this device. */
     savedState: string
     failedState: string
-    menuQr: string
     menuPng: string
     menuPdf: string
     formatsHint: string
@@ -367,7 +365,7 @@ export interface Translations {
     readyPng: string
     readyPdf: string
     readySave: string
-    /** The way out when a Project is too large for a QR code, or a save fails: the Project as a file. */
+    /** The way out when a save fails: the Project as a file. */
     exportProjectFile: string
     /** The Export menu's last row and its modal (NameOnExports card). */
     nameOnExports: string
@@ -380,22 +378,11 @@ export interface Translations {
     cancelName: string
   }
   transfer: {
-    /** Under the QR code: how to use it (QrExport card). */
-    qrScanHint: string
     exportProjectButton: string
     exportLibraryButton: string
     importLabel: string
     importedLabel: string
     importErrorLabel: string
-    /** Shown instead of the code when the Project doesn't fit a single QR code's capacity (ADR 0015's size cap) -- points at Export Project above as the fallback rather than duplicating a download of its own. */
-    qrTooLargeMessage: string
-    /** With {page} and {pages}. */
-    /** With {across}, {acrossTotal}, {down} and {downTotal}: which piece of a chart cut over several pages this is. */
-    closeQrButton: string
-    /** A picture believed to hold one of this app's QR exports (a photo/screenshot of the code shown on another device). */
-    importQrLabel: string
-    qrImportedLabel: string
-    qrImportErrorLabel: string
   }
   mirror: {
     mirrorCurrentHorizontalButton: string
@@ -636,7 +623,6 @@ export interface Translations {
     colors: string
     newProject: string
     importFile: string
-    importQr: string
     saveProject: string
     changeName: string
     convertImage: string

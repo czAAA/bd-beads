@@ -11,7 +11,7 @@ import LoadingState from '../ui/LoadingState.vue'
 
 /**
  * The save box (ticket 148; SaveBox, SaveStates and Menu cards), second in the left column: the Project library's save
- * state on this device (ADR 0012), a full-width Save Project, and Export ▾ with QR code, PNG image and PDF for
+ * state on this device (ADR 0012), a full-width Save Project, and Export ▾ with PNG image and PDF for
  * printing. It only asks; the app does the saving and exporting.
  */
 const props = withDefaults(defineProps<{
@@ -19,8 +19,6 @@ const props = withDefaults(defineProps<{
   hasFrame?: boolean
   /** The last write to this device was refused (useProjectLibrary's saveFailed). */
   saveFailed: boolean
-  /** The open Project doesn't fit a single QR code (ADR 0015). */
-  qrTooLarge?: boolean
   /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one, and a long one says so. */
   exporting?: 'png' | 'pdf'
   /** The open Project's name, for what the wait says it is doing. */
@@ -31,11 +29,8 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
   save: []
-  'export-qr': []
   'export-png': []
   'export-pdf': []
-  /** The open Project as a Project file: the way out when it is too large for a QR code (ticket 158). */
-  'export-project': []
   /** Change or Add the maker's name, from the Export menu's last row (ticket 161). */
   'edit-maker-name': []
   /** The Export prompt's two ways out: frame every bead drawn, or draw the Frame by hand. */
@@ -89,15 +84,6 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
               <AppButton variant="primary" icon="frame" data-testid="export-set-frame" @click="fromPrompt('set-frame')">{{ t.frame.setFrame }}</AppButton>
             </div>
           </div>
-          <AppMenuItem v-if="framed" icon="qr-code" :disabled="qrTooLarge" data-testid="export-qr" @select="emit('export-qr')">
-            {{ t.saveBox.menuQr }}
-          </AppMenuItem>
-          <template v-if="framed && qrTooLarge">
-            <p class="save-box__reason" data-testid="export-qr-reason">{{ t.transfer.qrTooLargeMessage }}</p>
-            <AppMenuItem icon="export" data-testid="export-qr-way-out" @select="emit('export-project')">
-              {{ t.saveBox.exportProjectFile }}
-            </AppMenuItem>
-          </template>
           <AppMenuItem v-if="framed" icon="image" :disabled="!!exporting" data-testid="export-png" @select="emit('export-png')">
             {{ t.saveBox.menuPng }}
           </AppMenuItem>
@@ -256,16 +242,6 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
 
 .save-box__hint {
   font: var(--type-meta-small);
-  color: var(--muted);
-}
-
-/* A disabled item's reason, in words under it (forms-and-states.md: a disabled control shows no tooltip). */
-.save-box__reason {
-  max-width: var(--tooltip-wide);
-  margin: 0;
-  padding: 0 var(--space-10) var(--space-6) calc(var(--space-10) + var(--space-8) + 1rem);
-  font: var(--type-meta-small);
-  font-family: var(--font-sans);
   color: var(--muted);
 }
 </style>

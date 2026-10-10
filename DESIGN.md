@@ -100,7 +100,7 @@ Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve he
 | §5.10 | Save box | `SaveBox`, `SaveStates`, `Menu`, `NameOnExports` cards |
 | §5.11 | Progress bar | `ProgressBar`, `SwitchAndFileButton` cards |
 | §5.12 | Message | `Message`, `ImportResult` cards; `forms-and-states.md` |
-| §5.13 | Modal, menu, tooltip | `Modal`, `ConfirmDialogs`, `Menu`, `QrExport`, `ShortcutsHelp` cards |
+| §5.13 | Modal, menu, tooltip | `Modal`, `ConfirmDialogs`, `Menu`, `ShortcutsHelp` cards |
 | §6.1 | Icons | README, Iconography; `assets/Icons/` |
 | §6.2 | Logo | README, Logo; `assets/Logos/` |
 | §6.3 | Favicon | README, Favicon; `favicon/` |
@@ -169,8 +169,7 @@ the design system no longer has preview pages (ticket 297).
 The SVG files carry a fixed `#1f1f1f` stroke because an `<img>` can't inherit color. The app inlines them and sets
 `stroke: currentColor` (the logo mark: `stroke: var(--accent)`). Take the files from the design system; don't redraw
 them. Every icon in the UI goes through `AppIcon`; no inline `<svg>`. `more` is reserved: no card places it, so the app
-doesn't draw it. The QR code's black modules on white (`QrCode.vue`) are deliberate: a scanner needs that contrast in
-every theme.
+doesn't draw it.
 
 ### 4.6 Tokens in the app's CSS
 

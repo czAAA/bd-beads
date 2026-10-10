@@ -351,7 +351,7 @@ describe('Toolbox without Save or Export (ticket 148)', () => {
   it('leaves Save and the exports to the save box: the Edit row is Undo, Redo, Rotate and Copy', () => {
     const wrapper = mountToolbox()
 
-    for (const testId of ['save-button', 'export-qr', 'export-png', 'export-pdf']) {
+    for (const testId of ['save-button', 'export-png', 'export-pdf']) {
       expect(wrapper.find(`[data-testid="${testId}"]`).exists()).toBe(false)
     }
     const edit = wrapper.findAll('[data-testid="tool-group-edit"] button').map((button) => button.attributes('data-testid'))

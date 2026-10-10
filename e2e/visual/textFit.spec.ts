@@ -161,16 +161,6 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'export menu: QR code',
-    visit: async (page, measure) => {
-      if (!(await reveal(page, 'export-menu-button'))) return false
-      await click(page, 'export-menu-button')
-      if (!(await shown(page, 'export-qr'))) return false
-      await click(page, 'export-qr')
-      await measure()
-    },
-  },
-  {
     name: 'Frame',
     visit: async (page, measure) => {
       if (!(await reveal(page, 'frame-fit'))) return false

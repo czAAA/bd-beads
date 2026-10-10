@@ -36,7 +36,7 @@ import { useRowOps } from '../project/useRowOps'
 import { useSaveFlow } from '../export/useSaveFlow'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
-import { useSharedProjectLink } from '../project/useSharedProjectLink'
+import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
@@ -307,9 +307,6 @@ function wireAppShell(services: Services) {
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
   const settledProject = useSettledProject(currentProject, () => strokeMode.value !== null)
 
-  /** The open Project for the code that shares it, which nobody watches change: it waits for the stroke to end. */
-  const shareableProject = useSettledProject(currentProject, () => strokeMode.value !== null, Number.POSITIVE_INFINITY)
-
   /**
    * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
    * panning scrolls the window instead, since nothing in the shell traps vertical overflow of its own.
@@ -438,11 +435,10 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  /** Exporting as a file, PNG, PDF or QR code, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
+  /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
   const exportFlow = useExportFlow({
     currentProject,
     projects: () => projects.value,
-    shareableProject: () => shareableProject.value,
     messages,
     locale: currentLocale,
     downloadFile: services.downloadFile,
@@ -453,8 +449,8 @@ function wireAppShell(services: Services) {
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
   const rowOps = useRowOps({ currentProject, replaceProject })
 
-  /** Opening a scanned QR export's link, and the page-hide and unmount saves (tickets 55, 68, 203). */
-  useSharedProjectLink({ projects: () => projects.value, addProject, flushPendingSave })
+  /** The deferred save's safety net (see useSaveOnPageHide). */
+  useSaveOnPageHide(flushPendingSave)
 
   function onSelectProject(id: string) {
     activeProjectId.value = id
@@ -539,7 +535,6 @@ function wireAppShell(services: Services) {
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
       !!savedProjectConfirms.pendingSwitch.value ||
-      exportFlow.qrExport.panelOpen.value ||
       shortcutsHelpOpen.value,
     collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
     backOutOfSelect,
@@ -588,7 +583,6 @@ function wireAppShell(services: Services) {
     resetMirrorState()
     deleteAll.onCancelDeleteAll()
     replaceBead.onCancelReplaceBead()
-    exportFlow.qrExport.close()
     clearSavedConfirmation()
     resetImageColor()
   })

@@ -126,12 +126,4 @@ describe('App empty, loading and failed states (ticket 158)', () => {
 
     expect(downloadFile).toHaveBeenCalledWith('bd-beads-my-scarf.json', expect.any(String))
   })
-
-  it('offers Export Project from the Export menu when the Project is too large for a QR code', async () => {
-    const wrapper = mountApp()
-    await openExportMenu(wrapper)
-
-    // The fixture is small enough for a code: no way out needed.
-    expect(wrapper.find('[data-testid="export-qr-way-out"]').exists()).toBe(false)
-  })
 })

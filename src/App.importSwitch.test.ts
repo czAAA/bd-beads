@@ -164,18 +164,6 @@ describe('App import asks before switching (ticket 154)', () => {
     expect(canUndo()).toBe(false)
   })
 
-  it('offers the same modal for a QR-code picture', async () => {
-    const wrapper = mount(App)
-    await createOpen(wrapper, 'Current')
-    const shown = wrapper.findComponent({ name: 'ProjectImport' })
-    shown.vm.$emit('import', [makeProject('Scanned')])
-    await flushPromises()
-
-    expect(modal(wrapper).exists()).toBe(true)
-    await click(wrapper, 'confirm-modal-confirm')
-    expect(openName(wrapper)).toContain('Scanned')
-  })
-
   describe('when the last save did not get through', () => {
     async function unsavedApp() {
       const wrapper = mount(App)

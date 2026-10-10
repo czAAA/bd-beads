@@ -20,7 +20,6 @@ const {
   activeTool,
   selectedColorId,
   onImportProjects,
-  decodeImage,
   onImportToast,
   openPhoneSheet,
   onSelectPhoneSheet,
@@ -31,12 +30,12 @@ const {
 <template>
   <!--
     Bottom of the phone layout (under 1024px, ticket 295): two states. With no Project open, a focused project-management
-    bar (New Project + Import + Import QR) replaces the Dock so the first action is immediately obvious, with the Menu
+    bar (New Project + Import) replaces the Dock so the first action is immediately obvious, with the Menu
     button at its bottom right so language and theme stay reachable. Once a Project is open the Dock appears.
   -->
   <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
     <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true" />
-    <ProjectImport :decode-image="decodeImage" compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
+    <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
     <IconButton :action="menuAction" :tooltip="{ placement: 'top' }" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
   </div>
   <AppDock

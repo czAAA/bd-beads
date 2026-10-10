@@ -36,7 +36,7 @@ Everything saved under one name: the Open canvas with all its Pieces, the Frame,
 _Avoid_: design, drawing, chart, pattern (for the whole saved thing)
 
 **Pattern**:
-The beads inside a Project's Frame: what the PNG, PDF and QR exports contain, what Beads needed counts, and what Row progress and Rotate work on. Only the word for this; the code has no `Pattern` type, it reads the Frame's beads (`beadsInFrame`). The Overview and Tour say Pattern only for this, never for the whole canvas.
+The beads inside a Project's Frame: what the PNG and PDF exports contain, what Beads needed counts, and what Row progress and Rotate work on. Only the word for this; the code has no `Pattern` type, it reads the Frame's beads (`beadsInFrame`). The Overview and Tour say Pattern only for this, never for the whole canvas.
 _Avoid_: for the whole saved canvas, which is a Project
 
 **Open canvas**:
@@ -166,7 +166,7 @@ The fixed-width rail of editing controls down the left of the app shell while a 
 _Avoid_: tool strip, toolbar, above-canvas panel
 
 **Tool group**:
-One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Eraser), Colors, Edit (including Save, QR export and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
+One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Eraser), Colors, Edit (including Save and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
 **Dock**:

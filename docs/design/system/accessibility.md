@@ -62,7 +62,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
 | `z-popover` | 60 | Menus, the Image colors popover, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |
-| `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, QR export, Keyboard shortcuts, New Pattern on phone. |
+| `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. |
 | `z-tour-dim` | 84 | The Tour's dim layer and its hole (v15). |
 | `z-tour-connector` | 85 | The Tour's ring of beads around the hole and the connector. |
 | `z-tour-card` | 86 | The Tour's step card. Above modals, so the Tour can guide inside New Pattern on the phone. |

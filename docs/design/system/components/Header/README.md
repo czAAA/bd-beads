@@ -8,7 +8,7 @@ On `canvas`, 1px `line-soft` bottom border, items 10px apart, none shrinking, pa
 2. **"currently editing"** (`label`), the Pattern summary (`control`), then the BeadPill. Only while a Pattern is open.
 3. **Replace bead:** a primary select.
 4. A flexible gap.
-5. **Import a file**, **Import QR code:** text buttons with icons; their results and errors show beside them.
+5. **Import a file:** a text button with an icon; its results and errors show beside it.
 6. **New Pattern:** primary button with a plus icon.
 7. **EN / RU**, 8. **ThemeToggle**, 9. **Keyboard shortcuts** (round icon button, 34px).
 

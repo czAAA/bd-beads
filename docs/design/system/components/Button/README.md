@@ -6,7 +6,7 @@ Every clickable action in bd-beads: primary, primary select, secondary, secondar
 - **Primary** (`bb-btn bb-btn--primary`): the single most likely next action in a region: New Pattern, Replace bead (as a select), Save Pattern, Row done. `accent` fill and border, `on-accent` text; hover and pressed use `accent-hover`; disabled uses `accent-disabled-bg` / `accent-disabled-fg`. **Two primary buttons never sit next to each other.**
 - **Secondary** (`bb-btn`): on the page (header). `button` fill, `button-line` border, `ink` text; hover `surface` in light, `elevated` in dark.
 - **Secondary in a box** (`bb-btn--in-box`): inside the save box and Saved Patterns: `elevated` fill, `line-strong` border (light) / `elevated` (dark). The Toolbox's own buttons (`bb-btn--toolbox`) use `panel-line` as border.
-- **Text** (`bb-btn--text`): Import a file, Import QR code. No fill or border, padding 0 6, hover `surface`.
+- **Text** (`bb-btn--text`): Import a file. No fill or border, padding 0 6, hover `surface`.
 - **Link** (`bb-link`, `bb-link--danger`; `AppButton variant="link"`, ticket 331, which replaces `AppLink`): Remove line (`ink`), Delete all (`danger`). 14/20 500, 16px icon, gap 6.
 - **Icon** (`bb-btn--icon`, 34 × 34, radius-md) and **round icon** (`bb-btn--round`, radius-full): Turn row direction; Keyboard shortcuts.
 - **Tool tab** (`IconButton` `variant="tool"`, ticket 330): a 34px icon in a 56 × 72 cell, no fill or border, `muted`; selected is `accent-strong` with a 2px `accent-strong` underline (3px in High contrast), and an optional key badge (DM Mono 11px, `muted`, accent when selected) against the icon's top-right corner. It is a tab of the Tools group (ToolTabs card).

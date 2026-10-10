@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useAppShell } from '../../composables/shell/useAppShell'
-import { summarizeProject } from '../../domain/project'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import NameOnExportsModal from '../export/NameOnExportsModal.vue'
-import QrExportPanel from '../export/QrExportPanel.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 
 const {
@@ -34,7 +32,6 @@ const {
   onKeepCurrentAfterImport,
   onSwitchToImported,
   onSaveBeforeImportSwitch,
-  qrExport,
   makerName,
   nameOnExportsOpen,
   onSaveMakerName,
@@ -135,13 +132,6 @@ const {
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>
-
-  <QrExportPanel
-    v-if="qrExport.panelOpen.value && activeProject"
-    :matrix="qrExport.matrix.value!"
-    :summary="summarizeProject(activeProject)"
-    @close="qrExport.close"
-  />
 
   <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
 

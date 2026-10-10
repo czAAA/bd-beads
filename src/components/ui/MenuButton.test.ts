@@ -17,7 +17,7 @@ function mountMenu(props: Record<string, unknown> = {}, onSelect = vi.fn(), with
           { label: 'Export', icon: 'export', ...props },
           {
             default: () => [
-              h(AppMenuItem, { 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'QR code'),
+              h(AppMenuItem, { 'data-testid': 'png', onSelect: () => onSelect('png') }, () => 'PNG image'),
               h(AppMenuItem, { 'data-testid': 'pdf', onSelect: () => onSelect('pdf') }, () => 'PDF'),
             ],
             ...(withSheet ? { sheet: ({ close }: { close: () => void }) => h('div', { 'data-testid': 'sheet', onClick: close }, 'sheet') } : {}),
@@ -67,7 +67,7 @@ describe('MenuButton', () => {
   it('closes on Escape and hands focus back to the button', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup]').trigger('keydown', { key: 'ArrowDown' })
-    expect(document.activeElement).toBe(wrapper.find('[data-testid="qr"]').element)
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="png"]').element)
 
     key(document.activeElement!, 'Escape')
     await wrapper.vm.$nextTick()
@@ -117,17 +117,17 @@ describe('MenuButton', () => {
   it('moves focus with the arrows, Home and End, and closes on Tab', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup]').trigger('keydown', { key: 'ArrowUp' })
-    const qr = wrapper.find('[data-testid="qr"]').element
+    const png = wrapper.find('[data-testid="png"]').element
     const pdf = wrapper.find('[data-testid="pdf"]').element
     expect(document.activeElement).toBe(pdf)
     key(pdf, 'Home')
-    expect(document.activeElement).toBe(qr)
-    key(qr, 'End')
+    expect(document.activeElement).toBe(png)
+    key(png, 'End')
     expect(document.activeElement).toBe(pdf)
     key(pdf, 'ArrowDown')
-    expect(document.activeElement).toBe(qr)
+    expect(document.activeElement).toBe(png)
 
-    key(qr, 'Tab')
+    key(png, 'Tab')
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })

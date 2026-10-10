@@ -49,19 +49,18 @@ describe('SaveBox (ticket 148)', () => {
     expect(save.attributes('aria-label')).toBe(en.saveBox.saveButton)
   })
 
-  it('opens the Export menu with QR code, PNG image and PDF for printing, and the formats hint beside it', async () => {
+  it('opens the Export menu with PNG image and PDF for printing, and the formats hint beside it', async () => {
     const wrapper = mountBox()
-    expect(wrapper.find('[data-testid="export-formats"]').text()).toBe('qr · png · pdf')
+    expect(wrapper.find('[data-testid="export-formats"]').text()).toBe('png · pdf')
 
     await openMenu(wrapper)
 
     const items = wrapper.findAll('[role="menuitem"]').map((item) => item.text())
     // Then the name on exports row (ticket 161).
-    expect(items).toEqual([en.saveBox.menuQr, en.saveBox.menuPng, en.saveBox.menuPdf, en.saveBox.addName])
+    expect(items).toEqual([en.saveBox.menuPng, en.saveBox.menuPdf, en.saveBox.addName])
   })
 
   it.each([
-    ['export-qr', 'export-qr'],
     ['export-png', 'export-png'],
     ['export-pdf', 'export-pdf'],
   ])('asks for %s from its menu item, closing the menu', async (testId, event) => {
@@ -74,33 +73,12 @@ describe('SaveBox (ticket 148)', () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })
 
-  it('turns QR code off for a Project too large for one, saying why in words', async () => {
-    const wrapper = mountBox({ qrTooLarge: true })
-    await openMenu(wrapper)
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="export-qr-reason"]').text()).toBe(en.transfer.qrTooLargeMessage)
-    await wrapper.find('[data-testid="export-qr"]').trigger('click')
-    expect(wrapper.emitted('export-qr')).toBeUndefined()
-  })
-
   it('holds PNG and PDF while one is being drawn', async () => {
     const wrapper = mountBox({ exporting: 'pdf' })
     await openMenu(wrapper)
 
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-png"]').element.disabled).toBe(true)
     expect(wrapper.find<HTMLButtonElement>('[data-testid="export-pdf"]').element.disabled).toBe(true)
-  })
-})
-
-describe('SaveBox ways out (ticket 158)', () => {
-  it('offers Export Project under the QR reason when the Project is too large for a code', async () => {
-    const wrapper = mountBox({ qrTooLarge: true })
-    await openMenu(wrapper)
-
-    await wrapper.find('[data-testid="export-qr-way-out"]').trigger('click')
-
-    expect(wrapper.emitted('export-project')).toHaveLength(1)
   })
 })
 
@@ -112,7 +90,6 @@ describe('SaveBox without a Frame (ticket 233)', () => {
     const prompt = wrapper.find('[data-testid="export-needs-frame"]')
     expect(prompt.text()).toContain(en.frame.exportPromptTitle)
     expect(prompt.text()).toContain(en.frame.explainer)
-    expect(wrapper.find('[data-testid="export-qr"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="export-pdf"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="name-on-exports"]').exists()).toBe(false)

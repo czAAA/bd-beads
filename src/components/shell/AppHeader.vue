@@ -29,7 +29,6 @@ const {
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportProjects,
-  decodeImage,
   shortcutsHelpOpen,
   tour,
 } = useAppShell()
@@ -107,7 +106,7 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
     <!-- Imported Projects go straight into the library, which decides what to open and persists them. -->
     <div class="app-header__imports" data-testid="project-actions">
-      <ProjectImport :decode-image="decodeImage" :projects="projects" :compact="compactImports" @import="onImportProjects" />
+      <ProjectImport :projects="projects" :compact="compactImports" @import="onImportProjects" />
     </div>
     <AppButton
       variant="primary"

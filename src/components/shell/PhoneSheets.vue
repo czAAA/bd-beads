@@ -62,11 +62,9 @@ const {
   onPickReplaceBead,
   onImportProjects,
   decodeImage,
-  qrExport,
   makerName,
   nameOnExportsOpen,
   exporting,
-  onExportProjectFile,
   onExportPng,
   onExportPdf,
   onSave,
@@ -200,14 +198,11 @@ const deps = computed(() =>
       <SaveBox
         :has-frame="activeProject.frame !== undefined"
         :save-failed="saveFailed"
-        :qr-too-large="qrExport.tooLarge.value"
         :exporting="exporting"
         :project-name="activeProject.name"
         :maker-name="makerName"
         @edit-maker-name="nameOnExportsOpen = true"
         @save="onSave"
-        @export-project="onExportProjectFile"
-        @export-qr="qrExport.open"
         @export-png="onExportPng"
         @export-pdf="onExportPdf"
         @fit-frame="onFitFrame(); openPhoneSheet = null"
@@ -218,7 +213,7 @@ const deps = computed(() =>
     <div class="phone-sheet__project-actions">
       <!-- New Project: never disabled -- with no Projects yet this is the only way to reach the form (the wider tiers show it inline by default). -->
       <AppButton variant="primary" icon="plus" :action="sheetActions.newProject" data-testid="phone-new-project-button" @click="phoneNewProjectOpen = true" />
-      <ProjectImport compact :decode-image="decodeImage" :projects="projects" testid-prefix="project-sheet-" @import="onImportProjects" />
+      <ProjectImport compact :projects="projects" testid-prefix="project-sheet-" @import="onImportProjects" />
       <IconButton
         :action="sheetActions.savedProjects"
         :disabled="projects.length === 0"

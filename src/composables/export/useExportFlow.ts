@@ -7,14 +7,11 @@ import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, sharesFromTap as browserSharesFromTap, type DownloadFile } from '../../services/fileDownload'
 import { browserMakerNameStore, type MakerNameStore } from '../../services/makerNameStore'
 import type { MessageTone, Toast } from '../ui/useToasts'
-import { useQrExport } from './useQrExport'
 
-/** What exporting needs from the app shell: the open Project and the library, the code's settled Project, and the app's language. */
+/** What exporting needs from the app shell: the open Project and the library, and the app's language. */
 export interface ExportFlowDeps {
   currentProject: () => Project | undefined
   projects: () => Project[]
-  /** The open Project for the QR code, which waits for a stroke to end (see useSettledProject). */
-  shareableProject: () => Project | undefined
   messages: () => Translations
   locale: () => Locale
   /** How a file is handed over, and where the maker's name is kept (ADR 0020); the browser's by default. */
@@ -27,20 +24,13 @@ export interface ExportFlowDeps {
 }
 
 /**
- * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020): as a Project file, a PNG, a PDF or a QR code, and
- * the maker's name the PNG and PDF print. QR is useQrExport's own; this composable builds on it. Deps are read lazily.
+ * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020): as a Project file, a PNG or a PDF, and
+ * the maker's name the PNG and PDF print. Deps are read lazily.
  */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
   const sharesFromTap = deps.sharesFromTap ?? browserSharesFromTap
   const makerNameStore = deps.makerNameStore ?? browserMakerNameStore
-
-  /**
-   * QR export (ticket 68, 116): the Toolbox's Edit group opens the panel and App shows it, so its state lives outside
-   * either. The code reads every bead of the Project, so it waits for a stroke to end rather than being worked out on
-   * each step of it.
-   */
-  const qrExport = useQrExport(deps.shareableProject)
 
   /**
    * The maker's name for the PDF and PNG exports (ticket 161; CONTEXT.md): kept on this device like the theme, set from
@@ -65,7 +55,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      // Read as the Project itself, as the QR export does: drawing reads every bead.
+      // Read as the Project itself: drawing reads every bead.
       const fileName = projectExportFileName(project, extension)
       const blob = await make(toRaw(project))
       if (deps.showToast && sharesFromTap(fileName, type)) {
@@ -85,7 +75,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /**
    * Export Project as the way out (ticket 158; forms-and-states.md): the open Project as a Project file, offered when a
-   * save fails and when a Project is too large for a QR code. With none open, a failed save offers the whole library.
+   * save fails. With none open, a failed save offers the whole library.
    */
   function onExportProjectFile() {
     const project = deps.currentProject()
@@ -119,5 +109,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { qrExport, makerName, nameOnExportsOpen, onSaveMakerName, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
+  return { makerName, nameOnExportsOpen, onSaveMakerName, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
 }
