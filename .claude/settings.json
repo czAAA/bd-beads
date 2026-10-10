@@ -1,5 +1,8 @@
 {
   "permissions": {
-    "deny": ["Read(./docs/design/system/**/preview.html)"]
+    "deny": [
+      "Read(./docs/design/system/**/preview.html)",
+      "Read(./.scratch/.archive/**)"
+    ]
   }
 }
