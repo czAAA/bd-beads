@@ -1,6 +1,6 @@
 # Glossary: Accounts and sharing
 
-Guest, Free account, Pro, View and Edit links, Locked Project. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
+Guest, Free account, Pro, View and Edit links, Locked Project, Sync pending. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **View link**:
 A hosted, encrypted snapshot of a Project that a Guest or any account can create. The key is in the part of the link after `#`, so the backend never sees the Project; opening it shows the Project and can import it. Later edits don't change it and it can't be used to edit. It expires 3 days after it was last opened, and every open restarts the clock; an expired link is gone, and the Project has to be shared again, as a new link.
@@ -25,6 +25,10 @@ _Avoid_: sync link, invite link
 **Locked Project**:
 A synced Project listed on a signed-in device that doesn't yet hold its key; it opens only after the Edit link is opened there.
 _Avoid_: encrypted Project, hidden Project
+
+**Sync pending**:
+The state of a synced Project that has changes the server doesn't have yet, for example because it couldn't be reached. A small banner says "Sync pending" until the changes arrive, then "Synced". The work stays safe on the device meanwhile.
+_Avoid_: unsynced, offline, not synced yet
 
 **Surface view**:
 How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch. It measures the drawing, not the piece: brick stitch's 1px seam between rows exists only in the drawing, so a Surface view's rows are a pixel further apart than the physical geometry Convert image samples with (ADR 0010, amended).

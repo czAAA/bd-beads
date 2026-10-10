@@ -15,11 +15,11 @@ Two halves, built in this order:
 
 - **Encryption:** AES-256-GCM through the browser's Web Crypto API only, no third-party crypto library. One fresh random key per View link and per synced Project. Everything that describes the Project is encrypted: bead grid, Palette, Project name, maker's name, Frame, Technique. The server sees only an opaque blob ID, the ciphertext size, timestamps and (for sync) the account. The ciphertext size reveals roughly how big a Project is; ADR 0037 accepts that.
 - **View link** is a snapshot: later edits don't change it, and it can never be used to edit or to derive the Project's own key. A Guest can't list or revoke one (there is no account to own it), so it expires 3 days after it was last opened (every open restarts the clock; ADR 0014) and uploads are rate-limited against abuse. An expired link is gone; sharing again makes a new link.
-- **Edit link**: last write wins for the whole Project. The server rejects a write based on a stale version and the losing device is offered its copy as a new Project. Live co-editing is a future Pro feature, not here.
+- **Edit link** sync follows Excalidraw's approach (ADR 0044): each row of the Pattern and each other part of a Project carries a `version` and a `versionNonce`, deletions stay as tombstones, and the client merges. The server rejects a write built on a stale version and the client pulls, merges and pushes again; it never merges itself. Edits to different rows on two devices both survive. Live co-editing is not planned here.
 - **Stop sharing**: generates a new key, re-encrypts the Project and invalidates the old Edit link. The popover warns that this person's other devices show the Project as locked until the new link is opened there.
 - **Lost link:** if every device and every copy of the Edit link is gone, the Project cannot be recovered, by anyone. A one-time notice when a Project first syncs says so and offers "Copy edit link". The existing file export stays as the backup that doesn't depend on the link.
 - **Lock icon** (signed in, Project synced): in the right slot of the canvas header, after the Fit icon, with a Tooltip. It shows two states, encrypted and synced, and sync problem or key missing. It never shows for a local-only Project or when signed out. Clicking it opens the README chapter on encryption. Add a lock icon to the design system in place (`docs/design/system/`, `DESIGN.md` §6) in the same commit; it has none today.
-- **README chapter** describing in plain words what is encrypted, what the server can still see, what the link is, and what losing it means.
+- **README chapter** describing in plain words what is encrypted, what the server can still see, what the link is, what losing it means, and that the app keeps working with no internet or when our hosting is down, with work kept on the device.
 
 ## Acceptance
 
@@ -29,7 +29,7 @@ Two halves, built in this order:
 - [ ] A signed-in account can sync a Project (a Free account one, Pro many), open its Edit link on a second device, and edit the same canvas there
 - [ ] A View link expires 3 days after it was last opened, and opening it restarts the clock
 - [ ] A signed-in device without the key lists the Project as locked and shows how to unlock it
-- [ ] A stale write is rejected and the losing device can keep its copy as a new Project
+- [ ] A stale write is rejected, the client merges per row (higher version wins, lower nonce breaks a tie, deletions kept as tombstones) and pushes again; edits to different rows on two devices both survive
 - [ ] Stop sharing re-encrypts under a new key, the old link stops working, and the warning shows before confirming
 - [ ] The first-sync notice appears once with "Copy edit link"
 - [ ] The lock icon shows only for a signed-in, synced Project, in the canvas header after the Fit icon, with the two states, a Tooltip, and a click that opens the README chapter; the lock icon is added to the design system
