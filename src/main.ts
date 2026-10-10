@@ -22,7 +22,5 @@ if (shouldOpenOverview(loadProjects().length === 0, loadTourStatus(), isEditorCh
   createApp(App).mount('#app')
   // The splash in index.html (ticket 69) has done its job once the app is on screen.
   document.getElementById('splash')?.remove()
-  if (import.meta.env.PROD) {
-    startOfflineShell(import.meta.env.BASE_URL)
-  }
+  startOfflineShell(import.meta.env.BASE_URL)
 }

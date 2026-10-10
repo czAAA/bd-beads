@@ -32,7 +32,7 @@ describe('useUpdatePrompt', () => {
     const showToast = vi.fn()
     effectScope().run(() => useUpdatePrompt({ updates, messages: () => en, showToast }))
     release()
-    expect(showToast).toHaveBeenCalledWith('update-ready', en.shell.updateReady, 'info', expect.objectContaining({ label: en.shell.updateReload }), true)
+    expect(showToast).toHaveBeenCalledWith('update-ready', en.shell.updateReady, 'info', expect.objectContaining({ label: en.shell.updateReload }), { persistent: true })
     showToast.mock.calls[0][3].run()
     expect(updates.apply).toHaveBeenCalledOnce()
   })

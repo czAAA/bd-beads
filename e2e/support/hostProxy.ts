@@ -13,11 +13,12 @@ export interface Host {
   down: boolean
   /** Waits this long before answering a path that matches. */
   delay: { pattern: RegExp; ms: number } | null
-  /** Changes the text of a file before it is sent (a new version of the worker, say); returns it as it is for other paths. */
+  /** Changes a text file before it is sent (a new version of the worker, say); returns the text as it is for other paths. */
   rewrite: ((path: string, text: string) => string) | null
   close: () => Promise<void>
 }
 
+/** Starts the stand-in host in front of `upstream` (the preview's address) on a free port; `close()` it after the check. */
 export async function startHost(upstream: string): Promise<Host> {
   const origin = new URL(upstream).origin
   const host: Host = { url: '', down: false, delay: null, rewrite: null, close: async () => {} }

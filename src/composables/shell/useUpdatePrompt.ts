@@ -17,7 +17,7 @@ export interface UpdatePromptDeps {
 export function useUpdatePrompt({ updates, messages, showToast }: UpdatePromptDeps) {
   const stopListening = updates.onReady(() => {
     const t = messages()
-    showToast('update-ready', t.shell.updateReady, 'info', { label: t.shell.updateReload, run: updates.apply }, true)
+    showToast('update-ready', t.shell.updateReady, 'info', { label: t.shell.updateReload, run: updates.apply }, { persistent: true })
   })
   onScopeDispose(stopListening)
 }

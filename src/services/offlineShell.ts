@@ -39,25 +39,26 @@ function watchForUpdates(found: ServiceWorkerRegistration) {
 }
 
 /**
- * Registers the worker found at `baseUrl` once the page has loaded, and asks for persistent storage so the library is
- * not cleared when the device is short of space (the privacy copy says so; ticket 82). Called by each page's entry.
+ * In a production build, registers the worker found at `baseUrl` once the page has loaded, and asks for persistent
+ * storage so the library is not cleared when the device is short of space (the privacy copy says so; ticket 82). Called
+ * by each page's entry; a dev server has no worker to register.
  */
 export function startOfflineShell(baseUrl: string): void {
-  if (!('serviceWorker' in navigator)) return
-  const register = () => {
+  if (!import.meta.env.PROD) return
+  const start = () => {
+    void navigator.storage?.persist?.().catch(() => {})
+    if (!('serviceWorker' in navigator)) return
     navigator.serviceWorker
       .register(`${baseUrl}sw.js`, { scope: baseUrl, updateViaCache: 'none' })
       .then(watchForUpdates)
       .catch(() => {
         // The page works without the worker; it just won't open offline.
       })
-    void navigator.storage?.persist?.().catch(() => {})
   }
-  if (document.readyState === 'complete') register()
-  else window.addEventListener('load', register, { once: true })
+  if (document.readyState === 'complete') start()
+  else window.addEventListener('load', start, { once: true })
 }
 
-/** The page's view of the worker's updates: one set of listeners for the whole page, however many composables ask. */
 export const browserAppUpdates: AppUpdates = {
   onReady(listener) {
     listeners.add(listener)

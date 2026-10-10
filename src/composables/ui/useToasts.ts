@@ -27,8 +27,8 @@ export function useToasts() {
     toasts.value = toasts.value.filter((toast) => toast.id !== id)
   }
 
-  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action'], persistent = false) {
-    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, persistent, stamp: ++stamp }]
+  function show(id: string, text: string, tone: MessageTone = 'success', action?: Toast['action'], options: { persistent?: boolean } = {}) {
+    toasts.value = [...toasts.value.filter((toast) => toast.id !== id), { id, text, tone, action, persistent: options.persistent, stamp: ++stamp }]
   }
 
   return { toasts, show, dismiss }

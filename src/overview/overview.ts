@@ -47,6 +47,4 @@ createApp({
 }).mount('#app')
 
 // A first visit that lands here still downloads the offline copy of the whole app (ticket 69).
-if (import.meta.env.PROD) {
-  startOfflineShell(base)
-}
+startOfflineShell(base)

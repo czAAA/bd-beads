@@ -41,9 +41,11 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('startOfflineShell', () => {
   beforeEach(() => {
+    vi.stubEnv('PROD', true)
     vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete')
   })
   afterEach(() => {
+    vi.unstubAllEnvs()
     vi.unstubAllGlobals()
     vi.restoreAllMocks()
   })
@@ -56,10 +58,20 @@ describe('startOfflineShell', () => {
     expect(persist).toHaveBeenCalledOnce()
   })
 
-  it('does nothing in a browser without service workers', async () => {
-    vi.stubGlobal('navigator', {})
+  it('still asks for storage in a browser without service workers', async () => {
+    const persist = vi.fn(() => Promise.resolve(true))
+    vi.stubGlobal('navigator', { storage: { persist } })
     const { startOfflineShell } = await freshModule()
     expect(() => startOfflineShell('/bd-beads/')).not.toThrow()
+    expect(persist).toHaveBeenCalledOnce()
+  })
+
+  it('does nothing outside a production build', async () => {
+    vi.stubEnv('PROD', false)
+    const { register } = stubBrowser({ controlled: false })
+    const { startOfflineShell } = await freshModule()
+    startOfflineShell('/bd-beads/')
+    expect(register).not.toHaveBeenCalled()
   })
 
   it('does not call the very first install an update', async () => {
