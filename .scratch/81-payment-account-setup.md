@@ -1,8 +1,8 @@
 # 81: Create the Polar account and the Free account / Pro plans
 
-**What to build:** Sign up for Polar (merchant of record, ADR 0014) and define the plans: a Free account gets the backend features that cost little (basic settings in step, one synced Project), Pro gets more (many synced Projects, Palettes saved to the account). The limits come from ticket 367's cost estimate. There is no free promo period.
+**What to build:** Sign up for Polar (merchant of record, ADR 0014) and define the plans: a Free account gets the backend features that cost little (basic settings in step, one synced Project), Pro gets more (many synced Projects, Palettes saved to the account). The limits come from the cost estimate in `docs/research/hosting.md` (ticket 367): what drives cost is how often a synced Project uploads, not how many there are. There is no free promo period.
 
-**Blocked by:** 78 (Accounts and settings sync), 367 (hosting cost estimate, for the limits)
+**Blocked by:** 78 (Accounts and settings sync)
 
 **Status:** ready-for-human
 
