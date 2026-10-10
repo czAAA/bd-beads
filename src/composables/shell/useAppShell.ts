@@ -7,6 +7,7 @@ import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
+import { rotationSwapsAxes } from '../../domain/grid'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
 import { usePenInputMode } from './usePenInputMode'
@@ -181,10 +182,26 @@ function wireAppShell(services: Services) {
     copyMode: mirrorCopyMode,
     previewedAxisCounts: previewedMirrorAxisCounts,
     currentDimmedCells: mirrorCurrentDimmedCells,
+    onHoverCurrent: onMirrorCurrentHover,
+    setAxisCount: onSetMirrorAxisCount,
+    toggleCopyMode: onToggleMirrorCopyMode,
+    mirrorCurrent: onMirrorCurrent,
     restoreAxisCounts: restoreMirrorAxisCounts,
     clearAxisCounts: clearMirrorAxisCounts,
     reset: resetMirrorState,
   } = useMirrorState(currentProject, edit)
+
+  /** -/=/[/] (ADR 0006): steps the Left–right or Top–bottom axis count as seen on screen; a quarter turn swaps which grid-space axis each drives. */
+  function onStepMirrorAxis(direction: 'leftRight' | 'topBottom', delta: number) {
+    const project = currentProject()
+    if (!project) {
+      return
+    }
+
+    const swapped = rotationSwapsAxes(project.rotation)
+    const axis = (direction === 'leftRight') !== swapped ? 'columns' : 'rows'
+    onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
+  }
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that isn't tied to a tool. */
   const {
@@ -565,6 +582,9 @@ function wireAppShell(services: Services) {
     onToggleRowProgress: rowOps.onToggleRowProgress,
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
+    onStepMirrorAxis,
+    onToggleMirrorCopyMode,
+    onMirrorCurrent,
     onZoomIn: () => zoomIn(),
     onZoomOut: () => zoomOut(),
     onFit: resetZoom,
@@ -674,6 +694,12 @@ function wireAppShell(services: Services) {
     previewCells,
     previewedMirrorAxisCounts,
     mirrorCurrentDimmedCells,
+    mirrorAxisCounts,
+    mirrorCopyMode,
+    onSetMirrorAxisCount,
+    onToggleMirrorCopyMode,
+    onMirrorCurrent,
+    onMirrorCurrentHover,
     endStroke,
     onCellPrimaryDown: unlessTourLocks(onCellPrimaryDown),
     onCellPrimaryMove: unlessTourLocks(onCellPrimaryMove),

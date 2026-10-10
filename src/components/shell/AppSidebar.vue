@@ -58,6 +58,12 @@ const {
   onExportPng,
   onExportPdf,
   onSave,
+  mirrorAxisCounts,
+  mirrorCopyMode,
+  onSetMirrorAxisCount,
+  onToggleMirrorCopyMode,
+  onMirrorCurrent,
+  onMirrorCurrentHover,
 } = useAppShell()
 </script>
 
@@ -98,6 +104,8 @@ const {
       :can-remove-selected-line="canRemoveSelectedLine"
       :setting-frame="settingFrame"
       :input-mode="inputModeAvailable ? inputMode : undefined"
+      :mirror-axis-counts="mirrorAxisCounts"
+      :mirror-copy-mode="mirrorCopyMode"
       @select-tool="onSelectTool"
       @toggle-input-mode="toggleInputMode"
       @select-color="onSelectColor"
@@ -115,6 +123,10 @@ const {
       @remove-frame="onRemoveFrame"
       @bring-frame="onBringFrameIntoView"
       @remove-selected-line="onRemoveSelectedLine"
+      @set-mirror-axis-count="onSetMirrorAxisCount"
+      @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
+      @mirror-current="onMirrorCurrent"
+      @mirror-current-hover="onMirrorCurrentHover"
     />
     <!-- The save box (ticket 148): the library's save state, Save Project and Export ▾, beside the open Project's tools. -->
     <SaveBox

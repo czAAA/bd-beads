@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 
-vi.mock('../features', () => ({ TOUR_ENABLED: true }))
+vi.mock('../features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 

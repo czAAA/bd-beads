@@ -5,16 +5,20 @@ import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
+import MirrorControls from './MirrorControls.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 import FrameControls from '../project/FrameControls.vue'
 import ToolGroup from './ToolGroup.vue'
 import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { MIRROR_ENABLED } from '../../features'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Technique } from '../../domain/grid'
 import type { Tool } from '../../domain/tool'
 import type { InputMode } from '../../domain/inputMode'
+import { rotationSwapsAxes } from '../../domain/grid'
+import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
@@ -35,6 +39,9 @@ const props = defineProps<{
   settingFrame?: boolean
   /** Pen mode or Mouse mode (ticket 325), shown after the Frame tool when the device can use it. */
   inputMode?: InputMode
+  /** Mirror's axis counts and copy mode (ADR 0006), read only while MIRROR_ENABLED. */
+  mirrorAxisCounts?: MirrorAxisCounts
+  mirrorCopyMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -58,6 +65,10 @@ const emit = defineEmits<{
   'remove-frame': []
   /** The Frame number was pressed: bring the Frame into view. */
   'bring-frame': []
+  'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
+  'toggle-mirror-copy-mode': []
+  'mirror-current': [axis: 'horizontal' | 'vertical']
+  'mirror-current-hover': [axis: 'horizontal' | 'vertical' | null]
 }>()
 
 const { t, locale } = useI18n()
@@ -116,6 +127,7 @@ const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 
 /** Which disclosure row is open (DisclosureRow card): closed until pressed. */
 const frameOpen = ref(false)
+const mirrorOpen = ref(false)
 
 /** Opening the Frame row with no Frame starts Set Frame as well (Frame card); the row still opens, to say what a Frame is. */
 function onFrameOpenChange(open: boolean) {
@@ -129,7 +141,8 @@ function onFrameOpenChange(open: boolean) {
  * used up or should fall through to its usual Select precedence.
  */
 function collapseExpandedGroup(): boolean {
-  if (frameOpen.value) {
+  if (mirrorOpen.value || frameOpen.value) {
+    mirrorOpen.value = false
     frameOpen.value = false
     return true
   }
@@ -139,6 +152,13 @@ function collapseExpandedGroup(): boolean {
 }
 
 defineExpose({ collapseExpandedGroup })
+
+/** The Mirror row's value ("↔ 1 · ↕ 0"): the counts as seen on screen, so a turned Project swaps them. */
+const mirrorSummary = computed(() => {
+  const counts = props.mirrorAxisCounts ?? NO_MIRROR_AXES
+  const swapped = rotationSwapsAxes(props.project.rotation)
+  return `↔ ${swapped ? counts.rows : counts.columns} · ↕ ${swapped ? counts.columns : counts.rows}`
+})
 
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
 const frameSummary = computed(() => {
@@ -240,6 +260,26 @@ const frameSummary = computed(() => {
     </ToolGroup>
 
     <div class="toolbox__rows">
+      <!-- Mirror (ADR 0006), switched off by MIRROR_ENABLED. -->
+      <DisclosureRow
+        v-if="MIRROR_ENABLED"
+        v-model:open="mirrorOpen"
+        icon="mirror-horizontal"
+        :label="t.toolbox.groups.mirror"
+        :summary="mirrorSummary"
+        data-testid="tool-group-mirror"
+      >
+        <MirrorControls
+          :project="project"
+          :mirror-axis-counts="mirrorAxisCounts ?? NO_MIRROR_AXES"
+          :mirror-copy-mode="mirrorCopyMode ?? false"
+          @set-mirror-axis-count="(axis, count) => emit('set-mirror-axis-count', axis, count)"
+          @toggle-mirror-copy-mode="emit('toggle-mirror-copy-mode')"
+          @mirror-current="(axis) => emit('mirror-current', axis)"
+          @mirror-current-hover="(axis) => emit('mirror-current-hover', axis)"
+        />
+      </DisclosureRow>
+
       <!-- The Frame (CONTEXT.md, ADR 0026): which beads are the Project, and what it measures. -->
       <DisclosureRow
         :open="frameOpen"

@@ -10,6 +10,7 @@ import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
+import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -22,7 +23,7 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
-import { TOUR_ENABLED } from '../../features'
+import { MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
 import { TOOL_HOTKEYS, TOOL_ORDER } from '../tools/toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
@@ -70,6 +71,12 @@ const {
   onExportPng,
   onExportPdf,
   onSave,
+  mirrorAxisCounts,
+  mirrorCopyMode,
+  onSetMirrorAxisCount,
+  onToggleMirrorCopyMode,
+  onMirrorCurrent,
+  onMirrorCurrentHover,
   openPhoneSheet,
   shortcutsHelpOpen,
   tour,
@@ -142,6 +149,18 @@ const deps = computed(() =>
       />
       <ImageColorsButton :colors="activeProject.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
     </div>
+  </BottomSheet>
+
+  <BottomSheet v-if="MIRROR_ENABLED && openPhoneSheet === 'mirror' && activeProject" :title="t.toolbox.groups.mirror" @close="openPhoneSheet = null">
+    <MirrorControls
+      :project="activeProject"
+      :mirror-axis-counts="mirrorAxisCounts"
+      :mirror-copy-mode="mirrorCopyMode"
+      @set-mirror-axis-count="onSetMirrorAxisCount"
+      @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
+      @mirror-current="onMirrorCurrent"
+      @mirror-current-hover="onMirrorCurrentHover"
+    />
   </BottomSheet>
 
   <!--

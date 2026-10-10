@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import OverviewPage from './overview/OverviewPage.vue'
-import { TOUR_ENABLED } from './features'
+import { MIRROR_ENABLED, TOUR_ENABLED } from './features'
 
 beforeEach(() => {
   localStorage.clear()
@@ -27,5 +27,19 @@ describe('the Tour is switched off (ticket 247)', () => {
     const wrapper = mount(OverviewPage, { props: { projectCount: 0, overviewHref: '/bd-beads/overview/' } })
     expect(wrapper.find('[data-testid="menu-item-tour"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
+  })
+})
+
+describe('Mirror is switched off (ticket 365)', () => {
+  it('ships off', () => {
+    expect(MIRROR_ENABLED).toBe(false)
+  })
+
+  it('offers no Mirror row, Dock button or Mirror group in the shortcuts help', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="tool-group-mirror"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-mirror"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 })

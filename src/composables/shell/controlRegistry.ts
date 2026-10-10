@@ -1,4 +1,5 @@
 import { type Chord } from '../../domain/chord'
+import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
@@ -49,11 +50,17 @@ export interface ControlDeps {
   onZoomIn: () => void
   onZoomOut: () => void
   onFit: () => void
+  /** Mirror (switched off, ticket 365): steps the left–right or top–bottom axis count, as seen on screen. */
+  onStepMirrorAxis: (direction: 'leftRight' | 'topBottom', delta: number) => void
+  onToggleMirrorCopyMode: () => void
+  onMirrorCurrent: (axis: 'horizontal' | 'vertical') => void
 }
 
-/** The groups of the Keyboard shortcuts dialog, in order; the first, third, fourth and fifth are the Toolbox's own names. */
-export const CONTROL_GROUPS = ['tools', 'canvas', 'colors', 'edit', 'rowProgress'] as const
-export type ControlGroup = (typeof CONTROL_GROUPS)[number]
+/** Every group of the Keyboard shortcuts dialog; the Toolbox's own names are tools, colors, edit, mirror and rowProgress. */
+export type ControlGroup = 'tools' | 'canvas' | 'colors' | 'edit' | 'mirror' | 'rowProgress'
+
+/** The groups the dialog lists, in order; Mirror's is there only while Mirror is on (MIRROR_ENABLED). */
+export const CONTROL_GROUPS: readonly ControlGroup[] = ['tools', 'canvas', 'colors', 'edit', ...(MIRROR_ENABLED ? (['mirror'] as const) : []), 'rowProgress']
 
 /** Whether the action's key runs while a menu or dialog is open: not at all, regardless, or claimed from the browser but not run. */
 type ModalRule = 'block' | 'ignore' | 'claim'
@@ -105,6 +112,74 @@ const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS
 /** A control with no key, so it only lists its Tooltip copy (ticket 334); its surface runs it. */
 const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName; shownKey?: string } = {}): ControlAction =>
   ({ id, name, group, chords: [], ...rest }) as ControlAction
+
+/** Mirror's actions (ADR 0006): -/= step Left–right, [/] step Top–bottom, M toggles copy mode, H/V are Mirror current. */
+const MIRROR_CONTROLS: readonly ControlAction[] = [
+  {
+    id: 'mirror-left-right-decrease',
+    icon: 'mirror-horizontal',
+    name: (t) => t.mirror.decreaseLeftRightButton,
+    group: 'mirror',
+    chords: [{ key: '-', label: '−' }],
+    needsProject: true,
+    run: (deps) => deps.onStepMirrorAxis('leftRight', -1),
+  },
+  {
+    id: 'mirror-left-right-increase',
+    icon: 'mirror-horizontal',
+    name: (t) => t.mirror.increaseLeftRightButton,
+    group: 'mirror',
+    chords: [{ key: '=', label: '=' }],
+    needsProject: true,
+    run: (deps) => deps.onStepMirrorAxis('leftRight', 1),
+  },
+  {
+    id: 'mirror-top-bottom-decrease',
+    icon: 'mirror-vertical',
+    name: (t) => t.mirror.decreaseTopBottomButton,
+    group: 'mirror',
+    chords: [{ key: '[', label: '[' }],
+    needsProject: true,
+    run: (deps) => deps.onStepMirrorAxis('topBottom', -1),
+  },
+  {
+    id: 'mirror-top-bottom-increase',
+    icon: 'mirror-vertical',
+    name: (t) => t.mirror.increaseTopBottomButton,
+    group: 'mirror',
+    chords: [{ key: ']', label: ']' }],
+    needsProject: true,
+    run: (deps) => deps.onStepMirrorAxis('topBottom', 1),
+  },
+  {
+    id: 'mirror-copy-mode',
+    icon: 'mirror-copy-mode',
+    name: (t) => t.mirror.copyModeLabel,
+    group: 'mirror',
+    chords: [{ key: 'm', label: 'M' }],
+    needsProject: true,
+    run: (deps) => deps.onToggleMirrorCopyMode(),
+  },
+  {
+    id: 'mirror-current-horizontal',
+    icon: 'mirror-horizontal',
+    name: (t) => t.mirror.mirrorCurrentHorizontalButton,
+    group: 'mirror',
+    chords: [{ key: 'h', label: 'H' }],
+    needsProject: true,
+    run: (deps) => deps.onMirrorCurrent('horizontal'),
+  },
+  {
+    id: 'mirror-current-vertical',
+    icon: 'mirror-vertical',
+    name: (t) => t.mirror.mirrorCurrentVerticalButton,
+    group: 'mirror',
+    chords: [{ key: 'v', label: 'V' }],
+    needsProject: true,
+    run: (deps) => deps.onMirrorCurrent('vertical'),
+  },
+  unkeyed('dock-mirror', (t) => t.toolbox.groups.mirror, 'mirror', { icon: 'mirror-horizontal' }),
+]
 
 /**
  * The control registry (ADR 0035, ticket 329): every action with a key, defined once. The keyboard shortcut table is
@@ -302,6 +377,7 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
     },
   },
+  ...(MIRROR_ENABLED ? MIRROR_CONTROLS : []),
   {
     id: 'row-progress',
     icon: 'check',

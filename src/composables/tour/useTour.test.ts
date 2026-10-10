@@ -7,7 +7,7 @@ import { en } from '../../i18n/en'
 import type { TourProgress, TourStatus, TourStore } from '../../services/tourStore'
 import { useTour } from './useTour'
 
-vi.mock('../../features', () => ({ TOUR_ENABLED: true }))
+vi.mock('../../features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
 function setup(initial: { status?: TourStatus; progress?: TourProgress; projects?: Project[]; open?: Project } = {}) {
   const saved = { status: initial.status ?? 'running', progress: initial.progress ?? { done: [] } }

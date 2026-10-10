@@ -7,6 +7,7 @@ import type { InputMode } from '../../domain/inputMode'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
+import { MIRROR_ENABLED } from '../../features'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
@@ -41,6 +42,7 @@ const activeToolAction = computed(() => controlAction(`tool-${props.activeTool}`
 const slots = computed<{ id: PhoneSheet; action: ReturnType<typeof controlAction>; label?: string; icon?: ReturnType<typeof controlAction>['icon']; key?: string; testid: string }[]>(() => [
   { id: 'tool', action: controlAction('dock-tool'), label: activeToolAction.value.name(t.value), icon: activeToolAction.value.icon, key: TOOL_HOTKEYS[props.activeTool], testid: 'dock-tool' },
   { id: 'color', action: controlAction('dock-colors'), icon: 'palette', testid: 'dock-color' },
+  ...(MIRROR_ENABLED ? [{ id: 'mirror' as const, action: controlAction('dock-mirror'), icon: 'mirror-horizontal' as const, testid: 'dock-mirror' }] : []),
   { id: 'frame', action: controlAction('dock-frame'), icon: 'frame', key: FRAME_HOTKEY, testid: 'dock-frame' },
   { id: 'project', action: controlAction('dock-project'), icon: 'pattern', testid: 'dock-project' },
   { id: 'menu', action: controlAction('dock-menu'), icon: 'menu', testid: 'dock-menu' },
