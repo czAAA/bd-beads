@@ -6,7 +6,7 @@
 
 **Status:** done
 
-- [x] CLAUDE.md names `/code-review main`, not the removed `/mattpocock-skills:code-review`
+- [x] CLAUDE.md keeps `/mattpocock-skills:code-review main` (the dev skill set in use) and tells it to run its reviewers on Sonnet with the diff, ticket path and standards path handed over
 - [x] `.ignore` hides `.scratch/.archive/` from ripgrep and the Grep tool; `.claude/settings.json` denies `Read` on it
 - [x] `npm run check` runs typecheck, lint and knip, prints one line per step, and the last 40 lines only for a failing step
 - [x] CLAUDE.md Context hygiene tells agents about the check command, the hidden archive and grepping CONTEXT.md's glossary
