@@ -151,7 +151,11 @@ const deps = computed(() =>
     </div>
   </BottomSheet>
 
-  <BottomSheet v-if="MIRROR_ENABLED && openPhoneSheet === 'mirror' && activeProject" :title="t.toolbox.groups.mirror" @close="openPhoneSheet = null">
+  <BottomSheet
+    v-if="MIRROR_ENABLED && openPhoneSheet === 'mirror' && activeProject"
+    :title="t.toolbox.groups.mirror"
+    @close="openPhoneSheet = null"
+  >
     <MirrorControls
       :project="activeProject"
       :mirror-axis-counts="mirrorAxisCounts"

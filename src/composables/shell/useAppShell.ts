@@ -8,6 +8,7 @@ import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 import { rotationSwapsAxes } from '../../domain/grid'
+import { gridAxisOfDirection } from '../../domain/mirror'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
 import { usePenInputMode } from './usePenInputMode'
@@ -198,8 +199,7 @@ function wireAppShell(services: Services) {
       return
     }
 
-    const swapped = rotationSwapsAxes(project.rotation)
-    const axis = (direction === 'leftRight') !== swapped ? 'columns' : 'rows'
+    const axis = gridAxisOfDirection(direction, rotationSwapsAxes(project.rotation))
     onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
   }
 

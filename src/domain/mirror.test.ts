@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   axisLinePositions,
   clampAxisCount,
+  gridAxisOfDirection,
   maxAxisCount,
   mirrorBlockPlacements,
   mirrorCounterpartInStrip,
@@ -249,5 +250,14 @@ describe('axisLinePositions', () => {
     expect(axisLinePositions(1)).toEqual([0.5])
     expect(axisLinePositions(2)).toEqual([1 / 3, 2 / 3])
     expect(axisLinePositions(3)).toEqual([0.25, 0.5, 0.75])
+  })
+})
+
+describe('gridAxisOfDirection', () => {
+  it('maps Left–right to columns and Top–bottom to rows, and a quarter turn swaps them', () => {
+    expect(gridAxisOfDirection('leftRight', false)).toBe('columns')
+    expect(gridAxisOfDirection('topBottom', false)).toBe('rows')
+    expect(gridAxisOfDirection('leftRight', true)).toBe('rows')
+    expect(gridAxisOfDirection('topBottom', true)).toBe('columns')
   })
 })

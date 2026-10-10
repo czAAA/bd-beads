@@ -18,7 +18,7 @@ import type { Technique } from '../../domain/grid'
 import type { Tool } from '../../domain/tool'
 import type { InputMode } from '../../domain/inputMode'
 import { rotationSwapsAxes } from '../../domain/grid'
-import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
+import { gridAxisOfDirection, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
@@ -65,6 +65,7 @@ const emit = defineEmits<{
   'remove-frame': []
   /** The Frame number was pressed: bring the Frame into view. */
   'bring-frame': []
+  /** Mirror (ADR 0006), from the Mirror row: the axis counts, copy mode and the one-time "Mirror current". */
   'set-mirror-axis-count': [axis: 'columns' | 'rows', count: number]
   'toggle-mirror-copy-mode': []
   'mirror-current': [axis: 'horizontal' | 'vertical']
@@ -127,6 +128,7 @@ const editGroupRef = ref<InstanceType<typeof ToolGroup> | null>(null)
 
 /** Which disclosure row is open (DisclosureRow card): closed until pressed. */
 const frameOpen = ref(false)
+/** Whether the Mirror row is open. */
 const mirrorOpen = ref(false)
 
 /** Opening the Frame row with no Frame starts Set Frame as well (Frame card); the row still opens, to say what a Frame is. */
@@ -157,7 +159,7 @@ defineExpose({ collapseExpandedGroup })
 const mirrorSummary = computed(() => {
   const counts = props.mirrorAxisCounts ?? NO_MIRROR_AXES
   const swapped = rotationSwapsAxes(props.project.rotation)
-  return `↔ ${swapped ? counts.rows : counts.columns} · ↕ ${swapped ? counts.columns : counts.rows}`
+  return `↔ ${counts[gridAxisOfDirection('leftRight', swapped)]} · ↕ ${counts[gridAxisOfDirection('topBottom', swapped)]}`
 })
 
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
