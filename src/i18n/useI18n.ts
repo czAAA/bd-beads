@@ -1,6 +1,9 @@
 import { type ComputedRef, type InjectionKey, type Ref, computed, inject, provide, watchEffect } from 'vue'
 import { en } from './en'
 import { ru } from './ru'
+import { zh } from './zh'
+import { es } from './es'
+import { pl } from './pl'
 import { useDevicePreferences, type DevicePreferences } from '../services/devicePreferences'
 import type { Locale, Translations } from './translations'
 
@@ -10,7 +13,7 @@ export interface I18n {
   t: ComputedRef<Translations>
 }
 
-const dictionaries: Record<Locale, Translations> = { en, ru }
+const dictionaries: Record<Locale, Translations> = { en, ru, zh, es, pl }
 const I18N_KEY: InjectionKey<I18n> = Symbol('i18n')
 
 function createI18n(preferences: DevicePreferences): I18n {

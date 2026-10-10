@@ -34,20 +34,20 @@ import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
 
-export const SANS = 'Inter, system-ui, sans-serif'
-export const MONO = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
-export const SERIF = '"Instrument Serif", "Source Serif 4", Georgia, serif'
+export const SANS = "Inter, system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif"
+export const MONO = '"DM Mono", "JetBrains Mono", ui-monospace, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace'
+export const SERIF = '"Instrument Serif", "Source Serif 4", Georgia, "Songti SC", "Noto Serif CJK SC", serif'
 
 /** Points on the page, as px at 150 dpi: nothing prints under 6.5 pt. */
 export const pt = (value: number) => (value * 150) / 72
 
 export const font = (weight: string, size: number, family: string) => `${weight} ${pt(size)}px ${family}`
 
-/** The type the pages use, loaded before anything is drawn (with the Cyrillic fallbacks, for a Russian export). */
+/** The type the pages use, loaded before anything is drawn (with the Cyrillic and Latin Extended subsets, for a Russian or Polish export). */
 export async function loadPrintFonts(): Promise<void> {
   const fonts = typeof document === 'undefined' ? undefined : document.fonts
   if (!fonts) return
-  const sample = 'Aa Яя 0123'
+  const sample = 'Aa Яя Ąą Łł Śś Żż 0123'
   await Promise.all(
     [font('400', 10, SANS), font('600', 10, SANS), font('700', 10, SANS), font('400', 10, MONO), font('italic 400', 10, SERIF)].map((spec) =>
       fonts.load(spec, sample).catch(() => []),

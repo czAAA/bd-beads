@@ -76,7 +76,7 @@ const expanded = ref(false)
   >
     <template v-if="quantities.length > 0" #suffix>
       <span class="bead-quantities__part"
-        >· <span data-testid="quantity-total-count">{{ groupThousands(totalCount) }}</span
+        >· <span data-testid="quantity-total-count">{{ groupThousands(totalCount, locale) }}</span
         ><template v-if="gramsPerBead !== undefined"
           >×<span data-testid="quantity-avg-weight">{{ avgWeightLabel }}</span
           >≈<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span></template
@@ -115,7 +115,7 @@ const expanded = ref(false)
             {{ colorName(quantity.colorId, quantity.hex) }}
           </td>
           <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
-            {{ groupThousands(quantity.count) }}
+            {{ groupThousands(quantity.count, locale) }}
           </td>
           <td
             v-if="gramsPerBead !== undefined"

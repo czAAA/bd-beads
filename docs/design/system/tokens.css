@@ -244,9 +244,9 @@
   --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. */
   --print-name-opacity: 0.14; /* The maker's name set large under the canvas. */
   --print-png-bead: 30px; /* Bead size in the PNG, fewer pixels when the picture would pass 16 megapixels. */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, monospace;
-  --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, serif;
+  --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
+  --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
   --text-brand: 700 18px/1 var(--font-sans); /* "bd-beads" in the header, beside the accent bead glyph. */
   --text-title: 600 16px/24px var(--font-sans); /* Modal titles (Derived). */
   --text-control: 500 14px/20px var(--font-sans); /* Buttons, selects, row labels (Mirror, Size), box titles, "Row 12", "Pattern". */

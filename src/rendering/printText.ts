@@ -92,14 +92,14 @@ export function printText(project: Project, t: Translations, locale: Locale, dev
     colors: quantities.map((quantity) => ({
       hex: quantity.hex,
       name: (quantity.colorId && t.colorNames[quantity.colorId]) || quantity.hex.toUpperCase(),
-      beads: groupThousands(quantity.count),
+      beads: groupThousands(quantity.count, locale),
       grams: grams(quantity.count),
     })),
     totalBeads: plural(locale, total, t.print.beadsCount),
     totalGrams: grams(total),
     gramsNote:
       perGram && bead
-        ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram)).replace('{bead}', `${bead.name} ${bead.size}`)} ${t.print.spares}`
+        ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram, locale)).replace('{bead}', `${bead.name} ${bead.size}`)} ${t.print.spares}`
         : undefined,
     labels: t.print,
   }

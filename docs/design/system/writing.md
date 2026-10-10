@@ -25,7 +25,7 @@ How the app talks in English and Russian: the voice, sentence patterns, one glos
 ## Plurals and length
 
 - Prefer "Label: number" so no plural is needed: "Patterns imported: 3" / «Схем импортировано: 3».
-- Where a count sits inside a sentence, use `Intl.PluralRules`: English has one and other, Russian one, few and many (1 бисеринка, 2 бисеринки, 5 бисеринок; 1 цвет, 2 цвета, 5 цветов).
+- Where a count sits inside a sentence, use `Intl.PluralRules`: English has one and other, Russian and Polish one, few and many, Spanish one, many and other, Chinese other only (1 бисеринка, 2 бисеринки, 5 бисеринок; 1 цвет, 2 цвета, 5 цветов).
 - Russian runs about a quarter longer: buttons and tabs are sized for the Russian string, text wraps rather than truncates; only Pattern names may end in an ellipsis, with the full name in the tooltip.
 
 ## Fitting longer text
@@ -63,6 +63,26 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | Image colors / Цвета изображения |
 
+## Chinese, Spanish and Polish (ticket 368)
+
+The same voice and sentence patterns in each language; domain words are never retranslated (ADR 0039). Chinese is Simplified, drawn by the device's own font. Spanish and Polish address the reader as "tú" / "ty", in the imperative.
+
+| English | Chinese | Spanish | Polish |
+| --- | --- | --- | --- |
+| Project | 项目 | proyecto | projekt |
+| Pattern | 图案 | patrón | wzór |
+| Bead / beads | 珠子 | cuenta / cuentas | koralik / koraliki |
+| Technique | 编织技法 | técnica | technika |
+| Loom · Peyote · Brick stitch | 织机编织 · 佩奥特编织 · 砖形编织 | Telar · Peyote · Punto ladrillo | Krosno · Peyote · Ścieg ceglasty |
+| Palette | 调色板 | paleta | paleta |
+| Row progress | 行进度 | progreso por filas | postęp rzędów |
+| Beads needed | 所需珠子 | Cuentas necesarias | Potrzebne koraliki |
+| Frame | 边框 | marco | ramka |
+| piece | 片段 | pieza | fragment |
+| Canvas · Hand · Rulers | 画布 · 抓手 · 标尺 | Lienzo · Mano · Reglas | Płótno · Ręka · Linijki |
+| Mirror | 镜像 | Espejo | Odbicie |
+| Convert image | 转换图片 | Convertir imagen | Konwertuj obraz |
+
 ## Color names
 
 | Palette color | English | Russian |
@@ -98,8 +118,8 @@ The Canvas color button (Russian "Цвет холста") offers five background
 
 | What | English | Russian | Rule |
 | --- | --- | --- | --- |
-| Counts | 1 424 | 1 424 | Group thousands with a no-break space in both languages (the rule DESIGN.md set). |
-| Decimals | 9.6 | 9,6 | The language's own decimal sign; at most one decimal for sizes. |
+| Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
+| Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
 | Grid size | 60×80 | 60×80 | Beads across × down with ×, no spaces. |
 | Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The "64×48 mm" in older mockups follows this rule from now on. |
 | Units | 12 mm · 10 MB | 12 мм · 10 МБ | A no-break space between number and unit. |

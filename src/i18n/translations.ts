@@ -87,8 +87,10 @@ export interface Translations {
   }
   languageSwitcher: {
     ariaLabel: string
-    /** EN / RU's accessible name: what pressing it does, in the language it switches from. */
+    /** The switcher's accessible name: what pressing it does, in the language it switches from. "{current}" and "{next}" are language names. */
     switchLabel: string
+    /** Each language's name in this language ("Russian", "русский"). */
+    names: Record<Locale, string>
   }
   projects: {
     heading: string

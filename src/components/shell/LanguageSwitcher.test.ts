@@ -7,38 +7,39 @@ beforeEach(() => {
 })
 
 describe('LanguageSwitcher', () => {
-  it('is one button reading EN / RU, with English current by default', () => {
+  it('is one button listing every language, with English current by default', () => {
     const wrapper = mount(LanguageSwitcher)
 
     expect(wrapper.findAll('button')).toHaveLength(1)
-    expect(wrapper.text().replace(/\s/g, '')).toBe('EN/RU')
+    expect(wrapper.text().replace(/\s/g, '')).toBe('EN/RU/ZH/ES/PL')
     expect(wrapper.find('[data-testid="language-en"]').attributes('aria-current')).toBe('true')
     expect(wrapper.find('[data-testid="language-ru"]').attributes('aria-current')).toBeUndefined()
   })
 
-  it('switches to the other language when pressed, and remembers it', async () => {
+  it('moves to the next language when pressed, round to the first, and remembers it', async () => {
     const wrapper = mount(LanguageSwitcher)
 
-    await wrapper.find('button').trigger('click')
-    expect(wrapper.find('[data-testid="language-ru"]').attributes('aria-current')).toBe('true')
-    expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
-
-    await wrapper.find('button').trigger('click')
-    expect(localStorage.getItem('bd-beads:locale')).toBe('en')
+    for (const expected of ['ru', 'zh', 'es', 'pl', 'en']) {
+      await wrapper.find('button').trigger('click')
+      expect(localStorage.getItem('bd-beads:locale')).toBe(expected)
+    }
   })
 
   it('sets the language pressed, when one code is pressed on its own', async () => {
     const wrapper = mount(LanguageSwitcher)
 
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await wrapper.find('[data-testid="language-pl"]').trigger('click')
 
-    expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
+    expect(localStorage.getItem('bd-beads:locale')).toBe('pl')
+    expect(wrapper.find('[data-testid="language-pl"]').attributes('aria-current')).toBe('true')
   })
 
-  it('names what pressing it does', () => {
+  it('names the current language and what pressing it does', () => {
+    expect(mount(LanguageSwitcher).find('button').attributes('aria-label')).toBe('Language: English. Switch to Russian')
+  })
+
+  it('names them in the current language', () => {
     localStorage.setItem('bd-beads:locale', 'ru')
-    const wrapper = mount(LanguageSwitcher)
-    expect(wrapper.find('button').attributes('aria-label')).toContain('английский')
+    expect(mount(LanguageSwitcher).find('button').attributes('aria-label')).toBe('Язык: русский. Переключить на: китайский')
   })
 })

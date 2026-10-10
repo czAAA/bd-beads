@@ -1,5 +1,6 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
+import { LOCALES } from '../domain/locale'
 import { DEFAULT_ZOOM_PILL_PLACEMENT, formatPlacement, parsePlacement, type ZoomPillPlacement } from '../domain/zoomPillPlacement'
 import { type InputMode } from '../domain/inputMode'
 import type { PositionMarkStyle } from '../rendering/positionMarks'
@@ -93,7 +94,7 @@ export const PREFERENCES = {
   locale: preference<Locale>({
     key: 'bd-beads:locale',
     fallback: 'en',
-    parse: (raw) => (raw === 'en' || raw === 'ru' ? raw : undefined),
+    parse: (raw) => LOCALES.find((locale) => locale === raw),
     write: (locale) => locale,
   }),
 }

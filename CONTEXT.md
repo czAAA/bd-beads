@@ -323,7 +323,7 @@ _Avoid_: onboarding, tutorial, walkthrough, guide, coach marks
 | `composables/<feature>/` | The app's behavior, one composable per concern; user flows are `use<Name>Flow` | `shell/useAppShell.ts` (wires them all), `project/useEdit.ts`, `shell/controlRegistry.ts` |
 | `components/<feature>/` | The Vue components for each feature: `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell`, `tour` | `shell/AppShell.vue` |
 | `components/ui/`, `composables/ui/` | Primitives every feature builds on: `IconButton`, `AppButton`, `MenuButton`, `AppSwatch`, `AppNote`, `AppTooltip`, modals, menus, form fields; generic composables | `controlAction.ts` |
-| `i18n/` | English and Russian strings, plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts` |
+| `i18n/` | One typed dictionary per language (English, Russian, Chinese, Spanish, Polish), plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts`, `zh.ts`, `es.ts`, `pl.ts` |
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
 | `styles/` | Tokens and shared CSS, from the design system | `tokens.css`, `design-values.css` |
 | `overview/` | The Overview page a new visitor lands on (its own entry, `overview/index.html`) | `OverviewPage.vue`, `overviewRoute.ts` |

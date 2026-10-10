@@ -1,7 +1,7 @@
 import { groupThousands } from '../domain/formatNumber'
 import type { Locale } from './translations'
 
-/** The forms a counted word takes: English uses one and other; Russian one, few and many (`writing.md`, Plurals). */
+/** The forms a counted word takes: English one and other; Russian and Polish one, few and many; Spanish one, many and other; Chinese other only (`writing.md`, Plurals). */
 export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string }
 
 const rules = new Map<Locale, Intl.PluralRules>()
@@ -14,5 +14,5 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
     rules.set(locale, rule)
   }
   const form = forms[rule.select(count)] ?? forms.other
-  return form.replace('{count}', groupThousands(count))
+  return form.replace('{count}', groupThousands(count, locale))
 }
