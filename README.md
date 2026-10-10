@@ -5,6 +5,12 @@ Open source under the GNU Affero General Public License v3.0 or later (see [LICE
 
 Hosted privately (tailnet only); see [ADR 0022](docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md).
 
+## Works offline
+
+bd-beads is local-first (ADR 0001): every Project lives in the browser, so the app opens and works with no internet, and when our hosting is down, from the copy the service worker cached (ticket 69). Only what needs the backend (View links, sync, accounts; ADR 0014) stops, and says so with a message (ticket 381). The first visit needs a network once. Limits that cost money are enforced on the server, never in this code (ADR 0044).
+
+To try it: open the built app (`npm run build && npm run preview`), load it once, switch the browser to offline in DevTools (Network), and reload.
+
 ## Deploy
 
 The build is served from the owner's Flint 2 router, reachable only over Tailscale; see [ADR 0022](docs/adr/0022-self-hosted-deploy-to-the-flint-2-over-tailscale.md) for why and what a new host would need. Every push to `main` runs [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml): it tests and builds the app, joins the tailnet as `tag:ci` and rsyncs `dist/` to the router. No manual deploy step is needed. A run can also be started by hand from the Actions tab ("Run workflow").

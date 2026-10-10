@@ -10,7 +10,7 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 | [Toolbox and controls](toolbox.md) | Toolbox, Tool group, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
 | [Editing a Pattern](editing.md) | Eraser, Clear, Pattern size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
 | [Import and rendering](import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
-| [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Edit link, Locked Project, Surface view |
+| [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](overview-and-tour.md) | Overview, Tour |
 
 Add a new term to the file of its area, and to this table. `CONTEXT.md` keeps the short core (Quick start, Key concepts, Where to start) and points here.

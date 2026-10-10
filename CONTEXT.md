@@ -41,7 +41,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Toolbox and controls](docs/glossary/toolbox.md) | Toolbox, Tool group, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
 | [Editing a Pattern](docs/glossary/editing.md) | Eraser, Clear, Pattern size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
-| [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Edit link, Locked Project, Surface view |
+| [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](docs/glossary/overview-and-tour.md) | Overview, Tour |
 
 ## How to run it
