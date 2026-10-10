@@ -51,9 +51,9 @@ const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size:
 const surfaceAt = (zoom: number) => surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom, viewport: { width: 800, height: 600 } })
 
 /** What the overlay hands drawRulers: the view's surface and the Ruler layout made for it. */
-function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: number; numbers: boolean }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'fontPx' | 'pixelRatio' | 'theme'> {
+function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: number; numbers: boolean }): Pick<RulerDrawInput, 'project' | 'surface' | 'layout' | 'pixelRatio' | 'theme'> {
   const surface = surfaceAt(zoom)
-  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), fontPx: 11, pixelRatio: 1, theme: LIGHT_THEME }
+  return { project, surface, layout: rulerLayout(project, surface, { fontPx: 11, numbers }), pixelRatio: 1, theme: LIGHT_THEME }
 }
 
 describe('drawRulers', () => {

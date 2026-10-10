@@ -416,7 +416,7 @@ function drawOverlay(): void {
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
-      rulers: { layout: rulers.value, surface: surface.value, fontPx: rulerFontPx() },
+      rulers: { layout: rulers.value, surface: surface.value },
     })
   }
 }

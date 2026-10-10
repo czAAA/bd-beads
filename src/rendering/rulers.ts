@@ -1,8 +1,9 @@
 import type { Frame } from '../domain/canvas'
 import type { Technique } from '../domain/grid'
-import { pieceAreasOf, PIECE_AREA_MIN_BEADS } from '../domain/pieces'
+import { pieceAreasOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
-import { CELL_SIZE_PX, FRAME_OUTSET_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
+import { rulerScale, type RulerScale } from './rulerScale'
+import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
 
 /**
  * The rulers and the lines they hang from on the open canvas (Rulers and BeadBoard cards, ADR 0026): every row and
@@ -13,14 +14,14 @@ import { CELL_SIZE_PX, FRAME_OUTSET_PX, rowShiftPx, rowTopPx, type SurfaceView }
  * the ones a press is tested against, and a test can find a number the way a pointer does (ADR 0033).
  */
 
-/** How far a piece's rectangle and the Frame's line sit outside their outermost beads (BeadBoard and Frame cards). */
-const PIECE_OUTSET_PX = 5
-/** The gap between a ruler number and the line it hangs from (Rulers card). */
-const RULER_GAP_PX = 3
+/** A Piece area carries rulers once it spans more than this many beads in total (ticket 377); a single row of five does. */
+const RULED_PIECE_MIN_AREA = 4
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
 const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
 const MONO_ADVANCE = 0.6
+/** The most half the band of numbers counts for when the dots stand on its line, as a share of the numbers' size: a 2-digit row number's, so only wider ones (3 digits, or turned) are held back. */
+const DOT_BAND_HALF_MAX = 0.6
 /** The clear space kept between two neighbouring numbers when the Ruler step is chosen (ADR 0033). */
 const RULER_NUMBER_GAP_PX = 4
 /** Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the step applies. */
@@ -58,14 +59,14 @@ export interface RulerLabel {
 /** What decides which boxes carry rulers. */
 export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }
 
-/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of at least 3x3 beads (those near the viewport are chosen by the caller). */
-function ruledBoxes(project: RuledProject): RuledBox[] {
+/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). */
+function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
-    return [{ ...project.frame, kind: 'frame', outset: FRAME_OUTSET_PX, sides: 'all' }]
+    return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
   return pieceAreasOf(project.beads, project.technique)
-    .filter((area) => area.rows >= PIECE_AREA_MIN_BEADS && area.columns >= PIECE_AREA_MIN_BEADS)
-    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: PIECE_OUTSET_PX, sides: 'start' as const }))
+    .filter((area) => area.rows * area.columns > RULED_PIECE_MIN_AREA)
+    .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
 
 /** The Ruler steps in order: every bead, then 5, 10, 50, 100, 500... (ADR 0033). */
@@ -134,7 +135,7 @@ export interface RulerDot {
 }
 
 export interface RulerLayoutOptions {
-  /** The numbers' size in px: 11, or 12 on a phone. */
+  /** The numbers' size in px at zoom 1: 11, or 12 on a phone. It grows or shrinks with the zoom (`RulerScale`). */
   fontPx: number
   /** Whether the numbers and dots are drawn (the Rulers toggle). Lines and picking do not depend on it. */
   numbers: boolean
@@ -142,6 +143,8 @@ export interface RulerLayoutOptions {
 
 /** What the rulers of one view are: what to draw, and what a point of the viewport selects. */
 export interface RulerLayout {
+  /** What the parts of the rulers measure at this zoom: the numbers' size, their gap to the line and the dots' radii. */
+  scale: RulerScale
   /** Whether the numbers and dots are drawn (the Rulers toggle). */
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
@@ -171,7 +174,8 @@ interface BoxLayout {
  * turned. Dots stand on that same line. Numbers stay upright; only a column number from 100 up turns. The Ruler step
  * is worked out here once per axis.
  */
-function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewport: { width: number; height: number }, fontPx: number): BoxLayout {
+function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+  const { fontPx, gap } = scale
   const margin = fontPx * 4
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
@@ -221,17 +225,19 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
     const turned = column && index + 1 >= TURNED_FROM
     const band = column ? columnBand : rowSize
     const half = column ? columnBand.height / 2 : rowSize.width / 2
+    // The dots stand no further out than a 2-digit number's half, so a turned 3-digit number or a wide row number does not push them off the line (ticket 377).
+    const dotHalf = Math.min(half, fontPx * DOT_BAND_HALF_MAX)
     const step = column ? columnStep : rowStep
     const { x, y, nx, ny } = outward(gridX, gridY, normal)
 
-    const dotAway = box.outset + RULER_GAP_PX + half
+    const dotAway = box.outset + gap + dotHalf
     const dot = { x: x + nx * dotAway, y: y + ny * dotAway }
     if (dotSeen(dot)) {
-      beads.push({ ...dot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % step === 0, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half })
+      beads.push({ ...dot, fifth: (index + 1) % 5 === 0, numbered: (index + 1) % step === 0, axis, index, selection, position, normal: [nx, ny], pitch: column ? columnPitch : rowPitch, half: dotHalf })
     }
     if ((index + 1) % step === 0) {
       const size = labelBox(text, turned, fontPx)
-      const reach = RULER_GAP_PX + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
+      const reach = gap + (Math.abs(nx) * (column ? band.width : rowSize.width) + Math.abs(ny) * (column ? band.height : rowSize.height)) / 2
       const spot = { x: x + nx * (box.outset + reach), y: y + ny * (box.outset + reach), ...size }
       if (seen(spot)) {
         labels.push({ text, ...spot, turned, fifth: (index + 1) % 5 === 0, axis, index, selection, position })
@@ -280,16 +286,18 @@ function labelAt(labels: readonly RulerLabel[], point: { x: number; y: number })
 export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
-  const reach = fontPx * 4 + FRAME_OUTSET_PX + NEAR_VIEWPORT_PX
-  const boxes = ruledBoxes(project).filter((box) => {
+  const scale = rulerScale(surface.zoom, fontPx)
+  const reach = scale.fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
+  const boxes = ruledBoxes(project, scale).filter((box) => {
     const shown = surface.beadBox(box)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  const laid = boxes.map((box) => layBox(box, project.technique, surface, viewport, fontPx))
+  const laid = boxes.map((box) => layBox(box, project.technique, surface, viewport, scale))
   const everyLabel = laid.flatMap((box) => box.labels)
   const everyBead = laid.flatMap((box) => box.beads)
 
   return {
+    scale,
     numbers,
     boxes,
     labels: numbers ? everyLabel : [],
@@ -306,7 +314,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
         const [nx, ny] = dot.normal
         const across = Math.abs(dx * nx + dy * ny)
         const alongRuler = Math.abs(-dx * ny + dy * nx)
-        if (across <= dot.half + RULER_GAP_PX + PICK_SLACK_PX && alongRuler <= dot.pitch / 2 + PICK_SLACK_PX / 4 && (!best || alongRuler < best.along)) {
+        if (across <= dot.half + scale.gap + PICK_SLACK_PX && alongRuler <= dot.pitch / 2 + PICK_SLACK_PX / 4 && (!best || alongRuler < best.along)) {
           best = { along: alongRuler, selection: dot.selection }
         }
       }

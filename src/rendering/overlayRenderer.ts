@@ -81,9 +81,9 @@ export interface OverlayInput {
   space?: Space
   /**
    * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with the
-   * numbers of the Ruler layout while it has them. `surface` is the view the layout was made for and `fontPx` the numbers' size.
+   * numbers of the Ruler layout while it has them. `surface` is the view the layout was made for.
    */
-  rulers?: { layout: RulerLayout; surface: SurfaceView; fontPx: number }
+  rulers?: { layout: RulerLayout; surface: SurfaceView }
   /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
@@ -546,7 +546,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       project,
       surface: rulers.surface,
       layout: rulers.layout,
-      fontPx: rulers.fontPx,
       pixelRatio,
       theme,
       cursor,

@@ -2,6 +2,7 @@ import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/passes'
 import type { DrawingContext } from './beadLook'
+import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
@@ -22,8 +23,6 @@ export interface RulerDrawInput {
   surface: SurfaceView
   /** What to draw; with its numbers off, the Pieces' rectangles go too, but the Frame's line is drawn either way. */
   layout: RulerLayout
-  /** The numbers' size in px. */
-  fontPx: number
   pixelRatio: number
   theme: ProjectTheme
   /** The keyboard's bead cursor: its row and column numbers are marked. */
@@ -43,15 +42,11 @@ function strokeBoxLine(context: DrawingContext, box: RuledBox, surface: SurfaceV
   context.stroke()
 }
 
-/** A Ruler dot's radius, and a 5th one's (Rulers card). */
-const DOT_RADIUS_PX = 1
-const FIFTH_DOT_RADIUS_PX = 1.75
-
-/** One Ruler dot: the number's colours, every 5th bolder. */
-function drawDot(context: DrawingContext, dot: RulerDot, theme: ProjectTheme): void {
+/** One Ruler dot: the number's colours, every 5th bolder; its radius follows the zoom (ticket 377). */
+function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, theme: ProjectTheme): void {
   context.fillStyle = dot.fifth ? theme.rulerStrong : theme.ruler
   context.beginPath()
-  context.arc(dot.x, dot.y, dot.fifth ? FIFTH_DOT_RADIUS_PX : DOT_RADIUS_PX, 0, Math.PI * 2)
+  context.arc(dot.x, dot.y, dot.fifth ? scale.fifthDotRadius : scale.dotRadius, 0, Math.PI * 2)
   context.fill()
 }
 
@@ -91,7 +86,8 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
  * viewport's own px over whatever is drawn.
  */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
-  const { project, surface, layout, fontPx, pixelRatio, theme, cursor } = input
+  const { project, surface, layout, pixelRatio, theme, cursor } = input
+  const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
   for (const box of layout.boxes) {
@@ -101,7 +97,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
     }
   }
   for (const dot of layout.dots) {
-    drawDot(context, dot, theme)
+    drawDot(context, dot, layout.scale, theme)
   }
   for (const label of layout.labels) {
     drawLabel(context, label, fontPx, project, theme, cursor)

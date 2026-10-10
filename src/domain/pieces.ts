@@ -117,9 +117,6 @@ function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean 
   }, b)
 }
 
-/** A Piece area is shown (rectangle and rulers) only when at least this many beads wide and tall, i.e. larger than 2x2. */
-export const PIECE_AREA_MIN_BEADS = 3
-
 const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
 
 /**
