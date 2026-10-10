@@ -4,7 +4,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Before exploring, read these
 
-- **`CONTEXT.md`** at the repo root.
+- **`CONTEXT.md`** at the repo root, the short core. Its glossary is `docs/glossary/`: grep it for the terms you need instead of reading it whole.
 - **`docs/adr/`**: read ADRs that touch the area you're about to work in.
 - **`DESIGN.md`** at the repo root, before any UI work: the visual language every screen follows (ADR 0021).
 
@@ -26,7 +26,7 @@ Single-context repo:
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
+When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in the glossary (`docs/glossary/`, indexed from `CONTEXT.md`). Don't drift to synonyms the glossary explicitly avoids.
 
 If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
 

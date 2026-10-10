@@ -31,7 +31,7 @@ Before writing or reviewing code, read `CODING_STANDARDS.md`: where code goes, t
 
 ### Domain docs
 
-Single-context layout: one `CONTEXT.md` at the repo root, plus `docs/adr/` for architecture decision records. See `docs/agents/domain.md`.
+Single-context layout: one `CONTEXT.md` at the repo root (the core; its glossary is `docs/glossary/`), plus `docs/adr/` for architecture decision records. See `docs/agents/domain.md`.
 
 ### Design
 
@@ -47,6 +47,6 @@ The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticke
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
 - Before pushing run `npm run check` (typecheck, lint, knip; prints only failures), not the three by hand.
 - `.scratch/.archive/` is hidden from search and read (`.ignore`, `.claude/settings.json`). Read an archived ticket only when a live one points at it, by `cat` in Bash.
-- `CONTEXT.md` is long, and most of it is the `## Language` glossary: read the top (up to Key concepts), then grep it for the term you need.
+- The glossary is `docs/glossary/` (one file per area; index in its `README.md`): grep it for the term you need, don't read it whole.
 - Never cat lock files, generated files, minified bundles, or large logs.
 - Screenshots and visual-test artifacts (`test-results/`, `e2e/visual/__screenshots__/`) are images: each one read into context stays there for the rest of the session. Trust Playwright's text reporter (pass/fail, pixel-diff count) first; only `Read` an image when a diff genuinely needs visual judgment. Crop to the region under review before reading rather than reading a full-page screenshot. When a visual test fails, read the `diff.png` before reaching for `actual.png`/`expected.png` too.
