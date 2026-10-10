@@ -2,6 +2,8 @@
 
 **What to build:** Add a web app manifest and a service worker so bd-beads can be installed to a home screen or desktop, and so it loads and works completely, from the last version saved on the device, when there is no network or when our hosting is down (ADR 0001, ADR 0014). Every Pattern already lives on the device, so nothing is lost; the point is that a refresh must still open the app. Only what needs the backend (ticket 381) stops working. This is the main goal of the ticket.
 
+**Spec:** 382
+
 **Blocked by:** None (can start immediately)
 
 **Status:** ready-for-agent

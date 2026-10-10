@@ -2,6 +2,8 @@
 
 **What to build:** Everything that runs on the device keeps working with no internet or when our hosting is down (ticket 69). The features that need the backend (View link, sync, login, saved Palettes, settings kept in step; none are built yet) must fail the same gentle way, through one shared mechanism rather than each feature's own handling (ADR 0014, ADR 0020).
 
+**Spec:** 382
+
 **Blocked by:** 69 (the offline shell); built together with the first backend feature (71, 323, 78)
 
 **Status:** needs-triage
