@@ -23,10 +23,9 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
-import { MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
+import { DOCK_LAYOUT_ENABLED, MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
 import { TOOL_HOTKEYS, TOOL_ORDER } from '../tools/toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { DOCK_LAYOUT_ENABLED } from '../../features'
 
 const {
   t,
