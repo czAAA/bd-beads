@@ -5,15 +5,15 @@ import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
 /**
- * One item of an AppMenu (Menu card): 34px, an icon and a label; choosing it runs `select` and closes the menu. With an
- * `href` it is a link (HeaderMenu card: Overview is navigation, not an action), so the browser follows it itself.
+ * One item of an AppMenu (Menu card): 34px, an icon and a label; choosing it runs `select` and closes the menu.
+ * `chosen` makes it one of a set to pick from (the language list, ticket 368): a check marks the chosen one, and the
+ * others keep the same space so the labels line up. With an `href` it is a link (HeaderMenu card: Overview is
+ * navigation, not an action), so the browser follows it itself.
  */
-const props = withDefaults(defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean }>(), {
-  icon: undefined,
-  disabled: false,
-  href: undefined,
-  current: false,
-})
+const props = withDefaults(
+  defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean }>(),
+  { icon: undefined, chosen: undefined, disabled: false, href: undefined, current: false },
+)
 const emit = defineEmits<{ select: [] }>()
 const closeMenu = inject(MENU_CLOSE, () => {})
 
@@ -29,8 +29,21 @@ function onClick() {
     <AppIcon v-if="icon" :name="icon" :size="16" />
     <span class="app-menu-item__label"><slot /></span>
   </a>
-  <button v-else class="ui-control app-menu-item" type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="onClick">
+  <button
+    v-else
+    class="ui-control app-menu-item"
+    type="button"
+    role="menuitem"
+    tabindex="-1"
+    :disabled="disabled"
+    :aria-current="chosen ? 'true' : undefined"
+    @click="onClick"
+  >
     <AppIcon v-if="icon" :name="icon" :size="16" />
+    <template v-else-if="chosen !== undefined">
+      <AppIcon v-if="chosen" name="check" :size="16" />
+      <span v-else class="app-menu-item__gap" aria-hidden="true" />
+    </template>
     <span class="app-menu-item__label"><slot /></span>
   </button>
 </template>
@@ -74,5 +87,9 @@ function onClick() {
 .app-menu-item:disabled {
   color: var(--faint);
   cursor: not-allowed;
+}
+.app-menu-item__gap {
+  flex: none;
+  width: 16px;
 }
 </style>

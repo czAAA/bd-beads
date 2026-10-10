@@ -14,7 +14,7 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
   let offsetX = 0
   let offsetY = 0
 
-  function place() {
+  function place(settled = false) {
     const button = anchor.value?.getBoundingClientRect()
     const list = popup.value
     if (!button || !list) return
@@ -33,6 +33,12 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     void nextTick(() => {
       const placed = popup.value?.getBoundingClientRect()
       if (!placed) return
+      // Once `fixed`, the list may take a different width than it had inside its button's box (ticket 368: a narrow
+      // button in a sheet), which moves an end-aligned popup: place it again with the real width before measuring.
+      if (!settled && Math.abs(placed.width - width) > 0.5) {
+        place(true)
+        return
+      }
       const dx = placed.left - left
       const dy = placed.top - top
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return
@@ -42,15 +48,17 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     })
   }
 
+  const onMove = () => place()
+
   function follow() {
     place()
-    window.addEventListener('scroll', place, true)
-    window.addEventListener('resize', place)
+    window.addEventListener('scroll', onMove, true)
+    window.addEventListener('resize', onMove)
   }
 
   function stop() {
-    window.removeEventListener('scroll', place, true)
-    window.removeEventListener('resize', place)
+    window.removeEventListener('scroll', onMove, true)
+    window.removeEventListener('resize', onMove)
   }
 
   onBeforeUnmount(stop)

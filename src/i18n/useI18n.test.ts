@@ -7,9 +7,11 @@ import { en } from './en'
 import { es } from './es'
 import { pl } from './pl'
 import { ru } from './ru'
+import { uk } from './uk'
+import { be } from './be'
 import { zh } from './zh'
 
-const dictionaries = { en, ru, zh, es, pl }
+const dictionaries = { en, ru, uk, be, zh, es, pl }
 
 beforeEach(() => {
   localStorage.clear()
@@ -38,13 +40,6 @@ describe('copy rules (writing.md)', () => {
   it.each(LOCALES)('has no em dash in any %s string', (locale) => {
     const dictionary = dictionaries[locale]
     expect(JSON.stringify(dictionary)).not.toContain('—')
-  })
-
-  it('has a dictionary for every language, each with its own name for the switcher', () => {
-    for (const locale of LOCALES) {
-      const dictionary = dictionaries[locale]
-      expect(Object.keys(dictionary.languageSwitcher.names)).toEqual([...LOCALES])
-    }
   })
 
   it('gives a counted word the forms its language needs', () => {

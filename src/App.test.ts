@@ -10,6 +10,7 @@ import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
+import { chooseLanguage } from './testUtils/chooseLanguage'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -140,7 +141,7 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="app-below-canvas"]').exists()).toBe(false)
 
     expect(topBar.find('h1').exists()).toBe(true)
-    expect(topBar.find('[data-testid="language-en"]').exists()).toBe(true)
+    expect(topBar.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(column.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(topBar.find('[data-testid="new-project-button"]').exists()).toBe(true)
     expect(canvas.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
@@ -852,7 +853,7 @@ describe('App', () => {
   it('switches every translated label when the language switcher is used, and persists the choice across a reload', async () => {
     const wrapper = mount(App)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     expect(wrapper.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
     expect(wrapper.find('button[type="submit"]').text()).toBe(en.form.submit)
@@ -1115,7 +1116,7 @@ describe('App storage writes', () => {
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(ru.storage.saveFailedMessage)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)
   })

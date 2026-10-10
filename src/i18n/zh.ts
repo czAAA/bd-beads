@@ -74,8 +74,6 @@ export const zh: Translations = {
   },
   languageSwitcher: {
     ariaLabel: '界面语言',
-    switchLabel: '语言：{current}。切换到{next}',
-    names: { en: '英语', ru: '俄语', zh: '中文', es: '西班牙语', pl: '波兰语' },
   },
   projects: {
     heading: '已保存的项目',

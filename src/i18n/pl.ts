@@ -74,8 +74,6 @@ export const pl: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Język interfejsu',
-    switchLabel: 'Język: {current}. Przełącz na: {next}',
-    names: { en: 'angielski', ru: 'rosyjski', zh: 'chiński', es: 'hiszpański', pl: 'polski' },
   },
   projects: {
     heading: 'Zapisane projekty',

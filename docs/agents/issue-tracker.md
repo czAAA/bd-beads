@@ -45,7 +45,7 @@ A number is never reused, and a ticket keeps its number when it moves to `.archi
 - Sections a larger ticket may add under the checklist: `### <group>` headings to split the checklist, and `### Done when` for the checks that close it.
 - On closing, tick every box that was done, say in the ticket what was left out and why, set `**Status:** done`, and move the file to `.archive/` in the same change.
 
-Tickets are English-only; the app's own language switcher (EN / RU / ZH / ES / PL) (see CONTEXT.md's Language section) is a separate, user-facing feature and not part of the issue-tracker workflow.
+Tickets are English-only; the app's own language switcher (see CONTEXT.md's Language section) is a separate, user-facing feature and not part of the issue-tracker workflow.
 
 ## Workflow
 

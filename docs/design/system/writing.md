@@ -25,7 +25,7 @@ How the app talks in English and Russian: the voice, sentence patterns, one glos
 ## Plurals and length
 
 - Prefer "Label: number" so no plural is needed: "Patterns imported: 3" / «Схем импортировано: 3».
-- Where a count sits inside a sentence, use `Intl.PluralRules`: English has one and other, Russian and Polish one, few and many, Spanish one, many and other, Chinese other only (1 бисеринка, 2 бисеринки, 5 бисеринок; 1 цвет, 2 цвета, 5 цветов).
+- Where a count sits inside a sentence, use `Intl.PluralRules`: English has one and other, Russian, Ukrainian, Belarusian and Polish one, few and many, Spanish one, many and other, Chinese other only (1 бисеринка, 2 бисеринки, 5 бисеринок; 1 цвет, 2 цвета, 5 цветов).
 - Russian runs about a quarter longer: buttons and tabs are sized for the Russian string, text wraps rather than truncates; only Pattern names may end in an ellipsis, with the full name in the tooltip.
 
 ## Fitting longer text
@@ -63,9 +63,25 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | Image colors / Цвета изображения |
 
-## Chinese, Spanish and Polish (ticket 368)
+## Ukrainian, Belarusian, Chinese, Spanish and Polish (ticket 368)
 
-The same voice and sentence patterns in each language; domain words are never retranslated (ADR 0039). Chinese is Simplified, drawn by the device's own font. Spanish and Polish address the reader as "tú" / "ty", in the imperative.
+The same voice and sentence patterns in each language; domain words are never retranslated (ADR 0039). Ukrainian and Belarusian follow the Russian column (same sentence patterns, «ялинки» for quoted buttons, one, few and many plurals); Belarusian is in the official orthography. Chinese is Simplified, drawn by the device's own font. Spanish and Polish address the reader as "tú" / "ty", in the imperative.
+
+| English | Ukrainian | Belarusian |
+| --- | --- | --- |
+| Project | проєкт | праект |
+| Pattern | схема | схема |
+| Bead / beads | бісерина / бісер | бісерына / бісер |
+| Technique | техніка плетіння | тэхніка пляцення |
+| Loom · Peyote · Brick stitch | Ткацтво · Мозаїчне плетіння · Цегляне плетіння | Ткацтва · Мазаічнае пляценне · Цаглянае пляценне |
+| Palette | палітра | палітра |
+| Row progress | прогрес за рядами | прагрэс па радках |
+| Beads needed | Потрібно бісеру | Патрэбна бісеру |
+| Frame | рамка | рамка |
+| piece | фрагмент | фрагмент |
+| Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
+| Mirror | Відображення | Адлюстраванне |
+| Convert image | Конвертувати зображення | Канвертаваць выяву |
 
 | English | Chinese | Spanish | Polish |
 | --- | --- | --- | --- |
@@ -118,8 +134,8 @@ The Canvas color button (Russian "Цвет холста") offers five background
 
 | What | English | Russian | Rule |
 | --- | --- | --- | --- |
-| Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
-| Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
+| Counts | 1 424 | 1 424 | Group thousands from four digits (`Intl.NumberFormat`, ticket 368). English, Russian, Ukrainian, Belarusian and Polish use a no-break space (the rule DESIGN.md set); Spanish writes 1.424 and Chinese 1,424. |
+| Decimals | 9.6 | 9,6 | The language's own decimal sign (a comma in Russian, Ukrainian, Belarusian, Spanish and Polish; a period in English and Chinese); at most one decimal for sizes. |
 | Grid size | 60×80 | 60×80 | Beads across × down with ×, no spaces. |
 | Measured size | 9.6 × 10.4 cm | 9,6 × 10,4 см | × with spaces, one unit for both sides, cm from 10 mm up (as the app does). The "64×48 mm" in older mockups follows this rule from now on. |
 | Units | 12 mm · 10 MB | 12 мм · 10 МБ | A no-break space between number and unit. |

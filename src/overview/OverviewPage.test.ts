@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
+import { chooseLanguage } from '../testUtils/chooseLanguage'
 
 vi.mock('../features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
@@ -59,7 +60,7 @@ describe('OverviewPage', () => {
 
     it('has the Russian notes', async () => {
       const wrapper = page()
-      await wrapper.find('[data-testid="language-switcher"]').trigger('click')
+      await chooseLanguage(wrapper, 'ru')
       expect(wrapper.find('[data-testid="overview-note-make-this"]').text()).toBe('её вы и сделаете')
       expect(wrapper.find('[data-testid="overview-note-steps"]').text()).toBe('одиннадцать коротких шагов')
     })
@@ -111,7 +112,7 @@ describe('OverviewPage', () => {
 
   it('switches to Russian with the language switcher, and remembers it', async () => {
     const wrapper = page()
-    await wrapper.find('[data-testid="language-switcher"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первый проект')
     expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
     expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
@@ -187,7 +188,7 @@ describe('the features carousel', () => {
 
   it('has the Russian arrow labels', async () => {
     const wrapper = page()
-    await wrapper.find('[data-testid="language-switcher"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="feature-prev"]').attributes('aria-label')).toBe('Предыдущая возможность')
     expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')
   })

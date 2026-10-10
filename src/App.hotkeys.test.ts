@@ -7,6 +7,7 @@ import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject } from './testUtils/seedProject'
+import { chooseLanguage } from './testUtils/chooseLanguage'
 
 beforeEach(() => {
   localStorage.clear()
@@ -39,7 +40,7 @@ describe('App Toolbox controls (ticket 75)', () => {
   it.each(tabs)('draws $testId as an icon-only button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
     const wrapper = await mountWithProject(15, 30)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     const tab = wrapper.find(`[data-testid="${testId}"]`)
     expect(tab.classes()).toContain('icon-btn--tool')
     expect(tab.find('svg').attributes('data-icon')).toBe(icon)
@@ -47,14 +48,14 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(tab.attributes('title')).toBeUndefined()
     expect(tab.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
 
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))
   })
 
   it.each(iconButtons)('draws $testId as an icon button named for screen readers, in both languages', async ({ testId, label, icon, chip }) => {
     const wrapper = await mountWithProject(15, 30)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     const button = wrapper.find(`[data-testid="${testId}"]`)
     expect(button.classes()).toContain('icon-btn')
     expect(button.find('svg').attributes('data-icon')).toBe(icon)
@@ -63,13 +64,13 @@ describe('App Toolbox controls (ticket 75)', () => {
     expect(button.attributes('title')).toBeUndefined()
     if (chip && button.attributes('aria-disabled') !== 'true') expect(button.element.closest('.app-tooltip')!.querySelector('.app-tooltip__key')?.textContent).toBe(chip)
 
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find(`[data-testid="${testId}"]`).attributes('aria-label')).toBe(label(ru))
   })
 
   it('puts Remove line and Delete all under the tabs as links, Delete all in the danger color', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     const removeLine = wrapper.find('[data-testid="tool-remove-line"]')
     expect(removeLine.text()).toBe(en.tools.removeLineShort)
@@ -80,7 +81,7 @@ describe('App Toolbox controls (ticket 75)', () => {
 
   it('gives the three always-open groups a label and makes Frame a disclosure row (ticket 174 hid Mirror pending its own redesign)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     expect(wrapper.findAll('.tool-group__title').map((title) => title.text())).toEqual([
       en.toolbox.groups.tools,
@@ -136,13 +137,13 @@ describe('App Progress bar', () => {
     const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     expect(wrapper.find('[data-testid="progress-bar-previous"]').text()).toBe('Row not done')
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe('Row done')
     expect(wrapper.find('[data-testid="progress-bar-previous"] svg').attributes('data-icon')).toBe('chevron-left')
     expect(wrapper.find('[data-testid="progress-bar-next"] svg').attributes('data-icon')).toBe('check')
 
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.previousButton)
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
   })
@@ -150,7 +151,7 @@ describe('App Progress bar', () => {
   it('makes Row done the primary action and names the switch for screen readers', async () => {
     const wrapper = await mountWithProject(15, 30)
     await enableRowProgress(wrapper)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     expect(wrapper.find('[data-testid="progress-bar-next"]').classes()).toContain('app-button--primary')
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')

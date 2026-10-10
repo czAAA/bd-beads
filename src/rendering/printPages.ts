@@ -34,6 +34,7 @@ import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
 
+// The canvas can't read CSS variables, so these three stacks repeat `docs/design/system/tokens.json` (type.families): change them together.
 export const SANS = "Inter, system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif"
 export const MONO = '"DM Mono", "JetBrains Mono", ui-monospace, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace'
 export const SERIF = '"Instrument Serif", "Source Serif 4", Georgia, "Songti SC", "Noto Serif CJK SC", serif'

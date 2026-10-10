@@ -31,6 +31,8 @@ describe('decimalSign', () => {
     ['ru', ','],
     ['es', ','],
     ['pl', ','],
+    ['uk', ','],
+    ['be', ','],
   ] as const)('is %s\'s own sign: %s', (locale, sign) => {
     expect(decimalSign(locale)).toBe(sign)
   })

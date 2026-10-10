@@ -74,8 +74,6 @@ export const ru: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Язык интерфейса',
-    switchLabel: 'Язык: {current}. Переключить на: {next}',
-    names: { en: 'английский', ru: 'русский', zh: 'китайский', es: 'испанский', pl: 'польский' },
   },
   projects: {
     heading: 'Сохранённые проекты',
