@@ -370,7 +370,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .app-shell__context-bar {
+:global(.app-shell--dock .app-shell__context-bar) {
   position: absolute;
   right: var(--space-10);
   bottom: calc(var(--progress-height) + var(--space-10));
@@ -383,7 +383,7 @@ function techniqueWord(technique: Technique): string {
    * The Frame bar (ticket 295; Frame bar card): while the Frame is being set, the same bar floats at the top-centre of
    * the canvas box over the beads instead of above the Progress bar, so it never takes a row and never reaches the Dock.
    */
-:global(.app-shell--dock) .app-shell__context-bar--frame {
+:global(.app-shell--dock .app-shell__context-bar--frame) {
   top: var(--space-10);
   right: auto;
   bottom: auto;
@@ -396,11 +396,11 @@ function techniqueWord(technique: Technique): string {
    * The bars keep clear of the Zoom pill (ticket 297): the Selection bar rises above a pill resting in the lower half, and the
    * Frame bar drops below one resting in the upper half. The pill's own height is its 36px buttons, 4px padding and 1px border.
    */
-:global(.app-shell--dock) .app-shell__context-bar--pill-bottom:not(.app-shell__context-bar--frame) {
+:global(.app-shell--dock .app-shell__context-bar--pill-bottom:not(.app-shell__context-bar--frame)) {
   bottom: calc(var(--progress-height) + var(--space-16) + env(safe-area-inset-bottom) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
 }
 
-:global(.app-shell--dock) .app-shell__context-bar--frame.app-shell__context-bar--pill-top {
+:global(.app-shell--dock .app-shell__context-bar--frame.app-shell__context-bar--pill-top) {
   top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
 }
 
@@ -421,12 +421,12 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .app-shell__progress--hidden {
+:global(.app-shell--dock .app-shell__progress--hidden) {
   display: none;
 }
 
 /* With the bar gone, the toasts and the Selection bar sit where it was. */
-:global(.app-shell--dock) .app-shell__canvas--no-progress {
+:global(.app-shell--dock .app-shell__canvas--no-progress) {
   --progress-height: 0px;
 }
 
@@ -452,7 +452,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .app-shell__zoom-pill {
+:global(.app-shell--dock .app-shell__zoom-pill) {
   position: absolute;
   z-index: var(--z-canvas-overlay);
   display: inline-flex;
@@ -465,7 +465,7 @@ function techniqueWord(technique: Technique): string {
    * Its placement is the share of the room it has to move in, so it is fully visible at any box size: `left` / `top`
    * put its own top-left corner that share of the way along, and `translate` takes back that share of its own size.
    */
-:global(.app-shell--dock) .app-shell__zoom-pill {
+:global(.app-shell--dock .app-shell__zoom-pill) {
   left: calc(var(--space-16) + var(--zoom-pill-x) * (100% - 2 * var(--space-16)));
   top: calc(var(--space-16) + var(--zoom-pill-y) * (100% - 2 * var(--space-16)));
   translate: calc(var(--zoom-pill-x) * -100%) calc(var(--zoom-pill-y) * -100%);
@@ -577,7 +577,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .app-shell__canvas-hint {
+:global(.app-shell--dock .app-shell__canvas-hint) {
   display: none;
 }
 
@@ -589,7 +589,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The Canvas strip stays in the Dock layout (ticket 383): one slim row at every width, without the zoom buttons and Rulers toggle the Zoom pill owns there. */
-:global(.app-shell--dock) .app-shell__canvas-strip {
+:global(.app-shell--dock .app-shell__canvas-strip) {
   display: flex;
 }
 </style>

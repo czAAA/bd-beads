@@ -88,12 +88,12 @@ const {
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .app-shell__dock {
+:global(.app-shell--dock .app-shell__dock) {
   display: flex;
   flex: none;
 }
 
-:global(.app-shell--dock) .app-shell__phone-project-bar {
+:global(.app-shell--dock .app-shell__phone-project-bar) {
   display: flex;
   flex: none;
   align-items: center;
@@ -107,7 +107,7 @@ const {
 }
 
 /* New Project grows to take the remaining width; the import icons and Menu sit at a fixed square size beside it. */
-:global(.app-shell--dock) .app-shell__phone-project-bar :deep(.app-button) {
+:global(.app-shell--dock .app-shell__phone-project-bar .app-button) {
   flex: 1 1 0;
 }
 </style>
