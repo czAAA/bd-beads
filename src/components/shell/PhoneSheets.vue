@@ -23,7 +23,7 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
-import { MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
+import { DOCK_LAYOUT_ENABLED, MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
 import { TOOL_HOTKEYS, TOOL_ORDER } from '../tools/toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
@@ -191,8 +191,8 @@ const deps = computed(() =>
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
   <BottomSheet v-if="openPhoneSheet === 'project'" modal :title="t.header.projectSheetLabel" @close="openPhoneSheet = null; phoneSavedProjectsOpen = false">
-    <!-- Canvas color on the phone (CanvasBackground card): the CanvasStrip is hidden here, so the picker lives in this header, before Close. In high contrast it opens the Position marks choice alone, and with no Project open there is no canvas to color. -->
-    <template v-if="activeProject" #actions>
+    <!-- Canvas color under 1024px with the Toolbox layout (CanvasBackground card): the CanvasStrip is hidden there, so the picker lives in this header, before Close. In the Dock layout the strip is always there and holds it (ticket 383). In high contrast it opens the Position marks choice alone, and with no Project open there is no canvas to color. -->
+    <template v-if="activeProject && !DOCK_LAYOUT_ENABLED" #actions>
       <CanvasColorPicker />
     </template>
     <template v-if="activeProject">

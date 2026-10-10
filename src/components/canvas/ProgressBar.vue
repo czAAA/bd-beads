@@ -215,6 +215,15 @@ const directionLabel = computed(() =>
   }
 }
 
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .progress-bar__phone-hide {
+  display: none;
+}
+
+:global(.app-shell--dock) .progress-bar__phone-only {
+  display: inline-flex;
+}
+
 /* The same compact mode wherever the bar itself is too narrow for the spelled-out one, e.g. beside the Tour card or
    the Toolbox at tablet widths (ticket 246). */
 @container (max-width: 51rem) {

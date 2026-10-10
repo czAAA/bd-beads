@@ -14,8 +14,8 @@ The header's summary holds the open Project's info alongside New Project and the
 
 Read [ADR 0021](adr/0021-visual-language-follows-design-md.md) before adding a new screen or control.
 
-## Under 1024px: the phone layout
+## The Dock layout (every width; with the flag off, under 1024px)
 
-**Under 1024px the whole screen is the phone layout, in portrait and landscape** ([ADR 0032](adr/0032-everything-under-1024px-is-the-phone-layout.md), ticket 295): no header, no left column and no canvas header strip. The canvas starts at the top edge and a slim icon-only Dock (Tool, Colour, Frame, Project, Menu; 48px plus the safe-area inset) sits below it, its sheets holding what the header and column held. With no Project open, the New Project / Import bar replaces the Dock. The Frame bar floats at the top-centre of the canvas box.
+**With `DOCK_LAYOUT_ENABLED` on (ADR 0046) the whole screen is the Dock layout at every width; with it off, under 1024px**, in portrait and landscape ([ADR 0032](adr/0032-everything-under-1024px-is-the-phone-layout.md), ticket 295): no header, no left column and no canvas header strip. The canvas starts at the top edge and a slim icon-only Dock (Tool, Colour, Frame, Project, Menu; 48px plus the safe-area inset) sits below it, its sheets holding what the header and column held. With no Project open, the New Project / Import bar replaces the Dock. The Frame bar floats at the top-centre of the canvas box.
 
-1024px is the only split between that layout and the desktop one.
+In the Dock layout the Canvas strip stays, one slim row at every width (title, size line, keyboard hint, Canvas color picker; no zoom buttons or Rulers toggle, which the Zoom pill owns), and the Canvas color picker is not in the Project sheet header. The Dock keeps its width and sits centred; the canvas takes the rest. With the flag off, 1024px is the only split between the Dock layout and the Toolbox layout (header, left column, Toolbox), and the strip is hidden under it.

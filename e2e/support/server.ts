@@ -11,7 +11,7 @@ const PORT = Number(process.env.E2E_PORT ?? 4173)
 export const baseURL = `http://localhost:${PORT}/bd-beads/`
 
 export const webServer = {
-  command: `${process.env.SKIP_BUILD ? '' : 'npm run build && '}npx vite preview --port ${PORT} --strictPort`,
+  command: `${process.env.SKIP_BUILD ? '' : 'VITE_DOCK_LAYOUT=off npm run build && '}npx vite preview --port ${PORT} --strictPort`,
   url: baseURL,
   reuseExistingServer: !process.env.CI,
   timeout: 180_000,

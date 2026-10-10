@@ -133,7 +133,7 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
   white-space: nowrap;
 }
 
-/* A narrow strip (the desktop layout at 1024px) gives up the printed-size estimate first, then the decorative icon and some of the spacing, so the size still reads whole in English and Russian (ticket 315). */
+/* A narrow strip (the Toolbox layout at 1024px, or a phone) gives up the printed-size estimate first, then the decorative icon and some of the spacing, so the size still reads whole in English and Russian (ticket 315). */
 @container (max-width: 799px) {
   .canvas-strip__estimate {
     display: none;

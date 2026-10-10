@@ -4,7 +4,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { en } from './i18n/en'
 
 // Mirror is switched off (ticket 174, 365); these tests run it with the flag on, as the Tour's do.
-vi.mock('./features', () => ({ TOUR_ENABLED: false, MIRROR_ENABLED: true }))
+vi.mock('./features', () => ({ TOUR_ENABLED: false, MIRROR_ENABLED: true, DOCK_LAYOUT_ENABLED: false }))
 
 beforeEach(() => {
   localStorage.clear()

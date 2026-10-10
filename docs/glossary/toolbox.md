@@ -10,8 +10,16 @@ _Avoid_: tool strip, toolbar, above-canvas panel
 One titled box within the Toolbox gathering related controls — e.g. Tools (Paint, Fill, Select, Eraser), Colors, Edit (including Save and PNG and PDF export), Mirror, Size. Lays its controls out four to a row (three on a tablet) and holds at most 16 in view (four rows of four); a group with more shows that it has more and expands in place, downward, while the pointer is inside it.
 _Avoid_: subbox, card, section, panel
 
+**Dock layout**:
+The main layout at every width (ADR 0046): the canvas first, the Dock below it (about 480px wide, centred), sheets for the controls, the slim Canvas strip always visible; no header, no left column, no Toolbox. Chosen by `DOCK_LAYOUT_ENABLED`.
+_Avoid_: phone layout, mobile layout, touch layout
+
+**Toolbox layout**:
+The wide layout kept behind `DOCK_LAYOUT_ENABLED = false`: from 1024px a header, the left column with the Toolbox, and the canvas box; under 1024px it is the Dock layout (ADR 0032).
+_Avoid_: desktop layout, wide layout
+
 **Dock**:
-The bottom bar at every width under 1024px (phones and iPads alike, portrait and landscape; ADR 0032), with no header above the canvas. Five slots, each opening its own sheet: Tool, Colour, Frame (which also holds Rotate, Copy and Paste), Project, Menu. icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred. With no Project open, a New Project / Import bar takes its place, with the Menu button still at the bottom right.
+The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046), with no header above the canvas. Five slots, each opening its own sheet: Tool, Colour, Frame (which also holds Rotate, Copy and Paste), Project, Menu. icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred. With no Project open, a New Project / Import bar takes its place, with the Menu button still at the bottom right.
 _Avoid_: toolbar, rail, tab bar
 
 **Menu**:

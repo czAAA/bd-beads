@@ -16,6 +16,7 @@ import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { DOCK_LAYOUT_ENABLED } from '../../features'
 
 const {
   t,
@@ -158,12 +159,12 @@ function techniqueWord(technique: Technique): string {
         class="app-shell__canvas-strip"
         :project="settledProject"
         :size="stripSize"
-        :zoom-percent="stripZoomPercent"
+        :zoom-percent="DOCK_LAYOUT_ENABLED ? undefined : stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"
         :title="framing ? t.convertImage.heading : undefined"
-        :rulers="activeProject && !framing ? showRulers : undefined"
+        :rulers="activeProject && !framing && !DOCK_LAYOUT_ENABLED ? showRulers : undefined"
         :setting-frame="settingFrame"
         :canvas-color="activeProject && !framing"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
@@ -368,6 +369,41 @@ function techniqueWord(technique: Technique): string {
   }
 }
 
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .app-shell__context-bar {
+  position: absolute;
+  right: var(--space-10);
+  bottom: calc(var(--progress-height) + var(--space-10));
+  left: var(--space-10);
+  z-index: var(--z-context-bar);
+  display: flex;
+}
+
+/*
+   * The Frame bar (ticket 295; Frame bar card): while the Frame is being set, the same bar floats at the top-centre of
+   * the canvas box over the beads instead of above the Progress bar, so it never takes a row and never reaches the Dock.
+   */
+:global(.app-shell--dock) .app-shell__context-bar--frame {
+  top: var(--space-10);
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  max-width: calc(100% - 2 * var(--space-10));
+  transform: translateX(-50%);
+}
+
+/*
+   * The bars keep clear of the Zoom pill (ticket 297): the Selection bar rises above a pill resting in the lower half, and the
+   * Frame bar drops below one resting in the upper half. The pill's own height is its 36px buttons, 4px padding and 1px border.
+   */
+:global(.app-shell--dock) .app-shell__context-bar--pill-bottom:not(.app-shell__context-bar--frame) {
+  bottom: calc(var(--progress-height) + var(--space-16) + env(safe-area-inset-bottom) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
+}
+
+:global(.app-shell--dock) .app-shell__context-bar--frame.app-shell__context-bar--pill-top {
+  top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
+}
+
 .app-shell__zoom-pill {
   display: none;
 }
@@ -382,6 +418,16 @@ function techniqueWord(technique: Technique): string {
   .app-shell__canvas--no-progress {
     --progress-height: 0px;
   }
+}
+
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .app-shell__progress--hidden {
+  display: none;
+}
+
+/* With the bar gone, the toasts and the Selection bar sit where it was. */
+:global(.app-shell--dock) .app-shell__canvas--no-progress {
+  --progress-height: 0px;
 }
 
 @media (max-width: 1023px) {
@@ -403,6 +449,26 @@ function techniqueWord(technique: Technique): string {
     top: calc(var(--space-16) + var(--zoom-pill-y) * (100% - 2 * var(--space-16)));
     translate: calc(var(--zoom-pill-x) * -100%) calc(var(--zoom-pill-y) * -100%);
   }
+}
+
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .app-shell__zoom-pill {
+  position: absolute;
+  z-index: var(--z-canvas-overlay);
+  display: inline-flex;
+  /* Never wider than the box it floats in, so a narrow phone can't push it out (ticket 297). */
+  max-width: calc(100% - 2 * var(--space-16));
+}
+
+/*
+   * The pill rests anywhere in the drawing area (tickets 297, 321), a --space-16 gap from its edges (ZOOM_PILL_INSET_PX).
+   * Its placement is the share of the room it has to move in, so it is fully visible at any box size: `left` / `top`
+   * put its own top-left corner that share of the way along, and `translate` takes back that share of its own size.
+   */
+:global(.app-shell--dock) .app-shell__zoom-pill {
+  left: calc(var(--space-16) + var(--zoom-pill-x) * (100% - 2 * var(--space-16)));
+  top: calc(var(--space-16) + var(--zoom-pill-y) * (100% - 2 * var(--space-16)));
+  translate: calc(var(--zoom-pill-x) * -100%) calc(var(--zoom-pill-y) * -100%);
 }
 
 /* The canvas box's cell: the rest of the width, the full height. */
@@ -510,10 +576,20 @@ function techniqueWord(technique: Technique): string {
   }
 }
 
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .app-shell__canvas-hint {
+  display: none;
+}
+
 /* No canvas header strip under 1024px (ticket 295, responsive.md): ZoomPill floats over the Project instead, and the strip's Project info lives in the Project sheet. */
 @media (max-width: 1023px) {
   .app-shell__canvas-strip {
     display: none;
   }
+}
+
+/* The Canvas strip stays in the Dock layout (ticket 383): one slim row at every width, without the zoom buttons and Rulers toggle the Zoom pill owns there. */
+:global(.app-shell--dock) .app-shell__canvas-strip {
+  display: flex;
 }
 </style>
