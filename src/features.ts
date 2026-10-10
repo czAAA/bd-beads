@@ -26,4 +26,5 @@ export const MIRROR_ENABLED = false
  * `VITE_DOCK_LAYOUT=off` at build time turns it off: the visual check is built that way, because its helpers drive the
  * Toolbox (Dock-layout visual checks are a follow-up).
  */
-export const DOCK_LAYOUT_ENABLED = import.meta.env.VITE_DOCK_LAYOUT !== 'off'
+// `env?.`: the e2e specs import this file under Node, where there is no `import.meta.env`.
+export const DOCK_LAYOUT_ENABLED = import.meta.env?.VITE_DOCK_LAYOUT !== 'off'
