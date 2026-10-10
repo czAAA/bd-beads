@@ -86,4 +86,28 @@ const {
     flex: 1 1 0;
   }
 }
+
+/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
+:global(.app-shell--dock) .app-shell__dock {
+  display: flex;
+  flex: none;
+}
+
+:global(.app-shell--dock) .app-shell__phone-project-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--dock-height);
+  /* Tight enough that New Project, both imports and Menu fit a 320px screen in Russian. */
+  padding: 0 var(--space-12);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--canvas);
+  border-top: 1px solid var(--line-soft);
+}
+
+/* New Project grows to take the remaining width; the import icons and Menu sit at a fixed square size beside it. */
+:global(.app-shell--dock) .app-shell__phone-project-bar :deep(.app-button) {
+  flex: 1 1 0;
+}
 </style>

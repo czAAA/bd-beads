@@ -16,3 +16,12 @@ export const TOUR_ENABLED = false
  * inert. The redo starts from ADR 0006's first two points.
  */
 export const MIRROR_ENABLED = false
+
+/**
+ * The Dock layout (ticket 383, ADR 0046) is the main layout at every width: the canvas first, the Dock below it, sheets for
+ * the controls, the slim Canvas strip always there; no header, no left column, no Toolbox. This flag reads the other way
+ * round from the rest of the file: ON is the new normal. OFF restores the Toolbox layout above 1024px and today's 1024px
+ * split (ADR 0032), exactly as before. It is a build-time constant because the layout is decided by CSS media queries, which
+ * cannot read a script value; the shell carries `app-shell--dock` on its root while this is on.
+ */
+export const DOCK_LAYOUT_ENABLED = true

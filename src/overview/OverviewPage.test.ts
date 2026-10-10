@@ -4,7 +4,7 @@ import OverviewPage from './OverviewPage.vue'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 
-vi.mock('../features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
+vi.mock('../features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false, DOCK_LAYOUT_ENABLED: false }))
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 

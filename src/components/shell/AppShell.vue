@@ -9,6 +9,7 @@ import CanvasPanel from '../canvas/CanvasPanel.vue'
 import PhoneSheets from './PhoneSheets.vue'
 import TourLayer from '../tour/TourLayer.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
+import { DOCK_LAYOUT_ENABLED } from '../../features'
 
 const {
   t,
@@ -23,14 +24,14 @@ const {
 </script>
 
 <template>
-  <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
+  <div class="app-shell" :class="{ 'app-shell--dock': DOCK_LAYOUT_ENABLED }" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
     <!-- Skip to Project (ticket 159): the first Tab stop, visible only while focused. -->
     <a v-if="activeProject && !framing" class="app-shell__skip" href="#project" data-testid="skip-to-project" @click.prevent="focusProject">
       {{ t.a11y.skipToProject }}
     </a>
     <!-- One polite announcement per action (ticket 159): the bead cursor's place, what the key just did. -->
     <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
-    <AppHeader />
+    <AppHeader v-if="!DOCK_LAYOUT_ENABLED" />
 
     <!--
       The notice row (ticket 141): library-wide notices sit directly under the header, full width, and the row takes no
@@ -51,7 +52,7 @@ const {
     </div>
 
     <div class="app-shell__body">
-      <AppSidebar />
+      <AppSidebar v-if="!DOCK_LAYOUT_ENABLED" />
       <CanvasPanel />
     </div>
 
@@ -67,7 +68,7 @@ const {
 
 <style scoped>
 /*
- * The app shell (ticket 141, ADR 0021): header (1024px and up), notice row, then the body, filling the screen exactly. The page itself
+ * The app shell (ticket 141, ADR 0021): header (Toolbox layout), notice row, then the body, filling the screen exactly. The page itself
  * never scrolls: the left column scrolls on its own, and the Project scrolls inside the canvas box, so the header, the
  * Toolbox's top and the canvas box's own top and bottom stay in view on a Project of any size.
  */
@@ -175,5 +176,15 @@ const {
   .app-shell__notices {
     padding: var(--space-8) var(--space-16) 0;
   }
+}
+
+/* The Dock layout (ticket 383, ADR 0046) is the Phone tier's shell at every width, so these repeat the rules above under the shell's own class. */
+.app-shell--dock .app-shell__body {
+  grid-template-columns: minmax(0, 1fr);
+  padding: env(safe-area-inset-top) max(var(--space-8), env(safe-area-inset-right)) var(--space-8) max(var(--space-8), env(safe-area-inset-left));
+}
+
+.app-shell--dock .app-shell__notices {
+  padding: var(--space-8) var(--space-16) 0;
 }
 </style>
