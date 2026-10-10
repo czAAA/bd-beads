@@ -124,4 +124,15 @@ describe('useKeyboardCursor', () => {
     onProjectKey(press('ArrowRight'))
     expect(cursorShown.value).toBe(true)
   })
+
+  it('shows a cursor hidden by Set Frame on the first Space, without painting at it (ticket 354)', () => {
+    const { cursorShown, deps, onProjectKey, hideCursor, onProjectKeyboardFocus } = setup()
+    onProjectKeyboardFocus(true)
+    hideCursor()
+    onProjectKey(press(' '))
+    expect(cursorShown.value).toBe(true)
+    expect(deps.invokeToolAt).not.toHaveBeenCalled()
+    onProjectKey(press(' '))
+    expect(deps.invokeToolAt).toHaveBeenCalledTimes(1)
+  })
 })

@@ -157,6 +157,21 @@ describe('Set Frame', () => {
     expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
   })
 
+  it('shows no bead cursor after key 6 or Escape ends Set Frame until an arrow key moves it (ticket 354)', async () => {
+    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
+    const cursor = () => wrapper.findComponent(ProjectSurface).props('cursor')
+
+    await key({ key: '6' })
+    await surface(wrapper).trigger('keydown', { key: '6' })
+    expect(cursor()).toBeUndefined()
+
+    await key({ key: '6' })
+    await surface(wrapper).trigger('keydown', { key: 'Escape' })
+    expect(cursor()).toBeUndefined()
+    await surface(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(cursor()).toBeDefined()
+  })
+
   it('is refused while Row progress is on', async () => {
     const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
     const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
