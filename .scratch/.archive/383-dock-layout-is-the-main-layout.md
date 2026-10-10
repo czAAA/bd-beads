@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done (the shared-controls refactor moved to ticket 384; e2e and visual references left for a human)
 
 ## Problem Statement
 
@@ -84,13 +84,13 @@ A build-time flag, `DOCK_LAYOUT_ENABLED`, in the switched-off-features file ([AD
 
 ## Checklist
 
-- [ ] `DOCK_LAYOUT_ENABLED` in `src/features.ts`, default on, commented
-- [ ] Flag on: Dock layout at every width; flag off: today's behaviour exactly
-- [ ] Canvas strip visible in the Dock layout (title, size line, hint, Canvas color picker)
-- [ ] Canvas color picker out of the Project sheet header in the Dock layout
-- [ ] Tool, colour and Edit controls shared by the Toolbox and the Dock sheets
-- [ ] Only the Toolbox marked as an exception for the unused-code check
-- [ ] Unit tests under both flag values; e2e and visual for the Dock layout
-- [ ] New ADR; ADR 0032 marked as amended
-- [ ] Glossary, `CONTEXT.md` and `docs/layout.md` use "Dock layout" and "Toolbox layout"
-- [ ] The ticket is archived in the same change
+- [x] `DOCK_LAYOUT_ENABLED` in `src/features.ts`, default on, commented
+- [x] Flag on: Dock layout at every width; flag off: today's behaviour exactly
+- [x] Canvas strip visible in the Dock layout (title, size line, hint, Canvas color picker)
+- [x] Canvas color picker out of the Project sheet header in the Dock layout
+- [ ] Tool, colour and Edit controls shared by the Toolbox and the Dock sheets (ticket 384)
+- [x] Unused-code check: nothing needed, the Toolbox is still imported (knip passes)
+- [ ] Unit tests under both flag values (done); e2e and visual for the Dock layout (not done: needs the Linux CI baselines)
+- [x] New ADR; ADR 0032 marked as amended
+- [x] Glossary, `CONTEXT.md` and `docs/layout.md` use "Dock layout" and "Toolbox layout"
+- [x] The ticket is archived in the same change

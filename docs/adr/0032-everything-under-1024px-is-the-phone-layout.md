@@ -1,6 +1,6 @@
 # Everything under 1024px is the phone layout
 
-**Status: accepted.** Tickets 295–297. Layout detail: `docs/layout.md`.
+**Status: accepted; amended by [ADR 0046](0046-the-dock-layout-is-the-main-layout.md)** (the Dock layout now runs at every width, with the Canvas strip back; the 1024px split applies only with the flag off). Tickets 295–297. Layout detail: `docs/layout.md`.
 
 The layout used to be chosen by width alone, with an iPad mini tier at 744–1023px. A phone on its side (844 × 390) fell into it and stacked a 64px header, the canvas strip, the Frame bar, the Progress bar and a 64px toolbar on a screen 390px tall, leaving almost no canvas. On a phone or a tablet held either way, height is what is scarce.
 
