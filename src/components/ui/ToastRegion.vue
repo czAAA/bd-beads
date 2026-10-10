@@ -5,7 +5,7 @@ import AppMessage from './AppMessage.vue'
 /**
  * Where toasts show (ticket 76; Message and StackingOrder cards): the bottom-right of the canvas box, 16px in, above
  * the Progress bar, on the toast layer (above sheets, below modals). A result goes after 5s unless hovered or focused;
- * an error stays until closed.
+ * an error, or a prompt such as Update ready, stays until closed.
  */
 defineProps<{ toasts: Toast[] }>()
 const emit = defineEmits<{ dismiss: [id: string] }>()
@@ -20,7 +20,7 @@ const TOAST_MS = 5000
       :key="toast.stamp"
       :tone="toast.tone"
       placement="toast"
-      :timeout="toast.tone === 'danger' ? undefined : TOAST_MS"
+      :timeout="toast.tone === 'danger' || toast.persistent ? undefined : TOAST_MS"
       :data-testid="toast.id"
       @close="emit('dismiss', toast.id)"
     >

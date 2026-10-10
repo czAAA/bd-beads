@@ -28,6 +28,7 @@ import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useMirrorState } from '../tools/useMirrorState'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import { useOverlayVisibility } from './useOverlayVisibility'
+import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
@@ -85,6 +86,9 @@ function wireAppShell(services: Services) {
 
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
+
+  /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
+  useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
 
   /** Save and its "Saved" confirmation (tickets 115, 119, 195). */
   const { onSave, clearSavedConfirmation } = useSaveFlow({

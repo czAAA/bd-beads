@@ -17,6 +17,8 @@ export default defineConfig({
     viewport: { width: 1900, height: 1200 },
     deviceScaleFactor: 1,
     colorScheme: 'light',
+    // The offline shell's worker (ticket 69) would serve the measured build from its cache.
+    serviceWorkers: 'block',
   },
   webServer,
 })

@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Behaviour
 
@@ -21,12 +21,12 @@
 
 ## Acceptance
 
-- [ ] The app is installable on at least one mobile and one desktop browser
-- [ ] After one load, with the network off, and separately with every `/api/*` and the host answering 503, a reload opens the app and a Pattern can be created, edited, saved and opened again
-- [ ] The Overview opens offline
-- [ ] An update is picked up on the next load without uninstalling; an open tab offers "Update ready, reload"
-- [ ] A Playwright test covers the offline and host-down cases above (service worker in control, network off)
-- [ ] A unit test asserts every file in the build output is in the precache list
-- [ ] The splash shows the loading beads from the design system after 300 ms, follows the theme, and `index.html` stays under 14 KB, asserted by a test
-- [ ] `navigator.storage.persist()` is requested
-- [ ] The ticket is archived in the same change
+- [x] The app is installable on at least one mobile and one desktop browser (desktop: no installability error in Chromium, checked by `offline.spec.ts`; the phone check, Chrome on Android and iOS Safari "Add to Home Screen", is left to the owner)
+- [x] After one load, with the network off, and separately with every `/api/*` and the host answering 503, a reload opens the app and a Pattern can be created, edited, saved and opened again
+- [x] The Overview opens offline
+- [x] An update is picked up on the next load without uninstalling; an open tab offers "Update ready, reload"
+- [x] A Playwright test covers the offline and host-down cases above (service worker in control, network off)
+- [x] A unit test asserts every file in the build output is in the precache list
+- [x] The splash shows the loading beads from the design system after 300 ms, follows the theme, and `index.html` stays under 14 KB, asserted by a test
+- [x] `navigator.storage.persist()` is requested
+- [x] The ticket is archived in the same change

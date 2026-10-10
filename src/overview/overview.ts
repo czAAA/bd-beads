@@ -8,6 +8,7 @@ import '../style.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadProjects } from '../services/libraryStore'
+import { startOfflineShell } from '../services/offlineShell'
 import { saveTourProgress, saveTourStatus } from '../services/tourStore'
 import { TOUR_ENABLED } from '../features'
 import { markEditorChosen, overviewUrl } from './overviewRoute'
@@ -44,3 +45,8 @@ createApp({
       },
     }),
 }).mount('#app')
+
+// A first visit that lands here still downloads the offline copy of the whole app (ticket 69).
+if (import.meta.env.PROD) {
+  startOfflineShell(base)
+}

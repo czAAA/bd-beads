@@ -1,0 +1,14 @@
+{
+  "name": "bd-beads",
+  "short_name": "bd-beads",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
+  "icons": [
+    { "src": "icons/bd-beads-app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

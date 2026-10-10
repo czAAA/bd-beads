@@ -64,6 +64,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
 | `styles/` | Tokens and shared CSS, from the design system | `tokens.css`, `design-values.css` |
 | `overview/` | The Overview page a new visitor lands on (its own entry, `overview/index.html`) | `OverviewPage.vue`, `overviewRoute.ts` |
+| `pwa/` | The offline shell's service worker, which `vite.pwa.ts` writes into the build as `sw.js` with the list of built files ([ADR 0045](docs/adr/0045-the-offline-shell-is-a-hand-written-service-worker.md)); its page-side half is `services/offlineShell.ts` | `serviceWorker.js` |
 | `testUtils/` | Shared test helpers ([docs/testing.md](docs/testing.md)) | `seedProject.ts`, `editHarness.ts` |
 
 Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, [ADR 0020](docs/adr/0020-module-boundaries-and-a-services-layer.md)), `src/features.ts` (switched-off features). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).

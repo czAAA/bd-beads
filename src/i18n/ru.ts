@@ -116,6 +116,8 @@ export const ru: Translations = {
   shell: {
     canvasPlaceholderHint: 'Создайте его кнопкой «Новый проект», откройте сохранённый проект или импортируйте файл.',
     canvasPlaceholder: 'Проект пока не открыт',
+    updateReady: 'Обновление готово',
+    updateReload: 'Перезагрузить',
   },
   storage: {
     saveFailedMessage:

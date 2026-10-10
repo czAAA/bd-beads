@@ -116,6 +116,8 @@ export const es: Translations = {
   shell: {
     canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre un proyecto guardado o importa un archivo.',
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
+    updateReady: 'Actualización lista',
+    updateReload: 'Recargar',
   },
   storage: {
     saveFailedMessage:

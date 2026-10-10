@@ -116,6 +116,8 @@ export const zh: Translations = {
   shell: {
     canvasPlaceholderHint: '用“新建项目”创建一个，打开已保存的项目，或导入文件。',
     canvasPlaceholder: '还没有打开的项目',
+    updateReady: '更新已就绪',
+    updateReload: '重新加载',
   },
   storage: {
     saveFailedMessage: '无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或将项目导出为文件以保留。',

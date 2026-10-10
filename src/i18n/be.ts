@@ -117,6 +117,8 @@ export const be: Translations = {
   shell: {
     canvasPlaceholderHint: 'Стварыце яго кнопкай «Новы праект», адкрыйце захаваны праект або імпартуйце файл.',
     canvasPlaceholder: 'Праект яшчэ не адкрыты',
+    updateReady: 'Абнаўленне гатова',
+    updateReload: 'Перазагрузіць',
   },
   storage: {
     saveFailedMessage:
