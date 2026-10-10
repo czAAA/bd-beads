@@ -14,8 +14,8 @@ import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceV
  * the ones a press is tested against, and a test can find a number the way a pointer does (ADR 0033).
  */
 
-/** A Piece area carries rulers once it spans more than this many beads in total (ticket 377); a single row of five does. */
-const RULED_PIECE_MIN_AREA = 4
+/** A Piece area carries rulers once it spans at least this many beads in total, i.e. more than 4 (ticket 377); a single row of five does. */
+const RULED_PIECE_MIN_BEADS = 5
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
 const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
@@ -65,7 +65,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
     return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
   return pieceAreasOf(project.beads, project.technique)
-    .filter((area) => area.rows * area.columns > RULED_PIECE_MIN_AREA)
+    .filter((area) => area.rows * area.columns >= RULED_PIECE_MIN_BEADS)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
 
@@ -225,8 +225,8 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
     const turned = column && index + 1 >= TURNED_FROM
     const band = column ? columnBand : rowSize
     const half = column ? columnBand.height / 2 : rowSize.width / 2
-    // The dots stand no further out than a 2-digit number's half, so a turned 3-digit number or a wide row number does not push them off the line (ticket 377).
-    const dotHalf = Math.min(half, fontPx * DOT_BAND_HALF_MAX)
+    // Below the zoom where only the last number is drawn the dots hug the line, as there is no row of numbers for them to line up with (ticket 378); above it they stand no further out than a 2-digit number's half, so a turned 3-digit number or a wide row number does not push them off the line (ticket 377).
+    const dotHalf = lastOnly ? scale.dotRadius : Math.min(half, fontPx * DOT_BAND_HALF_MAX)
     const step = column ? columnStep : rowStep
     const { x, y, nx, ny } = outward(gridX, gridY, normal)
 
