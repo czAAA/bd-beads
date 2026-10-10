@@ -316,7 +316,6 @@ export interface Translations {
     /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
   }
-  /** Export/import (CONTEXT.md's Project file). */
   /** What the PDF and PNG exports print (tickets 162–164; printed-output.md, `writing.md`). */
   print: {
     /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */

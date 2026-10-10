@@ -18,7 +18,7 @@ const props = withDefaults(
      */
     compact?: boolean
     /**
-     * The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the buttons in
+     * The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the button in
      * there, so it's emitted as `import-result` instead of drawn inline -- the app shell turns it into a toast above
      * the bottom toolbar. The header's own instance leaves this off and keeps the inline result it always had.
      */

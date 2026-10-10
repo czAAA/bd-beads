@@ -13,7 +13,7 @@ function mountMenu(onSelect = vi.fn()) {
           { label: 'Export', icon: 'export' },
           {
             default: () => [
-              h(AppMenuItem, { icon: 'image', 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'PNG image'),
+              h(AppMenuItem, { icon: 'image', 'data-testid': 'project', onSelect: () => onSelect('project') }, () => 'Project file'),
               h(AppMenuItem, { icon: 'image', disabled: true, 'data-testid': 'png' }, () => 'PNG image'),
               h(AppMenuItem, { icon: 'pdf', 'data-testid': 'pdf', onSelect: () => onSelect('pdf') }, () => 'PDF'),
             ],
@@ -54,19 +54,19 @@ describe('AppMenu', () => {
     const wrapper = mountMenu()
     const button = wrapper.find('[aria-haspopup="menu"]')
     await button.trigger('keydown', { key: 'ArrowDown' })
-    const qr = wrapper.find('[data-testid="qr"]').element
+    const project = wrapper.find('[data-testid="project"]').element
     const pdf = wrapper.find('[data-testid="pdf"]').element
-    expect(document.activeElement).toBe(qr)
+    expect(document.activeElement).toBe(project)
 
-    key(qr, 'ArrowDown')
+    key(project, 'ArrowDown')
     expect(document.activeElement).toBe(pdf)
     key(pdf, 'ArrowDown')
-    expect(document.activeElement).toBe(qr)
-    key(qr, 'ArrowUp')
+    expect(document.activeElement).toBe(project)
+    key(project, 'ArrowUp')
     expect(document.activeElement).toBe(pdf)
     key(pdf, 'Home')
-    expect(document.activeElement).toBe(qr)
-    key(qr, 'End')
+    expect(document.activeElement).toBe(project)
+    key(project, 'End')
     expect(document.activeElement).toBe(pdf)
   })
 
@@ -112,7 +112,7 @@ describe('AppMenu', () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
 
     await button.trigger('click')
-    key(wrapper.find('[data-testid="qr"]').element, 'Tab')
+    key(wrapper.find('[data-testid="project"]').element, 'Tab')
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })

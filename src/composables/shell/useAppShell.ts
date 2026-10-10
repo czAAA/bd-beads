@@ -449,7 +449,7 @@ function wireAppShell(services: Services) {
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
   const rowOps = useRowOps({ currentProject, replaceProject })
 
-  /** The page-hide and unmount saves (tickets 55, 203). */
+  /** The deferred save's safety net (see useSaveOnPageHide). */
   useSaveOnPageHide(flushPendingSave)
 
   function onSelectProject(id: string) {
