@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppSwatch from './AppSwatch.vue'
@@ -59,6 +61,23 @@ describe('AppSwatch', () => {
     await wrapper.setProps({ selected: true })
     await wrapper.get('.swatch__remove').trigger('click')
     expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
+  it('moves focus to the chip when the × only selects', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' }, attachTo: document.body })
+    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
+    await wrapper.get('.swatch__remove').trigger('click')
+    expect(document.activeElement).toBe(wrapper.get('.swatch__chip').element)
+    wrapper.unmount()
+  })
+
+  it('keeps the × in the top-right corner with a hit area that stays small', () => {
+    const css = readFileSync(resolve(__dirname, 'AppSwatch.vue'), 'utf8')
+    const rule = css.match(/\.swatch__remove \{[^}]*\}/)?.[0] ?? ''
+    expect(rule).toContain('top: 0')
+    expect(rule).toContain('right: 0')
+    expect(rule).toContain('place-items: start end')
+    expect(rule).not.toContain('--hit-min')
   })
 
   it('draws the × black on a light swatch and white on a dark one, in any theme', () => {

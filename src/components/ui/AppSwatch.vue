@@ -12,8 +12,8 @@ import { markOn } from './swatchMark'
  *
  * The remove × (added colors only): shown on the active swatch, while a mouse or an Apple Pencil hovers an added swatch
  * (touch cannot hover) and while keyboard focus is on it. It sits top-right inside the swatch with no background,
- * drawn black or white, whichever reads better on this hex, with a thin halo of the other, in a 24px invisible hit
- * area (WCAG 2.5.8).
+ * drawn black or white, whichever reads better on this hex, with a thin halo of the other, in an invisible hit
+ * area that reaches 4px past the glyph, so a click on the swatch body never removes.
  */
 defineOptions({ inheritAttrs: false })
 
@@ -63,7 +63,12 @@ const onPointerLeave = () => {
 }
 /** The first click on a swatch always selects it, even one that landed on the ×; only a selected swatch's × removes. */
 const onRemove = () => {
-  if (!props.selected) return emit('select')
+  if (!props.selected) {
+    // Do what a click on the chip does, focus included, so the Tab stop and the arrows follow.
+    rootEl.value?.querySelector<HTMLElement>('.swatch__chip')?.focus()
+    emit('select')
+    return
+  }
   hovered.value = false
   emit('remove')
 }
@@ -164,7 +169,7 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   outline-offset: var(--focus-offset);
 }
 
-/* A 24×24 button with no look of its own: only the × shows, in the swatch's top-right corner. */
+/* A button the size of the × and its 4px inset, with no look of its own: only the × shows, in the swatch's top-right corner. It stays small so a second click on the swatch body never removes. */
 .swatch__remove {
   position: absolute;
   top: 0;
@@ -173,9 +178,9 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   box-sizing: border-box;
   display: grid;
   place-items: start end;
-  width: var(--hit-min);
-  height: var(--hit-min);
-  padding: var(--space-2);
+  width: calc(var(--swatch-remove-size) + 2 * var(--space-4));
+  height: calc(var(--swatch-remove-size) + 2 * var(--space-4));
+  padding: var(--space-4);
   background: none;
   border: 0;
   cursor: pointer;
