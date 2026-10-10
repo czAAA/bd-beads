@@ -1,5 +1,6 @@
 import type { Bead } from './beads'
-import { groupThousands } from './formatNumber'
+import { decimalSign, groupThousands } from './formatNumber'
+import type { Locale } from './locale'
 
 /**
  * Grams on the PDF and PNG (ticket 162; printed-output.md, Beads and grams): beads are bought by the gram, so every
@@ -18,9 +19,9 @@ export function beadsPerGram(bead: Pick<Bead, 'gramsPerBead'>): number | undefin
 }
 
 /** "24 g", "3.9 g", "3,9 г": a trailing .0 dropped, the language's decimal sign, thousands grouped (`writing.md`). */
-export function formatPrintedGrams(grams: number, locale: string, unit: string): string {
+export function formatPrintedGrams(grams: number, locale: Locale, unit: string): string {
   const whole = Math.trunc(grams)
   const tenth = Math.round((grams - whole) * 10)
-  const decimal = locale === 'ru' ? ',' : '.'
-  return `${groupThousands(whole)}${tenth ? `${decimal}${tenth}` : ''} ${unit}`
+  const decimal = decimalSign(locale)
+  return `${groupThousands(whole, locale)}${tenth ? `${decimal}${tenth}` : ''} ${unit}`
 }

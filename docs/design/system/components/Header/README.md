@@ -10,7 +10,7 @@ On `canvas`, 1px `line-soft` bottom border, items 10px apart, none shrinking, pa
 4. A flexible gap.
 5. **Import a file:** a text button with an icon; its results and errors show beside it.
 6. **New Pattern:** primary button with a plus icon.
-7. **EN / RU**, 8. **ThemeToggle**, 9. **Keyboard shortcuts** (round icon button, 34px).
+7. **Language** (one button with the current code, opening a list of every language; ThemeToggle card), 8. **ThemeToggle**, 9. **Keyboard shortcuts** (round icon button, 34px).
 
 Library-wide notices (Message) take their own full-width row directly under the header, only while there is something to say.
 

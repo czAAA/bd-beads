@@ -1,97 +1,33 @@
 <script setup lang="ts">
 import { useI18n } from '../../i18n/useI18n'
-import type { Locale } from '../../i18n/translations'
+import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
+import AppMenuItem from '../ui/AppMenuItem.vue'
+import MenuButton from '../ui/MenuButton.vue'
 
 /**
- * EN / RU (ticket 142; Header and ThemeToggle cards): one secondary button, the current language in `ink` and the other
- * in `subtle`. Pressing it switches to the other language; each code can also be pressed on its own.
+ * The language switcher (tickets 142, 368; Header and ThemeToggle cards): one button showing the current language's
+ * code ("EN"), which opens a list of every language under it (or above it, where there is no room below), each named
+ * in itself so a person finds their own whatever the app shows now. Choosing one switches the whole app.
  */
 const { locale, setLocale, t } = useI18n()
-
-function toggle() {
-  setLocale(locale.value === 'en' ? 'ru' : 'en')
-}
-
-function choose(next: Locale) {
-  setLocale(next)
-}
 </script>
 
 <template>
-  <button
-    type="button"
-    class="ui-control language-switcher"
-    :aria-label="t.languageSwitcher.switchLabel"
+  <MenuButton
+    :label="localeCode(locale)"
+    :aria-label="`${t.languageSwitcher.ariaLabel}: ${LOCALE_NAMES[locale]}`"
+    align="end"
     data-testid="language-switcher"
-    @click="toggle"
   >
-    <span
-      data-testid="language-en"
-      :class="{ 'language-switcher__current': locale === 'en' }"
-      :aria-current="locale === 'en' ? 'true' : undefined"
-      lang="en"
-      @click.stop="choose('en')"
-      >EN</span
+    <AppMenuItem
+      v-for="code in LOCALES"
+      :key="code"
+      :chosen="locale === code"
+      :lang="code"
+      :data-testid="`language-${code}`"
+      @select="setLocale(code)"
     >
-    <span class="language-switcher__slash" aria-hidden="true">/</span>
-    <span
-      data-testid="language-ru"
-      :class="{ 'language-switcher__current': locale === 'ru' }"
-      :aria-current="locale === 'ru' ? 'true' : undefined"
-      lang="ru"
-      @click.stop="choose('ru')"
-      >RU</span
-    >
-  </button>
+      {{ LOCALE_NAMES[code] }}
+    </AppMenuItem>
+  </MenuButton>
 </template>
-
-<style scoped>
-.language-switcher {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-4);
-  box-sizing: border-box;
-  height: var(--control-height);
-  padding: 0 var(--space-12);
-  font: var(--type-control);
-  color: var(--subtle);
-  background: var(--button);
-  border: 1px solid var(--button-line);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition:
-    background-color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-instant) var(--ease-standard);
-}
-
-.language-switcher__current {
-  color: var(--ink);
-}
-
-@media (hover: hover) {
-  .language-switcher:hover {
-    background: var(--hover-fill);
-  }
-}
-
-.language-switcher:active {
-  background: var(--press-fill);
-  transform: scale(var(--press-scale));
-}
-
-.language-switcher:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-:root[data-theme='contrast'] .language-switcher {
-  border-width: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .language-switcher:active {
-    transform: none;
-  }
-}
-</style>

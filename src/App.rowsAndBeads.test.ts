@@ -10,6 +10,7 @@ import { serializeLibrary } from './domain/projectFile'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
+import { chooseLanguage } from './testUtils/chooseLanguage'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -495,7 +496,7 @@ describe('App delete all', () => {
 
   it('translates the modal title, message and button labels with the interface language', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
     expect(wrapper.text()).toContain(en.deleteAll.confirmTitle)
@@ -504,7 +505,7 @@ describe('App delete all', () => {
     expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(en.deleteAll.confirmButton)
 
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     await wrapper.find('[data-testid="delete-all-button"]').trigger('click')
 
     expect(wrapper.text()).toContain(ru.deleteAll.confirmTitle)
@@ -556,7 +557,7 @@ describe('App header bead', () => {
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe(ru.projects.unknownBeadLabel)
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     expect(wrapper.find('[data-testid="current-project-bead"]').text()).toBe(en.projects.unknownBeadLabel)
   })
 
@@ -591,7 +592,7 @@ describe('App replace bead', () => {
   it('opens a confirmation modal showing the new Estimated size next to the current one instead of replacing immediately', async () => {
     const wrapper = await mountWithProject(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
 
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     const modal = wrapper.find('[data-testid="replace-bead-modal"]')
@@ -608,7 +609,7 @@ describe('App replace bead', () => {
     saveProjects([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
     await flushPromises()
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
 
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
@@ -798,7 +799,7 @@ describe('App replace bead', () => {
 
   it('translates the modal title, message and button labels with the interface language', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     expect(wrapper.text()).toContain(en.replaceBead.confirmTitle)
@@ -806,7 +807,7 @@ describe('App replace bead', () => {
     expect(wrapper.find('[data-testid="confirm-modal-confirm"]').text()).toBe(en.replaceBead.confirmButton)
 
     await wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     await wrapper.find('[data-testid="replace-bead-select"]').setValue('toho-round-11-0')
 
     expect(wrapper.text()).toContain(ru.replaceBead.confirmTitle)
@@ -901,7 +902,7 @@ describe('App estimated weight (ticket 155)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
 
     expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('0,01 г')
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('0.01 g')
   })
 })
@@ -974,12 +975,12 @@ describe('App project transfer', () => {
 
     await importFile(wrapper, serializeLibrary([makeProject('Fox'), makeProject('Owl')]))
     expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${ru.transfer.importedLabel}: 2`)
-    await wrapper.find('[data-testid="language-en"]').trigger('click')
+    await chooseLanguage(wrapper, 'en')
     expect(wrapper.find('[data-testid="import-result"]').text()).toBe(`${en.transfer.importedLabel}: 2`)
 
     await importFile(wrapper, 'definitely not a project file')
     expect(wrapper.find('[data-testid="import-error"]').text()).toBe(en.transfer.importErrorLabel)
-    await wrapper.find('[data-testid="language-ru"]').trigger('click')
+    await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="import-error"]').text()).toBe(ru.transfer.importErrorLabel)
   })
 

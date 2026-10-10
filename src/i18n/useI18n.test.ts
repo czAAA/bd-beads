@@ -2,6 +2,16 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 import { provideI18n, type I18n } from './useI18n'
+import { LOCALES } from '../domain/locale'
+import { en } from './en'
+import { es } from './es'
+import { pl } from './pl'
+import { ru } from './ru'
+import { uk } from './uk'
+import { be } from './be'
+import { zh } from './zh'
+
+const dictionaries = { en, ru, uk, be, zh, es, pl }
 
 beforeEach(() => {
   localStorage.clear()
@@ -27,10 +37,20 @@ describe('provideI18n', () => {
 })
 
 describe('copy rules (writing.md)', () => {
-  it('has no em dash in any string, in either language', async () => {
-    const { en } = await import('./en')
-    const { ru } = await import('./ru')
-    expect(JSON.stringify(en)).not.toContain('—')
-    expect(JSON.stringify(ru)).not.toContain('—')
+  it.each(LOCALES)('has no em dash in any %s string', (locale) => {
+    const dictionary = dictionaries[locale]
+    expect(JSON.stringify(dictionary)).not.toContain('—')
+  })
+
+  it('gives a counted word the forms its language needs', () => {
+    for (const locale of LOCALES) {
+      const dictionary = dictionaries[locale]
+      const needed = new Intl.PluralRules(locale).resolvedOptions().pluralCategories
+      for (const forms of [dictionary.canvas.piecesCount, dictionary.print.beadsCount, dictionary.a11y.colorsCount]) {
+        for (const category of needed) {
+          expect(forms, `${locale} ${category}`).toHaveProperty(category)
+        }
+      }
+    }
   })
 })
