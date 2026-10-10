@@ -4,7 +4,9 @@
  * page URL is relative to it. CI builds once in its own step (and uploads dist/ for later jobs), then sets SKIP_BUILD so
  * the test runner only serves that build.
  */
-const PORT = 4173
+// E2E_PORT lets a second worktree run its own server: with the default, a preview left running by another worktree is
+// reused locally and the checks would measure that build instead of this one.
+const PORT = Number(process.env.E2E_PORT ?? 4173)
 
 export const baseURL = `http://localhost:${PORT}/bd-beads/`
 
