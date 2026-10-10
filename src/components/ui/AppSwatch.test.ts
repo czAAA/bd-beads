@@ -49,6 +49,18 @@ describe('AppSwatch', () => {
     expect(wrapper.emitted('select')).toBeUndefined()
   })
 
+  it('selects on the first click even when it lands on a hovered ×, and removes only once selected', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' } })
+    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
+    await wrapper.get('.swatch__remove').trigger('click')
+    expect(wrapper.emitted('select')).toHaveLength(1)
+    expect(wrapper.emitted('remove')).toBeUndefined()
+
+    await wrapper.setProps({ selected: true })
+    await wrapper.get('.swatch__remove').trigger('click')
+    expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
   it('draws the × black on a light swatch and white on a dark one, in any theme', () => {
     const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', selected: true, removeLabel: 'Remove' } })
     const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', selected: true, removeLabel: 'Remove' } })

@@ -61,7 +61,9 @@ const onPointerEnter = (event: PointerEvent) => {
 const onPointerLeave = () => {
   hovered.value = false
 }
+/** The first click on a swatch always selects it, even one that landed on the ×; only a selected swatch's × removes. */
 const onRemove = () => {
+  if (!props.selected) return emit('select')
   hovered.value = false
   emit('remove')
 }
@@ -162,7 +164,7 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   outline-offset: var(--focus-offset);
 }
 
-/* A 24×24 button with no look of its own: only the 10px × shows. */
+/* A 24×24 button with no look of its own: only the × shows, in the swatch's top-right corner. */
 .swatch__remove {
   position: absolute;
   top: 0;
@@ -170,10 +172,10 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   z-index: 1;
   box-sizing: border-box;
   display: grid;
-  place-items: center;
+  place-items: start end;
   width: var(--hit-min);
   height: var(--hit-min);
-  padding: 0;
+  padding: var(--space-2);
   background: none;
   border: 0;
   cursor: pointer;
