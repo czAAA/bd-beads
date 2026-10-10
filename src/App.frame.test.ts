@@ -150,8 +150,26 @@ describe('Set Frame', () => {
     expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.frame.keyboardHint)
 
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
-    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
+    // Ending Set Frame reveals no cursor the person did not move (ticket 354); an arrow key brings it back.
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
     expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.a11y.keyboardHint)
+    await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
+    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
+  })
+
+  it('shows no bead cursor after key 6 or Escape ends Set Frame until an arrow key moves it (ticket 354)', async () => {
+    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
+    const cursor = () => wrapper.findComponent(ProjectSurface).props('cursor')
+
+    await key({ key: '6' })
+    await surface(wrapper).trigger('keydown', { key: '6' })
+    expect(cursor()).toBeUndefined()
+
+    await key({ key: '6' })
+    await surface(wrapper).trigger('keydown', { key: 'Escape' })
+    expect(cursor()).toBeUndefined()
+    await surface(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    expect(cursor()).toBeDefined()
   })
 
   it('is refused while Row progress is on', async () => {

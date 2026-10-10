@@ -30,8 +30,21 @@ export interface KeyboardCursorDeps {
 export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
   const keyboardOnProject = ref(false)
-  /** The cursor is drawn only with keyboard focus on the Project, and not during Set Frame. */
-  const cursorShown = computed(() => keyboardOnProject.value && !deps.settingFrame?.())
+  /** The cursor is drawn only with keyboard focus on the Project, once it has been put somewhere, and not during Set Frame. */
+  const cursorShown = computed(() => keyboardOnProject.value && cursorRevealed.value && !deps.settingFrame?.())
+  /**
+   * False after Set Frame switches on or off until a key puts the cursor somewhere (ticket 354): it must not come back
+   * on whatever bead it last rested on.
+   */
+  const cursorRevealed = ref(true)
+  /** Hides the cursor until a key puts it somewhere again: the app calls this whenever Set Frame switches on or off. */
+  function hideCursor() {
+    cursorRevealed.value = false
+  }
+  /** Shows the cursor where it now is: the keys that move it, and keyboard focus arriving, call this. */
+  function placeCursor() {
+    cursorRevealed.value = true
+  }
   let cursorProjectId: string | undefined
 
   /** Keyboard focus arriving on (or leaving) the Project. */
@@ -47,6 +60,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
       }
       // F focuses the Project for Set Frame's arrows: the cursor stays hidden, so nothing to reveal, hover or announce (ticket 286).
       if (deps.settingFrame?.()) return
+      placeCursor()
       deps.reveal(beadCursor.value)
       deps.onCellHover(beadCursor.value.row, beadCursor.value.column)
       deps.announceCursor()
@@ -66,6 +80,7 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
       deps.finishExtending()
     }
     beadCursor.value = next
+    placeCursor()
     deps.onCellHover(next.row, next.column)
     deps.reveal(next)
     deps.announceCursor()
@@ -123,7 +138,13 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     } else if (event.key === 'PageDown') {
       moveCursor(row + 10, column, false)
     } else if (event.key === ' ' || event.key === 'Enter') {
-      deps.invokeToolAt(beadCursor.value)
+      if (cursorRevealed.value) {
+        deps.invokeToolAt(beadCursor.value)
+      } else {
+        // Hidden after Set Frame: the first Space or Enter only shows where the cursor is, it paints nothing unseen.
+        placeCursor()
+        deps.announceCursor()
+      }
     } else if (event.key === 'Escape' && !deps.hasSelection()) {
       // Leaves the Project; with a Selection up, Escape clears that first (the app's own Escape order).
       ;(event.target as HTMLElement).blur()
@@ -139,5 +160,5 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (event.key === 'Shift') deps.finishExtending()
   }
 
-  return { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp }
+  return { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor }
 }

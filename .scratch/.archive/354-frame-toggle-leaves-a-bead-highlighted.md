@@ -11,11 +11,11 @@ Expected: entering Set Frame clears any hover preview and the surface's remember
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A failing test reproduces the stray bead (hover or keyboard cursor) after turning Set Frame on, and after turning it off
-- [ ] After hovering a bead with the mouse and then turning Set Frame on, no hover preview is drawn on the canvas
-- [ ] After turning Set Frame off (button, key 6, Enter, Escape), no hover preview and no keyboard bead cursor appears until the pointer or an arrow key moves
-- [ ] Moving the pointer onto the previously hovered bead after Set Frame ends shows its hover preview again
-- [ ] Set Frame itself (draw, move, resize, keyboard arrows) and tool painting are unchanged
-- [ ] The ticket is archived in the same change
+- [x] A failing test reproduces the stray bead (hover or keyboard cursor) after turning Set Frame on, and after turning it off
+- [x] After hovering a bead with the mouse and then turning Set Frame on, no hover preview is drawn on the canvas
+- [x] After turning Set Frame off (button, key 6, Enter, Escape), no hover preview and no keyboard bead cursor appears until the pointer or an arrow key moves
+- [x] Moving the pointer onto the previously hovered bead after Set Frame ends shows its hover preview again
+- [x] Set Frame itself (draw, move, resize, keyboard arrows) and tool painting are unchanged
+- [x] The ticket is archived in the same change
