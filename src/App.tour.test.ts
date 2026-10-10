@@ -9,7 +9,7 @@ import { en } from './i18n/en'
 
 import { ru } from './i18n/ru'
 
-vi.mock('./features', () => ({ TOUR_ENABLED: true }))
+vi.mock('./features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
 beforeEach(() => {
   localStorage.clear()

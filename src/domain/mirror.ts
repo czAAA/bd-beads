@@ -15,6 +15,14 @@ export interface MirrorAxisCounts {
   rows: number
 }
 
+/** A direction as seen on screen. */
+export type ScreenDirection = 'leftRight' | 'topBottom'
+
+/** The grid-space axis a screen direction drives: a quarter turn (`swapped`) swaps the two, never the counts themselves. */
+export function gridAxisOfDirection(direction: ScreenDirection, swapped: boolean): 'columns' | 'rows' {
+  return (direction === 'leftRight') !== swapped ? 'columns' : 'rows'
+}
+
 export const NO_MIRROR_AXES: MirrorAxisCounts = { columns: 0, rows: 0 }
 
 /** The largest axis count a direction with this many cells across it can take: every axis needs at least one cell on each side (ticket 44 decision). */

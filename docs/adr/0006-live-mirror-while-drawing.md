@@ -1,8 +1,8 @@
 # Mirror is live while drawing, and is switched off until its redo
 
-**Status: accepted; the feature is switched off.** Tickets 09, 44–50, 54, 174. Code catches up in ticket 365 (`MIRROR_ENABLED`).
+**Status: accepted; the feature is switched off.** Tickets 09, 44–50, 54, 174.
 
-Ticket 174 hid Mirror's controls pending a redesign; its domain code (`domain/mirror.ts`) and tests stay. Until the redo, the code does what is below. The redo starts from the first two points and may change the rest.
+Ticket 174 hid Mirror's controls pending a redesign, and `MIRROR_ENABLED` in `src/features.ts` (ticket 365) now holds them back; its domain code (`domain/mirror.ts`) and tests stay. Until the redo, the code does what is below. The redo starts from the first two points and may change the rest.
 
 - **Mirror is live, not an Apply command.** With an axis on, a Paint stroke or a Paste lands at every mirrored place at once, as one Undo step. Fill, Eraser and Delete all ignore Mirror.
 - **A one-time "Mirror current" stays** for what was drawn before an axis went on: the strip with the most beads is copied onto the others.

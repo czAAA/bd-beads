@@ -34,6 +34,7 @@ const groupTitles = computed<Record<ControlGroup, string>>(() => ({
   canvas: t.value.shortcutsHelp.canvasGroup,
   colors: t.value.toolbox.groups.colors,
   edit: t.value.toolbox.groups.edit,
+  mirror: t.value.toolbox.groups.mirror,
   rowProgress: t.value.toolbox.groups.rowProgress,
 }))
 
