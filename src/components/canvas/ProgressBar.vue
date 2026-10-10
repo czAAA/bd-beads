@@ -216,11 +216,11 @@ const directionLabel = computed(() =>
 }
 
 /* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock) .progress-bar__phone-hide {
+:global(.app-shell--dock .progress-bar__phone-hide) {
   display: none;
 }
 
-:global(.app-shell--dock) .progress-bar__phone-only {
+:global(.app-shell--dock .progress-bar__phone-only) {
   display: inline-flex;
 }
 
