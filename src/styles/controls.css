@@ -20,10 +20,10 @@
   --track-height: 0.25rem;
   /* Button card: the expand button */
   --expand-size: 1.75rem;
-  /* Modal card: a confirmation, and a panel (QR export, Keyboard shortcuts) */
+  /* Modal card: a confirmation, and a panel (Keyboard shortcuts) */
   --modal-width: 26.25rem;
   --modal-width-panel: 35rem;
-  /* QrExport and NameOnExports cards: the narrow modal */
+  /* NameOnExports card: the narrow modal */
   --modal-width-narrow: 21.25rem;
   /* ShortcutsHelp card: a key chip */
   --kbd-height: 1.375rem;

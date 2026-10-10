@@ -4,9 +4,8 @@ import { nextTick } from 'vue'
 import App from './App.vue'
 import { beadColor, drawnProject, hoverBead, pressBead, rulerNumbers } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { createProject, type Project, frameGrid } from './domain/project'
+import { createProject, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { serializeProjectForQr } from './domain/qrExport'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
@@ -17,55 +16,6 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
-})
-
-describe('App opened from a scanned QR link', () => {
-  afterEach(() => {
-    window.history.replaceState(null, '', '/')
-  })
-
-  function sharedProject(): Project {
-    return createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 9, height: 9, unit: 'mm' }, name: 'Shared' })
-  }
-
-  it('imports the Project in the URL, opens it and clears the fragment', async () => {
-    const shared = sharedProject()
-    const link = serializeProjectForQr(shared, 'http://localhost:3000/')
-    window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
-
-    const wrapper = mount(App)
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('Shared')
-    expect(loadProjects()).toEqual([{ ...shared, savedAt: expect.any(Number) }])
-    expect(window.location.hash).toBe('')
-  })
-
-  it('opens it even when another Project is already open, keeping both', async () => {
-    const existing = { ...sharedProject(), id: 'existing', name: 'Mine' }
-    saveProjects([existing])
-    const shared = sharedProject()
-    const link = serializeProjectForQr(shared, 'http://localhost:3000/')
-    window.history.replaceState(null, '', `/${link.slice(link.indexOf('#'))}`)
-
-    const wrapper = mount(App)
-    await flushPromises()
-
-    // The library is most recently saved first (ticket 145).
-    expect(loadProjects().map((project) => project.name)).toEqual(['Shared', 'Mine'])
-    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('Shared')
-  })
-
-  it('ignores a broken link and shows the library as it was', async () => {
-    window.history.replaceState(null, '', '/#pattern=***')
-
-    const wrapper = mount(App)
-    await flushPromises()
-
-    expect(loadProjects()).toEqual([])
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(window.location.hash).toBe('')
-  })
 })
 
 describe('App', () => {
@@ -1013,7 +963,7 @@ describe('App', () => {
     const wrapper = await mountWithProject(15, 30)
 
     const projectList = wrapper.find('[data-testid="project-list"]')
-    for (const testId of ['new-project-button', 'import-file', 'import-qr']) {
+    for (const testId of ['new-project-button', 'import-file']) {
       expect(projectList.find(`[data-testid="${testId}"]`).exists()).toBe(false)
     }
   })

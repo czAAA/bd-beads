@@ -1,6 +1,6 @@
 # Modal
 
-A centered dialog for confirmations (Delete all?, Replace bead?), the QR export panel and the keyboard shortcuts. (Derived in DESIGN.md.)
+A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboard shortcuts. (Derived in DESIGN.md.)
 
 - Width 420 (confirm) to 560 (panels), `canvas` fill in light / `panel` in dark (plus a 1px `line-strong` border), radius-lg, `elevation-3`, padding 24.
 - **Scrim:** `rgba(0,0,0,.32)` light, `rgba(0,0,0,.6)` dark.

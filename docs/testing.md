@@ -42,7 +42,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
 - `storageWrites.ts`: count localStorage writes, or make one fail.
-- `rotated.ts`, `denselyColoredGrid.ts`, `rasterizeQrMatrix.ts`: ready-made Projects and QR pixels.
+- `rotated.ts`: a ready-made rotated Project.
 
 `src/testSetup.ts` runs before every test file.
 

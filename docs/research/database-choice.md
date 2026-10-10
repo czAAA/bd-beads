@@ -4,7 +4,7 @@ Fetched 2026-09-24 from each provider's own pricing page (Supabase: from third-p
 
 ## What the data is
 
-- A Pattern is one JSON-shaped blob: a name, technique, bead id, size and a grid of at most 250 × 250 color cells (ADR 0019 removed the size cap; the compact encoding is ADR 0009). A Pattern is a few KB to, at the largest, a few hundred KB; a QR-sized one is under 3 KB (ADR 0015).
+- A Pattern is one JSON-shaped blob: a name, technique, bead id, size and a grid of at most 250 × 250 color cells (ADR 0019 removed the size cap; the compact encoding is ADR 0009). A Pattern is a few KB to, at the largest, a few hundred KB.
 - It is read and written whole, by owner. There are no queries across Patterns beyond "this account's list". Shared (hosted) links (ticket 85) are read-by-id.
 - Accounts and billing (tickets 78, 84) are small relational records: users, subscriptions, sync pairs.
 - Scale to plan for: thousands of accounts, tens of Patterns each. That is well under 1 GB.

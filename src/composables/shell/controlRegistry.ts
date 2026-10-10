@@ -17,7 +17,7 @@ export interface ControlDeps {
   addedColorCount: () => number
   /** A menu or popover layer is open (useEscapeLayer). */
   hasOpenLayer: () => boolean
-  /** A confirmation modal, the QR panel or the shortcuts help overlay is open. */
+  /** A confirmation modal or the shortcuts help overlay is open. */
   anyDialogOpen: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
   collapseExpandedToolGroup: () => boolean
@@ -392,7 +392,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton, t.tools.copyButton, t.tools.pasteLabel]),
   }),
   unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
-    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.transfer.importQrLabel, t.projects.heading]),
+    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),
   }),
   unkeyed('dock-menu', (t) => t.header.menuButton, 'edit', {
     body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.saveBox.nameOnExports, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
@@ -404,7 +404,6 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('dock-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),
-  unkeyed('import-qr', (t) => t.transfer.importQrLabel, 'edit', { body: (t) => t.tooltips.importQr }),
   unkeyed('change-maker-name', (t) => t.saveBox.changeName, 'edit', { body: (t) => t.tooltips.changeName }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
 ]

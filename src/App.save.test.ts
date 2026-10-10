@@ -2,14 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { seedProject } from './testUtils/seedProject'
-import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
+import { pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
-import { createProject, frameGrid, withFrameGrid } from './domain/project'
+import { createProject, frameGrid } from './domain/project'
 import { parseProjectsFile, projectFileName } from './domain/projectFile'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { denselyColoredGrid } from './testUtils/denselyColoredGrid'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
@@ -187,75 +186,5 @@ describe('App Save (ticket 115)', () => {
 
     expect(event.defaultPrevented).toBe(false)
     expect(writes.count).toBe(0)
-  })
-})
-
-/** QR code is an item of the save box's Export menu (ticket 148). */
-async function openQrPanel(wrapper: ReturnType<typeof mount>) {
-  await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
-  await wrapper.find('[data-testid="export-qr"]').trigger('click')
-}
-
-describe('App QR export (ticket 116)', () => {
-  it('opens the QR panel for the open Project from the Export menu, and Close hides it', async () => {
-    seedProject(15, 30)
-    const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
-
-    await openQrPanel(wrapper)
-
-    expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="qr-code-module"]').length).toBeGreaterThan(0)
-
-    await wrapper.find('[data-testid="qr-export-close"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
-  })
-
-  it('closes the panel on Escape without also backing out of Select', async () => {
-    seedProject(15, 30)
-    const wrapper = mountApp()
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-    await openQrPanel(wrapper)
-
-    await pressKey({ key: 'Escape' })
-
-    expect(wrapper.find('[data-testid="qr-export-panel"]').exists()).toBe(false)
-    expect(selectedBeadCount(wrapper)).toBe(2) // untouched by that Escape
-  })
-
-  it('withholds the editing shortcuts while the panel is open, like any other modal', async () => {
-    seedProject(15, 30)
-    const wrapper = mountApp()
-    await openQrPanel(wrapper)
-
-    await pressKey({ key: 'r' })
-
-    expect(loadProjects()[0]!.rotation).toBe(0)
-  })
-
-  it('turns the menu item off for a Project too large for a QR code, with the reason under it', async () => {
-    const huge = createProject({
-      name: 'Huge',
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 90, height: 135, unit: 'mm' }, // 60 x 90, ADR 0009's own worst-case size
-    })
-    saveProjects([withFrameGrid(huge, denselyColoredGrid(huge.frame!.columns, huge.frame!.rows))])
-    const wrapper = mountApp()
-    await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="export-qr"]').element.disabled).toBe(true)
-    expect(wrapper.find('[data-testid="export-qr-reason"]').text()).toBe(en.transfer.qrTooLargeMessage)
-  })
-
-  it('is gone from the Export and import box', async () => {
-    seedProject(15, 30)
-    const wrapper = mountApp()
-
-    expect(wrapper.find('[data-testid="project-transfer"] [data-testid="export-qr"]').exists()).toBe(false)
   })
 })

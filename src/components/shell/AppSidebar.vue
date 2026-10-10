@@ -48,7 +48,6 @@ const {
   onBringFrameIntoView,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
-  qrExport,
   makerName,
   nameOnExportsOpen,
   exporting,
@@ -121,14 +120,11 @@ const {
       v-if="activeProject && !framing"
       :has-frame="activeProject.frame !== undefined"
       :save-failed="saveFailed"
-      :qr-too-large="qrExport.tooLarge.value"
       :exporting="exporting"
       :project-name="activeProject.name"
       :maker-name="makerName"
       @edit-maker-name="nameOnExportsOpen = true"
       @save="onSave"
-      @export-project="onExportProjectFile"
-      @export-qr="qrExport.open"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @fit-frame="onFitFrame"

@@ -13,7 +13,7 @@ function mountMenu(onSelect = vi.fn()) {
           { label: 'Export', icon: 'export' },
           {
             default: () => [
-              h(AppMenuItem, { icon: 'qr-code', 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'QR code'),
+              h(AppMenuItem, { icon: 'image', 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'PNG image'),
               h(AppMenuItem, { icon: 'image', disabled: true, 'data-testid': 'png' }, () => 'PNG image'),
               h(AppMenuItem, { icon: 'pdf', 'data-testid': 'pdf', onSelect: () => onSelect('pdf') }, () => 'PDF'),
             ],

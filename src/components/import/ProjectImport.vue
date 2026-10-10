@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
-import type { DecodeImage } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { importProjects, parseProjectsFile } from '../../domain/projectFile'
-import { parseProjectFromQrImage } from '../../domain/qrExport'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -13,12 +11,6 @@ const props = withDefaults(
   defineProps<{
     /** Every Project saved on this device, for spotting import collisions. */
     projects: Project[]
-    /**
-     * How a picked QR-code picture is turned into pixels (ticket 68). The app shell hands over the browser's own
-     * decoding, the same adapter Convert image uses (ADR 0020); a test hands over synthetic pixel data instead, since
-     * jsdom decodes no image bytes.
-     */
-    decodeImage: DecodeImage
     /**
      * Icons only, each name kept as its tooltip and accessible name: the header's first step when it runs out of room
      * (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini tier's More menu
@@ -49,11 +41,9 @@ const emit = defineEmits<{
 }>()
 
 const fileInputId = useId()
-const qrInputId = useId()
 
 const { t } = useI18n()
 const importFile = controlAction('import-file')
-const importQr = controlAction('import-qr')
 
 const importedCount = ref<number | null>(null)
 const importFailed = ref(false)
@@ -83,43 +73,14 @@ async function onImportFile(event: Event): Promise<void> {
   }
 }
 
-const qrImportedCount = ref<number | null>(null)
-const qrImportFailed = ref(false)
-
-/** Import from a QR-code picture (ticket 68): a photo/screenshot of the code shown on another device, decoded the same way Convert image reads a picture's pixels. */
-async function onImportQrImage(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) {
-    return
-  }
-
-  qrImportedCount.value = null
-  qrImportFailed.value = false
-
-  try {
-    const pixels = await props.decodeImage(file)
-    const [added] = importProjects([parseProjectFromQrImage(pixels)], props.projects)
-    qrImportedCount.value = 1
-    emit('import', [added!])
-    if (props.toastResults) emit('import-result', 'import-qr', t.value.transfer.qrImportedLabel, 'success')
-  } catch {
-    qrImportFailed.value = true
-    if (props.toastResults) emit('import-result', 'import-qr', t.value.transfer.qrImportErrorLabel, 'danger')
-  } finally {
-    // Clear the input so re-picking the same file still counts as a change.
-    input.value = ''
-  }
-}
 </script>
 
 <template>
   <!--
-    Both Import controls and their outcome (tickets 117, 142, 169): from a Project file, and from a QR-code picture.
-    Each is a text button (Button card) that is a label around a visually hidden file input, so the browser's own
+    The Import control and its outcome (tickets 117, 142, 169): from a Project file. It is a text button (Button card) that is a label around a visually hidden file input, so the browser's own
     file picker opens from it, and keyboard focus on the input shows on the label. Icon-only (`compact`) wraps the
     same label in the design system's own Tooltip instead of a native `title`, so its background matches every other
-    icon control's. A fragment, so the controls and their one-line result sit in the header's own row.
+    icon control's. A fragment, so the control and its one-line result sit in the header's own row.
   -->
   <AppTooltip v-if="compact" :name="importFile.name(t)" :body="importFile.body?.(t)" :announce="false">
     <label class="project-import__button project-import__button--compact" :for="fileInputId">
@@ -150,35 +111,6 @@ async function onImportQrImage(event: Event): Promise<void> {
     </label>
   </AppTooltip>
 
-  <AppTooltip v-if="compact" :name="importQr.name(t)" :body="importQr.body?.(t)" :announce="false">
-    <label class="project-import__button project-import__button--compact" :for="qrInputId">
-      <input
-        :id="qrInputId"
-        type="file"
-        class="project-import__input"
-        accept="image/*"
-        :data-testid="`${testidPrefix}import-qr`"
-        :aria-label="t.transfer.importQrLabel"
-        @change="onImportQrImage"
-      />
-      <AppIcon name="scan" :size="15" />
-    </label>
-  </AppTooltip>
-  <AppTooltip v-else :name="importQr.name(t)" :body="importQr.body?.(t)" :announce="false">
-    <label class="project-import__button" :for="qrInputId">
-      <input
-        :id="qrInputId"
-        type="file"
-        class="project-import__input"
-        accept="image/*"
-        :data-testid="`${testidPrefix}import-qr`"
-        @change="onImportQrImage"
-      />
-      <AppIcon name="scan" :size="15" />
-      <span>{{ t.transfer.importQrLabel }}</span>
-    </label>
-  </AppTooltip>
-
   <!--
     One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
     announced as it appears, since the file picker has already closed by then. The iPad mini tier's More menu
@@ -190,13 +122,6 @@ async function onImportQrImage(event: Event): Promise<void> {
   </p>
   <p v-if="!toastResults && importFailed" class="project-import__error" role="alert" data-testid="import-error">
     <AppIcon name="warning" :size="16" />{{ t.transfer.importErrorLabel }}
-  </p>
-
-  <p v-if="!toastResults && qrImportedCount !== null" class="project-import__result" role="status" data-testid="qr-import-result">
-    {{ t.transfer.qrImportedLabel }}
-  </p>
-  <p v-if="!toastResults && qrImportFailed" class="project-import__error" role="alert" data-testid="qr-import-error">
-    <AppIcon name="warning" :size="16" />{{ t.transfer.qrImportErrorLabel }}
   </p>
 </template>
 

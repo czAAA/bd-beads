@@ -17,7 +17,7 @@ function mountMenu(props: Record<string, unknown> = {}, onSelect = vi.fn(), with
           { label: 'Export', icon: 'export', ...props },
           {
             default: () => [
-              h(AppMenuItem, { 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'QR code'),
+              h(AppMenuItem, { 'data-testid': 'qr', onSelect: () => onSelect('qr') }, () => 'PNG image'),
               h(AppMenuItem, { 'data-testid': 'pdf', onSelect: () => onSelect('pdf') }, () => 'PDF'),
             ],
             ...(withSheet ? { sheet: ({ close }: { close: () => void }) => h('div', { 'data-testid': 'sheet', onClick: close }, 'sheet') } : {}),

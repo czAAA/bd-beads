@@ -176,10 +176,9 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
-  it('shows import buttons in the project-management bar when no Project is open', async () => {
+  it('shows the Import button in the project-management bar when no Project is open', async () => {
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="phone-bar-import-file"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="phone-bar-import-qr"]').exists()).toBe(true)
   })
 
   it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {

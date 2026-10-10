@@ -51,7 +51,6 @@
     "components/PrintStrips/README.md",
     "components/PrintWide/README.md",
     "components/ProgressBar/README.md",
-    "components/QrExport/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
     "components/SaveStates/README.md",
@@ -192,7 +191,7 @@
     {
       "name": "ImportResult",
       "group": "Screens",
-      "summary": "The one-line result or error beside Import a file and Import QR code."
+      "summary": "The one-line result or error beside Import a file."
     },
     {
       "name": "InteractionStates",
@@ -237,7 +236,7 @@
     {
       "name": "Modal",
       "group": "Overlays",
-      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?), the QR export panel and the keyboard shortcuts."
+      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?), and the keyboard shortcuts."
     },
     {
       "name": "Motion",
@@ -313,11 +312,6 @@
       "name": "ProgressBar",
       "group": "Canvas",
       "summary": "The 56px bar along the canvas box's bottom edge holding every Row progress control."
-    },
-    {
-      "name": "QrExport",
-      "group": "Screens",
-      "summary": "The modal that shows a Pattern as a QR code, and its too-large state."
     },
     {
       "name": "SaveBox",
@@ -503,8 +497,6 @@
         "save.svg",
         "export.svg",
         "import.svg",
-        "qr-code.svg",
-        "scan.svg",
         "pdf.svg",
         "mirror-horizontal.svg",
         "mirror-vertical.svg",
@@ -599,14 +591,6 @@
         {
           "path": "assets/Icons/import.svg",
           "id": "6acdb745e2d748666975d704799aded7"
-        },
-        {
-          "path": "assets/Icons/qr-code.svg",
-          "id": "c1f7e1e0405bd1e4fcb90c921906b72e"
-        },
-        {
-          "path": "assets/Icons/scan.svg",
-          "id": "f9d9d3d27c7114e1e9862503c2db0e8f"
         },
         {
           "path": "assets/Icons/pdf.svg",
@@ -949,12 +933,6 @@
         "bytes": 219,
         "type": "image/svg+xml"
       },
-      "assets/Icons/qr-code.svg": {
-        "store": "blob",
-        "id": "c1f7e1e0405bd1e4fcb90c921906b72e",
-        "bytes": 461,
-        "type": "image/svg+xml"
-      },
       "assets/Icons/redo.svg": {
         "store": "blob",
         "id": "837241d556bdebd4c2d3095a382047a3",
@@ -983,12 +961,6 @@
         "store": "blob",
         "id": "42ee0443e8478c7706f18ba5b9f61dd6",
         "bytes": 383,
-        "type": "image/svg+xml"
-      },
-      "assets/Icons/scan.svg": {
-        "store": "blob",
-        "id": "f9d9d3d27c7114e1e9862503c2db0e8f",
-        "bytes": 373,
         "type": "image/svg+xml"
       },
       "assets/Icons/select.svg": {

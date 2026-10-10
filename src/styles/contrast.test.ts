@@ -31,7 +31,7 @@ describe('contrast.css', () => {
   it('keeps every bead color in forced colors: the Project, the swatches and the thumbnails', () => {
     const forced = sheet.slice(sheet.indexOf('@media (forced-colors: active)'))
     const keep = forced.slice(0, forced.indexOf('forced-color-adjust: none'))
-    for (const name of ['project-surface', 'palette-picker__swatch', 'bead-quantities__swatch', 'project-thumbnail', 'qr-code']) {
+    for (const name of ['project-surface', 'palette-picker__swatch', 'bead-quantities__swatch', 'project-thumbnail']) {
       expect(keep).toContain(`.${name}`)
     }
   })

@@ -34,7 +34,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 
 | Where | In Russian | Fix (for both languages) |
 | --- | --- | --- |
-| Header at 1440px (MacBook Air) | Needs 1 690px: "Импортировать файл", "Импортировать QR-код", "Заменить бисер", "Новая схема" are a third longer. English already fits with 0px to spare. | **The header fits by priority, not by breakpoint.** When it does not fit: 1) Import a file and Import QR code become icon buttons (name as tooltip and `aria-label`); 2) the Pattern name is cut with an ellipsis; 3) the imports move into More. In Russian at 1440px step 1 applies. 
+| Header at 1440px (MacBook Air) | Needs 1 690px: "Импортировать файл", "Заменить бисер", "Новая схема" are a third longer. English already fits with 0px to spare. | **The header fits by priority, not by breakpoint.** When it does not fit: 1) Import a file becomes an icon button (name as tooltip and `aria-label`); 2) the Pattern name is cut with an ellipsis; 3) the import moves into More. In Russian at 1440px step 1 applies. 
 | New Pattern → Technique | "Мозаичное плетение", "Кирпичное плетение" do not fit three segments in 262px (need 436px). | **SegmentedControl labels may wrap to two lines**; the control grows to 48px and every segment keeps the same height. Never cut or shrink the text. 
 | Selection ContextBar (phone) | "Удалить выделенный ряд/столбец" (the app's string) breaks the bar; on the paste bar "Отмена" is cut. | **The ContextBar drops labels right to left** when it does not fit: Remove line, then Rotate, then Copy become icon buttons with their names as `aria-label`. Cancel keeps its label. 
 | Saved Patterns names | Names such as "Панно с логотипом" wrap and run into their neighbours. | **Thumbnail names are one line**, cut with an ellipsis at 58px, the full name in the tooltip (as the writing rules say for Pattern names). 
@@ -129,7 +129,6 @@ The Canvas color button (Russian "Цвет холста") offers five background
 
 | English | Russian |
 | --- | --- |
-| Scan it with Import QR code on another device. | Отсканируйте его через «Импортировать QR-код» на другом устройстве. |
 | Make one with New Pattern on the left, open a Saved Pattern, or import a file. | Создайте её кнопкой «Новая схема» слева, откройте сохранённую схему или импортируйте файл. |
 | Opening {Pattern} · {size} | Открываем {Pattern} · {size} |
 | Converting the picture · {percent} | Конвертируем изображение · {percent} |
@@ -179,7 +178,7 @@ The Overview, the header menu and the Tour, as signed off. The same rules: plain
 | Convert image: Turn a picture into a Pattern in up to 14 colors. | Конвертировать изображение: Превращает картинку в схему, до 14 цветов. |
 | Row progress: Mark rows done as you weave and pick up where you stopped. | Прогресс по рядам: Отмечайте готовые ряды и продолжайте с того места, где остановились. |
 | Beads needed: Every color counted, with Estimated weight in grams. | Нужно бисера: Подсчёт по каждому цвету и примерный вес в граммах. |
-| Exports: PDF for printing, PNG image, QR code and the Pattern file. | Экспорт: PDF для печати, PNG, QR-код и файл схемы. |
+| Exports: PDF for printing, PNG image and the Pattern file. | Экспорт: PDF для печати, PNG и файл схемы. |
 | Saved Patterns: Kept on this device. No account needed. | Сохранённые схемы: Хранятся на этом устройстве. Аккаунт не нужен. |
 | Previous feature · Next feature (arrow labels) | Предыдущая возможность · Следующая возможность |
 | Made by one person | Один человек |
@@ -210,7 +209,7 @@ Plan contents are placeholders until paid features exist.
 | 9 | Remove line | **Remove a line** Remove line takes out a whole row or column. Remove any one, then press Undo to bring it back. | **Удалите линию** «Удалить линию» убирает целый ряд или столбец. Удалите любой, затем нажмите «Отменить», чтобы вернуть его. |
 | 10 | Size | **Change the size** Size adds or removes rows and columns at the edge. Press − or + next to Columns, look at the Pattern, then press Undo. | **Измените размер** «Размер» добавляет или убирает ряды и столбцы с края. Нажмите − или + у столбцов, посмотрите на схему, затем нажмите «Отменить». |
 | 11 | Row progress · P | **Track your rows** Row progress keeps your place while you weave. Turn it on, press Row done three times, then Row not done once to open row 3 again. | **Отмечайте ряды** Прогресс по рядам запоминает, где вы остановились. Включите его, трижды нажмите «Ряд готов», затем один раз «Ряд не готов», чтобы вернуть ряд 3. |
-| final | Export | **Your first Pattern is ready** Take it to the loom: Export makes a PDF to print, a PNG, a QR code or the Pattern file. To walk through again, open the menu and choose Take the tour. [Keep editing] [Export] | **Ваша первая схема готова** Пора за станок: «Экспорт» сделает PDF для печати, PNG, QR-код или файл схемы. Чтобы пройти шаги снова, откройте меню и выберите «Пройти обучение». [Продолжить] [Экспортировать] |
+| final | Export | **Your first Pattern is ready** Take it to the loom: Export makes a PDF to print, a PNG or the Pattern file. To walk through again, open the menu and choose Take the tour. [Keep editing] [Export] | **Ваша первая схема готова** Пора за станок: «Экспорт» сделает PDF для печати, PNG или файл схемы. Чтобы пройти шаги снова, откройте меню и выберите «Пройти обучение». [Продолжить] [Экспортировать] |
 | card | | {n} of 11 · Next · Skip tour | {n} из 11 · Далее · Пропустить обучение |
 | fallback | | This control isn't on screen. Next does this step for you. | Этого элемента сейчас нет на экране. «Далее» сделает шаг за вас. |
 | Skip toast | | Tour put aside for now. Pick it up from the menu any time. | Обучение отложено на потом. Вернуться к нему можно из меню в любой момент. |

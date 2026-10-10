@@ -27,9 +27,8 @@ How the app asks for input, and what every part shows when it is empty, waiting 
 ## Errors and results
 
 - An error stays beside what caused it: at the field (forms), beside the button (imports), in the save box (saving). Only save failures, which affect the whole library, use the notice row under the header, and they stay until a save succeeds.
-- Every error offers the way out when there is one: Export Pattern when saving fails, Export Pattern when a Pattern is too large for a QR code.
+- Every error offers the way out when there is one: Export Pattern when saving fails.
 - Results that need no action ("Patterns imported: 3", "Saved") are short and go by themselves.
-- The QR code always sits on white with dark modules, in both themes, so scanners can read it.
 
 ## Open canvas and Frame (v16)
 

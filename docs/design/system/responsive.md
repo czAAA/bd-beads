@@ -29,7 +29,7 @@ Devices (CSS px): iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, iPad min
 
 - The left column is docked again, 292px wide (286px boxes plus a 6px scrollbar gutter), with 6px between the header, the column, the canvas box and the screen edges, and 12px between boxes.
 - Beads needed and Saved Patterns start collapsed; the Toolbox and save box stay open.
-- Header 64px with the Bead pill and Replace bead; Import a file and Import QR code are icon buttons with tooltips. Keyboard shortcuts shows when a keyboard or trackpad is attached. No Dock.
+- Header 64px with the Bead pill and Replace bead; Import a file is an icon button with tooltips. Keyboard shortcuts shows when a keyboard or trackpad is attached. No Dock.
 
 ### MacBook Air · 1280 – 1919 px
 
@@ -53,7 +53,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Fitting longer text
 
-- The header fits by priority, not only by tier: when its content does not fit, first Import a file and Import QR code become icon buttons, then the Pattern name is cut with an ellipsis, then the imports move into More. Russian at 1440px takes the first step.
+- The header fits by priority, not only by tier: when its content does not fit, first Import a file becomes an icon button, then the Pattern name is cut with an ellipsis, then the import moves into More. Russian at 1440px takes the first step.
 - The ContextBar drops labels right to left (Remove line, Rotate, Copy) and keeps Cancel's label. The Dock is icon-only, so its names never need to fit.
 - See the LongerText card.
 
