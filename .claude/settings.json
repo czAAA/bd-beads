@@ -1,8 +1,8 @@
 {
   "permissions": {
     "deny": [
-      "Read(./docs/design/system/**/preview.html)",
-      "Read(./.scratch/.archive/**)"
-    ]
+      "Read(./docs/design/system/**/preview.html)"
+    ],
+    "additionalDirectories": ["../bd-beads-docs"]
   }
 }
