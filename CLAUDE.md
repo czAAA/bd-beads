@@ -8,7 +8,7 @@ This file documents how Claude Code and agent skills are configured for this rep
 
 Issues are tracked as markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
 
-This repo is code only. Tickets (`.scratch/`), ADRs (`docs/adr/`), specs (`docs/specs/`), research (`docs/research/`, `reports/`, `research_notes/`) live in the private repo `czAAA/bd-beads-docs`, cloned next to this one and linked in at the same paths by gitignored symlinks (`bash scripts/link-docs.sh`; `bash scripts/migrate.sh` moves a machine from the old single repo). The code builds, lints and tests without it, so if a docs path is missing, proceed. Tickets, ADRs and specs are committed straight to the docs repo's `main` and pushed at once: no branch, no worktree, no PR (`git -C ../bd-beads-docs ...`).
+This repo is code only. Tickets (`.scratch/`), ADRs (`docs/adr/`), specs (`docs/specs/`), research (`docs/research/`, `reports/`, `research_notes/`) and the operations runbook (`docs/operations.md`) live in the private repo `czAAA/bd-beads-docs`, cloned next to this one and linked in at the same paths by gitignored symlinks (`bash scripts/link-docs.sh`; `bash scripts/migrate.sh` moves a machine from the old single repo). The code builds, lints and tests without it, so if a docs path is missing, proceed. Tickets, ADRs and specs are committed straight to the docs repo's `main` and pushed at once: no branch, no worktree, no PR (`git -C ../bd-beads-docs ...`).
 
 ### Triage labels
 
@@ -49,7 +49,7 @@ The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticke
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
 - Before pushing run `npm run check` (typecheck, lint, knip; prints only failures), not the three by hand.
 - `.scratch/.archive/` is hidden from search (`.ignore`). Read an archived ticket only when a live one points at it, by `cat` in Bash.
-- `.scratch`, `docs/adr`, `docs/specs`, `docs/research`, `reports` and `research_notes` are symlinks: ripgrep and `grep -r` don't follow a link met while walking a tree, so name the link with a trailing slash (`grep -rn term .scratch/`, `rg term docs/adr/`).
+- `.scratch`, `docs/adr`, `docs/specs`, `docs/research`, `docs/operations.md`, `reports` and `research_notes` are symlinks: ripgrep and `grep -r` don't follow a link met while walking a tree, so name the link with a trailing slash (`grep -rn term .scratch/`, `rg term docs/adr/`).
 - The glossary is `docs/glossary/` (one file per area; index in its `README.md`): grep it for the term you need, don't read it whole.
 - Never cat lock files, generated files, minified bundles, or large logs.
 - Screenshots and visual-test artifacts (`test-results/`, `e2e/visual/__screenshots__/`) are images: each one read into context stays there for the rest of the session. Trust Playwright's text reporter (pass/fail, pixel-diff count) first; only `Read` an image when a diff genuinely needs visual judgment. Crop to the region under review before reading rather than reading a full-page screenshot. When a visual test fails, read the `diff.png` before reaching for `actual.png`/`expected.png` too.

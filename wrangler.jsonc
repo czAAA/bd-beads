@@ -1,0 +1,114 @@
+// The backend Worker (ticket 71, spec 385): serves the app and the Overview as static assets and the API under /api/*.
+// Two environments, each with its own `core` and `blobs` D1 databases (ADR 0049) and its own R2 bucket. Deploy with
+// `--env dev` or `--env production` (docs/deploy.md). Bindings and variables are NOT inherited between environments,
+// so each lists its own.
+//
+// Variables the maintainer sets in the dashboard, DISABLED_FEATURES above all, are never declared here: `keep_vars`
+// leaves them alone on deploy, but a value declared here would be put back by every deploy. Secrets (Turnstile key,
+// Healthchecks ping URL, analytics token, Google client secret) are set with `wrangler secret put`, never here.
+//
+// Sizes are in MB of 1,048,576 bytes; counts are per UTC day. The warn levels are spec 385's table.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bd-beads",
+  "main": "worker/src/index.ts",
+  // workerd in the tests' Miniflare 4 accepts dates up to 2026-08-06 (docs/testing.md).
+  "compatibility_date": "2026-08-01",
+  "keep_vars": true,
+  // No per-version workers.dev address that could get around Access.
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // The Worker runs only for /api/*: loading the app never counts as a Worker request, and keeps working when /api
+    // is over its daily cap or switched off.
+    "run_worker_first": ["/api/*"]
+  },
+  "env": {
+    "dev": {
+      "name": "bd-beads-dev",
+      "workers_dev": true,
+      // The watchdog, every 15 minutes (worker/src/watchdog/run.ts relies on the interval for its daily hook).
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "vars": {
+        "WORKER_NAME": "dev",
+        // This Worker's own script, databases and bucket, which dev's watchdog filters Cloudflare's analytics by (it
+        // counts only its own usage). The account and database ids are filled in by ticket 71 step A2.
+        "CF_ACCOUNT_ID": "",
+        "WORKER_SCRIPT": "bd-beads-dev",
+        "CORE_DATABASE_ID": "",
+        "BLOBS_DATABASE_ID": "",
+        "BLOBS_BUCKET_NAME": "bd-beads-dev",
+        // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
+        // 100 MB request body.
+        "UPLOAD_CAP_D1_BYTES": 1990000,
+        "UPLOAD_CAP_R2_MB": 90,
+        // Uploads to the blobs database are refused with 507 storage-full past this size.
+        "BLOBS_STORAGE_LIMIT_MB": 50,
+        // Warn levels: the watchdog pings Healthchecks /fail when one is passed.
+        "WARN_API_REQUESTS": 1000,
+        "WARN_D1_ROWS_WRITTEN": 1000,
+        "WARN_BLOBS_DB_MB": 25,
+        "WARN_CORE_DB_MB": 25,
+        "WARN_R2_STORAGE_MB": 25,
+        "WARN_WORKER_ERRORS": 10
+      },
+      "d1_databases": [
+        {
+          "binding": "CORE",
+          "database_name": "bd-beads-dev-core",
+          // Filled in by ticket 71 step A2, when the database is created.
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "worker/migrations/core"
+        },
+        {
+          "binding": "BLOBS_DB",
+          "database_name": "bd-beads-dev-blobs",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "worker/migrations/blobs"
+        }
+      ],
+      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads-dev" }]
+    },
+    "production": {
+      "name": "bd-beads",
+      "workers_dev": true,
+      "triggers": { "crons": ["*/15 * * * *"] },
+      "vars": {
+        "WORKER_NAME": "production",
+        // Production counts requests, D1 writes and R2 storage account-wide, the limits it shares with dev; its own
+        // script filters only its errors. The database ids are kept for the runbook.
+        "CF_ACCOUNT_ID": "",
+        "WORKER_SCRIPT": "bd-beads",
+        "CORE_DATABASE_ID": "",
+        "BLOBS_DATABASE_ID": "",
+        "BLOBS_BUCKET_NAME": "bd-beads",
+        "UPLOAD_CAP_D1_BYTES": 1990000,
+        "UPLOAD_CAP_R2_MB": 90,
+        "BLOBS_STORAGE_LIMIT_MB": 450,
+        "WARN_API_REQUESTS": 55000,
+        "WARN_D1_ROWS_WRITTEN": 55000,
+        "WARN_BLOBS_DB_MB": 350,
+        "WARN_CORE_DB_MB": 350,
+        "WARN_R2_STORAGE_MB": 5120,
+        "WARN_WORKER_ERRORS": 50
+      },
+      "d1_databases": [
+        {
+          "binding": "CORE",
+          "database_name": "bd-beads-core",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "worker/migrations/core"
+        },
+        {
+          "binding": "BLOBS_DB",
+          "database_name": "bd-beads-blobs",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "worker/migrations/blobs"
+        }
+      ],
+      "r2_buckets": [{ "binding": "BLOBS", "bucket_name": "bd-beads" }]
+    }
+  }
+}
