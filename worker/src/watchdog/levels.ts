@@ -18,7 +18,11 @@ const scope = (worker: Env['WORKER_NAME']): string => (worker === 'production' ?
 
 const MEASURES: Record<Measure, MeasureSpec> = {
   'api-requests': { level: 'WARN_API_REQUESTS', unit: 'count', label: (w) => `API requests today (${scope(w)})` },
-  'd1-rows-written': { level: 'WARN_D1_ROWS_WRITTEN', unit: 'count', label: (w) => `D1 rows written today (${scope(w)})` },
+  'd1-rows-written': {
+    level: 'WARN_D1_ROWS_WRITTEN',
+    unit: 'count',
+    label: (w) => `D1 rows written today (${scope(w)})`,
+  },
   'worker-errors': { level: 'WARN_WORKER_ERRORS', unit: 'count', label: () => 'Worker errors today (this Worker)' },
   'r2-storage': { level: 'WARN_R2_STORAGE_MB', unit: 'MB', label: (w) => `R2 storage (${scope(w)})` },
   'core-db': { level: 'WARN_CORE_DB_MB', unit: 'MB', label: () => 'core database size' },
@@ -48,7 +52,9 @@ export function checkLevels(env: Env, usage: Usage): Reading[] {
     if (Number.isNaN(raw)) return { measure, over: true, line: `${label}: its level ${spec.level} is not a number` }
     const level = spec.unit === 'MB' ? raw * MB : raw
     const value = usage[measure]
-    if (value === undefined) return { measure, over: false, line: `${label}: not read (warn level ${format(level, spec.unit)})` }
+    if (value === undefined) {
+      return { measure, over: false, line: `${label}: not read (warn level ${format(level, spec.unit)})` }
+    }
     const over = value > level
     return { measure, over, line: `${label}: ${format(value, spec.unit)} (warn level ${format(level, spec.unit)})` }
   })

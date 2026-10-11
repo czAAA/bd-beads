@@ -54,7 +54,8 @@ export function sizeCap(cap: (rc: RequestContext) => number): Guard {
 export function blobStorageLimit(): Guard {
   return async ({ env }) => {
     const limit = numberVar(env, 'BLOBS_STORAGE_LIMIT_MB') * MB
-    // A limit that isn't a number refuses: the safe reading of a mistyped dashboard variable.
+    // The size is read just before the write, so one upload may end a little past the limit; the next is refused. A
+    // limit that isn't a number refuses: the safe reading of a mistyped dashboard variable.
     if (!(await databaseSize(env.BLOBS_DB) <= limit)) throw new ApiError('storage-full')
   }
 }

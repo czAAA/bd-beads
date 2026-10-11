@@ -40,8 +40,9 @@ export function uploadCapFor(env: Env, plan: Plan): number {
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/
 
+/** An id that can't name a blob names none: `404 not-found`, the same answer as an id with nothing behind it. */
 function checkId(id: string): void {
-  if (!SAFE_ID.test(id)) throw new Error(`Blob id must be 1-64 letters, digits, "-" or "_": ${id}`)
+  if (!SAFE_ID.test(id)) throw new ApiError('not-found')
 }
 
 /** Blobs as rows of the `blobs` database's `blobs` table (worker/migrations/blobs). */

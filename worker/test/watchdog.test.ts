@@ -158,7 +158,8 @@ describe('the watchdog', () => {
       expect(ping.body).toContain("- Usage could not be read from Cloudflare's analytics: GraphQL Analytics answered 500")
       expect(ping.body).toMatch(/core database size: [\d.]+ MB/)
     })
-    await withWatchdog({ graphql: () => Response.json({ data: null, errors: [{ message: 'unknown field' }] }) }, async (worker) => {
+    const graphqlError = () => Response.json({ data: null, errors: [{ message: 'unknown field' }] })
+    await withWatchdog({ graphql: graphqlError }, async (worker) => {
       await worker.scheduled(NOON)
       expect(onePing(worker).body).toContain('GraphQL Analytics: unknown field')
     })

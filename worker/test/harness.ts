@@ -15,6 +15,7 @@ import { unstable_readConfig, unstable_splitSqlQuery } from 'wrangler'
  */
 const root = resolve(import.meta.dirname, '../..')
 
+/** A call the Worker made to the outside (Turnstile, GraphQL Analytics, Healthchecks), as the harness caught it. */
 export interface Outbound {
   url: string
   method: string
@@ -114,7 +115,10 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
     d1Databases: Object.fromEntries(databases.map((db) => [db.binding, db.database_name ?? db.binding])),
     r2Buckets: Object.fromEntries(config.r2_buckets.map((bucket) => [bucket.binding, bucket.bucket_name ?? bucket.binding])),
     ratelimits: Object.fromEntries(
-      Object.entries(options.ratelimits ?? {}).map(([name, simple], index) => [name, { namespace_id: String(index + 1), simple }]),
+      Object.entries(options.ratelimits ?? {}).map(([name, simple], index) => [
+        name,
+        { namespace_id: String(index + 1), simple },
+      ]),
     ),
     assets: {
       directory: assetsDir,
@@ -126,7 +130,12 @@ export async function startWorker(options: StartOptions = {}): Promise<RunningWo
       },
     },
     outboundService: async (request: MiniflareRequest) => {
-      const call = { url: request.url, method: request.method, headers: Object.fromEntries(request.headers), body: await request.text() }
+      const call = {
+        url: request.url,
+        method: request.method,
+        headers: Object.fromEntries(request.headers),
+        body: await request.text(),
+      }
       outbound.push(call)
       return options.reply ? options.reply(call) : new Response('{}')
     },
