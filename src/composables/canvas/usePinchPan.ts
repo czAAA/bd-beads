@@ -1,0 +1,113 @@
+import { onBeforeUnmount, watch, type Ref } from 'vue'
+
+interface PinchPanDeps {
+  zoom: () => number
+  /** Sets the zoom, keeping the point of the viewport under `anchor` where it is. */
+  setZoom: (value: number, anchor?: { x: number; y: number }) => void
+  /** Moves the canvas under the viewport by a distance on screen. */
+  panBy: (dx: number, dy: number) => void
+  /** Drops the paint stroke the first finger began, with the bead(s) it already painted: that finger was the start of a pinch, not a stroke. */
+  cancelStroke: () => void
+}
+
+interface Point {
+  x: number
+  y: number
+}
+
+function midpoint(a: Point, b: Point): Point {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+}
+
+function distance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+/**
+ * Two fingers on the Project pinch it to zoom and pan it (ticket 79; responsive.md's phone tier). One finger stays
+ * a paint stroke: the drawing surface keeps `touch-action: none` (ticket 60), so the browser never zooms or scrolls
+ * for us and this is the whole gesture recognizer.
+ *
+ * It listens in the capture phase on the canvas panel's scroller, above the drawing surface. The second finger
+ * landing takes back the stroke the first began, with every bead it painted, and from then until every finger is up
+ * the surface hears nothing, so neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
+ * and the point between them stays under them as the zoom changes; moving them together scrolls the Project.
+ * Only touch takes part: a mouse or pen has no second contact, and the zoom pill and keys cover them.
+ */
+export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDeps) {
+  const touches = new Map<number, Point>()
+  let gesturing = false
+  let startSpread = 0
+  let startZoom = 1
+  let lastMid: Point = { x: 0, y: 0 }
+
+  function firstTwo(): [Point, Point] {
+    const [a, b] = [...touches.values()]
+    return [a as Point, b as Point]
+  }
+
+  function onDown(event: PointerEvent) {
+    if (event.pointerType !== 'touch') return
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    if (!gesturing && touches.size === 2) {
+      deps.cancelStroke()
+      const [a, b] = firstTwo()
+      gesturing = true
+      startSpread = Math.max(distance(a, b), 1)
+      startZoom = deps.zoom()
+      lastMid = midpoint(a, b)
+    }
+    if (gesturing) event.stopPropagation()
+  }
+
+  function onMove(event: PointerEvent) {
+    const known = touches.get(event.pointerId)
+    if (!known) return
+    known.x = event.clientX
+    known.y = event.clientY
+    if (!gesturing) return
+    event.stopPropagation()
+    if (touches.size < 2) return
+
+    const [a, b] = firstTwo()
+    const mid = midpoint(a, b)
+    const box = scrollEl.value?.getBoundingClientRect()
+    // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with them.
+    deps.setZoom(startZoom * (distance(a, b) / startSpread), { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) })
+    deps.panBy(mid.x - lastMid.x, mid.y - lastMid.y)
+    lastMid = mid
+  }
+
+  function onEnd(event: PointerEvent) {
+    touches.delete(event.pointerId)
+    if (touches.size === 0) gesturing = false
+  }
+
+  function attach(el: HTMLElement) {
+    el.addEventListener('pointerdown', onDown, true)
+    el.addEventListener('pointermove', onMove, true)
+    el.addEventListener('pointerup', onEnd, true)
+    el.addEventListener('pointercancel', onEnd, true)
+  }
+
+  function detach(el: HTMLElement) {
+    el.removeEventListener('pointerdown', onDown, true)
+    el.removeEventListener('pointermove', onMove, true)
+    el.removeEventListener('pointerup', onEnd, true)
+    el.removeEventListener('pointercancel', onEnd, true)
+    touches.clear()
+    gesturing = false
+  }
+
+  watch(
+    scrollEl,
+    (el, previous) => {
+      if (previous) detach(previous)
+      if (el) attach(el)
+    },
+    { immediate: true },
+  )
+  onBeforeUnmount(() => {
+    if (scrollEl.value) detach(scrollEl.value)
+  })
+}

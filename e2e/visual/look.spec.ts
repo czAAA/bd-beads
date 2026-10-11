@@ -1,0 +1,113 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { expect, test } from '@playwright/test'
+import { PNG } from 'pngjs'
+import { openApp, projectBox, setZoom } from '../support/app'
+import { fixtureProject } from '../support/projects'
+import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
+
+/**
+ * The look of a Project in the app, held to the reference screenshots (support/referenceCheck.ts says how the
+ * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300% upright and at 100%
+ * rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
+ * the overlays that come with a tool in overlays.spec.ts.
+ */
+const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
+const ZOOMS = [100, 300]
+const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
+
+const scenarios = [
+  ...TECHNIQUES.map((technique) => ({ name: `${technique}-plain`, technique, rowProgress: undefined })),
+  ...TECHNIQUES.map((technique) => ({
+    name: `${technique}-progress-rows`,
+    technique,
+    rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } as const,
+  })),
+  ...TECHNIQUES.map((technique) => ({
+    name: `${technique}-progress-columns`,
+    technique,
+    rowProgress: { enabled: true, direction: 'columns', currentColumn: 6 } as const,
+  })),
+]
+
+for (const scenario of scenarios) {
+  for (const rotated of [false, true]) {
+    const orientation = rotated ? 'rotated' : 'upright'
+
+    test(`${scenario.name}, ${orientation}`, async ({ page }) => {
+      const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress })
+      await openApp(page, [project])
+      await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+
+      for (const zoom of zoomsFor(rotated)) {
+        await setZoom(page, zoom)
+        await page.mouse.move(5, 5)
+
+        const box = (await page.getByTestId('project-surface').boundingBox())!
+        const reference = `${REFERENCES}${scenario.name}-${orientation}-${zoom}.png`
+        const corner = await projectBox(page, box)
+        if (UPDATING_REFERENCES) await writeReference(page, reference, shownRegion(corner, project, zoom / 100))
+        const expected = readFileSync(reference)
+        const { width, height } = PNG.sync.read(expected)
+        const origin = shownRegion(corner, project, zoom / 100)
+        const actual = await page.screenshot({ clip: { ...origin, width, height } })
+
+        const label = `${scenario.name}, ${orientation}, ${zoom}%`
+        const { look, wrong } = compareToReference(actual, expected, project, zoom, corner, origin)
+        expect.soft(look, `${label}: look`).toBeLessThanOrEqual(MAX_DIFFERING_BLOCKS[scenario.technique])
+        expect.soft(wrong, `${label}: beads in the wrong color`).toEqual([])
+      }
+    })
+  }
+}
+
+/**
+ * The comparisons have to fail when the picture is wrong, or a pass means nothing. Each of these draws a Project that
+ * differs from the one the reference shows in one small way, at every zoom (100% is where a bead is smallest), and expects
+ * the check to notice.
+ */
+test.describe('the check notices a wrong picture', () => {
+  const reference = fixtureProject({ technique: 'loom' })
+
+  const wrongPictures = {
+    'a bead in another color': fixtureProject({ technique: 'loom', override: [{ row: 4, column: 7, color: '#2f6fed' }] }),
+    'a bead left empty': fixtureProject({ technique: 'loom', override: [{ row: 4, column: 7, color: null }] }),
+  }
+
+  for (const [description, wrongPicture] of Object.entries(wrongPictures)) {
+    test(description, async ({ page }) => {
+      await openApp(page, [wrongPicture])
+
+      for (const zoom of ZOOMS) {
+        await setZoom(page, zoom)
+        await page.mouse.move(5, 5)
+
+        const box = (await page.getByTestId('project-surface').boundingBox())!
+        const expected = readFileSync(`${REFERENCES}loom-plain-upright-${zoom}.png`)
+        const { width, height } = PNG.sync.read(expected)
+        const corner = await projectBox(page, box)
+        const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
+        const actual = await page.screenshot({ clip: { ...origin, width, height } })
+
+        // Judged against the Project the reference shows, the one bead is found and nothing else is.
+        expect(compareToReference(actual, expected, reference, zoom, corner, origin).wrong, `${zoom}%`).toEqual(['(4, 7)'])
+      }
+    })
+  }
+
+  test('a Row progress marker the reference does not have', async ({ page }) => {
+    await openApp(page, [fixtureProject({ technique: 'loom', rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } })])
+    await setZoom(page, 100)
+    await page.mouse.move(5, 5)
+
+    const box = (await page.getByTestId('project-surface').boundingBox())!
+    const expected = readFileSync(`${REFERENCES}loom-plain-upright-100.png`)
+    const { width, height } = PNG.sync.read(expected)
+    const corner = await projectBox(page, box)
+    const origin = { x: Math.floor(corner.x), y: Math.floor(corner.y) }
+    const actual = await page.screenshot({ clip: { ...origin, width, height } })
+
+    // The rows behind the pointer are faded and one is outlined: far more than the look is allowed to differ by.
+    expect(compareToReference(actual, expected, reference, 100, corner, origin).look).toBeGreaterThan(MAX_DIFFERING_BLOCKS.loom)
+  })
+})

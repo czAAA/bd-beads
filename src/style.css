@@ -1,0 +1,44 @@
+/*
+ * The very base of the page (ADR 0021, ticket 152): the design system's own tokens set the type, color and background;
+ * this file exists only to put them on :root and to zero the body margin every browser adds. Everything else the app
+ * draws is styled by tokens.css, controls.css, contrast.css and each component's own scoped style: the ticket-02
+ * stylesheet this file used to be (its own --color-*, --border-width and --radius-* tokens, the old system font
+ * stack, and the unstyled <button>/<input>/<label> rules that shaped them before every control had moved onto
+ * .ui-control) is gone, superseded end to end.
+ */
+:root {
+  /* The root's own type size and line height: nothing in tokens.css sets these (they're the page's base, not a
+     component's), so they still live here. e2e/support/app.ts pins --line-height-base for the visual checks. */
+  --font-size-base: 18px;
+  --line-height-base: 145%;
+
+  font: var(--font-size-base) / var(--line-height-base) var(--font-sans);
+  color: var(--ink);
+  background: var(--surface);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (manipulation allows it on iOS), and no overscroll bounce moves the page. */
+  touch-action: pan-x pan-y;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+}
+
+/*
+ * The app shell fills the screen and scrolls nothing itself (ticket 141), so the document under it must not scroll
+ * either (ticket 320): on a phone the page otherwise drags past the Dock into the empty band below it. The Overview
+ * page has no shell and scrolls as a document, so it is left alone. overscroll-behavior is ticket 316's.
+ */
+html:has(.app-shell),
+html:has(.app-shell) body {
+  height: 100%;
+  overflow: hidden;
+}
