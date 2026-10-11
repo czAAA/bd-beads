@@ -1,4 +1,5 @@
 name: CI
+# First run on the new repo (ticket 387).
 
 # Jobs that run at the same time; the pipeline takes as long as the slowest. Branch protection requires three checks
 # by name: "Typecheck and lint", "Unit tests passed" (the aggregate of the unit shards) and "Visual check passed" (the aggregate of the visual shards).
