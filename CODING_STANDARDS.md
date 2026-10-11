@@ -8,6 +8,7 @@ What a change in this repo must follow, for whoever writes it and whoever review
 - **Feature folders** (ADR 0020): `components/<feature>/` and `composables/<feature>/`, with features `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell`, `tour`. `components/ui/` holds the primitives and imports from no feature folder. No composable imports from a component, types included.
 - **App.vue stays a composition root** (ADR 0020): new behavior is a composable (a user flow is a `use<Name>Flow`) wired in `useAppShell`, not logic in `App.vue` or `AppShell.vue`. CSS moves with its markup.
 - Browser-only parts of the theme and language live in `theme/` and `i18n/`; the marketing page in `overview/`.
+- **The backend Worker is `worker/`** (ticket 71, spec 385), outside the app's layers: its own `tsconfig.json` (Workers types, no DOM), nothing in `src/` imports it, and it imports nothing from `src/`. A route is added in `worker/src/index.ts` behind the guards in `guards.ts` (`turnstile` on anything that creates, `sizeCap`, `rateLimit`); blobs go only through `blobs.ts`; a new feature registers its kill-switch name in `features.ts` and in the runbook `docs/operations.md` (private repo, linked in); a new table is a numbered migration in `worker/migrations/`. How it deploys: `docs/deploy.md`.
 
 ## Rules every change keeps
 
