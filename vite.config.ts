@@ -18,28 +18,15 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), overview: resolve(import.meta.dirname, 'overview/index.html') } },
   },
   test: {
+    environment: 'jsdom',
+    globals: false,
+    // The browser checks (ticket 103) are Playwright's, not Vitest's.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
+    setupFiles: ['./src/testSetup.ts'],
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
     // finishes in milliseconds either way, so this only ever matters on a bad day.
     testTimeout: 15000,
     // Two workers: more exhausted a dev machine's memory (8GB, no swap) and got the run killed.
     maxWorkers: 2,
-    projects: [
-      {
-        extends: true,
-        test: {
-          name: 'app',
-          environment: 'jsdom',
-          globals: false,
-          // The browser checks (ticket 103) are Playwright's, not Vitest's; the Worker's tests (ticket 71) run in Node.
-          exclude: [...configDefaults.exclude, 'e2e/**', 'worker/**'],
-          setupFiles: ['./src/testSetup.ts'],
-        },
-      },
-      {
-        // The Worker (ticket 71): its tests start workerd through Miniflare, so they run in Node with no DOM setup.
-        extends: true,
-        test: { name: 'worker', environment: 'node', globals: false, include: ['worker/**/*.test.ts'], testTimeout: 30000 },
-      },
-    ],
   },
 }))
