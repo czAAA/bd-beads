@@ -3,10 +3,9 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   // The Vite config's two pages (the editor and the Overview, ADR 0022) are the app's entries; Vitest and Playwright
-  // entries come from their plugins. These are the helpers those find no importer for, and the Worker's (ticket 71)
-  // entry module and the test-only Worker the harness bundles.
-  "entry": ["index.html", "overview/index.html", "src/testUtils/*.ts", "e2e/support/*.ts", "worker/test/fixtureWorker.ts"],
-  "project": ["src/**/*.{ts,vue}", "e2e/**/*.ts", "worker/**/*.ts", "*.ts"],
+  // entries come from their plugins. These are the helpers those find no importer for.
+  "entry": ["index.html", "overview/index.html", "src/testUtils/*.ts", "e2e/support/*.ts"],
+  "project": ["src/**/*.{ts,vue}", "e2e/**/*.ts", "*.ts"],
   "ignore": [
     // The switched-off Tour (ticket 80, TOUR_ENABLED in src/features.ts) is left alone until it is decided.
     "src/composables/tour/**",
