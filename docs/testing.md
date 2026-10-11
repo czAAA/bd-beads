@@ -47,6 +47,15 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 `src/testSetup.ts` runs before every test file.
 
+## The Worker's tests
+
+`worker/test/*.test.ts` (ticket 71) are their own Vitest project (`worker`, in `vite.config.ts`), run in Node by the same `vitest run`. They start the real Worker in workerd through Miniflare 4, configured from the repo's own `wrangler.jsonc` for dev or production (`worker/test/harness.ts`), with local D1 and R2, and drive it black-box over HTTP and its `scheduled()` entry. Outbound calls (Turnstile, GraphQL Analytics, Healthchecks.io) are caught by the harness and answered by the test. `worker/test/fixtureWorker.ts` is the deployed Worker plus routes and a daily hook that exist only for the tests (the guards and blob stores have no caller until the feature tickets); never deployed.
+
+- **Seam 1** (`api.test.ts`): requests in, responses out: health, an unknown path, kill switches, the Origin check, Turnstile with Cloudflare's dummy keys, size caps, the blob storage limit, rate limits through Miniflare's own Rate Limiting binding, both blob stores, no CORS, static assets.
+- **Seam 2** (`watchdog.test.ts`): the Cron Trigger's run: success and `/fail` pings, dev's and production's levels, what each counts, a reader that fails, the daily hook.
+- A change to `worker/migrations/` needs no extra test: the harness applies them before each Worker starts, so a broken one fails everything.
+- Why Miniflare directly: `@cloudflare/vitest-pool-workers` supports Vitest 4 only, and Wrangler pins a Miniflare 5 alpha. Miniflare 4's workerd accepts compatibility dates up to 2026-08-06, which bounds `compatibility_date` in `wrangler.jsonc` until Miniflare is upgraded with it. Miniflare's `dispatchFetch` sends a buffered body in chunks unless the test sets `Content-Length`, as a browser always does.
+
 ## The two layouts
 
 `DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file. The visual check is built with `VITE_DOCK_LAYOUT=off` (CI's build step, `e2e/support/server.ts`), so it covers the Toolbox layout until the Dock layout gets its own helpers and baselines.
