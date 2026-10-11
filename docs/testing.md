@@ -47,14 +47,6 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 `src/testSetup.ts` runs before every test file.
 
-## The Worker's tests
-
-`worker/test/*.test.ts` (ticket 71) are their own Vitest project (`worker`, in `vite.config.ts`), run in Node by the same `vitest run`. They start the real Worker in workerd through Miniflare, from the repo's own `wrangler.jsonc` (`worker/test/harness.ts`), with a local D1 and R2, and drive it black-box over HTTP and its `scheduled()` entry; the outbound calls (Turnstile, Telegram, Healthchecks.io, Cloudflare's analytics) are caught by the harness and answered by the test. `@cloudflare/vitest-pool-workers` isn't used: it supports Vitest 4 only. `worker/test/fixtureWorker.ts` is the production Worker plus routes that exist only for the tests (the guards and blob stores have no caller until the feature tickets); never deployed.
-
-- **Seam 1** (`api.test.ts`): requests in, responses out: health, unknown path, kill switches from either source, Turnstile, size caps, rate limits, blob stores, no CORS, static assets.
-- **Seam 2** (`watchdog.test.ts`): the Cron Trigger's run, with today's usage set in D1 and the outbound calls recorded: warn once a day, the stop order, the UTC-day reset, the heartbeat.
-- A change to `worker/migrations/` needs no extra test: the harness applies them all before each test, so a broken one fails everything.
-
 ## The two layouts
 
 `DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file. The visual check is built with `VITE_DOCK_LAYOUT=off` (CI's build step, `e2e/support/server.ts`), so it covers the Toolbox layout until the Dock layout gets its own helpers and baselines.
