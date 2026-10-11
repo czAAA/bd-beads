@@ -23,13 +23,9 @@ async function withWorker(options: StartOptions, test: (worker: RunningWorker) =
  * (Miniflare's `dispatchFetch` would otherwise send it in chunks).
  */
 function change(method: string, init: RequestInit = {}): RequestInit {
-  const length =
-    init.body instanceof Uint8Array ? init.body.byteLength : typeof init.body === 'string' ? new TextEncoder().encode(init.body).byteLength : null
-  return {
-    ...init,
-    method,
-    headers: { Origin: ORIGIN, ...(length === null ? {} : { 'Content-Length': String(length) }), ...(init.headers as Record<string, string>) },
-  }
+  const bytes = typeof init.body === 'string' ? new TextEncoder().encode(init.body) : init.body
+  const length = bytes instanceof Uint8Array ? { 'Content-Length': String(bytes.byteLength) } : {}
+  return { ...init, method, headers: { Origin: ORIGIN, ...length, ...(init.headers as Record<string, string>) } }
 }
 
 /** A body sent in chunks with no Content-Length, as a stream. */
@@ -220,7 +216,11 @@ describe('the Turnstile guard', () => {
       expect(response.status).toBe(403)
     })
     await withWorker(
-      { entry: 'fixture', vars: { TURNSTILE_SECRET_KEY: TURNSTILE_PASSES }, reply: () => new Response('down', { status: 502 }) },
+      {
+        entry: 'fixture',
+        vars: { TURNSTILE_SECRET_KEY: TURNSTILE_PASSES },
+        reply: () => new Response('down', { status: 502 }),
+      },
       async (worker) => {
         const response = await worker.fetch('/api/test/create', change('POST', { headers: { 'X-Turnstile-Token': 't' } }))
         expect(response.status).toBe(403)
@@ -314,7 +314,8 @@ describe('the blob stores', () => {
   afterAll(() => worker.dispose())
 
   for (const plan of ['free', 'pro'] as const) {
-    it(`put, get and delete a blob by id in the ${plan === 'free' ? 'D1' : 'R2'} store, with its owner and expiry`, async () => {
+    const store = plan === 'free' ? 'D1' : 'R2'
+    it(`put, get and delete a blob by id in the ${store} store, with its owner and expiry`, async () => {
       // The R2 blob is larger than D1 could hold in a row.
       const bytes = bytesOf(plan === 'free' ? 1_000_000 : 3 * MB)
       const put = await worker.fetch(`/api/test/${plan}/blobs/abc_1?expires=1760000000000`, change('PUT', { body: bytes }))
@@ -348,6 +349,7 @@ describe('the blob stores', () => {
   it('replaces a blob put again under the same id', async () => {
     await worker.fetch('/api/test/free/blobs/again', change('PUT', { body: bytesOf(100, 3) }))
     await worker.fetch('/api/test/free/blobs/again', change('PUT', { body: bytesOf(200, 5) }))
-    expect(sameBytes(new Uint8Array(await (await worker.fetch('/api/test/free/blobs/again')).arrayBuffer()), bytesOf(200, 5))).toBe(true)
+    const got = new Uint8Array(await (await worker.fetch('/api/test/free/blobs/again')).arrayBuffer())
+    expect(sameBytes(got, bytesOf(200, 5))).toBe(true)
   })
 })

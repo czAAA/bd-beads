@@ -24,11 +24,19 @@ interface AnalyticsResponse {
 }
 
 /** A GraphQL input object written inline: the values are JSON strings and lists, which GraphQL reads the same way. */
-function filter(fields: Record<string, string | string[]>): string {
+function graphqlFilter(fields: Record<string, string | string[]>): string {
   return `{ ${Object.entries(fields).map(([name, value]) => `${name}: ${JSON.stringify(value)}`).join(', ')} }`
 }
 
-function need(value: string | undefined, name: string): string {
+/** A time window as the adaptive datasets filter by it. */
+function timeWindow(since: Date, until: Date): Record<string, string> {
+  return { datetime_geq: since.toISOString(), datetime_leq: until.toISOString() }
+}
+
+const DAY_MS = 86_400_000
+
+/** A variable the reader can't work without; a missing one fails the read, which the watchdog reports. */
+function requireVar(value: string | undefined, name: string): string {
   if (!value) throw new Error(`${name} is not set`)
   return value
 }
@@ -46,31 +54,35 @@ function need(value: string | undefined, name: string): string {
 export function graphqlUsageReader(env: Env): UsageReader {
   return {
     async read(since, until) {
-      const account = need(env.CF_ACCOUNT_ID, 'CF_ACCOUNT_ID')
-      const token = need(env.CF_ANALYTICS_TOKEN, 'CF_ANALYTICS_TOKEN')
-      const script = need(env.WORKER_SCRIPT, 'WORKER_SCRIPT')
+      const account = requireVar(env.CF_ACCOUNT_ID, 'CF_ACCOUNT_ID')
+      const token = requireVar(env.CF_ANALYTICS_TOKEN, 'CF_ANALYTICS_TOKEN')
+      const script = requireVar(env.WORKER_SCRIPT, 'WORKER_SCRIPT')
       const own = env.WORKER_NAME !== 'production'
-      const window = { datetime_geq: since.toISOString(), datetime_leq: until.toISOString() }
+      const today = timeWindow(since, until)
       const day = since.toISOString().slice(0, 10)
       // R2 storage is sampled through the day, so the last 24 hours always hold a sample, even just after midnight.
-      const storageWindow = { datetime_geq: new Date(until.getTime() - 86_400_000).toISOString(), datetime_leq: window.datetime_leq }
-      const databases: Record<string, string[]> = own
-        ? { databaseId_in: [need(env.CORE_DATABASE_ID, 'CORE_DATABASE_ID'), need(env.BLOBS_DATABASE_ID, 'BLOBS_DATABASE_ID')] }
-        : {}
-      const bucket: Record<string, string> = own ? { bucketName: need(env.BLOBS_BUCKET_NAME, 'BLOBS_BUCKET_NAME') } : {}
+      const lastDay = timeWindow(new Date(until.getTime() - DAY_MS), until)
+      const ownDatabases = () => [
+        requireVar(env.CORE_DATABASE_ID, 'CORE_DATABASE_ID'),
+        requireVar(env.BLOBS_DATABASE_ID, 'BLOBS_DATABASE_ID'),
+      ]
+      const requests = graphqlFilter({ ...today, ...(own ? { scriptName: script } : {}) })
+      const errors = graphqlFilter({ ...today, scriptName: script })
+      const d1 = graphqlFilter({ date_geq: day, date_leq: day, ...(own ? { databaseId_in: ownDatabases() } : {}) })
+      const r2 = graphqlFilter({ ...lastDay, ...(own ? { bucketName: requireVar(env.BLOBS_BUCKET_NAME, 'BLOBS_BUCKET_NAME') } : {}) })
       const query = `query {
   viewer {
-    accounts(filter: ${filter({ accountTag: account })}) {
-      requests: workersInvocationsAdaptive(limit: 10000, filter: ${filter({ ...window, ...(own ? { scriptName: script } : {}) })}) {
+    accounts(filter: ${graphqlFilter({ accountTag: account })}) {
+      requests: workersInvocationsAdaptive(limit: 10000, filter: ${requests}) {
         sum { requests }
       }
-      errors: workersInvocationsAdaptive(limit: 10000, filter: ${filter({ ...window, scriptName: script })}) {
+      errors: workersInvocationsAdaptive(limit: 10000, filter: ${errors}) {
         sum { errors }
       }
-      d1: d1AnalyticsAdaptiveGroups(limit: 10000, filter: ${filter({ date_geq: day, date_leq: day, ...databases })}) {
+      d1: d1AnalyticsAdaptiveGroups(limit: 10000, filter: ${d1}) {
         sum { rowsWritten }
       }
-      r2: r2StorageAdaptiveGroups(limit: 10000, filter: ${filter({ ...storageWindow, ...bucket })}) {
+      r2: r2StorageAdaptiveGroups(limit: 10000, filter: ${r2}) {
         max { payloadSize metadataSize }
         dimensions { bucketName }
       }

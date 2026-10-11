@@ -14,8 +14,11 @@ export interface WatchdogDeps {
   daily: DailyHook[]
 }
 
-/** The Cron Trigger's interval in `wrangler.jsonc`; the run inside the day's first interval is the daily one. */
-const CRON_INTERVAL_MINUTES = 15
+/**
+ * The Cron Trigger's interval in `wrangler.jsonc` (every 15 minutes); the run inside the day's first interval is the
+ * daily one, so no "done today" state is kept. Change both together: the watchdog test's daily-hook case checks it.
+ */
+const CRON_INTERVAL_MS = 15 * 60_000
 
 /** The production dependencies: Cloudflare's GraphQL Analytics and this Worker's Healthchecks.io check. */
 export function watchdogDeps(env: Env, daily: DailyHook[]): WatchdogDeps {
@@ -34,6 +37,7 @@ function message(error: unknown): string {
  */
 export async function runWatchdog(env: Env, scheduledTime: number, deps: WatchdogDeps): Promise<void> {
   const now = new Date(scheduledTime)
+  // Day boundaries are UTC, as Cloudflare's daily limits are.
   const midnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
   const failures: string[] = []
   const usage: Usage = {}
@@ -43,14 +47,18 @@ export async function runWatchdog(env: Env, scheduledTime: number, deps: Watchdo
   } catch (error) {
     failures.push(`Usage could not be read from Cloudflare's analytics: ${message(error)}`)
   }
-  for (const [measure, db] of [['core-db', env.CORE], ['blobs-db', env.BLOBS_DB]] as const) {
+  const databases = [
+    { measure: 'core-db', name: 'core', db: env.CORE },
+    { measure: 'blobs-db', name: 'blobs', db: env.BLOBS_DB },
+  ] as const
+  for (const { measure, name, db } of databases) {
     try {
       usage[measure] = await databaseSize(db)
     } catch (error) {
-      failures.push(`The ${measure === 'core-db' ? 'core' : 'blobs'} database's size could not be read: ${message(error)}`)
+      failures.push(`The ${name} database's size could not be read: ${message(error)}`)
     }
   }
-  if (now.getTime() - midnight.getTime() < CRON_INTERVAL_MINUTES * 60_000) {
+  if (now.getTime() - midnight.getTime() < CRON_INTERVAL_MS) {
     for (const hook of deps.daily) {
       try {
         await hook(env, now)
