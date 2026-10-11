@@ -14,7 +14,7 @@ git clone git@github.com:czAAA/bd-beads-docs.git ../bd-beads-docs
 bash scripts/link-docs.sh
 ```
 
-`link-docs.sh` creates gitignored symlinks (`.scratch`, `docs/adr`, `docs/research`, `docs/specs`, `reports`, `research_notes`), so tickets and ADRs keep their paths. It is safe to run again, and refuses to replace a real folder. To move a machine from the old single-repo checkout, run `bash scripts/migrate.sh`.
+`link-docs.sh` creates gitignored symlinks (`.scratch`, `docs/adr`, `docs/research`, `docs/specs`, `docs/operations.md`, `reports`, `research_notes`), so tickets and ADRs keep their paths. It is safe to run again, and refuses to replace a real folder. To move a machine from the old single-repo checkout, run `bash scripts/migrate.sh`.
 
 ## Works offline
 
@@ -29,8 +29,8 @@ The app can be installed from the browser (Chrome's install button, "Add to Home
 
 | Command | What it checks |
 | --- | --- |
-| `npm test` | Unit and component tests (Vitest, jsdom). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
-| `npm run typecheck` | Type-checks the app, the build config and the browser checks |
+| `npm test` | Unit and component tests (Vitest, jsdom), and the backend Worker's tests (`worker/test/`, run in Node against workerd; `docs/testing.md`). Includes the stored-data compatibility test, `src/domain/compatibility.test.ts`, which opens libraries and Project files in every format the app has written (version 1 and 2 libraries, single-Project and whole-library files, a Project past the old 10,000-cell cap) from the literal fixtures in `src/domain/fixtures/` |
+| `npm run typecheck` | Type-checks the app, the build config, the browser checks and the Worker |
 | `npm run lint` | ESLint |
 | `npm run visual` | The visual check (below). Run on every pull request by CI (below) |
 | `npm run visual:update` | Rewrites the Convert image framing screenshots, the only ones the Playwright runner itself owns; the others are read from `e2e/visual/__screenshots__` as they are, and change only when the look is meant to (delete and regenerate them deliberately) |
