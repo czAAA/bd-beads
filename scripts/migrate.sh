@@ -29,6 +29,23 @@ unfinished() {
   [ -n "$(git -C "$wt" ls-files -u | head -1)" ]
 }
 
+# True when everything a branch changed is already in $pre: the branch is an ancestor of it, or it was squash-merged
+# (its diff applies in reverse to $pre's tree). Errs towards "not merged": a branch edited since stays unmerged.
+merged_into() {
+  local old=$1 pre=$2 b=$3 d idx rc=1
+  git -C "$old" merge-base --is-ancestor "$b" "$pre" && return 0
+  d=$(mktemp); idx=$(mktemp -u)
+  git -C "$old" diff --binary "$pre...$b" > "$d"
+  if [ ! -s "$d" ]; then
+    rc=0
+  elif GIT_INDEX_FILE="$idx" git -C "$old" read-tree "$pre" 2>/dev/null \
+      && GIT_INDEX_FILE="$idx" git -C "$old" apply --cached --check --reverse "$d" 2>/dev/null; then
+    rc=0
+  fi
+  rm -f "$d" "$idx"
+  return "$rc"
+}
+
 main() {
   local here parent old new docs out pre
   here=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -62,11 +79,11 @@ main() {
     git -C "$old" bundle create -q "$out/all.bundle" --all
     say "   bundle: $out/all.bundle"
 
-    say "== 3. Save branch work that is not merged into $pre"
+    say "== 3. Save branch work that is not in $pre (merged or squash-merged branches are skipped)"
     local keep=()
     while read -r b; do
       [ "$b" = main ] && continue
-      git -C "$old" merge-base --is-ancestor "$b" "$pre" && continue
+      merged_into "$old" "$pre" "$b" && continue
       local f="$out/patches/${b//\//_}.patch" d="$out/patches/${b//\//_}.docs.patch"
       git -C "$old" diff --binary "$pre...$b" -- . ':(exclude).scratch' ':(exclude)docs/adr' ':(exclude)docs/research' \
         ':(exclude)docs/specs' ':(exclude)docs/design/referances' ':(exclude)docs/deploy.md' ':(exclude).github/workflows/deploy.yml' > "$f"
@@ -85,7 +102,8 @@ main() {
     done < <(git -C "$old" worktree list --porcelain | sed -n 's/^worktree //p')
 
     say "== 5. Untracked and ignored local files of the old checkout"
-    ( cd "$old" && { git ls-files -o --exclude-standard; git ls-files -o -i --exclude-standard; } \
+    # core.quotepath=false: non-ASCII file names must come out as they are, not as "\320..." escapes
+    ( cd "$old" && { git -c core.quotepath=false ls-files -o --exclude-standard; git -c core.quotepath=false ls-files -o -i --exclude-standard; } \
         | grep -vE '^(node_modules|dist|dist-ssr|test-results|playwright-report|bd-beads-[^/]*)/' | sort -u ) > "$out/files.txt"
     grep -E "$PRIVATE_RE" "$out/files.txt" > "$out/files-docs.txt" || true
     grep -vE "$PRIVATE_RE" "$out/files.txt" > "$out/files-code.txt" || true
@@ -133,12 +151,12 @@ main() {
     done
     git -C "$new.tmp" switch -q main
 
-    say "== 9. Remove worktrees that are clean and merged into $pre"
+    say "== 9. Remove worktrees that are clean and merged into $pre (squash-merged counts)"
     while read -r wt; do
       [ "$wt" = "$old" ] && continue
       [ -d "$wt" ] || continue
       local br; br=$(git -C "$wt" symbolic-ref -q --short HEAD || true)
-      if [ -n "$br" ] && [ -z "$(git -C "$wt" status --porcelain)" ] && git -C "$old" merge-base --is-ancestor "$br" "$pre"; then
+      if [ -n "$br" ] && [ -z "$(git -C "$wt" status --porcelain)" ] && merged_into "$old" "$pre" "$br"; then
         git -C "$old" worktree remove "$wt" && git -C "$old" branch -q -D "$br"
         say "   removed $(basename "$wt") ($br)"
       else
