@@ -56,6 +56,12 @@ main() {
   docs="$parent/bd-beads-docs"
   out="$HOME/bd-beads-migrate-$(date +%Y%m%d-%H%M%S)"
 
+  # Checked first and whatever the checkout looks like: a rebase onto the new history (git pull in an old checkout,
+  # whose origin now has unrelated history) leaves the new tree checked out and would pass for a migrated repo.
+  if [ -d "$old/.git" ] && unfinished "$old"; then
+    die "$old has an unfinished merge, rebase, cherry-pick or revert, or unmerged paths. Back it up, then 'git rebase --abort' or 'git merge --abort' (never --continue), and run this again. Do not run git pull in an old checkout: its origin has unrelated history now."
+  fi
+
   local is_old=0
   if [ -d "$old/.git" ] && [ -n "$(git -C "$old" ls-files .scratch docs/adr | head -1)" ]; then is_old=1; fi
 
@@ -64,7 +70,6 @@ main() {
     [ ! -e "$new.tmp" ] || die "$new.tmp already exists; move it away first"
     [ "$old" = "$new" ] || [ ! -e "$new" ] || die "$new already exists and is not the old checkout; move it away first"
     say "== 1. Checks"
-    unfinished "$old" && die "$old has an unfinished merge/rebase/cherry-pick or unmerged paths; finish or abort it first"
     while read -r wt; do
       [ "$wt" = "$old" ] && continue
       [ -d "$wt" ] || continue
