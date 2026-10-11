@@ -40,5 +40,9 @@ docs/personal/
 /docs/adr
 /docs/research
 /docs/specs
+/docs/operations.md
 /reports
 /research_notes
+
+# Wrangler / Miniflare local state (ticket 71)
+.wrangler

@@ -24,6 +24,18 @@ export default tseslint.config(
       'vue/multi-word-component-names': ['error', { ignores: ['Toolbox'] }],
     },
   },
+  // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by
+  // import. Placed before the folder rules below, which replace it for their files.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['**/worker', '**/worker/**'], message: 'The Worker is a separate module; the app calls it over /api (ticket 71).' }] },
+      ],
+    },
+  },
   // Module boundaries (ADR 0020): only services/ reaches outside the page's own memory, and only composables and the
   // app shell wire services in. Tests are exempt: they set up the browser state a service reads.
   {
