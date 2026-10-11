@@ -11,7 +11,7 @@ Someone using the app without signing in. Everything that works on the device wo
 _Avoid_: anonymous user, visitor
 
 **Free account**:
-A signed-in person with no paid plan. Gets what needs little of the backend: making View links, the basic settings kept in step across their devices, and one synced Project. The exact set is decided by plan, not fixed here.
+A signed-in person with no paid plan. Gets what needs little of the backend: making View links, the basic settings kept in step across their devices, and one synced Project. Everything on the device is unlimited, as for a Guest: any number of Projects, any of which can be shared as a View link, while only one of them syncs. The exact set is decided by plan, not fixed here.
 _Avoid_: basic plan, member
 
 **Pro**:
