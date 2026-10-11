@@ -2,7 +2,7 @@
 
 How the app and its backend reach Cloudflare (ticket 71, spec 385, [ADR 0014](adr/0014-mvp-stays-local-only-hosted-phase-deferred.md)). What to watch once it runs, and when to switch a feature off or pay for more, is the runbook, `docs/operations.md` (private docs repo, linked in by `scripts/link-docs.sh`).
 
-**Draft.** Written in ticket 71 step A1, before anything exists on Cloudflare. Step A2 creates the resources and the deploy workflow and fills in what is marked *(A2)*; step A5 finishes this page.
+**Draft.** Written in ticket 71 steps A1 and A2; step A5 finishes this page.
 
 ## What runs where
 
@@ -11,7 +11,8 @@ One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jso
 | | dev | production |
 |---|---|---|
 | Worker | `bd-beads-dev` | `bd-beads` |
-| Deployed | on every push to `main` *(A2: the workflow)* | by a manual run of the workflow, from `main` only |
+| Deployed | on every push to `main` | by a manual run of the workflow, from `main` only |
+| Address | `https://bd-beads-dev.bd4beads.workers.dev` | `https://bd-beads.bd4beads.workers.dev` |
 | D1 `core` (binding `CORE`) | `bd-beads-dev-core` | `bd-beads-core` |
 | D1 `blobs` (binding `BLOBS_DB`) | `bd-beads-dev-blobs` | `bd-beads-blobs` |
 | R2 (binding `BLOBS`) | `bd-beads-dev` | `bd-beads` |
@@ -27,13 +28,20 @@ Needs `npx wrangler login` on the machine (wizard phase H2). From the repo root,
 DEPLOY_BASE=/ npm run build
 npx wrangler d1 migrations apply CORE --env dev --remote
 npx wrangler d1 migrations apply BLOBS_DB --env dev --remote
-npx wrangler deploy --env dev --var VERSION:$(git rev-parse --short HEAD)
-curl -s https://<dev host>/api/health
+npx wrangler deploy --env dev --var VERSION:$(git rev-parse HEAD)
+curl -s https://bd-beads-dev.bd4beads.workers.dev/api/health
 ```
 
 Production is the same with `--env production`, from a clean `main`. `npx wrangler deploy --dry-run --env <env>` checks the config and the bundle without touching Cloudflare.
 
-*(A2: the workflow, `.github/workflows/deploy.yml`, does the same: one build, each database's migrations, then the code, then a smoke check that `/api/health` answers with the new version.)*
+## Deploying through GitHub
+
+`.github/workflows/deploy.yml` does the same as the steps above:
+
+- **When it runs.** A push to `main` deploys dev. Production deploys only from a manual run (Actions → Deploy → Run workflow, on `main`). A run from any other ref fails at once, and the `production` environment refuses it too.
+- **What it does.** One build, then each database's migrations, then the code with `VERSION` set to the commit, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy.
+- **Concurrency.** Runs for the same Worker queue one behind another and are never cancelled halfway through.
+- **What it skips.** A push that changes only Markdown deploys nothing.
 
 ## Migrations
 
