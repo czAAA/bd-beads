@@ -1,0 +1,382 @@
+/* bd-beads — generated from tokens.json */
+:root, [data-theme="light"] {
+  --canvas: #ffffff; /* Page background and header. The darkest dark surface step. */
+  --surface: #fafafa; /* Quiet fills: hover on a text button, table stripes, menu item hover (light). */
+  --panel: #f5f1e8; /* The four left-column boxes (Toolbox, save box, Beads needed, Saved Patterns). Modal and menu fill in dark. */
+  --panel-line: #e8e3df; /* Left-column box borders (invisible in dark); the Toolbox's own button borders; message border in light. */
+  --panel-rule: #e8e3df; /* Dividers inside a box: above and below the Mirror and Size disclosure rows. */
+  --elevated: #ffffff; /* Buttons and thumbnail circles inside a box; the modal surface and menu hover in dark. The lightest dark surface step. */
+  --pill: #f5f1e8; /* The read-only Bead pill in the header. */
+  --ink: #1f1f1f; /* Primary text and icons, on canvas, panel, box and elevated (16:1 and up in both themes). */
+  --body: #4a4a4a; /* Secondary text such as Beads needed color names, on panel and elevated. */
+  --muted: #6a6a6a; /* Labels and meta (DM Mono), inactive tab labels, chevrons, on panel, box and elevated (4.8:1 or more in both themes). */
+  --subtle: #767676; /* "/ RU" in the language button and the inactive theme icon (4.5:1 on canvas). */
+  --faint: #a8a8a8; /* Disabled text and icons (Image colors while the Pattern has none). Exempt from contrast as disabled. */
+  --line: #e5e5e5; /* Hairlines. */
+  --line-soft: #ededed; /* Header bottom border; row dividers inside boxes (Beads needed rows, the Saved Patterns footer). */
+  --line-strong: #c7c7c7; /* Button and select borders on the page, expand buttons, the Tools tab rule, thin scrollbar thumb; the overlay border in dark. Fields and Steppers use field-line. */
+  --field-line: #858585; /* Borders that are the only edge of a control: TextField, NumberField, Select, Stepper (3.7:1 light, 3.6:1 dark). */
+  --accent: #fa520f; /* The one accent: the single most likely next action in a region (New Pattern, Replace bead, Save Pattern, Row done), the active tool, the current row, the brand mark, the selected Saved Pattern. Nothing else is accent-colored. As a fill and in the logo; for text and thin marks on light surfaces use accent-strong. */
+  --accent-hover: #ff6a2b; /* Primary button hover and pressed fill and border. Light is lighter than accent (#ff6a2b) so the dark label keeps 5.8:1. */
+  --accent-strong: #c23604; /* Accent as text and thin marks on light surfaces: the active tool label and underline, the open Saved Pattern ring and name, message edges and accent icons, links (4.9:1 on panel). Dark: the same yellow as accent. */
+  --focus-ring: #c23604; /* The keyboard focus ring: 2px, 2px away (3px in high contrast). 4.9:1 on panel in light, 16:1 in dark. */
+  --accent-disabled-bg: #e5e5e5; /* Disabled primary button fill. */
+  --accent-disabled-fg: #a8a8a8; /* Disabled primary button text. */
+  --on-accent: #1f1f1f; /* Text and icons on accent and accent-hover: dark in both themes (4.9:1 on light orange, 18:1 on dark yellow). The logo on an accent tile stays white (a graphic, 3.3:1). */
+  --ring: #1f1f1f; /* The selected palette swatch's outer ring (inner gap in panel). */
+  --danger: #c23604; /* Delete all, error text, the error message edge, danger-filled confirm buttons (their label is on-danger). 4.9:1 on panel in light, 4.6:1 in dark. */
+  --on-danger: #ffffff; /* Label on danger-filled buttons: white in light (5.5:1), near-black in dark (5.0:1 on #ef4444). */
+  --warning: #ffa110; /* Warning message edge and the Estimated size warning (Derived). Never as text. */
+  --swatch-edge: rgba(0,0,0,.2); /* Inset 1px edge on every swatch so ivory and black swatches do not vanish. */
+  --button: #ffffff; /* Secondary button fill on the page (header): EN / RU, theme toggle frame, keyboard shortcuts. */
+  --button-line: #c7c7c7; /* Secondary button border on the page. */
+  --box: #fafafa; /* Canvas box background. */
+  --box-line: #e5e5e5; /* Canvas box border. */
+  --box-muted: #6a6a6a; /* Meta text in the canvas box header strip and Progress bar. Strip dividers are this at 22% opacity. */
+  --box-button: #00000000; /* Button fill in the Progress bar (transparent in light). */
+  --box-button-line: #c7c7c7; /* Button border in the Progress bar. */
+  --switch-off: #858585; /* The Switch track while off (3.5:1 light, 4.1:1 dark on box). */
+  --board: #e8e3df; /* The rounded board the beads sit on (PatternTheme background). */
+  --ruler: #6a6a6a; /* Row and column numbers on the canvas rulers (5.2:1 light, 4.9:1 dark on box); the current row's number uses marker. */
+  --marker: #1d4ed8; /* Current-row border and its ruler number, the Selection and Mirror axes; PatternTheme marker. Royal blue in light, 6.0:1 on the canvas backgrounds (ticket 369). */
+  --track: #e5e5e5; /* Progress bar track. */
+  --word: #f1eadd; /* The background technique word ("Loom") behind the board. */
+  --print-board: #f7f3ec; /* The board behind the chart in PDF and PNG exports. Exports are always light, so it is the same in every theme. */
+  --curve: rgba(250,82,15,.32); /* The 1.5px decorative curve behind the board. */
+  --canvas-bg-1: #fafafa;
+  --canvas-bg-2: #f7f3ec;
+  --canvas-bg-3: #f1f5ee;
+  --canvas-bg-4: #eff4f8;
+  --canvas-bg-5: #fbf0ea;
+  --canvas-bg-6: #fafafa;
+  --bead-rim: rgba(20,20,19,.12); /* Faint 0.75px rim drawn around each bead in light; none in dark (drawn in the board color). */
+  --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
+  --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the dot, or the outline of the square, at an empty position outside the Frame (starts from bead-empty). */
+  --bead-seam: #1f1f1f; /* The seam line in brick stitch patterns. */
+  --bead-outline: #1f1f1f; /* Hover outline when no color is chosen. */
+  --tour-highlight: #f2c94c; /* The Tour: the 2.5px ring (with an 8px glow at 38%) on the control to use next, the tool tile tint and the current bead in the step strand. 3px ink ring, no glow, in high contrast. */
+  --note-gold: #c99a14; /* Overview only: the decorative note under the Tour Pattern band. About 2.5:1 on white, so never for text that carries meaning. */
+  --elevation-1: 0 4px 12px rgba(0,0,0,.04); /* Card: save box, Beads needed, Saved Patterns. Dark uses surface steps instead. */
+  --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08); /* The canvas box. */
+  --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12); /* Modals, menus, messages (Derived). Dark adds a 1px line-strong border instead. */
+}
+[data-theme="dark"] {
+  --canvas: #141414;
+  --surface: #1a1a1a;
+  --panel: #202020;
+  --panel-line: #202020;
+  --panel-rule: #333333;
+  --elevated: #2a2a2a;
+  --pill: #202020;
+  --ink: #ffffff;
+  --body: #cccccc;
+  --muted: #949494;
+  --subtle: #888888;
+  --faint: #5a5a5a;
+  --line: #333333;
+  --line-soft: #333333;
+  --line-strong: #3a3a3a;
+  --field-line: #7a7a7a;
+  --accent: #faff69;
+  --accent-hover: #e6eb52;
+  --accent-strong: #faff69;
+  --focus-ring: #faff69;
+  --accent-disabled-bg: #3a3a1f;
+  --accent-disabled-fg: #888888;
+  --on-accent: #0a0a0a;
+  --ring: #faff69;
+  --danger: #ef4444;
+  --on-danger: #0a0a0a;
+  --warning: #f59e0b;
+  --swatch-edge: #3a3a3a;
+  --button: #202020;
+  --button-line: #202020;
+  --box: #202020;
+  --box-line: #202020;
+  --box-muted: #949494;
+  --box-button: #2a2a2a;
+  --box-button-line: #2a2a2a;
+  --switch-off: #7a7a7a;
+  --board: #202020;
+  --ruler: #8c8c8c;
+  --marker: #faff69;
+  --track: #333333;
+  --word: #202020;
+  --print-board: #f7f3ec;
+  --curve: rgba(250,255,105,.14);
+  --canvas-bg-1: #202020;
+  --canvas-bg-2: #0e0e0e;
+  --canvas-bg-3: #12161c;
+  --canvas-bg-4: #171608;
+  --canvas-bg-5: #1c1714;
+  --canvas-bg-6: #2c2b29;
+  --bead-rim: #202020;
+  --bead-empty: #3c3c3c;
+  --position-mark: #3c3c3c;
+  --bead-seam: #888888;
+  --bead-outline: #ffffff;
+  --tour-highlight: #f2c94c;
+  --note-gold: #f2c94c;
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+}
+[data-theme="contrast"] {
+  --canvas: #ffffff;
+  --surface: #f0f0f0;
+  --panel: #ffffff;
+  --panel-line: #595959;
+  --panel-rule: #595959;
+  --elevated: #ffffff;
+  --pill: #ffffff;
+  --ink: #000000;
+  --body: #1f1f1f;
+  --muted: #3d3d3d;
+  --subtle: #3d3d3d;
+  --faint: #6a6a6a;
+  --line: #595959;
+  --line-soft: #595959;
+  --line-strong: #000000;
+  --field-line: #595959;
+  --accent: #a82c00;
+  --accent-hover: #8a2400;
+  --accent-strong: #a82c00;
+  --focus-ring: #000000;
+  --accent-disabled-bg: #e5e5e5;
+  --accent-disabled-fg: #595959;
+  --on-accent: #ffffff;
+  --ring: #000000;
+  --danger: #a82c00;
+  --on-danger: #ffffff;
+  --warning: #9a5b00;
+  --swatch-edge: #595959;
+  --button: #ffffff;
+  --button-line: #595959;
+  --box: #ffffff;
+  --box-line: #595959;
+  --box-muted: #3d3d3d;
+  --box-button: #ffffff;
+  --box-button-line: #595959;
+  --switch-off: #595959;
+  --board: #e8e3df;
+  --ruler: #3d3d3d;
+  --marker: #000000;
+  --track: #d0d0d0;
+  --word: #f5f5f5;
+  --print-board: #f7f3ec;
+  --curve: #00000000;
+  --canvas-bg-1: #ffffff;
+  --canvas-bg-2: #ffffff;
+  --canvas-bg-3: #ffffff;
+  --canvas-bg-4: #ffffff;
+  --canvas-bg-5: #ffffff;
+  --canvas-bg-6: #ffffff;
+  --bead-rim: rgba(0,0,0,.35);
+  --bead-empty: #b8b0a8;
+  --position-mark: #b8b0a8;
+  --bead-seam: #000000;
+  --bead-outline: #000000;
+  --tour-highlight: #000000;
+  --note-gold: #000000;
+  --elevation-1: none;
+  --elevation-2: none;
+  --elevation-3: none;
+}
+:root {
+  --space-2: 2px; /* Tight control groups (theme toggle padding and gap). */
+  --space-4: 4px; /* Base unit. Menu padding; gap from a button to its menu. */
+  --space-6: 6px; /* Buttons in the Edit row and swatch grid; tight control groups. */
+  --space-8: 8px; /* Buttons in a row; label to its group's content. */
+  --space-10: 10px; /* Header gap between items; save box label to its content; disclosure row padding. */
+  --space-12: 12px; /* Canvas strip gap; Progress bar gap; message padding (vertical). */
+  --space-14: 14px; /* Left column to canvas box; Beads needed / Saved Patterns padding; board padding. */
+  --space-16: 16px; /* Gap between left-column boxes; save box padding (vertical); message padding (horizontal). */
+  --space-20: 20px; /* Gap between Tool groups; save box and panel horizontal padding. */
+  --space-24: 24px; /* Page padding (top/bottom); Toolbox padding; modal padding. */
+  --space-32: 32px; /* Page padding (left/right); header horizontal padding. */
+  --radius-xs: 4px; /* kbd hints. */
+  --radius-sm: 6px; /* Swatches, zoom buttons, theme-toggle buttons, menu items, tooltips. */
+  --radius-md: 8px; /* Buttons, selects, the theme toggle frame, menus. */
+  --radius-lg: 12px; /* Every box, the canvas box, modals, messages. */
+  --radius-board: 32px; /* The bead board. */
+  --radius-full: 9999px; /* Pills, the switch, round icon buttons, thumbnails, the progress track. */
+  --bp-tablet: 744px; /* Bead sizing tier only (smallest bead on screen); not a layout split, everything under 1024px is the phone layout. */
+  --bp-tablet-lg: 1024px; /* iPad 13″ tier and up (13″ iPads upright, smaller iPads sideways): the left column docks again. */
+  --bp-laptop: 1280px; /* MacBook Air tier and up: the reference layout from DESIGN.md. */
+  --bp-desktop: 1920px; /* 24″ displays and larger: wider column, more room for the Pattern. */
+  --column-width-tablet-lg: 292px; /* Left column at the iPad 13″ tier (286px boxes plus the 6px gutter). */
+  --column-width: 358px; /* Left column at the MacBook Air tier (352px boxes plus a 6px scrollbar gutter; five 56px Tool tabs fit a row). */
+  --column-width-desktop: 350px; /* Left column at 24″ and up (344px boxes plus the 6px gutter). */
+  --header-height: 64px; /* Header at 1024px and up; there is none under it. */
+  --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
+  --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
+  --dock-max-width: 480px; /* The Dock's widest, centred. */
+  --progress-height-phone: 56px; /* Progress bar on a phone, plus its 3px progress line. */
+  --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
+  --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
+  --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */
+  --field-height: 40px; /* Text, number and select fields, Steppers and form buttons: taller than the 34px controls because people type and read in them. */
+  --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */
+  --loading-delay: 300ms; /* Wait before any loading indicator appears, so fast work never flashes. */
+  --z-canvas-overlay: 10; /* Rulers, current-row marker, Selection, paste preview, ZoomPill: inside the canvas box. */
+  --z-chrome: 20; /* Header, Dock, Progress bar when they overlap scrolling content. */
+  --z-context-bar: 30; /* The Selection ContextBar above the Progress bar. */
+  --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */
+  --z-popover: 60; /* Menus, the Image colors popover, OverflowMenu. */
+  --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */
+  --z-modal: 80; /* Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. */
+  --z-tour-dim: 84; /* The Tour's dim layer and its hole (v15): above modals so the Tour can guide inside New Pattern on the phone. */
+  --z-tour-connector: 85; /* The Tour's ring of beads around the hole and the connector to the card. */
+  --z-tour-card: 86; /* The Tour's step card and final card; below tooltips. */
+  --z-tooltip: 90; /* Tooltips: always on top, never interactive. */
+  --print-page-width: 210mm; /* A4 portrait. */
+  --print-page-height: 297mm; /* A4 portrait. */
+  --print-dpi: 150; /* Each PDF page is drawn at this resolution and embedded as one picture. */
+  --print-margin: 10mm; /* Page margin on every side. */
+  --print-header: 16mm; /* Chart page header: technique word and name, part, maker, date and time, page number, mini map. */
+  --print-footer: 8mm; /* Footer: the brand, and where the chart continues. */
+  --print-name-band: 12mm; /* Band under the chart board for the maker's name and the accent line. */
+  --print-bead-base: 4.6mm; /* Bead size that decides how many chart pages a Pattern takes. */
+  --print-bead-max: 7mm; /* Largest bead after a part is enlarged to fill its page. */
+  --print-legend-width: 48mm; /* Page 1 column: Beads needed (beads and grams) and the facts. */
+  --print-line-width: 0.5mm; /* The background accent line, at print-line-opacity. */
+  --print-line-opacity: 0.38; /* Accent line strength on paper. */
+  --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. */
+  --print-name-opacity: 0.14; /* The maker's name set large under the canvas. */
+  --print-png-bead: 30px; /* Bead size in the PNG, fewer pixels when the picture would pass 16 megapixels. */
+  --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
+  --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
+  --text-brand: 700 18px/1 var(--font-sans); /* "bd-beads" in the header, beside the accent bead glyph. */
+  --text-title: 600 16px/24px var(--font-sans); /* Modal titles (Derived). */
+  --text-control: 500 14px/20px var(--font-sans); /* Buttons, selects, row labels (Mirror, Size), box titles, "Row 12", "Pattern". */
+  --text-body: 400 14px/20px var(--font-sans); /* Text, Beads needed rows, modal and message body. */
+  --text-tab: 500 13px/18px var(--font-sans); /* Tool tab labels under their icons; small buttons (Custom, Image colors). */
+  --text-pill: 500 13px/18px var(--font-sans); /* The Bead pill. */
+  --text-small: 500 12px/15px var(--font-sans); /* Saved Pattern names under thumbnails; tooltips. */
+  --text-label: 400 13px/18px var(--font-mono); /* Group labels ("tools", "colors", "edit"), "currently editing", "saved · this device". Lowercased by text-transform, never in the string. */
+  --text-meta: 400 13px/18px var(--font-mono); /* Values next to a label: "l–r 1 · t–b 0", "64×48 mm", "40 columns · 30 rows", counts, "100%". Lowercased by style. */
+  --text-meta-small: 400 12px/16px var(--font-mono); /* "png · pdf", "5 of 12". Lowercased by style. */
+  --text-meta-tiny: 400 11px/15px var(--font-mono); /* Saved Pattern sizes ("40×30"), kbd hints ("esc"). */
+  --text-ruler: 400 11px/1.4 var(--font-mono); /* Canvas rulers: every row and column number; every 5th bold in body, the rest regular in ruler, the current row weight 700 in marker; column numbers from 100 turned a quarter turn; 12px on a phone. See the Rulers card. */
+  --text-word: italic 400 240px/1 var(--font-serif); /* The background technique word only, italic, in word color, anchored bottom-right behind the board. */
+  --text-tagline: italic 400 60px/62px var(--font-serif); /* Overview only: the slogan. 40px on the phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller. The last word in accent-strong. */
+  --text-serif-heading: italic 400 34px/38px var(--font-serif); /* Overview only: section headings ("What's inside", "Three ways to use it") and plan names (30px); 42px from 744 below 1024. */
+  --text-note: italic 400 17px/1 var(--font-serif); /* Overview only: handwritten notes beside things ("you", "on us", "eleven small steps"), 15–19px, muted or accent-strong, with a 1.25px hand-drawn arrow. Decorative, aria-hidden. */
+}
+.brand {
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.title {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.control {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.body {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.tab {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.pill {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.small {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.meta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.meta-small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.meta-tiny {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.ruler {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.word {
+  font-family: var(--font-serif);
+  font-size: 240px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: -4px;
+  font-style: italic;
+}
+.tagline {
+  font-family: var(--font-serif);
+  font-size: 60px;
+  line-height: 62px;
+  font-weight: 400;
+  letter-spacing: -0.6px;
+  font-style: italic;
+}
+.serif-heading {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  line-height: 38px;
+  font-weight: 400;
+  letter-spacing: -0.4px;
+  font-style: italic;
+}
+.note {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 400;
+  letter-spacing: 0;
+  font-style: italic;
+}

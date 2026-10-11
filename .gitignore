@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Playwright output
+test-results
+playwright-report
+
+# Design exploration (tickets 125–134): prototypes and screenshots are local-only
+design-exploration/
+
+# Local overnight ticket runner and its logs
+docs/scripts/
+.overnight-logs/
+docs/personal/
+
+# The private docs repo, linked in by scripts/link-docs.sh (symlinks: no trailing slash, or git would not match them)
+/.scratch
+/docs/adr
+/docs/research
+/docs/specs
+/reports
+/research_notes

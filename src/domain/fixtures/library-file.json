@@ -1,0 +1,130 @@
+{
+  "kind": "bd-beads/library",
+  "version": 1,
+  "patterns": [
+    {
+      "id": "file-a",
+      "name": "Loom in a file",
+      "technique": "loom",
+      "beadId": "toho-cube-1.5mm",
+      "columns": 4,
+      "rows": 3,
+      "grid": [
+        [
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": null
+          }
+        ],
+        [
+          {
+            "color": null
+          },
+          {
+            "color": "#1f1f1f"
+          },
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": null
+          }
+        ],
+        [
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#1f1f1f"
+          }
+        ]
+      ],
+      "rowProgress": {
+        "enabled": true,
+        "direction": "rows",
+        "currentRow": 1,
+        "currentColumn": 0
+      },
+      "rotated": false,
+      "createdAt": 1730000000000,
+      "updatedAt": 1730000001000
+    },
+    {
+      "id": "file-b",
+      "name": "Brick in a file",
+      "technique": "brick",
+      "beadId": "toho-cube-1.5mm",
+      "columns": 3,
+      "rows": 4,
+      "grid": [
+        [
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#1f1f1f"
+          }
+        ],
+        [
+          {
+            "color": null
+          },
+          {
+            "color": "#1e64c8"
+          },
+          {
+            "color": "#c81e3c"
+          }
+        ],
+        [
+          {
+            "color": "#1f1f1f"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": "#1e64c8"
+          }
+        ],
+        [
+          {
+            "color": "#c81e3c"
+          },
+          {
+            "color": null
+          },
+          {
+            "color": null
+          }
+        ]
+      ],
+      "rowProgress": {
+        "enabled": true,
+        "direction": "rows",
+        "currentRow": 1,
+        "currentColumn": 0
+      },
+      "rotated": false,
+      "createdAt": 1730000000000,
+      "updatedAt": 1730000001000
+    }
+  ]
+}

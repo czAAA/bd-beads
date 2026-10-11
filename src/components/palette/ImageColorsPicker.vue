@@ -1,0 +1,57 @@
+<script setup lang="ts">
+import { useI18n } from '../../i18n/useI18n'
+import AppSwatch from '../ui/AppSwatch.vue'
+
+/**
+ * The open Project's Image colors (CONTEXT.md, ADR 0011) as swatches in the Colors group, alongside the Palette: the
+ * colors one Convert image found, so a converted Project can actually be touched up instead of offering only twelve
+ * Palette colors none of its beads are.
+ *
+ * Deliberately the same shape and selection behaviour as PalettePicker, just keyed by hex rather than by a Palette
+ * color id — a converted color has no id, it is only ever the hex the conversion produced. A Project created any other
+ * way has no Image colors and this isn't rendered at all.
+ */
+defineProps<{
+  colors: readonly string[]
+  /** The Image color being painted with right now, if any — mutually exclusive with a Palette or Custom color. */
+  selectedColor?: string
+}>()
+
+const emit = defineEmits<{
+  select: [hex: string]
+}>()
+
+const { t } = useI18n()
+</script>
+
+<template>
+  <div
+    class="image-colors-picker"
+    role="group"
+    :aria-label="t.convertImage.imageColorsLabel"
+    data-testid="image-colors-picker"
+  >
+    <AppSwatch
+      v-for="hex in colors"
+      :key="hex"
+      class="image-colors-picker__swatch"
+      :color="hex"
+      :label="`${t.convertImage.imageColorsLabel} ${hex}`"
+      :selected="hex === selectedColor"
+      data-testid="image-color-swatch"
+      :data-color-hex="hex"
+      @select="emit('select', hex)"
+    />
+  </div>
+</template>
+
+<style scoped>
+/* The popover's grid (ColorPickers card): seven columns of square swatches, the chosen one ringed like a Palette swatch. */
+.image-colors-picker {
+  --swatch-size: var(--image-color-size);
+  --swatch-gap: var(--overlay-fill);
+  display: grid;
+  grid-template-columns: repeat(7, var(--image-color-size));
+  gap: var(--space-6);
+}
+</style>
