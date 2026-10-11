@@ -1,0 +1,72 @@
+/**
+ * What the Worker is given (spec 385): the bindings and variables declared per environment in `wrangler.jsonc`, the
+ * variables the maintainer sets in the dashboard, and the secrets. Limits and warn levels are variables so they can be
+ * tuned without a code change; a variable may arrive as a number or, once edited in the dashboard, a string, so they
+ * are read through `numberVar`.
+ */
+export interface Env {
+  /** Accounts, plan status, settings (ADR 0049); empty until ticket 78's first migration. */
+  CORE: D1Database
+  /** View links' and Free accounts' ciphertext, with owner, size and expiry (ADR 0049). */
+  BLOBS_DB: D1Database
+  /** Pro's synced Projects only (spec 385), so the one storage that bills grows only with paying customers. */
+  BLOBS: R2Bucket
+  /** The built app and Overview; the platform serves them itself and calls the Worker only for /api/*. */
+  ASSETS: Fetcher
+
+  /** Which Worker this is, so every health answer and alert names it. */
+  WORKER_NAME: 'dev' | 'production'
+  /** The git commit of the deploy, passed by the deploy workflow with `--var VERSION:<sha>`. */
+  VERSION?: string
+  /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (features.ts). */
+  DISABLED_FEATURES?: string
+
+  /**
+   * The account, and this Worker's own script name, databases and bucket, for the watchdog's analytics
+   * (watchdog/analytics.ts). The runtime can't tell a Worker its own names, so they are variables.
+   */
+  CF_ACCOUNT_ID?: string
+  WORKER_SCRIPT?: string
+  CORE_DATABASE_ID?: string
+  BLOBS_DATABASE_ID?: string
+  BLOBS_BUCKET_NAME?: string
+
+  UPLOAD_CAP_D1_BYTES: number | string
+  UPLOAD_CAP_R2_MB: number | string
+  BLOBS_STORAGE_LIMIT_MB: number | string
+
+  WARN_API_REQUESTS: number | string
+  WARN_D1_ROWS_WRITTEN: number | string
+  WARN_BLOBS_DB_MB: number | string
+  WARN_CORE_DB_MB: number | string
+  WARN_R2_STORAGE_MB: number | string
+  WARN_WORKER_ERRORS: number | string
+
+  /** Secret: Turnstile's secret key (Cloudflare's dummy keys in tests). */
+  TURNSTILE_SECRET_KEY?: string
+  /** Secret: a read-only Account Analytics token, for the watchdog. */
+  CF_ANALYTICS_TOKEN?: string
+  /** Secret: this Worker's Healthchecks.io ping URL (`watchdog-dev` or `watchdog-production`). */
+  HEALTHCHECK_URL?: string
+}
+
+/** The variables that hold a number: every limit and warn level. */
+export type NumberVar =
+  | 'UPLOAD_CAP_D1_BYTES'
+  | 'UPLOAD_CAP_R2_MB'
+  | 'BLOBS_STORAGE_LIMIT_MB'
+  | 'WARN_API_REQUESTS'
+  | 'WARN_D1_ROWS_WRITTEN'
+  | 'WARN_BLOBS_DB_MB'
+  | 'WARN_CORE_DB_MB'
+  | 'WARN_R2_STORAGE_MB'
+  | 'WARN_WORKER_ERRORS'
+
+/** A numeric variable's value; NaN when it is missing or not a number, which every caller treats as misconfigured. */
+export function numberVar(env: Env, name: NumberVar): number {
+  const value = env[name]
+  return typeof value === 'number' ? value : value.trim() === '' ? Number.NaN : Number(value)
+}
+
+/** Bytes in one MB, as every `_MB` variable counts them. */
+export const MB = 1024 * 1024
