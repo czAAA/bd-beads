@@ -34,11 +34,11 @@
       "vars": {
         "WORKER_NAME": "dev",
         // This Worker's own script, databases and bucket, which dev's watchdog filters Cloudflare's analytics by (it
-        // counts only its own usage). The account and database ids are filled in by ticket 71 step A2.
-        "CF_ACCOUNT_ID": "",
+        // counts only its own usage).
+        "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
         "WORKER_SCRIPT": "bd-beads-dev",
-        "CORE_DATABASE_ID": "",
-        "BLOBS_DATABASE_ID": "",
+        "CORE_DATABASE_ID": "3a0112f6-b4b0-422d-902a-015d6200b143",
+        "BLOBS_DATABASE_ID": "72538b64-97c6-4770-8f93-9f70fadd1563",
         "BLOBS_BUCKET_NAME": "bd-beads-dev",
         // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
         // 100 MB request body.
@@ -58,14 +58,13 @@
         {
           "binding": "CORE",
           "database_name": "bd-beads-dev-core",
-          // Filled in by ticket 71 step A2, when the database is created.
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "3a0112f6-b4b0-422d-902a-015d6200b143",
           "migrations_dir": "worker/migrations/core"
         },
         {
           "binding": "BLOBS_DB",
           "database_name": "bd-beads-dev-blobs",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "72538b64-97c6-4770-8f93-9f70fadd1563",
           "migrations_dir": "worker/migrations/blobs"
         }
       ],
@@ -79,10 +78,10 @@
         "WORKER_NAME": "production",
         // Production counts requests, D1 writes and R2 storage account-wide, the limits it shares with dev; its own
         // script filters only its errors. The database ids are kept for the runbook.
-        "CF_ACCOUNT_ID": "",
+        "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
         "WORKER_SCRIPT": "bd-beads",
-        "CORE_DATABASE_ID": "",
-        "BLOBS_DATABASE_ID": "",
+        "CORE_DATABASE_ID": "a02970a6-6bca-44e4-a331-cacb03e5a1d5",
+        "BLOBS_DATABASE_ID": "fecd4725-1d53-4824-8ec1-e40a47ce2d6c",
         "BLOBS_BUCKET_NAME": "bd-beads",
         "UPLOAD_CAP_D1_BYTES": 1990000,
         "UPLOAD_CAP_R2_MB": 90,
@@ -98,13 +97,13 @@
         {
           "binding": "CORE",
           "database_name": "bd-beads-core",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "a02970a6-6bca-44e4-a331-cacb03e5a1d5",
           "migrations_dir": "worker/migrations/core"
         },
         {
           "binding": "BLOBS_DB",
           "database_name": "bd-beads-blobs",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "fecd4725-1d53-4824-8ec1-e40a47ce2d6c",
           "migrations_dir": "worker/migrations/blobs"
         }
       ],
