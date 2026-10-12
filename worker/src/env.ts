@@ -31,6 +31,13 @@ export interface Env {
   BLOBS_DATABASE_ID?: string
   BLOBS_BUCKET_NAME?: string
 
+  /**
+   * Public ids, not secrets: the Google OAuth client (ticket 78's sign-in) and the Turnstile widget, whose site key the
+   * app renders the widget with. One of each serves both Workers and localhost.
+   */
+  GOOGLE_CLIENT_ID?: string
+  TURNSTILE_SITE_KEY?: string
+
   UPLOAD_CAP_D1_BYTES: number | string
   UPLOAD_CAP_R2_MB: number | string
   BLOBS_STORAGE_LIMIT_MB: number | string

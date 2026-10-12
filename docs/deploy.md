@@ -53,7 +53,7 @@ The tests apply every migration before each Worker starts (`docs/testing.md`), s
 
 ## Variables and secrets
 
-**Variables** are declared per environment in `wrangler.jsonc`: the Worker's name and script, the ids its watchdog filters by, every upload cap, the blob storage limit and every warn level. Change one there and deploy, or in the dashboard for a quick trial (a later deploy puts the file's value back). `keep_vars` keeps the variables that aren't in the file.
+**Variables** are declared per environment in `wrangler.jsonc`: the Worker's name and script, the ids its watchdog filters by, the Google OAuth client id and the Turnstile site key (public, one of each for both Workers), every upload cap, the blob storage limit and every warn level. Change one there and deploy, or in the dashboard for a quick trial (a later deploy puts the file's value back). `keep_vars` keeps the variables that aren't in the file.
 
 **`DISABLED_FEATURES` is never in `wrangler.jsonc`.** It is the kill switch, set by hand in the dashboard (Workers → the Worker → Settings → Variables), comma-separated feature names (`worker/src/features.ts`). Because the file doesn't declare it, deploys leave it alone.
 
