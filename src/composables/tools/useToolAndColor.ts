@@ -67,9 +67,12 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     activeTool.value = tool
   }
 
-  /** Picking a color while any other tool is active switches to Paint (ticket 171): the point of picking a color is to paint with it. */
+  /**
+   * Picking a color while a tool that paints nothing is active switches to Paint (ticket 171): the point of picking a
+   * color is to paint with it. Fill already paints with the picked color, so it stays Fill.
+   */
   function switchToPaintOnColorPick() {
-    if (activeTool.value !== 'paint') {
+    if (activeTool.value !== 'paint' && activeTool.value !== 'fill') {
       onSelectTool('paint')
     }
   }

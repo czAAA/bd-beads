@@ -457,8 +457,8 @@ describe('App Eraser tool (ticket 89, single-bead default per ticket 176)', () =
   })
 })
 
-describe('App picking a color switches to Paint (ticket 171)', () => {
-  it.each(['tool-fill', 'tool-select', 'tool-erase'])('switches from %s to Paint on picking a Palette color', async (testId) => {
+describe('App picking a color switches to Paint, except from Fill (ticket 171)', () => {
+  it.each(['tool-select', 'tool-erase'])('switches from %s to Paint on picking a Palette color', async (testId) => {
     const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 
@@ -470,11 +470,24 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
 
   it('switches to Paint on picking a Custom color', async () => {
     const wrapper = await mountAppForCleanup(15, 30)
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
 
     await wrapper.find('[data-testid="custom-color-input"]').setValue('#123456')
 
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it.each([
+    ['a Palette color', async (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-color-id="blue"]').trigger('click')],
+    ['a Custom color', async (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="custom-color-input"]').setValue('#123456')],
+  ])('keeps Fill active on picking %s', async (_name, pick) => {
+    const wrapper = await mountAppForCleanup(15, 30)
+    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+
+    await pick(wrapper)
+
+    expect(wrapper.find('[data-testid="tool-fill"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('switches to Paint on picking a Palette color by its Shift+key shortcut (ticket 88)', async () => {
@@ -494,7 +507,7 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
     expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
   })
 
-  it('leaves a Fill in progress unaffected: picking a color only changes the next stroke\'s tool', async () => {
+  it('picking a color while Fill is active makes the next press flood-fill with it', async () => {
     const wrapper = await mountAppForCleanup(15, 30)
     await wrapper.find('[data-color-id="red"]').trigger('click')
     await pressBead(wrapper, 0)
@@ -504,12 +517,12 @@ describe('App picking a color switches to Paint (ticket 171)', () => {
 
     await wrapper.find('[data-color-id="blue"]').trigger('click')
 
-    // The tool switched to Paint; a press now paints one bead rather than flood-filling.
+    // Fill stayed active; a press floods the connected red beads with the new color.
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#2f6fed')
-    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[0]![1]!.color).toBe('#2f6fed')
   })
 })
 
