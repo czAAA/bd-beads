@@ -6,15 +6,15 @@ import { offlineShell } from './vite.pwa.ts'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  // The app is served from a subpath (/bd-beads/ on the Flint 2 router), not /, so production builds (build and
-  // preview alike) resolve assets relative to it. `DEPLOY_BASE` overrides the path per host (ADR 0022); only the dev
-  // server stays at /.
+  // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
+  // `DEPLOY_BASE` sets it per host; the Workers serve the app at the root, so their deploy sets it to `/` (ADR 0014,
+  // docs/deploy.md). The dev server always serves from /.
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   plugins: [vue(), offlineShell()],
   build: {
     // Two pages: the editor and the Overview (ticket 77), which is a folder with its own index.html so a static host
-    // serves /overview/ with no rewrite rules (ADR 0022).
+    // serves /overview/ with no rewrite rules (ADR 0014).
     rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), overview: resolve(import.meta.dirname, 'overview/index.html') } },
   },
   test: {
