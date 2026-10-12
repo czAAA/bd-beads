@@ -100,6 +100,7 @@ export interface ColorPick {
 
 const colorPickKey: InjectionKey<ColorPick> = Symbol('colorPick')
 
+/** The app shell hands out Pick color from canvas, so the button in the Toolbox and in the Colour sheet share one state. */
 export function provideColorPick(pick: ColorPick) {
   provide(colorPickKey, pick)
 }
