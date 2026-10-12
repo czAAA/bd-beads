@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { inTourCard } from '../../composables/ui/tourDom'
-import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
+import { SHEET_CLOSE } from './sheetContext'
 
 /**
  * The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. Light (the default --
@@ -20,6 +21,9 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 const props = withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
 const emit = defineEmits<{ close: [] }>()
 const closeAction = controlAction('close')
+
+/** Pick controls inside (tool tiles, Palette swatches, the Custom and Image colors) close the sheet through this once they have picked. */
+provide(SHEET_CLOSE, () => emit('close'))
 
 const titleId = useId()
 const sheetEl = ref<HTMLElement>()

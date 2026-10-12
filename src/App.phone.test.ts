@@ -89,17 +89,37 @@ describe('App at the phone tier (ticket 79)', () => {
     }
   })
 
-  it('picks a tool from the Tool sheet, without auto-closing it (the active tile stays outlined, ToolSheet card)', async () => {
+  it('picks a tool from the Tool sheet and closes the sheet (ticket 397)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
     await wrapper.find('[data-testid="sheet-tool-erase"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="tool-erase"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('icon-btn--selected')
-
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
+    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('icon-btn--selected')
+  })
+
+  it('closes the Colour sheet on a Palette color and on a Custom color, and leaves Fill active (ticket 397)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
+    await wrapper.find('[data-testid="sheet-tool-fill"]').trigger('click')
+
+    await wrapper.find('[data-testid="dock-color"]').trigger('click')
+    await wrapper.get('[data-testid="bottom-sheet"] [data-color-id="blue"]').trigger('click')
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="dock-color"]').trigger('click')
+    const input = wrapper.get('[data-testid="bottom-sheet"] [data-testid="custom-color-input"]')
+    ;(input.element as HTMLInputElement).value = '#123456'
+    await input.trigger('input')
+    // Still open while the native dialog is: 'input' selects, 'change' commits.
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(true)
+    await input.trigger('change')
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
+    expect(wrapper.find('[data-testid="sheet-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
   it('draws the Frame sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {

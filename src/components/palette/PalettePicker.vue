@@ -5,6 +5,7 @@ import { usePalette, useRemoveAddedColor } from '../../composables/tools/usePale
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
+import { useCloseSheetOnPick } from '../shell/sheetContext'
 
 const props = defineProps<{ selectedColorId?: string }>()
 const emit = defineEmits<{
@@ -12,6 +13,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const palette = usePalette()
+const closeSheet = useCloseSheetOnPick()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
@@ -29,6 +31,12 @@ function isStop(colorId: string, index: number): boolean {
  */
 function remove(colorId: string) {
   removeAdded?.(colorId)
+}
+
+/** Choosing a swatch is the end of the visit to a Dock sheet: it closes (nothing, in the Toolbox). */
+function pick(colorId: string) {
+  emit('select', colorId)
+  closeSheet()
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
@@ -55,7 +63,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
       data-testid="palette-swatch"
       :data-tour="`color-${color.id}`"
       :data-color-id="color.id"
-      @select="emit('select', color.id)"
+      @select="pick(color.id)"
       @remove="remove(color.id)"
       @keydown="onSwatchKeydown($event, color.id)"
     />
