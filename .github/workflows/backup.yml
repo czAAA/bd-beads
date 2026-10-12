@@ -7,7 +7,8 @@ name: Backup
 #
 # Nothing leaves this job unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain
 # dump, is never printed. Its only credentials are the CI token and the ping URL, in the `production` environment, which
-# is limited to main. Each is given only to the steps that use it, so no package's install script sees them.
+# is limited to main. Each is given only to the steps that use it, and the job installs with `--ignore-scripts`, so no
+# package's install script runs here to plant code in those steps or read the plain dump (ticket 394; deploy.yml).
 
 on:
   schedule:
@@ -36,8 +37,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # Wrangler, at the version package.json pins.
-      - run: npm ci
+      # Wrangler, at the version package.json pins; no install script runs in the job that holds the token.
+      - run: npm ci --ignore-scripts
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
       - name: Export and encrypt both databases
         env:

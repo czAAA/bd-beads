@@ -5,9 +5,11 @@ name: Deploy
 # database's migrations, then the code, then a smoke check that /api/health answers with this commit.
 #
 # The Cloudflare token and account id live only in the `production` GitHub environment, which is limited to main, so
-# no branch, pull request or fork can deploy. Only the steps that run Wrangler get the token, so no package's install
-# script sees it. Migrations only add (docs/deploy.md), so a deploy that fails after them leaves the running code
-# working.
+# no branch, pull request or fork can deploy. Only the steps that run Wrangler get the token, and the job that holds it
+# installs with `--ignore-scripts`: an install script could otherwise write to $GITHUB_ENV (NODE_OPTIONS, say) and so
+# run inside those steps (ticket 394). Wrangler finds esbuild's and workerd's binaries through their optional
+# dependencies, so it needs no install script. Migrations only add (docs/deploy.md), so a deploy that fails after them
+# leaves the running code working.
 
 on:
   push:
@@ -67,8 +69,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # Wrangler, at the version package.json pins.
-      - run: npm ci
+      # Wrangler, at the version package.json pins; no install script runs in the job that holds the token.
+      - run: npm ci --ignore-scripts
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: dist
