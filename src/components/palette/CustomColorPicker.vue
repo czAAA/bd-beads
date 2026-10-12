@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { usePalette } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
@@ -46,10 +46,14 @@ const tooltip = computed(() => {
  * (`generation`), which closes the dialog with it.
  */
 const generation = ref(0)
-function onInput(event: Event) {
+const inputEl = ref<HTMLInputElement>()
+async function onInput(event: Event) {
   emit('select', (event.target as HTMLInputElement).value)
   generation.value += 1
   closeSheet()
+  // Outside a sheet the control stays, and keyboard focus comes back to it rather than falling to the page.
+  await nextTick()
+  inputEl.value?.focus()
 }
 </script>
 
@@ -64,6 +68,7 @@ function onInput(event: Event) {
       :aria-label="t.palette.customColorLabel"
       :aria-pressed="selected"
       :key="generation"
+      ref="inputEl"
       @input="onInput"
     />
     <span class="custom-color-picker__swatch" />

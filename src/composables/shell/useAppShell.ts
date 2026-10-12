@@ -646,6 +646,7 @@ function wireAppShell(services: Services) {
     replaceBead.onCancelReplaceBead()
     clearSavedConfirmation()
     resetImageColor()
+    pickingColor.value = false
   })
 
   return {

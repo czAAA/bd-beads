@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { MAX_ADDED_COLORS } from '../domain/palette'
-import { ADDED_COLORS_KEY, browserAddedColorsStore as store } from './addedColorsStore'
+import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, browserAddedColorsStore as store } from './addedColorsStore'
 
 beforeEach(() => localStorage.clear())
 
@@ -23,5 +23,22 @@ describe('the added colors store (ticket 227)', () => {
     const loaded = store.load()
     expect(loaded[0]).toBe('#abcdef')
     expect(loaded).toHaveLength(MAX_ADDED_COLORS)
+  })
+})
+
+describe('the palette slot order (ticket 398)', () => {
+  it('keeps the order across a reload', () => {
+    store.saveOrder(['white', 'added-123456', 'red'])
+    expect(store.loadOrder()).toEqual(['white', 'added-123456', 'red'])
+  })
+
+  it('reads damaged or foreign data as no order', () => {
+    expect(store.loadOrder()).toEqual([])
+    localStorage.setItem(PALETTE_ORDER_KEY, '{oops')
+    expect(store.loadOrder()).toEqual([])
+    localStorage.setItem(PALETTE_ORDER_KEY, '{"a":1}')
+    expect(store.loadOrder()).toEqual([])
+    localStorage.setItem(PALETTE_ORDER_KEY, JSON.stringify(['red', 5, null, 'blue']))
+    expect(store.loadOrder()).toEqual(['red', 'blue'])
   })
 })
