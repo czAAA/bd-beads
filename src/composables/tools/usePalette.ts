@@ -1,5 +1,5 @@
-import { computed, inject, provide, ref, type ComputedRef, type InjectionKey } from 'vue'
-import { PALETTE, addUsedColor, isAddedColorId, paletteWith, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor } from '../../domain/palette'
+import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
+import { PALETTE, addUsedColor, addedColorId, isAddedColorId, moveSlot, orderedPalette, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor } from '../../domain/palette'
 import type { AddedColorsStore } from '../../services/addedColorsStore'
 
 const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
@@ -10,7 +10,15 @@ const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('p
  */
 export function useAddedColors(store: AddedColorsStore) {
   const added = ref<readonly string[]>(store.load())
-  const palette = computed(() => paletteWith(added.value))
+  /** The slots' order as arranged (ticket 398); the colors it doesn't name yet follow in the default order. */
+  const order = ref<readonly string[]>(store.loadOrder())
+  const palette = computed(() => orderedPalette(added.value, order.value))
+
+  /** Slots are what the order keeps: an added color joins the last one, a removed one's slot closes up. */
+  function setOrder(ids: readonly string[]) {
+    order.value = ids
+    store.saveOrder(ids)
+  }
 
   provide(paletteKey, palette)
 
@@ -18,8 +26,10 @@ export function useAddedColors(store: AddedColorsStore) {
   function addUsed(hex: string): { outcome: AddUsedColorOutcome; colorId?: string } {
     const result = addUsedColor(added.value, hex)
     if (result.outcome === 'added') {
+      const ids = palette.value.map((color) => color.id)
       added.value = result.added
       store.save(result.added)
+      setOrder([...ids, addedColorId(result.added.at(-1)!)])
     }
     return { outcome: result.outcome, colorId: palette.value.find((color) => color.hex === hex.toLowerCase())?.id }
   }
@@ -29,18 +39,28 @@ export function useAddedColors(store: AddedColorsStore) {
     const hex = palette.value.find((color) => color.id === colorId && isAddedColorId(color.id))?.hex
     const removal = hex ? removeAddedColor(added.value, hex) : undefined
     if (!hex || !removal) return undefined
+    const ids = palette.value.map((color) => color.id)
+    const slot = ids.indexOf(colorId)
     added.value = removal.added
     store.save(removal.added)
+    setOrder(ids.filter((id) => id !== colorId))
     return () => {
       const restored = restoreAddedColor(added.value, hex, removal.index)
       if (!restored.includes(hex)) return false
+      const current = palette.value.map((color) => color.id)
       added.value = restored
       store.save(restored)
+      setOrder([...current.slice(0, slot), colorId, ...current.slice(slot)])
       return true
     }
   }
 
-  return { palette, addedCount: computed(() => added.value.length), addUsed, removeAdded }
+  /** A swatch dragged (or nudged) from one slot to another (ticket 398); its Shift+key follows the slot it lands in. */
+  function moveColor(from: number, to: number) {
+    setOrder(moveSlot(palette.value.map((color) => color.id), from, to))
+  }
+
+  return { palette, addedCount: computed(() => added.value.length), addUsed, removeAdded, moveColor }
 }
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')
@@ -58,4 +78,33 @@ export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
 /** The Palette for a swatch component: the built-in colors alone when no app shell provides one. */
 export function usePalette(): ComputedRef<readonly PaletteColor[]> {
   return inject(paletteKey, () => computed(() => PALETTE), true)
+}
+
+const moveKey: InjectionKey<(from: number, to: number) => void> = Symbol('moveColor')
+
+/** The app shell hands out how a swatch moves to another slot (ticket 398). */
+export function provideMoveColor(move: (from: number, to: number) => void) {
+  provide(moveKey, move)
+}
+
+/** How a swatch asks to move; absent (mounted alone) means the Palette can't be rearranged. */
+export function useMoveColor(): ((from: number, to: number) => void) | undefined {
+  return inject(moveKey, undefined)
+}
+
+/** Pick color from canvas (ticket 398): whether the next press on the canvas takes a bead's color, and how the button arms or disarms it. */
+export interface ColorPick {
+  picking: Readonly<Ref<boolean>>
+  toggle: () => void
+}
+
+const colorPickKey: InjectionKey<ColorPick> = Symbol('colorPick')
+
+export function provideColorPick(pick: ColorPick) {
+  provide(colorPickKey, pick)
+}
+
+/** Absent (mounted alone) means there is no canvas to pick from, so no button is offered. */
+export function useColorPick(): ColorPick | undefined {
+  return inject(colorPickKey, undefined)
 }

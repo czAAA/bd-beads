@@ -22,6 +22,8 @@ export interface CanvasPointerDeps {
   paintStrokeCell: (row: number, column: number, color: string | null) => void
   /** Pastes at a cell; true when something was pasted. */
   pasteAt: (cell: GridPosition | undefined) => boolean
+  /** Pick color from canvas (ticket 398): true when it is on and took this press. */
+  pickColorAt: (row: number, column: number) => boolean
 }
 
 /**
@@ -86,6 +88,10 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     }
 
     if (!deps.currentProject()) {
+      return
+    }
+
+    if (deps.pickColorAt(row, column)) {
       return
     }
 

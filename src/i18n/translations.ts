@@ -247,6 +247,7 @@ export interface Translations {
     rotateButton: string
     /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
     customColorLabel: string
+    pickFromCanvasLabel: string
     limitReached: string
     /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
     removed: string
@@ -607,6 +608,7 @@ export interface Translations {
     removeLineDisabled: string
     clear: string
     customColor: string
+    pickFromCanvas: string
     customColorFull: string
     imageColorsDisabled: string
     nothingToUndo: string

@@ -19,6 +19,7 @@ export const ICON_NAMES = [
   'device',
   'erase',
   'export',
+  'eyedropper',
   'fill',
   'fit',
   'frame',
