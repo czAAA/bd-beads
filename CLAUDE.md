@@ -23,7 +23,7 @@ Headline format `type:[ticketNumber] Description`, with type `feat`, `fix` or `r
 Standing orders for every implementation (incl. `implement` skill); don't ask between steps:
 1. Update local main `origin/main` first.
 2. create a worktree at `../bd-beads-<ticket>/` (a sibling of the repo, never inside it) from fresh main, run `bash scripts/link-docs.sh` there, and work there
-3. Archive the ticket in the docs repo and push (not in the code PR), once the code PR is merged.
+3. Archive the ticket in the docs repo and push (not in the code PR) as soon as the PR that completes it is open and ready for review, without waiting for the merge: tick the boxes, say what was left out, set `**Status:** done`, move it to `.scratch/.archive/`. If review finds something wrong or missing, move it back out of `.archive/` and set its status to `ready-for-agent`. A PR that is only one step of a larger ticket doesn't archive it.
 4. When finish: run `/mattpocock-skills:code-review main`, fix findings, commit, push, open PR. Keep the review cheap: start its reviewers on `model: sonnet`, give each only the diff command, the ticket path and `CODING_STANDARDS.md` (so they don't search for them), and for a diff that touches only docs or config review inline without subagents.
 5. explicitly say whats left for a human
 
