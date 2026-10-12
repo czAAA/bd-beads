@@ -40,6 +40,10 @@
         "CORE_DATABASE_ID": "3a0112f6-b4b0-422d-902a-015d6200b143",
         "BLOBS_DATABASE_ID": "72538b64-97c6-4770-8f93-9f70fadd1563",
         "BLOBS_BUCKET_NAME": "bd-beads-dev",
+        // Public ids, not secrets (step H3): the Google OAuth client and the Turnstile widget, one each for both
+        // Workers and localhost. Their secrets are set with `wrangler secret put`.
+        "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
         // Upload caps (ticket 323 sets the final numbers): just under D1's 2,000,000-byte row, and under Cloudflare's
         // 100 MB request body.
         "UPLOAD_CAP_D1_BYTES": 1990000,
@@ -83,6 +87,8 @@
         "CORE_DATABASE_ID": "a02970a6-6bca-44e4-a331-cacb03e5a1d5",
         "BLOBS_DATABASE_ID": "fecd4725-1d53-4824-8ec1-e40a47ce2d6c",
         "BLOBS_BUCKET_NAME": "bd-beads",
+        "GOOGLE_CLIENT_ID": "616858853393-fsl5tbh3829ejhh7vb4331rdoqk3m62v.apps.googleusercontent.com",
+        "TURNSTILE_SITE_KEY": "0x4AAAAAAFUZenzE5M2N5bxC",
         "UPLOAD_CAP_D1_BYTES": 1990000,
         "UPLOAD_CAP_R2_MB": 90,
         "BLOBS_STORAGE_LIMIT_MB": 450,
