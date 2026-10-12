@@ -47,7 +47,7 @@ Specs are not tickets: a spec is kept in `docs/specs/` (`NN-<slug>.md`, same num
 
 - `**Status:**` holds exactly one triage label (`docs/agents/triage-labels.md`); a ticket with a branch or worktree being worked on is at least `ready-for-agent` or `ready-for-human`, never `needs-triage`.
 - Sections a larger ticket may add under the checklist: `### <group>` headings to split the checklist, and `### Done when` for the checks that close it.
-- On closing, tick every box that was done, say in the ticket what was left out and why, set `**Status:** done`, and move the file to `.archive/` in the docs repo, committed and pushed at once.
+- On closing, tick every box that was done, say in the ticket what was left out and why, set `**Status:** done`, and move the file to `.archive/` in the docs repo, committed and pushed at once. Closing happens when the PR that completes the ticket is open and ready for review, not at the merge; a PR that is one step of a larger ticket doesn't close it. If review finds something wrong or missing, the ticket comes back: move it out of `.archive/`, set `**Status:** ready-for-agent` and untick what is open.
 
 Tickets are English-only; the app's own language switcher (see CONTEXT.md's Language section) is a separate, user-facing feature and not part of the issue-tracker workflow.
 
@@ -55,7 +55,7 @@ Tickets are English-only; the app's own language switcher (see CONTEXT.md's Lang
 
 - **Creating an issue**: `to-tickets` skill writes a new `.scratch/NN-slug.md`, then commits it to `bd-beads-docs` `main` and pushes at once (`git -C ../bd-beads-docs add -A && git -C ../bd-beads-docs commit -m "ticket NN: ..." && git -C ../bd-beads-docs push`)
 - **Triaging**: `triage` skill reads and updates a ticket's `**Status:**` line, set to one of the triage labels
-- **Resolving**: close the issue by moving it to `.scratch/.archive/`, then commit and push in the docs repo. The archive is part of the work, but it is not part of the code PR
+- **Resolving**: close the issue by moving it to `.scratch/.archive/`, then commit and push in the docs repo, once the PR that completes it is ready for review. The archive is part of the work, but it is not part of the code PR
 
 ## Why markdown in a private repo?
 
