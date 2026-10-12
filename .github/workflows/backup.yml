@@ -1,0 +1,80 @@
+name: Backup
+
+# The weekly copy of production's databases, for losing the Cloudflare account (ticket 71, spec 385; restoring it:
+# docs/operations.md). Exports `core` and `blobs`, encrypts each dump to the maintainer's age public key, keeps them as
+# one artifact for 28 days (four weekly copies, so a deleted account is gone from backups within four weeks), and pings
+# the Healthchecks.io check `backup-weekly`. Mistakes are undone with D1 Time Travel instead.
+#
+# The repo is public, so its artifacts and logs are readable by anyone signed in to GitHub: nothing leaves this job
+# unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain dump, is never
+# printed. Its only credentials are the CI token and the ping URL, in the `production` environment, which is limited
+# to main.
+
+on:
+  schedule:
+    # Monday 02:37 UTC, a quiet hour: an export holds up the database's other queries while it runs.
+    - cron: '37 2 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Its own group: sharing the production deploy's would cancel a deploy waiting behind it.
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Back up production
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      # Wrangler, at the version package.json pins.
+      - run: npm ci
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Export and encrypt both databases
+        env:
+          AGE_PUBLIC_KEY: ${{ vars.AGE_PUBLIC_KEY }}
+          PLAIN: ${{ runner.temp }}/plain
+          OUT: ${{ runner.temp }}/backup
+        run: |
+          if [ -z "$AGE_PUBLIC_KEY" ]; then echo "::error::The production environment has no AGE_PUBLIC_KEY"; exit 1; fi
+          mkdir -p "$PLAIN" "$OUT"
+          for binding in CORE:core BLOBS_DB:blobs; do
+            db=${binding%:*} name=${binding#*:}
+            # Wrangler's output holds a download link to the plain dump, so only its link-free lines are shown, and
+            # only on failure.
+            if ! npx wrangler d1 export "$db" --env production --remote --output "$PLAIN/$name.sql" >"$PLAIN/log" 2>&1; then
+              grep -v -i 'http' "$PLAIN/log" || true
+              echo "::error::Exporting $db failed"
+              exit 1
+            fi
+            if [ ! -s "$PLAIN/$name.sql" ]; then echo "::error::The export of $db is empty"; exit 1; fi
+            age --encrypt --recipient "$AGE_PUBLIC_KEY" --output "$OUT/$name.sql.age" "$PLAIN/$name.sql"
+            echo "$db: $(wc -c <"$PLAIN/$name.sql") bytes exported"
+          done
+          rm -rf "$PLAIN"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backup-production-${{ github.run_id }}
+          path: ${{ runner.temp }}/backup
+          retention-days: 28
+          # Encrypted bytes don't compress.
+          compression-level: 0
+          if-no-files-found: error
+      - name: Ping Healthchecks
+        run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_BACKUP_URL"
+      # A failed run alerts now, not a day after the missed ping.
+      - name: Report the failure to Healthchecks
+        if: failure()
+        run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_BACKUP_URL/fail"
