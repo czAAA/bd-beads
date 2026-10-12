@@ -285,8 +285,11 @@ phase_h2() {
   need_gh
   stage "Wrangler: log in on this machine"
   say "This lets the agent create the databases and buckets from here. The login stays on this machine."
-  step "A browser opens; allow Wrangler."
-  npx wrangler login
+  say "Run this on the machine the agent works on. If it has no browser, first run on the machine with the browser:"
+  say "  ssh -N -L 8976:localhost:8976 <user>@<this machine>"
+  say "so Cloudflare's redirect to localhost:8976 reaches this machine."
+  step "Open the URL Wrangler prints, and allow Wrangler."
+  npx wrangler login --browser=false
   npx wrangler whoami
 
   stage "Cloudflare: the CI token"
