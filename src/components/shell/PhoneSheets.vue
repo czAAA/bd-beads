@@ -10,6 +10,7 @@ import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
+import ToolTiles from '../tools/ToolTiles.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
@@ -24,7 +25,6 @@ import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
 import { DOCK_LAYOUT_ENABLED, MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
-import { TOOL_HOTKEYS, TOOL_ORDER } from '../tools/toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 const {
@@ -87,8 +87,6 @@ const {
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
-/** The phone Tool sheet's tiles (ToolSheet card): the same registry actions, in the same order, as the Toolbox's tabs. */
-const phoneTools = TOOL_ORDER.map((id) => ({ id, action: controlAction(`tool-${id}`), hotkey: TOOL_HOTKEYS[id] }))
 const sheetActions = {
   removeLine: controlAction('remove-line'),
   clear: controlAction('clear'),
@@ -113,20 +111,7 @@ const deps = computed(() =>
 
 <template>
   <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
-    <div class="phone-sheet__tiles">
-      <IconButton
-        v-for="tool in phoneTools"
-        :key="tool.id"
-        variant="tool"
-        :action="tool.action"
-        :hotkey="tool.hotkey"
-        show-hotkey
-        :selected="activeTool === tool.id"
-        :data-testid="`sheet-tool-${tool.id}`"
-        :data-tour="`tool-${tool.id}`"
-        @click="onSelectTool(tool.id)"
-      />
-    </div>
+    <ToolTiles :active-tool="activeTool" @select="onSelectTool" />
     <div class="phone-sheet__links">
       <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
@@ -305,15 +290,7 @@ const deps = computed(() =>
 </template>
 
 <style scoped>
-/* The phone ToolSheets' own content (ticket 79; ToolSheet card). */
-.phone-sheet__tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 56px);
-  justify-content: space-between;
-  grid-auto-rows: 72px;
-  background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px);
-}
-
+/* The phone ToolSheets' own content (ticket 79; ToolSheet card); the tool tiles are ToolTiles'. */
 .phone-sheet__links {
   display: flex;
   justify-content: space-between;

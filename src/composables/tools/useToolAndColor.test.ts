@@ -70,11 +70,24 @@ describe('useToolAndColor', () => {
       ['a Palette swatch', (flow: ReturnType<typeof setup>) => flow.onSelectColor('blue')],
       ['a Custom color', (flow: ReturnType<typeof setup>) => flow.onSelectCustomColor('#123456')],
       ['an Image color', (flow: ReturnType<typeof setup>) => flow.onSelectImageColor('#abcdef')],
-    ])('picking %s while another tool is active switches to Paint', (_name, pick) => {
+    ])('picking %s while a tool that paints nothing is active switches to Paint', (_name, pick) => {
+      for (const tool of ['erase', 'select', 'hand'] as const) {
+        const flow = setup()
+        flow.onSelectTool(tool)
+        pick(flow)
+        expect(flow.activeTool.value).toBe('paint')
+      }
+    })
+
+    it.each([
+      ['a Palette swatch', (flow: ReturnType<typeof setup>) => flow.onSelectColor('blue')],
+      ['a Custom color', (flow: ReturnType<typeof setup>) => flow.onSelectCustomColor('#123456')],
+      ['an Image color', (flow: ReturnType<typeof setup>) => flow.onSelectImageColor('#abcdef')],
+    ])('picking %s while Fill is active leaves Fill active', (_name, pick) => {
       const flow = setup()
-      flow.onSelectTool('erase')
+      flow.onSelectTool('fill')
       pick(flow)
-      expect(flow.activeTool.value).toBe('paint')
+      expect(flow.activeTool.value).toBe('fill')
     })
 
     it('stays on Paint without leaving Select when a color is picked on Paint', () => {

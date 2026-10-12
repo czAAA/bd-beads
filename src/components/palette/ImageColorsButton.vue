@@ -3,6 +3,7 @@ import { nextTick, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import MenuButton from '../ui/MenuButton.vue'
 import ImageColorsPicker from './ImageColorsPicker.vue'
+import { useCloseSheetOnPick } from '../shell/sheetContext'
 
 /**
  * The Image colors button (ticket 151; ColorPickers card): a MenuButton that opens a popover under it with the colors
@@ -17,6 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{ select: [hex: string] }>()
 const { t } = useI18n()
+const closeSheet = useCloseSheetOnPick()
 
 const menu = ref<InstanceType<typeof MenuButton>>()
 const rootEl = ref<HTMLElement>()
@@ -33,6 +35,7 @@ async function onOpen() {
 function onSelect(hex: string) {
   emit('select', hex)
   menu.value?.close()
+  closeSheet()
 }
 </script>
 
