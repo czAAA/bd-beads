@@ -196,9 +196,20 @@ finish() {
 # agent to read.
 # ──────────────────────────────────────────────────────────────────────────
 
+# Always from the repo root, wherever it is started: Wrangler needs wrangler.jsonc, gh picks the repo from the
+# folder's git remote (H2's GitHub stage once ran elsewhere and set nothing), and the handoff file lives here.
+cd "$(dirname "$0")/.." || exit 1
 ENV_FILE="${BACKEND_HANDOFF:-backend-handoff.local}"
 # Provisional: ticket 78 owns the final path, and the Google console lets you edit the URIs later.
 GOOGLE_CALLBACK_PATH="/api/auth/google/callback"
+
+# ask_host KEY PROMPT: like ask, but keeps the bare host, so "https://x.workers.dev/" and "x.workers.dev" both give
+# x.workers.dev. Every later stage adds the scheme itself where it needs one.
+ask_host() {
+  ask "$1" "$2"
+  local host="${!1#*://}"
+  printf -v "$1" '%s' "${host%%/*}"
+}
 
 # put_secret NAME ENV: wrangler asks for the value itself, hidden, and sends it straight to Cloudflare.
 put_secret() {
@@ -328,32 +339,36 @@ phase_h3() {
   need_gh
   stage "The two Worker addresses"
   say "The agent deployed both Workers in step A2 and gave you their workers.dev addresses."
-  ask WORKER_HOST_DEV "Dev host (bd-beads-dev.<subdomain>.workers.dev):"
-  ask WORKER_HOST_PRODUCTION "Production host (bd-beads.<subdomain>.workers.dev):"
+  ask_host WORKER_HOST_DEV "Dev host (bd-beads-dev.<subdomain>.workers.dev):"
+  ask_host WORKER_HOST_PRODUCTION "Production host (bd-beads.<subdomain>.workers.dev):"
   write_env WORKER_HOST_DEV "$WORKER_HOST_DEV"
   write_env WORKER_HOST_PRODUCTION "$WORKER_HOST_PRODUCTION"
 
   stage "Access (H3a): both Workers behind a sign-in"
   open_url "https://one.dash.cloudflare.com/"
-  step "Access → Applications → Add an application → Self-hosted, one per host:"
-  step "  $WORKER_HOST_DEV, then $WORKER_HOST_PRODUCTION."
-  step "Policy: Allow, include Emails: yours, then each tester's. Login method: One-time PIN."
-  step "Then one more application per host for the path /api/health only, policy Bypass, include Everyone."
+  step "Once: Integrations → Identity providers → Add new → One-time PIN. Nothing to fill in; save."
+  step "Access controls → Applications → Add an application → Self-hosted. Four applications in all:"
+  step "  per host, one that asks for a sign-in, and one that lets /api/health through."
+  note "workers.dev isn't one of your domains, so the Domain list is empty: click 'Switch to custom input' and type"
+  note "the host, without https://."
+  step "Sign-in application, host $WORKER_HOST_DEV, Path empty:"
+  step "  policy Allow, include Emails: yours, then each tester's;"
+  step "  Authentication: tick One-time PIN only (refresh the page if it isn't listed)."
+  step "Health application, same host, Path api/health: policy Bypass, include Everyone."
+  step "The same two for $WORKER_HOST_PRODUCTION (pick the policies under 'Add current policies')."
   note "The more specific path wins: health answers without a sign-in, and nothing else does."
   step "Open each host in a private window: you get the Access sign-in, and /api/health answers."
   confirm "Does it behave like that on both hosts?" || warn "Not confirmed: fix it before telling the agent."
-  ask ACCESS_HOST_DEV "Dev host exactly as it looks after Access:"
-  ask ACCESS_HOST_PRODUCTION "Production host exactly as it looks after Access:"
-  write_env ACCESS_HOST_DEV "$ACCESS_HOST_DEV"
-  write_env ACCESS_HOST_PRODUCTION "$ACCESS_HOST_PRODUCTION"
 
   stage "Google (H3b): the project and the consent screen"
   open_url "https://console.cloud.google.com/projectcreate"
   step "Create a project named bd-beads."
   open_url "https://console.cloud.google.com/auth/overview"
-  step "Set up the consent screen: app name bd-beads, your email as support and developer contact, audience External."
-  step "Publishing status stays Testing. Add yourself (and any tester) as a test user."
-  step "Scopes: only openid, email and profile. Nothing else."
+  note "The consent screen is what Google shows someone signing in to the app (not Access) with Google."
+  step "Get started (or Branding): app name bd-beads, your email as support and contact, audience External."
+  step "Audience: publishing status stays Testing (don't publish). Test users → Add users: yours (and testers')."
+  step "Data access → Add or remove scopes: tick only openid, .../auth/userinfo.email and .../auth/userinfo.profile."
+  step "Update, then Save. Both sensitive-scope tables stay empty."
   pause "Consent screen done, in Testing? Press Enter."
 
   stage "Google (H3b): the OAuth client"
@@ -364,6 +379,7 @@ phase_h3() {
   say "  https://$WORKER_HOST_PRODUCTION$GOOGLE_CALLBACK_PATH"
   say "  http://localhost:5173$GOOGLE_CALLBACK_PATH"
   say "  http://localhost:8787$GOOGLE_CALLBACK_PATH"
+  note "Google usually refuses workers.dev (it's on the Public Suffix List): then delete those two and keep localhost."
   if confirm "Did the console accept the workers.dev addresses?"; then
     write_env GOOGLE_WORKERS_DEV_REDIRECT accepted
   else
@@ -377,7 +393,8 @@ phase_h3() {
 
   stage "Turnstile (H3c)"
   open_url "https://dash.cloudflare.com/?to=/:account/turnstile"
-  step "Add widget, name bd-beads. Hostnames: $WORKER_HOST_DEV, $WORKER_HOST_PRODUCTION and localhost."
+  step "Add widget, name bd-beads. Hostnames, typed one by one with Enter after each (the list shows only your domains):"
+  step "  $WORKER_HOST_DEV, $WORKER_HOST_PRODUCTION and localhost (skip localhost if refused: tests use dummy keys)."
   step "Widget mode: Managed. Pre-clearance: no."
   ask TURNSTILE_SITE_KEY "Paste the site key (not secret):"
   write_env TURNSTILE_SITE_KEY "$TURNSTILE_SITE_KEY"
@@ -386,18 +403,20 @@ phase_h3() {
 
   stage "UptimeRobot (H3d)"
   open_url "https://dashboard.uptimerobot.com/monitors"
-  step "Add two HTTP(s) monitors, interval 5 minutes:"
+  step "Sign in with the account whose inbox gets the alerts. Add two HTTP(s) monitors, interval 15 minutes:"
   step "  https://$WORKER_HOST_DEV/api/health and https://$WORKER_HOST_PRODUCTION/api/health"
   step "Alert contacts: your email, and the UptimeRobot phone app (install it and sign in; it sends the push)."
   pause "Both monitors are up and green? Press Enter."
 
   stage "Healthchecks.io (H3d): three checks, email only"
-  open_url "https://healthchecks.io/projects/"
-  step "Create three checks, each alerting by email to you:"
+  open_url "https://healthchecks.io/accounts/signup/"
+  step "Sign up or log in: you land in your default project's checks."
+  step "Add Check three times, schedule Simple, each alerting by email to you:"
   step "  watchdog-dev: period 15 minutes, grace 1 hour"
   step "  watchdog-production: period 15 minutes, grace 1 hour"
   step "  backup-weekly: period 7 days, grace 1 day"
-  say "The ping URLs are secrets. Wrangler asks for watchdog-dev's, then watchdog-production's;"
+  say "The ping URLs (https://hc-ping.com/<uuid>, on each check's page) are secrets. Wrangler asks for"
+  say "watchdog-dev's, then watchdog-production's;"
   say "gh then asks for backup-weekly's."
   put_secret HEALTHCHECK_URL dev
   put_secret HEALTHCHECK_URL production
