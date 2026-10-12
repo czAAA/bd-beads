@@ -5,10 +5,8 @@ name: Backup
 # one artifact for 28 days (four weekly copies, so a deleted account is gone from backups within four weeks), and pings
 # the Healthchecks.io check `backup-weekly`. Mistakes are undone with D1 Time Travel instead.
 #
-# The repo is public, so its artifacts and logs are readable by anyone signed in to GitHub: nothing leaves this job
-# unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain dump, is never
-# printed. Its only credentials are the CI token and the ping URL, in the `production` environment, which is limited
-# to main.
+# Nothing leaves this job unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain dump,
+# is neverprinted. Its only credentials are the CI token and the ping URL, in the `production` environment, which is limited to main.
 
 on:
   schedule:
