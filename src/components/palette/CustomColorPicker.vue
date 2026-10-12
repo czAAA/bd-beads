@@ -5,6 +5,7 @@ import { usePalette } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
+import { useCloseSheetOnPick } from '../shell/sheetContext'
 
 /**
  * The Custom color button (tickets 75, 151; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const closeSheet = useCloseSheetOnPick()
 
 /**
  * Its Tooltip (ticket 335) comes from the registry's Custom color action: what it adds, and, once the Palette holds its
@@ -45,6 +47,14 @@ const tooltip = computed(() => {
 function onInput(event: Event) {
   emit('select', (event.target as HTMLInputElement).value)
 }
+
+/**
+ * The native dialog commits with 'change'. A sheet holding this control closes then, not on the live 'input' above:
+ * unmounting the input while its dialog is still open would take the dialog away mid-drag.
+ */
+function onChange() {
+  closeSheet()
+}
 </script>
 
 <template>
@@ -58,6 +68,7 @@ function onInput(event: Event) {
       :aria-label="t.palette.customColorLabel"
       :aria-pressed="selected"
       @input="onInput"
+      @change="onChange"
     />
     <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
