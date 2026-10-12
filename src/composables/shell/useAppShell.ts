@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
-import type { CreateProjectInput } from '../../domain/project'
+import { beadColorAt, type CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -42,7 +42,7 @@ import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
-import { provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
+import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
 import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
@@ -232,7 +232,7 @@ function wireAppShell(services: Services) {
   }
 
   /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
-  const { palette, addedCount, addUsed, removeAdded } = useAddedColors(services.addedColorsStore)
+  const { palette, addedCount, addUsed, removeAdded, moveColor } = useAddedColors(services.addedColorsStore)
 
   /** The active tool and which of the three paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -244,17 +244,21 @@ function wireAppShell(services: Services) {
     previewColor,
     onSelectTool: selectTool,
     onSelectColor,
-    onSelectCustomColor,
+    onSelectCustomColor: selectCustomColor,
     onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value, onToolChosen: () => frameFlow.done() })
+
+  /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
+  const pickingColor = ref(false)
 
   /**
    * Choosing a tool. Choosing the Eraser while a Selection exists empties the Selection's beads first (ticket 313), the
    * same as Del under Select; leaving Select then drops the Selection, as it does for every other tool.
    */
   function onSelectTool(tool: Tool) {
+    pickingColor.value = false
     if (tool === 'erase' && selection.value) {
       onDeleteSelection()
     }
@@ -301,6 +305,7 @@ function wireAppShell(services: Services) {
     if (colorId) onRemoveAddedColor(colorId)
   }
   provideRemoveAddedColor(onRequestRemoveAddedColor)
+  provideMoveColor(moveColor)
 
   /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it still paints, and the user is told once per color. */
   let limitToldFor: string | undefined
@@ -314,6 +319,31 @@ function wireAppShell(services: Services) {
       showToast('palette-full', t.value.palette.limitReached, 'info')
     }
   }
+
+  /**
+   * A color was picked as a Custom color, from the system picker or from the canvas (ticket 398): it is the paint color
+   * and, with a slot free, joins the Palette at once rather than on its first stroke.
+   */
+  function onSelectCustomColor(hex: string) {
+    selectCustomColor(hex)
+    onPaintColorUsed(hex)
+  }
+
+  /**
+   * Pick color from canvas (ticket 398): while it is on, the next press on a bead takes that bead's color as the paint
+   * color (an empty cell does nothing and it stays on). Choosing a tool or Escape ends it.
+   */
+  function pickColorAt(row: number, column: number): boolean {
+    if (!pickingColor.value) return false
+    const project = currentProject()
+    const hex = project ? beadColorAt(project, row, column) : null
+    if (hex) {
+      pickingColor.value = false
+      onSelectCustomColor(hex)
+    }
+    return true
+  }
+  provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
   const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
@@ -372,6 +402,7 @@ function wireAppShell(services: Services) {
     },
     paintStrokeCell,
     pasteAt: pasteAtCell,
+    pickColorAt,
   })
 
   /** Painting with the keyboard (tickets 159, 194): the announcer needs the cursor and the cursor the announcer, so the announcer reads the cursor lazily. */
@@ -548,6 +579,12 @@ function wireAppShell(services: Services) {
     canRedo: () => canRedo.value,
     hasClipboard,
     addedColorCount: () => addedCount.value,
+    paletteColorIdAt: (slot) => palette.value[slot]?.id,
+    cancelColorPick: () => {
+      const was = pickingColor.value
+      pickingColor.value = false
+      return was
+    },
     hasOpenLayer,
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||

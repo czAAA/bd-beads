@@ -112,3 +112,32 @@ export function restoreAddedColor(added: readonly string[], hex: string, index: 
   if (added.includes(hex) || added.length >= MAX_ADDED_COLORS) return added
   return [...added.slice(0, index), hex, ...added.slice(index)]
 }
+
+/**
+ * The Palette in the order its slots stand (ticket 398): `order` is the ids a person arranged them in. A slot whose
+ * color is gone is dropped, so the ones after it close up, and a color `order` doesn't name yet (a new one, or a
+ * built-in one on a device that never reordered) follows in the default order.
+ */
+export function orderedPalette(added: readonly string[], order: readonly string[]): PaletteColor[] {
+  const all = paletteWith(added)
+  const byId = new Map(all.map((color) => [color.id, color]))
+  const placed = new Set<string>()
+  const result: PaletteColor[] = []
+  for (const id of order) {
+    const color = byId.get(id)
+    if (color && !placed.has(id)) {
+      placed.add(id)
+      result.push(color)
+    }
+  }
+  return [...result, ...all.filter((color) => !placed.has(color.id))]
+}
+
+/** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by one. */
+export function moveSlot(ids: readonly string[], from: number, to: number): string[] {
+  if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return [...ids]
+  const next = [...ids]
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved!)
+  return next
+}
