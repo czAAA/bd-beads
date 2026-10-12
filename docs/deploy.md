@@ -2,8 +2,6 @@
 
 How the app and its backend reach Cloudflare (ticket 71, spec 385, [ADR 0014](adr/0014-mvp-stays-local-only-hosted-phase-deferred.md)). What to watch once it runs, and when to switch a feature off or pay for more, is the runbook, `docs/operations.md` (private docs repo, linked in by `scripts/link-docs.sh`).
 
-**Draft.** Written in ticket 71 steps A1 and A2; step A5 finishes this page.
-
 ## What runs where
 
 One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jsonc`:
@@ -72,7 +70,24 @@ GitHub holds only what CI needs, in the `production` environment (limited to `ma
 
 The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h5`), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
 
-## Still to write (A5)
+## Adding a tester
 
-- How to add a tester (an email in each Access policy).
-- How a fork deploys its own copy: its own account, the resource names in `wrangler.jsonc`, its own secrets.
+Before the public release both Workers sit behind Cloudflare Access, which lets in only the emails its policies list, by a one-time PIN sent to that email (spec 385). To add a tester:
+
+1. [one.dash.cloudflare.com](https://one.dash.cloudflare.com/) → Access controls → Applications.
+2. Open the sign-in application of each host the tester needs (the one with an empty Path, not the `api/health` one), then its Allow policy.
+3. Under Include → Emails, add the tester's address, and save. The policy is shared, so one edit can cover both hosts; check that both applications list it.
+4. Send the tester the address. They type their email at the Access page and the PIN that arrives.
+
+To remove a tester, delete the address the same way; their open session ends when it expires (24 hours by default), or at once by revoking their session in the Zero Trust dashboard's user list. Dev stays behind Access for good; production drops it at the public release (ticket 391).
+
+## A fork's own copy
+
+Nothing in the code names this account, so a fork deploys its own copy with its own accounts, all on free plans (spec 385):
+
+1. **Cloudflare.** Its own account. Create the four D1 databases (`npx wrangler d1 create <name>`, a `core` and a `blobs` per Worker) and the two R2 buckets (`npx wrangler r2 bucket create <name>`).
+2. **`wrangler.jsonc`.** For each environment: the Worker's `name` and `WORKER_SCRIPT`, `CF_ACCOUNT_ID`, each database's `database_name` and `database_id` (in `d1_databases` and in `CORE_DATABASE_ID` / `BLOBS_DATABASE_ID`), the bucket's `bucket_name`, and the fork's own `GOOGLE_CLIENT_ID` and `TURNSTILE_SITE_KEY`. Keep or tune the caps and warn levels.
+3. **Outside services.** Its own Google OAuth client, Turnstile widget, Healthchecks.io checks, UptimeRobot monitors and Access applications. `scripts/backend-wizard.sh` walks each one; its phases work for any account.
+4. **Secrets.** The four in the table above, per Worker, with `wrangler secret put`.
+5. **GitHub.** A `production` environment limited to `main`, holding `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (and, for the backup, `HEALTHCHECK_BACKUP_URL` and `AGE_PUBLIC_KEY`). Without them the deploy workflow fails at its first Wrangler step and touches nothing. GitHub keeps a fork's workflows off until its Actions tab turns them on.
+6. **First deploy.** By hand (above) or through the workflow; the smoke check reads the address from Wrangler, so nothing else names a host.
