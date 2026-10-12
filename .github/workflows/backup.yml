@@ -5,8 +5,9 @@ name: Backup
 # one artifact for 28 days (four weekly copies, so a deleted account is gone from backups within four weeks), and pings
 # the Healthchecks.io check `backup-weekly`. Mistakes are undone with D1 Time Travel instead.
 #
-# Nothing leaves this job unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain dump,
-# is neverprinted. Its only credentials are the CI token and the ping URL, in the `production` environment, which is limited to main.
+# Nothing leaves this job unencrypted, and Wrangler's export output, which carries a one-hour download link to the plain
+# dump, is never printed. Its only credentials are the CI token and the ping URL, in the `production` environment, which
+# is limited to main. Each is given only to the steps that use it, so no package's install script sees them.
 
 on:
   schedule:
@@ -28,9 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -42,6 +41,7 @@ jobs:
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
       - name: Export and encrypt both databases
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           AGE_PUBLIC_KEY: ${{ vars.AGE_PUBLIC_KEY }}
           PLAIN: ${{ runner.temp }}/plain
           OUT: ${{ runner.temp }}/backup
@@ -71,8 +71,12 @@ jobs:
           compression-level: 0
           if-no-files-found: error
       - name: Ping Healthchecks
+        env:
+          HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
         run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_BACKUP_URL"
       # A failed run alerts now, not a day after the missed ping.
       - name: Report the failure to Healthchecks
         if: failure()
+        env:
+          HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
         run: curl -fsS -m 10 --retry 5 -o /dev/null "$HEALTHCHECK_BACKUP_URL/fail"
