@@ -47,9 +47,8 @@ function requireVar(value: string | undefined, name: string): string {
  * databases and bucket. Each counts only its own Worker's errors (crashes and CPU over the limit). GraphQL counts a
  * little more than Cloudflare bills, so it errs towards warning early.
  *
- * UNVERIFIED: the dataset, field and filter names below are from Cloudflare's documentation and have not been run
- * against the real API. Ticket 71 step A2 checks that Workers Free serves them and fixes this reader to match
- * (`docs/operations.md`); if Free serves none, the watchdog reports the database sizes alone.
+ * Checked against the real API on Workers Free in ticket 71 step A2 (`docs/operations.md`): all three datasets are
+ * served, with these fields and filters, for up to 32 days at a time and 90 days back.
  */
 export function graphqlUsageReader(env: Env): UsageReader {
   return {
