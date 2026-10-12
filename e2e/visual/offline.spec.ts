@@ -113,7 +113,11 @@ test.describe('a new version', () => {
     await expect(page.getByTestId('update-ready')).toContainText('Update ready')
     // Not forced: the old version is still the one in control until Reload is pressed.
     expect(await cacheNames(page)).toHaveLength(2)
+    // Reload hands over to the new worker, and the page reloads itself once it takes control. The old page's canvas
+    // is still visible until then, so wait for the reload itself before reading the caches.
+    const reloaded = page.waitForEvent('load')
     await page.getByTestId('toast-action').click()
+    await reloaded
     await expect(page.getByTestId('app-canvas')).toBeVisible()
     await expect.poll(() => cacheNames(page)).toEqual([expect.stringContaining('bd-beads-next-')])
   })
