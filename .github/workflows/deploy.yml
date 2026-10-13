@@ -109,3 +109,29 @@ jobs:
           done
           echo "::error::$URL/api/health didn't answer ok with version $GITHUB_SHA; last answer: $body"
           exit 1
+      # Ticket 400: the same check on the custom domain, so a broken route or certificate fails the deploy. Dev's
+      # sign-in application has no health bypass (ticket 395), so it is asked with the service token; until that token
+      # exists the dev check is skipped with a warning rather than failed.
+      - name: Smoke check /api/health on the custom domain
+        env:
+          URL: ${{ github.event_name == 'push' && 'https://dev.openbeads.com' || 'https://openbeads.com' }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          headers=()
+          if [ -n "$CF_ACCESS_CLIENT_ID" ]; then
+            headers=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          elif [ "$WORKER" = dev ]; then
+            echo "::warning::No CF_ACCESS_CLIENT_ID (ticket 395): not checking $URL/api/health"
+            exit 0
+          fi
+          for attempt in $(seq 1 24); do
+            body=$(curl -s --max-time 10 "${headers[@]}" "$URL/api/health" || true)
+            if [ "$(jq -r '.ok' <<<"$body" 2>/dev/null)" = true ] && [ "$(jq -r '.version' <<<"$body")" = "$GITHUB_SHA" ]; then
+              echo "$URL/api/health: $body"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::$URL/api/health didn't answer ok with version $GITHUB_SHA; last answer: $body"
+          exit 1

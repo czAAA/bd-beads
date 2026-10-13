@@ -374,18 +374,10 @@ phase_h3() {
   stage "Google (H3b): the OAuth client"
   open_url "https://console.cloud.google.com/auth/clients/create"
   step "Application type: Web application. Name: bd-beads."
-  say "Authorized redirect URIs, all four:"
-  say "  https://$WORKER_HOST_DEV$GOOGLE_CALLBACK_PATH"
-  say "  https://$WORKER_HOST_PRODUCTION$GOOGLE_CALLBACK_PATH"
+  say "Authorized redirect URIs, for now the two localhost ones. Google refuses workers.dev (it's on the Public Suffix"
+  say "List); phase h6 adds the custom domains' two:"
   say "  http://localhost:5173$GOOGLE_CALLBACK_PATH"
   say "  http://localhost:8787$GOOGLE_CALLBACK_PATH"
-  note "Google usually refuses workers.dev (it's on the Public Suffix List): then delete those two and keep localhost."
-  if confirm "Did the console accept the workers.dev addresses?"; then
-    write_env GOOGLE_WORKERS_DEV_REDIRECT accepted
-  else
-    write_env GOOGLE_WORKERS_DEV_REDIRECT rejected
-    warn "Keep only the two localhost addresses. Ticket 390 decides whether to buy the domain early."
-  fi
   ask GOOGLE_CLIENT_ID "Paste the client id (not secret):"
   write_env GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
   step "Copy the client secret from the same page; wrangler asks for it next, twice (dev, then production)."
@@ -395,6 +387,7 @@ phase_h3() {
   open_url "https://dash.cloudflare.com/?to=/:account/turnstile"
   step "Add widget, name bd-beads. Hostnames, typed one by one with Enter after each (the list shows only your domains):"
   step "  $WORKER_HOST_DEV, $WORKER_HOST_PRODUCTION and localhost (skip localhost if refused: tests use dummy keys)."
+  note "Phase h6 adds the custom domains' two hostnames."
   step "Widget mode: Managed. Pre-clearance: no."
   ask TURNSTILE_SITE_KEY "Paste the site key (not secret):"
   write_env TURNSTILE_SITE_KEY "$TURNSTILE_SITE_KEY"
@@ -474,13 +467,60 @@ phase_h5() {
   say "Tell the agent: \"H5 done\"."
 }
 
+phase_h6() {
+  need_gh
+  stage "The domain's two hostnames (ticket 400)"
+  say "Production answers at the domain's apex and dev at dev.<domain>; the workers.dev addresses stay on beside them."
+  ask_host DOMAIN_PRODUCTION "Production host (the apex you bought, e.g. openbeads.com):"
+  ask_host DOMAIN_DEV "Dev host (dev.<the apex>):"
+  write_env DOMAIN_PRODUCTION "$DOMAIN_PRODUCTION"
+  write_env DOMAIN_DEV "$DOMAIN_DEV"
+  say "The agent puts both in wrangler.jsonc (routes, and PUBLIC_ORIGIN) and deploys; wrangler makes the DNS records."
+  confirm "Is the deploy with the routes done?" || { warn "Ask the agent to deploy first, then re-run this phase."; exit 1; }
+
+  stage "Cloudflare: auto-renew, and the www redirect"
+  open_url "https://dash.cloudflare.com/?to=/:account/domains/registrations"
+  step "The domain's auto-renew is on. Write its renewal price in the ticket."
+  open_url "https://dash.cloudflare.com/?to=/:account/:zone/rules/redirect-rules"
+  step "A redirect from www.$DOMAIN_PRODUCTION (any path) to https://$DOMAIN_PRODUCTION, status 301."
+  note "The www record needs an AAAA 100:: record, proxied, to be reached; add it under DNS if the rule alone does nothing."
+
+  stage "Access: a sign-in application for each hostname"
+  open_url "https://one.dash.cloudflare.com/"
+  step "Access controls → Applications → Add an application → Self-hosted, for $DOMAIN_PRODUCTION and $DOMAIN_DEV."
+  step "Each: policy Allow, include Emails: yours, then each tester's; Authentication: One-time PIN only."
+  step "Production's only: a second application, same host, Path api/health, policy Bypass, include Everyone."
+  step "Dev's has no health bypass (ticket 395)."
+  ask ACCESS_AUD_DEV "Dev's application: its Audience tag (Overview tab; not secret, it differs per application):"
+  write_env ACCESS_AUD_DEV "$ACCESS_AUD_DEV"
+  step "In a private window, both hostnames show the Access sign-in."
+
+  stage "Google: the domain, and the two callbacks"
+  open_url "https://console.cloud.google.com/auth/branding"
+  step "Authorized domains: add $DOMAIN_PRODUCTION (one covers dev.). Save. The consent screen stays in Testing."
+  open_url "https://console.cloud.google.com/auth/clients"
+  step "Open the bd-beads client. Authorized JavaScript origins: https://$DOMAIN_PRODUCTION and https://$DOMAIN_DEV."
+  say "Authorized redirect URIs, beside the two localhost ones:"
+  say "  https://$DOMAIN_PRODUCTION$GOOGLE_CALLBACK_PATH"
+  say "  https://$DOMAIN_DEV$GOOGLE_CALLBACK_PATH"
+  step "Save. Each tester is a test user (Audience → Test users)."
+  pause "Saved? Press Enter."
+
+  stage "Turnstile"
+  open_url "https://dash.cloudflare.com/?to=/:account/turnstile"
+  step "The bd-beads widget's hostnames: add $DOMAIN_PRODUCTION and $DOMAIN_DEV."
+  note "The Google client secret and the Turnstile secret are already the Workers' secrets (phase h3); nothing to paste."
+  say "Tell the agent: \"H6 done\" and give it the dev audience tag from $ENV_FILE."
+}
+
 case "${1:-}" in
   h1) TOTAL_STAGES=6; banner "Backend H1: the Cloudflare account"; phase_h1 ;;
   h2) TOTAL_STAGES=4; banner "Backend H2: tokens"; phase_h2 ;;
   h3) TOTAL_STAGES=8; banner "Backend H3: sign-in, bots and alerts"; phase_h3 ;;
   h4) TOTAL_STAGES=1; banner "Backend H4: the backup's key"; phase_h4 ;;
   h5) TOTAL_STAGES=4; banner "Backend H5: the old deploy's credentials, and billing"; phase_h5 ;;
-  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5   (ticket 71's human steps, in order)"; exit 2 ;;
+  h6) TOTAL_STAGES=5; banner "Backend H6: the domain on both Workers, and Google sign-in"; phase_h6 ;;
+  *) echo "Usage: bash scripts/backend-wizard.sh h1|h2|h3|h4|h5|h6   (ticket 71's human steps, in order)"; exit 2 ;;
 esac
 
 finish

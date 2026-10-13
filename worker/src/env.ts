@@ -16,6 +16,12 @@ export interface Env {
 
   /** Which Worker this is, so every health answer and alert names it. */
   WORKER_NAME: 'dev' | 'production'
+  /**
+   * The origin people use this Worker on (`https://dev.openbeads.com`, `https://openbeads.com`; ticket 400). Google's
+   * callback and the allowed origins come from this, never from the request's host: `workers.dev` stays on beside it
+   * until the release, and Google lists no such redirect URI.
+   */
+  PUBLIC_ORIGIN?: string
   /** The git commit of the deploy, passed by the deploy workflow with `--var VERSION:<sha>`. */
   VERSION?: string
   /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (features.ts). */
