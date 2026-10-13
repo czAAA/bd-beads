@@ -124,7 +124,7 @@ export const en: Translations = {
     keepNote: {
       title: 'Keep Projects on this device?',
       message:
-        'Your browser may ask to let this app keep its data. Tick “Remember this decision” and choose Allow, so your Projects are kept even when the device is short on space. If you decline, the browser can clear Projects when space runs low, so use Save often and keep the Project file safe.',
+        'Your browser may ask to let this app keep its data. Tick “Remember this decision” and choose Allow, so your Projects are kept even when the device is short on space. If you decline, the browser can clear Projects when space runs low, so always save important Projects with Save, which gives a Project file, and keep that file safe.',
       confirmButton: 'Keep Projects',
       cancelButton: 'Skip',
     },

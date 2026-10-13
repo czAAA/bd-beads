@@ -70,9 +70,13 @@ describe('useProjectLibrary', () => {
     library.addProject(makeProject())
     expect(onSaved).toHaveBeenCalledOnce()
 
+    library.removeProject(library.projects.value[0]!.id)
+    library.addProject(makeProject())
+    expect(onSaved).toHaveBeenCalledTimes(2)
+
     refuseStorageWrites()
     library.addProject(makeProject())
-    expect(onSaved).toHaveBeenCalledOnce()
+    expect(onSaved).toHaveBeenCalledTimes(2)
   })
 
   it('persists a replaced Project straight away by default', () => {
