@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
-import CustomColorPicker from '../palette/CustomColorPicker.vue'
-import PickColorButton from '../palette/PickColorButton.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
+import EditControls, { type EditControlId } from './EditControls.vue'
 import IconButton from '../ui/IconButton.vue'
-import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import MirrorControls from './MirrorControls.vue'
-import PalettePicker from '../palette/PalettePicker.vue'
+import ToolColorControls from './ToolColorControls.vue'
+import ToolTiles from './ToolTiles.vue'
 import FrameControls from '../project/FrameControls.vue'
 import ToolGroup from './ToolGroup.vue'
-import { FRAME_HOTKEY, TOOL_HOTKEYS } from './toolIcons'
+import { FRAME_HOTKEY } from './toolIcons'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { MIRROR_ENABLED } from '../../features'
 import { useI18n } from '../../i18n/useI18n'
@@ -75,23 +74,12 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-/** Custom color is the active paint color exactly when neither a Palette swatch nor an Image color is (App.vue keeps the three mutually exclusive). */
-const customColorSelected = computed(
-  () => !props.selectedColorId && !props.selectedImageColor && !!props.customColor,
-)
-
-/** The Tools group's icon tiles (ToolTabs card): each is a registry action, so its name, Tooltip and key come from there. */
-const tools: { id: Tool; action: ReturnType<typeof controlAction>; hotkey?: string }[] = (['paint', 'fill', 'select', 'erase', 'hand'] as const).map((id) => ({
-  id,
-  action: controlAction(`tool-${id}`),
-  hotkey: TOOL_HOTKEYS[id],
-}))
-/** An Edit button's press is the event of the same name. */
-function onEdit(id: 'undo' | 'redo' | 'rotate' | 'copy') {
+/** An Edit button's press is the event of the same name (EditControls card). */
+function onEdit(id: EditControlId) {
   if (id === 'undo') emit('undo')
   else if (id === 'redo') emit('redo')
   else if (id === 'rotate') emit('rotate')
-  else emit('copy')
+  else if (id === 'copy') emit('copy')
 }
 const setFrameAction = controlAction('set-frame')
 /** The input mode toggle's face is the current mode. */
@@ -101,10 +89,6 @@ const toolActions = {
   removeFrame: controlAction('remove-frame'),
   removeLine: controlAction('remove-line'),
   clear: controlAction('clear'),
-  undo: controlAction('undo'),
-  redo: controlAction('redo'),
-  rotate: controlAction('rotate'),
-  copy: controlAction('copy'),
 }
 
 /** What the actions' enabled states and disabled reasons read (ADR 0035). */
@@ -186,18 +170,12 @@ const frameSummary = computed(() => {
   <div class="toolbox" data-testid="toolbox">
     <ToolGroup ref="toolsGroupRef" :title="t.toolbox.groups.tools" data-testid="tool-group-tools">
       <div ref="tabsEl" class="tool-buttons" @keydown="tabsRoving.onKeydown">
-        <IconButton
-          v-for="tool in tools"
-          :key="tool.id"
-          variant="tool"
-          :action="tool.action"
-          :hotkey="tool.hotkey"
-          show-hotkey
-          :selected="activeTool === tool.id && !settingFrame"
-          :data-testid="`tool-${tool.id}`"
-          :data-tour="`tool-${tool.id}`"
-          :tabindex="tabsRoving.tabIndexFor(activeTool === tool.id && !settingFrame)"
-          @click="emit('select-tool', tool.id)"
+        <ToolTiles
+          :active-tool="activeTool"
+          :setting-frame="!!settingFrame"
+          testid-prefix="tool"
+          :tab-index-for="tabsRoving.tabIndexFor"
+          @select="(tool) => emit('select-tool', tool)"
         />
         <!-- The Frame tool (ticket 258): Set Frame is a mode, not a Tool, so it lights up from `settingFrame`; choosing any tool ends it. -->
         <IconButton
@@ -236,30 +214,27 @@ const frameSummary = computed(() => {
     </ToolGroup>
 
     <ToolGroup ref="colorsGroupRef" :title="t.toolbox.groups.colors" data-testid="tool-group-colors">
-      <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
-      <div class="toolbox__color-buttons">
-        <CustomColorPicker
-          :color="customColor"
-          :selected="customColorSelected"
-          @select="(hex) => emit('select-custom-color', hex)"
-        />
-        <PickColorButton />
-        <!--
-          The open Project's Image colors (ADR 0011), alongside the Palette rather than instead of it: a converted
-          Project is touched up with its own colors from this button's popover; any other Project has none, and the
-          button says why.
-        -->
-        <ImageColorsButton
-          :colors="project.imageColors"
-          :selected-color="selectedImageColor"
-          @select="(hex) => emit('select-image-color', hex)"
-        />
-      </div>
+      <!-- The open Project's Image colors (ADR 0011), alongside the Palette rather than instead of it: a converted Project is touched up with its own colors from this button's popover; any other Project has none, and the button says why. -->
+      <ToolColorControls
+        :selected-color-id="selectedColorId"
+        :custom-color="customColor"
+        :selected-image-color="selectedImageColor"
+        :image-colors="project.imageColors"
+        @select-color="(colorId) => emit('select-color', colorId)"
+        @select-custom-color="(hex) => emit('select-custom-color', hex)"
+        @select-image-color="(hex) => emit('select-image-color', hex)"
+      />
     </ToolGroup>
 
     <ToolGroup ref="editGroupRef" :title="t.toolbox.groups.edit" data-testid="tool-group-edit">
       <div class="toolbox__edit">
-        <IconButton v-for="id in (['undo', 'redo', 'rotate', 'copy'] as const)" :key="id" variant="toolbox" size="lg" :icon-size="17" :action="toolActions[id]" :deps="deps" :data-testid="`${id}-button`" :data-tour="id === 'undo' || id === 'copy' ? id : undefined" @click="onEdit(id)" />
+        <EditControls
+          :ids="['undo', 'redo', 'rotate', 'copy']"
+          :deps="deps"
+          :icon-size="17"
+          :test-id-for="(id: EditControlId) => `${id}-button`"
+          @activate="onEdit"
+        />
       </div>
     </ToolGroup>
 
@@ -340,14 +315,6 @@ const frameSummary = computed(() => {
 
 /* Remove Frame sits 12px below the tiles (ToolTabs card). */
 .toolbox__links--frame {
-  margin-top: var(--space-12);
-}
-
-/* Side by side while both labels fit whole, one above the other when they don't (ticket 246). */
-.toolbox__color-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
   margin-top: var(--space-12);
 }
 

@@ -39,3 +39,27 @@ describe('pick controls and the sheet around them (ticket 397)', () => {
     expect(wrapper.emitted('select')).toEqual([['erase']])
   })
 })
+
+describe('ToolTiles in the Toolbox (ticket 384: the Toolbox and the phone Tool sheet share these tiles)', () => {
+  it('uses a caller-chosen testid prefix in place of the sheet default', () => {
+    const wrapper = mount(ToolTiles, { props: { activeTool: 'paint', testidPrefix: 'tool' } })
+    expect(wrapper.find('[data-testid="tool-paint"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sheet-tool-paint"]').exists()).toBe(false)
+  })
+
+  it('lights no tile while the Frame is being set (ticket 258)', () => {
+    const wrapper = mount(ToolTiles, { props: { activeTool: 'paint', settingFrame: true, testidPrefix: 'tool' } })
+    expect(wrapper.get('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('sets tabindex from a given roving-focus function, or leaves it to the browser when none is given', () => {
+    const withRoving = mount(ToolTiles, {
+      props: { activeTool: 'paint', testidPrefix: 'tool', tabIndexFor: (selected: boolean) => (selected ? 0 : -1) },
+    })
+    expect(withRoving.get('[data-testid="tool-paint"]').attributes('tabindex')).toBe('0')
+    expect(withRoving.get('[data-testid="tool-fill"]').attributes('tabindex')).toBe('-1')
+
+    const withoutRoving = mount(ToolTiles, { props: { activeTool: 'paint', testidPrefix: 'tool' } })
+    expect(withoutRoving.get('[data-testid="tool-fill"]').attributes('tabindex')).toBeUndefined()
+  })
+})
