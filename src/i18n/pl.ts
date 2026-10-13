@@ -126,7 +126,7 @@ export const pl: Translations = {
     keepNote: {
       title: 'Zachować projekty na tym urządzeniu?',
       message:
-        'Przeglądarka może zapytać, czy pozwolić aplikacji przechowywać dane. Zaznacz „Zapamiętaj decyzję” i wybierz Zezwól, aby projekty zostały zachowane, nawet gdy na urządzeniu brakuje miejsca. Jeśli odmówisz, przeglądarka może usunąć projekty, gdy zabraknie miejsca, więc zapisuj często i dbaj o plik projektu.',
+        'Przeglądarka może zapytać, czy pozwolić aplikacji przechowywać dane. Zaznacz „Zapamiętaj decyzję” i wybierz Zezwól, aby projekty zostały zachowane, nawet gdy na urządzeniu brakuje miejsca. Jeśli odmówisz, przeglądarka może usunąć projekty, gdy zabraknie miejsca, więc ważne projekty zawsze zapisuj przyciskiem Zapisz, który daje plik projektu, i dbaj o ten plik.',
       confirmButton: 'Zachowaj projekty',
       cancelButton: 'Pomiń',
     },

@@ -60,16 +60,18 @@ function wireAppShell(services: Services) {
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
   useThemePick(services.devicePreferences)
 
+  /** Asking the browser to keep the library, at a device's first save (ticket 399). */
+  const storageAsk = useStorageAskFlow({
+    persistentStorage: services.persistentStorage,
+    devicePreferences: services.devicePreferences,
+  })
+
   /**
    * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
    * one of these mutators, and nothing here touches storage directly. replaceProject is the single commit point for a
    * change to the open Project, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
    * save to be deferred per cell and writing once when the stroke ends (see usePaintStroke).
    */
-  const storageAsk = useStorageAskFlow({
-    persistentStorage: services.persistentStorage,
-    devicePreferences: services.devicePreferences,
-  })
   const {
     projects,
     activeProjectId,

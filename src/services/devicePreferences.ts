@@ -77,8 +77,8 @@ export const PREFERENCES = {
     write: (seen) => (seen ? 'yes' : null),
   }),
   /** Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never again. */
-  storageAsked: preference<boolean>({
-    key: 'bd-beads:storage-asked',
+  storageNoteSeen: preference<boolean>({
+    key: 'bd-beads:storage-note-seen',
     fallback: false,
     parse: (raw) => raw === 'yes',
     write: (asked) => (asked ? 'yes' : null),

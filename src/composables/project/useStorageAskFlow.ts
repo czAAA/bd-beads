@@ -18,7 +18,7 @@ export function useStorageAskFlow(deps: StorageAskFlowDeps) {
   /** Whether the note before the browser's prompt is open. */
   const storageNoteOpen = ref(false)
 
-  const asked = deps.devicePreferences.get('storageAsked')
+  const asked = deps.devicePreferences.get('storageNoteSeen')
   /** Whether a check is under way or has found nothing to ask, so later saves don't repeat it. */
   let settled = false
 
