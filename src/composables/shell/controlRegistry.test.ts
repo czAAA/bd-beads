@@ -69,4 +69,10 @@ describe('the control registry', () => {
       expect(controlAction(id).chords).toEqual([])
     }
   })
+
+  it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
+    expect(actionKey(controlAction('zoom-in'))).toBe('Ctrl/Cmd+')
+    expect(actionKey(controlAction('zoom-out'))).toBe('Ctrl/Cmd−')
+    expect(actionKey(controlAction('zoom-fit'))).toBe('Ctrl/Cmd+0')
+  })
 })
