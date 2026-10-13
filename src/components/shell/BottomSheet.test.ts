@@ -24,7 +24,7 @@ describe('BottomSheet', () => {
     outside.remove()
   })
 
-  it('the modal variant has a scrim, and a press outside it does not close it', async () => {
+  it('the modal variant has a scrim and closes on a press outside it too (ticket 402)', async () => {
     const wrapper = mountSheet(true)
     expect(wrapper.find('[data-testid="sheet-scrim"]').exists()).toBe(true)
 
@@ -32,13 +32,66 @@ describe('BottomSheet', () => {
     document.body.appendChild(outside)
     outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     await wrapper.vm.$nextTick()
-    expect(wrapper.emitted('close')).toBeUndefined()
-
-    // scrim has pointer-events: none, so it doesn't close the modal
-    // verify close only via the close button
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     expect(wrapper.emitted('close')).toHaveLength(1)
     outside.remove()
+  })
+
+  it('a press outside only collapses: neither the press nor its click reaches what is under it (ticket 402)', async () => {
+    const wrapper = mountSheet()
+    const outside = document.createElement('button')
+    document.body.appendChild(outside)
+    const seen: string[] = []
+    outside.addEventListener('pointerdown', () => seen.push('pointerdown'))
+    outside.addEventListener('click', () => seen.push('click'))
+
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }))
+    wrapper.unmount()
+    outside.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))
+    expect(seen).toEqual([])
+
+    // The next gesture is untouched.
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    outside.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    expect(seen).toEqual(['pointerdown', 'click'])
+    outside.remove()
+  })
+
+  it('a press inside another dialog (a stacked sheet) does not close the one below, and only the top sheet closes on an outside press (ticket 402)', async () => {
+    const outer = mountSheet(true)
+    const inner = mount(BottomSheet, { attachTo: document.body, props: { title: 'Saved Projects' }, slots: { default: '<button type="button">Open</button>' } })
+    await inner.vm.$nextTick()
+
+    inner.get('button').element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(outer.emitted('close')).toBeUndefined()
+    expect(inner.emitted('close')).toBeUndefined()
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    expect(inner.emitted('close')).toHaveLength(1)
+    expect(outer.emitted('close')).toBeUndefined()
+    inner.unmount()
+    outer.unmount()
+  })
+
+  it('the handle closes the sheet on a tap, and on a drag down past the threshold; a short drag springs back (ticket 402)', async () => {
+    const wrapper = mountSheet()
+    const handle = wrapper.get('[data-testid="sheet-handle"]')
+    const fire = (type: string, clientY: number) => handle.element.dispatchEvent(new PointerEvent(type, { bubbles: true, clientY, pointerId: 1 }))
+
+    fire('pointerdown', 100)
+    fire('pointerup', 100)
+    expect(wrapper.emitted('close')).toHaveLength(1)
+
+    fire('pointerdown', 100)
+    fire('pointermove', 130)
+    expect((wrapper.get('[data-testid="bottom-sheet"]').element as HTMLElement).style.transform).toBe('translateY(30px)')
+    fire('pointerup', 130)
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect((wrapper.get('[data-testid="bottom-sheet"]').element as HTMLElement).style.transform).toBe('')
+
+    fire('pointerdown', 100)
+    fire('pointermove', 220)
+    fire('pointerup', 220)
+    expect(wrapper.emitted('close')).toHaveLength(2)
   })
 
   it('closes on the close button and on Escape', async () => {

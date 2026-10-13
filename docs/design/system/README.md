@@ -121,7 +121,8 @@ In `index.html`:
 
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system (ADR 0030); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
-- **Repo changes after v18** (one line each: date, ticket, what changed): none yet since the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398. The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
+- **Repo changes after v18** (one line each: date, ticket, what changed) (the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398). The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
+  - Repo, 2026-10-13, ticket 402: the ToolSheet card's sheets, the modal one too, close on any press outside them, and that press only closes (nothing under it acts); the grab handle closes a sheet on a tap or a drag down. No token change.
 
 - **v18, Frame margin:** the Frame keeps a three-bead margin where nothing can be drawn, and beads already there move outside it. Drawn flat: no fill, a gap in the grid dots at rest, a 1px dashed `line-strong` outline only while the Frame is being set or a press is refused. New Message "Frame set. 1 piece was in the margin and moved outside it." (Russian proposed, not reviewed). No token changed.
 

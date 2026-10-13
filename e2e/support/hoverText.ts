@@ -192,8 +192,11 @@ export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<H
 
   // Long press, as on a touch screen: all of them at once, since each bubble is measured where it opens.
   await page.evaluate(() => {
+    const sheet = document.querySelector('.bottom-sheet')
     for (const wrapper of document.querySelectorAll('[data-hover-probe]')) {
-      // At the Tooltip itself and no further (not bubbling): a press the page at large sees would close the sheet or menu a trigger is under.
+      // Under an open sheet a press outside it closes it (ticket 402, in the capture phase, so not bubbling doesn't hide it): only what is in the sheet can be long-pressed.
+      if (sheet && !sheet.contains(wrapper)) continue
+      // At the Tooltip itself and no further (not bubbling): a press the page at large sees would close the menu a trigger is under.
       wrapper.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: false, isPrimary: true }))
     }
   })
