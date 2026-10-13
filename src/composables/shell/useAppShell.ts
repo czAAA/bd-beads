@@ -467,6 +467,8 @@ function wireAppShell(services: Services) {
     locale: currentLocale,
     centreOn,
     sides: () => ({ horizontal: frameWidthSide.value, vertical: frameHeightSide.value }),
+    // Not through `edit`: the Project is no longer the open one, so there is no Undo step to take (its history is reset
+    // by the switch) and no Message to show; changeFrame still clears the margin, as every Frame change does.
     commitIn: (id, frame) => {
       const project = projects.value.find((candidate) => candidate.id === id)
       const result = project && changeFrame(project, { set: frame })

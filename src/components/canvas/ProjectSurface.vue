@@ -56,6 +56,8 @@ const props = defineProps<{
   showRulers?: boolean
   /** Whether the Frame is being set (Set Frame): a drag draws, moves or resizes it instead of drawing beads, and its handles show. */
   settingFrame?: boolean
+  /** Whether the Frame shown is one the size steppers have set and nothing has committed: its margin outline shows, as mid-drag (ticket 410). */
+  framePending?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
   frameTooltip?: string
   /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
@@ -489,8 +491,8 @@ watch(
 )
 
 /**
- * The Frame margin's outline (ticket 276, Frame card): shown while a Frame gesture is going on and for 1s after a press
- * in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
+ * The Frame margin's outline (ticket 276, Frame card): shown while a Frame gesture is going on or a size is pending
+ * (ticket 410) and for 1s after a press in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
  * with reduced motion it is shown and hidden at once.
  */
 const MARGIN_FADE_MS = 120
@@ -499,7 +501,9 @@ const refusedPress = ref(false)
 let refusedTimer: ReturnType<typeof setTimeout> | undefined
 let fadeFrame: number | undefined
 
-const marginOutlineWanted = computed(() => props.project.frame !== undefined && (framing.value || refusedPress.value))
+const marginOutlineWanted = computed(
+  () => props.project.frame !== undefined && (framing.value || refusedPress.value || props.framePending === true),
+)
 
 function reducedMotion(): boolean {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
