@@ -19,6 +19,8 @@ export interface UndoHistoryDeps {
   mirrorAxisCounts: () => MirrorAxisCounts
   /** Edit's restore: writes the snapshot back and runs the session resets, without Edit's guards (ADR 0036). */
   restore: (snapshot: UndoEntry) => void
+  /** Runs before an Undo or Redo step: drops the Frame the size steppers have pending, which nothing baked (ticket 410). */
+  beforeStep?: () => void
 }
 
 /**
@@ -49,6 +51,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
   }
 
   function onUndo() {
+    deps.beforeStep?.()
     const project = deps.currentProject()
     const step = project && undoStep(history.value, snapshotOf(project, deps.mirrorAxisCounts()))
     if (step) {
@@ -58,6 +61,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
 
   /** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
   function onRedo() {
+    deps.beforeStep?.()
     const project = deps.currentProject()
     const step = project && redoStep(history.value, snapshotOf(project, deps.mirrorAxisCounts()))
     if (step) {

@@ -7,6 +7,7 @@ import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
+import { changeFrame } from '../../domain/changeFrame'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { gridAxisOfDirection } from '../../domain/mirror'
 import { useAppShortcutTable } from './useAppShortcutTable'
@@ -166,6 +167,7 @@ function wireAppShell(services: Services) {
     currentProject,
     mirrorAxisCounts: () => mirrorAxisCounts.value,
     restore: (snapshot) => editing.restore(snapshot),
+    beforeStep: () => frameFlow.dropPending(),
   })
 
   /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Mirror and Selection state declared below, through lazy arrows only called at runtime. */
@@ -180,6 +182,7 @@ function wireAppShell(services: Services) {
       clearSelectionAndHover()
     },
     flushPendingSave,
+    beforeEdit: () => frameFlow.commitPending(),
   })
   const { edit } = editing
 
@@ -449,6 +452,10 @@ function wireAppShell(services: Services) {
   /** Delete all and its confirmation (tickets 42, 198). */
   const deleteAll = useDeleteAllFlow({ currentProject, edit })
 
+  /** Which side each of Frame's size steppers grows from, kept on this device (ticket 410). */
+  const frameWidthSide = services.devicePreferences.get('frameWidthSide')
+  const frameHeightSide = services.devicePreferences.get('frameHeightSide')
+
   /** Set Frame and the Toolbox's Frame row: drawing, moving and resizing the Frame, Fit to drawing and Remove Frame (ticket 233). */
   const frameFlow = useFrameFlow({
     currentProject,
@@ -459,6 +466,14 @@ function wireAppShell(services: Services) {
     messages,
     locale: currentLocale,
     centreOn,
+    sides: () => ({ horizontal: frameWidthSide.value, vertical: frameHeightSide.value }),
+    // Not through `edit`: the Project is no longer the open one, so there is no Undo step to take (its history is reset
+    // by the switch) and no Message to show; changeFrame still clears the margin, as every Frame change does.
+    commitIn: (id, frame) => {
+      const project = projects.value.find((candidate) => candidate.id === id)
+      const result = project && changeFrame(project, { set: frame })
+      if (result?.kind === 'changed') replaceProject(result.project)
+    },
   })
   // Switching Set Frame on or off leaves no keyboard cursor on a bead nobody moved to (ticket 354).
   watch(frameFlow.settingFrame, hideCursor, { flush: 'sync' })
@@ -506,7 +521,7 @@ function wireAppShell(services: Services) {
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentProject, replaceProject })
+  const rowOps = useRowOps({ currentProject, replaceProject, settleFrame: frameFlow.commitPending })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
   useSaveOnPageHide(flushPendingSave)
@@ -530,6 +545,29 @@ function wireAppShell(services: Services) {
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch })
+  // Closing the Frame sheet, by any way it can close, commits the size the steppers left pending (ticket 410).
+  watch(
+    overlays.openPhoneSheet,
+    (sheet, before) => {
+      if (before === 'frame' && sheet !== 'frame') frameFlow.commitPending()
+    },
+    { flush: 'sync' },
+  )
+
+  /** A command that writes or exports the Project reads its Frame, so the size the steppers left pending is committed first (ticket 410). */
+  function settlingFrame<A extends unknown[], R>(command: (...args: A) => R): (...args: A) => R {
+    return (...args) => {
+      frameFlow.commitPending()
+      return command(...args)
+    }
+  }
+  const saveSettled = settlingFrame(onSave)
+  const exportSettled = {
+    onExportProjectFile: settlingFrame(exportFlow.onExportProjectFile),
+    onExportLibraryFile: settlingFrame(exportFlow.onExportLibraryFile),
+    onExportPng: settlingFrame(exportFlow.onExportPng),
+    onExportPdf: settlingFrame(exportFlow.onExportPdf),
+  }
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
@@ -619,7 +657,7 @@ function wireAppShell(services: Services) {
     finishFrame: frameFlow.done,
     onCopy,
     pasteAtPointer,
-    onSave,
+    onSave: saveSettled,
     onRotate: rotateFlow.onRotate,
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
@@ -768,6 +806,8 @@ function wireAppShell(services: Services) {
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
     frameDraft: frameFlow.draft,
+    pendingFrame: frameFlow.pendingFrame,
+    onCloseFrameControls: frameFlow.commitPending,
     frameLocked: frameFlow.frameLocked,
     onStartSetFrame: frameFlow.start,
     onDoneSetFrame: frameFlow.done,
@@ -784,7 +824,8 @@ function wireAppShell(services: Services) {
     ...importSwitch,
     ...storageAsk,
     ...exportFlow,
-    onSave,
+    ...exportSettled,
+    onSave: saveSettled,
     ...overlays,
     shortcutsHelpOpen,
     // The decoder Convert image reads a picked picture with, for the components that take a file

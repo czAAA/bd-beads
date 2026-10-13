@@ -98,6 +98,7 @@ const {
   onFitFrame,
   onRemoveFrame,
   frameDraft,
+  pendingFrame,
   onFramePress,
   onFrameDrag,
   onFrameRelease,
@@ -233,6 +234,7 @@ function techniqueWord(technique: Technique): string {
               v-else-if="activeProject"
               :project="shownProject!"
               :setting-frame="settingFrame"
+              :frame-pending="pendingFrame !== undefined"
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
