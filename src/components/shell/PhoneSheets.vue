@@ -7,20 +7,18 @@ import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
 import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
-import CustomColorPicker from '../palette/CustomColorPicker.vue'
-import PickColorButton from '../palette/PickColorButton.vue'
+import EditControls, { type EditControlId } from '../tools/EditControls.vue'
 import IconButton from '../ui/IconButton.vue'
-import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import ToolTiles from '../tools/ToolTiles.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
-import PalettePicker from '../palette/PalettePicker.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ProjectList from '../project/ProjectList.vue'
 import SaveBox from '../export/SaveBox.vue'
 import FrameControls from '../project/FrameControls.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import ThemeToggle from './ThemeToggle.vue'
+import ToolColorControls from '../tools/ToolColorControls.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
@@ -91,12 +89,21 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 const sheetActions = {
   removeLine: controlAction('remove-line'),
   clear: controlAction('clear'),
-  rotate: controlAction('rotate'),
-  copy: controlAction('copy'),
-  paste: controlAction('paste'),
   newProject: controlAction('new-project'),
   savedProjects: controlAction('saved-projects'),
   changeMakerName: controlAction('change-maker-name'),
+}
+
+/** The Frame sheet's Edit row (EditControls card): Rotate and Copy act at once; Paste only closes the sheet, so the Projection it already shows on the canvas is what the person sees next. */
+function onFrameSheetEdit(id: EditControlId) {
+  if (id === 'rotate') onRotate()
+  else if (id === 'copy') onCopy()
+  else openPhoneSheet.value = null
+}
+
+/** The sheet has never given its Copy button a testid of its own (ticket 384 keeps that as it was). */
+function frameSheetEditTestId(id: EditControlId): string | undefined {
+  return id === 'copy' ? undefined : `sheet-${id}`
 }
 
 /** What the actions' enabled states and disabled reasons read (ADR 0035). */
@@ -112,7 +119,9 @@ const deps = computed(() =>
 
 <template>
   <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
-    <ToolTiles :active-tool="activeTool" @select="onSelectTool" />
+    <div class="phone-sheet__tiles">
+      <ToolTiles :active-tool="activeTool" @select="onSelectTool" />
+    </div>
     <div class="phone-sheet__links">
       <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
@@ -124,16 +133,15 @@ const deps = computed(() =>
   </BottomSheet>
 
   <BottomSheet v-if="openPhoneSheet === 'color' && activeProject" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
-    <PalettePicker :selected-color-id="selectedColorId" @select="onSelectColor" />
-    <div class="phone-sheet__color-buttons">
-      <CustomColorPicker
-        :color="customColor"
-        :selected="!selectedColorId && !selectedImageColor && !!customColor"
-        @select="onSelectCustomColor"
-      />
-      <PickColorButton />
-      <ImageColorsButton :colors="activeProject.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
-    </div>
+    <ToolColorControls
+      :selected-color-id="selectedColorId"
+      :custom-color="customColor"
+      :selected-image-color="selectedImageColor"
+      :image-colors="activeProject.imageColors"
+      @select-color="onSelectColor"
+      @select-custom-color="onSelectCustomColor"
+      @select-image-color="onSelectImageColor"
+    />
   </BottomSheet>
 
   <BottomSheet
@@ -167,9 +175,7 @@ const deps = computed(() =>
       @remove="onRemoveFrame"
     />
     <div class="phone-sheet__edit">
-      <IconButton variant="toolbox" size="lg" :action="sheetActions.rotate" :deps="deps" data-testid="sheet-rotate" @click="onRotate" />
-      <IconButton variant="toolbox" size="lg" :action="sheetActions.copy" :deps="deps" data-tour="copy" @click="onCopy" />
-      <IconButton variant="toolbox" size="lg" :action="sheetActions.paste" :deps="deps" data-testid="sheet-paste" @click="openPhoneSheet = null" />
+      <EditControls :ids="['rotate', 'copy', 'paste']" :deps="deps" :test-id-for="frameSheetEditTestId" @activate="onFrameSheetEdit" />
     </div>
   </BottomSheet>
 
@@ -292,19 +298,19 @@ const deps = computed(() =>
 </template>
 
 <style scoped>
-/* The phone ToolSheets' own content (ticket 79; ToolSheet card); the tool tiles are ToolTiles'. */
+/* The phone ToolSheets' own content (ticket 79; ToolSheet card). */
+.phone-sheet__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 56px);
+  justify-content: space-between;
+  grid-auto-rows: 72px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px);
+}
+
 .phone-sheet__links {
   display: flex;
   justify-content: space-between;
   margin-top: var(--space-16);
-}
-
-/* Side by side while both labels fit whole, one above the other when they don't (ticket 246). */
-.phone-sheet__color-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  margin-top: var(--space-12);
 }
 
 .phone-sheet__edit {
