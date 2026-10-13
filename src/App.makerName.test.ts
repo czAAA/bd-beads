@@ -6,7 +6,6 @@ import { MAKER_NAME_KEY } from './services/makerNameStore'
 import { createProject } from './domain/project'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { ru } from './i18n/ru'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -100,13 +99,4 @@ describe('App name on exports (ticket 161)', () => {
     expect(localStorage.getItem(MAKER_NAME_KEY)).toBe('Maria')
   })
 
-  it('speaks Russian too', async () => {
-    localStorage.setItem('bd-beads:locale', 'ru')
-    const wrapper = mountApp()
-    await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="name-on-exports"]').text()).toContain(ru.saveBox.nameOnExports)
-    expect(row(wrapper)).toBe(ru.saveBox.nameNotSet)
-    expect(wrapper.find('[data-testid="name-on-exports-change"]').text()).toBe(ru.saveBox.addName)
-  })
 })

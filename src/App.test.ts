@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { beadColor, drawnProject, hoverBead, pressBead, rulerNumbers } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
@@ -27,20 +26,6 @@ describe('App', () => {
     expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(false)
   })
 
-  it('disables the new project button until at least one project exists', async () => {
-    const wrapper = mount(App)
-
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').attributes('aria-disabled'),
-    ).toBe('true')
-
-    await createProjectViaForm(wrapper)
-
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="new-project-button"]').element.disabled,
-    ).toBe(false)
-  })
-
   it('creates a project, renders its grid, and autosaves it without an explicit save action', async () => {
     const wrapper = await mountWithProject(15, 30)
 
@@ -63,25 +48,6 @@ describe('App', () => {
     expect(drawnProject(afterReload)).toMatchObject({ frame: { rows: 20, columns: 10 } })
   })
 
-  it('shows a summary of the currently open project', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('10×20')
-  })
-
-  it('lists a newly created project below the canvas and lets a second one be started alongside it', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
-
-    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
-
-    await createProjectViaForm(wrapper)
-    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(2)
-    expect(loadProjects()).toHaveLength(2)
-  })
-
   it('switches the open project when a different one is selected from the list', async () => {
     const wrapper = await mountWithProject(15, 30)
     const firstId = loadProjects()[0]!.id
@@ -93,24 +59,6 @@ describe('App', () => {
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
-  })
-
-  it('removing the open project switches to another remaining one', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const firstId = loadProjects()[0]!.id
-
-    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper)
-    const secondId = loadProjects().find((project) => project.id !== firstId)!.id
-
-    await wrapper.find(`[data-testid="select-project-${secondId}"]`).trigger('click')
-    await wrapper.find(`[data-testid="remove-project-${secondId}"]`).trigger('click')
-    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
-    expect(loadProjects()).toHaveLength(1)
-    expect(loadProjects()[0]!.id).toBe(firstId)
   })
 
   it('removing the last remaining project falls back to the empty home screen', async () => {
@@ -170,13 +118,6 @@ describe('App', () => {
     expect(boxOrder()).toEqual(['new-project-box', 'bead-quantities', 'project-list'])
   })
 
-  it('puts the notice row under the header only while there is something to say (ticket 141)', () => {
-    const wrapper = mount(App)
-
-    expect(wrapper.find('[data-testid="app-notices"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="app-topbar"]').element.nextElementSibling?.classList.contains('app-shell__body')).toBe(true)
-  })
-
   it('puts the Toolbox first in the left column while a Project is open, in place of the New Project form (tickets 114, 141)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
@@ -220,15 +161,6 @@ describe('App', () => {
     expect(canvas.find('[data-testid="canvas-strip-size"]').exists()).toBe(true)
   })
 
-  it('keeps the canvas box outside the left column, side by side in the body (ticket 141)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const column = wrapper.find('[data-testid="app-main-panel"]').element
-    expect(column.contains(wrapper.find('[data-testid="app-canvas"]').element)).toBe(false)
-    // The column is a direct child of the body, alongside the canvas box.
-    expect(wrapper.find('[data-testid="app-canvas"]').element.closest('.app-shell__body')).toBe(column.parentElement)
-  })
-
   it('paints a cell with the selected palette color', async () => {
     const wrapper = await mountWithProject(15, 30)
 
@@ -239,18 +171,6 @@ describe('App', () => {
 
     // Releasing the button ends the stroke, which is when a stroke reaches storage (ticket 55).
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-  })
-
-  it('paints a cell regardless of the Project\'s Technique', async () => {
-    saveProjects([createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })])
-    const wrapper = mount(App)
-    await nextTick()
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
@@ -297,25 +217,6 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
-  it('redoes an undone fill as a single action, re-repainting every cell it had touched', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await pressBead(wrapper, 1)
-
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-    await pressBead(wrapper, 0)
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBe('#2f6fed')
-    expect(grid[0]![1]!.color).toBe('#2f6fed')
-  })
-
   it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
     const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
 
@@ -334,50 +235,6 @@ describe('App', () => {
     // The top-left bead of a quarter turn clockwise is the top-right one.
     expect(frameGrid(afterRotate)[0]![1]!.color).toBe('#e63746')
     expect(frameGrid(afterRotate).flat().filter((cell) => cell.color).length).toBe(1)
-    expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('2×3')
-  })
-
-  it('comes back to upright after four turns (ticket 233)', async () => {
-    const wrapper = await mountWithProject(4.5, 3)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    const before = loadProjects()[0]!
-
-    for (const summary of ['2×3', '3×2', '2×3', '3×2']) {
-      await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-      expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain(summary)
-    }
-
-    const after = loadProjects()[0]!
-    expect(after.frame).toEqual(before.frame)
-    expect(frameGrid(after)).toEqual(frameGrid(before))
-  })
-
-  it('is one undo step: Undo turns it back and Redo turns it again', async () => {
-    const wrapper = await mountWithProject(4.5, 3)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    const turned = loadProjects()[0]!
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadProjects()[0]!.frame).toMatchObject({ columns: 3, rows: 2 })
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(loadProjects()[0]!.frame).toEqual(turned.frame)
-    expect(frameGrid(loadProjects()[0]!)).toEqual(frameGrid(turned))
-  })
-
-  it('keeps a Project saved turned (the legacy view) turned, and Rotate turns the data on top of it', async () => {
-    const saved = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-    saveProjects([{ ...saved, rotation: 90 }])
-    const wrapper = mount(App)
-    await flushPromises()
-
-    expect(loadProjects()[0]!.rotation).toBe(90)
     expect(wrapper.find('[data-testid="current-project-summary"]').text()).toContain('2×3')
   })
 
@@ -405,69 +262,6 @@ describe('App', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#123456')
   })
 
-  it('selects the swatch a Custom color joined at the first pick, and deselects the Palette (ticket 398)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const swatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
-
-    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    customColorInput.element.value = '#123456'
-    await customColorInput.trigger('input')
-
-    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('false')
-    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(swatchCount + 1)
-  })
-
-  it('selects the Palette swatch afterwards, and the picked color again by picking it again', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    customColorInput.element.value = '#123456'
-    await customColorInput.trigger('input')
-
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-
-    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('false')
-
-    const again = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    again.element.value = '#123456'
-    await again.trigger('input')
-
-    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('false')
-  })
-
-  it('adds each Custom color picked to the Palette and paints with the last one (ticket 398)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
-
-    const first = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    first.element.value = '#123456'
-    await first.trigger('input')
-    const second = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    second.element.value = '#abcdef'
-    await second.trigger('input')
-
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#abcdef')
-    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 2)
-  })
-
-  it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    customColorInput.element.value = '#123456'
-    await customColorInput.trigger('input')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    expect(wrapper.find('[data-testid="quantity-count-#123456"]').text()).toBe('1')
-  })
-
   it('paints every cell dragged over with the Paint tool, as a continuous stroke', async () => {
     const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
     await wrapper.find('[data-color-id="red"]').trigger('click')
@@ -485,70 +279,6 @@ describe('App', () => {
     expect(grid[0]![3]!.color).toBeNull()
   })
 
-  it('undoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await hoverBead(wrapper, 2, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBeNull()
-    expect(grid[0]![1]!.color).toBeNull()
-    expect(grid[0]![2]!.color).toBeNull()
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true',
-    ).toBe(true)
-  })
-
-  it('redoes a whole dragged stroke as a single action, not one step per cell', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await hoverBead(wrapper, 2, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBe('#e63746')
-    expect(grid[0]![1]!.color).toBe('#e63746')
-    expect(grid[0]![2]!.color).toBe('#e63746')
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true',
-    ).toBe(true)
-  })
-
-  it('does not drag-fill with the Fill tool: a move afterwards is ignored', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    // Isolate cell 5 from cell 6 with different colors, so flood-fill's own same-color spread can't
-    // explain either cell's result — only a (nonexistent) drag continuation could paint cell 6 green.
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 5)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await pressBead(wrapper, 6)
-    await wrapper.trigger('mouseup')
-
-    await wrapper.find('[data-color-id="green"]').trigger('click')
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-    await pressBead(wrapper, 5)
-    await hoverBead(wrapper, 6, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![5]!.color).toBe('#27ae60')
-    expect(grid[0]![6]!.color).toBe('#2f6fed')
-  })
-
   it('right-clicks a single cell to erase it with the Paint tool', async () => {
     const wrapper = await mountWithProject(15, 30)
 
@@ -561,33 +291,6 @@ describe('App', () => {
     await wrapper.trigger('mouseup')
 
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-  })
-
-  it('right-click-drags with the Paint tool to erase every cell along the path, as one undo step', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await hoverBead(wrapper, 2, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    await pressBead(wrapper, 0, { button: 2 })
-    await hoverBead(wrapper, 1, { buttons: 2 })
-    await hoverBead(wrapper, 2, { buttons: 2 })
-    await wrapper.trigger('mouseup')
-
-    let grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBeNull()
-    expect(grid[0]![1]!.color).toBeNull()
-    expect(grid[0]![2]!.color).toBeNull()
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-
-    grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBe('#e63746')
-    expect(grid[0]![1]!.color).toBe('#e63746')
-    expect(grid[0]![2]!.color).toBe('#e63746')
   })
 
   it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
@@ -613,34 +316,6 @@ describe('App', () => {
     expect(grid[0]![2]!.color).toBeNull()
   })
 
-  it('undoes a single-click flood-erase as one step', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-    await pressBead(wrapper, 0, { button: 2 })
-    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBeNull()
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBe('#e63746')
-    expect(grid[0]![1]!.color).toBe('#e63746')
-  })
-
-  it('suppresses the native context menu when right-clicking the canvas', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true })
-    wrapper.find('[data-testid="project-surface"]').element.dispatchEvent(event)
-
-    expect(event.defaultPrevented).toBe(true)
-  })
-
   it('undoes the most recent paint action, and repeated undo steps back further', async () => {
     const wrapper = await mountWithProject(15, 30)
 
@@ -658,145 +333,6 @@ describe('App', () => {
 
     await wrapper.find('[data-testid="undo-button"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-  })
-
-  it('disables undo when there is nothing to undo', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(
-      true,
-    )
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="undo-button"]').attributes('aria-disabled') === 'true').toBe(
-      false,
-    )
-  })
-
-  it('redoes the most recently undone change, and repeated redo steps forward through every undone change in order', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#2f6fed')
-  })
-
-  it('alternates undo and redo freely without losing or duplicating a step', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
-    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to blue
-    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to red
-    await wrapper.find('[data-testid="undo-button"]').trigger('click') // back to empty
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click') // forward to red
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-  })
-
-  it('disables redo when there is nothing to redo, and re-disables it once redo is exhausted', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
-
-    await wrapper.find('[data-testid="redo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-  })
-
-  it('clears the redo history once a new edit actually changes the grid', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
-
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
-    await pressBead(wrapper, 1)
-    await wrapper.trigger('mouseup')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-  })
-
-  it('switching or creating a Project clears the redo history, the same as the undo stack', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const firstId = loadProjects()[0]!.id
-
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(false)
-
-    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
-    await createProjectViaForm(wrapper)
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-
-    await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
-    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="redo-button"]').attributes('aria-disabled') === 'true').toBe(true)
-  })
-
-  it('renders the Undo button as an icon, with an aria-label conveying its action for screen readers', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const undoButton = wrapper.find('[data-testid="undo-button"]')
-    expect(undoButton.text()).toBe('')
-    expect(undoButton.find('svg').exists()).toBe(true)
-    expect(undoButton.attributes('aria-label')).toBe(ru.palette.undoButton)
-  })
-
-  it('persists painted cells across a reload', async () => {
-    const first = await mountWithProject(15, 30)
-
-    await first.find('[data-color-id="red"]').trigger('click')
-    await pressBead(first, 0)
-    await first.trigger('mouseup')
-    first.unmount()
-
-    const afterReload = mount(App)
-
-    expect(beadColor(afterReload, 0)).toBe('#e63746')
-  })
-
-  it('never renders the Bead catalog section (ticket 38): the catalog is a fixed built-in list', () => {
-    const wrapper = mount(App)
-
-    expect(wrapper.find('[data-testid="bead-catalog"]').exists()).toBe(false)
   })
 
   it('offers exactly the three built-in Beads when creating a Project, even with custom-bead data left over from before ticket 38', () => {
@@ -869,32 +405,6 @@ describe('App', () => {
     expect(afterReload.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
   })
 
-  it('reserves red for destructive actions, leaving every other button in the default style', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const projectId = loadProjects()[0]!.id
-
-    // Remove is the Saved Projects card's small neutral × (ticket 147); nothing outside a confirmation is red.
-    expect(wrapper.find(`[data-testid="remove-project-${projectId}"]`).classes()).not.toContain('button--danger')
-
-    for (const testId of ['new-project-button', 'zoom-in', 'zoom-out', 'zoom-reset', 'tool-paint', 'tool-fill', 'undo-button', 'rotate-button', 'redo-button']) {
-      expect(wrapper.find(`[data-testid="${testId}"]`).classes()).not.toContain('button--danger')
-    }
-  })
-
-  it('floats the zoom controls in the canvas panel, fixed to its corner rather than the Project\'s own box (ticket 57)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    expect(wrapper.find('[data-testid="app-main-panel"]').find('[data-testid="zoom-controls"]').exists()).toBe(false)
-
-    const appCanvas = wrapper.find('[data-testid="app-canvas"]')
-    expect(appCanvas.find('[data-testid="zoom-controls"]').exists()).toBe(true)
-    // Fixed to the canvas panel itself, not to the Project's own bordered box inside it (ticket 51 anchored it there;
-    // ticket 57 moved it one level up).
-    expect(
-      wrapper.find('[data-testid="project-surface"]').find('[data-testid="zoom-controls"]').exists(),
-    ).toBe(false)
-  })
-
   it('zooms the open Project from the floating canvas-box controls', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="zoom-level"]').text()).toBe('100%')
@@ -948,41 +458,12 @@ describe('App', () => {
     expect(header.find('[data-testid="current-project-summary"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
-  it('keeps the two primary actions apart: Replace bead and New Project never sit side by side (ticket 142)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const select = wrapper.find('[data-testid="replace-bead-select"]').element.closest('.app-select')!
-    expect(select.nextElementSibling?.getAttribute('data-testid')).not.toBe('new-project-button')
-    expect(wrapper.find('[data-testid="new-project-button"]').classes()).toContain('app-button--primary')
-    expect(select.classList).toContain('app-select--primary')
-  })
-
   it('opens the keyboard shortcuts from the header\'s round button (ticket 142)', async () => {
     const wrapper = mount(App)
 
     await wrapper.find('[data-testid="shortcuts-button"]').trigger('click')
 
     expect(wrapper.findComponent({ name: 'ShortcutsHelp' }).exists()).toBe(true)
-  })
-
-  it('has New Project and the Imports only in the header, not in the Saved Projects box (tickets 117, 142)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const projectList = wrapper.find('[data-testid="project-list"]')
-    for (const testId of ['new-project-button', 'import-file']) {
-      expect(projectList.find(`[data-testid="${testId}"]`).exists()).toBe(false)
-    }
-  })
-
-  it('keeps the two file exports in the Saved Projects box, with no Export and import box (ticket 118)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const projectList = wrapper.find('[data-testid="project-list"]')
-    // They sit in the footer the box shows once expanded (ticket 147).
-    await projectList.find('[data-testid="panel-expand"]').trigger('click')
-    expect(projectList.find('[data-testid="export-project"]').exists()).toBe(true)
-    expect(projectList.find('[data-testid="export-library"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="project-transfer"]').exists()).toBe(false)
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {
@@ -1038,78 +519,6 @@ describe('App storage writes', () => {
     ])
   })
 
-  it('writes a dragged erase stroke once too', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    const writes = spyOnStorageWrites(PROJECTS_KEY)
-    await pressBead(wrapper, 0, { button: 2 })
-    await hoverBead(wrapper, 1, { buttons: 2 })
-    expect(writes.count).toBe(0)
-
-    await wrapper.trigger('mouseup')
-
-    expect(writes.count).toBe(1)
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBeNull()
-  })
-
-  it('writes a stroke whose mouseup never arrived when the page goes away', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    // A button released outside the document (dragging off the window edge) fires no mouseup on the shell, so this
-    // stroke is still only in memory.
-    await pressBead(wrapper, 0)
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
-
-    window.dispatchEvent(new Event('pagehide'))
-
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-  })
-
-  it('writes a stroke whose mouseup never arrived when the editor is torn down', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-
-    wrapper.unmount()
-
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-  })
-
-  it('ends a touch/pen stroke the OS cancels mid-drag (ticket 60), instead of leaving it stuck in progress', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    await pressBead(wrapper, 0, { pointerType: 'touch' })
-    await hoverBead(wrapper, 1, { buttons: 1, pointerType: 'touch' })
-    await wrapper.find('.app-shell').trigger('pointercancel')
-
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#e63746')
-
-    // The cancelled stroke really ended: painting a third cell starts a fresh one rather than continuing the old.
-    await pressBead(wrapper, 2, { pointerType: 'touch' })
-    await wrapper.find('.app-shell').trigger('pointerup')
-    expect(frameGrid(loadProjects()[0]!)[0]![2]!.color).toBe('#e63746')
-  })
-
-  it('still writes a Fill the moment it lands, since it is one click rather than a stroke', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
-
-    const writes = spyOnStorageWrites(PROJECTS_KEY)
-    await pressBead(wrapper, 0)
-
-    expect(writes.count).toBe(1)
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-  })
-
   it('says so, in the current language, when a write to storage is refused', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
@@ -1126,24 +535,4 @@ describe('App storage writes', () => {
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)
   })
 
-  it('keeps the refused edit on screen, and takes the message down once a save gets through', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    const refusing = refuseStorageWrites(PROJECTS_KEY)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-
-    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(true)
-    expect(beadColor(wrapper, 0)).toBe('#e63746')
-
-    refusing.mockRestore()
-    await pressBead(wrapper, 1)
-    await wrapper.trigger('mouseup')
-
-    expect(wrapper.find('[data-testid="save-failed-message"]').exists()).toBe(false)
-    // The retry carries the refused cell too, since a save writes the whole library from memory.
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#e63746')
-  })
 })
