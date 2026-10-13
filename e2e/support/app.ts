@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { STORAGE_KEY, storedLibrary } from './projects'
-import type { Project } from '../../src/domain/project'
+import { normalizeProject, type Project } from '../../src/domain/project'
+import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import type { Tool } from '../../src/domain/tool'
 
 /**
@@ -147,4 +148,14 @@ export async function stateConvertSize(page: Page, columns: number, rows: number
   await page.getByTestId('width-input').fill(String(columns))
   await page.getByTestId('height-input').fill(String(rows))
   await page.getByTestId('convert-size-continue').click()
+}
+
+/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
+export async function savedProject(page: Page): Promise<Project> {
+  await openDockSheet(page, 'dock-project')
+  await page.getByTestId('save-button').click()
+  const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
+  await closeSheet(page)
+  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
+  return normalizeProject(decodeProject(library.patterns[0]!))
 }

@@ -4,11 +4,9 @@ import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Technique } from '../../src/domain/grid'
-import { normalizeProject } from '../../src/domain/project'
-import { decodeProject } from '../../src/domain/projectEncoding'
-import type { EncodedProject } from '../../src/domain/projectEncoding'
+import type { Project } from '../../src/domain/project'
 import { PALETTE } from '../../src/domain/palette'
-import { closeSheet, gridBox, openApp, openDockSheet, projectBox, selectTool, setZoom, settle } from '../support/app'
+import { gridBox, openApp, projectBox, savedProject, selectTool, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
@@ -20,22 +18,12 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
-/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
-async function savedProject(page: Page) {
-  await openDockSheet(page, 'dock-project')
-  await page.getByTestId('save-button').click()
-  const stored = await page.evaluate(() => localStorage.getItem('bd-beads:patterns'))
-  await closeSheet(page)
-  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
-  return normalizeProject(decodeProject(library.patterns[0]!))
-}
-
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
 async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomPercent: number, row: number, column: number) {
   return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
-const colorAt = (project: Awaited<ReturnType<typeof savedProject>>, row: number, column: number) => frameGrid(project)[row]![column]!.color
+const colorAt = (project: Project, row: number, column: number) => frameGrid(project)[row]![column]!.color
 
 test.describe('the hover preview', () => {
   const scenarios = [

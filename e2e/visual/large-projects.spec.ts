@@ -3,10 +3,9 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
-import { createProject, normalizeProject } from '../../src/domain/project'
-import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
+import { createProject } from '../../src/domain/project'
 import { parseProjectsFile } from '../../src/domain/projectFile'
-import { closeSheet, currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, settle, stateConvertSize } from '../support/app'
+import { currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -47,16 +46,6 @@ async function firstBeadPoint(page: Page, row: number, column: number) {
   const zoom = (await currentZoomPercent(page)) / 100
   const box = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
   return beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
-}
-
-/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
-async function savedProject(page: Page) {
-  await openDockSheet(page, 'dock-project')
-  await page.getByTestId('save-button').click()
-  const stored = await page.evaluate(() => localStorage.getItem('bd-beads:patterns'))
-  await closeSheet(page)
-  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
-  return normalizeProject(decodeProject(library.patterns[0]!))
 }
 
 for (const { columns, rows } of SIZES) {

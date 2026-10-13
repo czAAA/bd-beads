@@ -101,7 +101,8 @@ test('asks the browser to keep the library at the first save, after the note, an
   await openAndInstall(page, true)
   expect(await asked()).toBe(0)
 
-  await page.getByTestId('new-project-button').click()
+  await openDockSheet(page, 'dock-project')
+  await page.getByTestId('phone-new-project-button').click()
   await page.getByTestId('name-input').fill('First save')
   await page.locator('form.new-project-form button[type=submit]').click()
   await expect(page.getByTestId('keep-note-modal')).toBeVisible()
