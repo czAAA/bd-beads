@@ -7,7 +7,7 @@ import { PALETTE } from '../../src/domain/palette'
 import { MAKER_NAME_KEY } from '../../src/services/makerNameStore'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
-import { openApp } from '../support/app'
+import { openApp, openDockSheet } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { displayedExtentPx } from '../../src/rendering/surfaceView'
 
@@ -17,8 +17,9 @@ import { displayedExtentPx } from '../../src/rendering/surfaceView'
  * out whole.
  */
 
-/** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. */
+/** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. Save box sits in the Dock's Project sheet. */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
+  await openDockSheet(page, 'dock-project')
   await page.getByTestId('export-menu-button').click()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
   return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) }

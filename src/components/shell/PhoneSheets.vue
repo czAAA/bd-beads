@@ -67,6 +67,8 @@ const {
   exporting,
   onExportPng,
   onExportPdf,
+  onExportProjectFile,
+  onExportLibraryFile,
   onSave,
   mirrorAxisCounts,
   mirrorCopyMode,
@@ -256,6 +258,8 @@ const deps = computed(() =>
       :active-project-id="activeProjectId"
       @select="onSelectProjectFromPhoneDrawer"
       @remove="onRequestRemove"
+      @export-project="onExportProjectFile"
+      @export-library="onExportLibraryFile"
     />
   </BottomSheet>
 

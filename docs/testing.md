@@ -58,7 +58,9 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 ## The two layouts
 
-`DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file. The visual check is built with `VITE_DOCK_LAYOUT=off` (CI's build step, `e2e/support/server.ts`), so it covers the Toolbox layout until the Dock layout gets its own helpers and baselines.
+`DOCK_LAYOUT_ENABLED` (ADR 0046) is a build-time constant. `src/testSetup.ts` mocks it off for every unit test, because most App tests drive the Toolbox's own controls; `src/App.dockLayout.test.ts` mocks it again to test both values at a wide width. A test of the Dock layout does the same in its own file.
+
+The visual check is built with the flag at its default, on (ticket 385): its helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) drive the Dock and its sheets — opening a sheet before a control that sits in one (`openDockSheet`), picking a Tool through the Tool sheet (`selectTool`), Copy by its chord rather than a testid the Frame sheet has never given it (`copySelection`), and reading or stepping the zoom wherever it is: the Zoom pill normally, the Canvas strip's own cluster while framing, which the pill excludes (`currentZoomPercent`, `setZoom`). `e2e/perf/perf.spec.ts` and `e2e/perf/memory.spec.ts` still drive the Toolbox directly and are skipped while the flag is on (not part of CI; run by hand with `npm run perf`).
 
 ## The offline shell
 

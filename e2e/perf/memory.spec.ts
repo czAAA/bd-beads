@@ -1,12 +1,17 @@
 import { test } from '@playwright/test'
 import { openApp, projectBox } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
+import { DOCK_LAYOUT_ENABLED } from '../../src/features'
 
 /**
  * Memory with a long Undo history on a big Project (ticket 112's other condition): how much the page's heap grows as a
  * 250 × 250 Project is painted a bead at a time, and then filled again and again (each Fill keeps a whole grid to Undo
  * to). Printed, not asserted: there is no agreed limit, only what a small device can be expected to hold.
  */
+
+// Drives the Toolbox layout directly (ticket 385 ported the visual check's own helpers to the Dock, not this one): skip
+// while the build's default is the Dock layout, rather than fail on controls the build no longer mounts.
+test.skip(DOCK_LAYOUT_ENABLED, 'drives the Toolbox layout; port when the Dock layout gets its own perf helpers')
 test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   await openApp(page, [{ ...fixtureProject({ technique: 'loom', columns: 250, rows: 250, blank: true }), id: 'big' }])
   const cdp = await page.context().newCDPSession(page)

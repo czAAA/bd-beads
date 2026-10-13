@@ -35,6 +35,11 @@ vi.mock('./services/imageDecode', async (importOriginal) => {
   }
 })
 
+/** The Dock layout flag (ticket 383): off by default here, like the global mock (`testSetup.ts`) it overrides, since
+ * these tests otherwise drive the Toolbox's own controls; the framing-zoom tests below (ticket 385) turn it on. */
+const dockFlag = vi.hoisted(() => ({ on: false }))
+vi.mock('./features', async (importOriginal) => ({ ...(await importOriginal<typeof import('./features')>()), get DOCK_LAYOUT_ENABLED() { return dockFlag.on } }))
+
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 /** A picture of two flat blocks: the left half red, the right half blue. */
@@ -84,6 +89,7 @@ beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
   decodeState.image = twoBlocks()
   decodeState.error = undefined
+  dockFlag.on = false
 })
 
 describe('App Convert image framing (ticket 58)', () => {
@@ -195,6 +201,22 @@ describe('App Convert image framing (ticket 58)', () => {
     await wrapper.find('[data-testid="zoom-in"]').trigger('click')
 
     expect(beads()).toBeGreaterThan(atCover)
+  })
+})
+
+describe('App Convert image framing with the Dock layout on (ticket 385)', () => {
+  beforeEach(() => {
+    dockFlag.on = true
+  })
+
+  it('keeps the strip\'s own zoom buttons, since the Zoom pill excludes framing', async () => {
+    const wrapper = mount(App)
+    // No Project open yet, so the Dock layout's project bar holds the New Project form instead of showing it inline.
+    await wrapper.find('[data-testid="phone-bar-new-project"]').trigger('click')
+    await startFraming(wrapper)
+
+    expect(wrapper.find('[data-testid="app-canvas"] [data-testid="zoom-in"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="zoom-pill"]').exists()).toBe(false)
   })
 })
 

@@ -3,10 +3,9 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
-import { createProject, normalizeProject } from '../../src/domain/project'
-import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
+import { createProject } from '../../src/domain/project'
 import { parseProjectsFile } from '../../src/domain/projectFile'
-import { openApp, projectBox, settle, stateConvertSize } from '../support/app'
+import { currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -44,15 +43,9 @@ async function showTopLeft(page: Page): Promise<void> {
 
 /** The beads of the first rows are on screen at any zoom; this one is a few beads in from the corner. */
 async function firstBeadPoint(page: Page, row: number, column: number) {
-  const zoom = Number.parseInt((await page.getByTestId('zoom-level').textContent())!, 10) / 100
+  const zoom = (await currentZoomPercent(page)) / 100
   const box = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
   return beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
-}
-
-async function savedProject(page: Page) {
-  await page.getByTestId('save-button').click()
-  const library = JSON.parse((await page.evaluate(() => localStorage.getItem('bd-beads:patterns')))!) as { patterns: EncodedProject[] }
-  return normalizeProject(decodeProject(library.patterns[0]!))
 }
 
 for (const { columns, rows } of SIZES) {
@@ -82,7 +75,11 @@ for (const { columns, rows } of SIZES) {
       expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
 
       // The whole Project goes out in a Project file, and reads back the same. Export Project is in Saved Projects'
-      // footer (ticket 147; ExpandablePanel), which only renders once expanded.
+      // footer (ticket 147; ExpandablePanel), which only renders once expanded. Saved Projects is a sheet of its own,
+      // opened from the Project sheet (PhoneSheets card).
+      await openDockSheet(page, 'dock-project')
+      await page.getByTestId('phone-saved-projects-button').click()
+      await settle(page)
       await page.getByTestId('project-list').getByTestId('panel-expand').click()
       const download = page.waitForEvent('download')
       await page.getByTestId('export-project').click()
@@ -104,10 +101,10 @@ for (const { columns, rows } of SIZES) {
       await page.mouse.up()
       expect(frameGrid((await savedProject(page))).flat().filter((cell) => cell.color === RED).length).toBeGreaterThan(3)
 
-      await page.getByTestId('undo-button').click()
+      await page.getByTestId('zoom-pill-undo').click()
       expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
 
-      await page.getByTestId('redo-button').click()
+      await page.getByTestId('zoom-pill-redo').click()
       expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(RED)
     })
 
@@ -142,6 +139,7 @@ for (const { columns, rows } of SIZES) {
 
 test('Convert image can frame a picture at 250 × 250, where it was once refused', async ({ page }) => {
   await openApp(page, [])
+  await openNewProjectForm(page)
   await page.getByTestId('convert-image-input').setInputFiles({ name: 'picture.png', mimeType: 'image/png', buffer: fixturePicture(480, 320) })
   await stateConvertSize(page, 250, 250)
 

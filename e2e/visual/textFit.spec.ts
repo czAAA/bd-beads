@@ -52,6 +52,12 @@ async function reveal(page: Page, testid: string): Promise<boolean> {
     await page.getByTestId(dock).click()
     await settle(page)
     if (await shown(page, testid)) return true
+    // Saved Projects is a sheet of its own, opened from the Project sheet's own button (PhoneSheets card).
+    if (testid === 'project-list' && (await shown(page, 'phone-saved-projects-button'))) {
+      await page.getByTestId('phone-saved-projects-button').click()
+      await settle(page)
+      if (await shown(page, testid)) return true
+    }
     await page.getByTestId('sheet-close').click().catch(() => {})
   }
   return false
@@ -89,19 +95,12 @@ const SCREENS: Screen[] = [
     visit: async (_page, measure) => measure(),
   },
   {
-    // The input mode toggle only shows once a pen has been seen (ticket 326): a pen event reveals it.
-    name: 'pen seen',
-    visit: async (page, measure) => {
-      await page.evaluate(() => window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'pen' })))
-      await settle(page)
-      await measure()
-    },
-  },
-  {
+    // Before 'pen seen' (ticket 385): once a pen event has been dispatched, a plain mouse drag no longer makes a
+    // Selection (ADR 0042, pen mode decides per pointer), so this has to run first.
     name: 'selection',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'tool-select'))) return false
-      await click(page, 'tool-select')
+      if (!(await reveal(page, 'sheet-tool-select'))) return false
+      await click(page, 'sheet-tool-select')
       // On the phone the tool sheet is still open over the canvas.
       if (await shown(page, 'sheet-close')) await click(page, 'sheet-close')
       const box = await vis(page, 'project-surface').boundingBox()
@@ -111,6 +110,53 @@ const SCREENS: Screen[] = [
       await page.mouse.move(box.x + 120, box.y + 120, { steps: 4 })
       await page.mouse.up()
       await settle(page)
+      await measure()
+    },
+  },
+  {
+    // The input mode toggle only shows once a pen has been seen (ticket 326): a pen event reveals it.
+    name: 'pen seen',
+    visit: async (page, measure) => {
+      await page.evaluate(() => window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'pen' })))
+      await settle(page)
+      await measure()
+    },
+  },
+  {
+    // A failed write to this device's storage (ticket 55, ADR 0012): the library-wide notice row, a danger Message.
+    name: 'save failed',
+    visit: async (page, measure) => {
+      await page.evaluate(() => {
+        ;(window as unknown as { __realSetItem: Storage['setItem'] }).__realSetItem = Storage.prototype.setItem
+        Storage.prototype.setItem = () => {
+          throw new DOMException('The quota has been exceeded.', 'QuotaExceededError')
+        }
+      })
+      const box = await vis(page, 'project-surface').boundingBox()
+      let found = false
+      if (box) {
+        await page.mouse.click(box.x + 20, box.y + 20)
+        await settle(page)
+        found = await shown(page, 'save-failed-message')
+      }
+      // Every later screen's own setItem call (priming the library) would otherwise throw too: restore it before returning.
+      await page.evaluate(() => (Storage.prototype.setItem = (window as unknown as { __realSetItem: Storage['setItem'] }).__realSetItem))
+      if (!box || !found) return false
+      await measure()
+    },
+  },
+  {
+    // An import failure toasts (ProjectImport, ticket 76): the project-management bar's compact import, the only
+    // place that toasts rather than printing its result inline, and the Message's close button is a Tooltip.
+    name: 'import error toast',
+    visit: async (page, measure) => {
+      await page.evaluate(([key, value]) => localStorage.setItem(key, value), [STORAGE_KEY, storedLibrary([])])
+      await page.reload()
+      await page.getByTestId('app-canvas').waitFor()
+      if (!(await shown(page, 'phone-bar-import-file'))) return false
+      await page.getByTestId('phone-bar-import-file').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('not json') })
+      await settle(page)
+      if (!(await shown(page, 'toast-region'))) return false
       await measure()
     },
   },
@@ -137,8 +183,13 @@ const SCREENS: Screen[] = [
   {
     name: 'keyboard shortcuts',
     visit: async (page, measure) => {
-      if (!(await shown(page, 'shortcuts-button'))) return false
-      await click(page, 'shortcuts-button')
+      // The wide tier's own button (AppHeader), or the Dock Menu sheet's item to the same ShortcutsHelp.
+      if (await shown(page, 'shortcuts-button')) {
+        await click(page, 'shortcuts-button')
+      } else {
+        if (!(await reveal(page, 'menu-item-shortcuts'))) return false
+        await click(page, 'menu-item-shortcuts')
+      }
       await measure()
     },
   },
