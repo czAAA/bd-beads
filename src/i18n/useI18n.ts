@@ -41,5 +41,5 @@ export function provideI18n(preferences: DevicePreferences = useDevicePreference
 
 /** Falls back to a standalone instance when mounted without an ancestor provideI18n() (e.g. in isolated component tests). */
 export function useI18n(): I18n {
-  return inject(I18N_KEY) ?? createI18n(useDevicePreferences())
+  return inject(I18N_KEY, null) ?? createI18n(useDevicePreferences())
 }
