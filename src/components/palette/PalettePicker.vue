@@ -6,6 +6,7 @@ import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
+import PickColorButton from './PickColorButton.vue'
 import { useCloseSheetOnPick } from '../shell/sheetContext'
 
 const props = defineProps<{ selectedColorId?: string }>()
@@ -103,6 +104,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
       @pointerdown="drag.onPointerDown($event, index)"
       @keydown="onSwatchKeydown($event, color.id, index)"
     />
+    <PickColorButton class="palette-picker__pick" />
   </div>
 </template>
 
@@ -122,6 +124,15 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
 .palette-picker :deep(.palette-picker__swatch--target) {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+/* Pick color from canvas is the grid's last tile (ticket 403): a swatch's size, with a bigger eyedropper. Not a slot: it isn't dragged and has no Shift+key. */
+.palette-picker :deep(.palette-picker__pick),
+.palette-picker :deep(.palette-picker__pick .icon-btn) {
+  width: 100%;
+  min-width: var(--swatch-min, 0);
+  aspect-ratio: 1;
+  height: auto;
 }
 
 /*

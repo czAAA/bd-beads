@@ -3,12 +3,11 @@ import { computed } from 'vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
-import PickColorButton from '../palette/PickColorButton.vue'
 
 /**
- * The Colors group's controls (Toolbox card; ticket 384): the Palette, Custom color, Pick color from canvas (ticket
- * 398) and Image colors, shared by the Toolbox and the phone Color sheet so a control changed in one place reaches
- * both.
+ * The Colors group's controls (Toolbox card; ticket 384): the Palette (Pick color from canvas, ticket 398, is its last
+ * tile), Custom color and Image colors, shared by the Toolbox and the phone Color sheet so a control changed in one
+ * place reaches both.
  */
 const props = defineProps<{
   selectedColorId?: string
@@ -34,7 +33,6 @@ const customColorSelected = computed(() => !props.selectedColorId && !props.sele
   <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
   <div class="tool-color-controls__buttons">
     <CustomColorPicker :color="customColor" :selected="customColorSelected" @select="(hex) => emit('select-custom-color', hex)" />
-    <PickColorButton />
     <ImageColorsButton :colors="imageColors" :selected-color="selectedImageColor" @select="(hex) => emit('select-image-color', hex)" />
   </div>
 </template>
