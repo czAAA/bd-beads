@@ -4,7 +4,7 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { mayPlace } from '../../domain/margin'
-import { changedPositions, isInFinishedRow, type Project } from '../../domain/project'
+import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { framePressAt, type FramePress } from '../../rendering/frameHandles'
@@ -14,6 +14,7 @@ import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
+import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
@@ -62,6 +63,8 @@ const props = defineProps<{
   markerHidden?: boolean
   /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
+  /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead marker give way, and a chip by the pointer shows the color of the bead under it. */
+  picking?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -411,8 +414,8 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       cursor: props.cursor,
-      pointer: markerAt.value && !handMoves.value && !props.settingFrame && !props.markerHidden ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
-      preview: props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
+      pointer: markerAt.value && !handMoves.value && !props.settingFrame && !props.markerHidden && !props.picking ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
+      preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
@@ -453,6 +456,7 @@ watch(
     () => props.settingFrame,
     handMoves,
     () => props.markerHidden,
+    () => props.picking,
     () => props.frameTooltip,
     marginOpacity,
     touchInput,
@@ -541,8 +545,27 @@ function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPositi
   return surface.value.pointToBead({ x: event.clientX - box.left, y: event.clientY - box.top })
 }
 
+/**
+ * The color chip beside the eyedropper (ticket 403): what a press would take, shown live as the pointer moves over the
+ * beads, as paint programs do. Over an empty cell, or for a finger (which has no hover), there is no chip.
+ */
+const pickChip = ref<{ x: number; y: number; hex: string }>()
+
+function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
+  const hex = props.picking && bead && event.pointerType !== 'touch' ? beadColorAt(props.project, bead.row, bead.column) : null
+  const box = rootEl.value?.getBoundingClientRect()
+  pickChip.value = hex && box ? { x: event.clientX - box.left, y: event.clientY - box.top, hex } : undefined
+}
+
+watch(
+  () => props.picking,
+  () => {
+    pickChip.value = undefined
+  },
+)
+
 function refusesMargin(bead: GridPosition | undefined): boolean {
-  return props.blocksMargin === true && bead !== undefined && !mayPlace(props.project, bead)
+  return props.blocksMargin === true && !props.picking && bead !== undefined && !mayPlace(props.project, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -680,6 +703,7 @@ function onPointerMove(event: PointerEvent): void {
   overBead.value = bead !== undefined
   overRefusedMargin.value = refusesMargin(bead)
   placeMarker()
+  placePickChip(event, bead)
   if (isSameBead(bead, lastBead)) {
     return
   }
@@ -717,6 +741,7 @@ function onPointerLeave(): void {
   lastBead = undefined
   overBead.value = false
   overRefusedMargin.value = false
+  pickChip.value = undefined
   hideMarker()
   emit('hover-end')
 }
@@ -772,12 +797,14 @@ onBeforeUnmount(() => {
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"
     :class="{
-      'project-surface--over-bead': overBead && !handMoves,
+      'project-surface--over-bead': overBead && !handMoves && !picking,
+      'project-surface--picking': picking && !handMoves && !settingFrame,
       'project-surface--refused': overRefusedMargin && !handMoves && !settingFrame,
       'project-surface--moving': handMoves,
       'project-surface--setting-frame': settingFrame && !handMoves,
       'project-surface--dragging': dragging,
     }"
+    :style="picking && !handMoves && !settingFrame ? { cursor: EYEDROPPER_CURSOR } : undefined"
     tabindex="0"
     role="img"
     :aria-label="label"
@@ -795,6 +822,13 @@ onBeforeUnmount(() => {
   >
     <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
     <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
+    <span
+      v-if="pickChip"
+      class="project-surface__pick-chip"
+      :style="{ left: `${pickChip.x}px`, top: `${pickChip.y}px`, '--pick-color': pickChip.hex }"
+      data-testid="pick-chip"
+      aria-hidden="true"
+    ><span class="project-surface__pick-chip-swatch" />{{ pickChip.hex }}</span>
   </div>
 </template>
 
@@ -830,6 +864,30 @@ onBeforeUnmount(() => {
 /* The Hand tool and Space + drag (CanvasHint card): an open hand, closed while the canvas is being moved. */
 .project-surface--moving {
   cursor: grab;
+}
+
+/* The live color under the eyedropper: a small chip a little below and right of the tip, never in the way of the press. */
+.project-surface__pick-chip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: var(--space-16) 0 0 var(--space-16);
+  padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
+  color: var(--ink);
+  font: var(--text-meta-small);
+  background: var(--panel);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  pointer-events: none;
+}
+
+.project-surface__pick-chip-swatch {
+  width: var(--space-16);
+  height: var(--space-16);
+  background: var(--pick-color);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 
 /* Set Frame: a crosshair, since a drag marks out beads (Frame card). */
