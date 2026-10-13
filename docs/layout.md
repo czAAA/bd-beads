@@ -4,7 +4,7 @@ Where everything sits on the screen. Moved out of `CONTEXT.md`'s Key concepts (t
 
 ## 1024px and wider
 
-The canvas box holds an Open canvas with a canvas strip, the Hand/Set Frame tools, a Rulers toggle and the canvas hint (ADR 0026).
+The canvas box holds a Canvas with a canvas strip, the Hand/Set Frame tools, a Rulers toggle and the canvas hint (ADR 0026).
 
 The screen is a header, a notice row under it (only while there is something library-wide to say), then one left column that scrolls on its own beside the canvas box, which takes all the remaining width and height. The page itself never scrolls; the Project scrolls inside the canvas box.
 
