@@ -76,6 +76,13 @@ export const PREFERENCES = {
     parse: (raw) => raw === 'yes',
     write: (seen) => (seen ? 'yes' : null),
   }),
+  /** Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never again. */
+  storageAsked: preference<boolean>({
+    key: 'bd-beads:storage-asked',
+    fallback: false,
+    parse: (raw) => raw === 'yes',
+    write: (asked) => (asked ? 'yes' : null),
+  }),
   /** The theme pick (ticket 139). Match device is no pick at all, so it is not kept. */
   theme: preference<ThemePick>({
     key: 'bd-beads:theme',

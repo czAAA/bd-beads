@@ -6,6 +6,7 @@ import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserMakerNameStore, type MakerNameStore } from './makerNameStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
+import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
 import { browserTourStore, type TourStore } from './tourStore'
 
 /**
@@ -22,6 +23,7 @@ export interface Services {
   devicePreferences: DevicePreferences
   tourStore: TourStore
   appUpdates: AppUpdates
+  persistentStorage: PersistentStorage
 }
 
 export const browserServices: Services = {
@@ -33,4 +35,5 @@ export const browserServices: Services = {
   devicePreferences: browserDevicePreferences,
   tourStore: browserTourStore,
   appUpdates: browserAppUpdates,
+  persistentStorage: browserPersistentStorage,
 }

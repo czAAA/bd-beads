@@ -10,6 +10,10 @@ _Avoid_: collection, gallery, saved list, workspace
 The app itself, kept on the device by the service worker after the first visit, so it opens with no internet or while our hosting is down (ticket 69, ADR 0045). It downloads silently; a newer one waits behind the open page until the person presses Reload in "Update ready", or the app is next opened. It holds no Projects: those are the Project library.
 _Avoid_: cache, offline mode, downloaded app
 
+**Keep note**:
+The short note shown once per device, at the first time a Project is written to the library and only if the browser doesn't already keep it (ticket 399). It says in plain words that the browser may ask to keep this app's data, to tick "Remember this decision" and choose Allow so Projects survive a device short on space, and that after a decline Projects can still be cleared, so Save often and keep the Project file safe. Its button is what triggers the browser's own prompt; Skip doesn't ask the browser. Either way the device remembers it was shown. Opening the app never asks. A browser without the storage API, or one that decides silently, just never gets the note.
+_Avoid_: permission prompt, storage popup
+
 **Maker's name**:
 Who made the Projects on this device: an optional name, at most 40 characters, printed on every PDF and PNG export. It belongs to the person, not to a Project, so it is kept on the device like the theme and never sent anywhere (ADR 0001); it is set from the Export menu's last row, "Name on exports", and the exports leave it out while it is empty (ticket 161). A Project can override it with its own maker's name, set from the New Project form and blank by default regardless of the device-wide value; set, it replaces the device-wide name on that Project's exports and background watermark, alongside the Project's own name, and it travels with the Project (export, import, another device) rather than staying behind on this one (ticket 182).
 _Avoid_: author, owner, signature, user name

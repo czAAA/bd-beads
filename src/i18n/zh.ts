@@ -121,6 +121,14 @@ export const zh: Translations = {
   },
   storage: {
     saveFailedMessage: '无法保存到此设备。你最近的修改只在屏幕上。请释放浏览器空间，或将项目导出为文件以保留。',
+    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    keepNote: {
+      title: '在此设备上保留项目？',
+      message:
+        '浏览器可能会询问是否允许此应用保存数据。请勾选“记住此决定”并选择允许，这样即使设备空间不足，项目也会保留。如果拒绝，空间不足时浏览器可能会清除项目，所以请经常保存，并妥善保管项目文件。',
+      confirmButton: '保留项目',
+      cancelButton: '跳过',
+    },
   },
   header: {
     menuButton: '菜单',

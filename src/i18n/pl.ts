@@ -122,6 +122,14 @@ export const pl: Translations = {
   storage: {
     saveFailedMessage:
       'Nie udało się zapisać na tym urządzeniu. Twoja ostatnia zmiana jest tylko na ekranie. Zwolnij miejsce w przeglądarce albo wyeksportuj projekt do pliku, żeby go zachować.',
+    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    keepNote: {
+      title: 'Zachować projekty na tym urządzeniu?',
+      message:
+        'Przeglądarka może zapytać, czy pozwolić aplikacji przechowywać dane. Zaznacz „Zapamiętaj decyzję” i wybierz Zezwól, aby projekty zostały zachowane, nawet gdy na urządzeniu brakuje miejsca. Jeśli odmówisz, przeglądarka może usunąć projekty, gdy zabraknie miejsca, więc zapisuj często i dbaj o plik projektu.',
+      confirmButton: 'Zachowaj projekty',
+      cancelButton: 'Pomiń',
+    },
   },
   header: {
     menuButton: 'Menu',
