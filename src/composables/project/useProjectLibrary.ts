@@ -45,7 +45,11 @@ export interface ProjectLibrary {
  * The library is kept in last-saved order (ticket 145): each mutator that saves a Project stamps it (markSaved) and
  * moves it to the front, and the order is written with the library, so it survives a reload as it stood.
  */
-export function useProjectLibrary(store: LibraryStore = browserLibraryStore): ProjectLibrary {
+export function useProjectLibrary(
+  store: LibraryStore = browserLibraryStore,
+  /** Called after each write that got through with a Project in the library, a removal aside (ticket 399: the first one asks the browser to keep it). */
+  onSaved?: () => void,
+): ProjectLibrary {
   const projects = ref<Project[]>(inSavedOrder(store.load()))
   const activeProjectId = ref<string | undefined>(mostRecentlyUpdated(projects.value)?.id)
   const activeProject = computed(() =>
@@ -56,11 +60,12 @@ export function useProjectLibrary(store: LibraryStore = browserLibraryStore): Pr
   /** Whether the library in memory has changes storage hasn't taken yet — a deferred stroke, or a write that threw. */
   let savePending = false
 
-  function save(): void {
+  function save(announce = true): void {
     try {
       store.save(projects.value)
       savePending = false
       saveFailed.value = false
+      if (announce && projects.value.length > 0) onSaved?.()
     } catch {
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.
@@ -75,10 +80,10 @@ export function useProjectLibrary(store: LibraryStore = browserLibraryStore): Pr
     projects.value = [saved, ...projects.value.filter((existing) => existing.id !== project.id)]
   }
 
-  function commit(options?: ReplaceOptions): void {
+  function commit(options?: ReplaceOptions, announce = true): void {
     savePending = true
     if (!options?.deferSave) {
-      save()
+      save(announce)
     }
   }
 
@@ -118,7 +123,8 @@ export function useProjectLibrary(store: LibraryStore = browserLibraryStore): Pr
       if (activeProjectId.value === id) {
         activeProjectId.value = mostRecentlyUpdated(projects.value)?.id
       }
-      commit()
+      // Removing isn't the Project's first save, so it never opens the storage note (ticket 399).
+      commit(undefined, false)
     },
 
     /** Writes whatever a deferred change (or a failed save) left pending; a no-op when storage is already up to date. */

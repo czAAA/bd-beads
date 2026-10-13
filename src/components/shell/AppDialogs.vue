@@ -36,6 +36,9 @@ const {
   nameOnExportsOpen,
   onSaveMakerName,
   shortcutsHelpOpen,
+  storageNoteOpen,
+  onConfirmStorageNote,
+  onCancelStorageNote,
 } = useAppShell()
 </script>
 
@@ -132,6 +135,19 @@ const {
       {{ t.storage.saveFailedMessage }}
     </p>
   </ConfirmModal>
+
+  <!-- The note before the browser's storage prompt, once per device at its first save (ticket 399). -->
+  <ConfirmModal
+    v-if="storageNoteOpen"
+    data-testid="keep-note-modal"
+    :title="t.storage.keepNote.title"
+    :message="t.storage.keepNote.message"
+    :confirm-label="t.storage.keepNote.confirmButton"
+    :cancel-label="t.storage.keepNote.cancelButton"
+    :confirm-danger="false"
+    @confirm="onConfirmStorageNote"
+    @cancel="onCancelStorageNote"
+  />
 
   <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
 
