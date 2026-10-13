@@ -35,7 +35,7 @@ jobs:
       - run: npm run knip
 
   # The unit tests are split across runners with Vitest's own sharding. Every test file lands in exactly one shard.
-  # Three shards, from the measured times in the PR for ticket 256: fewer leave the slowest shard long, more lose the
+  # Two shards, from the measured times in the PR for ticket 423 (three before tickets 420 and 422 made the suite leaner): fewer leave the slowest shard long, more lose the
   # saving to each shard's install and startup. Changing the count is this list only; the --shard flag follows it.
   unit:
     name: Unit tests (shard ${{ matrix.shard }})
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
