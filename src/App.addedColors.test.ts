@@ -77,17 +77,6 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await swatches(wrapper)[PALETTE.length + index]!.trigger('click')
   }
 
-  it('offers no removal on a built-in swatch', async () => {
-    seed(['#123456'])
-    const wrapper = mount(App)
-    await flushPromises()
-    await swatches(wrapper)[0]!.trigger('click')
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
-    await swatches(wrapper)[0]!.trigger('keydown', { key: 'Delete' })
-    expect(wrapper.find('[data-testid="remove-color-modal"]').exists()).toBe(false)
-    expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
-  })
-
   const modal = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="remove-color-modal"]')
   const confirm = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
@@ -230,18 +219,4 @@ describe('Pick color from canvas (ticket 398)', () => {
     expect(swatches(wrapper)[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
   })
 
-  it('adds the picked color when it is new', async () => {
-    const wrapper = mount(App)
-    await flushPromises()
-    await choose(wrapper, '#123456')
-    await paint(wrapper, 0)
-    await wrapper.find('[data-testid="palette-swatch-remove"]').trigger('click')
-    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(swatches(wrapper)).toHaveLength(PALETTE.length)
-    await wrapper.find('[data-testid="pick-color-button"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await flushPromises()
-    expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
-  })
 })

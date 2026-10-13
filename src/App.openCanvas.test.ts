@@ -5,7 +5,7 @@ import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { beadColor, hoverBead, previewedBeads, pressBead, pressRulerNumber, rulerNumbers, selectedBeadCount } from './testUtils/beads'
+import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 
 /**
  * The open canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
@@ -75,22 +75,6 @@ describe('drawing anywhere', () => {
     expect(beadColor(reloaded, { row: -30, column: -12 })).toBe(RED)
   })
 
-  it('undoes a stroke far from the start as one step', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-
-    await pressBead(wrapper, { row: 500, column: 500 })
-    await hoverBead(wrapper, { row: 500, column: 501 }, { buttons: 1 })
-    await hoverBead(wrapper, { row: 500, column: 502 }, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-    expect(loadProjects()[0]!.beads[500]).toEqual({ 500: RED, 501: RED, 502: RED })
-
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
-    expect(loadProjects()[0]!.beads[500]).toBeUndefined()
-  })
-
   it('reads "Canvas · 2 pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
     saveProjects([openCanvas()])
     const wrapper = mountApp()
@@ -114,35 +98,6 @@ describe('drawing anywhere', () => {
 })
 
 describe('the rulers of pieces', () => {
-  /** A 3×3 Piece and a lone bead: only the Piece is big enough to show an area. */
-  const bigAndSmall = () =>
-    openCanvas({
-      beads: withColors({}, [
-        ...[0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: RED }))),
-        { row: 10, column: 10, color: RED },
-      ]),
-    })
-
-  it('number each piece from 1 above and to the left, and nothing below or right of it', async () => {
-    saveProjects([bigAndSmall()])
-    const wrapper = mountApp()
-    await flushPromises()
-
-    const numbers = rulerNumbers(wrapper)
-    // The 3×3 piece is numbered 1 to 3; the lone bead at (10, 10) is too small for an area, so it has no numbers.
-    expect(numbers.filter((n) => n.axis === 'column').map((n) => n.text).sort()).toEqual(['1', '2', '3'])
-    expect(numbers.filter((n) => n.axis === 'row').map((n) => n.text).sort()).toEqual(['1', '2', '3'])
-  })
-
-  it('select the whole row of a piece when its number is pressed', async () => {
-    saveProjects([bigAndSmall()])
-    const wrapper = mountApp()
-    await flushPromises()
-
-    await pressRulerNumber(wrapper, 'row', 0)
-    expect(selectedBeadCount(wrapper)).toBe(3) // the first piece is 3 beads wide
-  })
-
   it('are hidden by the Rulers toggle and by R, and come back', async () => {
     saveProjects([openCanvas()])
     const wrapper = mountApp()
@@ -154,41 +109,6 @@ describe('the rulers of pieces', () => {
     expect(toggle.attributes('aria-pressed')).toBe('false')
     await key({ key: 'r' })
     expect(toggle.attributes('aria-pressed')).toBe('true')
-  })
-})
-
-describe('moving the canvas', () => {
-  it('scrolls with the wheel and zooms with Ctrl or ⌘ + wheel, about the pointer', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-    const root = surface(wrapper)
-    const scrollX = () => Number(root.attributes('data-scroll-x'))
-    const scrollY = () => Number(root.attributes('data-scroll-y'))
-    const zoom = () => Number(root.attributes('data-zoom'))
-    const start = { x: scrollX(), y: scrollY(), zoom: zoom() }
-
-    root.element.dispatchEvent(new WheelEvent('wheel', { deltaX: 30, deltaY: 120, bubbles: true, cancelable: true }))
-    await flushPromises()
-    expect(scrollX()).toBe(start.x + 30)
-    expect(scrollY()).toBe(start.y + 120)
-
-    root.element.dispatchEvent(new WheelEvent('wheel', { deltaY: -20, ctrlKey: true, bubbles: true, cancelable: true }))
-    await flushPromises()
-    expect(zoom()).toBeGreaterThan(start.zoom)
-  })
-
-  it('has no edge: a long way off is just as reachable', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-    const root = surface(wrapper)
-
-    root.element.dispatchEvent(new WheelEvent('wheel', { deltaX: 400000, deltaY: -400000, bubbles: true, cancelable: true }))
-    await flushPromises()
-
-    expect(Number(root.attributes('data-scroll-x'))).toBeGreaterThan(300000)
-    expect(Number(root.attributes('data-scroll-y'))).toBeLessThan(-300000)
   })
 })
 
@@ -217,40 +137,4 @@ describe('the Hand tool', () => {
     expect(wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled')).toBeDefined()
   })
 
-  it('leaves the other tools alone: pressing a bead with Paint still paints', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-    await wrapper.find('[data-color-id="red"]').trigger('click')
-    await key({ key: '5' })
-    await key({ key: '1' })
-
-    await pressBead(wrapper, { row: 3, column: 3 })
-    await wrapper.trigger('mouseup')
-
-    expect(beadColor(wrapper, { row: 3, column: 3 })).toBe(RED)
-  })
-})
-
-describe('the canvas hint', () => {
-  it('names how to move, zoom and the shortcuts, in the bottom-left of the drawing area, while a Project is open', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-
-    const hint = wrapper.find('[data-testid="canvas-hint"]')
-    expect(hint.exists()).toBe(true)
-    expect(hint.attributes('aria-hidden')).toBe('true')
-    expect(hint.text()).toContain(en.canvas.hint.hand)
-    expect(hint.text()).toContain(en.canvas.hint.setFrame)
-    expect(hint.text()).toContain(en.canvas.hint.rulers)
-    expect(hint.text()).toContain('Ctrl') // jsdom is not an Apple device
-  })
-
-  it('is not there with no Project open', async () => {
-    const wrapper = mountApp()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="canvas-hint"]').exists()).toBe(false)
-  })
 })

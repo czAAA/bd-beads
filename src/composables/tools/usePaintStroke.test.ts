@@ -102,4 +102,18 @@ describe('usePaintStroke', () => {
     harness.history.onUndo()
     expect(at(1, 1)).toBeNull()
   })
+
+  it('flood-erases the connected region in one click under Fill, as one undo step', () => {
+    const { stroke, harness, at, frame } = setup('fill')
+    stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
+    expect(at(0, 2)).toBe('#00ff00')
+
+    stroke.beginOrCommitPress('erase', null, frame.row + 1, frame.column + 1)
+    expect(stroke.strokeMode.value).toBeNull()
+    expect(at(0, 0)).toBeNull()
+    expect(at(2, 2)).toBeNull()
+
+    harness.history.onUndo()
+    expect(at(0, 0)).toBe('#00ff00')
+  })
 })

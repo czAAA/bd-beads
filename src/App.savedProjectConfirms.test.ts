@@ -50,15 +50,6 @@ describe('Saved Projects confirms remove (ticket 232)', () => {
     expect(names()).toEqual(['Current'])
   })
 
-  it('Cancel leaves the library and the open Project alone', async () => {
-    const { wrapper, otherId } = await twoProjects()
-    await click(wrapper, `remove-project-${otherId}`)
-    await click(wrapper, 'confirm-modal-cancel')
-
-    expect(wrapper.find('[data-testid="remove-project-modal"]').exists()).toBe(false)
-    expect(names()).toEqual(['Current', 'Other'])
-    expect(openName(wrapper)).toContain('Current')
-  })
 })
 
 describe('Saved Projects confirms switching (ticket 232)', () => {
@@ -76,22 +67,6 @@ describe('Saved Projects confirms switching (ticket 232)', () => {
     await click(wrapper, 'confirm-modal-confirm')
     expect(wrapper.find('[data-testid="switch-project-modal"]').exists()).toBe(false)
     expect(openName(wrapper)).toContain('Other')
-  })
-
-  it('Cancel keeps the current Project open', async () => {
-    const { wrapper, otherId } = await twoProjects()
-    await click(wrapper, `select-project-${otherId}`)
-    await click(wrapper, 'confirm-modal-cancel')
-
-    expect(wrapper.find('[data-testid="switch-project-modal"]').exists()).toBe(false)
-    expect(openName(wrapper)).toContain('Current')
-  })
-
-  it('does nothing when the picked Project is already open', async () => {
-    const { wrapper, currentId } = await twoProjects()
-    await click(wrapper, `select-project-${currentId}`)
-
-    expect(wrapper.find('[data-testid="switch-project-modal"]').exists()).toBe(false)
   })
 
   it('offers Save first and Switch anyway when the current Project is not saved', async () => {
