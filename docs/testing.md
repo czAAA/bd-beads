@@ -21,6 +21,11 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 ## Where a test goes
 
 - A unit or component test sits beside its file as `<name>.test.ts`.
+- Which Vitest project a test runs in (ticket 420) follows from where it sits and what it is called:
+  - `page` (jsdom, one page shared by every file a worker runs): anything under `src/components/` or `src/overview/`, every `src/App*.test.ts`, and any other test that needs a page or its storage (`document`, `window`, `localStorage`, `sessionStorage`, a canvas) named `<name>.dom.test.ts`.
+  - `unit` (plain Node, no per-file isolation): everything else. A new domain, rendering or service test needs no setup. If it fails there on `document`, `window` or `localStorage` being undefined, rename it `.dom.test.ts`.
+  - In both, files share one module cache per worker within a project, so keep module state and `vi.mock` inside the file and undo what a test installs on a global (`vi.unstubAllGlobals()`, `vi.restoreAllMocks()`).
+- Why sharing: setting up jsdom per file was most of the suite's time. Measured on the Pi with 2 workers (ticket 420), the App files take 217 s wall and 374 s CPU sharing one page per worker and 378 s and 567 s isolated, so they share too.
 - Test at the highest seam that already exists for the behavior, through its public interface, and don't add a seam only to reach an internal. Mount the whole App only when the App's wiring is the subject; otherwise test the domain function, the flow composable or the component on its own (ticket 253 moved logic tests down out of the App tests).
 - An App test proves the wiring (control → flow → storage or screen) with one happy path. Edge cases and every variant (each key, each guard, each label, each tool) live at the lowest level that has them: the shortcut table, the component, the flow. Use one language unless the language switch is the subject; the `Translations` type already makes both languages complete. A mount costs 250–330 ms on the Pi, so every extra App mount is paid by every CI run (ticket 421).
 - App-level tests are split by area: `src/App.<area>.test.ts`. Add to the file for the area, or start a new one; don't grow `App.test.ts`.
@@ -47,7 +52,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `rotated.ts`: a ready-made rotated Project.
 
-`src/testSetup.ts` runs before every test file.
+`src/testSetup.ts` runs before every `page` test file: it empties the module cache and the page the last file left (body, styles, storage), and re-arms auto-unmount, which the library only lets be armed once.
 
 ## The Worker's tests
 

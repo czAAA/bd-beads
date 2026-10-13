@@ -4,6 +4,9 @@ import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
 import { offlineShell } from './vite.pwa.ts'
 
+/** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
+const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/overview/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
@@ -25,15 +28,32 @@ export default defineConfig(({ mode }) => ({
     maxWorkers: 2,
     projects: [
       {
+        // Tests that need no page (ticket 420): domain, rendering, services, pure composables. Plain Node, no jsdom and no
+        // per-file isolation, so a file costs its tests and not a fresh page. A page test is named `*.dom.test.ts`, or sits
+        // under `src/components/`, `src/overview/` or is an `src/App*.test.ts` (docs/testing.md, Where a test goes).
         extends: true,
         test: {
-          name: 'app',
+          name: 'unit',
+          environment: 'node',
+          globals: false,
+          isolate: false,
+          include: ['**/*.test.ts'],
+          exclude: [...configDefaults.exclude, ...PAGE_TESTS, 'e2e/**', 'worker/**'],
+        },
+      },
+      {
+        // Tests that mount a component or touch the page or its storage: one jsdom per worker, shared by every file the
+        // worker runs. `src/testSetup.ts` re-arms what each file needs and clears what the last one left.
+        extends: true,
+        test: {
+          name: 'page',
           environment: 'jsdom',
           globals: false,
-          // The browser checks (ticket 103) are Playwright's, not Vitest's; the Worker's tests (ticket 71) are below.
+          isolate: false,
+          include: PAGE_TESTS,
           // `npm run test:related` sets SKIP_APP_TESTS: the App imports everything, so `vitest related` would pull in
           // every App.*.test.ts (ticket 418, docs/testing.md).
-          exclude: [...configDefaults.exclude, 'e2e/**', 'worker/**', ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
+          exclude: [...configDefaults.exclude, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
           setupFiles: ['./src/testSetup.ts'],
         },
       },
