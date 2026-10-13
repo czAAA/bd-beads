@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { ref } from 'vue'
+import { runInComponent } from '../../testUtils/inComponent'
 import { usePinchPan } from './usePinchPan'
 
 function setup(zoom = 1) {
@@ -11,7 +12,7 @@ function setup(zoom = 1) {
   })
   const panBy = vi.fn()
   const cancelStroke = vi.fn()
-  effectScope().run(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, cancelStroke }))
+  runInComponent(() => usePinchPan(ref(el), { zoom: () => state.zoom, setZoom, panBy, cancelStroke }))
 
   const heard: string[] = []
   const child = document.createElement('div')

@@ -78,3 +78,32 @@ if (typeof window !== 'undefined') {
  * does not mount. A test of the Dock layout, or of the flag itself, mocks `features` again for its own file.
  */
 vi.mock('./features', async (importOriginal) => ({ ...(await importOriginal<typeof import('./features')>()), DOCK_LAYOUT_ENABLED: false }))
+
+/**
+ * A Vue warning fails the test that raised it (ticket 419). Vue reports a mistake in a test (a missing required prop, a
+ * lifecycle hook outside a component) only as a `[Vue warn]` line on console.warn, which a green run buries. The hook
+ * records them while the test runs and throws in afterEach, naming each. A test that provokes a warning on purpose
+ * spies on console.warn itself, which keeps the line from reaching here.
+ */
+const vueWarnings: string[] = []
+let originalWarn: typeof console.warn | undefined
+
+beforeEach(() => {
+  vueWarnings.length = 0
+  originalWarn = console.warn
+  console.warn = (...args: unknown[]) => {
+    const first = args[0]
+    if (typeof first === 'string' && first.startsWith('[Vue warn]')) {
+      vueWarnings.push(args.filter((a) => typeof a === 'string').join(' '))
+    } else {
+      originalWarn?.(...args)
+    }
+  }
+})
+
+afterEach(() => {
+  if (originalWarn) console.warn = originalWarn
+  if (vueWarnings.length > 0) {
+    throw new Error(`Vue warned during the test:\n${vueWarnings.map((w) => `  - ${w}`).join('\n')}`)
+  }
+})
