@@ -42,6 +42,8 @@ const {
   inputModeAvailable,
   toggleInputMode,
   onSetFrameSize,
+  pendingFrame,
+  onCloseFrameControls,
   onSetTechnique,
   onFitFrame,
   onRemoveFrame,
@@ -102,6 +104,7 @@ const {
       :can-copy="!!selection"
       :can-remove-selected-line="canRemoveSelectedLine"
       :setting-frame="settingFrame"
+      :pending-frame="pendingFrame"
       :input-mode="inputModeAvailable ? inputMode : undefined"
       :mirror-axis-counts="mirrorAxisCounts"
       :mirror-copy-mode="mirrorCopyMode"
@@ -120,6 +123,7 @@ const {
       @set-technique="onSetTechnique"
       @fit-frame="onFitFrame"
       @remove-frame="onRemoveFrame"
+      @close-frame="onCloseFrameControls"
       @bring-frame="onBringFrameIntoView"
       @remove-selected-line="onRemoveSelectedLine"
       @set-mirror-axis-count="onSetMirrorAxisCount"

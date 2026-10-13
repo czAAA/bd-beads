@@ -53,6 +53,7 @@ const {
   onRequestDeleteAll,
   onStartSetFrame,
   onSetFrameSize,
+  pendingFrame,
   onSetTechnique,
   onFitFrame,
   onRemoveFrame,
@@ -169,6 +170,7 @@ const deps = computed(() =>
   <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
     <FrameControls
       :project="activeProject"
+      :pending-frame="pendingFrame"
       with-set-frame
       @set-frame="onStartSetFrame(); openPhoneSheet = null"
       @set-size="onSetFrameSize"

@@ -7,6 +7,7 @@ import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { PatternSizeUnit } from '../domain/projectSize'
+import { DEFAULT_FRAME_SIDES, type FrameSides } from '../domain/frame'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
 interface Preference<T> {
@@ -96,6 +97,20 @@ export const PREFERENCES = {
     fallback: 'beads',
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
     write: (unit) => (unit === 'beads' ? null : unit),
+  }),
+  /** The side Width grows and shrinks the Frame from (ticket 410): Right until Left is chosen. Never saved with a Project. */
+  frameWidthSide: preference<FrameSides['horizontal']>({
+    key: 'bd-beads:frame-width-side',
+    fallback: DEFAULT_FRAME_SIDES.horizontal,
+    parse: (raw) => (raw === 'left' || raw === 'right' ? raw : undefined),
+    write: (side) => (side === DEFAULT_FRAME_SIDES.horizontal ? null : side),
+  }),
+  /** The side Height grows and shrinks the Frame from (ticket 410): Bottom until Top is chosen. Never saved with a Project. */
+  frameHeightSide: preference<FrameSides['vertical']>({
+    key: 'bd-beads:frame-height-side',
+    fallback: DEFAULT_FRAME_SIDES.vertical,
+    parse: (raw) => (raw === 'top' || raw === 'bottom' ? raw : undefined),
+    write: (side) => (side === DEFAULT_FRAME_SIDES.vertical ? null : side),
   }),
   /** The app's language. */
   locale: preference<Locale>({

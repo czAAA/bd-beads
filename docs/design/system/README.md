@@ -124,6 +124,8 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 - **Repo changes after v18** (one line each: date, ticket, what changed) (the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398). The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
   - Repo, 2026-10-13, ticket 402: the ToolSheet card's sheets, the modal one too, close on any press outside them, and that press only closes (nothing under it acts); the grab handle closes a sheet on a tap or a drag down. No token change.
 
+- 2026-10-13, ticket 410: MirrorSizeControls and Dock cards: a Left | Right choice before Width and a Top | Bottom choice before Height (SegmentedControl, small, kept on the device), and the Steppers' size applied once when the sheet or row closes. No token changed.
+
 - **v18, Frame margin:** the Frame keeps a three-bead margin where nothing can be drawn, and beads already there move outside it. Drawn flat: no fill, a gap in the grid dots at rest, a 1px dashed `line-strong` outline only while the Frame is being set or a press is refused. New Message "Frame set. 1 piece was in the margin and moved outside it." (Russian proposed, not reviewed). No token changed.
 
 - **v19, Note, ticket 328:** the new Note card: a thin, always-visible block of helper text on `surface` (`meta`, `muted`, radius-sm, padding 8 10, no icon), in place of the (i) popups on the Estimated size warning and the Beads needed weight explanation. `bundle.css` gains `.bb-note`. No token changed.

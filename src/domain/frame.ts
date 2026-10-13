@@ -52,6 +52,35 @@ export function frameWithSize(frame: Frame, columns: number, rows: number): Fram
   return { ...frame, columns: Math.max(1, Math.round(columns)), rows: Math.max(1, Math.round(rows)) }
 }
 
+/** Which side of the Frame the Width and Height steppers grow and shrink it from (ticket 410): the opposite edge stays where it is. */
+export interface FrameSides {
+  horizontal: 'left' | 'right'
+  vertical: 'top' | 'bottom'
+}
+
+/** The sides the steppers used before they could be chosen (ticket 410): the top-left corner stays, the Frame grows right and down. */
+export const DEFAULT_FRAME_SIDES: FrameSides = { horizontal: 'right', vertical: 'bottom' }
+
+/**
+ * The Frame resized to a size from one chosen side per axis (ticket 410), never smaller than one bead each way. From the
+ * left the right edge stays, from the top the bottom one does. Where rows alternate (peyote, brick stitch) the top edge
+ * lands on an even row, as dragging the top handle does, so a press that would land between two even rows goes on to the
+ * next one in the direction of the change: it always moves, by a pair of rows.
+ */
+export function frameWithSizeFrom(technique: Technique, frame: Frame, columns: number, rows: number, from: FrameSides): Frame {
+  const size = frameWithSize(frame, columns, rows)
+  const column = from.horizontal === 'left' ? frame.column + frame.columns - size.columns : frame.column
+  if (from.vertical === 'bottom') {
+    return { row: frame.row, column, rows: size.rows, columns: size.columns }
+  }
+  const bottom = frame.row + frame.rows - 1
+  let top = bottom - size.rows + 1
+  if (snapRow(technique, top) !== top) {
+    top = size.rows < frame.rows && top + 1 <= bottom ? top + 1 : top - 1
+  }
+  return { row: top, column, rows: bottom - top + 1, columns: size.columns }
+}
+
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. */
 export function fitToDrawing(technique: Technique, beads: BeadMap): Frame | undefined {
   const bounds = beadBounds(beads)

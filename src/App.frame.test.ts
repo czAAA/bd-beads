@@ -212,8 +212,9 @@ describe('the Frame row', () => {
     await row.find('[data-testid="frame-fit"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
+    // The press only changes the pending Frame (ticket 410); Remove Frame reads the Frame, so it commits it first.
     await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
     await row.find('[data-testid="frame-remove"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
@@ -221,6 +222,132 @@ describe('the Frame row', () => {
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
     expect(beadColor(wrapper, { row: 3, column: 5 })).toBe(RED)
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+})
+
+describe('the Frame row\'s size steppers apply once (ticket 410)', () => {
+  const framed = (): Project => ({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+  const shownFrame = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.findComponent(ProjectSurface).props('project').frame
+
+  async function openRow(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+    const row = wrapper.find('[data-testid="tool-group-frame"]')
+    await row.find('button').trigger('click')
+    return row
+  }
+
+  it('shows each press on the canvas and in the fields, saves nothing, and commits as one Undo step when the row closes', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('[data-testid="frame-rows-increase"]').trigger('click')
+
+    expect(shownFrame(wrapper)).toEqual({ row: 2, column: 3, rows: 3, columns: 5 })
+    expect(row.find('[data-testid="frame-columns"]').text()).toBe('5')
+    expect(row.find('[data-testid="frame-rows"]').text()).toBe('3')
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+
+    await row.find('button').trigger('click')
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 5 })
+    expect(shownFrame(wrapper)).toEqual({ row: 2, column: 3, rows: 3, columns: 5 })
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+
+  it('takes no Undo step when the Frame is closed back at its own size', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+
+    await row.find('[data-testid="frame-columns-decrease"]').trigger('click')
+    await row.find('[data-testid="frame-columns-decrease"]').trigger('click')
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('button').trigger('click')
+
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('grows from the side that was chosen, keeps the choice on the device and never saves it in the Project', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+    expect(row.find('[data-testid="frame-width-side"] [aria-checked="true"]').text()).toBe(en.frame.sideRight)
+    expect(row.find('[data-testid="frame-height-side"] [aria-checked="true"]').text()).toBe(en.frame.sideBottom)
+
+    await row.find('[data-testid="frame-width-side"] [data-value="left"]').trigger('click')
+    await row.find('[data-testid="frame-height-side"] [data-value="top"]').trigger('click')
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('[data-testid="frame-rows-increase"]').trigger('click')
+    await row.find('button').trigger('click')
+
+    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 3, columns: 4 })
+    expect(localStorage.getItem('bd-beads:frame-width-side')).toBe('left')
+    expect(localStorage.getItem('bd-beads:frame-height-side')).toBe('top')
+    expect(JSON.stringify(loadProjects())).not.toMatch(/frame-width-side|frameWidthSide|"left"/)
+
+    wrapper.unmount()
+    const again = await mountOpen(loadProjects()[0])
+    const reopened = await openRow(again)
+    expect(reopened.find('[data-testid="frame-width-side"] [aria-checked="true"]').text()).toBe(en.frame.sideLeft)
+    expect(reopened.find('[data-testid="frame-height-side"] [aria-checked="true"]').text()).toBe(en.frame.sideTop)
+  })
+
+  it('commits a pending Frame before Rotate or a stroke reads it, so neither acts on a stale one', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+
+    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 4, columns: 2 })
+
+    // Rotate is its own Undo step on top of the committed size.
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+
+  it('commits a pending Frame when a bead is painted, in the bead the pending Frame reaches', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+
+    await pressBead(wrapper, { row: 2, column: 6 })
+    await surface(wrapper).trigger('pointerup')
+    await flushPromises()
+
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
+    expect(beadColor(wrapper, { row: 2, column: 6 })).not.toBeNull()
+  })
+
+  it('drops a pending Frame on Undo, which has nothing of it to take back', async () => {
+    const wrapper = await mountOpen(framed())
+    const row = await openRow(wrapper)
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    expect(shownFrame(wrapper)?.columns).toBe(4)
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(shownFrame(wrapper)).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    await row.find('button').trigger('click')
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+
+  it('keeps the steppers and the choices disabled with the reason while Row progress is on', async () => {
+    const project = framed()
+    const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
+    const row = await openRow(wrapper)
+
+    expect(row.find('[data-testid="frame-width-side"]').attributes('aria-disabled')).toBe('true')
+    expect(row.find('[data-testid="frame-height-side"]').attributes('aria-disabled')).toBe('true')
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    expect(shownFrame(wrapper)).toEqual(project.frame)
+    expect(row.find('[data-testid="frame-locked"]').exists()).toBe(true)
   })
 })
 
