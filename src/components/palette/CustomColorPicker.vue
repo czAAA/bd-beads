@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { usePalette } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
@@ -41,19 +41,19 @@ const tooltip = computed(() => {
 })
 
 /**
- * The native picker reports every change here, including live drag-preview in browsers that fire 'input' while its
- * own dialog is still open — matching the ticket's "choosing a color immediately makes it the paint color".
+ * The first color picked is the answer (ticket 398): it becomes the paint color and joins the Palette, and the sheet
+ * holding this control closes. The native dialog stays open until it is dismissed, so the input is mounted afresh
+ * (`generation`), which closes the dialog with it.
  */
-function onInput(event: Event) {
+const generation = ref(0)
+const inputEl = ref<HTMLInputElement>()
+async function onInput(event: Event) {
   emit('select', (event.target as HTMLInputElement).value)
-}
-
-/**
- * The native dialog commits with 'change'. A sheet holding this control closes then, not on the live 'input' above:
- * unmounting the input while its dialog is still open would take the dialog away mid-drag.
- */
-function onChange() {
+  generation.value += 1
   closeSheet()
+  // Outside a sheet the control stays, and keyboard focus comes back to it rather than falling to the page.
+  await nextTick()
+  inputEl.value?.focus()
 }
 </script>
 
@@ -67,8 +67,9 @@ function onChange() {
       :value="color ?? '#000000'"
       :aria-label="t.palette.customColorLabel"
       :aria-pressed="selected"
+      :key="generation"
+      ref="inputEl"
       @input="onInput"
-      @change="onChange"
     />
     <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>

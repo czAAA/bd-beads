@@ -15,6 +15,8 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     collapseExpandedToolGroup: () => false,
+    cancelColorPick: () => false,
+    paletteColorIdAt: () => undefined,
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
@@ -197,6 +199,21 @@ describe('useAppShortcutTable', () => {
     press({ key: 'Escape' })
     expect(paint.deps.onSelectTool).not.toHaveBeenCalled()
     paint.wrapper.unmount()
+  })
+
+  it('Escape ends Pick color from canvas before anything else (ticket 398)', () => {
+    const picking = mountTable({ activeTool: () => 'select', cancelColorPick: vi.fn(() => true) })
+    press({ key: 'Escape' })
+    expect(picking.deps.cancelColorPick).toHaveBeenCalled()
+    expect(picking.deps.onSelectTool).not.toHaveBeenCalled()
+    picking.wrapper.unmount()
+  })
+
+  it('Shift+1 selects whichever color stands in the first slot (ticket 398)', () => {
+    const slots = mountTable({ paletteColorIdAt: (slot) => ['white', 'red'][slot] })
+    press({ code: 'Digit2', key: '@', shiftKey: true })
+    expect(slots.deps.onSelectColor).toHaveBeenCalledWith('red')
+    slots.wrapper.unmount()
   })
 
   it('Escape leaves the tool alone when it dismissed something', () => {

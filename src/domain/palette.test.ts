@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MAX_ADDED_COLORS, PALETTE, addUsedColor, addedColorId, findPaletteColor, paletteWith, removeAddedColor, restoreAddedColor } from './palette'
+import { MAX_ADDED_COLORS, PALETTE, addUsedColor, addedColorId, findPaletteColor, moveSlot, orderedPalette, paletteWith, removeAddedColor, restoreAddedColor } from './palette'
 
 describe('PALETTE', () => {
   it('has no duplicate ids', () => {
@@ -58,5 +58,39 @@ describe('the Palette limit', () => {
   it('lets 28 colors be added, 40 swatches in all (the Message card)', () => {
     expect(MAX_ADDED_COLORS).toBe(28)
     expect(paletteWith(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))).toHaveLength(40)
+  })
+})
+
+describe('orderedPalette (ticket 398)', () => {
+  const ids = (colors: { id: string }[]) => colors.map((c) => c.id)
+
+  it('is the default order with no saved order', () => {
+    expect(ids(orderedPalette(['#111111'], []))).toEqual(ids(paletteWith(['#111111'])))
+  })
+
+  it('follows the saved order, an added color standing between built-in ones', () => {
+    const order = ['red', addedColorId('#111111'), 'black']
+    const result = ids(orderedPalette(['#111111'], order))
+    expect(result.slice(0, 3)).toEqual(order)
+    expect(result).toHaveLength(PALETTE.length + 1)
+  })
+
+  it('closes up over a color that was removed and appends one the order lacks', () => {
+    const order = ['red', addedColorId('#999999'), 'black']
+    const result = ids(orderedPalette(['#111111'], order))
+    expect(result.slice(0, 2)).toEqual(['red', 'black'])
+    expect(result.at(-1)).toBe(addedColorId('#111111'))
+  })
+})
+
+describe('moveSlot (ticket 398)', () => {
+  it('moves one id to a slot, shifting the ones between', () => {
+    expect(moveSlot(['a', 'b', 'c', 'd'], 3, 1)).toEqual(['a', 'd', 'b', 'c'])
+    expect(moveSlot(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+  })
+
+  it('leaves the ids alone for a move that goes nowhere', () => {
+    expect(moveSlot(['a', 'b'], 1, 1)).toEqual(['a', 'b'])
+    expect(moveSlot(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
   })
 })

@@ -5,7 +5,7 @@ import { BEAD_CATALOG } from './domain/beads'
 import { MAX_ADDED_COLORS, PALETTE } from './domain/palette'
 import { createProject } from './domain/project'
 import { en } from './i18n/en'
-import { ADDED_COLORS_KEY } from './services/addedColorsStore'
+import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY } from './services/addedColorsStore'
 import { saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
 
@@ -32,14 +32,10 @@ async function paint(wrapper: ReturnType<typeof mount>, at = 0) {
 }
 
 describe('a Custom color joins the Palette on first use (ticket 227)', () => {
-  it('adds a swatch only once it paints, selects it, and keeps it across a reload', async () => {
+  it('adds a swatch and selects it at the first pick (ticket 398), and keeps it across a reload', async () => {
     const wrapper = mount(App)
     await flushPromises()
     await choose(wrapper, '#123456')
-    expect(swatches(wrapper)).toHaveLength(PALETTE.length)
-
-    await paint(wrapper, 0)
-    await paint(wrapper, 1)
     const all = swatches(wrapper)
     expect(all).toHaveLength(PALETTE.length + 1)
     const added = all[PALETTE.length]!
@@ -47,6 +43,8 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     expect(added.element.closest('.swatch')!.querySelector('.app-tooltip__key')).toBeNull() // an added color has no key chip
     expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456'])
 
+    await paint(wrapper, 0)
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
     expect(swatches(mount(App, { attachTo: document.body }))).toHaveLength(PALETTE.length + 1)
   })
 
@@ -182,5 +180,68 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await paint(wrapper)
     expect(swatches(wrapper)).toHaveLength(PALETTE.length + MAX_ADDED_COLORS)
     expect(swatches(wrapper).at(-1)!.attributes('aria-label')).toBe('#fedcba')
+  })
+})
+
+describe('the Palette is slots (ticket 398)', () => {
+  const ids = (wrapper: ReturnType<typeof mount>) => swatches(wrapper).map((swatch) => swatch.attributes('data-color-id'))
+
+  it('moves a swatch to another slot, and Shift+1 follows the slot', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    const first = swatches(wrapper)[0]!
+    await first.trigger('keydown', { key: 'ArrowRight', altKey: true })
+    await flushPromises()
+    expect(ids(wrapper).slice(0, 3)).toEqual(['white', 'black', 'red'])
+    expect(JSON.parse(localStorage.getItem(PALETTE_ORDER_KEY)!).slice(0, 2)).toEqual(['white', 'black'])
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '!', shiftKey: true, bubbles: true }))
+    await flushPromises()
+    expect(swatches(wrapper)[0]!.attributes('aria-pressed')).toBe('true')
+    expect(swatches(wrapper)[0]!.attributes('data-color-id')).toBe('white')
+  })
+
+  it('keeps no empty slot when an added color between others is removed', async () => {
+    localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(['#123456', '#abcdef']))
+    localStorage.setItem(PALETTE_ORDER_KEY, JSON.stringify(['red', 'added-123456', 'black']))
+    const wrapper = mount(App)
+    await flushPromises()
+    expect(ids(wrapper).slice(0, 4)).toEqual(['red', 'added-123456', 'black', 'white'])
+    await swatches(wrapper)[1]!.trigger('click')
+    await wrapper.find('[data-testid="palette-swatch-remove"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(ids(wrapper).slice(0, 3)).toEqual(['red', 'black', 'white'])
+  })
+})
+
+describe('Pick color from canvas (ticket 398)', () => {
+  it('takes the pressed bead\'s color, adds it to the Palette and ends the pick', async () => {
+    const wrapper = mount(App)
+    await flushPromises()
+    await choose(wrapper, '#123456')
+    await paint(wrapper, 0)
+    await swatches(wrapper)[0]!.trigger('click') // red again
+    const button = wrapper.find('[data-testid="pick-color-button"]')
+    await button.trigger('click')
+    expect(button.attributes('aria-pressed')).toBe('true')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
+    await flushPromises()
+    expect(button.attributes('aria-pressed')).toBe('false')
+    expect(swatches(wrapper)[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
+  })
+
+  it('adds the picked color when it is new', async () => {
+    const wrapper = mount(App)
+    await flushPromises()
+    await choose(wrapper, '#123456')
+    await paint(wrapper, 0)
+    await wrapper.find('[data-testid="palette-swatch-remove"]').trigger('click')
+    await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length)
+    await wrapper.find('[data-testid="pick-color-button"]').trigger('click')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
+    await flushPromises()
+    expect(swatches(wrapper)).toHaveLength(PALETTE.length + 1)
   })
 })

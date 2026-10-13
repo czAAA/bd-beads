@@ -100,7 +100,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('icon-btn--selected')
   })
 
-  it('closes the Colour sheet on a Palette color and on a Custom color, and leaves Fill active (ticket 397)', async () => {
+  it('closes the Colour sheet on a Palette color and on the first Custom color picked, and leaves Fill active (ticket 397)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
     await wrapper.find('[data-testid="sheet-tool-fill"]').trigger('click')
@@ -113,9 +113,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const input = wrapper.get('[data-testid="bottom-sheet"] [data-testid="custom-color-input"]')
     ;(input.element as HTMLInputElement).value = '#123456'
     await input.trigger('input')
-    // Still open while the native dialog is: 'input' selects, 'change' commits.
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(true)
-    await input.trigger('change')
+    // The first pick is the answer (ticket 398): it selects, joins the Palette and closes the sheet.
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
