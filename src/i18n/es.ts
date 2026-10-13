@@ -122,6 +122,14 @@ export const es: Translations = {
   storage: {
     saveFailedMessage:
       'No se pudo guardar en este dispositivo. Tu último cambio solo está en pantalla. Libera espacio en el navegador o exporta el proyecto a un archivo para conservarlo.',
+    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    keepNote: {
+      title: '¿Conservar los proyectos en este dispositivo?',
+      message:
+        'Tu navegador puede preguntar si permite que esta app guarde sus datos. Marca «Recordar esta decisión» y elige Permitir, para que tus proyectos se conserven aunque el dispositivo se quede sin espacio. Si lo rechazas, el navegador puede borrar los proyectos cuando falte espacio, así que guarda siempre los proyectos importantes con Guardar, que da un archivo del proyecto, y cuida ese archivo.',
+      confirmButton: 'Conservar proyectos',
+      cancelButton: 'Omitir',
+    },
   },
   header: {
     menuButton: 'Menú',

@@ -33,6 +33,7 @@ import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
+import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
@@ -59,6 +60,12 @@ function wireAppShell(services: Services) {
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
   useThemePick(services.devicePreferences)
 
+  /** Asking the browser to keep the library, at a device's first save (ticket 399). */
+  const storageAsk = useStorageAskFlow({
+    persistentStorage: services.persistentStorage,
+    devicePreferences: services.devicePreferences,
+  })
+
   /**
    * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
    * one of these mutators, and nothing here touches storage directly. replaceProject is the single commit point for a
@@ -76,7 +83,7 @@ function wireAppShell(services: Services) {
     removeProject,
     flushPendingSave,
     saveNow,
-  } = useProjectLibrary(services.libraryStore)
+  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved)
 
   const currentProject = () => activeProject.value
   const messages = () => t.value
@@ -593,6 +600,7 @@ function wireAppShell(services: Services) {
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
       !!savedProjectConfirms.pendingSwitch.value ||
+      storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
     collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
     backOutOfSelect,
@@ -774,6 +782,7 @@ function wireAppShell(services: Services) {
     onBringFrameIntoView: frameFlow.bringIntoView,
     ...replaceBead,
     ...importSwitch,
+    ...storageAsk,
     ...exportFlow,
     onSave,
     ...overlays,

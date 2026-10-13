@@ -148,6 +148,8 @@ export interface Translations {
   /** Storage's own voice in the UI: what it says when a write to this device didn't get through (ticket 55). */
   storage: {
     saveFailedMessage: string
+    /** The note before the browser's storage prompt, shown once at a device's first save (ticket 399). */
+    keepNote: { title: string; message: string; confirmButton: string; cancelButton: string }
   }
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
