@@ -23,9 +23,18 @@
 
 html,
 body {
-  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (manipulation allows it on iOS), and no overscroll bounce moves the page. */
+  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (`manipulation` would allow it on iOS), and no overscroll bounce moves the page. */
   touch-action: pan-x pan-y;
   overscroll-behavior: none;
+}
+
+/*
+ * touch-action is not inherited: a scrolling sheet body or any control left at `auto` would let Safari pinch-zoom the
+ * page there. Every element is locked to panning; the canvas (ProjectSurface, ZoomPill) sets its own `none`, which
+ * out-ranks this zero-specificity rule.
+ */
+:where(*) {
+  touch-action: pan-x pan-y;
 }
 
 body {
@@ -41,4 +50,6 @@ html:has(.app-shell),
 html:has(.app-shell) body {
   height: 100%;
   overflow: hidden;
+  /* The Dock's own colour, so no band of page background shows below it where the screen is taller than the shell. */
+  background: var(--canvas);
 }

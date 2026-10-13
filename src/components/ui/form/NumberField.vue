@@ -167,7 +167,7 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
   background: var(--elevated);
   border: 0;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
   user-select: none;
 }
 
