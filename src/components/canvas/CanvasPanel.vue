@@ -153,13 +153,15 @@ function techniqueWord(technique: Technique): string {
         The canvas box's header strip (ticket 143): what is on the board and its zoom. While a picture is being
         framed (ticket 58) its zoom is the framing step's own, over its own 100–800% range (domain/imageFraming),
         since that zoom moves the picture under a fixed frame rather than scaling the Project on screen. The strip
-        never scrolls, zooms or rotates with the Project below it.
+        never scrolls, zooms or rotates with the Project below it. The Dock layout otherwise leaves zoom to the
+        Zoom pill (ADR 0046), but the pill excludes framing (there is no Project yet to float over), so the strip
+        keeps its own cluster then even with the flag on (ticket 385).
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
         :project="settledProject"
         :size="stripSize"
-        :zoom-percent="DOCK_LAYOUT_ENABLED ? undefined : stripZoomPercent"
+        :zoom-percent="DOCK_LAYOUT_ENABLED && !framing ? undefined : stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"

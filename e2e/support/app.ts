@@ -1,6 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
 import { STORAGE_KEY, storedLibrary } from './projects'
-import type { Project } from '../../src/domain/project'
+import { normalizeProject, type Project } from '../../src/domain/project'
+import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
+import type { Tool } from '../../src/domain/tool'
 
 /**
  * Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. It
@@ -51,15 +53,66 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
+/** One of the Dock's five sheets (Dock card). */
+type DockSheetButton = 'dock-tool' | 'dock-color' | 'dock-frame' | 'dock-project' | 'dock-menu'
+
+/** Opens a Dock sheet (Dock card), closing whichever one is already open first — its Dock button toggles, so clicking
+ * it while open would close it instead. Does nothing if the right one is already open. */
+export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<void> {
+  if ((await page.getByTestId('bottom-sheet').count()) > 0) {
+    await closeSheet(page)
+  }
+  await page.getByTestId(dock).click()
+  await settle(page)
+}
+
+/** Closes whichever Dock sheet is open, the way its own Close button does; does nothing with none open. */
+export async function closeSheet(page: Page): Promise<void> {
+  const close = page.getByTestId('sheet-close')
+  if ((await close.count()) > 0) {
+    await close.click()
+    await settle(page)
+  }
+}
+
+/** Picks a Tool through the Dock's Tool sheet (ToolTiles card): opens it, then taps the tile, which closes the sheet itself. */
+export async function selectTool(page: Page, tool: Tool): Promise<void> {
+  await openDockSheet(page, 'dock-tool')
+  await page.getByTestId(`sheet-tool-${tool}`).click()
+  await settle(page)
+}
+
+/** Copies the Selection by its keyboard chord: the Frame sheet's Copy button has never had a testid of its own (ticket 384). */
+export async function copySelection(page: Page): Promise<void> {
+  await page.keyboard.press('ControlOrMeta+c')
+  await settle(page)
+}
+
+/** Opens the New Project form (modal sheet): with no Project open the Dock layout shows the project bar in the Dock's
+ * place (AppBottomBar card) instead of the Toolbox layout's inline form. */
+export async function openNewProjectForm(page: Page): Promise<void> {
+  await page.getByTestId('phone-bar-new-project').click()
+  await settle(page)
+}
+
+/** The zoom readout, wherever it is: the Zoom pill normally, or the Canvas strip's own cluster while framing, which the pill excludes (ticket 385). */
+function zoomControl(page: Page, part: 'level' | 'in' | 'out'): Locator {
+  return page.getByTestId(`zoom-pill-${part}`).or(page.getByTestId(`zoom-${part}`))
+}
+
+/** The zoom level on screen right now, in percent. */
+export async function currentZoomPercent(page: Page): Promise<number> {
+  return Number.parseInt((await zoomControl(page, 'level').textContent()) ?? '', 10)
+}
+
 /** Clicks the zoom buttons until the level reads `percent`, and waits for the picture to catch up. */
 export async function setZoom(page: Page, percent: number): Promise<void> {
-  const level = page.getByTestId('zoom-level')
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    const current = Number.parseInt((await level.textContent()) ?? '', 10)
+    const current = await currentZoomPercent(page)
     if (current === percent) {
       break
     }
-    await page.getByTestId(current < percent ? 'zoom-in' : 'zoom-out').click()
+    await zoomControl(page, current < percent ? 'in' : 'out').click()
   }
   await settle(page)
 }
@@ -95,4 +148,14 @@ export async function stateConvertSize(page: Page, columns: number, rows: number
   await page.getByTestId('width-input').fill(String(columns))
   await page.getByTestId('height-input').fill(String(rows))
   await page.getByTestId('convert-size-continue').click()
+}
+
+/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
+export async function savedProject(page: Page): Promise<Project> {
+  await openDockSheet(page, 'dock-project')
+  await page.getByTestId('save-button').click()
+  const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
+  await closeSheet(page)
+  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
+  return normalizeProject(decodeProject(library.patterns[0]!))
 }

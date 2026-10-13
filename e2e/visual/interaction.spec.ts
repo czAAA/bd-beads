@@ -4,11 +4,9 @@ import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Technique } from '../../src/domain/grid'
-import { normalizeProject } from '../../src/domain/project'
-import { decodeProject } from '../../src/domain/projectEncoding'
-import type { EncodedProject } from '../../src/domain/projectEncoding'
+import type { Project } from '../../src/domain/project'
 import { PALETTE } from '../../src/domain/palette'
-import { gridBox, openApp, projectBox, setZoom, settle } from '../support/app'
+import { gridBox, openApp, projectBox, savedProject, selectTool, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
@@ -20,27 +18,19 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
-/** The Project the app has saved, read back the way it is stored. */
-async function savedProject(page: Page) {
-  await page.getByTestId('save-button').click()
-  const stored = await page.evaluate(() => localStorage.getItem('bd-beads:patterns'))
-  const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
-  return normalizeProject(decodeProject(library.patterns[0]!))
-}
-
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
 async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomPercent: number, row: number, column: number) {
   return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
-const colorAt = (project: Awaited<ReturnType<typeof savedProject>>, row: number, column: number) => frameGrid(project)[row]![column]!.color
+const colorAt = (project: Project, row: number, column: number) => frameGrid(project)[row]![column]!.color
 
 test.describe('the hover preview', () => {
   const scenarios = [
     { name: 'loom-hover-paint', technique: 'loom' as const, tool: undefined },
     { name: 'peyote-hover-paint', technique: 'peyote' as const, tool: undefined },
     { name: 'brick-hover-paint', technique: 'brick' as const, tool: undefined },
-    { name: 'peyote-hover-erase', technique: 'peyote' as const, tool: 'tool-erase' },
+    { name: 'peyote-hover-erase', technique: 'peyote' as const, tool: 'erase' as const },
   ]
 
   for (const scenario of scenarios) {
@@ -51,7 +41,7 @@ test.describe('the hover preview', () => {
         const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0 })
         await openApp(page, [project])
         if (scenario.tool) {
-          await page.getByTestId(scenario.tool).click()
+          await selectTool(page, scenario.tool)
         }
 
         for (const zoom of zoomsFor(rotated)) {
@@ -117,7 +107,7 @@ test.describe('the pointer tools', () => {
     expect([1, 2, 3, 4, 5, 6].map((column) => colorAt(saved, 2, column))).toEqual(Array(6).fill(DEFAULT_COLOR))
     expect(colorAt(saved, 2, 0)).toBeNull()
 
-    await page.getByTestId('undo-button').click()
+    await page.getByTestId('zoom-pill-undo').click()
     expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 
@@ -143,7 +133,7 @@ test.describe('the pointer tools', () => {
 
   test('the Fill tool fills the area under a click', async ({ page }) => {
     await openBlank(page)
-    await page.getByTestId('tool-fill').click()
+    await selectTool(page, 'fill')
 
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y)
@@ -155,7 +145,7 @@ test.describe('the pointer tools', () => {
     const project = fixtureProject({ technique: 'peyote' })
     await openApp(page, [project])
     await setZoom(page, 100)
-    await page.getByTestId('tool-erase').click()
+    await selectTool(page, 'erase')
 
     const at = await pointOn(page, 'peyote', false, 100, 3, 5)
     await page.mouse.click(at.x, at.y)

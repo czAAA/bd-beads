@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { Technique } from '../../src/domain/grid'
 import type { Project, RowProgress } from '../../src/domain/project'
-import { gridBox, settle } from '../support/app'
+import { copySelection, gridBox, selectTool, settle } from '../support/app'
 import { beadCentre } from '../support/projects'
 
 /** What a scenario's steps are working on: the Project as seeded, and the zoom the page is at right now, in percent. */
@@ -50,7 +50,7 @@ async function pointerOnBead(page: Page, { project, zoom }: Context, row: number
 
 /** Drags the Select tool's marquee from one bead to another, the way a person would. */
 async function dragSelection(page: Page, context: Context, from: [number, number], to: [number, number]): Promise<void> {
-  await page.getByTestId('tool-select').click()
+  await selectTool(page, 'select')
   const box = await gridBox(page)
   const start = beadCentre(context.project, box, context.zoom / 100, { row: from[0], column: from[1] })
   const end = beadCentre(context.project, box, context.zoom / 100, { row: to[0], column: to[1] })
@@ -93,7 +93,7 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-paste-preview`,
     prepare: async (page, context) => {
       await dragSelection(page, context, [1, 1], [3, 4])
-      await page.getByTestId('copy-button').click()
+      await copySelection(page)
     },
     place: (page, context) => pointerOnBead(page, context, 5, 8),
     // The Selection's beads, and the block of 3 × 4 stamped with its corner at (5, 8).
@@ -110,7 +110,7 @@ export const SCENARIOS: Scenario[] = [
     technique: 'peyote',
     name: 'peyote-hover-erase',
     prepare: async (page) => {
-      await page.getByTestId('tool-erase').click()
+      await selectTool(page, 'erase')
     },
     place: (page, context) => pointerOnBead(page, context, 3, 5),
   },
