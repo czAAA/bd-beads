@@ -1,7 +1,14 @@
-import { enableAutoUnmount } from '@vue/test-utils'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { browserDevicePreferences } from './services/devicePreferences'
-import { installSurfaceLayout } from './testUtils/surfaceLayout'
+
+/**
+ * Page tests share one jsdom and one module cache per worker (ticket 420), so a file would otherwise start from the
+ * modules the last one imported, mocks and module state included. Empty the cache first, and import what this file's
+ * setup shares with its tests only afterwards, so both hold the same instance.
+ */
+vi.resetModules()
+const { disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils')
+const { browserDevicePreferences } = await import('./services/devicePreferences')
+const { installSurfaceLayout } = await import('./testUtils/surfaceLayout')
 
 /**
  * jsdom's PointerEvent doesn't redeclare `button`/`buttons` on its own prototype -- they're inherited, getter-only,
@@ -25,7 +32,20 @@ if (typeof PointerEvent !== 'undefined') {
  * Unmount every wrapper after each test. A leaked App keeps its window keydown listeners and reactive watchers
  * alive, so each later test in the same file pays for every earlier one (App.test.ts went from ~26s to a fraction).
  */
+// Page tests share one jsdom per worker (ticket 420), so this runs once per file; the library throws on a second arming.
+disableAutoUnmount()
 enableAutoUnmount(afterEach)
+
+/** What the file before left on the shared page: its mounted elements, its storage, its title and its classes. */
+if (typeof document !== 'undefined') {
+  document.body.replaceChildren()
+  document.head.querySelectorAll('style').forEach((node) => node.remove())
+  document.documentElement.removeAttribute('class')
+  document.documentElement.removeAttribute('style')
+  document.title = ''
+  window.localStorage.clear()
+  window.sessionStorage.clear()
+}
 
 /**
  * jsdom has no canvas: getContext logs "not implemented" and hands back nothing. A component that draws on one (the
