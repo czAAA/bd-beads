@@ -29,8 +29,13 @@ const MEASURES: Record<Measure, MeasureSpec> = {
   'blobs-db': { level: 'WARN_BLOBS_DB_MB', unit: 'MB', label: () => 'blobs database size' },
 }
 
+/**
+ * Counts are whole numbers, grouped by thousands with a regex rather than `toLocaleString`: the first `Intl` call in a
+ * fresh isolate initialises ICU (about 6 ms of V8 CPU), and the watchdog is cold on every run, against Workers Free's
+ * 10 ms (ticket 409).
+ */
 function format(value: number, unit: MeasureSpec['unit']): string {
-  return unit === 'MB' ? `${(value / MB).toFixed(1)} MB` : value.toLocaleString('en-US')
+  return unit === 'MB' ? `${(value / MB).toFixed(1)} MB` : String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
 
 /** One measure checked against its warn level, as a line of the report. */
