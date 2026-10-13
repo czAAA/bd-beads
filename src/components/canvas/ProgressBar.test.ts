@@ -60,6 +60,15 @@ describe('ProgressBar', () => {
     expect(next.attributes('title')).toBeUndefined()
   })
 
+  it('fills the track with the finished share of the rows', () => {
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 2) } }) // 20 rows
+
+    const track = wrapper.find('[data-testid="progress-bar-track"]')
+    expect(track.attributes('aria-valuenow')).toBe('2')
+    expect(track.attributes('aria-valuemax')).toBe('20')
+    expect(track.find('span').attributes('style')).toContain('width: 10%')
+  })
+
   it('shows a compact "current/total" counter and icon-only Previous/Next with the same hover label and hotkeys (ticket 188)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 

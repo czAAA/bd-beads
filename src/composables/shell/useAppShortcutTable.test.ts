@@ -237,4 +237,105 @@ describe('useAppShortcutTable', () => {
     expect(open.deps.onSave).toHaveBeenCalled()
     open.wrapper.unmount()
   })
+
+  it('4, 5 and 6 pick Erase, Hand and Frame (ticket 292)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
+    for (const key of ['4', '5', '6']) press({ key })
+    expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
+    expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
+    expect(deps.onToggleFrame).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('does nothing on keys that no longer have a control: E, H, F and the Mirror keys (tickets 174, 292)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
+    for (const key of ['e', 'h', 'f', '-', '=', '[', ']', 'm', 'v']) press({ key })
+    for (const fn of Object.values(deps)) if (typeof fn === 'function' && 'mock' in fn) expect(fn).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('Shift plus 1..9, 0, Q and W pick the Palette slots in order (ticket 88)', () => {
+    const codes = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyQ', 'KeyW']
+    const { deps, wrapper } = mountTable({ paletteColorIdAt: (slot) => `slot-${slot}` })
+    for (const code of codes) press({ code, shiftKey: true })
+    expect(vi.mocked(deps.onSelectColor).mock.calls.map(([id]) => id)).toEqual(codes.map((_c, slot) => `slot-${slot}`))
+    wrapper.unmount()
+  })
+
+  it('P and D toggle Row progress and its direction (ticket 94)', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: false } }) as never })
+    press({ key: 'p' })
+    expect(deps.onToggleRowProgress).toHaveBeenCalledWith(true)
+    press({ key: 'd' })
+    expect(deps.onToggleRowDirection).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('Enter and Space move one row on, with Shift one back, and only while Row progress is on (tickets 94, 178)', () => {
+    const on = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never })
+    press({ key: 'Enter' })
+    press({ key: ' ' })
+    press({ key: 'Enter', shiftKey: true })
+    press({ key: ' ', shiftKey: true })
+    expect(vi.mocked(on.deps.onMoveRow).mock.calls).toEqual([[1], [1], [-1], [-1]])
+    on.wrapper.unmount()
+    const off = mountTable({ activeProject: () => ({ rowProgress: { enabled: false } }) as never })
+    press({ key: 'Enter' })
+    press({ key: ' ', shiftKey: true })
+    expect(off.deps.onMoveRow).not.toHaveBeenCalled()
+    off.wrapper.unmount()
+  })
+
+  it('leaves Enter and Space to a focused Toolbox or Progress bar button, so one press does not also move the row', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never })
+    for (const container of ['toolbox', 'progress-bar']) {
+      const holder = document.createElement('div')
+      holder.dataset.testid = container
+      const button = document.createElement('button')
+      holder.appendChild(button)
+      document.body.appendChild(holder)
+      for (const init of [{ key: 'Enter' }, { key: ' ' }, { key: 'Enter', shiftKey: true }, { key: ' ', shiftKey: true }]) {
+        button.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+      }
+      holder.remove()
+    }
+    expect(deps.onMoveRow).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('Ctrl/Cmd+C copies, and ? opens the shortcuts help (tickets 91, 96)', () => {
+    const { deps, wrapper } = mountTable()
+    press({ key: 'c', ctrlKey: true })
+    press({ key: 'c', metaKey: true })
+    press({ key: '?', shiftKey: true })
+    expect(deps.onCopy).toHaveBeenCalledTimes(2)
+    expect(deps.openShortcutsHelp).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('answers no key while typing in a form field, except those marked to', () => {
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never, hasSelection: () => true, paletteColorIdAt: () => 'red' })
+    const field = document.createElement('input')
+    document.body.appendChild(field)
+    for (const init of [
+      { key: '1' }, { key: 'r' }, { key: 'p' }, { key: 'd' }, { key: 'Delete' }, { key: 'Enter' }, { key: ' ' }, { key: '?' },
+      { key: 'c', ctrlKey: true }, { code: 'Digit2', shiftKey: true },
+    ]) {
+      field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
+    }
+    field.remove()
+    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowProgress, deps.onToggleRowDirection, deps.onDeleteSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
+      expect(fn).not.toHaveBeenCalled()
+    }
+    wrapper.unmount()
+  })
+
+  it('answers no key while a dialog is open, except Escape', () => {
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ rowProgress: { enabled: true } }) as never, paletteColorIdAt: () => 'red' })
+    for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
+    for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onToggleRowProgress, deps.onSelectColor]) {
+      expect(fn).not.toHaveBeenCalled()
+    }
+    wrapper.unmount()
+  })
 })
