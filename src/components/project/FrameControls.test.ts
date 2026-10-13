@@ -80,4 +80,63 @@ describe('FrameControls', () => {
     const again = mount(FrameControls, { props: { project: framed() } })
     expect(again.find('[data-testid="frame-columns"]').text()).toBe('15')
   })
+
+  describe('the side each stepper changes the Frame from (ticket 410)', () => {
+    const optionsOf = (wrapper: ReturnType<typeof mount>, testid: string) => wrapper.findAll(`[data-testid="${testid}"] [role="radio"]`)
+
+    it('offers Left | Right before Width and Top | Bottom before Height, on Right and Bottom until chosen', () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      const width = optionsOf(wrapper, 'frame-width-side')
+      const height = optionsOf(wrapper, 'frame-height-side')
+
+      expect(width.map((option) => option.text())).toEqual([en.frame.sideLeft, en.frame.sideRight])
+      expect(width.map((option) => option.attributes('aria-checked'))).toEqual(['false', 'true'])
+      expect(height.map((option) => option.text())).toEqual([en.frame.sideTop, en.frame.sideBottom])
+      expect(height.map((option) => option.attributes('aria-checked'))).toEqual(['false', 'true'])
+
+      const order = wrapper.findAll('[data-testid="frame-width-side-row"], [data-testid="frame-columns"], [data-testid="frame-height-side-row"], [data-testid="frame-rows"]')
+      expect(order.map((el) => el.attributes('data-testid'))).toEqual(['frame-width-side-row', 'frame-columns', 'frame-height-side-row', 'frame-rows'])
+    })
+
+    it('keeps the choices on the device, not in the Project, and emits nothing for them', async () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      await wrapper.find('[data-testid="frame-width-side"] [data-value="left"]').trigger('click')
+      await wrapper.find('[data-testid="frame-height-side"] [data-value="top"]').trigger('click')
+
+      expect(localStorage.getItem('bd-beads:frame-width-side')).toBe('left')
+      expect(localStorage.getItem('bd-beads:frame-height-side')).toBe('top')
+      expect(wrapper.emitted('set-size')).toBeUndefined()
+
+      const again = mount(FrameControls, { props: { project: framed() } })
+      expect(optionsOf(again, 'frame-width-side').map((option) => option.attributes('aria-checked'))).toEqual(['true', 'false'])
+      expect(optionsOf(again, 'frame-height-side').map((option) => option.attributes('aria-checked'))).toEqual(['true', 'false'])
+    })
+
+    it('falls back to Right and Bottom for a saved value it does not know', () => {
+      localStorage.setItem('bd-beads:frame-width-side', 'centre')
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      expect(optionsOf(wrapper, 'frame-width-side').map((option) => option.attributes('aria-checked'))).toEqual(['false', 'true'])
+    })
+
+    it('is disabled while Row progress is on', async () => {
+      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 0, currentColumn: 0 } }
+      const wrapper = mount(FrameControls, { props: { project } })
+      const width = wrapper.find('[data-testid="frame-width-side"]')
+      expect(width.attributes('aria-disabled')).toBe('true')
+      await width.find('[data-value="left"]').trigger('click')
+      expect(localStorage.getItem('bd-beads:frame-width-side')).toBeNull()
+    })
+  })
+
+  it('shows the pending Frame in the fields and the estimate, and steps from it (ticket 410)', async () => {
+    const project = framed()
+    const wrapper = mount(FrameControls, { props: { project, pendingFrame: { ...project.frame!, columns: 14, rows: 22 } } })
+
+    expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('14')
+    expect(wrapper.find('[data-testid="frame-rows"]').text()).toBe('22')
+    expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 2.1 × 3.3 cm')
+
+    await wrapper.find('[data-testid="frame-columns-increase"]').trigger('click')
+    expect(wrapper.emitted('set-size')).toEqual([[15, 22]])
+  })
 })

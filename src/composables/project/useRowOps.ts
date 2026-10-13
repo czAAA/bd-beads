@@ -10,6 +10,8 @@ import {
 export interface RowOpsDeps {
   currentProject: () => Project | undefined
   replaceProject: (project: Project) => void
+  /** Commits the Frame the size steppers have pending before Row progress turns on: its rows are the Frame's (ticket 410). */
+  settleFrame?: () => void
 }
 
 /**
@@ -18,6 +20,7 @@ export interface RowOpsDeps {
  */
 export function useRowOps(deps: RowOpsDeps) {
   function onToggleRowProgress(enabled: boolean) {
+    deps.settleFrame?.()
     const project = deps.currentProject()
     if (project) {
       deps.replaceProject(setRowProgressEnabled(project, enabled))
