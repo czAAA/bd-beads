@@ -193,7 +193,7 @@ watch(
   border: 0;
   border-radius: var(--radius-md);
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
   user-select: none;
 }
 

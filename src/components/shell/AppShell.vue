@@ -76,8 +76,9 @@ const {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  height: 100dvh;
-  position: relative;
+  /* Pinned to the screen, not sized by 100dvh: iOS's dvh can fall short of the screen and leave a band under the Dock. */
+  position: fixed;
+  inset: 0;
   overflow: hidden;
   background: var(--canvas);
 }
