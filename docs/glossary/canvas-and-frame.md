@@ -1,37 +1,37 @@
 # Glossary: Canvas and Frame
 
-The Project, the Open canvas, the Frame, Pieces, zoom and the rulers. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
+The Project, the Canvas, the Frame, Pieces, zoom and the rulers. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **Project**:
-Everything saved under one name: the Open canvas with all its Pieces, the Frame, Technique, Bead, rotation, Row progress, Image colors and maker's name. What a person creates, opens, saves, lists in the library, exports as a file and shares. A Project with no Frame has no Pattern yet (ADR 0028, ticket 262).
-_Avoid_: design, drawing, chart, pattern (for the whole saved thing)
+Everything saved under one name: one Canvas holding the Frame (none or one), the Pieces and any unframed Schemas, plus the Technique, Bead, rotation, Row progress, Image colors, the Project's name and its Maker's name. What a person creates, opens, saves, lists in the library, exports as a file and shares. A Project with no Frame has no framed Schema yet (ADR 0028, ticket 262).
+_Avoid_: design, drawing, chart, pattern, schema (for the whole saved thing)
 
-**Pattern**:
-The beads inside a Project's Frame: what the PNG and PDF exports contain, what Beads needed counts, and what Row progress and Rotate work on. Only the word for this; the code has no `Pattern` type, it reads the Frame's beads (`beadsInFrame`). The Overview and Tour say Pattern only for this, never for the whole canvas.
-_Avoid_: for the whole saved canvas, which is a Project
+**Schema**:
+A Piece that has a Frame or a name; the word for finished work. A **framed Schema** is the beads inside the Project's Frame, finished and ready for progress: what the PNG and PDF exports contain, what Beads needed counts, and what Row progress and Rotate work on. A Piece cut by the Frame's edge is a Schema only where it lies inside; the part outside stays a Piece. An **unframed Schema** is a named Piece not yet framed; a Project holds any number of them. Decided, not built yet: the app has no name for a Piece, so today only the Frame makes a Schema (ADR 0050, tickets 406 and 407). The code has no `Schema` type, it reads the Frame's beads (`beadsInFrame`). The Overview and Tour say Schema only for this, never for the whole Canvas.
+_Avoid_: pattern, chart (all replaced by Schema, ADR 0050); for the whole saved thing, which is a Project; for an unnamed Piece with no Frame
 
-**Open canvas**:
-What a Project is drawn on: an endless field of bead positions with no board and no fixed size (see ADR 0026), laid out on the Technique's Grid. Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
-_Avoid_: board, infinite grid, sheet
+**Canvas**:
+The open area a Project is drawn on: an endless field of bead positions with no board and no fixed size (see ADR 0026), laid out on the Technique's Grid. A Project has exactly one. Positions are addressed by row and column, negative included, and only painted ones are stored. The person draws anywhere, and moves around with the Hand tool, the wheel, two fingers or Space + drag.
+_Avoid_: open canvas, board, infinite grid, sheet
 
 **Grid**:
-The endless arrangement of positions on the Open canvas set by the Technique: loom rows stack, peyote rows nest, brick stitch rows are offset by half a bead with a seam between them. It has no edge and no size; the Frame, not the Grid, gives a Pattern its size.
-_Avoid_: board, for the beads themselves or for the Pattern
+The endless arrangement of positions on the Canvas set by the Technique: loom rows stack, peyote rows nest, brick stitch rows are offset by half a bead with a seam between them. It has no edge and no size; the Frame, not the Grid, gives a Schema its size.
+_Avoid_: board, for the beads themselves or for the Schema
 
 **Position marks**:
-How the Grid's empty positions outside the Frame and its keep-out margin are drawn on the Open canvas, in the style chosen as a preference on the device from the Canvas color popover: **Dots** (a dot at each position, the default) or **Squares** (an outline in the gap round each position with its inside left clear, shaped like the Technique's bead). Inside the Frame an empty position is an empty bead instead; the keep-out margin has none. Never in exports.
+How the Grid's empty positions outside the Frame and its keep-out margin are drawn on the Canvas, in the style chosen as a preference on the device from the Canvas color popover: **Dots** (a dot at each position, the default) or **Squares** (an outline in the gap round each position with its inside left clear, shaped like the Technique's bead). Inside the Frame an empty position is an empty bead instead; the keep-out margin has none. Never in exports.
 _Avoid_: grid dots, background dots
 
 **Piece**:
-A set of beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and erased. Each Piece belongs to exactly one Piece area.
-_Avoid_: island, cluster, group, shape
+A small, independent set of beads that touch by a side or a corner, drawn on the Canvas. Pieces form, merge and split as beads are painted and erased. Each Piece belongs to exactly one Piece area. A Piece that has a Frame or a name is a Schema.
+_Avoid_: island, cluster, group, shape, fragment
 
 **Piece area**:
 The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. Each Piece's area counts as everything within one bead outside its own bounds; Piece areas whose rectangles overlap, lie inside or touch once that margin is included join, repeated until none do, so Pieces with one empty bead between them share one rectangle and one set of rulers while two or more empty beads keep them apart, and a large Piece never shows smaller Pieces' rectangles inside or against its own. The margin only decides what joins; the drawn rectangle stays around the beads. A Piece area shows its rectangle and rulers only when its joined rectangle spans more than 4 beads in total (width times height, so a single row of 5 counts and 2x2 does not); smaller ones are not drawn, and beads, Pieces, Export and Beads needed are unchanged. Forms, merges and splits as beads are painted and erased. With no Frame, a whole row or column of one can be selected by its ruler number and removed with Remove row/column. The Rulers toggle shows or hides it; the Frame is never hidden by it.
 _Avoid_: group, cluster, island
 
 **Frame**:
-The one rectangle per Open canvas, on whole beads, that marks which beads are the Pattern. A line, plus a **keep-out margin** (below): drawing outside it stays possible beyond the margin and is saved with the Project, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Pattern has a size (the Pattern size) . Set, moved, resized and removed as Undo steps that never change a bead. A Project from before the Frame opens with a Frame the size of its old grid.
+The one rectangle per Canvas, on whole beads, that marks which beads are the Schema. A line, plus a **keep-out margin** (below): drawing outside it stays possible beyond the margin and is saved with the Project, but Export, Beads needed, Row progress and Rotate read only what is inside. With a Frame the Schema has a size (the Schema size) . Set, moved, resized and removed as Undo steps that never change a bead. A Project from before the Frame opens with a Frame the size of its old grid.
 _Avoid_: border, crop, artboard, page, grid size
 
 **Keep-out margin**:
@@ -62,7 +62,7 @@ The browser's own whole-page zoom (pinch on the page, double-tap, Ctrl/⌘ + whe
 _Avoid_: UI scale, browser scale
 
 **Zoom floor**:
-The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit all stop there, so a Pattern wider or taller than the screen can be seen whole. Fit never goes above 100%.
+The smallest zoom, 10%, the same on every screen: zoom out, pinch, wheel and Fit all stop there, so a Schema wider or taller than the screen can be seen whole. Fit never goes above 100%.
 _Avoid_: min zoom, bead-min floor
 
 **Ruler step**:
@@ -74,7 +74,7 @@ The small mark a ruler draws for a bead that has no number at the current Ruler 
 _Avoid_: tick, marker
 
 **Ruler layout**:
-Everything the rulers are for one view of the open canvas, worked out once from the Project and the Surface view: the boxes that carry rulers, the numbers and Ruler dots to draw, and what a point of the viewport selects. The overlay draws it and a press asks it, so what is drawn and what is picked cannot disagree; the Ruler step is chosen once per axis per box inside it. The print rulers (fixed step, no dots, no picking) are not part of it.
+Everything the rulers are for one view of the canvas, worked out once from the Project and the Surface view: the boxes that carry rulers, the numbers and Ruler dots to draw, and what a point of the viewport selects. The overlay draws it and a press asks it, so what is drawn and what is picked cannot disagree; the Ruler step is chosen once per axis per box inside it. The print rulers (fixed step, no dots, no picking) are not part of it.
 _Avoid_: ruler view, ruler geometry
 
 **Canvas color**:

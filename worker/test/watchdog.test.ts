@@ -102,6 +102,15 @@ describe('the watchdog', () => {
       expect(ping.body).toContain('dev Worker')
     }))
 
+  it('groups counts by thousands, from 0 up to millions', () =>
+    withWatchdog({ today: { requests: 1234567, rowsWritten: 0, errors: 999 } }, async (worker) => {
+      await worker.scheduled(NOON)
+      const body = onePing(worker).body
+      expect(body).toContain('API requests today (dev Worker only): 1,234,567 (warn level 1,000)')
+      expect(body).toContain('D1 rows written today (dev Worker only): 0 (warn level 1,000)')
+      expect(body).toContain('Worker errors today (this Worker): 999 (warn level 10)')
+    }))
+
   it("applies dev's levels to dev and production's to production", async () => {
     const today = { requests: 2000, rowsWritten: 2000 }
     await withWatchdog({ env: 'dev', today }, async (worker) => {
