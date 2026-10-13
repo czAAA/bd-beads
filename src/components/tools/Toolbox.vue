@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
+import PickColorButton from '../palette/PickColorButton.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
@@ -242,6 +243,7 @@ const frameSummary = computed(() => {
           :selected="customColorSelected"
           @select="(hex) => emit('select-custom-color', hex)"
         />
+        <PickColorButton />
         <!--
           The open Project's Image colors (ADR 0011), alongside the Palette rather than instead of it: a converted
           Project is touched up with its own colors from this button's popover; any other Project has none, and the

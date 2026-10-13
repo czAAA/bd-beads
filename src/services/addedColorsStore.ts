@@ -7,10 +7,15 @@ import { MAX_ADDED_COLORS, normalizeHex } from '../domain/palette'
  */
 export const ADDED_COLORS_KEY = 'bd-beads:added-colors'
 
-/** Where the added colors are kept (ADR 0020). */
+/** The ids of the Palette's swatches in the order their slots were arranged (ticket 398), built-in ones included. */
+export const PALETTE_ORDER_KEY = 'bd-beads:palette-order'
+
+/** Where the added colors and the slot order are kept (ADR 0020). */
 export interface AddedColorsStore {
   load: () => string[]
   save: (hexes: readonly string[]) => void
+  loadOrder: () => string[]
+  saveOrder: (ids: readonly string[]) => void
 }
 
 function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): AddedColorsStore {
@@ -37,6 +42,21 @@ function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): 
         // Blocked storage: the colors still hold for this visit.
       }
     },
+    loadOrder() {
+      try {
+        const parsed: unknown = JSON.parse(storage.getItem(PALETTE_ORDER_KEY) ?? '[]')
+        return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+      } catch {
+        return []
+      }
+    },
+    saveOrder(ids) {
+      try {
+        storage.setItem(PALETTE_ORDER_KEY, JSON.stringify(ids))
+      } catch {
+        // Blocked storage: the order still holds for this visit.
+      }
+    },
   }
 }
 
@@ -44,4 +64,6 @@ function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): 
 export const browserAddedColorsStore: AddedColorsStore = {
   load: () => createAddedColorsStore(localStorage).load(),
   save: (hexes) => createAddedColorsStore(localStorage).save(hexes),
+  loadOrder: () => createAddedColorsStore(localStorage).loadOrder(),
+  saveOrder: (ids) => createAddedColorsStore(localStorage).saveOrder(ids),
 }

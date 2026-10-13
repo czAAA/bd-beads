@@ -8,6 +8,7 @@ import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
 import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
+import PickColorButton from '../palette/PickColorButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import ToolTiles from '../tools/ToolTiles.vue'
@@ -130,6 +131,7 @@ const deps = computed(() =>
         :selected="!selectedColorId && !selectedImageColor && !!customColor"
         @select="onSelectCustomColor"
       />
+      <PickColorButton />
       <ImageColorsButton :colors="activeProject.imageColors" :selected-color="selectedImageColor" @select="onSelectImageColor" />
     </div>
   </BottomSheet>

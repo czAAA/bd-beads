@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
+import { useMoveColor, usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
+import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
@@ -33,13 +34,43 @@ function remove(colorId: string) {
   removeAdded?.(colorId)
 }
 
+/**
+ * Rearranging (ticket 398): a swatch is dragged to another slot, or moved a slot with Alt+Left/Right. Each slot owns
+ * its Shift+key, so the swatch that lands in the first one is Shift+1.
+ */
+const moveColor = useMoveColor()
+const drag = useSwatchDrag(
+  (from, to) => moveColor?.(from, to),
+  (x, y) => {
+    const id = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-color-id]')?.dataset.colorId
+    const slot = palette.value.findIndex((color) => color.id === id)
+    return slot < 0 ? undefined : slot
+  },
+)
+
+async function nudge(slot: number, by: number) {
+  const target = slot + by
+  if (!moveColor || target < 0 || target >= palette.value.length) return
+  const colorId = palette.value[slot]!.id
+  moveColor(slot, target)
+  await nextTick()
+  gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
+}
+
 /** Choosing a swatch is the end of the visit to a Dock sheet: it closes (nothing, in the Toolbox). */
 function pick(colorId: string) {
+  if (drag.consumeDrag()) return
   emit('select', colorId)
   closeSheet()
 }
 
-function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
+function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
+  if (event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+    event.preventDefault()
+    event.stopPropagation()
+    void nudge(slot, event.key === 'ArrowLeft' ? -1 : 1)
+    return
+  }
   if (!removeAdded || !isAddedColorId(colorId) || (event.key !== 'Delete' && event.key !== 'Backspace')) return
   event.preventDefault()
   event.stopPropagation()
@@ -58,6 +89,10 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
       :hotkey="PALETTE_SHORTCUTS[index] ? `Shift+${PALETTE_SHORTCUTS[index].keyLabel}` : undefined"
       :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
       class="palette-picker__swatch"
+      :class="{
+        'palette-picker__swatch--dragging': drag.draggingFrom.value === index,
+        'palette-picker__swatch--target': drag.draggingFrom.value !== undefined && drag.hoverSlot.value === index && drag.hoverSlot.value !== drag.draggingFrom.value,
+      }"
       :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
       :tabindex="roving.tabIndexFor(isStop(color.id, index))"
       data-testid="palette-swatch"
@@ -65,7 +100,8 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
       :data-color-id="color.id"
       @select="pick(color.id)"
       @remove="remove(color.id)"
-      @keydown="onSwatchKeydown($event, color.id)"
+      @pointerdown="drag.onPointerDown($event, index)"
+      @keydown="onSwatchKeydown($event, color.id, index)"
     />
   </div>
 </template>
@@ -76,6 +112,16 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string) {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: var(--space-6);
+}
+
+/* A swatch being dragged to another slot (ticket 398), and the slot it would land in. */
+.palette-picker :deep(.palette-picker__swatch--dragging) {
+  opacity: 0.5;
+}
+
+.palette-picker :deep(.palette-picker__swatch--target) {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 /*

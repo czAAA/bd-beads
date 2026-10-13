@@ -1,7 +1,7 @@
 import { type Chord } from '../../domain/chord'
 import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
-import { MAX_ADDED_COLORS, PALETTE, PALETTE_SHORTCUTS } from '../../domain/palette'
+import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
@@ -16,10 +16,14 @@ export interface ControlDeps {
   canRedo: () => boolean
   hasClipboard: () => boolean
   addedColorCount: () => number
+  /** The Palette color standing in a slot (ticket 398): Shift+1 is slot 1, wherever its color was moved to. */
+  paletteColorIdAt: (slot: number) => string | undefined
   /** A menu or popover layer is open (useEscapeLayer). */
   hasOpenLayer: () => boolean
   /** A confirmation modal or the shortcuts help overlay is open. */
   anyDialogOpen: () => boolean
+  /** Ends Pick color from canvas; true if it was on. */
+  cancelColorPick: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
   collapseExpandedToolGroup: () => boolean
   /** Dismisses the paste preview, else clears the Selection; true if either was there. */
@@ -209,6 +213,8 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [{ key: 'Escape', shift: 'any', label: 'Esc' }],
     allowWhileTyping: true,
     run: (deps) => {
+      // Picking a color from the canvas (ticket 398) is the first thing Escape ends.
+      if (deps.cancelColorPick()) return
       // An expanded Tool group takes the first Escape (ticket 41), then Set Frame, the paste preview, the Selection.
       if (deps.collapseExpandedToolGroup()) return
       if (deps.settingFrame()) {
@@ -288,8 +294,8 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: PALETTE_SHORTCUTS.map(({ code, keyLabel }) => ({ code, shift: true, label: keyLabel })),
     help: { name: (t) => t.shortcutsHelp.paletteColors, keys: [['Shift', '1…9'], ['Shift', '0'], ['Q'], ['W']] },
     run: (deps, event) => {
-      const color = PALETTE[PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)]
-      if (color) deps.onSelectColor(color.id)
+      const colorId = deps.paletteColorIdAt(PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code))
+      if (colorId) deps.onSelectColor(colorId)
     },
   },
   {
@@ -456,6 +462,11 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => maxAdded(t.tooltips.customColor),
     enabled: (deps: ControlDeps) => deps.addedColorCount() < MAX_ADDED_COLORS,
     disabledBody: (t: Translations) => maxAdded(t.tooltips.customColorFull),
+  }),
+  unkeyed('pick-color', (t) => t.palette.pickFromCanvasLabel, 'colors', {
+    icon: 'eyedropper',
+    body: (t) => t.tooltips.pickFromCanvas,
+    shownKey: 'Esc',
   }),
   unkeyed('image-colors', (t) => t.convertImage.imageColorsLabel, 'colors', {
     enabled: (deps: ControlDeps) => (deps.activeProject()?.imageColors?.length ?? 0) > 0,

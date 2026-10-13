@@ -29,6 +29,7 @@ function setup(options: Options = {}) {
     beginOrCommitPress: vi.fn(),
     paintStrokeCell: vi.fn(),
     pasteAt: vi.fn(() => true),
+    pickColorAt: vi.fn(() => false),
   }
   return { deps, ...useCanvasPointer(deps) }
 }

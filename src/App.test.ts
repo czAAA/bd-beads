@@ -405,18 +405,20 @@ describe('App', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#123456')
   })
 
-  it('shows the Custom color slot as selected once chosen, and the Palette deselected', async () => {
+  it('selects the swatch a Custom color joined at the first pick, and deselects the Palette (ticket 398)', async () => {
     const wrapper = await mountWithProject(15, 30)
+    const swatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     customColorInput.element.value = '#123456'
     await customColorInput.trigger('input')
 
-    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(swatchCount + 1)
   })
 
-  it('deselects the Custom color slot when a Palette swatch is picked afterwards, and vice versa', async () => {
+  it('selects the Palette swatch afterwards, and the picked color again by picking it again', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
@@ -426,29 +428,32 @@ describe('App', () => {
     await wrapper.find('[data-color-id="blue"]').trigger('click')
 
     expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('true')
-    expect(customColorInput.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('false')
 
-    await customColorInput.trigger('input')
+    const again = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    again.element.value = '#123456'
+    await again.trigger('input')
 
-    expect(customColorInput.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="added-123456"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-color-id="blue"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('replaces the previous Custom color when another one is chosen, and only the one that paints joins the Palette (ticket 227)', async () => {
+  it('adds each Custom color picked to the Palette and paints with the last one (ticket 398)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const paletteSwatchCount = wrapper.findAll('[data-testid="palette-swatch"]').length
 
-    const customColorInput = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    customColorInput.element.value = '#123456'
-    await customColorInput.trigger('input')
-    customColorInput.element.value = '#abcdef'
-    await customColorInput.trigger('input')
+    const first = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    first.element.value = '#123456'
+    await first.trigger('input')
+    const second = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    second.element.value = '#abcdef'
+    await second.trigger('input')
 
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#abcdef')
-    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 1)
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(paletteSwatchCount + 2)
   })
 
   it('lists cells painted with a Custom color in Beads needed, like any other color', async () => {
