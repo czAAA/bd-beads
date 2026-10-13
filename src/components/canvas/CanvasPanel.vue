@@ -11,6 +11,7 @@ import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
+import { useColorPick } from '../../composables/tools/usePalette'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
@@ -103,6 +104,9 @@ const {
   onFrameRelease,
   onFrameCancel,
 } = useAppShell()
+
+/** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
+const colorPick = useColorPick()
 
 /** Under 1024px the Progress bar shows exactly while Row progress is on: the Zoom pill's button is the one Row progress action (ticket 338). */
 const rowProgressOn = computed(() => activeProject.value?.rowProgress.enabled === true)
@@ -237,8 +241,9 @@ function techniqueWord(technique: Technique): string {
               :show-rulers="showRulers"
               :moving="activeTool === 'hand'"
               :marker-hidden="spaceHeld"
+              :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
-              :blocks-margin="activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive"
+              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"

@@ -402,6 +402,38 @@ describe('ProjectSurface', () => {
     })
   })
 
+  describe('picking a color (ticket 403)', () => {
+    const painted = (): Project => projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
+    const at = (project: Project, row: number, column: number) =>
+      surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
+
+    it('shows the eyedropper pointer, and the color under it in a chip over a painted bead only', async () => {
+      const project = painted()
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { picking: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      expect(surface.attributes('style')).toContain('cursor: url(')
+      expect(surface.classes()).toContain('project-surface--picking')
+
+      const bead = at(project, 3, 4)
+      await surface.trigger('pointermove', { clientX: bead.x, clientY: bead.y, pointerType: 'mouse', buttons: 0 })
+      expect(wrapper.find('[data-testid="pick-chip"]').text()).toBe('#123456')
+
+      const empty = at(project, 6, 6)
+      await surface.trigger('pointermove', { clientX: empty.x, clientY: empty.y, pointerType: 'mouse', buttons: 0 })
+      expect(wrapper.find('[data-testid="pick-chip"]').exists()).toBe(false)
+    })
+
+    it('has no eyedropper and no chip when not picking', async () => {
+      const project = painted()
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const bead = at(project, 3, 4)
+      await surface.trigger('pointermove', { clientX: bead.x, clientY: bead.y, pointerType: 'mouse', buttons: 0 })
+      expect(surface.attributes('style') ?? '').not.toContain('cursor')
+      expect(wrapper.find('[data-testid="pick-chip"]').exists()).toBe(false)
+    })
+  })
+
   describe('the pointer', () => {
     /** Where on the screen a bead's centre is, for a surface at the screen's corner, at a zoom and a scroll. */
     function centreOf(project: Project, row: number, column: number, zoom = 1, scroll = { x: 0, y: 0 }): { clientX: number; clientY: number } {

@@ -123,6 +123,7 @@ Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo
 
 - **Repo changes after v18** (one line each: date, ticket, what changed) (the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398). The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
   - Repo, 2026-10-13, ticket 402: the ToolSheet card's sheets, the modal one too, close on any press outside them, and that press only closes (nothing under it acts); the grab handle closes a sheet on a tap or a drag down. No token change.
+  - Repo, 2026-10-13, ticket 403: Pick color from canvas (the `eyedropper` icon, 22px) is the last tile of the PaletteSwatches grid, a swatch's size, instead of a button beside Custom color; while it is on, the canvas pointer is the eyedropper (hot spot on its tip) and a chip beside it shows the color of the bead under it, as paint programs do. The cursor image uses the icon file's ink and white, since a cursor can't read tokens. No token change.
 
 - 2026-10-13, ticket 410: MirrorSizeControls and Dock cards: a Left | Right choice before Width and a Top | Bottom choice before Height (SegmentedControl, small, kept on the device), and the Steppers' size applied once when the sheet or row closes. No token changed.
 
