@@ -9,6 +9,6 @@ The bottom sheet a Dock button opens on the phone, holding every option of that 
 - **Pattern:** Save Pattern and Export (PNG, PDF), the Bead pill and Replace bead, Beads needed, Saved Patterns, New Pattern, Import file.
 - Tool sheets are light: `panel`, 18px top corners, a grab handle, title and close; no scrim and only as tall as their content, so the Pattern stays in view. The Pattern sheet is modal: taller, with the scrim; its header carries the Canvas color button between the title and Close (CanvasBackground).
 - Choosing a tool, a Palette swatch, a Custom color or an Image color closes the sheet it was chosen in (every pick control does, through the sheet; the same controls in the Toolbox close nothing). A Custom color closes when its native dialog commits, not while it is still being dragged.
-- Swipe down, the close button, Escape, tapping the Pattern or the same Dock button closes a sheet. Sheets slide with `transform`; the drawing surface never resizes.
+- Tapping or dragging the grab handle down, the close button, Escape, and a press anywhere outside the sheet (the modal Pattern sheet too) close a sheet. An outside press only closes: it and its click reach nothing under them, so no stroke, fill or Frame starts and a Dock button does not re-open the sheet it closed. A press inside another dialog is not outside. Sheets slide with `transform`; the drawing surface never resizes.
 
 Hand-written from the responsive sign-off; static rendition.

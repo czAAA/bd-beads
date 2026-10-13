@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { withColors } from '../../domain/canvas'
+import { DEFAULT_FRAME_SIDES, type FrameSides } from '../../domain/frame'
 import { createProject, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
@@ -8,8 +10,9 @@ import { useFrameFlow } from './useFrameFlow'
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
 
-function setup(project: Project | null = sized) {
+function setup(project: Project | null = sized, sides: FrameSides = DEFAULT_FRAME_SIDES) {
   const harness = editHarness(project ?? undefined, { mirrorAxisCounts: { columns: 1, rows: 0 } })
+  const sidesNow = { current: sides }
   const deps = {
     currentProject: harness.currentProject,
     edit: harness.edit,
@@ -19,8 +22,10 @@ function setup(project: Project | null = sized) {
     messages: () => en,
     locale: () => 'en' as const,
     centreOn: vi.fn(),
+    sides: () => sidesNow.current,
+    commitIn: vi.fn(),
   }
-  return { deps: { ...deps, replaceProject: harness.replaceProject, harness }, ...useFrameFlow(deps) }
+  return { deps: { ...deps, replaceProject: harness.replaceProject, harness, sidesNow }, ...useFrameFlow(deps) }
 }
 
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
@@ -94,22 +99,16 @@ describe('useFrameFlow', () => {
 
   it('is refused while Row progress is on', () => {
     const locked = setRowProgressEnabled(sized, true)
-    const { deps, frameLocked, press, drag, release, setSize, remove } = setup(locked)
+    const { deps, frameLocked, press, drag, release, setSize, remove, pendingFrame, commitPending } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'inside' }, { row: 0, column: 0 })
     drag({ row: 1, column: 1 })
     release()
     setSize(9, 9)
+    expect(pendingFrame.value).toBeUndefined()
+    commitPending()
     remove()
     expect(deps.replaceProject).not.toHaveBeenCalled()
-  })
-
-  it('sets the size from the steppers, keeping the top-left corner, never below one bead', () => {
-    const { deps, setSize } = setup()
-    setSize(6, 5)
-    expect(lastFrame(deps)).toEqual({ ...sized.frame, columns: 6, rows: 5 })
-    setSize(0, 0)
-    expect(lastFrame(deps)).toEqual({ ...sized.frame, columns: 1, rows: 1 })
   })
 
   it('removes the Frame, and says so', () => {
@@ -244,6 +243,182 @@ describe('useFrameFlow', () => {
     expect(deps.announce).not.toHaveBeenCalled()
   })
 
+  describe('the size steppers apply once (ticket 410)', () => {
+    /** The Project with a bead `distance` rows below its Frame, so a taller Frame crowds it into the margin. */
+    function withBeadBelow(distance: number): Project {
+      const frame = sized.frame!
+      return { ...sized, beads: withColors(sized.beads, [{ row: frame.row + frame.rows + distance, column: frame.column, color: '#ff0000' }]) }
+    }
+
+    it('shows a press on the canvas at once, changing no bead and taking no Undo step', () => {
+      const { deps, setSize, draft, pendingFrame } = setup()
+      setSize(6, 5)
+      expect(pendingFrame.value).toEqual({ ...sized.frame, columns: 6, rows: 5 })
+      expect(draft.value).toEqual(pendingFrame.value)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(deps.harness.history.canUndo.value).toBe(false)
+      expect(deps.showToast).not.toHaveBeenCalled()
+      expect(deps.announce).not.toHaveBeenCalled()
+    })
+
+    it('keeps stepping from the pending Frame, never below one bead', () => {
+      const { setSize, pendingFrame } = setup()
+      setSize(6, 5)
+      setSize(0, 0)
+      expect(pendingFrame.value).toEqual({ ...sized.frame, columns: 1, rows: 1 })
+    })
+
+    it('commits once on commitPending: one Undo step, restoring the Frame', () => {
+      const { deps, setSize, commitPending, pendingFrame, draft } = setup()
+      setSize(6, 5)
+      setSize(7, 6)
+      commitPending()
+      expect(pendingFrame.value).toBeUndefined()
+      expect(draft.value).toBeUndefined()
+      expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+      expect(lastFrame(deps)).toEqual({ ...sized.frame, columns: 7, rows: 6 })
+      expect(deps.announce).toHaveBeenCalledWith('Frame set, width 7, height 6')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.frame).toEqual(sized.frame)
+      expect(deps.harness.history.canUndo.value).toBe(false)
+    })
+
+    it('grows and shrinks from the chosen sides, the opposite edges staying', () => {
+      const frame = sized.frame!
+      const { setSize, commitPending, deps } = setup(sized, { horizontal: 'left', vertical: 'top' })
+      setSize(frame.columns + 2, frame.rows + 1)
+      commitPending()
+      expect(lastFrame(deps)).toEqual({ row: frame.row - 1, column: frame.column - 2, rows: frame.rows + 1, columns: frame.columns + 2 })
+    })
+
+    it('reads the sides at each press, so the choice can change between presses', () => {
+      const frame = sized.frame!
+      const { deps, setSize, pendingFrame } = setup()
+      setSize(frame.columns + 1, frame.rows)
+      expect(pendingFrame.value).toEqual({ ...frame, columns: frame.columns + 1 })
+      deps.sidesNow.current = { horizontal: 'left', vertical: 'bottom' }
+      setSize(frame.columns + 2, frame.rows)
+      expect(pendingFrame.value).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2 })
+    })
+
+    it('is no step and no Message when the Frame is shrunk and grown back before closing', () => {
+      const { deps, setSize, commitPending, pendingFrame } = setup(withBeadBelow(1))
+      const frame = sized.frame!
+      for (let press = 1; press <= 2; press++) setSize(frame.columns, frame.rows - press)
+      for (let press = 1; press <= 2; press++) setSize(frame.columns, frame.rows - 2 + press)
+      expect(pendingFrame.value).toBeUndefined()
+      commitPending()
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(deps.harness.history.canUndo.value).toBe(false)
+      expect(deps.showToast).not.toHaveBeenCalled()
+    })
+
+    it('moves the Pieces the final Frame reaches once, with one Message and one Undo step', () => {
+      const frame = sized.frame!
+      // The bead is four rows below the Frame's last row: three more rows put it in the margin, so does two.
+      const crowded = withBeadBelow(3)
+      const { deps, setSize, commitPending } = setup(crowded)
+      setSize(frame.columns, frame.rows + 3)
+      setSize(frame.columns, frame.rows + 2)
+      expect(deps.showToast).not.toHaveBeenCalled()
+      commitPending()
+      expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+      expect(deps.showToast).toHaveBeenCalledTimes(1)
+      expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame resized. 1 piece was in the margin and moved outside it.')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.beads).toEqual(crowded.beads)
+      expect(deps.harness.project.frame).toEqual(frame)
+    })
+
+    it('pulls nothing out of the margin for a Frame that was only passed through', () => {
+      const frame = sized.frame!
+      const { deps, setSize, commitPending } = setup(withBeadBelow(4))
+      setSize(frame.columns, frame.rows + 3)
+      setSize(frame.columns, frame.rows + 1)
+      setSize(frame.columns, frame.rows)
+      commitPending()
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(deps.showToast).not.toHaveBeenCalled()
+    })
+
+    it('commits a pending Frame first when another command reads the Frame', () => {
+      const frame = sized.frame!
+      const drawn = { ...sized, beads: withColors(sized.beads, [{ row: 0, column: 0, color: '#ff0000' }]) }
+      const { deps, setSize, fit } = setup(drawn)
+      setSize(frame.columns + 3, frame.rows + 3)
+      fit()
+      const frames = deps.replaceProject.mock.calls.map((call) => call[0].frame)
+      expect(frames).toEqual([{ ...frame, columns: frame.columns + 3, rows: frame.rows + 3 }, { row: 0, column: 0, rows: 1, columns: 1 }])
+    })
+
+    it('commits a pending Frame before a drag starts, Set Frame starts, the Technique changes or Remove Frame', () => {
+      const frame = sized.frame!
+      const bigger = { ...frame, columns: frame.columns + 1 }
+      const starts: [string, (flow: ReturnType<typeof setup>) => void][] = [
+        ['press', (flow) => flow.press({ kind: 'inside' }, { row: 0, column: 0 })],
+        ['start', (flow) => flow.start()],
+        ['setTechnique', (flow) => flow.setTechnique('peyote')],
+        ['remove', (flow) => flow.remove()],
+        ['key', (flow) => { flow.start(); flow.onKey({ key: 'ArrowDown', shiftKey: false } as KeyboardEvent) }],
+      ]
+      for (const [name, act] of starts) {
+        const flow = setup()
+        flow.setSize(bigger.columns, bigger.rows)
+        act(flow)
+        expect(flow.deps.replaceProject.mock.calls[0]?.[0].frame, name).toEqual(bigger)
+        expect(flow.pendingFrame.value, name).toBeUndefined()
+      }
+    })
+
+    it('drops a pending Frame on dropPending, as Undo and Redo do', () => {
+      const { deps, setSize, dropPending, commitPending, pendingFrame } = setup()
+      setSize(9, 9)
+      dropPending()
+      expect(pendingFrame.value).toBeUndefined()
+      commitPending()
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+
+    it('centres the view on the pending Frame', () => {
+      const { deps, setSize, bringIntoView } = setup()
+      setSize(9, 9)
+      bringIntoView()
+      expect(deps.centreOn).toHaveBeenCalledWith({ ...sized.frame, columns: 9, rows: 9 })
+    })
+
+    it('does not touch the Frame while Row progress is on', () => {
+      const { deps, setSize, pendingFrame, commitPending } = setup(setRowProgressEnabled(sized, true))
+      setSize(9, 9)
+      commitPending()
+      expect(pendingFrame.value).toBeUndefined()
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+
+    it('settles a pending Frame on the Project it leaves when another Project is opened', async () => {
+      const first = sized
+      const second = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } })
+      const open = ref<Project>(first)
+      const harness = editHarness(first)
+      const commitIn = vi.fn()
+      const flow = useFrameFlow({
+        currentProject: () => open.value,
+        edit: harness.edit,
+        announce: vi.fn(),
+        showToast: vi.fn(),
+        onUndo: vi.fn(),
+        messages: () => en,
+        locale: () => 'en',
+        centreOn: vi.fn(),
+        sides: () => DEFAULT_FRAME_SIDES,
+        commitIn,
+      })
+      flow.setSize(9, 9)
+      open.value = second
+      expect(commitIn).toHaveBeenCalledWith(first.id, { ...first.frame, columns: 9, rows: 9 })
+      expect(flow.pendingFrame.value).toBeUndefined()
+    })
+  })
+
   describe('the margin Message names what was done to the Frame', () => {
     function crowdedBelow() {
       const frame = sized.frame!
@@ -260,8 +435,9 @@ describe('useFrameFlow', () => {
     })
 
     it('says "Frame resized." for a resize', () => {
-      const { deps, setSize } = setup(crowdedBelow())
+      const { deps, setSize, commitPending } = setup(crowdedBelow())
       setSize(sized.frame!.columns, sized.frame!.rows + 1)
+      commitPending()
       expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame resized. 1 piece was in the margin and moved outside it.')
     })
   })

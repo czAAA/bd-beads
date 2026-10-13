@@ -144,6 +144,43 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(drawnProject(wrapper).technique).toBe('loom')
   })
 
+  it('applies the Frame sheet\'s size once, when the sheet closes, as one Undo step (ticket 410)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const original = { ...drawnProject(wrapper).frame! }
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+
+    await wrapper.get('[data-testid="frame-width-side"] [data-value="left"]').trigger('click')
+    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
+    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
+    await wrapper.get('[data-testid="frame-rows-decrease"]').trigger('click')
+
+    // The canvas and the fields follow the presses, but nothing is committed and there is nothing to undo.
+    expect(drawnProject(wrapper).frame).toEqual({ ...original, column: original.column - 2, columns: original.columns + 2, rows: original.rows - 1 })
+    expect(wrapper.get('[data-testid="frame-columns"]').text()).toBe(String(original.columns + 2))
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    expect(drawnProject(wrapper).frame).toEqual({ ...original, column: original.column - 2, columns: original.columns + 2, rows: original.rows - 1 })
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeUndefined()
+
+    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
+    expect(drawnProject(wrapper).frame).toEqual(original)
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+  })
+
+  it('applies the Frame sheet\'s size too when another sheet is opened over it (ticket 410)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    const original = { ...drawnProject(wrapper).frame! }
+    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
+
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+
+    expect(drawnProject(wrapper).frame).toEqual({ ...original, columns: original.columns + 1 })
+    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeUndefined()
+  })
+
   it('picks a Palette color from the Colour sheet and paints with it', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-color"]').trigger('click')

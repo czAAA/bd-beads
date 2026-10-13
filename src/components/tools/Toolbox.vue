@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import DisclosureRow from '../ui/DisclosureRow.vue'
 import EditControls, { type EditControlId } from './EditControls.vue'
@@ -14,6 +14,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { MIRROR_ENABLED } from '../../features'
 import { useI18n } from '../../i18n/useI18n'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
+import type { Frame } from '../../domain/canvas'
 import type { Technique } from '../../domain/grid'
 import type { Tool } from '../../domain/tool'
 import type { InputMode } from '../../domain/inputMode'
@@ -37,6 +38,8 @@ const props = defineProps<{
   canRemoveSelectedLine: boolean
   /** Whether the Frame is being set: the Frame tool shows as the active tool. */
   settingFrame?: boolean
+  /** The size the Frame row's steppers have set and nothing has committed yet (ticket 410). */
+  pendingFrame?: Frame
   /** Pen mode or Mouse mode (ticket 325), shown after the Frame tool when the device can use it. */
   inputMode?: InputMode
   /** Mirror's axis counts and copy mode (ADR 0006), read only while MIRROR_ENABLED. */
@@ -63,6 +66,8 @@ const emit = defineEmits<{
   'set-technique': [technique: Technique]
   'fit-frame': []
   'remove-frame': []
+  /** The Frame row closed, or another row opened: whatever size its steppers left pending is committed (ticket 410). */
+  'close-frame': []
   /** The Frame number was pressed: bring the Frame into view. */
   'bring-frame': []
   /** Mirror (ADR 0006), from the Mirror row: the axis counts, copy mode and the one-time "Mirror current". */
@@ -116,6 +121,17 @@ const frameOpen = ref(false)
 /** Whether the Mirror row is open. */
 const mirrorOpen = ref(false)
 
+// The Frame's size is applied when its row closes, or another opens, or the Toolbox goes away (ticket 410).
+watch(frameOpen, (open) => {
+  if (!open) emit('close-frame')
+})
+watch(mirrorOpen, (open) => {
+  if (open) emit('close-frame')
+})
+onBeforeUnmount(() => {
+  if (frameOpen.value) emit('close-frame')
+})
+
 /** Opening the Frame row with no Frame starts Set Frame as well (Frame card); the row still opens, to say what a Frame is. */
 function onFrameOpenChange(open: boolean) {
   frameOpen.value = open
@@ -149,7 +165,7 @@ const mirrorSummary = computed(() => {
 
 /** The Frame row's value: "not set", or the Frame's measured size (its number is the chip before it). */
 const frameSummary = computed(() => {
-  const frame = props.project.frame
+  const frame = props.pendingFrame ?? props.project.frame
   if (!frame) return t.value.frame.notSet
   const bead = resolveProjectBead(props.project)
   if (!bead) return undefined
@@ -275,6 +291,7 @@ const frameSummary = computed(() => {
       >
         <FrameControls
           :project="project"
+          :pending-frame="pendingFrame"
           @set-size="(columns, rows) => emit('set-frame-size', columns, rows)"
           @set-technique="(technique) => emit('set-technique', technique)"
           @fit="emit('fit-frame')"

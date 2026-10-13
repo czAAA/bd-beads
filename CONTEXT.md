@@ -15,16 +15,16 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 
 ## Key concepts
 
-- **Project**: everything saved under one name — an Open canvas of Pieces with a Frame on it (see [Language](#language) below)
-- **Pattern**: only the beads inside a Project's Frame, which is what Export, Beads needed, Row progress and Rotate act on
+- **Project**: everything saved under one name — one Canvas holding 0–1 Frame, Pieces and unframed Schemas (see [Language](#language) below)
+- **Piece** and **Schema**: a Piece is a small independent set of touching beads on the Canvas; a Piece that has a Frame or a name is a Schema. The framed Schema, the beads inside the Project's Frame, is what Export, Beads needed, Row progress and Rotate act on — see ADR 0050
 - **Palette** and **Bead catalog**: kept as separate concepts — a cell's color is not required to match a real Bead — see ADR 0002, amended by ADR 0007 (dropped the color-to-bead mapping; a Project now has exactly one Bead)
 - **Technique**: determines a Project's grid geometry (loom, peyote, brick stitch)
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Mirror**: a symmetric-drawing aid, live while painting — see ADR 0006
-- **Pattern size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see ADR 0026 and ADR 0007. There is no limit on size beyond what the device can hold (ADR 0019, which removed the cell cap)
-- **Bead quantities**: the per-color bead counts a Pattern needs, counted straight from its painted colors (with an Estimated weight beside them) — see ADR 0007
+- **Schema size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see ADR 0026 and ADR 0007. There is no limit on size beyond what the device can hold (ADR 0019, which removed the cell cap)
+- **Bead quantities**: the per-color bead counts a Schema needs, counted straight from its painted colors (with an Estimated weight beside them) — see ADR 0007
 - **Project file**: the exported `.json` holding one Project or a whole library — the only way work moves between devices, per ADR 0001
-- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Pattern, cropped to the Pattern's real-world size (ADR 0010, amended by ADR 0026) with its colors saved as Image colors (ADR 0011)
+- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Schema, cropped to the Schema's real-world size (ADR 0010, amended by ADR 0026) with its colors saved as Image colors (ADR 0011)
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v18), entered through [DESIGN.md](DESIGN.md); see ADR 0021, amended by ADR 0030. The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
 - **App shell layout**: how the screen is arranged — the **Dock layout** at every width (canvas on top, Dock below it, sheets for the controls, the slim Canvas strip), or with `DOCK_LAYOUT_ENABLED` off the **Toolbox layout** (from 1024px a header, the left column with the Toolbox, save box, Beads needed, Saved Projects, and the canvas box; under 1024px the Dock layout) (ADR 0021, ADR 0032, ADR 0046). The full arrangement is in [docs/layout.md](docs/layout.md)
 - **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing.md](docs/testing.md#text-fit-check)
@@ -35,11 +35,11 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 
 | Area | Terms |
 |---|---|
-| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Pattern, Open canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Set Frame, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
+| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Set Frame, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Technique |
 | [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Toolbox and controls](docs/glossary/toolbox.md) | Toolbox, Tool group, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
-| [Editing a Pattern](docs/glossary/editing.md) | Eraser, Clear, Pattern size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
+| [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](docs/glossary/overview-and-tour.md) | Overview, Tour |

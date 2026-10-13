@@ -1,4 +1,4 @@
-# Glossary: Editing a Pattern
+# Glossary: Editing a Schema
 
 Editing, sizing, counting and the clipboard and history. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
@@ -10,8 +10,8 @@ _Avoid_: erase mode, clear tool
 Resets the open Project to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Project's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
 _Avoid_: delete all, reset, wipe
 
-**Pattern size**:
-How big a Pattern is: its Frame's width × height, counted in beads (a Project with no Frame has no Pattern size yet). It is set in the Frame section, in beads or mm (the unit is remembered on the device, not in the Project); a size in mm always rounds up to the next whole bead and is not remembered. A stepper press adds or removes one bead in either unit. Not limited in size beyond what the device can hold (see ADR 0019, which removed the cap ADR 0026 set).
+**Schema size**:
+How big a Schema is: its Frame's width × height, counted in beads (a Project with no Frame has no Schema size yet). It is set in the Frame section, in beads or mm (the unit is remembered on the device, not in the Project); a size in mm always rounds up to the next whole bead and is not remembered. A stepper press adds or removes one bead in either unit. Not limited in size beyond what the device can hold (see ADR 0019, which removed the cap ADR 0026 set).
 _Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
@@ -23,11 +23,11 @@ The count (and Estimated weight) of beads per color inside the Frame only; with 
 _Avoid_: shopping list, bead count
 
 **Estimated size**:
-A Pattern's width and height in mm/cm, worked out from its Pattern size and Bead as one bead's size multiplied by the bead count, and never stored. Always presented as an estimate, since a real piece comes out a little different.
+A Schema's width and height in mm/cm, worked out from its Schema size and Bead as one bead's size multiplied by the bead count, and never stored. Always presented as an estimate, since real work comes out a little different.
 _Avoid_: real size, actual size, physical size
 
 **Estimated weight**:
-The grams of beads a Pattern needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Project's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
+The grams of beads a Schema needs, per color and in total, shown in Beads needed: the bead count multiplied by an average weight of one bead of the Project's Bead, derived on the spot and never stored. Always presented as an estimate (an info tooltip says so and shows the average used), since real beads vary by color and finish. Hidden for a Bead with no weight. The per-bead weights are provisional until a dealer confirms them (ticket 155).
 _Avoid_: real weight, exact weight
 
 **Remove row/column**:
@@ -35,7 +35,7 @@ A Tools-group tool, next to Eraser, that removes the specific row or column the 
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
-Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Pattern size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007.
+Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007.
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
