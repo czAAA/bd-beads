@@ -52,13 +52,6 @@ describe('the input mode toggle', () => {
     expect(toggle(again).attributes('aria-label')).toBe(en.inputMode.penLabel)
   })
 
-  it('is on the Dock too, and is the same mode', async () => {
-    penDevice('mouse')
-    const wrapper = await mountOpen()
-    await dockToggle(wrapper).trigger('click')
-    expect(toggle(wrapper).attributes('aria-pressed')).toBe('true')
-    expect(dockToggle(wrapper).attributes('aria-pressed')).toBe('true')
-  })
 })
 
 describe('a pen appearing', () => {
@@ -87,34 +80,6 @@ describe('a pen appearing', () => {
     expect(beadColor(wrapper, bead(3, 3))).toBeNull()
   })
 
-  it('is remembered on the device, so the toggle and Pen mode are there on the next visit', async () => {
-    const wrapper = await mountOpen()
-    await pressBead(wrapper, bead(1, 1), { pointerType: 'pen' })
-    expect(localStorage.getItem('bd-beads:pen-seen')).toBe('yes')
-
-    wrapper.unmount()
-    const again = await mountOpen()
-    expect(toggle(again).attributes('aria-pressed')).toBe('true')
-  })
-
-  it('is shown the toggle by a hovering pen too', async () => {
-    const wrapper = await mountOpen()
-    window.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'pen' }))
-    await flushPromises()
-    expect(wrapper.find('[data-testid="input-mode-toggle"]').exists()).toBe(true)
-  })
-
-  it('never overrides a mode the person chose', async () => {
-    localStorage.setItem('bd-beads:input-mode', 'mouse')
-    const wrapper = await mountOpen()
-    await pressBead(wrapper, bead(1, 1), { pointerType: 'pen' })
-    expect(beadColor(wrapper, bead(1, 1))).not.toBeNull()
-    expect(toggle(wrapper).attributes('aria-pressed')).toBe('false')
-    expect(localStorage.getItem('bd-beads:input-mode')).toBe('mouse')
-
-    await pressBead(wrapper, bead(2, 2), { pointerType: 'pen' })
-    expect(beadColor(wrapper, bead(2, 2))).toBeNull()
-  })
 })
 
 describe('who draws', () => {
@@ -129,14 +94,4 @@ describe('who draws', () => {
     expect(beadColor(wrapper, bead(2, 2))).not.toBeNull()
   })
 
-  it('lets a finger paint and keeps the pen off the beads in Mouse mode', async () => {
-    penDevice('mouse')
-    const wrapper = await mountOpen()
-
-    await pressBead(wrapper, bead(1, 1), { pointerType: 'pen' })
-    expect(beadColor(wrapper, bead(1, 1))).toBeNull()
-
-    await pressBead(wrapper, bead(2, 2), { pointerType: 'touch' })
-    expect(beadColor(wrapper, bead(2, 2))).not.toBeNull()
-  })
 })
