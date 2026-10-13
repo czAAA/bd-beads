@@ -8,6 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:related": "bash scripts/test-related.sh",
     "test:watch": "vitest",
     "typecheck": "vue-tsc -b --noEmit",
     "check": "bash scripts/check.sh",

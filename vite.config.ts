@@ -31,7 +31,9 @@ export default defineConfig(({ mode }) => ({
           environment: 'jsdom',
           globals: false,
           // The browser checks (ticket 103) are Playwright's, not Vitest's; the Worker's tests (ticket 71) are below.
-          exclude: [...configDefaults.exclude, 'e2e/**', 'worker/**'],
+          // `npm run test:related` sets SKIP_APP_TESTS: the App imports everything, so `vitest related` would pull in
+          // every App.*.test.ts (ticket 418, docs/testing.md).
+          exclude: [...configDefaults.exclude, 'e2e/**', 'worker/**', ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
           setupFiles: ['./src/testSetup.ts'],
         },
       },
