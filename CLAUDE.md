@@ -47,6 +47,7 @@ The Tour (ticket 80) is switched off (`TOUR_ENABLED` in `src/features.ts`, ticke
 - Search with grep/glob before reading; read with offset/limit, not whole large files.
 - Don't re-read files already in context unless they changed.
 - Pipe verbose command output (tests, builds, logs, installs) through tail -n 50 or grep.
+- Run only the tests related to your change: `npm run test:related -- <changed files>` (`agent` reporter, `--silent=passed-only`, no `App.*` files; name an App file only when the App's wiring changed, `docs/testing.md`). Never `vitest run` unfiltered.
 - Before pushing run `npm run check` (typecheck, lint, knip; prints only failures), not the three by hand.
 - `.scratch/.archive/` is hidden from search (`.ignore`). Read an archived ticket only when a live one points at it, by `cat` in Bash.
 - `.scratch`, `docs/adr`, `docs/specs`, `docs/research`, `docs/operations.md`, `reports` and `research_notes` are symlinks: ripgrep and `grep -r` don't follow a link met while walking a tree, so name the link with a trailing slash (`grep -rn term .scratch/`, `rg term docs/adr/`).
