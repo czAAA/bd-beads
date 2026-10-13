@@ -17,9 +17,18 @@ export interface ControlActionLike {
   disabledBody?: (t: Translations, deps: never) => string
 }
 
+/** A chord written on one line: its parts joined by "+", except that a key which is itself a sign takes no separator
+ * (`Ctrl/Cmd+`, `Ctrl/Cmd−`, not `Ctrl/Cmd++`, `Ctrl/Cmd+−`). */
+function chordText(chord: Chord): string {
+  const parts = chordParts(chord)
+  const key = parts.pop() ?? ''
+  const modifiers = parts.join('+')
+  return !modifiers ? key : key === '+' || key === '−' ? modifiers + key : `${modifiers}+${key}`
+}
+
 /** The action's first chord as the shortcuts help writes it (`Ctrl/Cmd+S`, `Shift+R`), or undefined without one; every chord, joined by ", ", when the action asks for it. */
 export function actionKey(action: ControlActionLike | undefined): string | undefined {
   if (!action) return undefined
   if (!action.chords.length) return action.shownKey
-  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map((chord) => chordParts(chord).join('+')).join(', ')
+  return (action.chipAllKeys ? action.chords : action.chords.slice(0, 1)).map(chordText).join(', ')
 }

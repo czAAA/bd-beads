@@ -10,7 +10,7 @@ One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jso
 |---|---|---|
 | Worker | `bd-beads-dev` | `bd-beads` |
 | Deployed | on every push to `main` | by a manual run of the workflow, from `main` only |
-| Address | `https://bd-beads-dev.bd4beads.workers.dev` | `https://bd-beads.bd4beads.workers.dev` |
+| Address | `https://dev.openbeads.com`, and `https://bd-beads-dev.bd4beads.workers.dev` | `https://openbeads.com`, and `https://bd-beads.bd4beads.workers.dev` until the release switches it off (ticket 391) |
 | D1 `core` (binding `CORE`) | `bd-beads-dev-core` | `bd-beads-core` |
 | D1 `blobs` (binding `BLOBS_DB`) | `bd-beads-dev-blobs` | `bd-beads-blobs` |
 | R2 (binding `BLOBS`) | `bd-beads-dev` | `bd-beads` |
@@ -27,7 +27,7 @@ DEPLOY_BASE=/ npm run build
 npx wrangler d1 migrations apply CORE --env dev --remote
 npx wrangler d1 migrations apply BLOBS_DB --env dev --remote
 npx wrangler deploy --env dev --var VERSION:$(git rev-parse HEAD)
-curl -s https://bd-beads-dev.bd4beads.workers.dev/api/health
+curl -s https://bd-beads-dev.bd4beads.workers.dev/api/health   # or https://dev.openbeads.com/api/health
 ```
 
 Production is the same with `--env production`, from a clean `main`. `npx wrangler deploy --dry-run --env <env>` checks the config and the bundle without touching Cloudflare.
@@ -37,7 +37,8 @@ Production is the same with `--env production`, from a clean `main`. `npx wrangl
 `.github/workflows/deploy.yml` does the same as the steps above:
 
 - **When it runs.** A push to `main` deploys dev. Production deploys only from a manual run (Actions → Deploy → Run workflow, on `main`). A run from any other ref fails at once, and the `production` environment refuses it too.
-- **What it does.** One build, then each database's migrations, then the code with `VERSION` set to the commit, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy.
+- **What it does.** One build, then each database's migrations, then the code with `VERSION` set to the commit, then a smoke check. The smoke check retries `/api/health` for up to two minutes, until it answers `ok` with that commit. It takes the address from Wrangler's own record of the deploy. A second check asks the custom domain (`dev.openbeads.com` or `openbeads.com`) the same; it sends the Access service token when `CF_ACCESS_CLIENT_ID` is set (ticket 395), and dev's is skipped with a warning until then. It is advisory: the zone's Bot Fight Mode challenges a runner, so a failure there only warns.
+- **Custom domains.** Each Worker's `routes` entry in `wrangler.jsonc` is a Custom Domain, so a deploy keeps it. `PUBLIC_ORIGIN` is the origin sign-in is tried on; Google's callback and the allowed origins come from it, never from the request's host. Each hostname has its own Access application (ticket 400), so a tester is added to both policies.
 - **Concurrency.** Runs for the same Worker queue one behind another and are never cancelled halfway through.
 - **What it skips.** A push that changes only Markdown deploys nothing.
 
@@ -68,7 +69,7 @@ GitHub holds only what CI needs, in the `production` environment (limited to `ma
 
 ## The human steps
 
-The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h5`), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
+The steps that need the maintainer's login, card or judgment are in `scripts/backend-wizard.sh`, one phase per run (`h1` to `h6`; h6 is ticket 400's domain), in the order ticket 71 gives. It opens each dashboard, says what to click, sends each secret straight to Wrangler or GitHub, and writes the ids, site keys and hosts it collects (none secret) to `backend-handoff.local` (gitignored) for the agent.
 
 ## Adding a tester
 

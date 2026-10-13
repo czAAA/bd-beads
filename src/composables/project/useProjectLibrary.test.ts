@@ -62,6 +62,23 @@ describe('useProjectLibrary', () => {
     expect(loadProjects()).toEqual(library.projects.value)
   })
 
+  it('tells its subscriber after a write that got through, not after a refused one', () => {
+    const onSaved = vi.fn()
+    const library = useProjectLibrary(undefined, onSaved)
+    expect(onSaved).not.toHaveBeenCalled()
+
+    library.addProject(makeProject())
+    expect(onSaved).toHaveBeenCalledOnce()
+
+    library.removeProject(library.projects.value[0]!.id)
+    library.addProject(makeProject())
+    expect(onSaved).toHaveBeenCalledTimes(2)
+
+    refuseStorageWrites()
+    library.addProject(makeProject())
+    expect(onSaved).toHaveBeenCalledTimes(2)
+  })
+
   it('persists a replaced Project straight away by default', () => {
     const library = useProjectLibrary()
     const project = makeProject()

@@ -7,7 +7,16 @@ import type { Tool } from '../../src/domain/tool'
  * Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. It
  * opens at the preview's address, or at `url` where a check serves the build itself.
  */
-export async function openApp(page: Page, projects: Project[], url = './'): Promise<void> {
+export async function openApp(
+  page: Page,
+  projects: Project[],
+  url = './',
+  /** Leave the storage note (ticket 399) to appear at the first save; by default the device has already seen it, so it never covers a check's clicks. */
+  options: { storageNote?: boolean } = {},
+): Promise<void> {
+  if (!options.storageNote) {
+    await page.addInitScript(() => localStorage.setItem('bd-beads:storage-note-seen', 'yes'))
+  }
   if (projects.length > 0) {
     const stored = storedLibrary(projects)
     await page.addInitScript(
