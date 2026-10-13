@@ -4,7 +4,7 @@ How tests are written in this repo. The commands are in the README's Checks; the
 
 ## Running them
 
-- While working, run only the tests related to your change: `npm run test:related -- <changed files>`. It runs `vitest related` with the `agent` reporter and `--silent=passed-only`, so a green run prints a few lines, and it leaves out the `App.*.test.ts` files: the App imports everything, so almost any UI change would pull in all 21 of them (about 4 min of CPU on the Pi). The full unit suite peaks near 1.5 GB of RAM, so its one run is CI's, on every pull request, even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene).
+- While working, run only the tests related to your change: `npm run test:related -- <changed files>`. It runs `vitest related` with the `agent` reporter and `--silent=passed-only`, so a green run prints a few lines, and it leaves out the `App.*.test.ts` files: the App imports everything, so almost any UI change would pull in all 21 of them (about 4 min of CPU on the Pi). The full unit suite peaks near 2 GB of RAM (summed over its worker processes, the largest about 0.8 GB; measured after tickets 420 and 422), so its one run is CI's, on every pull request, even where a skill says to run it at the end (`CLAUDE.md`, Context hygiene).
 - Add an App file to the command (`npm run test:related -- src/ProgressBar.vue src/App.canvas.test.ts`) only when your change touches the App's wiring: a shell, a keyboard shortcut, a flow that spans components. It is then run on its own, in the same quiet mode.
 - `npm run typecheck` and `npm run lint` are cheap; run them before pushing.
 
