@@ -29,10 +29,17 @@
     "dev": {
       "name": "bd-beads-dev",
       "workers_dev": true,
+      // Ticket 400: dev's own address, a subdomain of production's zone. A Custom Domain, so Cloudflare makes the DNS
+      // record and the certificate.
+      "routes": [{ "pattern": "dev.openbeads.com", "custom_domain": true }],
       // The watchdog, every 15 minutes (worker/src/watchdog/run.ts relies on the interval for its daily hook).
       "triggers": { "crons": ["*/15 * * * *"] },
       "vars": {
         "WORKER_NAME": "dev",
+        // The origin sign-in is tried on: Google's callback is this plus the callback path, and the allowed origins are
+        // this. One setting per Worker, never read off the request's Host, so a `workers.dev` address (which Google
+        // refuses) can't make a redirect URI that isn't listed.
+        "PUBLIC_ORIGIN": "https://dev.openbeads.com",
         // This Worker's own script, databases and bucket, which dev's watchdog filters Cloudflare's analytics by (it
         // counts only its own usage).
         "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
@@ -76,10 +83,14 @@
     },
     "production": {
       "name": "bd-beads",
+      // Stays on until the release switches it off (ticket 391).
       "workers_dev": true,
+      // Ticket 400. `www.openbeads.com` redirects to the apex in the dashboard (a Redirect Rule), not here.
+      "routes": [{ "pattern": "openbeads.com", "custom_domain": true }],
       "triggers": { "crons": ["*/15 * * * *"] },
       "vars": {
         "WORKER_NAME": "production",
+        "PUBLIC_ORIGIN": "https://openbeads.com",
         // Production counts requests, D1 writes and R2 storage account-wide, the limits it shares with dev; its own
         // script filters only its errors. The database ids are kept for the runbook.
         "CF_ACCOUNT_ID": "925d034d8d4ae6552ded069d92010749",
