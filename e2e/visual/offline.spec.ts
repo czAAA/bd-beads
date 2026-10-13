@@ -20,8 +20,8 @@ test.afterEach(async () => {
 })
 
 /** Opens the editor from `host` on a saved Project, and waits until the worker has the whole app and is in control. */
-async function openAndInstall(page: Page): Promise<void> {
-  await openApp(page, [fixtureProject({ technique: 'loom', columns: 8, rows: 6, blank: true })], host.url)
+async function openAndInstall(page: Page, storageNote = false): Promise<void> {
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 8, rows: 6, blank: true })], host.url, { storageNote })
   await page.evaluate(() => navigator.serviceWorker.ready)
   await expect.poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null)).toBe(true)
 }
@@ -94,7 +94,7 @@ test('asks the browser to keep the library at the first save, after the note, an
     }
   })
   const asked = () => page.evaluate(() => (window as unknown as { persistAsked: number }).persistAsked)
-  await openAndInstall(page)
+  await openAndInstall(page, true)
   expect(await asked()).toBe(0)
 
   await page.getByTestId('new-project-button').click()
