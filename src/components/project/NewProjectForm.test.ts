@@ -52,7 +52,7 @@ async function stateSize(wrapper: ReturnType<typeof mount>, width: string, heigh
 
 describe('NewProjectForm', () => {
   it('lists every bead in the catalog as an option', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     const options = wrapper.findAll('[data-testid="bead-select"] option')
     expect(options).toHaveLength(BEAD_CATALOG.length)
@@ -60,7 +60,7 @@ describe('NewProjectForm', () => {
   })
 
   it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {
-    const wrapper = mount(NewProjectForm, { attachTo: document.body })
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() }, attachTo: document.body })
     const input = wrapper.find('[data-testid="name-input"]').element as HTMLInputElement
 
     expect(document.activeElement).toBe(input)
@@ -71,7 +71,7 @@ describe('NewProjectForm', () => {
   })
 
   it('has no Frame, Unit, Width or Height fields: the size is set afterwards in the Frame section (ticket 342)', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     for (const id of ['width-input', 'height-input', 'unit-select', 'new-project-frame-heading', 'size-conversion']) {
       expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false)
@@ -80,7 +80,7 @@ describe('NewProjectForm', () => {
   })
 
   it('emits submit with the chosen bead and technique, and no size: a new Project is an open canvas', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
     await wrapper.find('form').trigger('submit')
@@ -91,7 +91,7 @@ describe('NewProjectForm', () => {
   })
 
   it('shows the selected bead label as the name placeholder', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
 
@@ -101,7 +101,7 @@ describe('NewProjectForm', () => {
   })
 
   it('emits the trimmed custom name when one is typed', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="name-input"]').setValue('  My Bracelet  ')
     await wrapper.find('form').trigger('submit')
@@ -111,14 +111,14 @@ describe('NewProjectForm', () => {
   })
 
   it('lists Peyote and Brick stitch alongside Loom', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     const options = wrapper.findAll('[data-testid="technique-select"] [role="radio"]')
     expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
     await wrapper.find('form').trigger('submit')
@@ -128,7 +128,7 @@ describe('NewProjectForm', () => {
   })
 
   it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="maker-name-input"]').setValue('  Bead Master  ')
     await wrapper.find('form').trigger('submit')
@@ -138,7 +138,7 @@ describe('NewProjectForm', () => {
   })
 
   it("leaves the maker's name blank by default", () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     expect((wrapper.find('[data-testid="maker-name-input"]').element as HTMLInputElement).value).toBe('')
   })
@@ -146,7 +146,7 @@ describe('NewProjectForm', () => {
 
 describe('NewProjectForm draft (ticket 58)', () => {
   it('reports its values straight away, so Convert image has a frame before anything is touched', () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     expect(wrapper.emitted('draft')![0]![0]).toEqual({
       name: '',
@@ -157,7 +157,7 @@ describe('NewProjectForm draft (ticket 58)', () => {
   })
 
   it('reports every later change, so the frame follows the fields as they are edited', async () => {
-    const wrapper = mount(NewProjectForm)
+    const wrapper = mount(NewProjectForm, { props: { decodeImage: vi.fn() } })
 
     await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[2]!.id)

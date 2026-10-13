@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { ref } from 'vue'
 import { createProject, type Project } from '../../domain/project'
+import { runInComponent } from '../../testUtils/inComponent'
 import { useCanvasFraming } from './useCanvasFraming'
 
 const project = createProject({
@@ -13,15 +14,14 @@ function setup(options: { open?: boolean; framing?: { columns: number; rows: num
   const open = ref(options.open ?? true)
   const framing = ref(options.framing)
   const convertZoomPercent = ref(60)
-  const scope = effectScope()
-  const result = scope.run(() =>
+  const { result, stop } = runInComponent(() =>
     useCanvasFraming({
       currentProject: (): Project | undefined => (open.value ? project : undefined),
       framing: () => (framing.value ? { dimensions: framing.value } : undefined),
       convertZoomPercent: () => convertZoomPercent.value,
     }),
-  )!
-  return { open, framing, result, stop: () => scope.stop() }
+  )
+  return { open, framing, result, stop }
 }
 
 describe('useCanvasFraming', () => {
