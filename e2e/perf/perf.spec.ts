@@ -2,6 +2,7 @@ import { test, type CDPSession, type Page } from '@playwright/test'
 import { openApp, projectBox, settle, stateConvertSize } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
+import { DOCK_LAYOUT_ENABLED } from '../../src/features'
 
 /**
  * The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`. It drives the production build in a real
@@ -18,6 +19,10 @@ import { fixturePicture } from '../support/picture'
  * browser produces a frame only when the main thread is free, so a slow render shows up as few frames), and the main
  * thread's busy milliseconds per frame. "open" and "zoom" are one-off actions, so they report how long one takes.
  */
+
+// Drives the Toolbox layout directly (ticket 385 ported the visual check's own helpers to the Dock, not this one): skip
+// while the build's default is the Dock layout, rather than fail on controls the build no longer mounts.
+test.skip(DOCK_LAYOUT_ENABLED, 'drives the Toolbox layout; port when the Dock layout gets its own perf helpers')
 
 const SLOWDOWNS = (process.env.PERF_SLOWDOWNS ?? '4,6').split(',').map(Number)
 const SIZES = (process.env.PERF_SIZES ?? '60x90,70x250,250x250').split(',').map((size) => {

@@ -67,9 +67,11 @@ function onKeydown(event: KeyboardEvent) {
 
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
-  if (sheetEl.value && target && !sheetEl.value.contains(target) && !inTourCard(target)) {
-    ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
-  }
+  if (!target || inTourCard(target) || sheetEl.value?.contains(target)) return
+  // A focus that lands inside another open sheet (stacked, like Saved Projects over the Project sheet) is not
+  // "outside": that sheet's own trap owns it, and every trap pulling it back would recurse until the stack overflows.
+  if (target instanceof Element && target.closest('.bottom-sheet')) return
+  ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
 }
 
 /** A light sheet closes on a press anywhere outside it -- "tapping the Project" is one case of this, not a special one. */

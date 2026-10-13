@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openApp, setZoom, stateConvertSize } from '../support/app'
+import { openApp, openNewProjectForm, setZoom, stateConvertSize } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
 /**
@@ -13,6 +13,7 @@ test.describe('Convert image framing', () => {
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
     test(technique, async ({ page }) => {
       await openApp(page, [])
+      await openNewProjectForm(page)
       await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
       await page.getByTestId('convert-image-input').setInputFiles({
         name: 'fixture.png',

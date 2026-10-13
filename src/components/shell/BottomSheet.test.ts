@@ -69,6 +69,24 @@ describe('BottomSheet', () => {
     opener.remove()
   })
 
+  it('two open sheets stacked (Saved Projects over the Project sheet) do not fight over focus (ticket 385)', async () => {
+    const outer = mountSheet(true)
+    await outer.vm.$nextTick()
+
+    const inner = mount(BottomSheet, {
+      attachTo: document.body,
+      props: { title: 'Saved Projects' },
+      slots: { default: '<button type="button">Export Project</button>' },
+    })
+    await inner.vm.$nextTick()
+
+    // The inner sheet's own opening focus stays put: the outer one doesn't pull it back into itself.
+    expect(inner.element.contains(document.activeElement)).toBe(true)
+
+    inner.unmount()
+    outer.unmount()
+  })
+
   it('skips a data-skip-autofocus control when picking where to land opening focus (ticket 188)', async () => {
     const wrapper = mount(BottomSheet, {
       attachTo: document.body,

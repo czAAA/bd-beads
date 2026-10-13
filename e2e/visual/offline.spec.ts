@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
-import { openApp } from '../support/app'
+import { openApp, openDockSheet } from '../support/app'
 import { startHost, type Host } from '../support/hostProxy'
 import { fixtureProject, STORAGE_KEY } from '../support/projects'
 import { baseURL } from '../support/server'
@@ -35,15 +35,18 @@ async function reloadsIntoTheApp(page: Page): Promise<void> {
   await expect(page.getByTestId('app-canvas')).toBeVisible()
 }
 
-/** Creates a Pattern through the New Pattern form, paints a bead, saves, and checks it is stored. */
+/** Creates a Pattern through the New Pattern form, paints a bead, saves, and checks it is stored. New Project and Save
+ * both sit in the Dock's Project sheet, which creating the Project closes. */
 async function createEditAndSave(page: Page, name: string): Promise<void> {
-  await page.getByTestId('new-project-button').click()
+  await openDockSheet(page, 'dock-project')
+  await page.getByTestId('phone-new-project-button').click()
   await page.getByTestId('name-input').fill(name)
   await page.locator('form.new-project-form button[type=submit]').click()
   await expect(page.getByTestId('project-surface')).toBeVisible()
   const surface = page.getByTestId('project-surface')
   const box = (await surface.boundingBox())!
   await page.mouse.click(box.x + 20, box.y + 20)
+  await openDockSheet(page, 'dock-project')
   await page.getByTestId('save-button').click()
   await expect.poll(() => savedNames(page)).toContain(name)
 }
@@ -62,6 +65,7 @@ for (const [situation, breakIt] of failures) {
     await createEditAndSave(page, 'Made offline')
     await reloadsIntoTheApp(page)
     expect(await savedNames(page)).toContain('Made offline')
+    await openDockSheet(page, 'dock-project')
     await expect(page.getByTestId('save-state')).toBeVisible()
   })
 

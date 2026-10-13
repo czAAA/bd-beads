@@ -1,16 +1,20 @@
 import { frameGrid } from './domain/project'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
+import { downloadFile } from './services/fileDownload'
+
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('bd-beads:locale', 'en')
+  vi.mocked(downloadFile).mockClear()
 })
 
 /**
@@ -213,6 +217,25 @@ describe('App at the phone tier (ticket 79)', () => {
     const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
     expect(sheets.length).toBeGreaterThan(1)
     expect(sheets[sheets.length - 1]!.find('[data-testid="project-list"]').exists()).toBe(true)
+  })
+
+  it('exports a Project file and the whole library from the Saved Projects sheet (ticket 385)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
+
+    // Scoped to the Saved Projects sheet, the last one rendered: the always-mounted (but hidden) AppSidebar
+    // ProjectList has its own panel-expand too.
+    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
+    const savedProjectsSheet = sheets[sheets.length - 1]!
+    await savedProjectsSheet.find('[data-testid="panel-expand"]').trigger('click')
+
+    await savedProjectsSheet.find('[data-testid="export-project"]').trigger('click')
+    expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.json$/), expect.any(String))
+
+    vi.mocked(downloadFile).mockClear()
+    await savedProjectsSheet.find('[data-testid="export-library"]').trigger('click')
+    expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.json$/), expect.any(String))
   })
 
   it('closes both the Saved Projects drawer and Project sheet on project select', async () => {
