@@ -438,6 +438,17 @@ export interface Translations {
     decreaseHeight: string
     increaseHeight: string
     unitLabel: string
+    /** Which side Width and Height grow and shrink the Frame from (ticket 410): each choice's label, option names and Tooltip bodies. */
+    widthSideLabel: string
+    heightSideLabel: string
+    sideLeft: string
+    sideRight: string
+    sideTop: string
+    sideBottom: string
+    sideLeftBody: string
+    sideRightBody: string
+    sideTopBody: string
+    sideBottomBody: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */

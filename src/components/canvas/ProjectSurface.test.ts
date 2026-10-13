@@ -660,6 +660,15 @@ describe('ProjectSurface', () => {
         expect(surface.classes()).not.toContain('project-surface--refused')
       })
 
+      it('draws the margin outline for a Frame whose size is pending, and not for a committed one (ticket 410)', async () => {
+        const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 })
+        await nextTick()
+        expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(false)
+
+        await wrapper.setProps({ framePending: true })
+        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      })
+
       it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
         const project = framed()
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })

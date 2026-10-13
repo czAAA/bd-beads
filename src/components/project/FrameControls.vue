@@ -7,23 +7,28 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { TECHNIQUES, type Technique } from '../../domain/grid'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
+import { useFrameSides } from '../../composables/project/useFrameSides'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
+import type { Frame } from '../../domain/canvas'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
  * The body of the Frame row (MirrorSizeControls card, ticket 233): the beads | mm switch (ticket 342, remembered on
- * this device), Width and Height steppers that move one bead per press in either unit, Fit to drawing and Remove
- * Frame, and the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). With no Frame it
- * says what a Frame is and offers Fit
- * to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
+ * this device), Width and Height steppers that move one bead per press in either unit, each after a choice of the side
+ * it grows and shrinks the Frame from (ticket 410, also remembered on this device), Fit to drawing and Remove
+ * Frame, and the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). The steppers change
+ * a pending Frame, committed when the sheet closes: this shows it (`pendingFrame`) in place of the Project's own.
+ * With no Frame it says what a Frame is and offers Fit to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
  * the reason is written under the controls.
  */
 const props = defineProps<{
   project: Project
   /** Offers Set Frame itself, for where opening the controls doesn't start it (the phone's Frame sheet). */
   withSetFrame?: boolean
+  /** The size the steppers set and nothing has committed yet (ticket 410): the fields and the estimate follow it. */
+  pendingFrame?: Frame
 }>()
 
 const emit = defineEmits<{
@@ -36,7 +41,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const frame = computed(() => props.project.frame)
+const frame = computed(() => props.pendingFrame ?? props.project.frame)
 const locked = computed(() => props.project.rowProgress.enabled)
 const bead = computed(() => resolveProjectBead(props.project))
 
@@ -83,12 +88,28 @@ const techniqueOptions = computed(() => {
 
 const lockedNoteId = useId()
 
+/** The side each stepper changes the Frame from (ticket 410). */
+const { widthSide, heightSide, widthSideOptions, heightSideOptions } = useFrameSides()
+const widthSideLabelId = useId()
+const heightSideLabelId = useId()
+
 const setFrameAction = controlAction('set-frame')
 const fitAction = controlAction('fit-to-drawing')
 const removeAction = controlAction('remove-frame')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 /** The steppers' reason while Row progress holds the Frame still. */
 const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.value))
+
+/** A side choice's options with their Tooltips; while Row progress holds the Frame still each says why. */
+function sideOptions<T extends string>(options: readonly { value: T; label: string; body: string }[]) {
+  return options.map(({ value, label, body }) => ({
+    value,
+    label,
+    tooltip: { name: label, body, disabledBody: lockedReason.value },
+  }))
+}
+const widthSideChoices = computed(() => sideOptions(widthSideOptions.value))
+const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
 </script>
 
 <template>
@@ -112,6 +133,17 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
         <span :id="unitLabelId">{{ t.frame.unitLabel }}</span>
         <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="frame-unit" />
       </div>
+      <div class="frame-controls__side" data-testid="frame-width-side-row">
+        <span :id="widthSideLabelId">{{ t.frame.widthSideLabel }}</span>
+        <SegmentedControl
+          v-model="widthSide"
+          :options="widthSideChoices"
+          :disabled="locked"
+          small
+          :labelledby="widthSideLabelId"
+          data-testid="frame-width-side"
+        />
+      </div>
       <label class="frame-controls__setting">
         <span>{{ t.frame.widthLabel }}</span>
         <AppStepper
@@ -129,6 +161,17 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
           value-testid="frame-columns"
         />
       </label>
+      <div class="frame-controls__side" data-testid="frame-height-side-row">
+        <span :id="heightSideLabelId">{{ t.frame.heightSideLabel }}</span>
+        <SegmentedControl
+          v-model="heightSide"
+          :options="heightSideChoices"
+          :disabled="locked"
+          small
+          :labelledby="heightSideLabelId"
+          data-testid="frame-height-side"
+        />
+      </div>
       <label class="frame-controls__setting">
         <span>{{ t.frame.heightLabel }}</span>
         <AppStepper
@@ -184,7 +227,8 @@ const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.va
   font: var(--type-control);
 }
 
-.frame-controls__technique {
+.frame-controls__technique,
+.frame-controls__side {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
