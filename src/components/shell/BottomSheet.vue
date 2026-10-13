@@ -9,16 +9,14 @@ import { SHEET_CLOSE } from './sheetContext'
 /**
  * The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. Light (the default --
  * Tool, Colour, Edit, Mirror, Size): `panel`, 18px top corners, a grab handle, title and close, no scrim, only as
- * tall as its content so the Project stays in view, and closes on a press anywhere outside it. `modal` (the Project
- * sheet): taller, with a scrim, closing only from its own controls or Escape -- an accidental tap past its edge
- * shouldn't lose the way back to New Project or Import.
+ * tall as its content so the Project stays in view. `modal` (the Project sheet): taller, with a scrim. Both close on a
+ * press anywhere outside them, which only closes (ticket 402).
  *
  * Mounted with `v-if`, like AppModal: while open, focus stays inside (Tab wraps, Escape and the close button hand it
  * back to whatever opened it). Slides up with `transform` (ADR 0018: the drawing surface behind it never resizes).
- * Swipe-to-dismiss (the card's other close gesture, alongside the close button, Escape, tapping the Project and the
- * Dock button re-toggling it) isn't built this pass -- see ticket 79's own note.
+ * Swipe-to-dismiss: the handle closes the sheet on a tap or a drag down (ticket 402).
  */
-const props = withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
+withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
 const emit = defineEmits<{ close: [] }>()
 const closeAction = controlAction('close')
 
@@ -74,10 +72,64 @@ function onFocusIn(event: FocusEvent) {
   ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
 }
 
-/** A light sheet closes on a press anywhere outside it -- "tapping the Project" is one case of this, not a special one. */
+/** Eats the click that follows a press the sheet swallowed. It outlives the sheet (which unmounts before the click lands) and drops away at the next press, so a press that never clicks (a drag, a cancel) leaves nothing behind. */
+function swallowNextClick() {
+  const stop = (event: Event) => {
+    event.stopPropagation()
+    event.preventDefault()
+    release()
+  }
+  const release = () => {
+    document.removeEventListener('click', stop, true)
+    document.removeEventListener('pointerdown', release, true)
+  }
+  document.addEventListener('click', stop, true)
+  document.addEventListener('pointerdown', release, true)
+}
+
+/**
+ * A sheet, light or modal, closes on a press anywhere outside it, and only closes: the press and its click are
+ * swallowed so nothing under them acts (no stroke, fill or Frame start; a Dock button doesn't re-open the sheet it
+ * just closed). A press inside another dialog (a stacked sheet, a confirmation) is not "outside", and only the
+ * topmost sheet reacts.
+ */
 function onPointerDownOutside(event: PointerEvent) {
-  if (props.modal) return
-  if (sheetEl.value && !sheetEl.value.contains(event.target as Node) && !inTourCard(event.target)) emit('close')
+  const sheet = sheetEl.value
+  const target = event.target
+  if (!sheet || !(target instanceof Node) || sheet.contains(target) || inTourCard(target)) return
+  if (target instanceof Element && target.closest('[role="dialog"]')) return
+  if ([...document.querySelectorAll('.bottom-sheet')].at(-1) !== sheet) return
+  event.stopPropagation()
+  event.preventDefault()
+  swallowNextClick()
+  emit('close')
+}
+
+/** The handle: a tap closes the sheet, a drag down follows the finger and closes past the threshold, else springs back. */
+const DRAG_CLOSE_PX = 80
+let dragStartY: number | null = null
+let dragOffset = 0
+
+function onHandleDown(event: PointerEvent) {
+  dragStartY = event.clientY
+  dragOffset = 0
+  ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
+}
+
+function onHandleMove(event: PointerEvent) {
+  if (dragStartY === null || !sheetEl.value) return
+  dragOffset = Math.max(0, event.clientY - dragStartY)
+  sheetEl.value.style.transform = `translateY(${dragOffset}px)`
+}
+
+function onHandleUp() {
+  if (dragStartY === null) return
+  const offset = dragOffset
+  dragStartY = null
+  dragOffset = 0
+  if (sheetEl.value) sheetEl.value.style.transform = ''
+  // Under a few pixels is a tap, not a drag.
+  if (offset < 4 || offset >= DRAG_CLOSE_PX) emit('close')
 }
 
 onMounted(() => {
@@ -86,12 +138,12 @@ onMounted(() => {
   // sheet's own content instead, the same way AppModal's own initial focus skips past its header.
   void nextTick(() => (initialFocusable(bodyEl.value) ?? initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus())
   document.addEventListener('focusin', onFocusIn)
-  document.addEventListener('pointerdown', onPointerDownOutside)
+  document.addEventListener('pointerdown', onPointerDownOutside, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('focusin', onFocusIn)
-  document.removeEventListener('pointerdown', onPointerDownOutside)
+  document.removeEventListener('pointerdown', onPointerDownOutside, true)
   const target = opener
   if (target?.isConnected) {
     target.focus()
@@ -114,7 +166,17 @@ onBeforeUnmount(() => {
     data-testid="bottom-sheet"
     @keydown="onKeydown"
   >
-    <div class="bottom-sheet__handle" aria-hidden="true" />
+    <div
+      class="bottom-sheet__grab"
+      data-testid="sheet-handle"
+      aria-hidden="true"
+      @pointerdown="onHandleDown"
+      @pointermove="onHandleMove"
+      @pointerup="onHandleUp"
+      @pointercancel="onHandleUp"
+    >
+      <div class="bottom-sheet__handle" />
+    </div>
     <div class="bottom-sheet__head">
       <h2 :id="titleId" class="bottom-sheet__title">{{ title }}</h2>
       <div class="bottom-sheet__head-actions">
@@ -174,10 +236,18 @@ onBeforeUnmount(() => {
   box-shadow: none;
 }
 
+/* A full-width, finger-sized strip around the bar: the bar alone is 4px tall. */
+.bottom-sheet__grab {
+  margin: calc(-1 * var(--space-8)) calc(-1 * var(--space-20)) 0;
+  padding: var(--space-8) 0 var(--space-12);
+  touch-action: none;
+  cursor: grab;
+}
+
 .bottom-sheet__handle {
   width: 2.25rem;
   height: 4px;
-  margin: 0 auto var(--space-12);
+  margin: 0 auto;
   background: var(--line-strong);
   border-radius: var(--radius-full);
 }
