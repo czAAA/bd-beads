@@ -241,7 +241,7 @@ function techniqueWord(technique: Technique): string {
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
-              :blocks-margin="activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive"
+              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"

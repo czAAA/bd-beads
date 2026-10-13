@@ -5,9 +5,9 @@ import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 
 /**
- * The Colors group's controls (Toolbox card; ticket 384): the Palette (Pick color from canvas, ticket 398, is its
- * last tile), Custom color and Image colors, shared by the Toolbox and the phone Color sheet so a control changed in one place reaches
- * both.
+ * The Colors group's controls (Toolbox card; ticket 384): the Palette (Pick color from canvas, ticket 398, is its last
+ * tile), Custom color and Image colors, shared by the Toolbox and the phone Color sheet so a control changed in one
+ * place reaches both.
  */
 const props = defineProps<{
   selectedColorId?: string
