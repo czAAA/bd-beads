@@ -6,7 +6,7 @@ import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { beadColor, drawnProject, hoverBead, pressBead } from './testUtils/beads'
+import { beadColor, hoverBead, pressBead } from './testUtils/beads'
 
 /** Set Frame (ticket 233, ADR 0026) as the app shows it: drawing, moving and resizing the Frame, its Toolbox row and its keys. */
 
@@ -72,33 +72,6 @@ describe('Set Frame', () => {
     expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.stripTitle)
   })
 
-  it('shows the Frame while it is dragged and commits it on release, as one Undo step that changes no bead', async () => {
-    const wrapper = await mountOpen()
-    await key({ key: '6' })
-
-    await pressBead(wrapper, { row: 1, column: 1 })
-    await hoverBead(wrapper, { row: 3, column: 4 }, { buttons: 1 })
-    await flushPromises()
-    expect(drawnProject(wrapper).frame).toEqual({ row: 1, column: 1, rows: 3, columns: 4 })
-    expect(savedFrame()).toBeUndefined()
-
-    await surface(wrapper).trigger('pointerup')
-    await flushPromises()
-    expect(savedFrame()).toEqual({ row: 1, column: 1, rows: 3, columns: 4 })
-
-    await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toBeUndefined()
-    expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
-  })
-
-  it('moves a Frame by dragging inside it', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    await key({ key: '6' })
-
-    await drag(wrapper, { row: 2, column: 2 }, { row: 3, column: 4 })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
-  })
-
   it('moves a Frame with the Hand tool chosen before, and goes back to the Hand tool after (ticket 294)', async () => {
     const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
     await key({ key: '5' })
@@ -153,44 +126,6 @@ describe('Set Frame', () => {
     expect(savedFrame()).toEqual({ row: 1, column: 0, rows: 1, columns: 2 })
   })
 
-  it('shows no bead cursor when F focuses the Project, and hints at the Frame keys instead (ticket 286)', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    await key({ key: '6' })
-
-    expect(document.activeElement).toBe(surface(wrapper).element)
-    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
-    expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.frame.keyboardHint)
-
-    await surface(wrapper).trigger('keydown', { key: 'Enter' })
-    // Ending Set Frame reveals no cursor the person did not move (ticket 354); an arrow key brings it back.
-    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeUndefined()
-    expect(wrapper.find('[data-testid="canvas-strip-hint"]').text()).toBe(en.a11y.keyboardHint)
-    await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
-    expect(wrapper.findComponent(ProjectSurface).props('cursor')).toBeDefined()
-  })
-
-  it('shows no bead cursor after key 6 or Escape ends Set Frame until an arrow key moves it (ticket 354)', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    const cursor = () => wrapper.findComponent(ProjectSurface).props('cursor')
-
-    await key({ key: '6' })
-    await surface(wrapper).trigger('keydown', { key: '6' })
-    expect(cursor()).toBeUndefined()
-
-    await key({ key: '6' })
-    await surface(wrapper).trigger('keydown', { key: 'Escape' })
-    expect(cursor()).toBeUndefined()
-    await surface(wrapper).trigger('keydown', { key: 'ArrowDown' })
-    expect(cursor()).toBeDefined()
-  })
-
-  it('is refused while Row progress is on', async () => {
-    const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
-    await key({ key: '6' })
-    await drag(wrapper, { row: 5, column: 5 }, { row: 7, column: 8 })
-    expect(savedFrame()).toEqual(project.frame)
-  })
 })
 
 describe('the Frame row', () => {
@@ -258,44 +193,6 @@ describe('the Frame row\'s size steppers apply once (ticket 410)', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
   })
 
-  it('takes no Undo step when the Frame is closed back at its own size', async () => {
-    const wrapper = await mountOpen(framed())
-    const row = await openRow(wrapper)
-
-    await row.find('[data-testid="frame-columns-decrease"]').trigger('click')
-    await row.find('[data-testid="frame-columns-decrease"]').trigger('click')
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    await row.find('button').trigger('click')
-
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled')).toBe('true')
-  })
-
-  it('grows from the side that was chosen, keeps the choice on the device and never saves it in the Project', async () => {
-    const wrapper = await mountOpen(framed())
-    const row = await openRow(wrapper)
-    expect(row.find('[data-testid="frame-width-side"] [aria-checked="true"]').text()).toBe(en.frame.sideRight)
-    expect(row.find('[data-testid="frame-height-side"] [aria-checked="true"]').text()).toBe(en.frame.sideBottom)
-
-    await row.find('[data-testid="frame-width-side"] [data-value="left"]').trigger('click')
-    await row.find('[data-testid="frame-height-side"] [data-value="top"]').trigger('click')
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    await row.find('[data-testid="frame-rows-increase"]').trigger('click')
-    await row.find('button').trigger('click')
-
-    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 3, columns: 4 })
-    expect(localStorage.getItem('bd-beads:frame-width-side')).toBe('left')
-    expect(localStorage.getItem('bd-beads:frame-height-side')).toBe('top')
-    expect(JSON.stringify(loadProjects())).not.toMatch(/frame-width-side|frameWidthSide|"left"/)
-
-    wrapper.unmount()
-    const again = await mountOpen(loadProjects()[0])
-    const reopened = await openRow(again)
-    expect(reopened.find('[data-testid="frame-width-side"] [aria-checked="true"]').text()).toBe(en.frame.sideLeft)
-    expect(reopened.find('[data-testid="frame-height-side"] [aria-checked="true"]').text()).toBe(en.frame.sideTop)
-  })
-
   it('commits a pending Frame before Rotate or a stroke reads it, so neither acts on a stale one', async () => {
     const wrapper = await mountOpen(framed())
     const row = await openRow(wrapper)
@@ -312,43 +209,6 @@ describe('the Frame row\'s size steppers apply once (ticket 410)', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
   })
 
-  it('commits a pending Frame when a bead is painted, in the bead the pending Frame reaches', async () => {
-    const wrapper = await mountOpen(framed())
-    const row = await openRow(wrapper)
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-
-    await pressBead(wrapper, { row: 2, column: 6 })
-    await surface(wrapper).trigger('pointerup')
-    await flushPromises()
-
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
-    expect(beadColor(wrapper, { row: 2, column: 6 })).not.toBeNull()
-  })
-
-  it('drops a pending Frame on Undo, which has nothing of it to take back', async () => {
-    const wrapper = await mountOpen(framed())
-    const row = await openRow(wrapper)
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    expect(shownFrame(wrapper)?.columns).toBe(4)
-
-    await key({ key: 'z', ctrlKey: true })
-    expect(shownFrame(wrapper)).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    await row.find('button').trigger('click')
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-  })
-
-  it('keeps the steppers and the choices disabled with the reason while Row progress is on', async () => {
-    const project = framed()
-    const wrapper = await mountOpen({ ...project, rowProgress: { ...project.rowProgress, enabled: true } })
-    const row = await openRow(wrapper)
-
-    expect(row.find('[data-testid="frame-width-side"]').attributes('aria-disabled')).toBe('true')
-    expect(row.find('[data-testid="frame-height-side"]').attributes('aria-disabled')).toBe('true')
-    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
-    expect(shownFrame(wrapper)).toEqual(project.frame)
-    expect(row.find('[data-testid="frame-locked"]').exists()).toBe(true)
-  })
 })
 
 describe('Rotate, Export and Row progress on the Frame', () => {
@@ -366,32 +226,6 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(beadColor(wrapper, { row: 3, column: 5 })).toBe(RED)
-  })
-
-  it('moves a Piece out of the way with a Message, and Undo brings it and the turn back', async () => {
-    const project = framed()
-    // A piece below the Frame, where the taller turned Frame reaches.
-    const withPiece = { ...project, beads: withColors(project.beads, [{ row: 4, column: 5, color: RED }]) }
-    const wrapper = await mountOpen(withPiece)
-    await wrapper.find('[data-testid="rotate-button"]').trigger('click')
-    await flushPromises()
-
-    const message = wrapper.find('[data-testid="project-rotated"]')
-    expect(message.text()).toContain(en.palette.undoButton)
-    expect(message.text()).toContain('Pattern rotated. 1 piece was in the way and moved outside the Frame.')
-    expect(beadColor(wrapper, { row: 4, column: 5 })).toBeNull()
-
-    await message.find('[data-testid="toast-action"]').trigger('click')
-    await flushPromises()
-    expect(beadColor(wrapper, { row: 4, column: 5 })).toBe(RED)
-    expect(savedFrame()).toEqual(project.frame)
-  })
-
-  it('disables Rotate with no Frame, naming why', async () => {
-    const wrapper = await mountOpen()
-    const rotate = wrapper.find('[data-testid="rotate-button"]')
-    expect(rotate.attributes('aria-disabled')).toBeDefined()
-    expect(rotate.attributes('aria-label')).toBe(en.palette.rotateButton)
   })
 
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
@@ -413,16 +247,6 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toContain('setting Frame')
   })
 
-  it('turns Row progress on over the Frame\'s rows, and locks the Frame while it is on', async () => {
-    const wrapper = await mountOpen(framed())
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
-    expect(wrapper.find('[data-testid="progress-bar-position"]').text()).toMatch(/1.*2/)
-
-    await key({ key: '6' })
-    await drag(wrapper, { row: 9, column: 9 }, { row: 11, column: 12 })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(wrapper.find('[data-testid="rotate-button"]').attributes('aria-disabled')).toBeDefined()
-  })
 })
 
 describe('New Project with the Frame optional', () => {

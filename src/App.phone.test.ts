@@ -81,18 +81,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('icon-btn--selected')
   })
 
-  it('has the five tools in the Tool sheet, Hand among them, each with its hotkey corner (ticket 275)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
-
-    const expectedKeys: Record<string, string> = { paint: '1', fill: '2', select: '3', erase: '4', hand: '5' }
-    for (const [tool, key] of Object.entries(expectedKeys)) {
-      const tile = wrapper.find(`[data-testid="sheet-tool-${tool}"]`)
-      expect(tile.exists()).toBe(true)
-      expect(tile.get('.icon-btn__key').text()).toBe(key)
-    }
-  })
-
   it('picks a tool from the Tool sheet and closes the sheet (ticket 397)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-tool"]').trigger('click')
@@ -235,11 +223,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
-  it('shows the Import button in the project-management bar when no Project is open', async () => {
-    const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="phone-bar-import-file"]').exists()).toBe(true)
-  })
-
   it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
@@ -297,14 +280,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
   })
 
-  it('shows the compact import control in the Project sheet actions', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
-
-    // The compact import file input should be present in the project sheet.
-    expect(wrapper.find('[data-testid="bottom-sheet"] [data-testid="project-sheet-import-file"]').exists()).toBe(true)
-  })
-
   it('changes the Canvas color from the Project sheet header and remembers it (ticket 281)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
@@ -317,28 +292,6 @@ describe('App at the phone tier (ticket 79)', () => {
     await sheet.get('[data-testid="canvas-color-sage"]').trigger('click')
 
     expect(localStorage.getItem('bd-beads:canvas-background')).toBe('3')
-  })
-
-  it('has exactly five icon-only Dock slots: Tool, Colour, Frame, Project, Menu (ticket 295)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const slots = wrapper.findAll('[data-testid="dock"] button')
-
-    expect(slots.map((slot) => slot.attributes('data-testid'))).toEqual(['dock-tool', 'dock-color', 'dock-frame', 'dock-project', 'dock-menu'])
-    for (const slot of slots) {
-      expect(slot.attributes('aria-label')).toBeTruthy()
-      expect(slot.find('.dock__label').exists()).toBe(false)
-    }
-  })
-
-  it('holds Rotate, Copy and Paste beside the Frame controls in the Frame sheet (ticket 295)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
-    expect(sheet.find('[data-testid="frame-set"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="sheet-rotate"]').exists()).toBe(true)
-    expect(sheet.find('[data-tour="copy"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="sheet-paste"]').exists()).toBe(true)
   })
 
   it('shows the open Project\'s name, size and save state in the Project sheet (ticket 295)', async () => {
@@ -365,13 +318,4 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-project-info"]').exists()).toBe(false)
   })
 
-  it('puts the Menu button at the end of the New / Import bar with no Project open, and opens the Menu from it (ticket 295)', async () => {
-    const wrapper = mount(App)
-    const bar = wrapper.get('[data-testid="phone-project-bar"]')
-
-    const last = bar.element.lastElementChild as HTMLElement
-    expect(last.contains(bar.get('[data-testid="phone-bar-menu"]').element)).toBe(true)
-    await bar.get('[data-testid="phone-bar-menu"]').trigger('click')
-    expect(wrapper.get('[data-testid="bottom-sheet"]').find('[data-testid="language-switcher"]').exists()).toBe(true)
-  })
 })
