@@ -45,7 +45,11 @@ export interface ProjectLibrary {
  * The library is kept in last-saved order (ticket 145): each mutator that saves a Project stamps it (markSaved) and
  * moves it to the front, and the order is written with the library, so it survives a reload as it stood.
  */
-export function useProjectLibrary(store: LibraryStore = browserLibraryStore): ProjectLibrary {
+export function useProjectLibrary(
+  store: LibraryStore = browserLibraryStore,
+  /** Called after each write that got through with a Project in the library (ticket 399: the first one asks the browser to keep it). */
+  onSaved?: () => void,
+): ProjectLibrary {
   const projects = ref<Project[]>(inSavedOrder(store.load()))
   const activeProjectId = ref<string | undefined>(mostRecentlyUpdated(projects.value)?.id)
   const activeProject = computed(() =>
@@ -61,6 +65,7 @@ export function useProjectLibrary(store: LibraryStore = browserLibraryStore): Pr
       store.save(projects.value)
       savePending = false
       saveFailed.value = false
+      if (projects.value.length > 0) onSaved?.()
     } catch {
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.

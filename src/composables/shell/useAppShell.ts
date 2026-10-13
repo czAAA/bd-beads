@@ -33,6 +33,7 @@ import { usePaintStroke } from '../tools/usePaintStroke'
 import { usePinchPan } from '../canvas/usePinchPan'
 import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
+import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
@@ -65,6 +66,10 @@ function wireAppShell(services: Services) {
    * change to the open Project, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
    * save to be deferred per cell and writing once when the stroke ends (see usePaintStroke).
    */
+  const storageAsk = useStorageAskFlow({
+    persistentStorage: services.persistentStorage,
+    devicePreferences: services.devicePreferences,
+  })
   const {
     projects,
     activeProjectId,
@@ -76,7 +81,7 @@ function wireAppShell(services: Services) {
     removeProject,
     flushPendingSave,
     saveNow,
-  } = useProjectLibrary(services.libraryStore)
+  } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved)
 
   const currentProject = () => activeProject.value
   const messages = () => t.value
@@ -593,6 +598,7 @@ function wireAppShell(services: Services) {
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
       !!savedProjectConfirms.pendingSwitch.value ||
+      storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
     collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
     backOutOfSelect,
@@ -774,6 +780,7 @@ function wireAppShell(services: Services) {
     onBringFrameIntoView: frameFlow.bringIntoView,
     ...replaceBead,
     ...importSwitch,
+    ...storageAsk,
     ...exportFlow,
     onSave,
     ...overlays,

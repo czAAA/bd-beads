@@ -84,16 +84,28 @@ test('is installable: a manifest with icons, standalone, and no installability e
   expect(manifest.display).toBe('standalone')
 })
 
-test('asks the browser to keep the library', async ({ page }) => {
+test('asks the browser to keep the library at the first save, after the note, and not on load', async ({ page }) => {
   await page.addInitScript(() => {
     ;(window as unknown as { persistAsked: number }).persistAsked = 0
+    navigator.storage.persisted = () => Promise.resolve(false)
     navigator.storage.persist = () => {
       ;(window as unknown as { persistAsked: number }).persistAsked += 1
       return Promise.resolve(true)
     }
   })
+  const asked = () => page.evaluate(() => (window as unknown as { persistAsked: number }).persistAsked)
   await openAndInstall(page)
-  await expect.poll(() => page.evaluate(() => (window as unknown as { persistAsked: number }).persistAsked)).toBeGreaterThan(0)
+  expect(await asked()).toBe(0)
+
+  await page.getByTestId('new-project-button').click()
+  await page.getByTestId('name-input').fill('First save')
+  await page.locator('form.new-project-form button[type=submit]').click()
+  await expect(page.getByTestId('keep-note-modal')).toBeVisible()
+  expect(await asked()).toBe(0)
+
+  await page.getByTestId('confirm-modal-confirm').click()
+  await expect.poll(asked).toBe(1)
+  await expect(page.getByTestId('keep-note-modal')).toHaveCount(0)
 })
 
 test.describe('a new version', () => {

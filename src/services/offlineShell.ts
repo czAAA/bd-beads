@@ -1,8 +1,8 @@
 /**
  * The offline shell's side in the page (ticket 69, ADR 0045; the worker itself is pwa/serviceWorker.js): registers the
- * worker once the app has loaded, so the offline copy downloads silently behind the app, asks the browser to keep the
- * library, and tells the app when a newer version is waiting. Everything here does nothing where the browser has no
- * service worker (jsdom, an old browser, a private window that refuses it): the app just isn't offline-capable there.
+ * worker once the app has loaded, so the offline copy downloads silently behind the app, and tells the app when a newer
+ * version is waiting. Everything here does nothing where the browser has no service worker (jsdom, an old browser, a
+ * private window that refuses it): the app just isn't offline-capable there.
  */
 
 /** What the app knows of the offline shell: whether a newer version is waiting, and how to switch to it. */
@@ -39,14 +39,13 @@ function watchForUpdates(found: ServiceWorkerRegistration) {
 }
 
 /**
- * In a production build, registers the worker found at `baseUrl` once the page has loaded, and asks for persistent
- * storage so the library is not cleared when the device is short of space (the privacy copy says so; ticket 82). Called
- * by each page's entry; a dev server has no worker to register.
+ * In a production build, registers the worker found at `baseUrl` once the page has loaded. Called by each page's entry;
+ * a dev server has no worker to register. It never asks for persistent storage: that waits for a first save, with a
+ * note before it (ticket 399, useStorageAskFlow).
  */
 export function startOfflineShell(baseUrl: string): void {
   if (!import.meta.env.PROD) return
   const start = () => {
-    void navigator.storage?.persist?.().catch(() => {})
     if (!('serviceWorker' in navigator)) return
     navigator.serviceWorker
       .register(`${baseUrl}sw.js`, { scope: baseUrl, updateViaCache: 'none' })

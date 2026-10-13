@@ -50,20 +50,20 @@ describe('startOfflineShell', () => {
     vi.restoreAllMocks()
   })
 
-  it('registers the worker under the app\'s base and asks the browser to keep the library', async () => {
+  it('registers the worker under the app\'s base and never asks the browser for persistent storage (ticket 399)', async () => {
     const { register, persist } = stubBrowser({ controlled: false })
     const { startOfflineShell } = await freshModule()
     startOfflineShell('/bd-beads/')
     expect(register).toHaveBeenCalledWith('/bd-beads/sw.js', { scope: '/bd-beads/', updateViaCache: 'none' })
-    expect(persist).toHaveBeenCalledOnce()
+    expect(persist).not.toHaveBeenCalled()
   })
 
-  it('still asks for storage in a browser without service workers', async () => {
+  it('does not throw in a browser without service workers', async () => {
     const persist = vi.fn(() => Promise.resolve(true))
     vi.stubGlobal('navigator', { storage: { persist } })
     const { startOfflineShell } = await freshModule()
     expect(() => startOfflineShell('/bd-beads/')).not.toThrow()
-    expect(persist).toHaveBeenCalledOnce()
+    expect(persist).not.toHaveBeenCalled()
   })
 
   it('does nothing outside a production build', async () => {
