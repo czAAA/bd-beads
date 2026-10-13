@@ -98,6 +98,8 @@ const emit = defineEmits<{
 
 /** Whether the chosen Tool moves the canvas right now: the Hand tool, but not while the Frame is being set, which takes every drag so the Frame can be edited whichever Tool was chosen. */
 const handMoves = computed(() => props.moving === true && !props.settingFrame)
+/** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space) or the Frame set. */
+const eyedropperShown = computed(() => props.picking === true && !props.markerHidden && !handMoves.value && !props.settingFrame)
 
 /**
  * Set by a press on the surface: a press focuses it too, but the bead cursor shows only for focus that didn't come from
@@ -549,23 +551,35 @@ function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPositi
  * The color chip beside the eyedropper (ticket 403): what a press would take, shown live as the pointer moves over the
  * beads, as paint programs do. Over an empty cell, or for a finger (which has no hover), there is no chip.
  */
-const pickChip = ref<{ x: number; y: number; hex: string }>()
+const pickChip = ref<{ x: number; y: number; hex: string; flipX: boolean; flipY: boolean }>()
 
 function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
-  const hex = props.picking && bead && event.pointerType !== 'touch' ? beadColorAt(props.project, bead.row, bead.column) : null
+  const shown = eyedropperShown.value && bead && event.pointerType !== 'touch' && !movesCanvas(event)
+  const hex = shown ? beadColorAt(props.project, bead.row, bead.column) : null
   const box = rootEl.value?.getBoundingClientRect()
-  pickChip.value = hex && box ? { x: event.clientX - box.left, y: event.clientY - box.top, hex } : undefined
+  if (!hex || !box) {
+    pickChip.value = undefined
+    return
+  }
+  const x = event.clientX - box.left
+  const y = event.clientY - box.top
+  // Near the right or bottom edge the chip goes to the other side of the tip instead of being cut off.
+  pickChip.value = { x, y, hex, flipX: x > box.width - PICK_CHIP_ROOM.x, flipY: y > box.height - PICK_CHIP_ROOM.y }
 }
 
+/** The room the chip needs right of and below the tip, in px: its width with a full hex, and its height, plus the offset. */
+const PICK_CHIP_ROOM = { x: 110, y: 40 }
+
+// A zoom, scroll or end of the pick leaves the chip showing a bead that is no longer under the pointer.
 watch(
-  () => props.picking,
+  () => [eyedropperShown.value, props.zoom, props.scroll.x, props.scroll.y],
   () => {
     pickChip.value = undefined
   },
 )
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
-  return props.blocksMargin === true && !props.picking && bead !== undefined && !mayPlace(props.project, bead)
+  return props.blocksMargin === true && bead !== undefined && !mayPlace(props.project, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -798,13 +812,13 @@ onBeforeUnmount(() => {
     :data-scroll-y="scroll.y"
     :class="{
       'project-surface--over-bead': overBead && !handMoves && !picking,
-      'project-surface--picking': picking && !handMoves && !settingFrame,
+      'project-surface--picking': eyedropperShown,
       'project-surface--refused': overRefusedMargin && !handMoves && !settingFrame,
       'project-surface--moving': handMoves,
       'project-surface--setting-frame': settingFrame && !handMoves,
       'project-surface--dragging': dragging,
     }"
-    :style="picking && !handMoves && !settingFrame ? { cursor: EYEDROPPER_CURSOR } : undefined"
+    :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : undefined"
     tabindex="0"
     role="img"
     :aria-label="label"
@@ -825,6 +839,7 @@ onBeforeUnmount(() => {
     <span
       v-if="pickChip"
       class="project-surface__pick-chip"
+      :class="{ 'project-surface__pick-chip--flip-x': pickChip.flipX, 'project-surface__pick-chip--flip-y': pickChip.flipY }"
       :style="{ left: `${pickChip.x}px`, top: `${pickChip.y}px`, '--pick-color': pickChip.hex }"
       data-testid="pick-chip"
       aria-hidden="true"
@@ -872,7 +887,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: var(--space-6);
-  margin: var(--space-16) 0 0 var(--space-16);
+  transform: translate(var(--space-16), var(--space-16));
   padding: var(--space-4) var(--space-8) var(--space-4) var(--space-4);
   color: var(--ink);
   font: var(--text-meta-small);
@@ -880,6 +895,18 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
   pointer-events: none;
+}
+
+.project-surface__pick-chip--flip-x {
+  transform: translate(calc(-100% - var(--space-16)), var(--space-16));
+}
+
+.project-surface__pick-chip--flip-y {
+  transform: translate(var(--space-16), calc(-100% - var(--space-16)));
+}
+
+.project-surface__pick-chip--flip-x.project-surface__pick-chip--flip-y {
+  transform: translate(calc(-100% - var(--space-16)), calc(-100% - var(--space-16)));
 }
 
 .project-surface__pick-chip-swatch {
