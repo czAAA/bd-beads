@@ -88,6 +88,19 @@ export function allBeadsSelection(beads: BeadMap): Selection | undefined {
   return bounds ? selectionOfBox(bounds) : undefined
 }
 
+/** Whether the Selection holds every placed bead (ticket 415): the Select all case, where Clear selection means Delete all. False on an empty canvas. */
+export function selectionHoldsAllBeads(beads: BeadMap, selection: Selection): boolean {
+  const bounds = beadBounds(beads)
+  if (!bounds) return false
+  const all = selectionOfBox(bounds)
+  return (
+    selection.top <= all.top &&
+    selection.left <= all.left &&
+    selection.top + selection.rows >= all.top + all.rows &&
+    selection.left + selection.columns >= all.left + all.columns
+  )
+}
+
 /**
  * The Selection with the sides a handle drags moved to a bead (ticket 414): `edges` are the sides (a corner drags two),
  * `cell` the bead the pointer is over. A side never passes the one opposite it, so a Selection stays one bead each way.

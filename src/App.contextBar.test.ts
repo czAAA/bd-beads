@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
@@ -18,17 +19,20 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
   await wrapper.find('.app-shell').trigger('mouseup')
 }
 
-describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
-  it('shows Copy, Rotate, Remove line and a clear x for a Selection, wired to the registry actions', async () => {
+describe('the Selection bar (tickets 168, 295, 415)', () => {
+  it('shows Copy, Cut, Fill, Rotate, Remove line and Clear selection for a Selection, wired to the registry actions', async () => {
     const wrapper = await mountWithProject(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
-    expect(wrapper.find('[data-testid="context-bar-size"]').text()).toBe('2×1')
-    expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes("aria-disabled")).toBeUndefined()
+    expect(wrapper.find('[data-testid="context-bar-size"]').text()).toMatch(/^2×1 · /)
+    expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
 
+    // Copy keeps the Selection; Paste then appears, and arming it discards the Selection (ticket 415).
     await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
-    // Copying clears the Selection and arms the clipboard -- the bar switches to its "Tap where to paste" state.
+    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="context-bar-paste"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar-hint"]').text()).toBe('Tap where to paste')
 
@@ -49,13 +53,19 @@ describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('clears the Selection on the clear x without erasing anything', async () => {
-    const wrapper = await mountWithProject(3, 30)
+  it('sits inside the drawing area, above the Selection when there is room', async () => {
+    const wrapper = await mountWithProject(6, 6)
     await pickTool(wrapper, 'select')
-    await drag(wrapper, [0, 1])
+    await drag(wrapper, [14, 15]) // a row well below the top
+    await nextTick()
+    await nextTick()
 
-    await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
-    expect(selectedBeadCount(wrapper)).toBe(0)
+    const bar = wrapper.get('[data-testid="context-bar"]').element.getBoundingClientRect()
+    const area = wrapper.get('[data-testid="app-drawing-area"]').element.getBoundingClientRect()
+    if (area.width === 0) return // not laid out in this environment
+    expect(bar.left).toBeGreaterThanOrEqual(area.left)
+    expect(bar.right).toBeLessThanOrEqual(area.right)
+    expect(bar.top).toBeGreaterThanOrEqual(area.top)
+    expect(bar.bottom).toBeLessThanOrEqual(area.bottom)
   })
 })

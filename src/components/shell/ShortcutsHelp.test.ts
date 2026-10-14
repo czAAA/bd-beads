@@ -39,7 +39,7 @@ describe('ShortcutsHelp', () => {
       expect(text).toContain(key)
     }
     expect(text).toContain(ru.tools.paintLabel)
-    expect(text).toContain(ru.shortcutsHelp.emptySelection)
+    expect(text).toContain(ru.contextBar.clearButton)
     expect(text).toContain(ru.shortcutsHelp.panCanvas)
     expect(text).toContain(ru.tools.handLabel)
     expect(text).toContain(ru.canvas.rulersLabel)

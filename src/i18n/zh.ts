@@ -261,6 +261,7 @@ export const zh: Translations = {
   contextBar: {
     label: '选区操作',
     clearButton: '清除选区',
+    moreLabel: '更多',
     pasteHint: '点击要粘贴的位置',
     cancelButton: '取消',
   },
@@ -293,6 +294,7 @@ export const zh: Translations = {
     selectHint: '拖动标出一个区域，然后复制和粘贴。',
     handHint: '拖动以在画布上移动。',
     copyButton: '复制',
+    cutButton: '剪切',
     saveButton: '保存',
     savedConfirmation: '已保存',
     pasteLabel: '粘贴',
@@ -525,7 +527,6 @@ export const zh: Translations = {
   },
   shortcutsHelp: {
     title: '键盘快捷键',
-    emptySelection: '清空选区',
     backOut: '退出',
     panCanvas: '移动画布',
     canvasGroup: '画布',
@@ -562,6 +563,8 @@ export const zh: Translations = {
     zoomInLimit: '已放大到最大。',
     nothingToRedo: '没有可重做的操作。',
     copyDisabled: '请先选择一个区域。',
+    fillSelection: '用当前颜色填充选区。',
+    frameFromSelection: '将选区设为边框。',
     pasteDisabled: '请先复制一个区域。',
     rotate: '把边框转四分之一圈。',
     setFrameFirst: '请先设置边框。',

@@ -63,8 +63,8 @@ describe('the control registry', () => {
     }
   })
 
-  it('shows Back out\'s Esc on Done, Cancel and Clear selection without claiming the key twice', () => {
-    for (const id of ['done-frame', 'cancel-paste', 'clear-selection']) {
+  it('shows Back out\'s Esc on Done and Cancel without claiming the key twice', () => {
+    for (const id of ['done-frame', 'cancel-paste']) {
       expect(actionKey(controlAction(id))).toBe('Esc')
       expect(controlAction(id).chords).toEqual([])
     }

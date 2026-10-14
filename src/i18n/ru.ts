@@ -273,6 +273,7 @@ export const ru: Translations = {
   contextBar: {
     label: 'Действия с выделением',
     clearButton: 'Снять выделение',
+    moreLabel: 'Ещё',
     pasteHint: 'Нажмите, куда вставить',
     cancelButton: 'Отмена',
   },
@@ -305,6 +306,7 @@ export const ru: Translations = {
     selectHint: 'Обведите область, затем скопируйте и вставьте её.',
     handHint: 'Перетаскивайте, чтобы двигаться по полотну.',
     copyButton: 'Копировать',
+    cutButton: 'Вырезать',
     saveButton: 'Сохранить',
     savedConfirmation: 'Сохранено',
     pasteLabel: 'Вставить',
@@ -548,7 +550,6 @@ export const ru: Translations = {
   },
   shortcutsHelp: {
     title: 'Горячие клавиши',
-    emptySelection: 'Очистить выделение',
     backOut: 'Выйти из режима',
     panCanvas: 'Двигать полотно',
     canvasGroup: 'Полотно',
@@ -585,6 +586,8 @@ export const ru: Translations = {
     zoomInLimit: 'Дальше увеличивать некуда.',
     nothingToRedo: 'Нечего повторять.',
     copyDisabled: 'Сначала выделите область.',
+    fillSelection: 'Заливает выделение текущим цветом.',
+    frameFromSelection: 'Делает выделение рамкой.',
     pasteDisabled: 'Сначала скопируйте область.',
     rotate: 'Повернуть рамку на четверть оборота.',
     setFrameFirst: 'Сначала задайте рамку.',

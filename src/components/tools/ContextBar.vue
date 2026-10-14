@@ -1,26 +1,36 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useDropSteps } from '../../composables/ui/useDropSteps'
 import { useI18n } from '../../i18n/useI18n'
+import { useElementSize } from '../../composables/ui/useElementSize'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { BAR_EDGE_PX, selectionBarPlacement, type BarBox } from '../../composables/tools/selectionBarPlacement'
+import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
-import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import MenuButton from '../ui/MenuButton.vue'
+import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import type { Project } from '../../domain/project'
 
 /**
- * The design system's ContextBar (ticket 168; ContextBar card): a floating bar above the Progress bar, on phone and
- * iPad mini, offering what a Selection can do. While a Selection exists: its size, Copy, Rotate, Remove line and a
- * clear x, on `ink` with `canvas` text. Once Copy has armed the clipboard it turns `accent`: "Tap where to paste",
- * Rotate and Cancel (both "clear x" and Cancel back out of the same state -- see App.vue's backOutOfSelect).
- *
- * Its labels drop right to left as Russian doesn't fit (responsive.md, Fitting longer text) -- useDropSteps, the
- * same measured-priority idea useFitByPriority gives the header, generalized to more than one step.
+ * The design system's ContextBar (tickets 168, 415; ContextBar card): a thin icon-only bar anchored above the
+ * Selection's top edge, centred on it, clamped inside the canvas box and flipped below when there is no room above. It
+ * offers what a Selection can do: its size, Copy, Cut, Paste, Fill, Frame and, after a divider, Clear selection; only
+ * what applies is rendered (Paste with a clipboard, Frame without a Frame, Remove line with a line selected). When the
+ * canvas box is too narrow for all of it, the last actions fold into a "…" menu. Once Paste is armed it is "Tap to paste"
+ * and Cancel at the canvas box's top-centre, and while the Frame is being set it holds the Frame's size, Fit to drawing,
+ * Remove Frame and Done (ticket 295).
  */
 const props = defineProps<{
-  /** The Selection's size in cells; absent once Copy has armed the clipboard (a Copy clears the Selection itself). */
-  selectionSize?: { columns: number; rows: number }
+  /** The Selection's size, "12×8 · 4.2 × 2.6 cm"; absent when there is no Selection. */
+  selectionSummary?: string
+  /** The Selection's rectangle and the canvas box it is in, in the box's own pixels: where the bar anchors. */
+  anchor?: { box: BarBox; viewport: { width: number; height: number } }
+  /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
+  gesturing?: boolean
   /** Whether a copied block is armed to paste (useSelectionGesture's pasteProjectionActive). */
   pasteArmed: boolean
+  /** Whether something has been copied, so Paste applies. */
+  hasClipboard?: boolean
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
   project: Project
   canRemoveLine: boolean
@@ -34,136 +44,220 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   copy: []
+  cut: []
+  paste: []
+  fill: []
+  frame: []
+  'clear-selection': []
   rotate: []
   'remove-line': []
   'name-piece': []
   'fit-frame': []
   'remove-frame': []
   'done-frame': []
-  /** The pre-copy clear x and the post-copy Cancel both just back out one step (App.vue's backOutOfSelect). */
+  /** The armed paste's Cancel backs out one step (App.vue's backOutOfSelect). */
   dismiss: []
 }>()
 
 const { t } = useI18n()
 
-const rowEl = ref<HTMLElement>()
-const dropped = useDropSteps(rowEl, 4, [() => props.pasteArmed, () => t.value.contextBar])
-
-/** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there. */
 const actions = {
   fit: controlAction('fit-to-drawing'),
   removeFrame: controlAction('remove-frame'),
   done: controlAction('done-frame'),
   copy: controlAction('copy'),
+  cut: controlAction('cut'),
+  paste: controlAction('paste'),
+  fill: controlAction('fill-selection'),
+  frame: controlAction('frame-from-selection'),
   rotate: controlAction('rotate'),
   removeLine: controlAction('remove-line'),
   namePiece: controlAction('name-piece'),
-  clear: controlAction('clear-selection'),
+  clear: controlAction('empty-selection'),
   cancel: controlAction('cancel-paste'),
 }
 
 const deps = computed(() =>
   controlDeps({
     activeProject: () => props.project,
-    hasSelection: () => !!props.selectionSize,
+    hasSelection: () => props.selectionSummary !== undefined,
+    hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
   }),
 )
 
-/** A button whose label has dropped keeps its name in the Tooltip: the icon-only button, over the same action. */
-const labelled = (step: number) => (dropped.value < step ? AppButton : IconButton)
+/** Touch gets the taller bar with bigger icons (ContextBar card). */
+const touch = useMediaQuery('(pointer: coarse)')
+const iconSize = computed(() => (touch.value ? 18 : 16))
+const buttonPx = computed(() => (touch.value ? 36 : 28))
 
-const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.columns}×${props.selectionSize.rows}` : ''))
+/** One button of the Selection bar, in the order it is drawn; `group` decides where a divider goes. */
+interface BarItem {
+  id: string
+  action: ControlAction
+  group: number
+  run: () => void
+  danger?: boolean
+}
+
+/** What applies to this Selection, in order (ContextBar card). */
+const items = computed<BarItem[]>(() => {
+  const list: BarItem[] = [
+    { id: 'copy', action: actions.copy, group: 1, run: () => emit('copy') },
+    { id: 'cut', action: actions.cut, group: 1, run: () => emit('cut') },
+  ]
+  if (props.hasClipboard) list.push({ id: 'paste', action: actions.paste, group: 1, run: () => emit('paste') })
+  list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
+  if (!props.project.frame) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
+  list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
+  if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
+  list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })
+  return list
+})
+
+const rootEl = ref<HTMLElement>()
+const readoutEl = ref<HTMLElement>()
+const bar = useElementSize(rootEl)
+const readout = useElementSize(readoutEl)
+
+/** How many buttons fit beside the readout in the canvas box's width; every one with no measured box (a test). */
+const capacity = computed(() => {
+  const viewport = props.anchor?.viewport.width
+  if (!viewport || !readout.width.value) return Infinity
+  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (2 + 7)
+  return Math.max(1, Math.floor(room / (buttonPx.value + 2)))
+})
+const overflowing = computed(() => items.value.length > capacity.value)
+const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
+const folded = computed(() => (overflowing.value ? items.value.slice(shown.value.length) : []))
+
+const placement = computed(() => {
+  const anchor = props.anchor
+  if (!anchor || props.settingFrame || props.pasteArmed) return undefined
+  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport)
+})
+const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
+
+const showing = computed(() => !!props.settingFrame || props.selectionSummary !== undefined || props.pasteArmed)
+const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? 'armed' : 'selection'))
 </script>
 
 <template>
   <div
-    v-if="settingFrame || selectionSize || pasteArmed"
-    ref="rowEl"
+    v-if="showing"
+    ref="rootEl"
+    v-show="!gesturing"
     class="context-bar"
-    :class="{ 'context-bar--armed': pasteArmed && !settingFrame }"
+    :class="[`context-bar--${mode}`, { 'context-bar--placed': placement, 'context-bar--below': placement?.below }]"
+    :style="placedStyle"
     role="toolbar"
     :aria-label="t.contextBar.label"
     data-testid="context-bar"
   >
     <template v-if="settingFrame">
       <span class="context-bar__size context-bar__frame-size" data-testid="context-bar-frame-size">{{ frameSummary }}</span>
-      <IconButton class="context-bar__button" icon="frame" :action="actions.fit" :deps="deps" data-testid="context-bar-fit-frame" @click="emit('fit-frame')" />
+      <span class="context-bar__divider" aria-hidden="true" />
+      <IconButton class="context-bar__button" :icon-size="iconSize" icon="frame" :action="actions.fit" :deps="deps" data-testid="context-bar-fit-frame" @click="emit('fit-frame')" />
       <IconButton
         v-if="project.frame"
         class="context-bar__button"
+        :icon-size="iconSize"
         :action="actions.removeFrame"
         :deps="deps"
         data-testid="context-bar-remove-frame"
         @click="emit('remove-frame')"
       />
-      <AppButton class="context-bar__button" :action="actions.done" :deps="deps" data-testid="context-bar-done-frame" @click="emit('done-frame')" />
+      <AppButton class="context-bar__button context-bar__done" :action="actions.done" :deps="deps" data-testid="context-bar-done-frame" @click="emit('done-frame')" />
     </template>
     <template v-else-if="!pasteArmed">
-      <span v-if="dropped < 4" class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
-      <component :is="labelled(3)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
-      <component :is="labelled(2)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
-      <component
-        :is="labelled(1)"
-        class="context-bar__button"
-        :action="actions.removeLine"
-        :deps="deps"
-        data-testid="context-bar-remove-line"
-        data-tour="remove-line"
-        @click="emit('remove-line')"
-      />
-      <IconButton
-        class="context-bar__button"
-        :action="actions.namePiece"
-        :deps="deps"
-        data-testid="context-bar-name-piece"
-        @click="emit('name-piece')"
-      />
-      <IconButton class="context-bar__button" shape="round" :action="actions.clear" :deps="deps" data-testid="context-bar-clear" @click="emit('dismiss')" />
+      <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
+      <template v-for="(item, index) in shown" :key="item.id">
+        <span v-if="index === 0 || shown[index - 1].group !== item.group" class="context-bar__divider" aria-hidden="true" />
+        <IconButton
+          class="context-bar__button"
+          :class="{ 'context-bar__button--danger': item.danger }"
+          :icon-size="iconSize"
+          :action="item.action"
+          :deps="deps"
+          :data-testid="`context-bar-${item.id}`"
+          :data-tour="item.id === 'copy' || item.id === 'remove-line' ? item.id : undefined"
+          @click="item.run()"
+        />
+      </template>
+      <template v-if="folded.length">
+        <span class="context-bar__divider" aria-hidden="true" />
+        <MenuButton class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
+          <AppMenuItem
+            v-for="item in folded"
+            :key="item.id"
+            :icon="item.action.icon"
+            :disabled="item.action.enabled ? !item.action.enabled(deps) : false"
+            :data-testid="`context-bar-more-${item.id}`"
+            @select="item.run()"
+          >
+            {{ item.action.name(t) }}
+          </AppMenuItem>
+        </MenuButton>
+      </template>
     </template>
     <template v-else>
       <span class="context-bar__hint" data-testid="context-bar-hint">{{ t.contextBar.pasteHint }}</span>
-      <component :is="labelled(1)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
-      <AppButton class="context-bar__button" :action="actions.cancel" :deps="deps" data-testid="context-bar-cancel" @click="emit('dismiss')" />
+      <span class="context-bar__divider" aria-hidden="true" />
+      <IconButton class="context-bar__button" :icon-size="iconSize" icon="close" :action="actions.cancel" :deps="deps" data-testid="context-bar-cancel" @click="emit('dismiss')" />
     </template>
   </div>
 </template>
 
 <style scoped>
-/* 10px from the screen edges, on ink, elevation-3, 14px radius (ContextBar card). */
+/* On ink, elevation-3, --selbar-radius; 28px high (36px on touch), 2px between items (ContextBar card). */
 .context-bar {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: 2px;
   box-sizing: border-box;
-  height: 2.5rem;
-  padding: 0 var(--space-10);
+  height: var(--selbar-height);
+  padding: 0 2px;
   color: var(--canvas);
   background: var(--ink);
-  border-radius: var(--context-bar-radius);
+  border-radius: var(--selbar-radius);
   box-shadow: var(--elevation-3);
 }
 
-.context-bar--armed {
-  color: var(--on-accent);
-  background: var(--accent);
+:root[data-theme='dark'] .context-bar {
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
 }
 
-.context-bar__size {
-  flex: none;
-  font: var(--type-meta);
-  color: inherit;
-  opacity: 0.8;
+@media (pointer: coarse) {
+  .context-bar {
+    height: var(--selbar-height-touch);
+  }
 }
 
+/* Anchored to the Selection: the canvas box places it with left and top. */
+.context-bar--placed {
+  position: absolute;
+  z-index: var(--z-context-bar);
+  max-width: calc(100% - 2 * var(--space-8));
+}
+
+.context-bar__size,
 .context-bar__hint {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  font: var(--type-small);
+  flex: none;
+  padding: 0 6px;
+  font: var(--type-meta);
+  color: color-mix(in srgb, var(--canvas) 74%, transparent);
   white-space: nowrap;
-  text-overflow: ellipsis;
+}
+
+.context-bar__divider {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 3px;
+  background: color-mix(in srgb, var(--canvas) 28%, transparent);
 }
 
 .context-bar :deep(.context-bar__button) {
@@ -171,21 +265,35 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
   flex: none;
   align-items: center;
   justify-content: center;
-  gap: var(--space-6);
-  width: auto;
-  min-width: 2.5rem;
-  height: 2.5rem;
-  padding: 0 var(--space-8);
-  font: var(--type-small);
+  width: var(--selbar-height);
+  min-width: var(--hit-min);
+  height: var(--selbar-height);
+  padding: 0;
   color: inherit;
   background: none;
   border: 0;
   border-radius: var(--radius-sm);
 }
 
-.context-bar :deep(.icon-btn--round.context-bar__button) {
-  width: 2.5rem;
-  padding: 0;
+.context-bar :deep(.context-bar__done) {
+  width: auto;
+  padding: 0 var(--space-8);
+  font: var(--type-small);
+}
+
+@media (pointer: coarse) {
+  .context-bar :deep(.context-bar__button) {
+    width: var(--selbar-height-touch);
+    height: var(--selbar-height-touch);
+  }
+
+  .context-bar :deep(.context-bar__done) {
+    width: auto;
+  }
+}
+
+.context-bar :deep(.context-bar__button--danger) {
+  color: var(--selbar-danger);
 }
 
 .context-bar :deep(.context-bar__button[aria-disabled='true']) {
@@ -196,17 +304,16 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
 
 @media (hover: hover) {
   .context-bar :deep(.context-bar__button:hover:not([aria-disabled='true'])) {
-    background: none;
-    opacity: 0.8;
+    background: color-mix(in srgb, var(--canvas) 12%, transparent);
   }
+}
+
+.context-bar :deep(.context-bar__button:active:not([aria-disabled='true'])) {
+  background: color-mix(in srgb, var(--canvas) 20%, transparent);
 }
 
 .context-bar :deep(.context-bar__button:focus-visible) {
   outline: var(--focus-width) solid var(--canvas);
   outline-offset: -2px;
-}
-
-.context-bar--armed :deep(.context-bar__button:focus-visible) {
-  outline-color: var(--on-accent);
 }
 </style>

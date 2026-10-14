@@ -18,6 +18,17 @@ import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
 
+/** Every position in the Selection's rectangle. */
+function selectionPositions(sel: Selection): GridPosition[] {
+  const positions: GridPosition[] = []
+  for (let rowOffset = 0; rowOffset < sel.rows; rowOffset++) {
+    for (let columnOffset = 0; columnOffset < sel.columns; columnOffset++) {
+      positions.push({ row: sel.top + rowOffset, column: sel.left + columnOffset })
+    }
+  }
+  return positions
+}
+
 /**
  * The Select tool's whole gesture (ticket 63, architecture review): the Selection itself, the in-session clipboard,
  * the in-progress press that resolves the click-vs-drag ambiguity a Select press starts with, and the live paste
@@ -228,9 +239,8 @@ export function useSelectionGesture(
   }
 
   /**
-   * Snapshots the Selection into the in-session clipboard; from there a click on the canvas stamps it (see
-   * endPress). The Selection's marquee is hidden immediately, the same as a right-click or Escape with nothing
-   * copied (ticket 49) -- copying the same block again means dragging a new Selection over it first.
+   * Snapshots the Selection into the in-session clipboard and keeps the Selection (ticket 415, ADR 0051, reversing
+   * ticket 49). Copy does not arm Paste: that is armPaste's job, so the Selection can still be cut, filled or cleared.
    */
   function copy() {
     const project = currentProject()
@@ -239,8 +249,31 @@ export function useSelectionGesture(
     }
 
     copiedBlock.value = copySelection(project, selection.value)
+    pasteDismissed.value = true
+  }
+
+  /** Cut (ticket 415, Ctrl+X): Copy, then empty the Selection as one Undo step; the Selection is kept. */
+  function cut() {
+    if (!selection.value) return
+    copy()
+    deleteSelection()
+  }
+
+  /** Arms Paste (ticket 415): the copied block follows the pointer and a tap stamps it, and the Selection is discarded. Nothing with nothing copied. */
+  function armPaste() {
+    if (!copiedBlock.value) return
     pasteDismissed.value = false
     selection.value = undefined
+  }
+
+  /**
+   * Fill (ticket 415): every position in the Selection, empty ones too, takes `color`, as one Undo step. The keep-out
+   * margin and finished rows trim it silently, as Paste, since the edit is a drawing one.
+   */
+  function fill(color: string) {
+    const sel = selection.value
+    if (!currentProject() || !sel) return
+    edit('drawing', (current) => paintCells(current, selectionPositions(sel), color, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /**
@@ -274,14 +307,7 @@ export function useSelectionGesture(
       return
     }
 
-    const positions: GridPosition[] = []
-    for (let rowOffset = 0; rowOffset < sel.rows; rowOffset++) {
-      for (let columnOffset = 0; columnOffset < sel.columns; columnOffset++) {
-        positions.push({ row: sel.top + rowOffset, column: sel.left + columnOffset })
-      }
-    }
-
-    edit('drawing', (current) => paintCells(current, positions, null, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintCells(current, selectionPositions(sel), null, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /**
@@ -323,6 +349,9 @@ export function useSelectionGesture(
     cancel,
     leaveSelectTool,
     copy,
+    cut,
+    armPaste,
+    fill,
     pasteAt,
     deleteSelection,
     selectLine,
