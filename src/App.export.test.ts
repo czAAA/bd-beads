@@ -8,6 +8,7 @@ import { projectExportFileName } from './domain/projectFile'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
+import { openSheet } from './testUtils/dock'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
@@ -44,6 +45,7 @@ function mountApp() {
 
 /** The exports are items of the save box's Export menu (ticket 148). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
+  await openSheet(wrapper, 'dock-project')
   await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 }
 
@@ -85,6 +87,7 @@ describe('App empty, loading and failed states (ticket 158)', () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
+    await openSheet(wrapper, 'dock-project')
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     setItem.mockRestore()
     vi.mocked(downloadFile).mockClear()

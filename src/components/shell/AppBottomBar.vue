@@ -52,48 +52,14 @@ const {
 </template>
 
 <style scoped>
-/* The phone layout's Dock (ticket 79, 295): a flex sibling of the body, shown under 1024px. */
+/* The Dock (ticket 79, 295; ADR 0046): a flex sibling of the body, at every width. */
 .app-shell__dock {
-  display: none;
-}
-
-/* Project-management bar: shown instead of the Dock when no Project is open. */
-.app-shell__phone-project-bar {
-  display: none;
-}
-
-@media (max-width: 1023px) {
-  .app-shell__dock {
-    display: flex;
-    flex: none;
-  }
-
-  .app-shell__phone-project-bar {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: var(--space-4);
-    height: var(--dock-height);
-    /* Tight enough that New Project, both imports and Menu fit a 320px screen in Russian. */
-    padding: 0 var(--space-12);
-    padding-bottom: env(safe-area-inset-bottom);
-    background: var(--canvas);
-    border-top: 1px solid var(--line-soft);
-  }
-
-  /* New Project grows to take the remaining width; the import icons and Menu sit at a fixed square size beside it. */
-  .app-shell__phone-project-bar :deep(.app-button) {
-    flex: 1 1 0;
-  }
-}
-
-/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock .app-shell__dock) {
   display: flex;
   flex: none;
 }
 
-:global(.app-shell--dock .app-shell__phone-project-bar) {
+/* Project-management bar: shown instead of the Dock when no Project is open. */
+.app-shell__phone-project-bar {
   display: flex;
   flex: none;
   align-items: center;
@@ -107,7 +73,7 @@ const {
 }
 
 /* New Project grows to take the remaining width; the import icons and Menu sit at a fixed square size beside it. */
-:global(.app-shell--dock .app-shell__phone-project-bar .app-button) {
+.app-shell__phone-project-bar :deep(.app-button) {
   flex: 1 1 0;
 }
 </style>

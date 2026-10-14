@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import App from '../App.vue'
 import { createProject } from '../domain/project'
 import { saveProjects } from '../services/libraryStore'
+import { openNewProject } from './dock'
 
 /**
  * Saves a Loom Project of Toho Cube 1.5mm beads, sized in mm like the New Project form's
@@ -27,8 +28,16 @@ export async function mountWithProject(widthMm: number, heightMm: number, option
   return wrapper
 }
 
-/** Fills in and submits the New Project form: Toho Cube 1.5mm beads. The form states no size (ticket 342), so this makes an open canvas. */
-export async function createProjectViaForm(wrapper: ReturnType<typeof mount>) {
-  await wrapper.find('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
-  await wrapper.find('form').trigger('submit')
+/**
+ * Raises the New Project sheet if it is not up, then fills in and submits its form: Toho Cube 1.5mm beads. The form
+ * states no size (ticket 342), so this makes an open canvas.
+ */
+export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, name?: string) {
+  await openNewProject(wrapper)
+  const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((candidate) => candidate.find('[data-testid="bead-select"]').exists())!
+  if (name !== undefined) {
+    await sheet.get('[data-testid="name-input"]').setValue(name)
+  }
+  await sheet.get('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+  await sheet.get('form').trigger('submit')
 }

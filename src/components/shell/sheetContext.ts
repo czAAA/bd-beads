@@ -4,8 +4,8 @@ import { inject, type InjectionKey } from 'vue'
 export const SHEET_CLOSE: InjectionKey<() => void> = Symbol('sheet-close')
 
 /**
- * What a pick control calls after it has emitted its choice: closes the enclosing BottomSheet. Outside a sheet (the
- * Toolbox's inline controls) there is nothing to close and it does nothing, so one control serves both.
+ * What a pick control calls after it has emitted its choice: closes the enclosing BottomSheet. Outside a sheet (a control
+ * set inline) there is nothing to close and it does nothing, so one control serves both.
  */
 export function useCloseSheetOnPick(): () => void {
   return inject(SHEET_CLOSE, () => {})

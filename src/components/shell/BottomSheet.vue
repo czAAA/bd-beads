@@ -69,6 +69,8 @@ function onFocusIn(event: FocusEvent) {
   // A focus that lands inside another open sheet (stacked, like Saved Projects over the Project sheet) is not
   // "outside": that sheet's own trap owns it, and every trap pulling it back would recurse until the stack overflows.
   if (target instanceof Element && target.closest('.bottom-sheet')) return
+  // Likewise a modal raised from inside the sheet (the name on exports, a confirmation): it traps its own focus.
+  if (target instanceof Element && target.closest('.app-modal')) return
   ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
 }
 
@@ -97,7 +99,7 @@ function onPointerDownOutside(event: PointerEvent) {
   const sheet = sheetEl.value
   const target = event.target
   if (!sheet || !(target instanceof Node) || sheet.contains(target) || inTourCard(target)) return
-  if (target instanceof Element && target.closest('[role="dialog"]')) return
+  if (target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"]')) return
   if ([...document.querySelectorAll('.bottom-sheet')].at(-1) !== sheet) return
   event.stopPropagation()
   event.preventDefault()

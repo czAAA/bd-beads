@@ -92,9 +92,3 @@ if (typeof window !== 'undefined') {
   Reflect.deleteProperty(window, 'requestAnimationFrame')
   Reflect.deleteProperty(window, 'cancelAnimationFrame')
 }
-
-/**
- * The unit suite runs the Toolbox layout (ticket 383): most App tests drive the Toolbox's own controls, which the Dock layout
- * does not mount. A test of the Dock layout, or of the flag itself, mocks `features` again for its own file.
- */
-vi.mock('./features', async (importOriginal) => ({ ...(await importOriginal<typeof import('./features')>()), DOCK_LAYOUT_ENABLED: false }))

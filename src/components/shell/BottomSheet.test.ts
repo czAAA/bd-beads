@@ -72,6 +72,20 @@ describe('BottomSheet', () => {
     outer.unmount()
   })
 
+  it('a press inside a confirmation (an alertdialog raised from the sheet) is not outside either, so its click lands', async () => {
+    const wrapper = mountSheet(true)
+    const confirmation = document.createElement('div')
+    confirmation.setAttribute('role', 'alertdialog')
+    confirmation.innerHTML = '<button type="button">Switch</button>'
+    document.body.appendChild(confirmation)
+
+    confirmation.querySelector('button')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+
+    expect(wrapper.emitted('close')).toBeUndefined()
+    confirmation.remove()
+    wrapper.unmount()
+  })
+
   it('the handle closes the sheet on a tap, and on a drag down past the threshold; a short drag springs back (ticket 402)', async () => {
     const wrapper = mountSheet()
     const handle = wrapper.get('[data-testid="sheet-handle"]')

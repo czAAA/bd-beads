@@ -1,5 +1,7 @@
 # Toolbox
 
+> **Retired (ticket 412).** The Toolbox layout is gone: the app has one layout, the Dock layout (ADR 0046). These controls live in the Dock's Tool, Colour and Frame sheets (ToolSheet, ToolTabs and Dock cards), the ContextBar and the ZoomPill. Kept as the record of the v18 rail.
+
 The first box of the left column: Tool groups Tools, Colors and Edit, then the Frame disclosure row.
 
 - Box: `panel` fill, 1px `panel-line`, radius-lg, padding 24, no shadow, 312px wide. Groups sit 20px apart.

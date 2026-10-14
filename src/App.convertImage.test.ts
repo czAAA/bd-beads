@@ -7,6 +7,7 @@ import { projectExtentPx } from './rendering/surfaceView'
 import type { PixelData } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
+import { openNewProject } from './testUtils/dock'
 
 /**
  * Convert image end to end through the app shell (ticket 58): the New Project form's file input, the framing step
@@ -33,11 +34,6 @@ vi.mock('./services/imageDecode', async (importOriginal) => {
   }
 })
 
-/** The Dock layout flag (ticket 383): off by default here, like the global mock (`testSetup.ts`) it overrides, since
- * these tests otherwise drive the Toolbox's own controls; the framing-zoom tests below (ticket 385) turn it on. */
-const dockFlag = vi.hoisted(() => ({ on: false }))
-vi.mock('./features', async (importOriginal) => ({ ...(await importOriginal<typeof import('./features')>()), get DOCK_LAYOUT_ENABLED() { return dockFlag.on } }))
-
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 /** A picture of two flat blocks: the left half red, the right half blue. */
@@ -51,9 +47,10 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
-/** The New Project form states no size (ticket 342): all it has to settle before a picture is the Bead. */
-async function pickBead(wrapper: ReturnType<typeof mount>) {
-  await wrapper.find('[data-testid="bead-select"]').setValue(cubeBead.id)
+/** Raises the New Project sheet. The form states no size (ticket 342): all it has to settle before a picture is the Bead. */
+async function pickBead(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
+  await openNewProject(wrapper)
+  await wrapper.find('[data-testid="bead-select"]').setValue(beadId)
 }
 
 async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', type = 'image/png') {
@@ -67,8 +64,19 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', 
 }
 
 /** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture, its size stated in the size step. */
-async function startFraming(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
-  await pickBead(wrapper)
+async function startFraming(
+  wrapper: ReturnType<typeof mount>,
+  width = '15',
+  height = '30',
+  form: { technique?: string; beadId?: string; name?: string } = {},
+) {
+  await pickBead(wrapper, form.beadId)
+  if (form.technique) {
+    await wrapper.find(`[data-testid="technique-select"] [data-value="${form.technique}"]`).trigger('click')
+  }
+  if (form.name) {
+    await wrapper.find('[data-testid="name-input"]').setValue(form.name)
+  }
   await chooseImage(wrapper)
   await stateSizeStep(wrapper, width, height)
 }
@@ -87,7 +95,6 @@ beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
   decodeState.image = twoBlocks()
   decodeState.error = undefined
-  dockFlag.on = false
 })
 
 describe('App Convert image framing (ticket 58)', () => {
@@ -110,38 +117,6 @@ describe('App Convert image framing (ticket 58)', () => {
       `width: ${projectExtentPx('loom', 11, 1).width}px`,
     )
   })
-
-  it('follows the Technique as it is changed, staggering the beads for peyote', async () => {
-    const wrapper = mount(App)
-    await startFraming(wrapper)
-
-    expect(wrapper.find('[data-testid="convert-image-lattice"]').classes()).toContain(
-      'convert-image-frame__lattice--loom',
-    )
-
-    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="convert-image-lattice"]').classes()).toContain(
-      'convert-image-frame__lattice--peyote',
-    )
-  })
-
-})
-
-describe('App Convert image framing with the Dock layout on (ticket 385)', () => {
-  beforeEach(() => {
-    dockFlag.on = true
-  })
-
-  it('keeps the strip\'s own zoom buttons, since the Zoom pill excludes framing', async () => {
-    const wrapper = mount(App)
-    // No Project open yet, so the Dock layout's project bar holds the New Project form instead of showing it inline.
-    await wrapper.find('[data-testid="phone-bar-new-project"]').trigger('click')
-    await startFraming(wrapper)
-
-    expect(wrapper.find('[data-testid="app-canvas"] [data-testid="zoom-in"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="zoom-pill"]').exists()).toBe(false)
-  })
 })
 
 describe('App Convert image creating the Project (ticket 58)', () => {
@@ -157,7 +132,6 @@ describe('App Convert image creating the Project (ticket 58)', () => {
     expect(beadColor(wrapper, 0)).toBe('#e63746')
     expect(beadColor(wrapper, 9)).toBe('#2f6fed')
   })
-
 })
 
 describe('App Convert image cancelling (ticket 58)', () => {
@@ -171,7 +145,6 @@ describe('App Convert image cancelling (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
   })
-
 })
 
 describe('App Convert image rejections (ticket 58)', () => {
@@ -185,7 +158,6 @@ describe('App Convert image rejections (ticket 58)', () => {
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
   })
-
 })
 
 describe('App empty canvas (ticket 158)', () => {

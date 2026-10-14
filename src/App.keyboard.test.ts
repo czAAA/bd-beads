@@ -6,6 +6,7 @@ import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import App from './App.vue'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
+import { openSheet, pickColor } from './testUtils/dock'
 
 /*
  * Painting with the keyboard, landmarks and announcements (ticket 159; `accessibility.md`, BeadCursor and ScreenReaders
@@ -50,7 +51,7 @@ describe('the Project from the keyboard (ticket 159)', () => {
 
   it('paints with Space, as one undo step, and says so', async () => {
     const wrapper = await openProject()
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await pickColor(wrapper, 'blue')
     await focusProject(wrapper)
     await key(wrapper, 'ArrowRight')
 
@@ -58,7 +59,7 @@ describe('the Project from the keyboard (ticket 159)', () => {
 
     expect(colorAt(0, 1)).toBe('#2f6fed')
     expect(await heard(wrapper)).toBe('Painted Blue')
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(colorAt(0, 1)).toBeNull()
   })
 
@@ -75,11 +76,10 @@ describe('the Project from the keyboard (ticket 159)', () => {
 })
 
 describe('landmarks and the skip link (ticket 159)', () => {
-  it('has header, the Tools aside and main, and Skip to Project first, which moves focus onto the Project', async () => {
+  it('has the Dock\'s Tools landmark and main, and Skip to Project first, which moves focus onto the Project', async () => {
     const wrapper = await openProject()
 
-    expect(wrapper.find('header').exists()).toBe(true)
-    expect(wrapper.find('aside').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
+    expect(wrapper.find('nav').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
     expect(wrapper.find('main').find('[data-testid="project-surface"]').exists()).toBe(true)
 
     const skip = wrapper.find('[data-testid="skip-to-project"]')
@@ -90,20 +90,9 @@ describe('landmarks and the skip link (ticket 159)', () => {
 })
 
 describe('one Tab stop per group (ticket 159)', () => {
-  it('makes the active tool tab the tool tabs\' only stop, and moves focus with the arrows without choosing', async () => {
-    const wrapper = await openProject()
-    const tabs = wrapper.findAll('[data-testid="toolbox"] .icon-btn--tool')
-
-    expect(tabs.map((tab) => tab.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1', '-1'])
-    ;(tabs[0]!.element as HTMLElement).focus()
-    await tabs[0]!.trigger('keydown', { key: 'ArrowRight' })
-
-    expect(document.activeElement).toBe(tabs[1]!.element)
-    expect(tabs[0]!.attributes('aria-pressed')).toBe('true')
-  })
-
   it('makes the selected swatch the Palette\'s only stop', async () => {
     const wrapper = await openProject()
+    await openSheet(wrapper, 'dock-color')
     const stops = wrapper.findAll('[data-testid="palette-swatch"]').filter((swatch) => swatch.attributes('tabindex') === '0')
 
     expect(stops).toHaveLength(1)

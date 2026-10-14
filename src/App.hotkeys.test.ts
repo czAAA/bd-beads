@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { pickColor, pickTool, toolState } from './testUtils/dock'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
@@ -58,7 +59,7 @@ describe('App Progress bar', () => {
 describe('App keyboard shortcuts', () => {
   it('Ctrl+Z undoes a painted bead and Ctrl+Shift+Z brings it back', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     await click(wrapper, 0)
 
     await pressKey({ key: 'z', ctrlKey: true })
@@ -70,42 +71,42 @@ describe('App keyboard shortcuts', () => {
 
   it('a digit picks its tool, as clicking it does, even with a Selection active', async () => {
     const wrapper = await mountApp(6, 6)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await pressKey({ key: '2' })
 
-    expect(wrapper.find('[data-testid="tool-fill"]').attributes('aria-pressed')).toBe('true')
+    expect((await toolState(wrapper, 'fill')).pressed).toBe(true)
   })
 
   it('Escape switches Fill back to Paint', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await pickTool(wrapper, 'fill')
 
     await pressKey({ key: 'Escape' })
 
-    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
+    expect((await toolState(wrapper, 'paint')).pressed).toBe(true)
   })
 
   it('Shift+a color key switches to Paint and paints with that Palette color', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
 
     await pressKey({ code: 'Digit2', shiftKey: true })
     await click(wrapper, 0)
 
-    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('true')
+    expect((await toolState(wrapper, 'paint')).pressed).toBe(true)
     expect(firstCellColor()).not.toBeNull()
     expect(firstCellColor()).not.toBe('#e63746') // not the default red
   })
 
   it('Del empties the Selection as one undo step, keeping it and staying on Select', async () => {
     const wrapper = await mountApp(6, 6)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     for (let index = 0; index < 16; index++) await click(wrapper, index)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 5, { buttons: 1 })
     await wrapper.trigger('mouseup')
@@ -114,13 +115,13 @@ describe('App keyboard shortcuts', () => {
 
     expect(firstCellColor()).toBeNull()
     expect(selectedBeadCount(wrapper)).toBe(4)
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(firstCellColor()).toBe('#e63746')
   })
 
   it('Ctrl+C copies the Selection, as the Copy button does', async () => {
     const wrapper = await mountApp(6, 6)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
@@ -135,7 +136,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'r' })
 
-    expect(wrapper.find('[data-testid="rulers-toggle"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="zoom-pill-rulers"]').attributes('aria-pressed')).toBe('false')
     expect(localStorage.getItem('bd-beads:rulers')).toBe('off')
   })
 
@@ -161,7 +162,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Space held stops painting and shows the grab cursor', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
 
     await pressKey({ key: ' ', code: 'Space', cancelable: true })
     await click(wrapper, 0)
@@ -172,7 +173,7 @@ describe('App keyboard shortcuts', () => {
 
   it('? opens the shortcuts help and Escape closes it without backing out of Select', async () => {
     const wrapper = await mountApp(6, 6)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
     await wrapper.trigger('mouseup')
@@ -189,15 +190,15 @@ describe('App keyboard shortcuts', () => {
 describe('App Eraser tool', () => {
   it('erases just the pressed bead, not its same-color neighbours, as one undo step', async () => {
     const wrapper = await mountApp(3, 3) // 2x2
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     for (let index = 0; index < 4; index++) await click(wrapper, index)
-    await wrapper.find('[data-testid="tool-erase"]').trigger('click')
+    await pickTool(wrapper, 'erase')
 
     await click(wrapper, 0)
 
     const grid = frameGrid(loadProjects()[0]!)
     expect([grid[0]![0]!.color, grid[0]![1]!.color]).toEqual([null, '#e63746'])
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
 })
@@ -205,13 +206,13 @@ describe('App Eraser tool', () => {
 describe('App picking a color', () => {
   it('while Fill is active keeps Fill, and the next press floods with the new color', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
     await pressBead(wrapper, 1)
     await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="tool-fill"]').trigger('click')
+    await pickTool(wrapper, 'fill')
 
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await pickColor(wrapper, 'blue')
     await click(wrapper, 0)
 
     const row = frameGrid(loadProjects()[0]!)[0]!
@@ -222,7 +223,7 @@ describe('App picking a color', () => {
 describe('App hover preview', () => {
   it('shows a faint preview of the selected color at the hovered cell, clearing on mouse leave', async () => {
     const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
 
     await hoverBead(wrapper, 5)
     expect(previewedBeads(wrapper)).toEqual([{ row: 0, column: 5, color: '#e63746' }])

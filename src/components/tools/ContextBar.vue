@@ -46,7 +46,7 @@ const { t } = useI18n()
 const rowEl = ref<HTMLElement>()
 const dropped = useDropSteps(rowEl, 3, [() => props.pasteArmed, () => t.value.contextBar])
 
-/** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there, as in the Toolbox. */
+/** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there. */
 const actions = {
   fit: controlAction('fit-to-drawing'),
   removeFrame: controlAction('remove-frame'),
