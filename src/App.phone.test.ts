@@ -42,7 +42,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await createProjectViaPhoneSheet(wrapper)
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(drawnProject(wrapper).frame).toBeUndefined() // an open canvas: its size is set in the Frame section (ticket 342)
+    expect(drawnProject(wrapper).frame).toBeUndefined() // a Canvas: its size is set in the Frame section (ticket 342)
     // After creation the Dock replaces the project-management bar.
     expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(false)

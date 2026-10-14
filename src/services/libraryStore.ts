@@ -28,7 +28,7 @@ interface StoredLibrary {
   patterns: EncodedProject[]
 }
 
-/** The same envelope as version 2 wrote it: every Project a fixed grid of cells, before the open canvas (ADR 0026). */
+/** The same envelope as version 2 wrote it: every Project a fixed grid of cells, before the Canvas (ADR 0026). */
 interface StoredGridLibrary {
   version: number
   patterns: EncodedGridProject[]

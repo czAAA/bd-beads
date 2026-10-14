@@ -26,7 +26,7 @@ const project = (positions: [number, number][], frame?: Frame, technique: Techni
   frame,
   beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
 })
-/** The Ruler layout of a Project in a view of the open canvas. */
+/** The Ruler layout of a Project in a view of the Canvas. */
 const layoutOf = (subject: ReturnType<typeof project>, { technique = subject.technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true }: Look = {}) => {
   const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.

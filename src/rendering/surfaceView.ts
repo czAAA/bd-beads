@@ -17,7 +17,7 @@ import type { Space } from './space'
  *
  * Coordinates. "Grid space" is px at zoom 1 with a bead CELL_SIZE_PX square. "Displayed space" is grid space zoomed and
  * turned clockwise by the rotation, about the box round the beads in a space of its own (an export, the Convert image
- * preview) or about the origin on the open canvas. A "point" is in the viewport: displayed space less the scroll, which
+ * preview) or about the origin on the Canvas. A "point" is in the viewport: displayed space less the scroll, which
  * is the displayed position of the viewport's top-left corner.
  */
 
@@ -87,7 +87,7 @@ export function displayedExtentPx(technique: Technique, columns: number, rows: n
 }
 
 /**
- * The extent of the open canvas: nothing. It has no first bead to measure from, so displayed space is measured from the
+ * The extent of the Canvas: nothing. It has no first bead to measure from, so displayed space is measured from the
  * bead at row 0, column 0 and a region may reach into the negative; a quarter turn is about the origin instead of a box.
  */
 export const OPEN_EXTENT: Extent = { width: 0, height: 0 }

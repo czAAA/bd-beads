@@ -1,6 +1,6 @@
 import { CELL_SIZE_PX } from './surfaceView'
 
-/** A view of the open canvas: how much it is enlarged by, and how far it has been moved, in displayed px. */
+/** A view of the Canvas: how much it is enlarged by, and how far it has been moved, in displayed px. */
 export interface View {
   zoom: number
   scroll: { x: number; y: number }

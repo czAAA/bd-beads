@@ -24,7 +24,7 @@ for (const [scheme, choice, name] of [
   })
 }
 
-/** Squares for Position marks (ticket 348): the open canvas with an outline round each empty position, per Technique, and the picker's Dots | Squares choice. */
+/** Squares for Position marks (ticket 348): the Canvas with an outline round each empty position, per Technique, and the picker's Dots | Squares choice. */
 for (const technique of ['loom', 'peyote', 'brick'] as const) {
   test(`position marks as squares, ${technique}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
