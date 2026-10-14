@@ -85,7 +85,8 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-selection`,
     prepare: (page, context) => dragSelection(page, context, [2, 3], [6, 9]),
     place: pointerAway,
-    overlaid: beadsIn(1, 2, 7, 9),
+    // The Selection bar floats over the Canvas above the Selection's top edge (ticket 415), wherever the zoom and the turn put that.
+    overlaid: 'all',
   })),
 
   // A paste preview: the copied block in its own colors under the pointer; arming Paste discards the Selection (ticket 415).
