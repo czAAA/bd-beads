@@ -12,7 +12,7 @@ The `bp-*` tokens in `tokens.json` stay for the `bead-min-*` and Ruler step rule
 - The Progress bar is the largest control on the screen: 56px, its own compact mode (ticket 188) -- a "1/222" counter, Turn row direction, and Row not done/Row done as icon-only buttons (their hover/focus label carries the word) -- and a 3px progress line under it. It shows exactly while Row progress is on.
 - **A slim, icon-only Dock of five buttons** (Tool, Colour, Frame, Pattern, Menu; no Mirror, which the app hides pending a redesign, ticket 174): 48px plus `env(safe-area-inset-bottom)` in portrait and landscape alike, at most 480px wide and centred, whatever the screen's width. No text labels: each button keeps its name as an accessible name and a Tooltip. With no Pattern open, the New Pattern / Import bar replaces the Dock, with the Menu button at its bottom right.
 - Tool, Colour and Frame sheets are light: no scrim, only as tall as their content, so the Pattern stays visible; tapping the Pattern or the button again closes them. The Frame sheet also holds Rotate, Copy and Paste. The Pattern sheet (name and size, save, export, Replace bead, Beads needed, Saved Patterns, New, Import) and the Menu sheet are modal, with a scrim.
-- While a Selection exists, a context bar above the Progress bar offers Copy, Rotate, Remove line and clear; after Copy it turns into "Tap where to paste" with Rotate and Cancel.
+- While a Selection exists, a context bar above the Progress bar offers Copy, Rotate, Remove line and clear; after Copy it turns into "Tap where to paste" with Rotate and Cancel. From ticket 415 the bar is anchored to the Selection instead, 28px (36px on touch), icon-only, and always inside the canvas box (ContextBar card).
 - **Frame bar:** while the Frame is being set, the Frame's size, Fit to drawing, ✕ and Done float at the top-centre of the canvas box over the beads, taking no row and never covering the Dock.
 - **Wide screens:** the extra space goes to the Pattern, never to bigger chrome. Type and controls keep their size. The surface is largest at 24″ and up; ticket 83 checks it on a Core i3-class laptop.
 
@@ -22,7 +22,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Fitting longer text
 
-- The ContextBar drops labels right to left (Remove line, Rotate, Copy) and keeps Cancel's label. The Dock is icon-only, so its names never need to fit.
+- The ContextBar drops labels right to left (Remove line, Rotate, Copy) and keeps Cancel's label. The anchored bar of ticket 415 has no labels; it folds its last actions into a "…" menu when it cannot fit. The Dock is icon-only, so its names never need to fit.
 - See the LongerText card.
 
 ## Input, not width

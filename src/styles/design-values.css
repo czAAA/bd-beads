@@ -67,11 +67,25 @@
   --underline-width: 3px;
 }
 
+/* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar is light, so danger as is) */
+:root,
+:root[data-theme="light"],
+:root[data-theme="contrast"] {
+  --selbar-danger: color-mix(in srgb, var(--danger) 55%, #fff);
+}
+:root[data-theme="dark"] {
+  --selbar-danger: var(--danger);
+}
+
 :root {
   /* Control geometry (Button, IconButton, Swatch, Tooltip cards): fixed sizes the spacing scale does not cover */
   --focus-offset: 2px;
   --border-emphasis: 2px;
   --hit-min: 24px;
+  --selbar-height: 28px;
+  --selbar-height-touch: 36px;
+  --selbar-radius: 8px;
+  --selbar-gap: 6px;
   --swatch-remove-size: 10px;
   --swatch-remove-stroke: 3;
   --swatch-mark-halo: 1px;
