@@ -1,6 +1,7 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { snapRow } from './frame'
-import { relocateFromMargin, type Cell } from './margin'
+import { movedByRelocation, relocateFromMargin, type Cell } from './margin'
+import { carryNames } from './pieceNames'
 import { clampPointer, type Project } from './project'
 
 /**
@@ -61,5 +62,13 @@ export function rotateProject(project: Project): Rotated | undefined {
   const beads = withColors(cleared, [...placed, ...rotated])
 
   // Row progress's pointers stay inside the turned Frame, whose rows and columns have swapped.
-  return { project: { ...project, beads, frame: turned, rowProgress: clampPointer(project.rowProgress, turned, project.technique), updatedAt: Date.now() }, moved: moving.pieces }
+  const turnedProject = { ...project, beads, frame: turned, rowProgress: clampPointer(project.rowProgress, turned, project.technique), updatedAt: Date.now() }
+  const relocated = movedByRelocation(moving)
+  // Piece names follow their beads: those in the old Frame turn with it, those outside move with their Piece (ticket 406).
+  const named = carryNames(project, turnedProject, (position) =>
+    frameContains(frame, position)
+      ? { row: turned.row + (position.column - frame.column), column: turned.column + (frame.rows - 1 - (position.row - frame.row)) }
+      : relocated(position),
+  )
+  return { project: named, moved: moving.pieces }
 }

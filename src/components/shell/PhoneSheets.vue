@@ -58,6 +58,8 @@ const {
   onRemoveFrame,
   canRemoveSelectedLine,
   onRemoveSelectedLine,
+  canNamePiece,
+  onNamePiece,
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportProjects,
@@ -90,6 +92,7 @@ const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
 const sheetActions = {
   removeLine: controlAction('remove-line'),
+  namePiece: controlAction('name-piece'),
   clear: controlAction('clear'),
   newProject: controlAction('new-project'),
   savedProjects: controlAction('saved-projects'),
@@ -113,6 +116,7 @@ const deps = computed(() =>
   controlDeps({
     activeProject: () => activeProject.value,
     canRemoveSelectedLine: () => canRemoveSelectedLine.value,
+    canNamePiece: () => canNamePiece.value,
     hasSelection: () => !!selection.value,
     hasClipboard: () => pasteProjectionActive.value,
   }),
@@ -127,6 +131,9 @@ const deps = computed(() =>
     <div class="phone-sheet__links">
       <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
         {{ t.tools.removeLineShort }}
+      </AppButton>
+      <AppButton variant="link" icon="piece" :action="sheetActions.namePiece" :deps="deps" data-testid="sheet-name-piece" @click="onNamePiece(); openPhoneSheet = null">
+        {{ t.tools.namePieceButton }}
       </AppButton>
       <AppButton variant="link" icon="delete" danger :action="sheetActions.clear" :deps="deps" data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
         {{ t.deleteAll.button }}
@@ -310,6 +317,8 @@ const deps = computed(() =>
 
 .phone-sheet__links {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
   justify-content: space-between;
   margin-top: var(--space-16);
 }

@@ -7,9 +7,12 @@ import { normalizeProject, type GridProject, type Project } from './project'
  */
 const PROJECT_FILE_KIND = 'bd-beads/pattern'
 const LIBRARY_FILE_KIND = 'bd-beads/library'
-/** Version 1 held a fixed grid of cells per Project; version 2 holds beads by position and a Frame (ADR 0026). Both are read, only 2 is written. */
-const FILE_VERSION = 2
-const FILE_VERSIONS: readonly number[] = [1, 2]
+/**
+ * Version 1 held a fixed grid of cells per Project; version 2 holds beads by position and a Frame (ADR 0026); version 3
+ * adds Piece names, by an anchor bead's position (ticket 406). All are read, only 3 is written.
+ */
+const FILE_VERSION = 3
+const FILE_VERSIONS: readonly number[] = [1, 2, 3]
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND

@@ -253,6 +253,13 @@ export const uk: Translations = {
       export: 'Експортувати',
     },
   },
+  pieceName: {
+    title: 'Назва шматочка',
+    label: 'Назва',
+    hint: 'Шматочок з назвою стає схемою. Залиште поле порожнім, щоб прибрати назву.',
+    save: 'Зберегти',
+    cancel: 'Скасувати',
+  },
   contextBar: {
     label: 'Дії з виділенням',
     clearButton: 'Зняти виділення',
@@ -292,6 +299,7 @@ export const uk: Translations = {
     removeLineButton: 'Видалити виділений ряд/стовпець',
     removeLineShort: 'Видалити лінію',
     removeLineName: 'Видалити лінію',
+    namePieceButton: 'Назвати шматочок',
   },
   inputMode: {
     penLabel: 'Режим пера',
@@ -551,6 +559,8 @@ export const uk: Translations = {
     rowProgressLockedRemoveLine: 'Вимкніть прогрес за рядами, щоб видалити ряд або стовпець.',
     removeLine: 'Видалити вибраний ряд або стовпець і зсунути решту.',
     removeLineDisabled: 'Спершу виділіть цілий ряд або стовпець.',
+    namePiece: 'Дайте вибраному шматочку назву, і він стане схемою.',
+    namePieceDisabled: 'Спершу виділіть один шматочок.',
     clear: 'Очистити все полотно.',
     customColor: 'Додайте колір до палітри, не більше {max}.',
     pickFromCanvas: 'Натисніть на бісерину на полотні, щоб взяти її колір; він потрапить у палітру, якщо є вільне місце.',

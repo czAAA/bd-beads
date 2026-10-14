@@ -20,6 +20,7 @@ import { useConvertImage } from '../import/useConvertImage'
 import { useEdit } from '../project/useEdit'
 import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
 import { useFrameFlow } from '../project/useFrameFlow'
+import { useNamePieceFlow } from '../project/useNamePieceFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateFlow } from '../project/useRotateFlow'
 import { hasOpenLayer } from '../ui/useEscapeLayer'
@@ -495,6 +496,13 @@ function wireAppShell(services: Services) {
     selection: () => selection.value,
   })
 
+  /** Name Piece: the dialog that gives the selected Piece a name, which makes it a Schema (ticket 406). */
+  const namePiece = useNamePieceFlow({
+    currentProject,
+    edit,
+    selection: () => selection.value,
+  })
+
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
   const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale })
 
@@ -652,6 +660,8 @@ function wireAppShell(services: Services) {
     onRotate: rotateFlow.onRotate,
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
+    canNamePiece: () => namePiece.canNamePiece.value,
+    onNamePiece: namePiece.onNamePiece,
     onToggleRowProgress: rowOps.onToggleRowProgress,
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
@@ -814,6 +824,7 @@ function wireAppShell(services: Services) {
     ...importSwitch,
     ...storageAsk,
     ...exportFlow,
+    ...namePiece,
     ...exportSettled,
     onSave: saveSettled,
     ...overlays,

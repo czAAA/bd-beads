@@ -1,6 +1,7 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, positionKey, type GridPosition } from './grid'
 import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } from './project'
+import { carryNames, keepNamesApart } from './pieceNames'
 import { touching } from './pieces'
 
 /**
@@ -22,9 +23,23 @@ export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'techn
   return !isInFinishedRow(project, position) && !inMargin(project.frame, position)
 }
 
-/** What a drawing command did, minus what it did to finished rows (ticket 33) and what it painted in the margin; `before` itself when nothing is left. */
+/**
+ * What a drawing command did, minus what it did to finished rows (ticket 33), what it painted in the margin and what
+ * would join two named Pieces (ticket 406), with the Piece names carried over; `before` itself when nothing is left.
+ */
 export function keepAllowedEdits(before: Project, after: Project): Project {
-  return keepMarginClear(before, keepFinishedRows(before, after))
+  const allowed = keepNamesApart(before, keepMarginClear(before, keepFinishedRows(before, after)))
+  return allowed === before ? before : carryNames(before, allowed)
+}
+
+/** Where each bead that `relocateFromMargin` moved went, as `carryNames` wants it: the position it was at, or itself when it stayed. */
+export function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: readonly Cell[] }): (position: GridPosition) => GridPosition {
+  const to = new Map<string, GridPosition>()
+  moving.changes.forEach(({ row, column }, index) => to.set(positionKey({ row, column }), moving.placed[index]))
+  return (position) => {
+    const moved = to.get(positionKey(position))
+    return moved ? { row: moved.row, column: moved.column } : position
+  }
 }
 
 /** Whether a position lies in the Frame's margin: within 3 of the Frame, but not in it. */
@@ -191,5 +206,6 @@ export function clearMargin(project: Project): { project: Project; moved: number
     return { project, moved: 0 }
   }
   const beads = withColors(withColors(project.beads, changes), placed)
-  return { project: { ...project, beads, updatedAt: Date.now() }, moved: pieces }
+  const moved = { ...project, beads, updatedAt: Date.now() }
+  return { project: carryNames(project, moved, movedByRelocation({ changes, placed })), moved: pieces }
 }

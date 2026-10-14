@@ -1,6 +1,7 @@
 import type { Frame } from './canvas'
 import { pieceAreasOf } from './pieces'
-import { beadsWithoutLine, changeFrame, frameChangeRefusal, type FrameChangeResult } from './changeFrame'
+import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
+import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -95,5 +96,6 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
   if (project.rowProgress.enabled) {
     return { kind: 'refused', reason: 'locked' }
   }
-  return { kind: 'changed', project: { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }, moved: 0 }
+  const shifted = { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
+  return { kind: 'changed', project: carryNames(project, shifted, (at) => shiftedByLine(line.area, line, at)), moved: 0 }
 }
