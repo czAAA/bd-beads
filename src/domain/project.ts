@@ -232,7 +232,7 @@ function clampRow(row: number, passes: number): number {
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
-export function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
+function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
   return {
     ...rowProgress,
     currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),

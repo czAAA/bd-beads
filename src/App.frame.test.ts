@@ -162,9 +162,11 @@ describe('the Frame sheet\'s size steppers apply once (ticket 410)', () => {
     const row = await openRow(wrapper)
     await row.find('[data-testid="frame-columns-increase"]').trigger('click')
 
+    await pickTool(wrapper, 'select-all')
     await rotate(wrapper)
     await flushPromises()
-    expect(savedFrame()).toMatchObject({ rows: 4, columns: 2 })
+    // The Frame took its new size and Rotate left it alone.
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
 
     // Rotate is its own Undo step on top of the committed size.
     await key({ key: 'z', ctrlKey: true })
@@ -180,15 +182,19 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     frame: { row: 2, column: 3, rows: 2, columns: 3 },
   })
 
-  it('turns the Frame and its beads, and one Undo turns them back', async () => {
-    const wrapper = await mountOpen(framed())
+  it('turns the Selection and not the Frame, and one Undo turns it back (ticket 416)', async () => {
+    const wrapper = await mountOpen({ ...framed(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
+    await pickTool(wrapper, 'select-all')
     await rotate(wrapper)
     await flushPromises()
 
-    expect(savedFrame()).toMatchObject({ rows: 3, columns: 2 })
+    // The 2 x 3 box round the beads becomes 3 x 2, and the Frame is as it was.
+    expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 8, columns: 8 })
+    expect(beadColor(wrapper, { row: 3, column: 5 })).toBeNull()
+    expect(beadColor(wrapper, { row: 4, column: 4 })).toBe(RED)
     await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(beadColor(wrapper, { row: 3, column: 5 })).toBe(RED)
+    expect(beadColor(wrapper, { row: 4, column: 4 })).toBeNull()
   })
 
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
@@ -250,23 +256,20 @@ describe('Row progress on by itself (ticket 411)', () => {
     expect(savedProgress().enabled).toBe(false)
   })
 
-  it('holds the Frame still only once a pass is done: Row done locks it, switching off unlocks it', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+  it('offers Rotate only until a pass is done: Row done hides it, switching off brings it back (tickets 411, 416)', async () => {
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
     await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
-
-    await rotate(wrapper)
-    await flushPromises()
-    expect(savedFrame()).toMatchObject({ rows: 3, columns: 2 })
+    await pickTool(wrapper, 'select-all')
+    expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
-    await rotate(wrapper)
-    await flushPromises()
-    expect(savedFrame()).toMatchObject({ rows: 3, columns: 2 })
+    expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+    expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
     await rotate(wrapper)
     await flushPromises()
-    expect(savedFrame()).toMatchObject({ rows: 2, columns: 3 })
+    expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 8, columns: 8 })
   })
 
   it('says the new direction in a toast when D turns it, once per press', async () => {

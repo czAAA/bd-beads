@@ -445,12 +445,12 @@ export const zh: Translations = {
     announceNothingToFit: '还没有画任何东西，无法让边框贴合',
     refusedCutsSchema: '边框不能切开图案“{name}”。要么整个框住，要么都不框。',
     announceTechnique: '编织技法已改为{technique}',
-    announceRotated: '图样已旋转',
+    announceSelectionRotated: '选区已旋转',
     exportPromptTitle: '设置边框后才能导出',
     countNeedsFrame: '设置边框后才能计数。',
     progressNeedsFrame: '设置边框后开始',
-    rotatedMessage: {
-      other: '图样已旋转。{count} 个小块挡住了位置，已移到边框之外。',
+    rotateCoveredMessage: {
+      other: '{count} 颗珠子被覆盖。',
     },
     marginLead: { set: '边框已设置。', moved: '边框已移动。', resized: '边框已调整大小。' },
     marginClearedMessage: {
@@ -572,7 +572,7 @@ export const zh: Translations = {
     fillSelection: '用当前颜色填充选区。',
     frameFromSelection: '将选区设为边框。',
     pasteDisabled: '请先复制一个区域。',
-    rotate: '把边框转四分之一圈。',
+    rotate: '把选区转四分之一圈。',
     setFrameFirst: '请先设置边框。',
     fitToDrawing: '让边框贴合所有珠子。',
     noBeadsToFit: '没有可贴合的珠子。',

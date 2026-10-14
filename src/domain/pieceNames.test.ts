@@ -5,6 +5,7 @@ import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
 import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
+import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
 
 const R = '#e63746'
@@ -103,13 +104,10 @@ describe('piece names', () => {
 
   it('follows its beads through Rotate and Remove line', () => {
     const framed = { ...withPieceName(projectWith(row(1, 1, 3)), { row: 1, column: 1 }, 'Fox'), frame: { row: 0, column: 0, rows: 4, columns: 5 } }
-    const turned = changeFrame(framed, { rotate: true })
-    expect(turned.kind).toBe('changed')
-    if (turned.kind === 'changed') {
-      expect(pieceNameAt(turned.project, { row: 1, column: 1 })).toBeUndefined()
-      expect(namedPieces(turned.project)).toHaveLength(1)
-      expect(namedPieces(turned.project)[0]).toMatchObject({ name: 'Fox', beads: 3, rows: 3, columns: 1 })
-    }
+    const turned = rotateSelection(framed, { top: 0, left: 0, rows: 4, columns: 5 }).project
+    expect(pieceNameAt(turned, { row: 1, column: 1 })).toBeUndefined()
+    expect(namedPieces(turned)).toHaveLength(1)
+    expect(namedPieces(turned)[0]).toMatchObject({ name: 'Fox', beads: 3, rows: 3, columns: 1 })
 
     const removed = removeSelectedLine(framed, { top: 0, left: 0, rows: 1, columns: 5 })
     expect(removed.kind).toBe('changed')

@@ -67,10 +67,10 @@ describe('useEdit', () => {
     it('applies it once, resets the session once, and Undo restores the Frame and Mirror’s counts', () => {
       const counts = { columns: 1, rows: 0 }
       const ctx = editHarness(base, { mirrorAxisCounts: counts })
-      const outcome = ctx.edit('frame', (project) => changeFrame(project, { rotate: true }))
+      const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }))
 
       expect(outcome).toEqual({ kind: 'applied', moved: 0 })
-      expect(ctx.project.frame).toMatchObject({ rows: frame.columns, columns: frame.rows })
+      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(ctx.mirrorAxisCounts.current).toEqual(NO_MIRROR_AXES)
 
@@ -81,7 +81,7 @@ describe('useEdit', () => {
 
     it('hands back the refusal and records nothing', () => {
       const ctx = editHarness(moveToRow(setRowProgressEnabled(base, true), 1))
-      expect(ctx.edit('frame', (project) => changeFrame(project, { rotate: true }))).toEqual({ kind: 'refused', reason: 'locked' })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'refused', reason: 'locked' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
     })
