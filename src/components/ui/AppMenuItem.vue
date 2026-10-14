@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import AppIcon from './AppIcon.vue'
+import AppTooltip from './AppTooltip.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
@@ -8,11 +9,12 @@ import { MENU_CLOSE } from './menuContext'
  * One item of an AppMenu (Menu card): 34px, an icon and a label; choosing it runs `select` and closes the menu.
  * `chosen` makes it one of a set to pick from (the language list, ticket 368): a check marks the chosen one, and the
  * others keep the same space so the labels line up. With an `href` it is a link (HeaderMenu card: Overview is
- * navigation, not an action), so the browser follows it itself.
+ * navigation, not an action), so the browser follows it itself. A disabled item that is given its `name` and a
+ * `disabledBody` says why in the shared Tooltip on hover (ADR 0035); it stays natively disabled, so the arrows skip it.
  */
 const props = withDefaults(
-  defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean }>(),
-  { icon: undefined, chosen: undefined, disabled: false, href: undefined, current: false },
+  defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean; name?: string; disabledBody?: string }>(),
+  { icon: undefined, chosen: undefined, disabled: false, href: undefined, current: false, name: undefined, disabledBody: undefined },
 )
 const emit = defineEmits<{ select: [] }>()
 const closeMenu = inject(MENU_CLOSE, () => {})
@@ -29,6 +31,19 @@ function onClick() {
     <AppIcon v-if="icon" :name="icon" :size="16" />
     <span class="app-menu-item__label"><slot /></span>
   </a>
+  <AppTooltip v-else-if="disabled && name && disabledBody" :name="name" disabled :disabled-body="disabledBody" :announce="false" class="app-menu-item-wrap">
+    <button
+      class="ui-control app-menu-item"
+      type="button"
+      role="menuitem"
+      tabindex="-1"
+      disabled
+      @click="onClick"
+    >
+      <AppIcon v-if="icon" :name="icon" :size="16" />
+      <span class="app-menu-item__label"><slot /></span>
+    </button>
+  </AppTooltip>
   <button
     v-else
     class="ui-control app-menu-item"
@@ -88,6 +103,11 @@ function onClick() {
   color: var(--faint);
   cursor: not-allowed;
 }
+.app-menu-item-wrap {
+  display: block;
+  width: 100%;
+}
+
 .app-menu-item__gap {
   flex: none;
   width: 16px;

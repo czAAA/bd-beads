@@ -6,6 +6,12 @@ export interface BarBox {
   height: number
 }
 
+/** Where the Selection is on the canvas box, and how big that box is: what the bar anchors to (ticket 415). */
+export interface SelectionAnchor {
+  box: BarBox
+  viewport: { width: number; height: number }
+}
+
 /** Where the Selection bar goes and which side of the Selection it is on. */
 export interface BarPlacement {
   left: number

@@ -22,7 +22,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSelectTool: vi.fn(),
     onSelectAll: vi.fn(),
     onSelectColor: vi.fn(),
-    onDeleteSelection: vi.fn(),
+    onClearSelection: vi.fn(),
     onToggleRulers: vi.fn(),
     onToggleFrame: vi.fn(),
     settingFrame: () => false,
@@ -36,6 +36,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onRotate: vi.fn(),
     canRemoveSelectedLine: () => true,
     canNamePiece: () => false,
+    hasPaintColor: () => true,
     onNamePiece: vi.fn(),
     onRemoveSelectedLine: vi.fn(),
     onToggleRowProgress: vi.fn(),
@@ -149,12 +150,12 @@ describe('useAppShortcutTable', () => {
   it('Delete empties the Selection and does nothing without one, never picking the eraser', () => {
     const { deps, wrapper } = mountTable({ activeTool: () => 'select', hasSelection: () => true })
     press({ key: 'Delete' })
-    expect(deps.onDeleteSelection).toHaveBeenCalledTimes(1)
+    expect(deps.onClearSelection).toHaveBeenCalledTimes(1)
     expect(deps.onRemoveSelectedLine).not.toHaveBeenCalled()
     wrapper.unmount()
     const other = mountTable()
     press({ key: 'Delete' })
-    expect(other.deps.onDeleteSelection).not.toHaveBeenCalled()
+    expect(other.deps.onClearSelection).not.toHaveBeenCalled()
     expect(other.deps.onSelectTool).not.toHaveBeenCalled()
     other.wrapper.unmount()
   })
@@ -163,7 +164,7 @@ describe('useAppShortcutTable', () => {
     const { deps, wrapper } = mountTable({ hasSelection: () => true })
     press({ key: 'Delete', shiftKey: true })
     expect(deps.onRemoveSelectedLine).toHaveBeenCalledTimes(1)
-    expect(deps.onDeleteSelection).not.toHaveBeenCalled()
+    expect(deps.onClearSelection).not.toHaveBeenCalled()
     wrapper.unmount()
     const refused = mountTable({ canRemoveSelectedLine: () => false })
     press({ key: 'Delete', shiftKey: true })
@@ -326,7 +327,7 @@ describe('useAppShortcutTable', () => {
       field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
     }
     field.remove()
-    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowProgress, deps.onToggleRowDirection, deps.onDeleteSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowProgress, deps.onToggleRowDirection, deps.onClearSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()

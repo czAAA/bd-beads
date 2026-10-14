@@ -11,12 +11,12 @@ A Selection is always **one rectangle** (ticket 414). It is made three ways: the
 - **Items, in order:** the size readout, Copy, Cut, Paste, Fill, Frame, a divider, Clear selection.
   - **Size readout:** the rectangle's size in beads and mm, "11×6 · 3.5×1.9 cm" (`meta`, DM Mono 11px, `canvas` at 74%), 6px padding. No bead count: a Selection is a rectangle.
   - **Icons:** `copy`, `cut`, `paste`, `fill-selection`, `frame` (the Frame tool's own `#`) and `delete`.
-  - **Only what applies is rendered:** Paste with a clipboard; Frame without a Frame; Remove line only when a line of the Frame is selected.
+  - **Only what applies is rendered:** Paste with a clipboard; Remove line only when a line of the Frame is selected. **Frame is offered with or without a Frame:** it sets the Frame to the Selection, or moves it there (ticket 407, e.g. onto another named Schema). **Fill** is disabled, with its reason in a Tooltip, until a color is chosen.
   - **Clear selection** is the only destructive item: its icon takes `--selbar-danger` (danger lifted toward white on the light bar's `ink`, plain `danger` on the dark theme's light bar). It sits after a divider.
   - **Dividers:** 1px by 16px, `canvas` at 28%, 3px each side, between the readout and the actions and before Clear selection.
 - **No Add or Subtract toggle:** nothing combines rectangles.
 - **Names:** icon-only. Each button has an accessible name and a Tooltip with its key (Ctrl+X, Del...). The bar is `role="toolbar"` named "Selection". When it cannot fit the canvas box, the last actions fold into a "…" menu.
-- **Armed paste:** an icon-only "Tap to paste" and Cancel, on the same bar, at the canvas box's top-centre.
+- **Armed paste:** an icon-only "Tap to paste" (the `paste` icon, named for screen readers) and Cancel, on the same bar, at the canvas box's top-centre.
 - **Select all, then Clear selection** asks for confirmation, because it would wipe the drawing (ticket 415).
 
 Design reference: the "Selection bar on the canvas" board of the design canvas (rectangle, a piece, select all, touch).

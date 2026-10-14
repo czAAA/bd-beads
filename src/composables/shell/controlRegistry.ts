@@ -32,7 +32,7 @@ export interface ControlDeps {
   onSelectTool: (tool: Tool) => void
   onSelectColor: (colorId: string) => void
   /** Clear selection (Del): empties the Selection, or opens Delete all when it holds every bead (ticket 415). */
-  onDeleteSelection: () => void
+  onClearSelection: () => void
   /** Cut (Ctrl+X), Fill and Frame from the Selection (ticket 415). */
   onCut: () => void
   onFillSelection: () => void
@@ -54,6 +54,8 @@ export interface ControlDeps {
   onRemoveSelectedLine: () => void
   /** Whether Name Piece applies right now: the Selection holds beads of exactly one Piece (ticket 406). */
   canNamePiece: () => boolean
+  /** Whether a color is chosen to paint with: Fill needs one. */
+  hasPaintColor: () => boolean
   onNamePiece: () => void
   onToggleRowProgress: (enabled: boolean) => void
   onToggleRowDirection: () => void
@@ -229,7 +231,7 @@ export const CONTROLS: readonly ControlAction[] = [
     group: 'tools',
     chords: [{ key: 'Delete', label: 'Del' }],
     run: (deps) => {
-      if (deps.hasSelection()) deps.onDeleteSelection()
+      if (deps.hasSelection()) deps.onClearSelection()
     },
   },
   {
@@ -387,6 +389,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('fill-selection', (t) => t.tools.fillLabel, 'edit', {
     icon: 'fill-selection',
     body: (t) => t.tooltips.fillSelection,
+    enabled: (deps: ControlDeps) => deps.hasPaintColor(),
+    disabledBody: (t: Translations) => t.tooltips.fillNeedsColor,
   }),
   unkeyed('frame-from-selection', (t) => t.frame.title, 'canvas', {
     icon: 'frame',
@@ -577,7 +581,7 @@ export function chordSlots(chord: Chord): string[] {
 }
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine' | 'canNamePiece'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

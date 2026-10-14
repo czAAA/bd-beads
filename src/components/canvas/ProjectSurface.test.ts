@@ -342,6 +342,23 @@ describe('ProjectSurface', () => {
       expect(wrapper.emitted('scroll')).toEqual([[3, 40], [40, 0]])
     })
 
+    it('says the canvas is being moved while the wheel scrolls it, and that it stopped once the wheel is quiet (ticket 415)', async () => {
+      vi.useFakeTimers()
+      try {
+        const { wrapper } = await mountSurface(projectOf(20, 10))
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        surface.element.dispatchEvent(new WheelEvent('wheel', { deltaY: 40, bubbles: true, cancelable: true }))
+        surface.element.dispatchEvent(new WheelEvent('wheel', { deltaY: 40, bubbles: true, cancelable: true }))
+        expect(wrapper.emitted('pressing')).toEqual([[true]])
+
+        vi.advanceTimersByTime(200)
+        expect(wrapper.emitted('pressing')).toEqual([[true], [false]])
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('keeps the browser from scrolling the page behind it', async () => {
       const { wrapper } = await mountSurface(projectOf(20, 10))
       const event = new WheelEvent('wheel', { deltaY: 40, cancelable: true, bubbles: true })
