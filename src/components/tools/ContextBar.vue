@@ -201,7 +201,8 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
             :key="item.id"
             :icon="item.action.icon"
             :disabled="isDisabled(item)"
-            :title="disabledReason(item)"
+            :name="item.action.name(t)"
+            :disabled-body="disabledReason(item)"
             :data-testid="`context-bar-more-${item.id}`"
             @select="item.run()"
           >
