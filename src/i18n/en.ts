@@ -262,6 +262,13 @@ export const en: Translations = {
       export: 'Export',
     },
   },
+  pieceName: {
+    title: 'Name this Piece',
+    label: 'Name',
+    hint: 'A named Piece is a Schema. Leave it empty to remove the name.',
+    save: 'Save',
+    cancel: 'Cancel',
+  },
   contextBar: {
     label: 'Selection actions',
     clearButton: 'Clear selection',
@@ -301,6 +308,7 @@ export const en: Translations = {
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
     removeLineName: 'Remove line',
+    namePieceButton: 'Name Piece',
   },
   inputMode: {
     penLabel: 'Pen mode',
@@ -556,6 +564,8 @@ export const en: Translations = {
     rowProgressLockedRemoveLine: 'Turn off Row progress to remove a row or column.',
     removeLine: 'Remove the selected row or column and close the gap.',
     removeLineDisabled: 'Select one whole row or column first.',
+    namePiece: 'Give the selected Piece a name, which makes it a Schema.',
+    namePieceDisabled: 'Select one Piece first.',
     clear: 'Clear everything from the Canvas.',
     customColor: 'Add a color to the Palette, up to {max}.',
     pickFromCanvas: 'Click a bead on the Canvas to use its color; it joins the Palette if a slot is free.',

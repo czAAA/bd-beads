@@ -24,6 +24,8 @@ const props = defineProps<{
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
   project: Project
   canRemoveLine: boolean
+  /** Whether the Selection holds beads of exactly one Piece, which Name can then name (ticket 406). */
+  canNamePiece?: boolean
   /** Whether the Frame is being set: the bar then holds the Frame's size, Fit to drawing and Done (v16). */
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
@@ -34,6 +36,7 @@ const emit = defineEmits<{
   copy: []
   rotate: []
   'remove-line': []
+  'name-piece': []
   'fit-frame': []
   'remove-frame': []
   'done-frame': []
@@ -44,7 +47,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const rowEl = ref<HTMLElement>()
-const dropped = useDropSteps(rowEl, 3, [() => props.pasteArmed, () => t.value.contextBar])
+const dropped = useDropSteps(rowEl, 4, [() => props.pasteArmed, () => t.value.contextBar])
 
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there. */
 const actions = {
@@ -54,6 +57,7 @@ const actions = {
   copy: controlAction('copy'),
   rotate: controlAction('rotate'),
   removeLine: controlAction('remove-line'),
+  namePiece: controlAction('name-piece'),
   clear: controlAction('clear-selection'),
   cancel: controlAction('cancel-paste'),
 }
@@ -63,6 +67,7 @@ const deps = computed(() =>
     activeProject: () => props.project,
     hasSelection: () => !!props.selectionSize,
     canRemoveSelectedLine: () => props.canRemoveLine,
+    canNamePiece: () => !!props.canNamePiece,
   }),
 )
 
@@ -97,10 +102,10 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
     </template>
     <template v-else-if="!pasteArmed">
       <span class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
-      <component :is="labelled(3)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
-      <component :is="labelled(2)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
+      <component :is="labelled(4)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
+      <component :is="labelled(3)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
       <component
-        :is="labelled(1)"
+        :is="labelled(2)"
         class="context-bar__button"
        
         :action="actions.removeLine"
@@ -108,6 +113,14 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
         data-testid="context-bar-remove-line"
         data-tour="remove-line"
         @click="emit('remove-line')"
+      />
+      <component
+        :is="labelled(1)"
+        class="context-bar__button"
+        :action="actions.namePiece"
+        :deps="deps"
+        data-testid="context-bar-name-piece"
+        @click="emit('name-piece')"
       />
       <IconButton class="context-bar__button" shape="round" :action="actions.clear" :deps="deps" data-testid="context-bar-clear" @click="emit('dismiss')" />
     </template>

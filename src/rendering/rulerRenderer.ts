@@ -1,6 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/passes'
+import { namedPieces } from '../domain/pieceNames'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -101,6 +102,30 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   }
   for (const label of layout.labels) {
     drawLabel(context, label, fontPx, project, theme, cursor)
+  }
+  drawPieceNames(context, input)
+}
+
+/** The gap between a named Piece's rectangle and its name below it. */
+const NAME_GAP_PX = 4
+
+/** The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line color; read at any zoom. */
+function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
+  const pieces = namedPieces(project)
+  if (pieces.length === 0) {
+    return
+  }
+  const fontPx = Math.max(layout.scale.fontPx, 11)
+  context.font = `600 ${fontPx}px "DM Mono", "JetBrains Mono", ui-monospace, monospace`
+  context.fillStyle = theme.frameLine
+  context.textAlign = 'left'
+  context.textBaseline = 'top'
+  for (const piece of pieces) {
+    const shown = surface.beadBox(piece)
+    if (shown.x > surface.viewport.width || shown.y > surface.viewport.height || shown.x + shown.width < 0 || shown.y + shown.height < 0) {
+      continue
+    }
+    context.fillText(piece.name, shown.x, shown.y + shown.height + layout.scale.pieceOutset + NAME_GAP_PX)
   }
 }
 

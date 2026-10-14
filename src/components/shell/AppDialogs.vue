@@ -2,6 +2,7 @@
 import { useAppShell } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import NameOnExportsModal from '../export/NameOnExportsModal.vue'
+import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 
 const {
@@ -34,6 +35,9 @@ const {
   onSaveBeforeImportSwitch,
   makerName,
   nameOnExportsOpen,
+  naming,
+  onSavePieceName,
+  onCancelPieceName,
   onSaveMakerName,
   shortcutsHelpOpen,
   storageNoteOpen,
@@ -150,6 +154,8 @@ const {
   />
 
   <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
+
+  <NamePieceModal v-if="naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />
 
   <NameOnExportsModal
     v-if="nameOnExportsOpen"
