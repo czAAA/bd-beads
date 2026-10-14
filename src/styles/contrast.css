@@ -4,10 +4,8 @@
  * things, by the class each component gives them. `:root[data-theme]` outweighs a component's scoped rule.
  */
 :root[data-theme='contrast'] :is(
-    .toolbox,
     .save-box,
     .expandable-panel,
-    .app-shell__new-project,
     .app-shell__canvas,
     .theme-toggle
   ) {
@@ -15,16 +13,12 @@
   box-shadow: none;
 }
 
-:root[data-theme='contrast'] .app-header {
-  border-bottom-width: 2px;
-}
-
 /* The rules between things: full strength, 2px. */
-:root[data-theme='contrast'] :is(.canvas-strip, .disclosure-row) {
+:root[data-theme='contrast'] .canvas-strip {
   border-bottom: 2px solid var(--line);
 }
 
-:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls, .toolbox__rows, .expandable-panel__footer) {
+:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls, .expandable-panel__footer) {
   border-top: 2px solid var(--line);
 }
 
@@ -107,7 +101,7 @@
     outline-offset: 2px;
   }
 
-  html:root :is(.toolbox, .save-box, .expandable-panel, .app-shell__new-project, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
+  html:root :is(.save-box, .expandable-panel, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
     border: 1px solid CanvasText;
   }
 }

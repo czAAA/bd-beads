@@ -26,27 +26,16 @@ interface Screen {
 const wholeOnScreen = async (locator: Locator): Promise<boolean> => {
   const box = await locator.first().boundingBox().catch(() => null)
   const viewport = locator.page().viewportSize()!
-  // Not how far down it is: the left column scrolls, and a click scrolls to what it clicks.
+  // Not how far down it is: a click scrolls to what it clicks.
   return !!box && box.width > 0 && box.x >= -1 && box.x + box.width <= viewport.width + 1
 }
 /** The first of the elements with this test id that is displayed at all (the phone and desktop versions of a control share one). */
 const vis = (page: Page, testid: string): Locator => page.locator(`[data-testid="${testid}"]:visible`).first()
 const shown = async (page: Page, testid: string): Promise<boolean> => (await vis(page, testid).count()) > 0 && (await wholeOnScreen(vis(page, testid)))
 
-/** Whether the control is there, opening the Toolbox's collapsed Frame row if that is where it is. */
-async function shownOrExpanded(page: Page, testid: string): Promise<boolean> {
-  if (await shown(page, testid)) return true
-  if (['frame-fit', 'size-estimate-note'].includes(testid) && (await shown(page, 'tool-group-frame'))) {
-    await vis(page, 'tool-group-frame').locator('button').first().click()
-    await settle(page)
-    return shown(page, testid)
-  }
-  return false
-}
-
 /** Brings the control into view the way a person would at this width: it is already there, or in one of the phone sheets. Returns false when no way leads to it. */
 async function reveal(page: Page, testid: string): Promise<boolean> {
-  if (await shownOrExpanded(page, testid)) return true
+  if (await shown(page, testid)) return true
   for (const dock of PHONE_SHEETS) {
     if (!(await shown(page, dock))) break
     await page.getByTestId(dock).click()
@@ -75,7 +64,7 @@ async function click(page: Page, testid: string): Promise<void> {
 const TOUR_SCREEN: Screen = {
   name: 'Tour',
   visit: async (page, measure) => {
-    await click(page, 'header-menu')
+    await click(page, 'dock-menu')
     await click(page, 'menu-item-tour')
     for (let step = 1; step <= 20; step += 1) {
       await page.getByTestId('tour-card').waitFor()
@@ -169,15 +158,6 @@ const SCREENS: Screen[] = [
         await measure(dock.replace('dock-', ''))
         await click(page, 'sheet-close')
       }
-    },
-  },
-  {
-    // Only at 1024px and up: under it there is no header, and the Menu is one of the phone sheets.
-    name: 'header menu',
-    visit: async (page, measure) => {
-      if (!(await shown(page, 'header-menu'))) return false
-      await click(page, 'header-menu')
-      await measure()
     },
   },
   {

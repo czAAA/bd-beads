@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
+import { pickTool } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
@@ -18,9 +19,9 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
 }
 
 describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
-  it('shows Copy, Rotate, Remove line and a clear x for a Selection, wired to the same actions as the Toolbox', async () => {
+  it('shows Copy, Rotate, Remove line and a clear x for a Selection, wired to the registry actions', async () => {
     const wrapper = await mountWithProject(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
     expect(wrapper.find('[data-testid="context-bar-size"]').text()).toBe('2×1')
@@ -35,9 +36,9 @@ describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('removes the selected line through the same command Toolbox\'s Remove line link uses', async () => {
+  it('removes the selected line through the registry\'s Remove line command', async () => {
     const wrapper = await mountWithProject(3, 30)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1])
 
     const before = selectedBeadCount(wrapper)
@@ -50,7 +51,7 @@ describe('the Selection ContextBar under 1024px (tickets 168, 295)', () => {
 
   it('clears the Selection on the clear x without erasing anything', async () => {
     const wrapper = await mountWithProject(3, 30)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1])
 
     await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')

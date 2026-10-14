@@ -6,7 +6,6 @@ import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
-import CanvasColorPicker from '../canvas/CanvasColorPicker.vue'
 import EditControls, { type EditControlId } from '../tools/EditControls.vue'
 import IconButton from '../ui/IconButton.vue'
 import ToolTiles from '../tools/ToolTiles.vue'
@@ -23,7 +22,7 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
 import { overviewUrl } from '../../overview/overviewRoute'
-import { DOCK_LAYOUT_ENABLED, MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
+import { MIRROR_ENABLED, TOUR_ENABLED } from '../../features'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 const {
@@ -188,10 +187,6 @@ const deps = computed(() =>
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
   <BottomSheet v-if="openPhoneSheet === 'project'" modal :title="t.header.projectSheetLabel" @close="openPhoneSheet = null; phoneSavedProjectsOpen = false">
-    <!-- Canvas color under 1024px with the Toolbox layout (CanvasBackground card): the CanvasStrip is hidden there, so the picker lives in this header, before Close. In the Dock layout the strip is always there and holds it (ticket 383). In high contrast it opens the Position marks choice alone, and with no Project open there is no canvas to color. -->
-    <template v-if="activeProject && !DOCK_LAYOUT_ENABLED" #actions>
-      <CanvasColorPicker />
-    </template>
     <template v-if="activeProject">
       <!-- The open Project's name, size and save state (ticket 295): moved here from the header, which is gone under 1024px. -->
       <p class="phone-sheet__project-info" data-testid="phone-project-info">

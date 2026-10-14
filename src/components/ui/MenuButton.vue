@@ -2,13 +2,11 @@
 import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import AppButton from './AppButton.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 import { menuTooltipBody } from './menuTooltipBody'
-import { DOCK_LAYOUT_ENABLED } from '../../features'
 
 type ButtonVariant = InstanceType<typeof AppButton>['$props']['variant']
 type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
@@ -62,12 +60,9 @@ const props = withDefaults(
   },
 )
 
-/** Under 1024px a menu opens as a sheet, and in the Dock layout (ticket 383) at every width. */
-const underDesktop = useMediaQuery('(max-width: 1023px)')
-const narrow = computed(() => DOCK_LAYOUT_ENABLED || underDesktop.value)
 const slots = useSlots()
-/** A sheet is what a phone opens, when the caller gave one: it brings its own Escape layer and outside press. */
-const showsSheet = computed(() => narrow.value && !!slots.sheet)
+/** A menu opens as a sheet at every width (ADR 0046), when the caller gave one: it brings its own Escape layer and outside press. */
+const showsSheet = computed(() => !!slots.sheet)
 
 const open = ref(false)
 const rootEl = ref<HTMLElement>()

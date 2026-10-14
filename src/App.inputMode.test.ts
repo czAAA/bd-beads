@@ -30,9 +30,7 @@ async function mountOpen() {
   return wrapper
 }
 
-const toggle = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.get('[data-testid="input-mode-toggle"]')
-
-const dockToggle = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.get('[data-testid="dock-input-mode"]')
+const toggle = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.get('[data-testid="dock-input-mode"]')
 const bead = (row: number, column: number) => ({ row, column })
 
 describe('the input mode toggle', () => {
@@ -73,7 +71,6 @@ describe('a pen appearing', () => {
     await pressBead(wrapper, bead(1, 1), { pointerType: 'pen' })
     expect(beadColor(wrapper, bead(1, 1))).not.toBeNull()
     expect(toggle(wrapper).attributes('aria-pressed')).toBe('true')
-    expect(dockToggle(wrapper).attributes('aria-pressed')).toBe('true')
 
     // A finger resting on the screen no longer paints.
     await pressBead(wrapper, bead(3, 3), { pointerType: 'touch' })

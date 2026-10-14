@@ -9,7 +9,7 @@ import { en } from './i18n/en'
 
 import { ru } from './i18n/ru'
 
-vi.mock('./features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false, DOCK_LAYOUT_ENABLED: false }))
+vi.mock('./features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -51,7 +51,7 @@ describe('App Tour (ticket 80)', () => {
     const wrapper = mountApp()
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="new-project-box"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
     expect(card(wrapper).exists()).toBe(true)
   })
 
@@ -108,7 +108,7 @@ describe('App Tour (ticket 80)', () => {
     await flushPromises()
     expect(card(wrapper).exists()).toBe(false)
 
-    await wrapper.find('[data-testid="header-menu"]').trigger('click')
+    await wrapper.find('[data-testid="phone-bar-menu"], [data-testid="dock-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-item-tour"]').trigger('click')
     await flushPromises()
 
