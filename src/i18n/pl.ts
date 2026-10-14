@@ -445,6 +445,7 @@ export const pl: Translations = {
     announceSet: 'Ustawiono ramkę, szerokość {width}, wysokość {height}',
     announceRemoved: 'Usunięto ramkę',
     announceNothingToFit: 'Nic jeszcze nie narysowano, do czego można dopasować ramkę',
+    refusedCutsSchema: 'Ramka nie może przecinać schematu „{name}”. Obejmij go w całości albo wcale.',
     announceTechnique: 'Zmieniono technikę na: {technique}',
     announceRotated: 'Obrócono schemat',
     exportPromptTitle: 'Ustaw ramkę, aby wyeksportować',

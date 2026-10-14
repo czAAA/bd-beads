@@ -2,7 +2,7 @@ import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { sameFrame } from './frame'
 import type { GridPosition, Technique } from './grid'
 import { clearMargin } from './margin'
-import { carryNames } from './pieceNames'
+import { carryNames, namedPieceCutBy } from './pieceNames'
 import { rowProgressStarted, withFrame, withRowProgressOnByItself, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 import { rotateProject } from './rotate'
@@ -34,6 +34,8 @@ export type FrameChangeRefusal =
   | 'no-line'
   /** The Frame has only the one row or column asked for, and a Frame is never empty. */
   | 'only-line'
+  /** The new Frame would cut through a named Piece (an unframed Schema), which it must take whole or leave whole (ticket 407). */
+  | 'cuts-schema'
 
 export type FrameChangeResult =
   | { kind: 'refused'; reason: FrameChangeRefusal }
@@ -63,6 +65,9 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     if (length <= 1) {
       return 'only-line'
     }
+  }
+  if ('set' in change && namedPieceCutBy(project, change.set)) {
+    return 'cuts-schema'
   }
   return undefined
 }

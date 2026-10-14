@@ -445,6 +445,7 @@ export const uk: Translations = {
     announceSet: 'Рамку задано: ширина {width}, висота {height}',
     announceRemoved: 'Рамку прибрано',
     announceNothingToFit: 'Поки нічого обводити рамкою: нічого не намальовано',
+    refusedCutsSchema: 'Рамка не може розрізати схему «{name}». Обведіть її цілком або не чіпайте.',
     announceTechnique: 'Техніку змінено: {technique}',
     announceRotated: 'Схему повернуто',
     exportPromptTitle: 'Задайте рамку для експорту',

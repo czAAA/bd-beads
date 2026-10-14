@@ -445,6 +445,7 @@ export const es: Translations = {
     announceSet: 'Marco definido, ancho {width}, alto {height}',
     announceRemoved: 'Marco quitado',
     announceNothingToFit: 'Aún no hay nada dibujado a lo que ajustar el marco',
+    refusedCutsSchema: 'Un marco no puede cortar el esquema «{name}». Enmárcalo entero o déjalo fuera.',
     announceTechnique: 'Técnica cambiada a {technique}',
     announceRotated: 'Esquema girado',
     exportPromptTitle: 'Define el marco para exportar',

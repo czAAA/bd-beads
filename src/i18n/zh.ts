@@ -443,6 +443,7 @@ export const zh: Translations = {
     announceSet: '边框已设置，宽 {width}，高 {height}',
     announceRemoved: '边框已移除',
     announceNothingToFit: '还没有画任何东西，无法让边框贴合',
+    refusedCutsSchema: '边框不能切开图案“{name}”。要么整个框住，要么都不框。',
     announceTechnique: '编织技法已改为{technique}',
     announceRotated: '图样已旋转',
     exportPromptTitle: '设置边框后才能导出',
