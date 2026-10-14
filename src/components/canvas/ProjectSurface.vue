@@ -5,9 +5,9 @@ import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { mayPlace } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
-import type { Selection } from '../../domain/selection'
+import { selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
-import { framePressAt, type FramePress } from '../../rendering/frameHandles'
+import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -65,6 +65,8 @@ const props = defineProps<{
   markerHidden?: boolean
   /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
+  /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped marker, and the Selection shows its handles. */
+  selecting?: boolean
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead marker give way, and a chip by the pointer shows the color of the bead under it. */
   picking?: boolean
 }>()
@@ -94,6 +96,12 @@ const emit = defineEmits<{
   'frame-drag': [cell: GridPosition]
   /** Set Frame: the press ended. */
   'frame-release': []
+  /** The Selection's handles or inside were pressed (ticket 414), at this bead position. */
+  'selection-press': [target: FramePress, cell: GridPosition]
+  /** The pointer moved with that press held, over this bead position. */
+  'selection-drag': [cell: GridPosition]
+  /** That press ended. */
+  'selection-release': []
   /** Set Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
 }>()
@@ -418,7 +426,7 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       cursor: props.cursor,
-      pointer: markerAt.value && !handMoves.value && !props.settingFrame && !props.markerHidden && !props.picking ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
+      pointer: markerAt.value && !handMoves.value && !props.settingFrame && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
@@ -426,6 +434,7 @@ function drawOverlay(): void {
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
+      selectionHandles: props.selecting && !props.settingFrame ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
     })
   }
@@ -460,6 +469,7 @@ watch(
     () => props.settingFrame,
     handMoves,
     () => props.markerHidden,
+    () => props.selecting,
     () => props.picking,
     () => props.frameTooltip,
     marginOpacity,
@@ -482,6 +492,10 @@ const overRefusedMargin = ref(false)
 const dragging = ref(false)
 /** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
 const framing = ref(false)
+/** Whether the Selection's handles or inside are held (ticket 414). */
+const adjusting = ref(false)
+/** The resize cursor over one of the Selection's handles, while the pointer hovers one. */
+const handleCursor = ref<string>()
 let lastBead: GridPosition | undefined
 
 // Starting Set Frame ends the hover preview and forgets the bead, so leaving it hovers the bead under the pointer afresh (ticket 354).
@@ -639,6 +653,17 @@ function onPointerDown(event: PointerEvent): void {
     event.preventDefault()
     return
   }
+  if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
+    const target = boxPressAt(surface.value.beadBox(selectionFrame(props.selection)), props.project.rotation, pointInSurface(event), touchInput.value)
+    if (target.kind !== 'outside') {
+      adjusting.value = true
+      hideMarker()
+      rootEl.value?.setPointerCapture?.(event.pointerId)
+      emit('selection-press', target, cellUnder(event))
+      event.preventDefault()
+      return
+    }
+  }
   if (startsDrag(event)) {
     dragging.value = true
     lastPoint = { x: event.clientX, y: event.clientY }
@@ -695,6 +720,16 @@ function onPointerDown(event: PointerEvent): void {
  * primary-move branch covers all three input kinds without checking pointerType.
  */
 function onPointerMove(event: PointerEvent): void {
+  if (adjusting.value) {
+    emit('selection-drag', cellUnder(event))
+    return
+  }
+  if (props.selecting && props.selection && event.pointerType !== 'touch') {
+    const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection)), pointInSurface(event), false)
+    handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
+  } else {
+    handleCursor.value = undefined
+  }
   if (framing.value) {
     emit('frame-drag', cellUnder(event))
     return
@@ -741,6 +776,10 @@ function onPointerMove(event: PointerEvent): void {
 
 function onPointerEnd(): void {
   dragging.value = false
+  if (adjusting.value) {
+    adjusting.value = false
+    emit('selection-release')
+  }
   if (framing.value) {
     framing.value = false
     emit('frame-release')
@@ -815,14 +854,14 @@ onBeforeUnmount(() => {
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"
     :class="{
-      'project-surface--over-bead': overBead && !handMoves && !picking,
+      'project-surface--over-bead': overBead && !handMoves && !picking && !selecting,
       'project-surface--picking': eyedropperShown,
       'project-surface--refused': overRefusedMargin && !handMoves && !settingFrame,
       'project-surface--moving': handMoves,
       'project-surface--setting-frame': settingFrame && !handMoves,
       'project-surface--dragging': dragging,
     }"
-    :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : undefined"
+    :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : handleCursor ? { cursor: handleCursor } : undefined"
     tabindex="0"
     role="img"
     :aria-label="label"

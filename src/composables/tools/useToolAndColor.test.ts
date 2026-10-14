@@ -31,6 +31,17 @@ describe('useToolAndColor', () => {
       expect(deps.leaveSelectTool).toHaveBeenCalledTimes(1)
     })
 
+    it('keeps the Selection when switching between Select and Piece, and forgets it on leaving both (ticket 414)', () => {
+      const { deps, onSelectTool } = setup()
+      onSelectTool('select')
+      onSelectTool('piece')
+      onSelectTool('select')
+      expect(deps.leaveSelectTool).not.toHaveBeenCalled()
+      onSelectTool('piece')
+      onSelectTool('paint')
+      expect(deps.leaveSelectTool).toHaveBeenCalledTimes(1)
+    })
+
     it('keeps the Selection and clipboard when Select is chosen again', () => {
       const { deps, activeTool, onSelectTool } = setup()
       onSelectTool('select')

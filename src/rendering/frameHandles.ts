@@ -46,9 +46,25 @@ export function frameHandles(box: { x: number; y: number; width: number; height:
   return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1], size }))
 }
 
-/** The handle under a point, if any: within its own square, or a little more where a finger is bigger than a pointer. */
-export function handleAt(handles: readonly Handle[], point: { x: number; y: number }, slack = 3): Handle | undefined {
-  return handles.find((handle) => Math.abs(point.x - handle.x) <= handle.size / 2 + slack && Math.abs(point.y - handle.y) <= handle.size / 2 + slack)
+/** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target does not. */
+const HIT_RADIUS_PX = 14
+const TOUCH_HIT_RADIUS_PX = 24
+
+/** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the shorter side so a small rectangle keeps an inside to move. */
+export function hitRadius(box: { width: number; height: number }, touch: boolean): number {
+  return Math.min(touch ? TOUCH_HIT_RADIUS_PX : HIT_RADIUS_PX, Math.min(box.width, box.height) / 3)
+}
+
+/**
+ * The handle a press at a point grabs, if any: the nearest within `radius` of its centre, except that a corner within
+ * reach beats an edge handle that is nearer. A press inside the rectangle near a corner is therefore that corner's.
+ */
+export function handleAt(handles: readonly Handle[], point: { x: number; y: number }, radius: number): Handle | undefined {
+  const reached = handles
+    .map((handle) => ({ handle, distance: Math.hypot(point.x - handle.x, point.y - handle.y) }))
+    .filter(({ distance }) => distance <= radius)
+    .sort((a, b) => a.distance - b.distance)
+  return (reached.find(({ handle }) => CORNERS.includes(handle.id)) ?? reached[0])?.handle
 }
 
 /** The side of the displayed rectangle a handle sits on, as the side of the Frame it drags once the picture is turned a quarter at a time. */
@@ -68,16 +84,34 @@ export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
 /** What a press while setting the Frame grabbed: one of its handles (with the edges it drags), its inside, or the open canvas. */
 export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'inside' } | { kind: 'outside' }
 
-/** What a press at a point of the viewport grabs: a handle first, then the inside of the Frame, then the canvas round it. */
-export function framePressAt(frame: Frame | undefined, surface: Pick<SurfaceView, 'frameBox'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
-  if (!frame) {
-    return { kind: 'outside' }
-  }
-  const box = surface.frameBox(frame)
-  const handle = handleAt(frameHandles(box, touch), point)
+/** What a press at a point of the viewport grabs of a rectangle on screen: a handle first, then its inside, then the canvas round it. */
+export function boxPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
+  const handle = handleAt(frameHandles(box, touch), point, hitRadius(box, touch))
   if (handle) {
     return { kind: 'handle', edges: handleEdges(rotation, handle.id) }
   }
   const inside = point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height
   return { kind: inside ? 'inside' : 'outside' }
+}
+
+/** The handle a point is within reach of (ticket 414), for the resize cursor a hover shows. */
+export function handleIdAt(box: { x: number; y: number; width: number; height: number }, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
+  return handleAt(frameHandles(box, touch), point, hitRadius(box, touch))?.id
+}
+
+/** The cursor that shows a handle is resizable: the diagonal pairs for corners, the straight arrows for sides. */
+export const HANDLE_CURSORS: Record<HandleId, string> = {
+  'top-left': 'nwse-resize',
+  'bottom-right': 'nwse-resize',
+  'top-right': 'nesw-resize',
+  'bottom-left': 'nesw-resize',
+  top: 'ns-resize',
+  bottom: 'ns-resize',
+  left: 'ew-resize',
+  right: 'ew-resize',
+}
+
+/** What a press at a point of the viewport grabs of the Frame. */
+export function framePressAt(frame: Frame | undefined, surface: Pick<SurfaceView, 'frameBox'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
+  return frame ? boxPressAt(surface.frameBox(frame), rotation, point, touch) : { kind: 'outside' }
 }

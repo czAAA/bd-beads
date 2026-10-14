@@ -18,6 +18,8 @@ export interface CanvasPointerDeps {
   beginSelectPress: (row: number, column: number) => void
   extendSelection: (row: number, column: number) => void
   backOutOfSelect: () => void
+  /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty space. */
+  tapPiece: (row: number, column: number) => void
   beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number) => void
   paintStrokeCell: (row: number, column: number, color: string | null) => void
   /** Pastes at a cell; true when something was pasted. */
@@ -37,6 +39,9 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   function cellsUnderCursor(project: Project, hovered: GridPosition): PreviewCell[] {
     const tool = deps.activeTool()
     if (tool === 'hand') {
+      return []
+    }
+    if (tool === 'piece') {
       return []
     }
     if (tool === 'select') {
@@ -104,6 +109,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       deps.beginSelectPress(row, column)
       return
     }
+    // Piece never drags: a tap selects the bead's Piece (ticket 414).
+    if (tool === 'piece') {
+      deps.tapPiece(row, column)
+      return
+    }
 
     // Eraser (ticket 176): single-bead erase by default, the same stroke path right-click erase already used --
     // so it works on touch/phone without needing a right-click. Right-click stays as-is (see onCellSecondaryDown);
@@ -161,8 +171,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    // Select never erases; under it the right button backs out of a pending Paste or the Selection, alongside Escape.
-    if (deps.activeTool() === 'select') {
+    // Select and Piece never erase; under them the right button backs out of a pending Paste or the Selection, alongside Escape.
+    if (deps.activeTool() === 'select' || deps.activeTool() === 'piece') {
       deps.backOutOfSelect()
       return
     }

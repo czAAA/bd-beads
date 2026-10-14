@@ -33,8 +33,10 @@ export interface ControlDeps {
   onSelectColor: (colorId: string) => void
   onDeleteSelection: () => void
   onToggleRulers: () => void
-  /** 6: starts Set Frame, or finishes it. */
+  /** Starts Set Frame, or finishes it. */
   onToggleFrame: () => void
+  /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
+  onSelectAll: () => void
   /** Whether the Frame is being set, and the way out of it. */
   settingFrame: () => boolean
   finishFrame: () => void
@@ -199,6 +201,21 @@ export const CONTROLS: readonly ControlAction[] = [
   selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
   selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
   selectTool('select', '3', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
+  selectTool('piece', '6', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
+  {
+    id: 'select-all',
+    icon: 'select-all',
+    name: (t) => t.tools.selectAllLabel,
+    body: (t) => t.tooltips.selectAll,
+    group: 'tools',
+    chords: [
+      { key: '7', label: '7' },
+      { key: 'a', mod: true, label: 'A' },
+    ],
+    preventDefault: true,
+    needsProject: true,
+    run: (deps) => deps.onSelectAll(),
+  },
   selectTool('erase', '4', 'erase', (t) => t.tools.eraseLabel, 'tools', (t) => t.tooltips.erase),
   {
     id: 'empty-selection',
@@ -237,7 +254,7 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.frame.setFrame,
     body: (t) => t.tooltips.setFrame,
     group: 'canvas',
-    chords: [{ key: '6', label: '6' }],
+    chords: [],
     needsProject: true,
     run: (deps) => deps.onToggleFrame(),
   },
@@ -488,7 +505,7 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.imageColorsDisabled,
   }),
   unkeyed('dock-tool', (t) => t.toolbox.groups.tools, 'tools', {
-    body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.eraseLabel, t.tools.handLabel]),
+    body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.pieceLabel, t.tools.selectAllLabel, t.tools.eraseLabel, t.tools.handLabel]),
   }),
   unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
     body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton, t.tools.copyButton, t.tools.pasteLabel]),

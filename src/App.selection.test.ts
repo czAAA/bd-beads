@@ -50,6 +50,45 @@ describe('App select, copy and paste', () => {
     expect(wrapper.find('[data-testid="sheet-tool-paint"]').attributes('aria-pressed')).toBe('false')
   })
 
+  it('Piece selects the rectangle round the tapped bead\'s Piece, and a tap on empty space clears it (ticket 414)', async () => {
+    const wrapper = await mountWithProject(6, 6) // 4x4
+    await projectWithMotif(wrapper) // red (0,0) and blue (1,1) touch at a corner: one Piece
+    await pickTool(wrapper, 'piece')
+
+    await click(wrapper, 5)
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await click(wrapper, 10) // (2,2) is empty
+    expect(selectedCount(wrapper)).toBe(0)
+  })
+
+  it('Select all selects the rectangle round every bead and leaves Select active; on an empty canvas it does nothing (ticket 414)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await pickTool(wrapper, 'select-all')
+    expect(selectedCount(wrapper)).toBe(0)
+
+    await projectWithMotif(wrapper)
+    await pickTool(wrapper, 'select-all')
+
+    expect(selectedCount(wrapper)).toBe(4)
+    await openSheet(wrapper, 'dock-tool')
+    expect(wrapper.find('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="sheet-tool-select-all"]').attributes('aria-pressed')).toBeUndefined()
+  })
+
+  it('keeps the Selection across Select and Piece, and drops it for any other tool (ticket 414)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await pickTool(wrapper, 'select-all')
+
+    await pickTool(wrapper, 'piece')
+    expect(selectedCount(wrapper)).toBe(4)
+    await pickTool(wrapper, 'select')
+    expect(selectedCount(wrapper)).toBe(4)
+    await pickTool(wrapper, 'paint')
+    expect(selectedCount(wrapper)).toBe(0)
+  })
+
   it('marks out a rectangle as the cursor is dragged, and keeps it after the drag ends', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
     await pickTool(wrapper, 'select')

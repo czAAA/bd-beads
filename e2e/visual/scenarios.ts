@@ -80,12 +80,12 @@ export const SCENARIOS: Scenario[] = [
     place: pointerAway,
   })),
 
-  // A Selection: the marquee reads as one rectangle even across peyote's and brick stitch's shifted rows.
+  // A Selection: its border reads as one rectangle even across peyote's and brick stitch's shifted rows, with the Frame's eight handles (ticket 414); the handles reach into the beads round it.
   ...perTechnique((technique) => ({
     name: `${technique}-selection`,
     prepare: (page, context) => dragSelection(page, context, [2, 3], [6, 9]),
     place: pointerAway,
-    overlaid: beadsIn(2, 3, 5, 7),
+    overlaid: beadsIn(1, 2, 7, 9),
   })),
 
   // A paste preview: the copied block in its own colors under the pointer, with the Selection still marked.

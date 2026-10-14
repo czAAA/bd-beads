@@ -1056,7 +1056,8 @@ describe('ProjectSurface', () => {
 
       await wrapper.setProps({ selection: { top: 1, left: 1, rows: 2, columns: 3 } })
 
-      expect(context.named('fillRect').filter((call) => call.globalAlpha === 0.3)).toHaveLength(6)
+      // The rectangle's border, four strips; no wash on its beads.
+      expect(context.named('fillRect')).toHaveLength(4)
       expect(context.named('rect')).toHaveLength(0) // the cells were left alone
 
       context.calls.length = 0
@@ -1083,6 +1084,51 @@ describe('ProjectSurface', () => {
       expect(context.named('drawImage')).toHaveLength(2)
       expect(context.named('rect')).toHaveLength(0)
     })
+  })
+})
+
+describe('ProjectSurface with a Selection (ticket 414)', () => {
+  const selection = { top: 1, left: 1, rows: 2, columns: 3 }
+
+  it('reports a press on a handle or inside as a Selection press, and the drag and release after it, and draws no bead', async () => {
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selection })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    // The box is (20, 20) to (80, 60): near its top-left corner, then inside, then well away.
+    await surface.trigger('pointerdown', { button: 0, clientX: 24, clientY: 24, pointerId: 1 })
+    await surface.trigger('pointermove', { buttons: 1, clientX: 45, clientY: 45, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    await surface.trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+    await surface.trigger('pointerdown', { button: 0, clientX: 250, clientY: 150, pointerId: 1 })
+    await surface.trigger('pointerup', { pointerId: 1 })
+
+    expect(wrapper.emitted('selection-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['top', 'left'] }, { kind: 'inside' }])
+    expect(wrapper.emitted('selection-drag')).toEqual([[{ row: 2, column: 2 }]])
+    expect(wrapper.emitted('selection-release')).toHaveLength(2)
+    // Only the press away from the Selection reached the beads.
+    expect(wrapper.emitted('cell-primary-down')).toEqual([[7, 12]])
+  })
+
+  it('leaves the press to the beads when the tool is not Select or Piece, or there is no Selection', async () => {
+    for (const props of [{ selecting: false, selection }, { selecting: true }]) {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, props)
+      await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
+      expect(wrapper.emitted('selection-press')).toBeUndefined()
+      expect(wrapper.emitted('cell-primary-down')).toBeDefined()
+    }
+  })
+
+  it('shows the native arrow instead of the bead-shaped marker, and a resize cursor over a handle', async () => {
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selection })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    await surface.trigger('pointermove', { clientX: 50, clientY: 40, pointerId: 1, pointerType: 'mouse' })
+    expect(surface.classes()).not.toContain('project-surface--over-bead')
+    expect(surface.attributes('style') ?? '').not.toContain('resize')
+
+    await surface.trigger('pointermove', { clientX: 22, clientY: 22, pointerId: 1, pointerType: 'mouse' })
+    expect(surface.attributes('style')).toContain('nwse-resize')
   })
 })
 
