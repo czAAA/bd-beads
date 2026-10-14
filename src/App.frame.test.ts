@@ -221,7 +221,7 @@ describe('Row progress on by itself (ticket 411)', () => {
     const wrapper = await mountOpen()
     expect(savedProgress().enabled).toBe(false)
 
-    await key({ key: '6' })
+    await wrapper.find('[data-testid="progress-bar-set-frame"]').trigger('click')
     await drag(wrapper, { row: 4, column: 6 }, { row: 1, column: 2 })
 
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 4, columns: 5 })
