@@ -421,7 +421,7 @@ export function withRowProgressOnByItself(before: Project, after: Project): Proj
   return { ...after, rowProgress: { ...after.rowProgress, enabled: true, decided: true, currentRow: 0, currentColumn: 0 } }
 }
 
-/** Whether Row progress is on and at least one pass is done: the Frame is then held still, because the passes done belong to it (ticket 411). */
+/** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it (ticket 411). */
 export function rowProgressStarted(project: Pick<Project, 'rowProgress'>): boolean {
   const { enabled, currentRow, currentColumn } = project.rowProgress
   return enabled && (currentRow > 0 || currentColumn > 0)

@@ -10,6 +10,8 @@ function setup(project: Project | null = base) {
   const deps = {
     currentProject: () => project ?? undefined,
     replaceProject: vi.fn(),
+    showToast: vi.fn(),
+    messages: () => en,
   }
   return { deps, ...useRowOps(deps) }
 }

@@ -15,8 +15,8 @@ export interface RowOpsDeps {
   /** Commits the Frame the size steppers have pending before Row progress turns on: its rows are the Frame's (ticket 410). */
   settleFrame?: () => void
   /** The success toast after the direction turns (ticket 411). */
-  showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
-  messages?: () => Translations
+  showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
+  messages: () => Translations
 }
 
 /**
@@ -43,11 +43,8 @@ export function useRowOps(deps: RowOpsDeps) {
       const turned = toggleRowDirection(project)
       deps.replaceProject(turned)
       // Said once per change, whether the button or its key turned it (ticket 411).
-      const t = deps.messages?.()
-      if (t && deps.showToast) {
-        const text = turned.rowProgress.direction === 'rows' ? t.rowProgress.directionToastRows : t.rowProgress.directionToastColumns
-        deps.showToast('row-direction', text, 'success')
-      }
+      const t = deps.messages().rowProgress
+      deps.showToast('row-direction', turned.rowProgress.direction === 'rows' ? t.directionToastRows : t.directionToastColumns, 'success')
     }
   }
 
