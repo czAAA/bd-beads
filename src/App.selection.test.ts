@@ -151,6 +151,17 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
+  it('Select all then the Eraser asks before wiping the drawing too (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await pickTool(wrapper, 'select-all')
+
+    await pickTool(wrapper, 'erase')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+  })
+
   it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)

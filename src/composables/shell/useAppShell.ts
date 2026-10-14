@@ -275,13 +275,14 @@ function wireAppShell(services: Services) {
   const pickingColor = ref(false)
 
   /**
-   * Choosing a tool. Choosing the Eraser while a Selection exists empties the Selection's beads first (ticket 313), the
-   * same as Del under Select; leaving Select then drops the Selection, as it does for every other tool.
+   * Choosing a tool. Choosing the Eraser while a Selection exists clears the Selection first (ticket 313), the same as
+   * Del under Select, so a Select all Selection asks for Delete all's confirmation too (ticket 415); leaving Select then
+   * drops the Selection, as it does for every other tool.
    */
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
     if (tool === 'erase' && selection.value) {
-      onEmptySelection()
+      onDeleteSelection()
     }
     selectTool(tool)
   }
