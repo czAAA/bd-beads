@@ -2,7 +2,7 @@ import { type Chord } from '../../domain/chord'
 import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
-import type { Project } from '../../domain/project'
+import { rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -113,7 +113,10 @@ const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translation
 })
 
 
-const frameLocked = (deps: ControlDeps) => deps.activeProject()?.rowProgress.enabled === true
+const frameLocked = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && rowProgressStarted(project)
+}
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
@@ -438,7 +441,6 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-done',
-    icon: 'check',
     name: (t) => t.rowProgress.nextButton,
     group: 'rowProgress',
     chords: [
@@ -453,7 +455,6 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'row-not-done',
-    icon: 'chevron-left',
     name: (t) => t.rowProgress.previousButton,
     group: 'rowProgress',
     chords: [

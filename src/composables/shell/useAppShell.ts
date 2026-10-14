@@ -549,7 +549,7 @@ function wireAppShell(services: Services) {
   })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentProject, replaceProject, settleFrame: frameFlow.commitPending })
+  const rowOps = useRowOps({ currentProject, replaceProject, settleFrame: frameFlow.commitPending, showToast, messages })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
   useSaveOnPageHide(flushPendingSave)

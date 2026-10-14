@@ -65,6 +65,7 @@ describe('single-Project roundtrip', () => {
       direction: 'rows',
       currentRow: 4,
       currentColumn: 0,
+      decided: true,
     })
   })
 

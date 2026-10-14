@@ -312,6 +312,12 @@ export interface Translations {
     positionLabel: string
     previousButton: string
     nextButton: string
+    /** The same two buttons while rows run down the columns (ticket 411): the weaver works a column at a time. */
+    columnPreviousButton: string
+    columnNextButton: string
+    /** The success toast after Turn row direction names the direction the rows now run. */
+    directionToastRows: string
+    directionToastColumns: string
     /** The Progress bar's meta after "Row 12": "of {total} · {direction}" (ticket 144). */
     ofTotal: string
     topToBottom: string

@@ -16,9 +16,14 @@ function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
   return calls.slice(begin, stroke).filter((call) => call.name === 'roundRect')
 }
 
-function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0): Project {
+/** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
+function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  return { ...project, rotation, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  const beads: Project['beads'] = {}
+  for (let row = 0; filled && row < rows; row += 1) {
+    beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
+  }
+  return { ...project, beads, rotation, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
 }
 
 function whole(project: Project, zoom = 1) {
@@ -104,6 +109,25 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       expect(ringRects(calls).map((call) => call.args[4])).toEqual([R, R, R, R, R])
+    })
+
+    it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
+      const project = { ...projectOf('loom', 3, 3, { currentRow: 1 }), beads: { 1: { 0: '#e63746', 2: '#e63746' } } }
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      expect(ringRects(calls).map((call) => call.args.slice(0, 2))).toEqual([[1, 21], [41, 21]])
+    })
+
+    it('shows no marker for a pass with no beads', () => {
+      const project = projectOf('loom', 3, 3, { currentRow: 1 }, 0, false)
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      expect(named('stroke')).toHaveLength(0)
+      expect(named('roundRect')).toHaveLength(0)
     })
 
     it('draws nothing for a row that is not there', () => {
@@ -425,7 +449,7 @@ describe('renderOverlay', () => {
     })
 
     it('draws an empty bead faded in the empty tint', () => {
-      const project = projectOf('loom', 2, 2, noProgress)
+      const project = projectOf('loom', 2, 2, noProgress, 0, false)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }] })
@@ -608,8 +632,12 @@ describe('the bead cursor (ticket 159)', () => {
 describe('on the open canvas (ADR 0026)', () => {
   /** A 3-wide, 4-tall Frame at row 6, column 5: positions are the bead's own row and column, so the Frame is not at the origin. */
   function openProject(rowProgress: Partial<RowProgress>): Project {
-    const project = projectOf('loom', 3, 4, rowProgress)
-    return { ...project, frame: { row: 6, column: 5, rows: 4, columns: 3 } }
+    const project = projectOf('loom', 3, 4, rowProgress, 0, false)
+    const beads: Project['beads'] = {}
+    for (let row = 6; row < 10; row += 1) {
+      beads[row] = { 5: '#e63746', 6: '#e63746', 7: '#e63746' }
+    }
+    return { ...project, beads, frame: { row: 6, column: 5, rows: 4, columns: 3 } }
   }
   const view = { x: 0, y: 0, width: 400, height: 400 }
   const overlay = (project: Project, extra: Parameters<typeof renderOverlay>[1] extends infer Input ? Partial<Input> : never) => {
