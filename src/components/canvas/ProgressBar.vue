@@ -8,12 +8,12 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 
 /**
- * Progress bar (CONTEXT.md; ticket 144, ProgressBar card): every Row progress control, in one 56px bar along the canvas
- * box's bottom edge, always shown whatever the Project's shape. The switch that turns Row progress on comes first, so
- * the bar has to be there while it is off: then only the switch and its label show, and the bar keeps its height so the
- * canvas doesn't jump. On, it reads out the current row, shows the finished share, and holds Turn row direction, Row
- * not done and Row done, which move the current-row pointer exactly as the hotkeys do (D, Shift+Enter/Shift+Space,
- * Enter/Space (ticket 178); P toggles the switch).
+ * Progress bar (CONTEXT.md; tickets 144, 411, ProgressBar card): every Row progress control, in one short bar along the
+ * canvas box's bottom edge, always shown at every width whatever the Project's shape. The switch comes first, so the
+ * bar is there while Row progress is off: then only the switch and its label show, and the bar keeps its height so the
+ * canvas doesn't jump. On, Turn row direction sits beside the switch; then come the current row, the finished share,
+ * and the large Row not done and Row done buttons, whose label and arrow follow Row direction. They move the
+ * current-row pointer exactly as the hotkeys do (D, Shift+Enter/Shift+Space, Enter/Space (ticket 178); P toggles the switch).
  */
 const props = defineProps<{ project: Project }>()
 
@@ -50,6 +50,15 @@ const position = computed(() => rowProgressPosition(props.project))
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
 
+const columnWise = computed(() => props.project.rowProgress.direction === 'columns')
+
+/** Row done and Row not done name what is woven in the direction the rows run: a row, or a column (ticket 411). */
+const doneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnNextButton : t.value.rowProgress.nextButton))
+const notDoneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnPreviousButton : t.value.rowProgress.previousButton))
+
+/** The row shown as current: the last one once every pass is done. */
+const shownRow = computed(() => Math.min(position.value.current + 1, position.value.total))
+
 const directionLabel = computed(() =>
   props.project.rowProgress.direction === 'rows' ? t.value.rowProgress.topToBottom : t.value.rowProgress.leftToRight,
 )
@@ -67,18 +76,24 @@ const directionLabel = computed(() =>
       </span>
     </template>
     <template v-else-if="enabled">
+      <!-- Turn row direction sits beside the switch, away from the do/undo pair, so it can't be hit while doing rows (ticket 411). -->
+      <IconButton
+        variant="box"
+        :action="actions.direction"
+        :selected="columnWise"
+        data-testid="progress-bar-direction"
+        @click="emit('toggle-row-direction')"
+      />
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
-        <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ position.current + 1 }}</span>
+        <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ shownRow }}</span>
         {{ ' ' }}
         <span class="progress-bar__of">{{
           t.rowProgress.ofTotal.replace('{total}', String(position.total)).replace('{direction}', directionLabel)
         }}</span>
       </p>
-      <!-- The phone tier's compact mode (ticket 188): "1/222" in place of the spelled-out row count, and Row not
-        done/Row done as icon-only buttons with a hover/focus label instead of the reference tier's wide text ones --
-        the bar is the widest control on the phone screen already (responsive.md), so it can't also spell everything out. -->
-      <p class="progress-bar__compact-position progress-bar__phone-only" data-testid="progress-bar-compact-position">
-        {{ position.current + 1 }}/{{ position.total }}
+      <!-- The compact counter (ticket 188): "1/222" in place of the spelled-out row count; the buttons keep their text (ticket 411). -->
+      <p class="progress-bar__compact-position" data-testid="progress-bar-compact-position">
+        {{ shownRow }}/{{ position.total }}
       </p>
       <div
         class="progress-bar__track"
@@ -91,53 +106,31 @@ const directionLabel = computed(() =>
       >
         <span class="progress-bar__fill" :style="{ width: `${finishedShare * 100}%` }" />
       </div>
-      <IconButton
-        variant="box"
-        :action="actions.direction"
-        :selected="project.rowProgress.direction === 'columns'"
-        data-testid="progress-bar-direction"
-        @click="emit('toggle-row-direction')"
-      />
-      <span class="progress-bar__phone-hide">
+      <!-- Row not done and Row done are large text buttons whose label and arrow follow Row direction (ticket 411). -->
+      <div class="progress-bar__steps" :class="{ 'progress-bar__steps--columns': columnWise }">
         <AppButton
           variant="box"
+          size="lg"
           :action="actions.notDone"
+          :label="notDoneLabel"
+          icon="arrow-up"
           :disabled="position.current === 0"
           data-testid="progress-bar-previous"
           data-tour="progress-previous"
           @click="emit('move-row', -1)"
         />
-      </span>
-      <span class="progress-bar__phone-only">
-        <IconButton
-          variant="box"
-          :action="actions.notDone"
-          :disabled="position.current === 0"
-          data-testid="progress-bar-previous-compact"
-          data-tour="progress-previous"
-          @click="emit('move-row', -1)"
-        />
-      </span>
-      <span class="progress-bar__phone-hide">
         <AppButton
           variant="primary"
+          size="lg"
           :action="actions.done"
-          :disabled="position.current === position.total - 1"
+          :label="doneLabel"
+          trailing-icon="arrow-down"
+          :disabled="position.current >= position.total"
           data-testid="progress-bar-next"
           data-tour="progress-next"
           @click="emit('move-row', 1)"
         />
-      </span>
-      <span class="progress-bar__phone-only">
-        <IconButton
-          variant="box"
-          :action="actions.done"
-          :disabled="position.current === position.total - 1"
-          data-testid="progress-bar-next-compact"
-          data-tour="progress-next"
-          @click="emit('move-row', 1)"
-        />
-      </span>
+      </div>
     </template>
     <span v-else class="progress-bar__off-label">{{ t.toolbox.groups.rowProgress }}</span>
   </div>
@@ -193,15 +186,22 @@ const directionLabel = computed(() =>
   white-space: nowrap;
 }
 
-/* The compact mode (ticket 188, 295; ADR 0046): the short counter and icon-only buttons stand in for the spelled-out row count and text row buttons. */
-.progress-bar__phone-only {
-  display: inline-flex;
-  flex: none;
-}
-
-/* The wide buttons sit in these spans: the shared controls take their classes on the button itself, inside a Tooltip wrapper, so the swap has to happen out here. */
+/* The wide row count stays out of the bar: the short counter stands in for it at every width (ticket 188, 295; ADR 0046). */
 .progress-bar__phone-hide {
   display: none;
+}
+
+/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction beside the switch. */
+.progress-bar__steps {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+/* Rows running down the columns point the arrows along them: the down arrow turns to point right, the up arrow left. */
+.progress-bar__steps--columns :deep(svg) {
+  transform: rotate(-90deg);
 }
 
 .progress-bar__track {
@@ -225,6 +225,41 @@ const directionLabel = computed(() =>
   font: var(--type-label);
   color: var(--box-muted);
   text-transform: lowercase;
+}
+
+/*
+ * Phone widths (ticket 411): the large text buttons can't share one row with the switch, Turn row direction and the track
+ * at 360px in every language, so the buttons take a second row of their own, half the bar each. The bar is taller there:
+ * --progress-height says so (controls.css), and everything that sits above the bar follows it.
+ */
+@media (max-width: 30rem) {
+  .progress-bar {
+    flex-wrap: wrap;
+    align-content: center;
+    gap: var(--space-8) var(--space-12);
+  }
+
+  .progress-bar__track {
+    min-width: var(--space-32);
+  }
+
+  .progress-bar__steps {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .progress-bar__steps :deep(.app-button-wrap) {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .progress-bar__steps :deep(.app-button) {
+    width: 100%;
+    min-width: 0;
+    padding-inline: var(--space-8);
+    justify-content: center;
+    font: var(--type-small);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

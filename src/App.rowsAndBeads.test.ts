@@ -177,6 +177,7 @@ describe('App delete all', () => {
     expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
+      decided: true,
       currentRow: 2,
       currentColumn: 0,
     })
@@ -258,6 +259,7 @@ describe('App replace bead', () => {
     expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
+      decided: true,
       currentRow: 1,
       currentColumn: 0,
     })

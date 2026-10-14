@@ -4,7 +4,6 @@ import { createProject } from '../../domain/project'
 import ZoomPill from './ZoomPill.vue'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-const withRowProgress = (enabled: boolean) => ({ ...project, rowProgress: { ...project.rowProgress, enabled } })
 
 describe('ZoomPill', () => {
   it('shows the zoom level and emits out/in/fit', async () => {
@@ -19,14 +18,13 @@ describe('ZoomPill', () => {
     expect(wrapper.emitted('reset')).toHaveLength(1)
   })
 
-  it('reads rulers, undo, redo, progress bar, out, level, in, fit', () => {
+  it('reads rulers, undo, redo, out, level, in, fit', () => {
     const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, rulers: true, project } })
     const order = wrapper.findAll('[data-testid^="zoom-pill-"]:not([role="status"])').map((element) => element.attributes('data-testid'))
     expect(order).toEqual([
       'zoom-pill-rulers',
       'zoom-pill-undo',
       'zoom-pill-redo',
-      'zoom-pill-progress',
       'zoom-pill-out',
       'zoom-pill-level',
       'zoom-pill-in',
@@ -55,20 +53,9 @@ describe('ZoomPill', () => {
     expect(on.emitted('redo')).toHaveLength(1)
   })
 
-  it('shows the Row progress button pressed while it is on and emits the opposite on click (one action with the Progress bar switch)', async () => {
-    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, project: withRowProgress(true) } })
-    const toggle = wrapper.get('[data-testid="zoom-pill-progress"]')
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-    await toggle.trigger('click')
-    expect(wrapper.emitted('toggle-row-progress')).toEqual([[false]])
-  })
-
-  it('disables Row progress with no Frame, and says why in its Tooltip', async () => {
-    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, project: { ...project, frame: undefined } } })
-    const toggle = wrapper.get('[data-testid="zoom-pill-progress"]')
-    expect(toggle.attributes('aria-disabled')).toBe('true')
-    await toggle.trigger('click')
-    expect(wrapper.emitted('toggle-row-progress')).toBeUndefined()
+  it('has no Row progress button: the Progress bar switch is the only way to turn it on or off (ticket 411)', () => {
+    const wrapper = mount(ZoomPill, { props: { zoomPercent: 100, project } })
+    expect(wrapper.find('[data-testid="zoom-pill-progress"]').exists()).toBe(false)
   })
 
   describe('drag from anywhere (ticket 302)', () => {

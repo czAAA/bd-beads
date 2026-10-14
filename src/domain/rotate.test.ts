@@ -133,8 +133,8 @@ describe('rotatedFrame', () => {
       for (const direction of ['rows', 'columns'] as const) {
         const result = rotateProject(tall(progress(40, 25, direction)))!.project
         expect(result.frame).toMatchObject({ rows: 30, columns: 50 })
-        expect(result.rowProgress.currentRow).toBeLessThan(30)
-        expect(result.rowProgress.currentColumn).toBeLessThan(50)
+        expect(result.rowProgress.currentRow).toBeLessThanOrEqual(30)
+        expect(result.rowProgress.currentColumn).toBeLessThanOrEqual(50)
       }
     })
 

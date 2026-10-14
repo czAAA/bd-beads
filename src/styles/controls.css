@@ -12,7 +12,7 @@
   --strip-height: 2.875rem;
   --zoom-level-width: 3rem;
   /* ProgressBar card: the bar along the canvas box's bottom edge, and its switch (30 × 18, a 12px knob) */
-  --progress-height: 3.5rem;
+  --progress-height: 3rem;
   --switch-width: 1.875rem;
   --switch-height: 1.125rem;
   --switch-knob: 0.75rem;
@@ -70,6 +70,13 @@
   --context-bar-radius: 0.875rem;
   /* ZoomPill card: its own 36px buttons, bigger than the reference tier's zoom cluster */
   --zoom-pill-button: 2.25rem;
+}
+
+/* Phone widths: the Progress bar's buttons take a second row (ProgressBar.vue, ticket 411). */
+@media (max-width: 30rem) {
+  :root {
+    --progress-height: var(--progress-height-phone);
+  }
 }
 
 /*

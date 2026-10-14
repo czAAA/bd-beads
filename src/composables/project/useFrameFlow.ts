@@ -3,7 +3,7 @@ import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, frameWithSizeFrom, movedFrame, sameFrame, type FrameEdge, type FrameSides } from '../../domain/frame'
 import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
-import type { Project } from '../../domain/project'
+import { rowProgressStarted, type Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -56,7 +56,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** The size the steppers have set but nothing has committed yet, and the Project it is for (ticket 410). */
   const pending = ref<{ projectId: string; frame: Frame } | undefined>()
 
-  const locked = computed(() => !!deps.currentProject()?.rowProgress.enabled)
+  const locked = computed(() => {
+    const project = deps.currentProject()
+    return !!project && rowProgressStarted(project)
+  })
 
   /** The pending Frame of the open Project; none while Row progress holds the Frame still. */
   const pendingFrame = computed(() => {

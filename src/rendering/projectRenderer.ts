@@ -267,9 +267,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const inFrame = space.hasFrame
   const frameRows = { first: origin.row, last: origin.row + space.rows - 1 }
   const frameColumns = { first: origin.column, last: origin.column + space.columns - 1 }
-  // The current row's beads, empty ones too, are drawn 10% brighter than the todo rows (ticket 352).
+  // The current row's beads are drawn 10% brighter than the todo rows (ticket 352); an empty cell is left as it is (ticket 411).
   const lightenCurrent = (color: string | null, position: GridPosition): string | null =>
-    isInCurrentRow(project, position) ? brighten(color ?? look.emptyBead, CURRENT_ROW_BRIGHTNESS) : color
+    color !== null && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
   const drawAt = (row: number, column: number, color: string | null) => {
     const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
     drawBead(context, {

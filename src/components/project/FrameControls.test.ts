@@ -29,8 +29,8 @@ describe('FrameControls', () => {
       expect(wrapper.emitted('set-technique')).toEqual([['brick']])
     })
 
-    it('is disabled while Row progress is on, and does not emit', async () => {
-      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 0, currentColumn: 0 } }
+    it('is disabled once Row progress is on and a pass is done, and does not emit (ticket 411)', async () => {
+      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
       const wrapper = mount(FrameControls, { props: { project } })
       const group = wrapper.find('[data-testid="frame-technique"]')
       expect(group.attributes('aria-disabled')).toBe('true')
@@ -118,8 +118,8 @@ describe('FrameControls', () => {
       expect(optionsOf(wrapper, 'frame-width-side').map((option) => option.attributes('aria-checked'))).toEqual(['false', 'true'])
     })
 
-    it('is disabled while Row progress is on', async () => {
-      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 0, currentColumn: 0 } }
+    it('is disabled once Row progress is on and a pass is done (ticket 411)', async () => {
+      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
       const wrapper = mount(FrameControls, { props: { project } })
       const width = wrapper.find('[data-testid="frame-width-side"]')
       expect(width.attributes('aria-disabled')).toBe('true')

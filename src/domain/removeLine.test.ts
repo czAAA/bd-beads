@@ -92,8 +92,8 @@ describe('removeSelectedLine', () => {
     expect(removeSelectedLine(project, { top: 10, left: 20, rows: 2, columns: 2 })).toBe(project)
   })
 
-  it('is refused while Row progress is on', () => {
-    const woven = setRowProgressEnabled(numbered(3, 4), true)
+  it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
+    const woven = moveToRow(setRowProgressEnabled(numbered(3, 4), true), 1)
     expect(removeLineRefusal(woven, rowOf(woven, 0))).toBe('locked')
     expect(removeSelectedLine(woven, rowOf(woven, 0))).toBe(woven)
   })
@@ -105,9 +105,9 @@ describe('removeSelectedLine', () => {
   })
 
   it('clamps Row progress\'s pointers onto a row that still exists', () => {
-    const before = { ...moveToRow(setRowProgressEnabled(numbered(3, 4), true), 3) }
+    const before = { ...moveToRow(setRowProgressEnabled(numbered(3, 4), true), 4) }
     const off: Project = { ...before, rowProgress: { ...before.rowProgress, enabled: false } }
-    expect(removeSelectedLine(off, rowOf(off, 0)).rowProgress.currentRow).toBe(2)
+    expect(removeSelectedLine(off, rowOf(off, 0)).rowProgress.currentRow).toBe(3)
   })
 })
 

@@ -54,6 +54,12 @@ export interface RowProgress {
   currentRow: number
   /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses either place. */
   currentColumn: number
+  /**
+   * Whether Row progress has been settled for this Project (ticket 411): switched on by itself at its first Frame, or
+   * switched by the weaver. Once set, no later Frame edit turns it on again; absent on a Project that never had either, and
+   * so on one saved before ticket 411, which opens exactly as it was saved.
+   */
+  decided?: boolean
 }
 
 export interface Project {
@@ -220,8 +226,9 @@ function touch(project: Project, changes: Partial<Project>): Project {
   return { ...project, ...changes, updatedAt: Date.now() }
 }
 
-function clampRow(row: number, rows: number): number {
-  return Math.max(0, Math.min(rows - 1, row))
+/** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the track. */
+function clampRow(row: number, passes: number): number {
+  return Math.max(0, Math.min(passes, row))
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
@@ -400,7 +407,24 @@ export function setRowProgressEnabled(project: Project, enabled: boolean): Proje
   if (enabled && !project.frame) {
     return project
   }
-  return touch(project, { rowProgress: { ...project.rowProgress, enabled } })
+  return touch(project, { rowProgress: { ...project.rowProgress, enabled, decided: true } })
+}
+
+/**
+ * The Frame set for the first time on a Project turns Row progress on by itself, the pointer at the first pass (ticket
+ * 411), unless the weaver has already settled the switch. Every other Frame change leaves Row progress as it is.
+ */
+export function withRowProgressOnByItself(before: Project, after: Project): Project {
+  if (before.frame || !after.frame || after.rowProgress.decided) {
+    return after
+  }
+  return { ...after, rowProgress: { ...after.rowProgress, enabled: true, decided: true, currentRow: 0, currentColumn: 0 } }
+}
+
+/** Whether Row progress is on and at least one pass is done: the Frame is then held still, because the passes done belong to it (ticket 411). */
+export function rowProgressStarted(project: Pick<Project, 'rowProgress'>): boolean {
+  const { enabled, currentRow, currentColumn } = project.rowProgress
+  return enabled && (currentRow > 0 || currentColumn > 0)
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
