@@ -179,7 +179,7 @@ describe('the features carousel', () => {
     expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
     const cards = wrapper.findAll('[data-testid="overview-features-track"] > [data-feature]')
     expect(cards.map((card) => card.attributes('data-feature'))).toEqual(FEATURES)
-    expect(cards[2]!.text()).toContain('Turn a picture into a Pattern in up to 14 colors.')
+    expect(cards[2]!.text()).toContain('Turn a picture into a Schema in up to 14 colors.')
     expect(wrapper.findAll('[data-testid="feature-dots"] i')).toHaveLength(7)
     await wrapper.find('[data-testid="feature-next"]').trigger('click')
     expect(wrapper.find('[data-testid="feature-count"]').text()).toBe('2 / 7')
