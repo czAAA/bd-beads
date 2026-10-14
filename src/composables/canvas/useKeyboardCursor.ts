@@ -6,7 +6,7 @@ import type { Project } from '../../domain/project'
 /** What the keyboard cursor needs from the app shell. Deps are read lazily. */
 export interface KeyboardCursorDeps {
   currentProject: () => Project | undefined
-  /** Scrolls the open canvas just far enough to show a bead (the cursor never leaves the view). */
+  /** Scrolls the Canvas just far enough to show a bead (the cursor never leaves the view). */
   reveal: (position: GridPosition) => void
   hasSelection: () => boolean
   onCellHover: (row: number, column: number) => void

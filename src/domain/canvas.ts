@@ -1,7 +1,7 @@
 import type { GridDimensions, GridPosition } from './grid'
 
 /**
- * The painted beads of an Open canvas (ADR 0026), by position: row, then column, then the color's hex. Only painted
+ * The painted beads of a Canvas (ADR 0026), by position: row, then column, then the color's hex. Only painted
  * positions are stored, so an empty canvas is `{}` and a bead far from the others costs one entry. Rows and columns
  * may be negative: the canvas has no origin the person has to stay below or to the right of.
  *

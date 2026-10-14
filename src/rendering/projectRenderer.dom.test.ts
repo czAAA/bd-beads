@@ -352,27 +352,44 @@ describe('renderProject', () => {
       expect(named('fillRect').slice(1).map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
     })
 
+    /** Every cell of a Frame at the origin holds a red bead. */
+    const filled = (project: Project): Project => {
+      const frame = project.frame!
+      const beads: Project['beads'] = {}
+      for (let row = 0; row < frame.rows; row += 1) {
+        beads[row] = Object.fromEntries(Array.from({ length: frame.columns }, (_, column) => [column, '#e63746']))
+      }
+      return { ...project, beads }
+    }
+
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
       const colors = (direction: 'rows' | 'columns', showFinished: boolean) => {
-        const project = projectOf('loom', 3, 3, { rowProgress: progress(direction) })
+        const project = filled(projectOf('loom', 3, 3, { rowProgress: progress(direction) }))
         return beadsDrawn(project, whole(project), 1, showFinished).map(({ color }) => color)
       }
-      const lit = brighten(DEFAULT_THEME.emptyBead, 0.1)
-      expect(lit).not.toBe(DEFAULT_THEME.emptyBead)
+      const red = '#e63746'
+      const lit = brighten(red, 0.1)
+      expect(lit).not.toBe(red)
 
       for (const showFinished of [false, true]) {
-        // Empty todo and finished beads carry no color of their own; the current row's are lifted.
-        expect(colors('rows', showFinished)).toEqual([null, null, null, lit, lit, lit, null, null, null])
-        expect(colors('columns', showFinished)).toEqual([null, null, lit, null, null, lit, null, null, lit])
+        // The finished and todo beads keep their own color; the current row's are lifted.
+        expect(colors('rows', showFinished)).toEqual([red, red, red, lit, lit, lit, red, red, red])
+        expect(colors('columns', showFinished)).toEqual([red, red, lit, red, red, lit, red, red, lit])
       }
     })
 
     it('brightens only the pass on peyote, not the whole line', () => {
-      const project = projectOf('peyote', 4, 3, { rowProgress: { ...progress('rows'), currentRow: 1 } })
+      const project = filled(projectOf('peyote', 4, 3, { rowProgress: { ...progress('rows'), currentRow: 1 } }))
 
-      const lit = beadsDrawn(project, whole(project)).filter(({ color }) => color !== null).length
+      const lit = beadsDrawn(project, whole(project)).filter(({ color }) => color === brighten('#e63746', 0.1)).length
 
       expect(lit).toBe(2)
+    })
+
+    it('leaves an empty cell of the current row as it is: no brightening where there is no bead (ticket 411)', () => {
+      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
+
+      expect(beadsDrawn(project, whole(project)).every(({ color }) => color === null)).toBe(true)
     })
 
     it('fades nothing while Row progress is off', () => {

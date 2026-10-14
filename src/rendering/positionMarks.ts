@@ -3,7 +3,7 @@ import { beadRoundness, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
 
 /**
- * Position marks (CONTEXT.md): how the open canvas's empty positions outside the Frame are drawn. They are one repeating
+ * Position marks (CONTEXT.md): how the Canvas's empty positions outside the Frame are drawn. They are one repeating
  * tile, a bead across and two rows down (so the alternate rows of peyote and brick stitch carry their half-bead shift),
  * filled over the whole view at once, rather than one shape for each of the tens of thousands of positions a zoomed-out
  * canvas shows. The tile is a bitmap at the size it is on the screen, kept like the bead sprites (sprites.ts). Its style
@@ -106,7 +106,7 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, size: { widt
 }
 
 /**
- * The tile for the open canvas's Position marks as a pattern on `context`, scaled so that it repeats every bead across
+ * The tile for the Canvas's Position marks as a pattern on `context`, scaled so that it repeats every bead across
  * in grid px, or undefined where there is no canvas to make the bitmap on. Fill with it while the context is in grid space.
  */
 export function positionMarkPattern(context: DrawingContext, input: MarkTileInput): CanvasPattern | undefined {

@@ -30,7 +30,7 @@ export async function mountWithProject(widthMm: number, heightMm: number, option
 
 /**
  * Raises the New Project sheet if it is not up, then fills in and submits its form: Toho Cube 1.5mm beads. The form
- * states no size (ticket 342), so this makes an open canvas.
+ * states no size (ticket 342), so this makes a Canvas.
  */
 export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, name?: string) {
   await openNewProject(wrapper)

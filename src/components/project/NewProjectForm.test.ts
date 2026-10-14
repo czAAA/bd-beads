@@ -79,7 +79,7 @@ describe('NewProjectForm', () => {
     expect(wrapper.find('[data-testid="new-project-estimate-info"]').exists()).toBe(false)
   })
 
-  it('emits submit with the chosen bead and technique, and no size: a new Project is an open canvas', async () => {
+  it('emits submit with the chosen bead and technique, and no size: a new Project is a Canvas', async () => {
     const wrapper = mount(NewProjectForm)
 
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)

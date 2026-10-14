@@ -75,17 +75,17 @@ export interface OverlayInput {
   /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
   tourMarks?: TourMarks
   /**
-   * Where positions live, from `spaceOf`, the same value the base layer was drawn with. On the open canvas (ADR 0026)
+   * Where positions live, from `spaceOf`, the same value the base layer was drawn with. On the Canvas (ADR 0026)
    * any position can carry a preview, a Selection or the cursor; in Frame-only space, the default, the Project is the
    * Frame alone, drawn from its first bead, as an export or a picture shows it.
    */
   space?: Space
   /**
-   * The rulers and the lines they hang from (open canvas only): the Frame's line, or each piece's rectangle, with the
+   * The rulers and the lines they hang from (Canvas only): the Frame's line, or each piece's rectangle, with the
    * numbers of the Ruler layout while it has them. `surface` is the view the layout was made for.
    */
   rulers?: { layout: RulerLayout; surface: SurfaceView }
-  /** While the Frame is being set (open canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
+  /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
   marginOutline?: number
@@ -97,11 +97,11 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
-/** A bead the current pass weaves: its cell, top left, and its color (none when empty). */
+/** A bead the current pass weaves: its cell, top left, and its color. */
 interface PassBead {
   x: number
   y: number
-  color: string | null
+  color: string
 }
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none when the Frame has no such pass. */
@@ -123,7 +123,11 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
     const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX
     const y = rowTopPx(technique, row)
     if (passOf(technique, line, along) === pass) {
-      beads.push({ x, y, color: colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column) })
+      // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
+      const color = colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
+      if (color !== null) {
+        beads.push({ x, y, color })
+      }
     }
   }
   return beads
@@ -136,7 +140,7 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
   const cornerRadius = beadRoundness(project.technique) * CELL_SIZE_PX
   for (const bead of beads) {
-    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color ?? theme.emptyBead, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
   }
 }
 

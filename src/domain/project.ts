@@ -54,6 +54,12 @@ export interface RowProgress {
   currentRow: number
   /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses either place. */
   currentColumn: number
+  /**
+   * Whether Row progress has been settled for this Project (ticket 411): switched on by itself at its first Frame, or
+   * switched by the weaver. Once set, no later Frame edit turns it on again; absent on a Project that never had either, and
+   * so on one saved before ticket 411, which opens exactly as it was saved.
+   */
+  decided?: boolean
 }
 
 export interface Project {
@@ -62,13 +68,13 @@ export interface Project {
   technique: Technique
   beadId: string
   /**
-   * What is painted on the Open canvas, by position (ADR 0026); see BeadMap. A Project stores no real-world size —
+   * What is painted on the Canvas, by position (ADR 0026); see BeadMap. A Project stores no real-world size —
    * what the editor shows in millimetres is an Estimated size worked out on demand from the Frame (estimatedSizeMm).
    */
   beads: BeadMap
   /**
    * The Frame (CONTEXT.md): which beads are the Project, and so its size in beads. Absent on a canvas that has none
-   * yet; a Project saved before the open canvas has one the size of its old grid (see normalizeProject).
+   * yet; a Project saved before the Canvas has one the size of its old grid (see normalizeProject).
    */
   frame?: Frame
   rowProgress: RowProgress
@@ -119,7 +125,7 @@ export interface CreateProjectInput {
   beadId: string
   /**
    * How big the Project's Frame is, in beads or in mm/cm — the latter converted once to a grid and not remembered
-   * (ADR 0026). Left out, the Project is an open canvas with no Frame (ADR 0026).
+   * (ADR 0026). Left out, the Project is a Canvas with no Frame (ADR 0026).
    */
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
@@ -220,8 +226,9 @@ function touch(project: Project, changes: Partial<Project>): Project {
   return { ...project, ...changes, updatedAt: Date.now() }
 }
 
-function clampRow(row: number, rows: number): number {
-  return Math.max(0, Math.min(rows - 1, row))
+/** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the track. */
+function clampRow(row: number, passes: number): number {
+  return Math.max(0, Math.min(passes, row))
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
@@ -279,13 +286,13 @@ export function withFrameGrid(project: Project, grid: Grid): Project {
   }
 }
 
-/** The color at a position on the open canvas: a hex, or null where nothing is painted. */
+/** The color at a position on the Canvas: a hex, or null where nothing is painted. */
 export function beadColorAt(project: Pick<Project, 'beads'>, row: number, column: number): string | null {
   return colorAt(project.beads, row, column)
 }
 
 /**
- * A Project as it was saved before the open canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
+ * A Project as it was saved before the Canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
  * beads by position and a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid.
  */
 export type GridProject = Omit<Project, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
@@ -339,7 +346,7 @@ export function normalizeProject(project: Project | GridProject): Project {
     ...rest
   } = legacy
 
-  // A Project saved before the open canvas becomes beads by position with a Frame the size of its old grid.
+  // A Project saved before the Canvas becomes beads by position with a Frame the size of its old grid.
   const placed = isGridProject(project)
     ? {
         beads: beadsFromColors(project.grid.map((row) => row.map((cell) => cell.color))),
@@ -400,7 +407,24 @@ export function setRowProgressEnabled(project: Project, enabled: boolean): Proje
   if (enabled && !project.frame) {
     return project
   }
-  return touch(project, { rowProgress: { ...project.rowProgress, enabled } })
+  return touch(project, { rowProgress: { ...project.rowProgress, enabled, decided: true } })
+}
+
+/**
+ * The Frame set for the first time on a Project turns Row progress on by itself, the pointer at the first pass (ticket
+ * 411), unless the weaver has already settled the switch. Every other Frame change leaves Row progress as it is.
+ */
+export function withRowProgressOnByItself(before: Project, after: Project): Project {
+  if (before.frame || !after.frame || after.rowProgress.decided) {
+    return after
+  }
+  return { ...after, rowProgress: { ...after.rowProgress, enabled: true, decided: true, currentRow: 0, currentColumn: 0 } }
+}
+
+/** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it (ticket 411). */
+export function rowProgressStarted(project: Pick<Project, 'rowProgress'>): boolean {
+  const { enabled, currentRow, currentColumn } = project.rowProgress
+  return enabled && (currentRow > 0 || currentColumn > 0)
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */

@@ -44,7 +44,7 @@ describe('ProgressBar', () => {
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBe('true')
     expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBeUndefined()
 
-    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
+    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows) } })
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
     expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
   })
@@ -69,33 +69,49 @@ describe('ProgressBar', () => {
     expect(track.find('span').attributes('style')).toContain('width: 10%')
   })
 
-  it('shows a compact "current/total" counter and icon-only Previous/Next with the same hover label and hotkeys (ticket 188)', async () => {
+  it('shows a compact "current/total" counter and large text Previous/Next with their hotkeys (tickets 188, 411)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
     expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('5/20')
 
-    const previous = wrapper.find('[data-testid="progress-bar-previous-compact"]')
-    const next = wrapper.find('[data-testid="progress-bar-next-compact"]')
-    expect(previous.attributes('aria-label')).toBe(ru.rowProgress.previousButton)
-    expect(next.attributes('aria-label')).toBe(ru.rowProgress.nextButton)
-    // No visible text of their own -- an icon-only button, unlike the reference tier's Previous/Next.
+    const previous = wrapper.find('[data-testid="progress-bar-previous"]')
+    const next = wrapper.find('[data-testid="progress-bar-next"]')
+    expect(previous.classes()).toContain('app-button--lg')
+    expect(next.classes()).toContain('app-button--lg')
     expect(previous.find('svg').exists()).toBe(true)
-
-    await next.trigger('click')
-    await previous.trigger('click')
-    expect(wrapper.emitted('move-row')).toEqual([[1], [-1]])
+    expect(next.find('svg').exists()).toBe(true)
+    // No compact, icon-only twin any more.
+    expect(wrapper.find('[data-testid="progress-bar-previous-compact"]').exists()).toBe(false)
   })
 
-  it('disables the compact Previous/Next the same as the reference tier\'s', () => {
+  it('names the buttons after a column, with their own arrows, once rows run down the columns (ticket 411)', () => {
+    const rows = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
+    expect(rows.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.previousButton)
+    expect(rows.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
+    expect(rows.find('.progress-bar__steps--columns').exists()).toBe(false)
+
+    const columns = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) } })
+    expect(columns.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.columnPreviousButton)
+    expect(columns.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
+    expect(columns.find('.progress-bar__steps--columns').exists()).toBe(true)
+  })
+
+  it('fills the whole track once every pass is done, and shows the last row as the current one (ticket 411)', () => {
     const project = makeProject()
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows) } })
 
-    const atStart = mount(ProgressBar, { props: { project } })
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').attributes('aria-disabled') === 'true').toBe(true)
-    expect(atStart.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').attributes('aria-disabled') === 'true').toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-track"] span').attributes('style')).toContain('width: 100%')
+    expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
+    expect(wrapper.find('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
+  })
 
-    const atEnd = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows - 1) } })
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-previous-compact"]').attributes('aria-disabled') === 'true').toBe(false)
-    expect(atEnd.find<HTMLButtonElement>('[data-testid="progress-bar-next-compact"]').attributes('aria-disabled') === 'true').toBe(true)
+  it('puts Turn row direction beside the switch, ahead of the do/undo pair (ticket 411)', () => {
+    const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
+    const order = wrapper
+      .findAll('[data-testid="progress-bar-switch"], [data-testid="progress-bar-direction"], [data-testid="progress-bar-previous"], [data-testid="progress-bar-next"]')
+      .map((element) => element.attributes('data-testid'))
+    expect(order).toEqual(['progress-bar-switch', 'progress-bar-direction', 'progress-bar-previous', 'progress-bar-next'])
   })
 
   it('says which way the rows run after the total', () => {
@@ -139,13 +155,13 @@ describe('ProgressBar', () => {
 })
 
 describe('ProgressBar with no Frame (ticket 233)', () => {
-  function openCanvas(): Project {
+  function unframedProject(): Project {
     const { frame: _frame, ...rest } = makeProject()
     return rest
   }
 
   it('shows the switch off and disabled, "Set Frame to start" and a Set Frame button, and no row buttons', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: openCanvas() } })
+    const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
     expect(toggle.attributes('aria-disabled')).toBe('true')

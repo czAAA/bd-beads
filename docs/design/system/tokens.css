@@ -211,7 +211,7 @@
   --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
   --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
   --dock-max-width: 480px; /* The Dock's widest, centred. */
-  --progress-height-phone: 56px; /* Progress bar on a phone, plus its 3px progress line. */
+  --progress-height-phone: 88px; /* Progress bar on a phone (30rem and under), where Row not done and Row done take a second row. */
   --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */

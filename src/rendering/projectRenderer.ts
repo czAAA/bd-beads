@@ -43,7 +43,7 @@ import {
  *
  * One renderer over two spaces (ADR 0018, ADR 0026): a `Space` (space.ts) says whether the Project is drawn on its own,
  * as the Frame alone with its first bead at the origin (the exports, the Convert image preview, the Overview), or on
- * the open canvas, an endless field of positions measured from row 0, column 0 (the editor).
+ * the Canvas, an endless field of positions measured from row 0, column 0 (the editor).
  */
 
 /**
@@ -77,7 +77,7 @@ export function visibleBeads(
 }
 
 /**
- * The beads that touch a stretch of grid space on an open canvas (ADR 0026): the same maths as visibleBeads with no
+ * The beads that touch a stretch of grid space on a Canvas (ADR 0026): the same maths as visibleBeads with no
  * edge to stop at, so rows and columns may be negative.
  */
 function visibleBeadsOpen(
@@ -99,7 +99,7 @@ function visibleBeadsOpen(
 }
 
 
-/** The beads in view of a space: with no edge on the open canvas, and within the Project otherwise. */
+/** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. */
 export function visibleBeadsInSpace(technique: Technique, space: Space, region: Region, zoom: number, rotation: Rotation): ReturnType<typeof visibleBeads> {
   const area = regionInGridSpace(space.extent, region, zoom, rotation)
   return space.open ? visibleBeadsOpen(technique, area) : visibleBeads(technique, space.columns, space.rows, area, space.toAbsolute.row)
@@ -113,7 +113,7 @@ export interface RenderInput {
   project: DrawnProject
   /** Where its positions live, from `spaceOf`: handed to the overlay as well, so both agree where a position is. */
   space: Space
-  /** The part of the displayed Project to draw, in displayed px: from its top-left corner in Frame-only space, how far the canvas has been moved on the open canvas. The surface is this big. */
+  /** The part of the displayed Project to draw, in displayed px: from its top-left corner in Frame-only space, how far the canvas has been moved on the Canvas. The surface is this big. */
   region: Region
   /** How much the Project is enlarged by; 1 is a bead 20px across. */
   zoom: number
@@ -129,14 +129,14 @@ export interface RenderInput {
    * repeated edits do not pile up the anti-aliasing at the edges of rounded beads.
    */
   rows?: { first: number; last: number }
-  /** How the open canvas draws its Position marks: the device's choice. Defaults to Dots. */
+  /** How the Canvas draws its Position marks: the device's choice. Defaults to Dots. */
   positionMarks?: PositionMarkStyle
   /** How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows, zoom, rotation or what is on screen. */
   drawBead?: BeadDrawer
 }
 
 /**
- * The open canvas's Position marks (CONTEXT.md): the empty positions outside the Frame and its keep-out margin, as one
+ * The Canvas's Position marks (CONTEXT.md): the empty positions outside the Frame and its keep-out margin, as one
  * pattern fill over what is in view, in up to four strips round the margin's box. The strips' edges sit between the
  * marks either side of the margin, whichever way the rows are shifted, so no position is tested.
  */
@@ -178,14 +178,14 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
-/** Whether a brick seam runs above this row of the space: between two rows of the Frame, so never on an open canvas with no Frame. */
+/** Whether a brick seam runs above this row of the space: between two rows of the Frame, so never on a Canvas with no Frame. */
 function seamAbove(technique: Technique, space: Space, row: number): boolean {
   return technique === 'brick' && space.hasFrame && row > space.origin.row && row < space.origin.row + space.rows
 }
 
 /**
  * The band of the surface, in its device pixels and on whole pixels, that rows `first` to `last` occupy: from a brick
- * seam above the first to the bottom of the last, across the whole Project, or the whole viewport on the open canvas.
+ * seam above the first to the bottom of the last, across the whole Project, or the whole viewport on the Canvas.
  */
 function bandOnSurface(
   space: Space,
@@ -219,15 +219,15 @@ function bandOnSurface(
 /**
  * Draws the part of the Project in the region. Clears what was there first; the surface can be redrawn in place.
  *
- * What differs by space, and only this: the background (Frame-only fills the theme's background; the open canvas stays
+ * What differs by space, and only this: the background (Frame-only fills the theme's background; the Canvas stays
  * transparent for the technique word behind it, and finished rows fade toward the drawing area), and empty positions
- * (the open canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
+ * (the Canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
  */
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false } = input
   const { technique, beads, frame, rotation } = project
   const { extent, origin } = space
-  // A finished row fades toward what is behind it, which on the open canvas is the drawing area, not a board.
+  // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
 
   // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface or
@@ -267,9 +267,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const inFrame = space.hasFrame
   const frameRows = { first: origin.row, last: origin.row + space.rows - 1 }
   const frameColumns = { first: origin.column, last: origin.column + space.columns - 1 }
-  // The current row's beads, empty ones too, are drawn 10% brighter than the todo rows (ticket 352).
+  // The current row's beads are drawn 10% brighter than the todo rows (ticket 352); an empty cell is left as it is (ticket 411).
   const lightenCurrent = (color: string | null, position: GridPosition): string | null =>
-    isInCurrentRow(project, position) ? brighten(color ?? look.emptyBead, CURRENT_ROW_BRIGHTNESS) : color
+    color !== null && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
   const drawAt = (row: number, column: number, color: string | null) => {
     const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
     drawBead(context, {
