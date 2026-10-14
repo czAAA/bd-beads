@@ -91,6 +91,15 @@ describe('AppMenu', () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(true)
   })
 
+  it('keeps a disabled item with a reason natively disabled, in the shared Tooltip and with no native title (ADR 0035)', () => {
+    const wrapper = mount(AppMenuItem, { props: { disabled: true, name: 'Paste', disabledBody: 'Copy something first.' }, slots: { default: () => 'Paste' } })
+
+    const item = wrapper.get('[role="menuitem"]')
+    expect(item.attributes('disabled')).toBeDefined()
+    expect(item.attributes('title')).toBeUndefined()
+    expect(wrapper.find('.app-menu-item-wrap').exists()).toBe(true)
+  })
+
   it('closes on Escape, handing focus back to its button', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup="menu"]').trigger('keydown', { key: 'Enter' })

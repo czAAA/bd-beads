@@ -90,9 +90,8 @@ export function allBeadsSelection(beads: BeadMap): Selection | undefined {
 
 /** Whether the Selection holds every placed bead (ticket 415): the Select all case, where Clear selection means Delete all. False on an empty canvas. */
 export function selectionHoldsAllBeads(beads: BeadMap, selection: Selection): boolean {
-  const bounds = beadBounds(beads)
-  if (!bounds) return false
-  const all = selectionOfBox(bounds)
+  const all = allBeadsSelection(beads)
+  if (!all) return false
   return (
     selection.top <= all.top &&
     selection.left <= all.left &&

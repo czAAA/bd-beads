@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './margin'
 import { NO_MIRROR_AXES } from './mirror'
-import { carryNames, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
-import { createProject, deleteAll, restoreSnapshot, snapshotOf, type Project } from './project'
+import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
+import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { changeFrame } from './changeFrame'
 
@@ -133,5 +133,55 @@ describe('piece names', () => {
     const after = { ...project, beads: {} }
 
     expect(carryNames(project, after)).toBe(after)
+  })
+
+  describe('framing a named Schema (ticket 407)', () => {
+    const fox = () => withPieceName(projectWith(row(0, 0, 3), row(0, 10, 12)), { row: 0, column: 0 }, 'Fox')
+
+    it('frames a named Piece whole: the Frame snaps to it and the name stays', () => {
+      const project = fox()
+      const result = changeFrame(project, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+
+      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
+      expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
+    })
+
+    it('refuses a Frame that cuts a named Piece, and says which', () => {
+      const project = fox()
+      const cut = { row: 0, column: 2, rows: 1, columns: 4 }
+
+      expect(namedPieceCutBy(project, cut)).toBe('Fox')
+      expect(changeFrame(project, { set: cut })).toEqual({ kind: 'refused', reason: 'cuts-schema' })
+    })
+
+    it('lets a Frame cut an unnamed Piece, as before, and take in a named one whole with it', () => {
+      const project = fox()
+
+      expect(namedPieceCutBy(project, { row: 0, column: 11, rows: 1, columns: 5 })).toBeUndefined()
+      expect(namedPieceCutBy(project, { row: 0, column: 0, rows: 1, columns: 20 })).toBeUndefined()
+    })
+
+    it('leaves the beads of every other Schema out of what the Frame holds, which is what Export, Beads needed and Row progress read', () => {
+      const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
+      const onFox = changeFrame(both, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      if (onFox.kind !== 'changed') throw new Error('expected a change')
+
+      const colors = frameGrid(onFox.project).flat().map((cell) => cell.color)
+
+      expect(colors).toEqual([R, R, R, R])
+    })
+
+    it('keeps the Schema and its name when the Frame moves to another Schema or is removed', () => {
+      const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
+      const onFox = changeFrame(both, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      if (onFox.kind !== 'changed') throw new Error('expected a change')
+      const onOwl = changeFrame(onFox.project, { set: { row: 0, column: 10, rows: 1, columns: 3 } })
+      if (onOwl.kind !== 'changed') throw new Error('expected a change')
+      const removed = changeFrame(onOwl.project, { remove: true })
+
+      expect(onOwl.project.pieceNames?.map((entry) => entry.name).sort()).toEqual(['Fox', 'Owl'])
+      expect(removed.kind === 'changed' && removed.project.frame).toBeUndefined()
+      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name).sort()).toEqual(['Fox', 'Owl'])
+    })
   })
 })

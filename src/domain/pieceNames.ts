@@ -1,4 +1,4 @@
-import { forEachBead, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { GridPosition, Technique } from './grid'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
@@ -70,6 +70,21 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
   }
   namedCache.set(project.beads, { names, technique: project.technique, found })
   return found
+}
+
+/**
+ * The name of the first named Piece (an unframed Schema) that `frame` would cut: some of its beads inside, some outside
+ * (ticket 407). A Frame frames a Schema whole or not at all, like the keep-out margin keeps a Piece whole.
+ */
+export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>, frame: Frame): string | undefined {
+  for (const { name, row, column } of project.pieceNames ?? []) {
+    const members = pieceBeadsAt(project.beads, project.technique, { row, column })
+    const inside = members.filter((at) => frameContains(frame, at)).length
+    if (inside > 0 && inside < members.length) {
+      return name
+    }
+  }
+  return undefined
 }
 
 /** The name of the Piece that holds the bead at `position`, if it has one. */

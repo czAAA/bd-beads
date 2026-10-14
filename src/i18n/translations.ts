@@ -478,6 +478,8 @@ export interface Translations {
     announceRemoved: string
     /** Fit to drawing with nothing drawn: there is nothing to wrap. */
     announceNothingToFit: string
+    /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
+    refusedCutsSchema: string
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
     announceRotated: string
@@ -635,6 +637,7 @@ export interface Translations {
     noFrameToRemove: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
+    fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
     rowProgressLockedRotate: string
