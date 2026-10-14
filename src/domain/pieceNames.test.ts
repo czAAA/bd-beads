@@ -3,7 +3,7 @@ import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './margin'
 import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
-import { createProject, restoreSnapshot, snapshotOf, type Project } from './project'
+import { createProject, deleteAll, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { changeFrame } from './changeFrame'
 
@@ -86,6 +86,12 @@ describe('piece names', () => {
     const erased = draw(named, row(0, 0, 2).map((change) => ({ ...change, color: null })))
 
     expect(erased.pieceNames).toBeUndefined()
+  })
+
+  it('is dropped by Delete all', () => {
+    const named = withPieceName(projectWith(row(0, 0, 2)), { row: 0, column: 0 }, 'Fox')
+
+    expect(deleteAll(named).pieceNames).toBeUndefined()
   })
 
   it('is no change when the edit changes nothing', () => {
