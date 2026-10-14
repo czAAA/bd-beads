@@ -9,6 +9,9 @@ import { isOffsetTechnique, type GridPosition, type Technique } from './grid'
 
 export type FrameEdge = 'top' | 'bottom' | 'left' | 'right'
 
+/** The four edges, in the order Edit Frame's controls list them (ticket 417). */
+export const FRAME_EDGES: readonly FrameEdge[] = ['top', 'bottom', 'left', 'right']
+
 /** The row a Frame may start on: the row itself, or the even row above it where rows alternate. */
 export function snapRow(technique: Technique, row: number): number {
   return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? row - 1 : row
