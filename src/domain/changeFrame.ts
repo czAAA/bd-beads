@@ -1,7 +1,8 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { sameFrame } from './frame'
-import type { Technique } from './grid'
+import type { GridPosition, Technique } from './grid'
 import { clearMargin } from './margin'
+import { carryNames } from './pieceNames'
 import { withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 import { rotateProject } from './rotate'
@@ -81,14 +82,15 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const { axis } = change.removeLine
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
     const beads = beadsWithoutLine(project.beads, frame, change.removeLine)
-    return settled({ ...withFrame(project, smaller), beads })
+    const shifted = carryNames(project, { ...withFrame(project, smaller), beads }, (at) => shiftedByLine(frame, change.removeLine, at))
+    return settled(shifted)
   }
 
   if ('technique' in change) {
     if (change.technique === project.technique) {
       return { kind: 'unchanged', project }
     }
-    return settled(withTechnique(project, change.technique))
+    return settled(carryNames(project, withTechnique(project, change.technique)))
   }
 
   const next = 'set' in change ? change.set : undefined
@@ -104,24 +106,34 @@ function settled(framed: Project): FrameChangeResult {
   return { kind: 'changed', project, moved }
 }
 
+/** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined for a position on the removed line. */
+export function shiftedByLine(area: Frame, line: AreaLine, position: GridPosition): GridPosition | undefined {
+  if (!frameContains(area, position)) {
+    return position
+  }
+  const relative = line.axis === 'row' ? position.row - area.row : position.column - area.column
+  if (relative === line.index) {
+    return undefined
+  }
+  if (relative > line.index) {
+    return {
+      row: line.axis === 'row' ? position.row - 1 : position.row,
+      column: line.axis === 'column' ? position.column - 1 : position.column,
+    }
+  }
+  return position
+}
+
 /** The Project's beads with one line of `area` taken out and the area's later beads shifted up or left to close the gap. */
 export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): BeadMap {
   const result: BeadMap = {}
   forEachBead(beads, (row, column, color) => {
-    let newRow = row
-    let newColumn = column
-    if (frameContains(area, { row, column })) {
-      const relative = line.axis === 'row' ? row - area.row : column - area.column
-      if (relative === line.index) {
-        return
-      }
-      if (relative > line.index) {
-        newRow = line.axis === 'row' ? row - 1 : row
-        newColumn = line.axis === 'column' ? column - 1 : column
-      }
+    const to = shiftedByLine(area, line, { row, column })
+    if (!to) {
+      return
     }
-    result[newRow] ??= {}
-    result[newRow]![newColumn] = color
+    result[to.row] ??= {}
+    result[to.row]![to.column] = color
   })
   return result
 }

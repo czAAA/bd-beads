@@ -23,6 +23,7 @@ import {
   type Technique,
 } from './grid'
 import { normalizeMakerName } from './makerName'
+import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
 import { passCount, passOf } from './passes'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -96,6 +97,12 @@ export interface Project {
    * as that changes later, the same way an imported Project with no override picks up the importing device's name.
    */
   makerName?: string
+  /**
+   * The names of Pieces (ticket 406, ADR 0050): a named Piece is an unframed Schema. Each name is kept by the position
+   * of one bead of its Piece (the anchor), because Pieces are never stored; see domain/pieceNames.ts for how a name
+   * follows its Piece as beads are painted, erased and moved. Absent when no Piece has a name.
+   */
+  pieceNames?: PieceName[]
   createdAt: number
   updatedAt: number
   /**
@@ -342,9 +349,13 @@ export function normalizeProject(project: Project | GridProject): Project {
   const frame = projectFrame(placed)
   const technique = project.technique
 
+  const { pieceNames: _stored, ...withoutNames } = rest
+  const pieceNames = readPieceNames(legacy.pieceNames)
+
   return {
-    ...rest,
+    ...withoutNames,
     ...placed,
+    ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
       ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
@@ -496,6 +507,8 @@ export interface UndoEntry {
   rowProgress: RowProgress
   beadId: string
   frame: Frame | undefined
+  /** The Piece names as they were, so Undo and Redo of a naming or of a merge or split restore them (ticket 406). */
+  pieceNames?: PieceName[]
   /** The Technique the entry was taken in, so Undo undoes a change of Technique (ticket 351). */
   technique: Technique
   mirrorAxisCounts: MirrorAxisCounts
@@ -503,12 +516,20 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, technique: project.technique, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  return touch(project, { beads: entry.beads, rowProgress: entry.rowProgress, beadId: entry.beadId, frame: entry.frame, technique: entry.technique })
+  const { pieceNames: _current, ...rest } = project
+  return touch(rest, {
+    beads: entry.beads,
+    rowProgress: entry.rowProgress,
+    beadId: entry.beadId,
+    frame: entry.frame,
+    technique: entry.technique,
+    ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
+  })
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
