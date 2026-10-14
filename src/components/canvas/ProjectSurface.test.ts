@@ -319,12 +319,14 @@ describe('ProjectSurface', () => {
 
   it('draws the Row progress marker on the overlay, and no marker while it is off', async () => {
     const progress = (enabled: boolean): RowProgress => ({ enabled, direction: 'rows', currentRow: 2, currentColumn: 0 })
+    // Only a cell that holds a bead is marked (ticket 411).
+    const beads = { 2: { 0: '#e63746', 1: '#e63746' } }
 
-    await mountSurface(projectOf(20, 10, { rowProgress: progress(false) }))
+    await mountSurface(projectOf(20, 10, { beads, rowProgress: progress(false) }))
     const without = context.named('stroke').length
 
     context.calls.length = 0
-    await mountSurface(projectOf(20, 10, { rowProgress: progress(true) }))
+    await mountSurface(projectOf(20, 10, { beads, rowProgress: progress(true) }))
     // The marker is one stroke: the rings round the beads in the pass (tickets 375, 376), over whatever else the overlay strokes.
     expect(context.named('stroke')).toHaveLength(without + 1)
   })

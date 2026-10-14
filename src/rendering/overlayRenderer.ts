@@ -96,11 +96,11 @@ export interface TourMarks {
   boxes: readonly Selection[]
 }
 
-/** A bead the current pass weaves: its cell, top left, and its color (none when empty). */
+/** A bead the current pass weaves: its cell, top left, and its color. */
 interface PassBead {
   x: number
   y: number
-  color: string | null
+  color: string
 }
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none when the Frame has no such pass. */
@@ -122,7 +122,11 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
     const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX
     const y = rowTopPx(technique, row)
     if (passOf(technique, line, along) === pass) {
-      beads.push({ x, y, color: colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column) })
+      // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
+      const color = colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
+      if (color !== null) {
+        beads.push({ x, y, color })
+      }
     }
   }
   return beads
@@ -135,7 +139,7 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
   const cornerRadius = beadRoundness(project.technique) * CELL_SIZE_PX
   for (const bead of beads) {
-    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color ?? theme.emptyBead, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
   }
 }
 

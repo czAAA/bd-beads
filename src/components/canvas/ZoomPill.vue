@@ -9,7 +9,7 @@ import IconButton from '../ui/IconButton.vue'
 
 /**
  * The design system's ZoomPill (ticket 79; ZoomPill card): the phone's zoom control, floating over the Project
- * (rulers · undo · redo · Row progress · out · level · in · fit; ticket 296) -- pinch zooms and two fingers pan, so this is for a fit or an exact
+ * (rulers · undo · redo · out · level · in · fit; tickets 296, 411 took Row progress off it) -- pinch zooms and two fingers pan, so this is for a fit or an exact
  * step. Same zoom (useProjectZoom) as the reference tier's CanvasStrip zoom cluster (ZoomControls.vue): a `canvas`
  * pill instead of the strip's plain buttons.
  *
@@ -24,8 +24,6 @@ const emit = defineEmits<{
   'zoom-out': []
   reset: []
   'toggle-rulers': []
-  /** The Progress bar's switch too (`P`): one Row progress action, so turning it on shows the bar and off hides it. */
-  'toggle-row-progress': [enabled: boolean]
   undo: []
   redo: []
   move: [placement: ZoomPillPlacement]
@@ -37,7 +35,6 @@ const actions = {
   rulers: controlAction('rulers'),
   undo: controlAction('undo'),
   redo: controlAction('redo'),
-  rowProgress: controlAction('row-progress'),
   zoomOut: controlAction('zoom-out'),
   zoomIn: controlAction('zoom-in'),
   zoomFit: controlAction('zoom-fit'),
@@ -141,16 +138,6 @@ function onKeydown(event: KeyboardEvent): void {
     <IconButton v-if="rulers !== undefined" variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="zoom-pill-rulers" @click="emit('toggle-rulers')" />
     <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="zoom-pill-undo" data-tour="undo" @click="emit('undo')" />
     <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="zoom-pill-redo" @click="emit('redo')" />
-    <IconButton
-      v-if="project"
-      variant="plain"
-      :icon-size="18"
-      :action="actions.rowProgress"
-      :deps="deps"
-      :selected="project.rowProgress.enabled"
-      data-testid="zoom-pill-progress"
-      @click="emit('toggle-row-progress', !project.rowProgress.enabled)"
-    />
     <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="props.zoomPercent <= MIN_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-pill-out" @click="emit('zoom-out')" />
     <span class="zoom-pill__level" data-testid="zoom-pill-level">{{ zoomPercent }}%</span>
     <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="props.zoomPercent >= MAX_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-pill-in" @click="emit('zoom-in')" />

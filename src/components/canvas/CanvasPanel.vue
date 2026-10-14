@@ -109,9 +109,6 @@ const {
 /** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
 const colorPick = useColorPick()
 
-/** Under 1024px the Progress bar shows exactly while Row progress is on: the Zoom pill's button is the one Row progress action (ticket 338). */
-const rowProgressOn = computed(() => activeProject.value?.rowProgress.enabled === true)
-
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
@@ -152,7 +149,7 @@ function techniqueWord(technique: Technique): string {
   <main class="app-shell__canvas-column">
     <div
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': !rowProgressOn && !framing }"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': framing }"
       data-testid="app-canvas"
     >
       <!--
@@ -197,7 +194,6 @@ function techniqueWord(technique: Technique): string {
           :can-undo="canUndo"
           :can-redo="canRedo"
           @toggle-rulers="toggleRulers"
-          @toggle-row-progress="onToggleRowProgress"
           @undo="onUndo"
           @redo="onRedo"
           @zoom-in="zoomIn"
@@ -316,7 +312,6 @@ function techniqueWord(technique: Technique): string {
       -->
       <ProgressBar
         v-if="activeProject && !framing"
-        :class="{ 'app-shell__progress--hidden': !rowProgressOn }"
         :project="activeProject"
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
@@ -371,12 +366,7 @@ function techniqueWord(technique: Technique): string {
   top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
 }
 
-/* The bar shows exactly while Row progress is on (ticket 338). */
-.app-shell__progress--hidden {
-  display: none;
-}
-
-/* With the bar gone, the toasts and the Selection bar sit where it was. */
+/* With the bar gone (while a picture is framed), the toasts and the Selection bar sit where it was. */
 .app-shell__canvas--no-progress {
   --progress-height: 0px;
 }

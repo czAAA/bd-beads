@@ -2,7 +2,7 @@ import type { Frame } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
-import type { Project } from './project'
+import { rowProgressStarted, type Project } from './project'
 import type { Selection } from './selection'
 
 /**
@@ -69,7 +69,7 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
   }
   if (!project.frame) {
     // No Frame, so not a Frame change; Row progress still holds the area still.
-    return project.rowProgress.enabled ? 'locked' : undefined
+    return rowProgressStarted(project) ? 'locked' : undefined
   }
   switch (frameChangeRefusal(project, { removeLine: line })) {
     case 'locked':
@@ -93,7 +93,7 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
   if (project.frame) {
     return changeFrame(project, { removeLine: line })
   }
-  if (project.rowProgress.enabled) {
+  if (rowProgressStarted(project)) {
     return { kind: 'refused', reason: 'locked' }
   }
   const shifted = { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }

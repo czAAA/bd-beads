@@ -80,7 +80,7 @@ describe('useEdit', () => {
     })
 
     it('hands back the refusal and records nothing', () => {
-      const ctx = editHarness(setRowProgressEnabled(base, true))
+      const ctx = editHarness(moveToRow(setRowProgressEnabled(base, true), 1))
       expect(ctx.edit('frame', (project) => changeFrame(project, { rotate: true }))).toEqual({ kind: 'refused', reason: 'locked' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()

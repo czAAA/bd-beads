@@ -207,6 +207,75 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   })
 })
 
+describe('Row progress on by itself (ticket 411)', () => {
+  const savedProgress = () => loadProjects()[0]!.rowProgress
+
+  it('turns on with the first Frame, the pointer at the first pass, and one Undo takes both back', async () => {
+    const wrapper = await mountOpen()
+    expect(savedProgress().enabled).toBe(false)
+
+    await key({ key: '6' })
+    await drag(wrapper, { row: 4, column: 6 }, { row: 1, column: 2 })
+
+    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 4, columns: 5 })
+    expect(savedProgress()).toMatchObject({ enabled: true, currentRow: 0, currentColumn: 0 })
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toBeUndefined()
+    expect(savedProgress().enabled).toBe(false)
+  })
+
+  it('stays off once the switch is turned off, through later Frame edits and a Frame set again', async () => {
+    const wrapper = await mountOpen()
+    await openSheet(wrapper, 'dock-frame')
+    const row = wrapper.get('[data-testid="bottom-sheet"]')
+    await row.find('[data-testid="frame-fit"]').trigger('click')
+    expect(savedProgress().enabled).toBe(true)
+
+    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+    expect(savedProgress().enabled).toBe(false)
+
+    await row.find('[data-testid="frame-columns-increase"]').trigger('click')
+    await row.find('[data-testid="frame-remove"]').trigger('click')
+    await row.find('[data-testid="frame-fit"]').trigger('click')
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(savedProgress().enabled).toBe(false)
+  })
+
+  it('holds the Frame still only once a pass is done: Row done locks it, switching off unlocks it', async () => {
+    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+
+    await rotate(wrapper)
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 3, columns: 2 })
+
+    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
+    await rotate(wrapper)
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 3, columns: 2 })
+
+    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+    await rotate(wrapper)
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 2, columns: 3 })
+  })
+
+  it('says the new direction in a toast when D turns it, once per press', async () => {
+    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+
+    await key({ key: 'd' })
+    expect(wrapper.text()).toContain(en.rowProgress.directionToastColumns)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(en.rowProgress.columnNextButton)
+
+    await key({ key: 'd' })
+    expect(wrapper.text()).toContain(en.rowProgress.directionToastRows)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(en.rowProgress.nextButton)
+  })
+})
+
 describe('New Project with the Frame optional', () => {
   it('creates an open canvas from the empty form, and lists it in the library', async () => {
     const wrapper = mount(App, { attachTo: document.body })
