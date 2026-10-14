@@ -382,7 +382,7 @@ describe('the controls follow the interaction rules and use only tokens', () => 
 describe('New Project', () => {
   it('is the primary Button with the plus icon', async () => {
     const { default: App } = await import('../../App.vue')
-    const button = mount(App).get('[data-testid="new-project-button"]')
+    const button = mount(App).get('[data-testid="phone-bar-new-project"]')
     expect(button.classes()).toEqual(expect.arrayContaining(['app-button', 'app-button--primary']))
     expect(button.get('svg').attributes('data-icon')).toBe('plus')
   })

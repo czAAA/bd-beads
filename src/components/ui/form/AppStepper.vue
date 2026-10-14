@@ -7,7 +7,7 @@ import AppTooltip from '../AppTooltip.vue'
  * The − value + control (ticket 149; Stepper card), for every counted setting on desktop: 40px tall, 40px buttons, the
  * value in `meta` between hairlines. At a limit that button turns `faint`; a locked stepper (`disabled`) is all `faint`
  * on `surface`, and its reason goes under it in words. Each button has its own name ("Fewer columns"), which the
- * Toolbox's Size controls also show as a Tooltip (`tooltip`, ticket 251); a stepper in a form or dialog shows none.
+ * Frame sheet's Size controls also show as a Tooltip (`tooltip`, ticket 251); a stepper in a form or dialog shows none.
  * Ticket 355: holding a button repeats and speeds up (`useHoldRepeat`), and tapping the number turns it into a numeric
  * input (Enter or blur commits, Escape cancels, out of range is clamped, empty or invalid reverts); `valueLabel` names it.
  */

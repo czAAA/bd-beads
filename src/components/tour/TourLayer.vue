@@ -25,7 +25,7 @@ import type { IconName } from '../ui/icons'
  * (the Project is a hole for the pointer, and the app itself keeps it from drawing unless the step is about drawing).
  *
  * Each control is found on the screen by its `data-tour` mark, so the same step works at every size: the same control is
- * in the Toolbox, the BottomToolbar or a sheet, and the first one showing is the one pointed at. A control that isn't
+ * in the Dock or a sheet, and the first one showing is the one pointed at. A control that isn't
  * showing is reached through what opens it (the Dock button, the Tools button); if nothing is, the card centres.
  */
 const { t, tour, announce } = useAppShell()

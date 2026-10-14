@@ -1,7 +1,6 @@
 import { test } from '@playwright/test'
-import { openApp, projectBox } from '../support/app'
+import { currentZoomPercent, openApp, openDockSheet, projectBox, selectTool } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
-import { DOCK_LAYOUT_ENABLED } from '../../src/features'
 
 /**
  * Memory with a long Undo history on a big Project (ticket 112's other condition): how much the page's heap grows as a
@@ -9,9 +8,6 @@ import { DOCK_LAYOUT_ENABLED } from '../../src/features'
  * to). Printed, not asserted: there is no agreed limit, only what a small device can be expected to hold.
  */
 
-// Drives the Toolbox layout directly (ticket 385 ported the visual check's own helpers to the Dock, not this one): skip
-// while the build's default is the Dock layout, rather than fail on controls the build no longer mounts.
-test.skip(DOCK_LAYOUT_ENABLED, 'drives the Toolbox layout; port when the Dock layout gets its own perf helpers')
 test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   await openApp(page, [{ ...fixtureProject({ technique: 'loom', columns: 250, rows: 250, blank: true }), id: 'big' }])
   const cdp = await page.context().newCDPSession(page)
@@ -22,9 +18,9 @@ test('memory with a long Undo history at 250 × 250', async ({ page }) => {
     return Math.round(usedSize / 1024 / 1024)
   }
 
-  await page.getByTestId('zoom-reset').click()
+  await page.getByTestId('zoom-pill-fit').click()
   const box = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
-  const zoom = Number.parseInt((await page.getByTestId('zoom-level').textContent())!, 10) / 100
+  const zoom = (await currentZoomPercent(page)) / 100
   const at = (row: number, column: number) => beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
   const started = await heapMb()
 
@@ -34,9 +30,10 @@ test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   }
   const afterStrokes = await heapMb()
 
-  await page.getByTestId('tool-fill').click()
+  await selectTool(page, 'fill')
   const colors = ['red', 'blue', 'green', 'orange']
   for (let fill = 0; fill < 40; fill += 1) {
+    await openDockSheet(page, 'dock-color')
     await page.locator(`[data-color-id="${colors[fill % 4]}"]`).click()
     const point = at(100, 100)
     await page.mouse.click(point.x, point.y)

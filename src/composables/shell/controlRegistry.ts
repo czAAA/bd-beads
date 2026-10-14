@@ -25,7 +25,6 @@ export interface ControlDeps {
   /** Ends Pick color from canvas; true if it was on. */
   cancelColorPick: () => boolean
   /** Collapses an expanded Tool group; true if one was open. */
-  collapseExpandedToolGroup: () => boolean
   /** Dismisses the paste preview, else clears the Selection; true if either was there. */
   backOutOfSelect: () => boolean
   onUndo: () => void
@@ -60,7 +59,7 @@ export interface ControlDeps {
   onMirrorCurrent: (axis: 'horizontal' | 'vertical') => void
 }
 
-/** Every group of the Keyboard shortcuts dialog; the Toolbox's own names are tools, colors, edit, mirror and rowProgress. */
+/** Every group of the Keyboard shortcuts dialog. */
 export type ControlGroup = 'tools' | 'canvas' | 'colors' | 'edit' | 'mirror' | 'rowProgress'
 
 /** The groups the dialog lists, in order; Mirror's is there only while Mirror is on (MIRROR_ENABLED). */
@@ -94,7 +93,7 @@ export type ControlAction = Disableable & {
   needsProject?: boolean
   /** The key chip lists every key, not just the first (Row done: Enter, Space). */
   chipAllKeys?: boolean
-  /** Enter and Space give way to a focused Toolbox or Progress bar button, which they press natively. */
+  /** Enter and Space give way to a focused Progress bar button, which they press natively. */
   givesWayToFocusedButton?: boolean
 }
 
@@ -215,8 +214,7 @@ export const CONTROLS: readonly ControlAction[] = [
     run: (deps) => {
       // Picking a color from the canvas (ticket 398) is the first thing Escape ends.
       if (deps.cancelColorPick()) return
-      // An expanded Tool group takes the first Escape (ticket 41), then Set Frame, the paste preview, the Selection.
-      if (deps.collapseExpandedToolGroup()) return
+      // Then Set Frame, the paste preview, the Selection.
       if (deps.settingFrame()) {
         deps.finishFrame()
         return

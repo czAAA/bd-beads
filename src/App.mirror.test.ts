@@ -4,7 +4,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { en } from './i18n/en'
 
 // Mirror is switched off (ticket 174, 365); these tests run it with the flag on, as the Tour's do.
-vi.mock('./features', () => ({ TOUR_ENABLED: false, MIRROR_ENABLED: true, DOCK_LAYOUT_ENABLED: false }))
+vi.mock('./features', () => ({ TOUR_ENABLED: false, MIRROR_ENABLED: true }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -23,29 +23,37 @@ async function mountApp() {
 }
 
 describe('App Mirror, switched on (ticket 365)', () => {
-  it('shows the Mirror row in the Toolbox and opens its controls in place', async () => {
+  it('adds a Mirror button to the Dock, which opens its controls in a sheet', async () => {
     const wrapper = await mountApp()
-    const row = wrapper.get('[data-testid="tool-group-mirror"]')
-    expect(row.text()).toContain(en.toolbox.groups.mirror)
-    expect(row.text()).toContain('↔ 0 · ↕ 0')
 
-    await row.get('button').trigger('click')
+    await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="mirror-left-right"]').exists()).toBe(true)
+    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
+    expect(sheet.text()).toContain(en.toolbox.groups.mirror)
+    expect(sheet.find('[data-testid="mirror-left-right"]').exists()).toBe(true)
+    expect(sheet.get('[data-testid="mirror-left-right-value"]').text()).toBe(`${en.mirror.leftRightLabel}: 0`)
     wrapper.unmount()
   })
 
   it('steps the Left–right count with = and − and the Top–bottom count with ] and [', async () => {
     const wrapper = await mountApp()
-    const summary = () => wrapper.get('[data-testid="tool-group-mirror"]').text()
+    const counts = async () => {
+      await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
+      const read = [
+        wrapper.get('[data-testid="mirror-left-right-value"]').text(),
+        wrapper.get('[data-testid="mirror-top-bottom-value"]').text(),
+      ]
+      await wrapper.get('[data-testid="sheet-close"]').trigger('click') // a key waits while a sheet is open
+      return read.map((text) => text.split(': ')[1])
+    }
 
     await pressKey({ key: '=' })
     await pressKey({ key: ']' })
-    expect(summary()).toContain('↔ 1 · ↕ 1')
+    expect(await counts()).toEqual(['1', '1'])
 
     await pressKey({ key: '-' })
     await pressKey({ key: '[' })
-    expect(summary()).toContain('↔ 0 · ↕ 0')
+    expect(await counts()).toEqual(['0', '0'])
     wrapper.unmount()
   })
 
@@ -54,7 +62,8 @@ describe('App Mirror, switched on (ticket 365)', () => {
 
     await pressKey({ key: '=', ctrlKey: true })
 
-    expect(wrapper.get('[data-testid="tool-group-mirror"]').text()).toContain('↔ 0 · ↕ 0')
+    await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
+    expect(wrapper.get('[data-testid="mirror-left-right-value"]').text()).toBe(`${en.mirror.leftRightLabel}: 0`)
     wrapper.unmount()
   })
 
@@ -65,15 +74,6 @@ describe('App Mirror, switched on (ticket 365)', () => {
 
     const titles = wrapper.findAll('[data-testid="shortcuts-help-group"]').map((group) => group.text())
     expect(titles.some((text) => text.startsWith(en.toolbox.groups.mirror))).toBe(true)
-    wrapper.unmount()
-  })
-
-  it('adds a Mirror button and sheet to the phone Dock', async () => {
-    const wrapper = await mountApp()
-
-    await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
-
-    expect(wrapper.get('[data-testid="bottom-sheet"]').find('[data-testid="mirror-left-right"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })

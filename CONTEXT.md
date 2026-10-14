@@ -26,7 +26,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **Project file**: the exported `.json` holding one Project or a whole library — the only way work moves between devices, per ADR 0001
 - **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Schema, cropped to the Schema's real-world size (ADR 0010, amended by ADR 0026) with its colors saved as Image colors (ADR 0011)
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v18), entered through [DESIGN.md](DESIGN.md); see ADR 0021, amended by ADR 0030. The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
-- **App shell layout**: how the screen is arranged — the **Dock layout** at every width (canvas on top, Dock below it, sheets for the controls, the slim Canvas strip), or with `DOCK_LAYOUT_ENABLED` off the **Toolbox layout** (from 1024px a header, the left column with the Toolbox, save box, Beads needed, Saved Projects, and the canvas box; under 1024px the Dock layout) (ADR 0021, ADR 0032, ADR 0046). The full arrangement is in [docs/layout.md](docs/layout.md)
+- **App shell layout**: how the screen is arranged — the **Dock layout** at every width: canvas on top, Dock below it, sheets for the controls, the slim Canvas strip (ADR 0021, ADR 0032, ADR 0046; the Toolbox layout was removed in ticket 412). The full arrangement is in [docs/layout.md](docs/layout.md)
 - **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing.md](docs/testing.md#text-fit-check)
 
 ## Language
@@ -38,7 +38,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Set Frame, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Technique |
 | [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
-| [Toolbox and controls](docs/glossary/toolbox.md) | Toolbox, Tool group, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
+| [Dock and controls](docs/glossary/toolbox.md) | Tool group, Dock layout, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |

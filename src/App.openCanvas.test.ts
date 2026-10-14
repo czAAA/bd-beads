@@ -6,6 +6,7 @@ import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
+import { openSheet, pickColor } from './testUtils/dock'
 
 /**
  * The open canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
@@ -55,7 +56,7 @@ describe('drawing anywhere', () => {
     saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
 
     await pressBead(wrapper, { row: 4000, column: 9000 })
     await wrapper.trigger('mouseup')
@@ -83,7 +84,7 @@ describe('drawing anywhere', () => {
     expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · no Frame')
 
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     await pressBead(wrapper, { row: 5, column: 5 })
     await wrapper.trigger('mouseup')
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('3 pieces · no Frame')
@@ -97,31 +98,18 @@ describe('drawing anywhere', () => {
   })
 })
 
-describe('the rulers of pieces', () => {
-  it('are hidden by the Rulers toggle and by R, and come back', async () => {
-    saveProjects([openCanvas()])
-    const wrapper = mountApp()
-    await flushPromises()
-    const toggle = wrapper.find('[data-testid="rulers-toggle"]')
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-
-    await toggle.trigger('click')
-    expect(toggle.attributes('aria-pressed')).toBe('false')
-    await key({ key: 'r' })
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-  })
-})
-
 describe('the Hand tool', () => {
   it('is the fifth tool, picked by H, and drags the canvas without changing a bead or previewing one', async () => {
     saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
 
     await key({ key: '5' })
-    expect(wrapper.find('[data-testid="tool-hand"]').classes()).toContain('icon-btn--selected')
-    expect(wrapper.findAll('[data-testid="toolbox"] .icon-btn--tool')).toHaveLength(6)
+    await openSheet(wrapper, 'dock-tool')
+    expect(wrapper.find('[data-testid="sheet-tool-hand"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.findAll('[data-testid^="sheet-tool-"]')).toHaveLength(5)
+    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
 
     const before = JSON.stringify(loadProjects()[0]!.beads)
     const root = surface(wrapper)
@@ -134,7 +122,7 @@ describe('the Hand tool', () => {
     expect(Number(root.attributes('data-scroll-x'))).toBe(startX + 30)
     expect(JSON.stringify(loadProjects()[0]!.beads)).toBe(before)
     expect(previewedBeads(wrapper)).toEqual([])
-    expect(wrapper.find('[data-testid="undo-button"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
   })
-
 })
+

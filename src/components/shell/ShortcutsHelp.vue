@@ -8,7 +8,7 @@ import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, type ControlGrou
 
 /**
  * The `?` shortcuts help overlay (ticket 96), generated from the control registry (ADR 0035, ticket 329): every
- * action with a key, grouped under the same Tool group names the Toolbox itself uses (CONTEXT.md's Tool group entry),
+ * action with a key, grouped under the Tool group names (CONTEXT.md's Tool group entry),
  * plus the two pointer gestures that have no key (Space+drag, Ctrl/Cmd+wheel). Key labels (digits, letters,
  * "Ctrl/Cmd+C") are locale-neutral and written out directly rather than translated.
  *

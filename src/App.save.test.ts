@@ -8,6 +8,7 @@ import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
+import { openSheet, pickColor } from './testUtils/dock'
 
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
@@ -46,7 +47,7 @@ async function pressKey(init: KeyboardEventInit): Promise<KeyboardEvent> {
 
 /** Starts a paint stroke without releasing it, so the painted cell is on screen but its save is still deferred. */
 async function startUnfinishedStroke(wrapper: ReturnType<typeof mount>) {
-  await wrapper.find('[data-color-id="red"]').trigger('click')
+  await pickColor(wrapper, 'red')
   await pressBead(wrapper, 0)
 }
 
@@ -56,6 +57,8 @@ describe('App Save (ticket 115)', () => {
     const wrapper = mountApp()
     await startUnfinishedStroke(wrapper)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
+
+    await openSheet(wrapper, 'dock-project')
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
@@ -70,6 +73,7 @@ describe('App Save (ticket 115)', () => {
     await startUnfinishedStroke(wrapper)
 
     refuseStorageWrites(PROJECTS_KEY)
+    await openSheet(wrapper, 'dock-project')
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)
@@ -87,5 +91,4 @@ describe('App Save (ticket 115)', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
     expect(wrapper.find('[data-testid="save-confirmation"]').exists()).toBe(true)
   })
-
 })

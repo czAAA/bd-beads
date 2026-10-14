@@ -244,8 +244,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
 
-    // Scoped to the Saved Projects sheet, the last one rendered: the always-mounted (but hidden) AppSidebar
-    // ProjectList has its own panel-expand too.
+    // Scoped to the Saved Projects sheet, the last one rendered: another ProjectList has its own panel-expand too.
     const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
     const savedProjectsSheet = sheets[sheets.length - 1]!
     await savedProjectsSheet.find('[data-testid="panel-expand"]').trigger('click')
@@ -280,20 +279,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
   })
 
-  it('changes the Canvas color from the Project sheet header and remembers it (ticket 281)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
-
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
-    const button = sheet.get('[data-testid="canvas-color-button"]')
-    expect(button.attributes('aria-label')).toBe('Canvas color')
-    await button.trigger('click')
-    expect(sheet.findAll('.canvas-color__swatches [role="radio"]')).toHaveLength(5)
-    await sheet.get('[data-testid="canvas-color-sage"]').trigger('click')
-
-    expect(localStorage.getItem('bd-beads:canvas-background')).toBe('3')
-  })
-
   it('shows the open Project\'s name, size and save state in the Project sheet (ticket 295)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
@@ -317,5 +302,4 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(false)
     expect(sheet.find('[data-testid="phone-project-info"]').exists()).toBe(false)
   })
-
 })

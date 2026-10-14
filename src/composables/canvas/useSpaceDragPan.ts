@@ -2,9 +2,9 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
 
 /**
- * Whether Space has a native meaning at `target` that panning must not steal -- a focused button (every Toolbox
+ * Whether Space has a native meaning at `target` that panning must not steal -- a focused button (every sheet
  * control) activates on Space in every browser, so hijacking the key there would silently break keyboard-only use
- * of the Toolbox, not just cursor-driven panning.
+ * of the sheets, not just cursor-driven panning.
  */
 function activatesOnSpace(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button')

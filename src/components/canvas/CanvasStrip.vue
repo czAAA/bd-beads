@@ -1,18 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { controlAction } from '../../composables/shell/controlRegistry'
 import { piecesOf } from '../../domain/pieces'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
-import IconButton from '../ui/IconButton.vue'
 import CanvasColorPicker from './CanvasColorPicker.vue'
 import ZoomControls from './ZoomControls.vue'
 
 /**
- * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the canvas, whether rulers show, and how far
+ * The canvas box's header strip (ticket 143; CanvasStrip card): what is on the canvas, and how far
  * it is zoomed. With no Frame it reads "Canvas · 3 pieces · no Frame" ("setting Frame" while one is being drawn); with a
  * Frame, "Project · 21 columns · 19 rows · 3.4 × 3.0 cm" While a picture
  * is being framed it shows the Project that picture will make instead; with nothing to show it holds just the title.
@@ -32,8 +30,6 @@ const props = defineProps<{
   title?: string
   /** Whether the Frame is being set right now ("3 pieces · setting Frame"). */
   settingFrame?: boolean
-  /** Whether ruler numbers show (the Rulers toggle); undefined hides the button. */
-  rulers?: boolean
   /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Shown in high contrast too, where it opens the Position marks choice alone. */
   canvasColor?: boolean
 }>()
@@ -41,11 +37,9 @@ const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   reset: []
-  'toggle-rulers': []
 }>()
 
 const { t, locale } = useI18n()
-const rulersAction = controlAction('rulers')
 
 const sizeText = (size: { columns: number; rows: number }) =>
   `${t.value.canvas.widthSize.replace('{count}', String(size.columns))} · ${t.value.canvas.heightSize.replace('{count}', String(size.rows))}`
@@ -80,16 +74,6 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
     <span class="canvas-strip__title" data-testid="canvas-strip-title">{{ heading }}</span>
     <span v-if="sizeMeta" class="canvas-strip__meta" data-testid="canvas-strip-size">{{ sizeMeta.main }}<span v-if="sizeMeta.estimate" class="canvas-strip__estimate"> · {{ sizeMeta.estimate }}</span></span>
     <span v-if="hint" class="canvas-strip__hint" data-testid="canvas-strip-hint">{{ hint }}</span>
-    <IconButton
-      v-if="rulers !== undefined"
-      class="canvas-strip__rulers"
-      variant="plain"
-      :icon-size="16"
-      :action="rulersAction"
-      :selected="rulers"
-      data-testid="rulers-toggle"
-      @click="emit('toggle-rulers')"
-    />
     <div v-if="canvasColor" class="canvas-strip__color"><CanvasColorPicker /></div>
     <ZoomControls
       v-if="zoomPercent !== undefined"
@@ -163,14 +147,8 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
   white-space: nowrap;
 }
 
-.canvas-strip__hint + .canvas-strip__rulers,
 .canvas-strip__hint + .canvas-strip__zoom {
   margin-left: 0;
-}
-
-/* The Rulers toggle sits first on the right; pressed is the IconButton's selected look: an `ink` fill with a `canvas` icon (CanvasStrip card). */
-.canvas-strip__rulers {
-  margin-left: auto;
 }
 
 .canvas-strip__color {
@@ -179,13 +157,11 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
   margin-left: auto;
 }
 
-.canvas-strip__rulers + .canvas-strip__color,
 .canvas-strip__hint + .canvas-strip__color {
   margin-left: 0;
 }
 
-.canvas-strip__color + .canvas-strip__zoom,
-.canvas-strip__rulers + .canvas-strip__zoom {
+.canvas-strip__color + .canvas-strip__zoom {
   margin-left: 0;
 }
 
