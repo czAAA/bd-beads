@@ -59,17 +59,9 @@ export async function copySelection(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
 }
 
-/** Rotates the Selection with the Context bar's Rotate, or else the Frame with the Frame sheet's own (ADR 0046). */
+/** Rotates the Selection with the Selection bar's Rotate. */
 export async function rotate(wrapper: Wrapper): Promise<void> {
-  const bar = wrapper.find('[data-testid="context-bar-rotate"]')
-  if (bar.exists()) {
-    await bar.trigger('click')
-    return
-  }
-  if (!wrapper.find('[data-testid="sheet-rotate"]').exists()) {
-    await openSheet(wrapper, 'dock-frame')
-  }
-  await wrapper.get('[data-testid="sheet-rotate"]').trigger('click')
+  await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
 }
 
 /** Presses Delete all in the Tool sheet, which opens first; the confirmation it raises is the caller's. */

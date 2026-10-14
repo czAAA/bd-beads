@@ -15,7 +15,7 @@ How big a Schema is: its Frame's width × height, counted in beads (a Project wi
 _Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
-Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Its key is `Shift+R`. Disabled with no Frame, or once Row progress is on and a pass is done (ticket 411), and its Tooltip says which.
+Turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection and the Frame is untouched (ADR 0052, which replaces the Frame turn of ADR 0026 and the view-only turn of ticket 171). It is a drawing edit: beads under the turned footprint are replaced, one Message says how many were covered with Undo, and the keep-out margin and finished rows trim it silently. On peyote and brick stitch the turned top row snaps to an even row. Turning the whole drawing is Select all, Rotate, then Set Frame again. It sits on the Selection bar, and its key is `Shift+R`. Not offered once Row progress is on and a pass is done (ticket 411).
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:

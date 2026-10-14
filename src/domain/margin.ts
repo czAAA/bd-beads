@@ -7,7 +7,7 @@ import { touching } from './pieces'
 /**
  * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 3 bead positions all the way round it,
  * outside its line, where nothing can be drawn, so beads never end up right against the Frame and its rulers. Erase
- * still works there. A change of the Frame (or a Rotate) that leaves beads in it moves each Piece in the way clear, whole.
+ * still works there. A change of the Frame that leaves beads in it moves each Piece in the way clear, whole.
  */
 
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers, and between a moved Piece and anything else. */
@@ -33,7 +33,7 @@ export function keepAllowedEdits(before: Project, after: Project): Project {
 }
 
 /** Where each bead that `relocateFromMargin` moved went, as `carryNames` wants it: the position it was at, or itself when it stayed. */
-export function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: readonly Cell[] }): (position: GridPosition) => GridPosition {
+function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: readonly Cell[] }): (position: GridPosition) => GridPosition {
   const to = new Map<string, GridPosition>()
   moving.changes.forEach(({ row, column }, index) => to.set(positionKey({ row, column }), moving.placed[index]))
   return (position) => {
@@ -69,7 +69,7 @@ function keepMarginClear(before: Project, after: Project): Project {
   return changedPositions(before.beads, beads).length === 0 ? before : { ...after, beads }
 }
 
-export interface Cell extends GridPosition {
+interface Cell extends GridPosition {
   color: string
 }
 
@@ -160,7 +160,7 @@ function clearShift(project: Pick<Project, 'technique'>, cells: readonly Cell[],
  * Moves every Piece of `outside` (beads not in the Frame) that reaches the Frame's margin to the nearest empty space
  * clear of the Frame and its margin; the rest stay. Returns the changes to vacate and place, and how many beads moved.
  */
-export function relocateFromMargin(
+function relocateFromMargin(
   project: Pick<Project, 'technique'>,
   outside: BeadMap,
   frame: Frame,

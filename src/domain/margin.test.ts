@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type BeadMap, type Frame } from './canvas'
 import { clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
-import { rotateProject } from './rotate'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
@@ -71,15 +70,6 @@ describe('the keep-out margin', () => {
 
   it('leaves the same Project when nothing is in the margin', () => {
     expect(clearMargin(framed)).toEqual({ project: framed, moved: 0 })
-  })
-
-  it('keeps it clear on Rotate: a Piece right against the turned Frame moves, none is lost', () => {
-    const square = withFrame(open, { row: 0, column: 0, rows: 4, columns: 4 })
-    const beads = withColors(square.beads, [{ row: 0, column: 0, color: '#00ff00' }, { row: 5, column: 1, color: '#ff0000' }])
-    const rotated = rotateProject({ ...square, beads })!
-    expect(count(rotated.project.beads)).toBe(2)
-    expect(rotated.moved).toBe(1)
-    expect(clearMargin(rotated.project).moved).toBe(0)
   })
 
   it('moves a big drawing clear without freezing the page: a fresh Frame in the middle of a 150x150 drawing', () => {

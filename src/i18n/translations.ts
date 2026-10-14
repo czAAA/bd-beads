@@ -482,14 +482,14 @@ export interface Translations {
     refusedCutsSchema: string
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
-    announceRotated: string
+    /** Announced after Rotate turned the Selection and covered no bead. */
+    announceSelectionRotated: string
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
     countNeedsFrame: string
     progressNeedsFrame: string
-    /** Rotate's accessible name while it is disabled for want of a Frame. */
-    /** The Message after Rotate moved pieces out of the way ("{count}" of them): the singular and plural of the sentence. */
-    rotatedMessage: PluralForms
+    /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and plural of the sentence. */
+    rotateCoveredMessage: PluralForms
     /** The lead of the margin Message, by what was done to the Frame. */
     marginLead: Record<'set' | 'moved' | 'resized', string>
     /** The rest of the margin Message, after the lead: how many beads were in the margin. */

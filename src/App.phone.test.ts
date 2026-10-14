@@ -112,13 +112,13 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
-  it('keeps Copy and Paste off the Frame sheet: they are on the Selection bar (ticket 415)', async () => {
+  it('keeps Rotate, Copy and Paste off the Frame sheet: they are on the Selection bar (tickets 415, 416)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-frame"]').trigger('click')
 
     expect(wrapper.find('[data-testid="sheet-paste"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="sheet-copy"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(false)
   })
 
   it('changes the Technique from the Frame sheet as one Undo step (ticket 351)', async () => {

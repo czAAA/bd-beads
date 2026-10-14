@@ -5,11 +5,10 @@ import { clearMargin } from './margin'
 import { carryNames, namedPieceCutBy } from './pieceNames'
 import { rowProgressStarted, withFrame, withRowProgressOnByItself, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
-import { rotateProject } from './rotate'
 
 /**
  * The one operation behind every change of the Frame (ticket 361): Set Frame, moving and resizing it, Fit to drawing,
- * Remove Frame, Rotate and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
+ * Remove Frame and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
  * Row progress's lock (once a pass is done), Row progress turning on by itself at the first Frame,
  * Row progress's pointers ending inside the new Frame, and the keep-out margin left empty with each
  * Piece it reached moved clear, whole (ADR 0027).
@@ -18,7 +17,6 @@ export type FrameChange =
   /** Set Frame, moving it, resizing it and Fit to drawing all reduce to this. */
   | { set: Frame }
   | { remove: true }
-  | { rotate: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
   /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and column. */
@@ -28,7 +26,7 @@ export type FrameChange =
 export type FrameChangeRefusal =
   /** Row progress is on and a pass is done: the passes belong to the Frame, which any change would alter (ADR 0026, ticket 411). */
   | 'locked'
-  /** Rotate and Remove line need a Frame to act on. */
+  /** Remove line needs a Frame to act on. */
   | 'no-frame'
   /** Remove line's row or column is not one of the Frame's. */
   | 'no-line'
@@ -50,9 +48,6 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     return 'locked'
   }
   const frame = project.frame
-  if ('rotate' in change && !frame) {
-    return 'no-frame'
-  }
   if ('removeLine' in change) {
     if (!frame) {
       return 'no-frame'
@@ -76,11 +71,6 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   const reason = frameChangeRefusal(project, change)
   if (reason) {
     return { kind: 'refused', reason }
-  }
-
-  if ('rotate' in change) {
-    const turned = rotateProject(project)!
-    return { kind: 'changed', project: turned.project, moved: turned.moved }
   }
 
   if ('removeLine' in change) {

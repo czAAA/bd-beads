@@ -6,7 +6,6 @@ import AppSelect from '../ui/AppSelect.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
-import EditControls, { type EditControlId } from '../tools/EditControls.vue'
 import IconButton from '../ui/IconButton.vue'
 import ToolTiles from '../tools/ToolTiles.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
@@ -48,7 +47,6 @@ const {
   onSelectImageColor,
   selection,
   pasteProjectionActive,
-  onRotate,
   onRequestDeleteAll,
   onStartSetFrame,
   onSetFrameSize,
@@ -97,15 +95,6 @@ const sheetActions = {
   newProject: controlAction('new-project'),
   savedProjects: controlAction('saved-projects'),
   changeMakerName: controlAction('change-maker-name'),
-}
-
-/** The Frame sheet's Edit row (EditControls card): Rotate acts at once. Copy and Paste live on the Selection bar (ticket 415). */
-function onFrameSheetEdit(id: EditControlId) {
-  if (id === 'rotate') onRotate()
-}
-
-function frameSheetEditTestId(id: EditControlId): string | undefined {
-  return `sheet-${id}`
 }
 
 /** What the actions' enabled states and disabled reasons read (ADR 0035). */
@@ -167,8 +156,8 @@ const deps = computed(() =>
   </BottomSheet>
 
   <!--
-    The Frame sheet (ticket 295; Dock card): the Frame's own controls and, beneath them, what used to be the Edit sheet --
-    Rotate, which acts on the Frame or a Selection (Copy and Paste are on the Selection bar, ticket 415); Undo and Redo live in the Zoom pill (ticket 296).
+    The Frame sheet (ticket 295; Dock card): the Frame's own controls. Rotate, Copy and Paste are on the Selection bar
+    (tickets 415, 416); Undo and Redo live in the Zoom pill (ticket 296).
   -->
   <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
     <FrameControls
@@ -181,9 +170,6 @@ const deps = computed(() =>
       @fit="onFitFrame"
       @remove="onRemoveFrame"
     />
-    <div class="phone-sheet__edit">
-      <EditControls :ids="['rotate']" :deps="deps" :test-id-for="frameSheetEditTestId" @activate="onFrameSheetEdit" />
-    </div>
   </BottomSheet>
 
   <!--
@@ -318,15 +304,6 @@ const deps = computed(() =>
   gap: var(--space-8);
   justify-content: space-between;
   margin-top: var(--space-16);
-}
-
-.phone-sheet__edit {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-8);
-  margin-top: var(--space-16);
-  padding-top: var(--space-16);
-  border-top: 1px solid var(--line-soft);
 }
 
 .phone-sheet__project-info {

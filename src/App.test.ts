@@ -9,7 +9,7 @@ import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
-import { chooseAppLanguage, chooseCustomColor, openNewProject, openSavedProjects, openSheet, pickColor, pickTool, rotate, sheetRead } from './testUtils/dock'
+import { chooseAppLanguage, chooseCustomColor, openNewProject, openSavedProjects, openSheet, pickColor, pickTool, rotate } from './testUtils/dock'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -139,25 +139,29 @@ describe('App', () => {
     expect(grid[0]![1]!.color).toBe('#e63746')
   })
 
-  it('rotating turns the Frame and its beads a quarter turn, swapping the Frame\'s size and keeping the Technique', async () => {
+  it('rotating turns the Selection a quarter turn and leaves the Frame and the Technique alone (ticket 416)', async () => {
     const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
 
     await pickColor(wrapper, 'red')
-    await pressBead(wrapper, 0) // paint (0,0), the top-left bead
+    await pressBead(wrapper, 0) // paint (0,0) and (0,1), the top row's first two beads
+    await wrapper.trigger('mouseup')
+    await pressBead(wrapper, 1)
     await wrapper.trigger('mouseup')
     const beforeRotate = loadProjects()[0]!
 
+    await pickTool(wrapper, 'select-all')
     await rotate(wrapper)
 
     const afterRotate = loadProjects()[0]!
-    // A data turn, not a view one: the Project is not left turned, its Frame and beads are.
+    // A data turn of the Selection: the Project is not left turned and its Frame stays as it was.
     expect(afterRotate.rotation).toBe(0)
     expect(afterRotate.technique).toBe(beforeRotate.technique)
-    expect(afterRotate.frame).toMatchObject({ columns: beforeRotate.frame!.rows, rows: beforeRotate.frame!.columns })
-    // The top-left bead of a quarter turn clockwise is the top-right one.
-    expect(frameGrid(afterRotate)[0]![1]!.color).toBe('#e63746')
-    expect(frameGrid(afterRotate).flat().filter((cell) => cell.color).length).toBe(1)
-    expect((await sheetRead(wrapper, 'phone-project-summary')).text).toContain('2×3')
+    expect(afterRotate.frame).toEqual(beforeRotate.frame)
+    // The 1 x 2 strip becomes a 2 x 1 column on its right: the left bead goes to the top, the right one below it.
+    const grid = frameGrid(afterRotate)
+    expect(grid[0]![0]!.color).toBeNull()
+    expect(grid[0]![1]!.color).toBe('#e63746')
+    expect(grid[1]![1]!.color).toBe('#e63746')
   })
 
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {

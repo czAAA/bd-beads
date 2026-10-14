@@ -456,13 +456,13 @@ export const en: Translations = {
     announceNothingToFit: 'Nothing drawn yet to fit the Frame to',
     refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
     announceTechnique: 'Technique changed to {technique}',
-    announceRotated: 'Schema rotated',
+    announceSelectionRotated: 'Selection rotated',
     exportPromptTitle: 'Set Frame to export',
     countNeedsFrame: 'Set Frame to count beads.',
     progressNeedsFrame: 'Set Frame to start',
-    rotatedMessage: {
-      one: 'Schema rotated. {count} Piece was in the way and moved outside the Frame.',
-      other: 'Schema rotated. {count} Pieces were in the way and moved outside the Frame.',
+    rotateCoveredMessage: {
+      one: '{count} bead covered.',
+      other: '{count} beads covered.',
     },
     marginLead: { set: 'Frame set.', moved: 'Frame moved.', resized: 'Frame resized.' },
     marginClearedMessage: {
@@ -589,7 +589,7 @@ export const en: Translations = {
     fillSelection: 'Fill the Selection with the current color.',
     frameFromSelection: 'Make the Selection the Frame.',
     pasteDisabled: 'Copy an area first.',
-    rotate: 'Turn the Frame a quarter turn.',
+    rotate: 'Turn the Selection a quarter turn.',
     setFrameFirst: 'Set a Frame first.',
     fitToDrawing: 'Fit the Frame around every bead.',
     noBeadsToFit: 'There are no beads to fit.',
