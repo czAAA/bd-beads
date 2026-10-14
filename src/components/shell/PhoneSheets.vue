@@ -317,6 +317,8 @@ const deps = computed(() =>
 
 .phone-sheet__links {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
   justify-content: space-between;
   margin-top: var(--space-16);
 }
