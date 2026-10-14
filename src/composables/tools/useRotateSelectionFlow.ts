@@ -1,6 +1,6 @@
 import type { Ref } from 'vue'
-import { coveredByRotation, rotateSelection, type RotatedSelection } from '../../domain/rotate'
-import type { Project } from '../../domain/project'
+import { coveredByRotation, rotateSelection } from '../../domain/rotate'
+import { rowProgressStarted, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -28,16 +28,17 @@ export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
   function onRotate(): void {
     const selection = deps.selection.value
     const before = deps.currentProject()
-    if (!selection || !before) {
+    // Shift+R reaches here without asking the control, so the lock of ticket 411 is checked here too.
+    if (!selection || !before || rowProgressStarted(before)) {
       return
     }
 
-    let turned: RotatedSelection | undefined
+    let turnedSelection = selection
     const outcome = deps.edit('drawing', (project) => {
-      turned = rotateSelection(project, selection)
+      const turned = rotateSelection(project, selection)
+      turnedSelection = turned.selection
       return turned.project
     })
-    const turnedSelection = turned?.selection ?? rotateSelection(before, selection).selection
     deps.selection.value = turnedSelection
 
     const after = deps.currentProject()
