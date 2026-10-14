@@ -196,6 +196,10 @@ describe('App select, copy and paste', () => {
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
+    // Edit Frame starts on the new Frame (ticket 417); Done hands the canvas back to the Selection.
+    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="context-bar-done-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
 
     await tap({ row: 3, column: 5 })
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')

@@ -18,8 +18,8 @@ import { rowProgressStarted, type Project } from '../../domain/project'
  * offers what a Selection can do: its size, Copy, Cut, Paste, Fill, Frame, Rotate and, after a divider, Clear selection; only
  * what applies is rendered (Paste with a clipboard, Rotate until a Row progress pass is done, Remove line with a line selected). When the
  * canvas box is too narrow for all of it, the last actions fold into a "…" menu. Once Paste is armed it is "Tap to paste"
- * and Cancel at the canvas box's top-centre, and while the Frame is being set it holds the Frame's size, Fit to drawing,
- * Remove Frame and Done (ticket 295).
+ * and Cancel at the canvas box's top-centre, and while the Frame is being edited (ticket 417) it holds the Frame's size,
+ * Fit to drawing, Remove Frame and Done, anchored just above the Frame's top edge, outside Edit Frame's top stepper.
  */
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 · 4.2 × 2.6 cm"; absent when there is no Selection. */
@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<{
   canNamePiece?: boolean
   /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told otherwise. */
   hasPaintColor?: boolean
-  /** Whether the Frame is being set: the bar then holds the Frame's size, Fit to drawing and Done (v16). */
+  /** Whether the Frame is being edited: the bar then holds the Frame's size, Fit to drawing, Remove Frame and Done (v16). */
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
   frameSummary?: string
@@ -149,7 +149,7 @@ const folded = computed(() => (overflowing.value ? items.value.slice(shown.value
 
 const placement = computed(() => {
   const anchor = props.anchor
-  if (!anchor || props.settingFrame || props.pasteArmed) return undefined
+  if (!anchor || props.pasteArmed) return undefined
   return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport)
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))

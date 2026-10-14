@@ -711,12 +711,12 @@ describe('ProjectSurface', () => {
         expect(surface.classes()).not.toContain('project-surface--refused')
       })
 
-      it('draws the margin outline for a Frame whose size is pending, and not for a committed one (ticket 410)', async () => {
+      it('draws the margin outline while the Frame is being edited, and not otherwise (ticket 417)', async () => {
         const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 })
         await nextTick()
         expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(false)
 
-        await wrapper.setProps({ framePending: true })
+        await wrapper.setProps({ settingFrame: true })
         await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
       })
 

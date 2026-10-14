@@ -33,18 +33,16 @@ const emit = defineEmits<{
   'export-pdf': []
   /** Change or Add the maker's name, from the Export menu's last row (ticket 161). */
   'edit-maker-name': []
-  /** The Export prompt's two ways out: frame every bead drawn, or draw the Frame by hand. */
+  /** The Export prompt's way out: frame every bead drawn (a Frame can also be made from a Selection, ticket 417). */
   'fit-frame': []
-  'set-frame': []
 }>()
 
 const exportMenu = ref<InstanceType<typeof AppMenu>>()
 const framed = computed(() => props.hasFrame)
 
-function fromPrompt(action: 'fit-frame' | 'set-frame') {
+function fitFromPrompt() {
   exportMenu.value?.close()
-  if (action === 'fit-frame') emit('fit-frame')
-  else emit('set-frame')
+  emit('fit-frame')
 }
 
 const { t, locale } = useI18n()
@@ -80,8 +78,7 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
             <p class="save-box__prompt-title">{{ t.frame.exportPromptTitle }}</p>
             <p class="save-box__prompt-body">{{ t.frame.explainer }}</p>
             <div class="save-box__prompt-actions">
-              <AppButton variant="toolbox" data-testid="export-fit-frame" @click="fromPrompt('fit-frame')">{{ t.frame.fitToDrawing }}</AppButton>
-              <AppButton variant="primary" icon="frame" data-testid="export-set-frame" @click="fromPrompt('set-frame')">{{ t.frame.setFrame }}</AppButton>
+              <AppButton variant="toolbox" data-testid="export-fit-frame" @click="fitFromPrompt">{{ t.frame.fitToDrawing }}</AppButton>
             </div>
           </div>
           <AppMenuItem v-if="framed" icon="image" :disabled="!!exporting" data-testid="export-png" @select="emit('export-png')">

@@ -5,6 +5,7 @@ import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
+import EditFrameSteppers from './EditFrameSteppers.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
@@ -12,7 +13,8 @@ import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
-import type { SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { frameBarAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
@@ -102,12 +104,11 @@ const {
   settingFrame,
   surfaceInputMode,
   settledProject,
-  onStartSetFrame,
   onDoneSetFrame,
   onFitFrame,
+  onStepFrameEdge,
   onRemoveFrame,
   frameDraft,
-  pendingFrame,
   onFramePress,
   onFrameDrag,
   onFrameRelease,
@@ -145,6 +146,10 @@ const selectionSummary = computed(() => {
 
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
+/** Where the Frame is while it is edited: Edit Frame's margin steppers sit round it, and its bar above them (ticket 417). */
+const frameAnchor = ref<SelectionAnchor>()
+const touchPointer = useMediaQuery('(pointer: coarse)')
+const barAnchor = computed(() => (settingFrame.value && frameAnchor.value ? frameBarAnchor(frameAnchor.value, touchPointer.value) : selectionAnchor.value))
 const surfacePressing = ref(false)
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
@@ -194,7 +199,6 @@ function techniqueWord(technique: Technique): string {
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"
         :title="framing ? t.convertImage.heading : undefined"
-        :setting-frame="settingFrame"
         :canvas-color="activeProject && !framing"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
         @zoom-out="framing ? convertZoomOut() : zoomOut()"
@@ -229,13 +233,13 @@ function techniqueWord(technique: Technique): string {
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box; "Tap to paste" and the Frame bar sit at its top-centre.
+          inside the canvas box; "Tap to paste" sits at its top-centre, and Edit Frame's bar is anchored above the Frame (ticket 417).
         -->
         <ContextBar
           v-if="activeProject && !framing"
-          :class="{ 'app-shell__context-bar--top': settingFrame || pasteProjectionActive, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
+          :class="{ 'app-shell__context-bar--top': pasteProjectionActive, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
           :selection-summary="selectionSummary"
-          :anchor="selectionAnchor"
+          :anchor="barAnchor"
           :gesturing="surfacePressing"
           :paste-armed="pasteProjectionActive"
           :has-clipboard="hasClipboard()"
@@ -258,6 +262,13 @@ function techniqueWord(technique: Technique): string {
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
           @dismiss="backOutOfSelect"
+        />
+
+        <EditFrameSteppers
+          v-if="activeProject && settingFrame && frameAnchor"
+          :project="activeProject"
+          :anchor="frameAnchor"
+          @step="onStepFrameEdge"
         />
 
         <div class="app-shell__canvas-row">
@@ -287,7 +298,6 @@ function techniqueWord(technique: Technique): string {
               v-else-if="activeProject"
               :project="shownProject!"
               :setting-frame="settingFrame"
-              :frame-pending="pendingFrame !== undefined"
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
@@ -327,6 +337,7 @@ function techniqueWord(technique: Technique): string {
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
               @selection-anchor="selectionAnchor = $event"
+              @frame-anchor="frameAnchor = $event"
               @pressing="surfacePressing = $event"
             />
             <EmptyCanvas v-else />
@@ -355,7 +366,7 @@ function techniqueWord(technique: Technique): string {
         @move-row="onMoveRow"
         @toggle-row-progress="onToggleRowProgress"
         @toggle-row-direction="onToggleRowDirection"
-        @set-frame="onStartSetFrame"
+        @fit-frame="onFitFrame"
       />
     </div>
   </main>

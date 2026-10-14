@@ -28,8 +28,6 @@ const props = defineProps<{
   hint?: string
   /** What is on the board, when it isn't the Project: the framing step names itself here (ConvertImage card). */
   title?: string
-  /** Whether the Frame is being set right now ("3 pieces · setting Frame"). */
-  settingFrame?: boolean
   /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Shown in high contrast too, where it opens the Position marks choice alone. */
   canvasColor?: boolean
 }>()
@@ -64,7 +62,7 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
   const project = props.project
   if (!project) return undefined
   if (project.frame) return { main: sizeText(project.frame), estimate: estimate.value }
-  return { main: `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${props.settingFrame ? t.value.canvas.settingFrame : t.value.canvas.noFrame}` }
+  return { main: `${plural(locale.value, pieces.value.length, t.value.canvas.piecesCount)} · ${t.value.canvas.noFrame}` }
 })
 </script>
 
