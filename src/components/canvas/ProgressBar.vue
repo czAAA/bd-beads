@@ -248,6 +248,8 @@ const directionLabel = computed(() =>
     min-width: 0;
   }
 
+  /* A button is wrapped (for its Tooltip) only while it has one, so a lone button is a flex item too. */
+  .progress-bar__steps > .app-button,
   .progress-bar__steps :deep(.app-button-wrap) {
     flex: 1 1 0;
     min-width: 0;
