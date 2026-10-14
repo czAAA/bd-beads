@@ -11,7 +11,7 @@ import { findTextMisfits } from '../support/textFit'
 import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-frame', 'dock-project', 'dock-menu']
+const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-project', 'dock-menu']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {

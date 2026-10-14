@@ -21,8 +21,8 @@ const emit = defineEmits<{
   'move-row': [delta: number]
   'toggle-row-progress': [enabled: boolean]
   'toggle-row-direction': []
-  /** The bar's own way to Set Frame, shown while there is no Frame to count rows on. */
-  'set-frame': []
+  /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
+  'fit-frame': []
 }>()
 
 const { t } = useI18n()
@@ -30,7 +30,7 @@ const { t } = useI18n()
 /** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR 0035). */
 const actions = {
   rowProgress: controlAction('row-progress'),
-  setFrame: controlAction('set-frame'),
+  fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
@@ -71,8 +71,8 @@ const directionLabel = computed(() =>
     <template v-if="!hasFrame">
       <span class="progress-bar__row">{{ t.toolbox.groups.rowProgress }}</span>
       <span class="progress-bar__need" data-testid="progress-bar-needs-frame">{{ t.frame.progressNeedsFrame }}</span>
-      <span class="progress-bar__set-frame">
-        <AppButton variant="box" :action="actions.setFrame" :deps="deps" data-testid="progress-bar-set-frame" @click="emit('set-frame')" />
+      <span class="progress-bar__fit-frame">
+        <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
       </span>
     </template>
     <template v-else-if="enabled">
@@ -144,7 +144,7 @@ const directionLabel = computed(() =>
   white-space: nowrap;
 }
 
-.progress-bar__set-frame {
+.progress-bar__fit-frame {
   margin-left: auto;
 }
 

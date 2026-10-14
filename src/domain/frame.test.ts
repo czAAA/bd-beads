@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
-import { DEFAULT_FRAME_SIDES, fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, frameWithSizeFrom, movedFrame, sameFrame, snapRow } from './frame'
+import { fitToDrawing, frameFromCells, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
 
 describe('frameFromCells', () => {
   it('covers the beads from one corner to the other, whichever way the drag went', () => {
@@ -87,42 +87,30 @@ it('compares frames by their position and size', () => {
   expect(sameFrame(undefined, { row: 0, column: 0, rows: 1, columns: 1 })).toBe(false)
 })
 
-describe('frameWithSizeFrom', () => {
+describe('frameWithEdgeStep', () => {
   const frame = { row: 4, column: 4, rows: 6, columns: 6 }
 
-  it('from the right and the bottom keeps the top-left corner, as frameWithSize does', () => {
-    expect(frameWithSizeFrom('loom', frame, 8, 3, DEFAULT_FRAME_SIDES)).toEqual(frameWithSize(frame, 8, 3))
-    expect(frameWithSizeFrom('loom', frame, 8, 3, DEFAULT_FRAME_SIDES)).toEqual({ row: 4, column: 4, rows: 3, columns: 8 })
+  it('moves one edge a bead out or in and leaves the other three', () => {
+    expect(frameWithEdgeStep('loom', frame, 'left', 1)).toEqual({ row: 4, column: 3, rows: 6, columns: 7 })
+    expect(frameWithEdgeStep('loom', frame, 'left', -1)).toEqual({ row: 4, column: 5, rows: 6, columns: 5 })
+    expect(frameWithEdgeStep('loom', frame, 'right', 1)).toEqual({ row: 4, column: 4, rows: 6, columns: 7 })
+    expect(frameWithEdgeStep('loom', frame, 'right', -1)).toEqual({ row: 4, column: 4, rows: 6, columns: 5 })
+    expect(frameWithEdgeStep('loom', frame, 'top', 1)).toEqual({ row: 3, column: 4, rows: 7, columns: 6 })
+    expect(frameWithEdgeStep('loom', frame, 'top', -1)).toEqual({ row: 5, column: 4, rows: 5, columns: 6 })
+    expect(frameWithEdgeStep('loom', frame, 'bottom', 1)).toEqual({ row: 4, column: 4, rows: 7, columns: 6 })
+    expect(frameWithEdgeStep('loom', frame, 'bottom', -1)).toEqual({ row: 4, column: 4, rows: 5, columns: 6 })
   })
 
-  it('from the left keeps the right edge, growing and shrinking at the left', () => {
-    expect(frameWithSizeFrom('loom', frame, 8, 6, { horizontal: 'left', vertical: 'bottom' })).toEqual({ row: 4, column: 2, rows: 6, columns: 8 })
-    expect(frameWithSizeFrom('loom', frame, 4, 6, { horizontal: 'left', vertical: 'bottom' })).toEqual({ row: 4, column: 6, rows: 6, columns: 4 })
+  it('never takes an edge past the one opposite it', () => {
+    const one = { row: 2, column: 2, rows: 1, columns: 1 }
+    for (const edge of ['top', 'bottom', 'left', 'right'] as const) expect(frameWithEdgeStep('loom', one, edge, -1)).toBe(one)
   })
 
-  it('from the top keeps the bottom edge, growing and shrinking at the top', () => {
-    expect(frameWithSizeFrom('loom', frame, 6, 9, { horizontal: 'right', vertical: 'top' })).toEqual({ row: 1, column: 4, rows: 9, columns: 6 })
-    expect(frameWithSizeFrom('loom', frame, 6, 2, { horizontal: 'right', vertical: 'top' })).toEqual({ row: 8, column: 4, rows: 2, columns: 6 })
-  })
-
-  it('is never smaller than one bead each way, and its far edge stays put at one bead', () => {
-    expect(frameWithSizeFrom('loom', frame, 0, -3, { horizontal: 'left', vertical: 'top' })).toEqual({ row: 9, column: 9, rows: 1, columns: 1 })
-  })
-
-  it('moves the top edge by pairs of rows where rows alternate, in the direction of the change', () => {
+  it('moves the top edge by a pair of rows where rows alternate, so the first row stays even', () => {
     const peyote = { row: 4, column: 0, rows: 6, columns: 3 }
-    const fromTop = { horizontal: 'right', vertical: 'top' } as const
-    // One more row would put the top on row 3, so it goes up to 2: two rows more.
-    expect(frameWithSizeFrom('peyote', peyote, 3, 7, fromTop)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
-    // One fewer would put it on row 5, so it goes down to 6: two rows fewer.
-    expect(frameWithSizeFrom('peyote', peyote, 3, 5, fromTop)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
-    // Two at once lands on an even row, as it is.
-    expect(frameWithSizeFrom('brick', peyote, 3, 4, fromTop)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
-    // The bottom edge has no such step.
-    expect(frameWithSizeFrom('peyote', peyote, 3, 7, DEFAULT_FRAME_SIDES)).toEqual({ row: 4, column: 0, rows: 7, columns: 3 })
-  })
-
-  it('leaves a Frame as it is when the size is the same', () => {
-    expect(frameWithSizeFrom('peyote', frame, 6, 6, { horizontal: 'left', vertical: 'top' })).toEqual(frame)
+    expect(frameWithEdgeStep('peyote', peyote, 'top', 1)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
+    expect(frameWithEdgeStep('brick', peyote, 'top', -1)).toEqual({ row: 6, column: 0, rows: 4, columns: 3 })
+    expect(frameWithEdgeStep('peyote', { ...peyote, rows: 2 }, 'top', -1)).toEqual({ ...peyote, rows: 2 })
+    expect(frameWithEdgeStep('peyote', peyote, 'bottom', 1)).toEqual({ row: 4, column: 0, rows: 7, columns: 3 })
   })
 })

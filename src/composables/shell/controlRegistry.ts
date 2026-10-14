@@ -1,6 +1,7 @@
 import { type Chord } from '../../domain/chord'
 import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
+import { frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -38,11 +39,11 @@ export interface ControlDeps {
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
-  /** Starts Set Frame, or finishes it. */
-  onToggleFrame: () => void
+  /** Starts Edit Frame (ticket 417). */
+  onEditFrame: () => void
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
-  /** Whether the Frame is being set, and the way out of it. */
+  /** Whether the Frame is being edited, and the way out of it. */
   settingFrame: () => boolean
   finishFrame: () => void
   onCopy: () => void
@@ -126,6 +127,23 @@ const frameLocked = (deps: ControlDeps) => {
 }
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
+
+const FRAME_EDGES: readonly FrameEdge[] = ['top', 'bottom', 'left', 'right']
+
+/** One of Edit Frame's margin steppers (ticket 417): an edge a bead out or in, named for its edge. Moving in stops at one bead. */
+const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlAction => ({
+  id: `frame-edge-${edge}-${direction}`,
+  name: (t) => t.frame[direction === 'out' ? 'edgeOut' : 'edgeIn'][edge],
+  body: (t) => (direction === 'out' ? t.tooltips.frameEdgeOut : t.tooltips.frameEdgeIn),
+  enabled: (deps) => {
+    const project = deps.activeProject()
+    if (!project?.frame || frameLocked(deps)) return false
+    return direction === 'out' || frameWithEdgeStep(project.technique, project.frame, edge, -1) !== project.frame
+  },
+  disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.frameEdgeInDisabled),
+  group: 'canvas',
+  chords: [],
+})
 
 /** A control with no key, so it only lists its Tooltip copy (ticket 334); its surface runs it. */
 const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName; shownKey?: string } = {}): ControlAction =>
@@ -244,7 +262,7 @@ export const CONTROLS: readonly ControlAction[] = [
     run: (deps) => {
       // Picking a color from the canvas (ticket 398) is the first thing Escape ends.
       if (deps.cancelColorPick()) return
-      // Then Set Frame, the paste preview, the Selection.
+      // Then Edit Frame, the paste preview, the Selection.
       if (deps.settingFrame()) {
         deps.finishFrame()
         return
@@ -256,15 +274,18 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   selectTool('hand', '5', 'hand', (t) => t.tools.handLabel, 'canvas', (t) => t.tooltips.hand),
   {
-    id: 'set-frame',
+    id: 'edit-frame',
     icon: 'frame',
-    name: (t) => t.frame.setFrame,
-    body: (t) => t.tooltips.setFrame,
+    name: (t) => t.frame.editFrame,
+    body: (t) => t.tooltips.editFrame,
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
-    run: (deps) => deps.onToggleFrame(),
+    run: (deps) => deps.onEditFrame(),
   },
+  ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {
     id: 'rulers',
     icon: 'ruler',
@@ -535,9 +556,6 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('dock-tool', (t) => t.toolbox.groups.tools, 'tools', {
     body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.pieceLabel, t.tools.selectAllLabel, t.tools.eraseLabel, t.tools.handLabel]),
-  }),
-  unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
-    body: (t) => t.tooltips.list([t.frame.setFrame]),
   }),
   unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),

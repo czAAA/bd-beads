@@ -96,16 +96,13 @@ describe('SaveBox without a Frame (ticket 233)', () => {
     expect(wrapper.find('[aria-haspopup="dialog"]').exists()).toBe(true)
   })
 
-  it('asks for Fit to drawing or Set Frame, and closes the prompt', async () => {
+  it('asks for Fit to drawing, and closes the prompt', async () => {
     const wrapper = mountBox({ hasFrame: false })
     await openMenu(wrapper)
     await wrapper.find('[data-testid="export-fit-frame"]').trigger('click')
     expect(wrapper.emitted('fit-frame')).toHaveLength(1)
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-
-    await openMenu(wrapper)
-    await wrapper.find('[data-testid="export-set-frame"]').trigger('click')
-    expect(wrapper.emitted('set-frame')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="export-set-frame"]').exists()).toBe(false)
   })
 
   it('offers the formats as before once there is a Frame', async () => {

@@ -160,7 +160,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows the switch off and disabled, "Set Frame to start" and a Set Frame button, and no row buttons', async () => {
+  it('shows the switch off and disabled, "Set Frame to start" and a Fit to drawing button, and no row buttons', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
@@ -171,7 +171,11 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="progress-bar-set-frame"]').trigger('click')
-    expect(wrapper.emitted('set-frame')).toHaveLength(1)
+    // Fit to drawing needs something drawn; with a bead it asks the app to frame it.
+    await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
+    expect(wrapper.emitted('fit-frame')).toBeUndefined()
+    await wrapper.setProps({ project: { ...unframedProject(), beads: { 0: { 0: '#e63746' } } } })
+    await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
+    expect(wrapper.emitted('fit-frame')).toHaveLength(1)
   })
 })

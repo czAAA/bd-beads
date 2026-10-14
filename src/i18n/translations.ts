@@ -114,7 +114,6 @@ export interface Translations {
     piecesCount: PluralForms
     /** The strip's meta with no Frame ("3 pieces · no Frame") and while the Frame is being set ("3 pieces · setting Frame"). */
     noFrame: string
-    settingFrame: string
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
     /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */
@@ -441,9 +440,10 @@ export interface Translations {
    */
   frame: {
     title: string
-    setFrame: string
-    /** The description line in Set Frame's Tooltip (ticket 251). */
-    setFrameHint: string
+    editFrame: string
+    /** The margin steppers' names, by the edge they move (ticket 417): a bead out, a bead in. */
+    edgeOut: Record<'top' | 'bottom' | 'left' | 'right', string>
+    edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
     notSet: string
     /** The number chip's accessible name: pressing it brings the Frame into view. */
     numberLabel: string
@@ -451,25 +451,6 @@ export interface Translations {
     fitToDrawing: string
     removeFrame: string
     done: string
-    /** The Frame section's size controls (ticket 342): the Schema size is Width and Height, in beads or mm. */
-    widthLabel: string
-    heightLabel: string
-    decreaseWidth: string
-    increaseWidth: string
-    decreaseHeight: string
-    increaseHeight: string
-    unitLabel: string
-    /** Which side Width and Height grow and shrink the Frame from (ticket 410): each choice's label, option names and Tooltip bodies. */
-    widthSideLabel: string
-    heightSideLabel: string
-    sideLeft: string
-    sideRight: string
-    sideTop: string
-    sideBottom: string
-    sideLeftBody: string
-    sideRightBody: string
-    sideTopBody: string
-    sideBottomBody: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */
@@ -632,7 +613,11 @@ export interface Translations {
     piece: string
     selectAll: string
     hand: string
-    setFrame: string
+    editFrame: string
+    /** The margin steppers' Tooltips (ticket 417), and why Shrink is off at one bead. */
+    frameEdgeOut: string
+    frameEdgeIn: string
+    frameEdgeInDisabled: string
     removeFrame: string
     noFrameToRemove: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */

@@ -54,7 +54,6 @@ describe('App at the phone tier (ticket 79)', () => {
     for (const [dockId, expectFound] of [
       ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
       ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
-      ['dock-frame', () => wrapper.find('[data-testid="frame-set"]').exists()],
       ['dock-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
       ['dock-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
     ] as const) {
@@ -65,20 +64,20 @@ describe('App at the phone tier (ticket 79)', () => {
     }
   })
 
-  it('sets the Frame from the Dock\'s Frame sheet, with the ContextBar holding its size, Fit to drawing and Done', async () => {
+  it('has no Frame slot in the Dock; Edit Frame starts from the Project sheet, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
     const wrapper = await mountWithProject(15, 30)
+    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="frame-columns"]').text()).toBe('10')
-    await wrapper.find('[data-testid="frame-set"]').trigger('click')
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="frame-edit"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').classes()).toContain('icon-btn--selected')
     expect(wrapper.find('[data-testid="context-bar-frame-size"]').text()).toMatch(/^10×20/)
+    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
 
     await wrapper.find('[data-testid="context-bar-done-frame"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-frame-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').classes()).not.toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
   })
 
   it('picks a tool from the Tool sheet and closes the sheet (ticket 397)', async () => {
@@ -112,18 +111,18 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
-  it('keeps Rotate, Copy and Paste off the Frame sheet: they are on the Selection bar (tickets 415, 416)', async () => {
+  it('keeps Rotate, Copy and Paste off the Project sheet: they are on the Selection bar (tickets 415, 416)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
 
     expect(wrapper.find('[data-testid="sheet-paste"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="sheet-copy"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(false)
   })
 
-  it('changes the Technique from the Frame sheet as one Undo step (ticket 351)', async () => {
+  it('changes the Technique from the Project sheet as one Undo step (ticket 351)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
 
     await wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
@@ -132,43 +131,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').attributes('aria-checked')).toBe('true')
     await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
     expect(drawnProject(wrapper).technique).toBe('loom')
-  })
-
-  it('applies the Frame sheet\'s size once, when the sheet closes, as one Undo step (ticket 410)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const original = { ...drawnProject(wrapper).frame! }
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-
-    await wrapper.get('[data-testid="frame-width-side"] [data-value="left"]').trigger('click')
-    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
-    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
-    await wrapper.get('[data-testid="frame-rows-decrease"]').trigger('click')
-
-    // The canvas and the fields follow the presses, but nothing is committed and there is nothing to undo.
-    expect(drawnProject(wrapper).frame).toEqual({ ...original, column: original.column - 2, columns: original.columns + 2, rows: original.rows - 1 })
-    expect(wrapper.get('[data-testid="frame-columns"]').text()).toBe(String(original.columns + 2))
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
-
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(drawnProject(wrapper).frame).toEqual({ ...original, column: original.column - 2, columns: original.columns + 2, rows: original.rows - 1 })
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeUndefined()
-
-    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
-    expect(drawnProject(wrapper).frame).toEqual(original)
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
-  })
-
-  it('applies the Frame sheet\'s size too when another sheet is opened over it (ticket 410)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    const original = { ...drawnProject(wrapper).frame! }
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
-    await wrapper.get('[data-testid="frame-columns-increase"]').trigger('click')
-
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
-
-    expect(drawnProject(wrapper).frame).toEqual({ ...original, columns: original.columns + 1 })
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('picks a Palette color from the Colour sheet and paints with it', async () => {
@@ -182,7 +144,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBe('#e63746')
   })
 
-  it('undoes and redoes from the Zoom pill, and the Frame sheet no longer holds them (tickets 295, 296)', async () => {
+  it('undoes and redoes from the Zoom pill, and the Project sheet does not hold them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="zoom-pill-redo"]').attributes('aria-disabled')).toBeDefined()
@@ -198,7 +160,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.get('[data-testid="zoom-pill-redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
-    await wrapper.find('[data-testid="dock-frame"]').trigger('click')
+    await wrapper.find('[data-testid="dock-project"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 

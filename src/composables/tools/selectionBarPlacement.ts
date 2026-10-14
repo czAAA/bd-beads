@@ -36,3 +36,17 @@ export function selectionBarPlacement(selection: BarBox, bar: { width: number; h
   const top = clamp(below ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height)
   return { left, top, below }
 }
+
+/** How far Edit Frame's margin steppers reach past the Frame's line, in px: their gap and button (EditFrameSteppers), 16 + 28, or 24 + 36 on touch. */
+const STEPPER_REACH_PX = 44
+const TOUCH_STEPPER_REACH_PX = 60
+
+/**
+ * What Edit Frame's bar anchors to (ticket 417): the Frame grown by the margin steppers' reach above and below, so the bar
+ * sits just above the top stepper, and when it flips below the Frame, under the bottom one.
+ */
+export function frameBarAnchor(frame: SelectionAnchor, touch: boolean): SelectionAnchor {
+  const reach = touch ? TOUCH_STEPPER_REACH_PX : STEPPER_REACH_PX
+  const { left, top, width, height } = frame.box
+  return { box: { left, top: top - reach, width, height: height + 2 * reach }, viewport: frame.viewport }
+}
