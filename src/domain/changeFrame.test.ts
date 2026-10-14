@@ -25,7 +25,6 @@ describe('changeFrame', () => {
     const changes: [string, FrameChange][] = [
       ['set', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
       ['remove', { remove: true }],
-      ['rotate', { rotate: true }],
       ['removeLine', { removeLine: { axis: 'row', index: 0 } }],
       ['technique', { technique: 'peyote' }],
     ]
@@ -44,10 +43,9 @@ describe('changeFrame', () => {
       expect(changeFrame(project, { remove: true }).kind).toBe('changed')
     })
 
-    it('needs a Frame to rotate or remove a line from', () => {
+    it('needs a Frame to remove a line from', () => {
       const none = framed()
       delete none.frame
-      expect(changeFrame(none, { rotate: true })).toEqual({ kind: 'refused', reason: 'no-frame' })
       expect(changeFrame(none, { removeLine: { axis: 'row', index: 0 } })).toEqual({ kind: 'refused', reason: 'no-frame' })
     })
 
@@ -118,8 +116,6 @@ describe('changeFrame', () => {
       ['columns', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
       ['rows', { removeLine: { axis: 'row', index: 0 } }],
       ['columns', { removeLine: { axis: 'column', index: 0 } }],
-      ['rows', { rotate: true }],
-      ['columns', { rotate: true }],
     ]
     it.each(cases)('keeps both pointers inside the new Frame (%s, %j)', (direction, change) => {
       // Row progress off, so the change is allowed; the pointers are what it had saved.
@@ -156,13 +152,6 @@ describe('changeFrame', () => {
     it('reports no Pieces moved when the margin was already clear', () => {
       const result = changeFrame(framed(), { set: { ...frame, rows: 7 } })
       expect(result).toMatchObject({ kind: 'changed', moved: 0 })
-    })
-
-    it('counts the Pieces a Rotate moves', () => {
-      const square = framed({ frame: { row: 0, column: 0, rows: 4, columns: 4 } })
-      const beads = withColors(square.beads, [{ row: 0, column: 0, color: '#00ff00' }, { row: 5, column: 1, color: '#ff0000' }])
-      const result = changeFrame({ ...square, beads }, { rotate: true })
-      expect(result).toMatchObject({ kind: 'changed', moved: 1 })
     })
   })
 

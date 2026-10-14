@@ -52,5 +52,5 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - **Set Frame:** the Frame follows the drag and snaps to whole beads with no animation; its size tag updates as it moves.
 - **Bring into view** (the Frame number) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
 - **Margin:** its dashed outline fades in over `--duration-fast` while the Frame is set, moved or resized and after a refused press, and out again; opacity only. Beads moved out of it appear in their new place with no travel animation.
-- **Rotate:** the Frame and its beads turn at once. A piece that was in the way appears in its new place with no travel animation; the Message says what moved and offers Undo.
+- **Rotate:** the Selection's beads turn at once, and the turned rectangle is the new Selection. Beads it covers are simply replaced, with no travel animation; the Message says how many and offers Undo.
 - Rulers appear and hide at once. Nothing on the Pattern animates.

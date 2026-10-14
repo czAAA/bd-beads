@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContextBar from './ContextBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, withFrame } from '../../domain/project'
+import { createProject, moveToRow, setRowProgressEnabled, withFrame } from '../../domain/project'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const painted = { ...project, beads: { 0: { 0: '#ff0000' } } }
@@ -135,14 +135,15 @@ describe('ContextBar', () => {
     })
   })
 
-  it('disables Rotate, and does nothing on a click, when the Frame cannot be turned', async () => {
-    const wrapper = mount(ContextBar, {
-      props: { project: noFrame, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true },
-    })
-    const rotate = wrapper.get('[data-testid="context-bar-rotate"]')
-    expect(rotate.attributes('aria-disabled')).toBe('true')
-    await rotate.trigger('click')
-    expect(wrapper.emitted('rotate')).toBeUndefined()
+  it('offers Rotate with a Selection, and not once a Row progress pass is done (tickets 411, 416)', async () => {
+    const props = { selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true }
+    const wrapper = mount(ContextBar, { props: { ...props, project } })
+    await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
+    expect(wrapper.emitted('rotate')).toHaveLength(1)
+
+    const woven = moveToRow(setRowProgressEnabled(project, true), 1)
+    expect(mount(ContextBar, { props: { ...props, project: woven } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
+    expect(mount(ContextBar, { props: { pasteArmed: false, canRemoveLine: false, project } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
   })
 
   it('carries no native title: the Tooltip names a control whose label has hidden', () => {

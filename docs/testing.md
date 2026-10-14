@@ -35,7 +35,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 | Kind | Copy | Notes |
 |---|---|---|
 | Pure domain logic | `src/domain/changeFrame.test.ts` | Plain inputs and outputs, no mounting |
-| A flow composable that edits the Project | `src/composables/project/useRotateFlow.test.ts` | Drives a real Edit and Undo through `editHarness` |
+| A flow composable that edits the Project | `src/composables/tools/useRotateSelectionFlow.test.ts` | Drives a real Edit and Undo through `editHarness` |
 | A component on its own | `src/components/ui/MenuButton.test.ts`, `src/components/canvas/ProgressBar.test.ts` | `mount` with props, assert on what the person sees |
 | The control registry and its keys | `src/composables/shell/controlRegistry.test.ts` | A duplicate key fails here |
 | Drawing | `src/rendering/overlayRenderer.test.ts` | `recordingContext` writes down every draw call |

@@ -10,13 +10,13 @@ import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
-import type { Project } from '../../domain/project'
+import { rowProgressStarted, type Project } from '../../domain/project'
 
 /**
  * The design system's ContextBar (tickets 168, 415; ContextBar card): a thin icon-only bar anchored above the
  * Selection's top edge, centred on it, clamped inside the canvas box and flipped below when there is no room above. It
- * offers what a Selection can do: its size, Copy, Cut, Paste, Fill, Frame and, after a divider, Clear selection; only
- * what applies is rendered (Paste with a clipboard, Frame without a Frame, Remove line with a line selected). When the
+ * offers what a Selection can do: its size, Copy, Cut, Paste, Fill, Frame, Rotate and, after a divider, Clear selection; only
+ * what applies is rendered (Paste with a clipboard, Rotate until a Row progress pass is done, Remove line with a line selected). When the
  * canvas box is too narrow for all of it, the last actions fold into a "…" menu. Once Paste is armed it is "Tap to paste"
  * and Cancel at the canvas box's top-centre, and while the Frame is being set it holds the Frame's size, Fit to drawing,
  * Remove Frame and Done (ticket 295).
@@ -114,7 +114,8 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).
   list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
-  list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  // Not offered once a Row progress pass is done: the Frame lock of ticket 411 (ticket 416).
+  if (!props.project || !rowProgressStarted(props.project)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })

@@ -24,7 +24,7 @@ import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
 import { useFrameFlow } from '../project/useFrameFlow'
 import { useNamePieceFlow } from '../project/useNamePieceFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
-import { useRotateFlow } from '../project/useRotateFlow'
+import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -531,9 +531,11 @@ function wireAppShell(services: Services) {
   // Switching Set Frame on or off leaves no keyboard cursor on a bead nobody moved to (ticket 354).
   watch(frameFlow.settingFrame, hideCursor, { flush: 'sync' })
 
-  /** Rotate: the Frame and its beads a quarter turn, with a Message when a Piece had to move (ticket 233). */
-  const rotateFlow = useRotateFlow({
+  /** Rotate: the Selection a quarter turn, with a Message saying how many beads it covered (ticket 416, ADR 0052). */
+  const rotateFlow = useRotateSelectionFlow({
     edit,
+    currentProject,
+    selection,
     announce,
     showToast,
     onUndo,

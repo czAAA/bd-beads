@@ -27,7 +27,7 @@ Design reference: the "Selection bar on the canvas" board of the design canvas (
 
 ## What the app does differently
 
-- Until tickets 416 and 417 move them, **Rotate**, **Remove line** and **Name Piece** stay on the bar, after Fill and Frame and before the divider; Remove line and Name Piece are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece).
+- **Rotate** (Shift+R) turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection, the Frame is untouched, and beads under the new footprint are replaced (ticket 416, ADR 0052). It is not rendered once a Row progress pass is done (the Frame lock of ticket 411). Until ticket 417 moves them, **Remove line** and **Name Piece** stay on the bar, after Fill, Frame and Rotate and before the divider; they are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece).
 - The "…" menu folds the last items first, Clear selection among them when it comes to that.
 - The Frame bar keeps its Done label until ticket 417.
 
