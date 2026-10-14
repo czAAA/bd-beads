@@ -1,6 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/passes'
+import { namedPieces } from '../domain/pieceNames'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -8,6 +9,9 @@ import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { frameHandles } from './frameHandles'
+
+/** The mono stack every number and label on the canvas is set in. */
+const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
 
 /** The corner radius of a piece's rectangle and of the Frame's line (BeadBoard and Frame cards). */
 const PIECE_RADIUS_PX = 6
@@ -60,7 +64,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
 
   const weight = current || onCursor || label.fifth ? 700 : 400
-  context.font = `${weight} ${fontPx}px "DM Mono", "JetBrains Mono", ui-monospace, monospace`
+  context.font = `${weight} ${fontPx}px ${MONO_FONT}`
   context.fillStyle = current ? theme.marker : onCursor ? theme.frameLine : label.fifth ? theme.rulerStrong : theme.ruler
   context.textAlign = 'center'
   context.textBaseline = 'middle'
@@ -102,6 +106,30 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   for (const label of layout.labels) {
     drawLabel(context, label, fontPx, project, theme, cursor)
   }
+  drawPieceNames(context, input)
+}
+
+/** The gap between a named Piece's rectangle and its name below it. */
+const NAME_GAP_PX = 4
+
+/** The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line color; read at any zoom. */
+function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
+  const pieces = namedPieces(project)
+  if (pieces.length === 0) {
+    return
+  }
+  const fontPx = Math.max(layout.scale.fontPx, 11)
+  context.font = `600 ${fontPx}px ${MONO_FONT}`
+  context.fillStyle = theme.frameLine
+  context.textAlign = 'left'
+  context.textBaseline = 'top'
+  for (const piece of pieces) {
+    const shown = surface.beadBox(piece)
+    if (shown.x > surface.viewport.width || shown.y > surface.viewport.height || shown.x + shown.width < 0 || shown.y + shown.height < 0) {
+      continue
+    }
+    context.fillText(piece.name, shown.x, shown.y + shown.height + layout.scale.pieceOutset + NAME_GAP_PX)
+  }
 }
 
 
@@ -135,7 +163,7 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
   if (tooltip === '') {
     return
   }
-  context.font = '500 12px "DM Mono", "JetBrains Mono", ui-monospace, monospace'
+  context.font = `500 12px ${MONO_FONT}`
   const width = tooltip.length * 12 * 0.6 + TOOLTIP_PAD_X * 2
   const x = Math.min(box.x + box.width - width, viewport.width - width - 4)
   const y = Math.min(box.y + box.height + TOOLTIP_GAP, viewport.height - TOOLTIP_HEIGHT - 4)

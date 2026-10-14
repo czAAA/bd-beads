@@ -45,6 +45,9 @@ export interface ControlDeps {
   /** Whether Remove row/column applies right now: a whole row or column is selected and Row progress is off. */
   canRemoveSelectedLine: () => boolean
   onRemoveSelectedLine: () => void
+  /** Whether Name Piece applies right now: the Selection holds beads of exactly one Piece (ticket 406). */
+  canNamePiece: () => boolean
+  onNamePiece: () => void
   onToggleRowProgress: (enabled: boolean) => void
   onToggleRowDirection: () => void
   onMoveRow: (delta: number) => void
@@ -381,6 +384,19 @@ export const CONTROLS: readonly ControlAction[] = [
       if (deps.canRemoveSelectedLine()) deps.onRemoveSelectedLine()
     },
   },
+  {
+    id: 'name-piece',
+    icon: 'piece',
+    name: (t) => t.tools.namePieceButton,
+    body: (t) => t.tooltips.namePiece,
+    enabled: (deps) => deps.canNamePiece(),
+    disabledBody: (t) => t.tooltips.namePieceDisabled,
+    group: 'edit',
+    chords: [],
+    run: (deps) => {
+      if (deps.canNamePiece()) deps.onNamePiece()
+    },
+  },
   ...(MIRROR_ENABLED ? MIRROR_CONTROLS : []),
   {
     id: 'row-progress',
@@ -518,7 +534,7 @@ export function chordSlots(chord: Chord): string[] {
 }
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine' | 'canNamePiece'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

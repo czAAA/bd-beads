@@ -66,6 +66,8 @@ const {
   selection,
   pasteProjectionActive,
   onCopy,
+  canNamePiece,
+  onNamePiece,
   backOutOfSelect,
   previewCells,
   previewedMirrorAxisCounts,
@@ -295,6 +297,7 @@ function techniqueWord(technique: Technique): string {
         :paste-armed="pasteProjectionActive"
         :project="activeProject"
         :can-remove-line="canRemoveSelectedLine"
+        :can-name-piece="canNamePiece"
         :setting-frame="settingFrame"
         :frame-summary="frameTooltip"
         @fit-frame="onFitFrame"
@@ -303,6 +306,7 @@ function techniqueWord(technique: Technique): string {
         @copy="onCopy"
         @rotate="onRotate"
         @remove-line="onRemoveSelectedLine"
+        @name-piece="onNamePiece"
         @dismiss="backOutOfSelect"
       />
 

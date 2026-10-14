@@ -31,6 +31,8 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSave: vi.fn(),
     onRotate: vi.fn(),
     canRemoveSelectedLine: () => true,
+    canNamePiece: () => false,
+    onNamePiece: vi.fn(),
     onRemoveSelectedLine: vi.fn(),
     onToggleRowProgress: vi.fn(),
     onToggleRowDirection: vi.fn(),

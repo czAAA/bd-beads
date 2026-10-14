@@ -252,6 +252,13 @@ export const zh: Translations = {
       export: '导出',
     },
   },
+  pieceName: {
+    title: '给小块命名',
+    label: '名称',
+    hint: '有名称的小块就是图样。留空即可去掉名称。',
+    save: '保存',
+    cancel: '取消',
+  },
   contextBar: {
     label: '选区操作',
     clearButton: '清除选区',
@@ -291,6 +298,7 @@ export const zh: Translations = {
     removeLineButton: '删除所选行/列',
     removeLineShort: '删除行列',
     removeLineName: '删除行列',
+    namePieceButton: '命名小块',
   },
   inputMode: {
     penLabel: '手写笔模式',
@@ -539,6 +547,8 @@ export const zh: Translations = {
     rowProgressLockedRemoveLine: '关闭行进度后才能删除行或列。',
     removeLine: '删除所选的行或列并合拢空隙。',
     removeLineDisabled: '请先选择完整的一行或一列。',
+    namePiece: '给所选小块起个名字，它就成为图样。',
+    namePieceDisabled: '请先选择一个小块。',
     clear: '清除画布上的所有内容。',
     customColor: '向调色板添加颜色，最多 {max} 种。',
     pickFromCanvas: '点击画布上的珠子即可使用它的颜色；有空位时会加入调色板。',

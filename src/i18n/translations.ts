@@ -235,6 +235,14 @@ export interface Translations {
       names: [string, string, string, string, string, string]
     }
   }
+  /** The Name Piece dialog (ticket 406). */
+  pieceName: {
+    title: string
+    label: string
+    hint: string
+    save: string
+    cancel: string
+  }
   contextBar: {
     label: string
     clearButton: string
@@ -286,6 +294,8 @@ export interface Translations {
     /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
     removeLineShort: string
     removeLineName: string
+    /** The selection bar's Name button (ticket 406): gives the selected Piece a name, which makes it a Schema. */
+    namePieceButton: string
   }
   /** The input mode toggle (ticket 325; CONTEXT.md: Pen mode, Mouse mode). */
   inputMode: {
@@ -619,6 +629,8 @@ export interface Translations {
     rowProgressLockedRemoveLine: string
     removeLine: string
     removeLineDisabled: string
+    namePiece: string
+    namePieceDisabled: string
     clear: string
     customColor: string
     pickFromCanvas: string
