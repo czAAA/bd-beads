@@ -47,7 +47,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const rowEl = ref<HTMLElement>()
-const dropped = useDropSteps(rowEl, 5, [() => props.pasteArmed, () => t.value.contextBar])
+const dropped = useDropSteps(rowEl, 4, [() => props.pasteArmed, () => t.value.contextBar])
 
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there. */
 const actions = {
@@ -101,21 +101,19 @@ const sizeText = computed(() => (props.selectionSize ? `${props.selectionSize.co
       <AppButton class="context-bar__button" :action="actions.done" :deps="deps" data-testid="context-bar-done-frame" @click="emit('done-frame')" />
     </template>
     <template v-else-if="!pasteArmed">
-      <span v-if="dropped < 5" class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
-      <component :is="labelled(4)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
-      <component :is="labelled(3)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
+      <span v-if="dropped < 4" class="context-bar__size" data-testid="context-bar-size">{{ sizeText }}</span>
+      <component :is="labelled(3)" class="context-bar__button" :action="actions.copy" :deps="deps" data-testid="context-bar-copy" data-tour="copy" @click="emit('copy')" />
+      <component :is="labelled(2)" class="context-bar__button" :action="actions.rotate" :deps="deps" data-testid="context-bar-rotate" @click="emit('rotate')" />
       <component
-        :is="labelled(2)"
+        :is="labelled(1)"
         class="context-bar__button"
-       
         :action="actions.removeLine"
         :deps="deps"
         data-testid="context-bar-remove-line"
         data-tour="remove-line"
         @click="emit('remove-line')"
       />
-      <component
-        :is="labelled(1)"
+      <IconButton
         class="context-bar__button"
         :action="actions.namePiece"
         :deps="deps"
