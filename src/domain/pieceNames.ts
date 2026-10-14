@@ -3,6 +3,7 @@ import type { GridPosition, Technique } from './grid'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
 import type { Project } from './project'
+import type { Selection } from './selection'
 
 /**
  * A name for a Piece (ticket 406, ADR 0050): a named Piece is an unframed Schema. Pieces are never stored (they merge
@@ -56,7 +57,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
     return known.found
   }
   const found: NamedPiece[] = []
-  for (const { name, row, column } of project.pieceNames ?? []) {
+  for (const { name, row, column } of names) {
     const members = pieceBeadsAt(project.beads, project.technique, { row, column })
     if (members.length === 0) {
       continue
@@ -224,7 +225,7 @@ export function keepNamesApart(before: Project, after: Project): Project {
  */
 export function pieceInSelection(
   project: Pick<Project, 'beads' | 'technique'>,
-  selection: { top: number; left: number; rows: number; columns: number },
+  selection: Selection,
 ): GridPosition | undefined {
   const labeller = pieceLabeller(project.beads, project.technique)
   let found: { id: number; at: GridPosition } | undefined

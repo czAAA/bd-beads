@@ -22,7 +22,7 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
   const target = computed(() => {
     const project = deps.currentProject()
     const selection = deps.selection()
-    return project && selection ? pieceInSelection(project, { ...selection }) : undefined
+    return project && selection ? pieceInSelection(project, selection) : undefined
   })
 
   const canNamePiece = computed(() => !!target.value)

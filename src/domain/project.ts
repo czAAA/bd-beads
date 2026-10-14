@@ -554,7 +554,9 @@ export function deleteAll(project: Project): Project {
     return project
   }
 
-  return touch(project, {
+  // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
+  const { pieceNames: _names, ...rest } = project
+  return touch(rest, {
     beads: {},
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
