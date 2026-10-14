@@ -38,4 +38,30 @@ describe('pick controls and the sheet around them (ticket 397)', () => {
 
     expect(wrapper.emitted('select')).toEqual([['erase']])
   })
+
+  it('lists Paint, Fill, Select, Piece, Select all, Erase, Hand in that order (ticket 414)', () => {
+    const wrapper = mount(ToolTiles, { props: { activeTool: 'paint' } })
+
+    expect(wrapper.findAll('button').map((tile) => tile.attributes('data-testid'))).toEqual([
+      'sheet-tool-paint',
+      'sheet-tool-fill',
+      'sheet-tool-select',
+      'sheet-tool-piece',
+      'sheet-tool-select-all',
+      'sheet-tool-erase',
+      'sheet-tool-hand',
+    ])
+  })
+
+  it('Select all acts at once: it emits select-all, never a tool, and is never marked selected', async () => {
+    const wrapper = mount(ToolTiles, { props: { activeTool: 'select' } })
+    const tile = wrapper.get('[data-testid="sheet-tool-select-all"]')
+
+    await tile.trigger('click')
+
+    expect(wrapper.emitted('select-all')).toHaveLength(1)
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(tile.attributes('aria-pressed')).toBeUndefined()
+    expect(wrapper.get('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
+  })
 })

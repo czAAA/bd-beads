@@ -367,4 +367,101 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeUndefined()
     })
   })
+
+  describe('Piece and Select all (ticket 414)', () => {
+    /** Two Pieces: a pair at the top left and a lone bead at (3, 3), on a 4 x 4 loom. */
+    function twoPieces() {
+      let project = makeProject()
+      project = paintCells(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      return setup(project)
+    }
+
+    it('a tap on a bead selects its Piece\'s rectangle', () => {
+      const { gesture } = twoPieces()
+
+      gesture.tapPiece(1, 1)
+
+      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+    })
+
+    it('a tap on empty space clears the Selection', () => {
+      const { gesture } = twoPieces()
+      gesture.tapPiece(0, 0)
+
+      gesture.tapPiece(2, 0)
+
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('a new Piece Selection drops what was copied', () => {
+      const { gesture } = twoPieces()
+      gesture.tapPiece(0, 0)
+      gesture.copy()
+      expect(gesture.hasClipboard()).toBe(true)
+
+      gesture.tapPiece(3, 3)
+
+      expect(gesture.hasClipboard()).toBe(false)
+    })
+
+    it('Select all selects the rectangle round every bead, and does nothing on an empty canvas', () => {
+      const { gesture } = twoPieces()
+      expect(gesture.selectAll()).toBe(true)
+      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 4, columns: 4 })
+
+      const empty = setup()
+      expect(empty.gesture.selectAll()).toBe(false)
+      expect(empty.gesture.selection.value).toBeUndefined()
+    })
+  })
+
+  describe('handles (ticket 414)', () => {
+    function selected() {
+      const harness = setup()
+      harness.gesture.beginPress(1, 1)
+      harness.gesture.extendPress(2, 2)
+      harness.gesture.endPress()
+      return harness.gesture
+    }
+
+    it('dragging a handle resizes the Selection by the sides it stands on', () => {
+      const gesture = selected()
+
+      gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 2 }, 'select')
+      gesture.dragAdjust({ row: 3, column: 3 })
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toEqual({ top: 1, left: 1, rows: 3, columns: 3 })
+    })
+
+    it('dragging inside moves the outline and leaves the beads alone', () => {
+      const { gesture, harness } = (() => {
+        const made = setup(paintedProject())
+        made.gesture.beginPress(0, 0)
+        made.gesture.extendPress(1, 1)
+        made.gesture.endPress()
+        return made
+      })()
+      const before = harness.currentProject()!.beads
+
+      gesture.beginAdjust({ kind: 'inside' }, { row: 0, column: 0 }, 'select')
+      gesture.dragAdjust({ row: 1, column: 2 })
+      gesture.endAdjust()
+
+      expect(gesture.selection.value).toEqual({ top: 1, left: 2, rows: 2, columns: 2 })
+      expect(harness.currentProject()!.beads).toBe(before)
+    })
+
+    it('a press inside that never moves is a tap: one bead under Select, the bead\'s Piece under Piece', () => {
+      const gesture = selected()
+      gesture.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'select')
+      gesture.endAdjust()
+      expect(gesture.selection.value).toEqual({ top: 2, left: 1, rows: 1, columns: 1 })
+
+      const piece = selected()
+      piece.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'piece')
+      piece.endAdjust()
+      expect(piece.selection.value).toBeUndefined()
+    })
+  })
 })

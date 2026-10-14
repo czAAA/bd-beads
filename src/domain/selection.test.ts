@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import {
+  allBeadsSelection,
   copySelection,
+  movedSelection,
+  pieceSelectionAt,
+  selectionWithEdges,
   mirroredPasteBlock,
   mirroredPastedCells,
   pastedCells,
@@ -232,5 +236,43 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const result = mirroredPasteBlock(target, dot, { row: 0, column: 0 }, { rows: 0, columns: 2 })
 
     expect(result).toBe(target)
+  })
+})
+
+describe('Piece and Select all selections (ticket 414)', () => {
+  const picture = painted(['rr....', '.r..b.', '......', 'b...b.'])
+
+  it('a tap selects the bounding rectangle of the tapped bead’s Piece, and nothing on an empty position', () => {
+    expect(pieceSelectionAt(picture.beads, 'loom', { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+    expect(pieceSelectionAt(picture.beads, 'loom', { row: 2, column: 2 })).toBeUndefined()
+  })
+
+  it('a Piece’s rectangle includes the beads of other Pieces inside it', () => {
+    const ring = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
+    expect(pieceSelectionAt(ring.beads, 'loom', { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
+    expect(pieceSelectionAt(ring.beads, 'loom', { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
+  })
+
+  it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
+    expect(allBeadsSelection(picture.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(allBeadsSelection(project(3, 3).beads)).toBeUndefined()
+  })
+})
+
+describe('resizing and moving a Selection (ticket 414)', () => {
+  const selection = { top: 2, left: 3, rows: 4, columns: 5 }
+
+  it('a handle drags the sides it stands on, a corner two', () => {
+    expect(selectionWithEdges(selection, ['left'], { row: 9, column: 1 })).toEqual({ top: 2, left: 1, rows: 4, columns: 7 })
+    expect(selectionWithEdges(selection, ['bottom', 'right'], { row: 9, column: 10 })).toEqual({ top: 2, left: 3, rows: 8, columns: 8 })
+  })
+
+  it('a side never passes the one opposite it', () => {
+    expect(selectionWithEdges(selection, ['top'], { row: 20, column: 0 })).toEqual({ top: 5, left: 3, rows: 1, columns: 5 })
+    expect(selectionWithEdges(selection, ['right'], { row: 0, column: -4 })).toEqual({ top: 2, left: 3, rows: 4, columns: 1 })
+  })
+
+  it('moves by whole beads and keeps its size', () => {
+    expect(movedSelection(selection, -1, 2)).toEqual({ top: 1, left: 5, rows: 4, columns: 5 })
   })
 })

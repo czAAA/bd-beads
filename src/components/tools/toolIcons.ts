@@ -1,7 +1,7 @@
 import type { Tool } from '../../domain/tool'
 
-/** The five tools, in their fixed order (ToolTabs card). */
-export const TOOL_ORDER: readonly Tool[] = ['paint', 'fill', 'select', 'erase', 'hand']
+/** What the tool strip shows, in their fixed order (ToolTabs card; ticket 414): the Tools, with Select all, which acts at once and is no Tool, after Piece. */
+export const TILE_ORDER: readonly (Tool | 'select-all')[] = ['paint', 'fill', 'select', 'piece', 'select-all', 'erase', 'hand']
 
 /** Each tool's single-key shortcut, shown as a badge on its Tool button (ticket 250). Eraser's `Del` is not one. */
 export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {
@@ -10,7 +10,8 @@ export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {
   select: '3',
   erase: '4',
   hand: '5',
+  piece: '6',
 }
 
-/** Set Frame's key (ticket 292): a mode rather than a Tool, so it sits beside TOOL_HOTKEYS, not in it. */
-export const FRAME_HOTKEY = '6'
+/** Select all's key (ticket 414); Ctrl/⌘+A does the same. */
+export const SELECT_ALL_HOTKEY = '7'
