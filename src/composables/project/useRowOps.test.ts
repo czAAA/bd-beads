@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, setRowProgressEnabled, toggleRowDirection, type Project } from '../../domain/project'
+import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
@@ -9,6 +10,8 @@ function setup(project: Project | null = base) {
   const deps = {
     currentProject: () => project ?? undefined,
     replaceProject: vi.fn(),
+    showToast: vi.fn(),
+    messages: () => en,
   }
   return { deps, ...useRowOps(deps) }
 }
@@ -34,6 +37,20 @@ describe('useRowOps', () => {
     onToggleRowDirection()
     expect(replaced(deps).rowProgress.direction).toBe('columns')
     expect(replaced(deps).rotation).toBe(base.rotation)
+  })
+
+  it('says the new direction in a success toast, once per change, whoever turned it (ticket 411)', () => {
+    const showToast = vi.fn()
+    const deps = { currentProject: () => tracking, replaceProject: vi.fn(), showToast, messages: () => en }
+    const { onToggleRowDirection } = useRowOps(deps)
+    onToggleRowDirection()
+    expect(showToast).toHaveBeenCalledTimes(1)
+    expect(showToast).toHaveBeenCalledWith('row-direction', en.rowProgress.directionToastColumns, 'success')
+
+    const columns = toggleRowDirection(tracking)
+    const back = { ...deps, currentProject: () => columns }
+    useRowOps(back).onToggleRowDirection()
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 
   it('moves the Row progress pointer by the given step', () => {

@@ -5,7 +5,7 @@ import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { TECHNIQUES, type Technique } from '../../domain/grid'
-import { resolveProjectBead, type Project } from '../../domain/project'
+import { resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
 import { useFrameSides } from '../../composables/project/useFrameSides'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
@@ -42,7 +42,7 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 
 const frame = computed(() => props.pendingFrame ?? props.project.frame)
-const locked = computed(() => props.project.rowProgress.enabled)
+const locked = computed(() => rowProgressStarted(props.project))
 const bead = computed(() => resolveProjectBead(props.project))
 
 const columns = computed({

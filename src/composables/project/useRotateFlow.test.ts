@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { withColors } from '../../domain/canvas'
-import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFlow } from './useRotateFlow'
@@ -57,9 +57,9 @@ describe('useRotateFlow', () => {
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
   })
 
-  it('does nothing without a Frame, while Row progress is on, or with no Project', () => {
+  it('does nothing without a Frame, once Row progress is on and a pass is done, or with no Project', () => {
     const { frame: _frame, ...open } = base
-    for (const project of [open as Project, setRowProgressEnabled(base, true), null]) {
+    for (const project of [open as Project, moveToRow(setRowProgressEnabled(base, true), 1), null]) {
       const { harness, onRotate } = setup(project)
       onRotate()
       expect(harness.replaceProject).not.toHaveBeenCalled()

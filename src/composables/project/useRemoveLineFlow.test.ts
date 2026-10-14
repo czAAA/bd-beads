@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
@@ -21,8 +21,8 @@ describe('useRemoveLineFlow', () => {
     expect(setup({ project: null, selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
   })
 
-  it('is not available under the Row progress lock', () => {
-    expect(setup({ project: setRowProgressEnabled(base, true), selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
+  it('is not available under the Row progress lock: on with a pass done (ticket 411)', () => {
+    expect(setup({ project: moveToRow(setRowProgressEnabled(base, true), 1), selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
   })
 
   it('removes the line, resets the session, and Undo brings the Frame back', () => {

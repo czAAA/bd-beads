@@ -253,7 +253,7 @@ export const ru: Translations = {
       rows: {
         title: 'Отмечайте ряды',
         body:
-          'Прогресс по рядам запоминает, где вы остановились. Включите его, трижды нажмите «Ряд готов», затем один раз «Ряд не готов», чтобы вернуть ряд 3.',
+          'Прогресс по рядам запоминает, где вы остановились. Включите его, трижды нажмите «Готово», затем один раз «Ряд не готов», чтобы вернуть ряд 3.',
       },
     },
     final: {
@@ -324,7 +324,11 @@ export const ru: Translations = {
     directionButton: 'Повернуть направление рядов',
     positionLabel: 'Ряд',
     previousButton: 'Ряд не готов',
-    nextButton: 'Ряд готов',
+    nextButton: 'Готово',
+    columnPreviousButton: 'Столбец не готов',
+    columnNextButton: 'Столбец готов',
+    directionToastRows: 'Ряды теперь идут сверху вниз.',
+    directionToastColumns: 'Ряды теперь идут слева направо.',
     ofTotal: 'из {total} · {direction}',
     topToBottom: 'Сверху вниз',
     leftToRight: 'Слева направо',

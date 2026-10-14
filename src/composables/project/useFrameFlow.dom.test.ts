@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { withColors } from '../../domain/canvas'
 import { DEFAULT_FRAME_SIDES, type FrameSides } from '../../domain/frame'
-import { createProject, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
+import { createProject, moveToRow, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
@@ -97,8 +97,8 @@ describe('useFrameFlow', () => {
     expect(deps.replaceProject).not.toHaveBeenCalled()
   })
 
-  it('is refused while Row progress is on', () => {
-    const locked = setRowProgressEnabled(sized, true)
+  it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
+    const locked = moveToRow(setRowProgressEnabled(sized, true), 1)
     const { deps, frameLocked, press, drag, release, setSize, remove, pendingFrame, commitPending } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'inside' }, { row: 0, column: 0 })
@@ -212,8 +212,8 @@ describe('useFrameFlow', () => {
       expect(deps.harness.history.canUndo.value).toBe(false)
     })
 
-    it('is refused while Row progress is on', () => {
-      const { deps, setTechnique } = setup(setRowProgressEnabled(sized, true))
+    it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
+      const { deps, setTechnique } = setup(moveToRow(setRowProgressEnabled(sized, true), 1))
       setTechnique('brick')
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -386,8 +386,8 @@ describe('useFrameFlow', () => {
       expect(deps.centreOn).toHaveBeenCalledWith({ ...sized.frame, columns: 9, rows: 9 })
     })
 
-    it('does not touch the Frame while Row progress is on', () => {
-      const { deps, setSize, pendingFrame, commitPending } = setup(setRowProgressEnabled(sized, true))
+    it('does not touch the Frame once Row progress is on and a pass is done (ticket 411)', () => {
+      const { deps, setSize, pendingFrame, commitPending } = setup(moveToRow(setRowProgressEnabled(sized, true), 1))
       setSize(9, 9)
       commitPending()
       expect(pendingFrame.value).toBeUndefined()

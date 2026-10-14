@@ -30,6 +30,7 @@ import {
   frameGrid,
   withFrame,
   withFrameGrid,
+  rowProgressStarted,
 } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -728,13 +729,14 @@ describe('row progress', () => {
     const started = moveToRow(project(), 4)
 
     const shown = setRowProgressEnabled(started, true)
-    expect(shown.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(shown.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0, decided: true })
 
     expect(setRowProgressEnabled(shown, false).rowProgress).toEqual({
       enabled: false,
       direction: 'rows',
       currentRow: 4,
       currentColumn: 0,
+      decided: true,
     })
   })
 
@@ -744,11 +746,40 @@ describe('row progress', () => {
     expect(moveToRow(atThree, atThree.rowProgress.currentRow - 1).rowProgress.currentRow).toBe(2)
   })
 
-  it('will not step past either end of the Project', () => {
+  it('will not step past either end of the Project; one past the last pass is every pass done (ticket 411)', () => {
     const first = project()
 
     expect(moveToRow(first, -1).rowProgress.currentRow).toBe(0)
-    expect(moveToRow(first, first.frame!.rows + 5).rowProgress.currentRow).toBe(first.frame!.rows - 1)
+    expect(moveToRow(first, first.frame!.rows + 5).rowProgress.currentRow).toBe(first.frame!.rows)
+  })
+
+  it('counts every pass done as the whole track, on loom, brick stitch and peyote, in both directions (ticket 411)', () => {
+    for (const technique of ['loom', 'brick', 'peyote'] as const) {
+      for (const direction of ['rows', 'columns'] as const) {
+        const base = createProject({ technique, beadId: cubeBead.id, size: { width: 6, height: 8, unit: 'beads' } })
+        const turned = direction === 'columns' ? toggleRowDirection(base) : base
+        const open = rowProgressPosition(turned)
+        const done = moveToRow(turned, open.total)
+        expect(rowProgressPosition(done)).toEqual({ current: open.total, total: open.total })
+        expect(rowProgressPosition(moveToRow(turned, open.total - 1)).current).toBeLessThan(open.total)
+      }
+    }
+  })
+
+  it('has no current pass once every pass is done, so nothing is marked', () => {
+    const woven = setRowProgressEnabled(project(), true)
+    const done = moveToRow(woven, woven.frame!.rows)
+    expect(isInCurrentRow(done, { row: 0, column: 0 })).toBe(false)
+    expect(isInFinishedRow(done, { row: woven.frame!.rows - 1, column: 0 })).toBe(true)
+  })
+
+  it('is started only while on with a pass done (ticket 411)', () => {
+    const woven = setRowProgressEnabled(project(), true)
+    expect(rowProgressStarted(woven)).toBe(false)
+    expect(rowProgressStarted(moveToRow(woven, 1))).toBe(true)
+    expect(rowProgressStarted(setRowProgressEnabled(moveToRow(woven, 1), false))).toBe(false)
+    // The pointer of the other direction counts too.
+    expect(rowProgressStarted(moveToRow(toggleRowDirection(woven), 1))).toBe(true)
   })
 
   it('leaves the grid alone and returns a new Project rather than mutating the old one', () => {
@@ -780,7 +811,7 @@ describe('row direction', () => {
 
     expect(rowProgressPosition(downColumns)).toEqual({ current: 0, total: 10 })
     expect(rowProgressPosition(moveToRow(downColumns, 4))).toEqual({ current: 4, total: 10 })
-    expect(rowProgressPosition(moveToRow(downColumns, 15))).toEqual({ current: 9, total: 10 })
+    expect(rowProgressPosition(moveToRow(downColumns, 15))).toEqual({ current: 10, total: 10 })
   })
 
   it('keeps a separate pointer for each direction, so flipping back returns to the same row', () => {
@@ -1155,8 +1186,8 @@ describe('normalizeProject', () => {
       rowProgress: { enabled: true, direction: 'columns', currentRow: 999, currentColumn: 999 },
     })
 
-    expect(normalized.rowProgress.currentRow).toBe(19)
-    expect(normalized.rowProgress.currentColumn).toBe(9)
+    expect(normalized.rowProgress.currentRow).toBe(20)
+    expect(normalized.rowProgress.currentColumn).toBe(10)
   })
 })
 

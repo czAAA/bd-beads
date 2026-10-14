@@ -15,7 +15,7 @@ How big a Schema is: its Frame's width × height, counted in beads (a Project wi
 _Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
-Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Its key is `Shift+R`. Disabled with no Frame or while Row progress is on, and its Tooltip says which.
+Turns the Frame and the beads inside it a quarter turn about the Frame's centre (ADR 0026, which replaces the view-only turn of ticket 171). A Piece in the way moves clear of the Frame, with a Message and one Undo step. Its key is `Shift+R`. Disabled with no Frame, or once Row progress is on and a pass is done (ticket 411), and its Tooltip says which.
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:
