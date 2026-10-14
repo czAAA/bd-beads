@@ -52,9 +52,9 @@ describe('useProjectLabels', () => {
       expect(setup(tracking).projectLabel.value).toMatch(/, row 2 of 3 done$/)
     })
 
-    it('names a canvas with no Frame as an open canvas, with no size to state', () => {
+    it('names a canvas with no Frame as a Canvas, with no size to state', () => {
       const { frame: _frame, ...open } = withColors(base, ['#ff0000'])
-      expect(setup(open as Project).projectLabel.value).toBe('Logo panel, open canvas with no Frame, 1 color')
+      expect(setup(open as Project).projectLabel.value).toBe('Logo panel, Canvas with no Frame, 1 color')
     })
 
     it('is undefined with no Project open', () => {

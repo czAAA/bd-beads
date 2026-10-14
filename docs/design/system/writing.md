@@ -47,19 +47,20 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 
 | English | Russian | Note |
 | --- | --- | --- |
-| Pattern | схема | Saved Patterns / Сохранённые схемы; New Pattern / Новая схема |
+| Project | проект | Saved Projects / Сохранённые проекты; New Project / Новый проект |
+| Schema | схема | The beads inside the Frame; Schema rotated / Схема повёрнута (ADR 0050) |
 | Bead / beads | бисеринка / бисер | One bead is бисеринка; the material and amounts are бисер |
 | Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
 | Palette | палитра |  |
 | Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
-| Clear | Очистить; confirm Очистить? | Empties the cells; the Pattern stays. Not «Очистить всё», which was Delete all |
+| Clear | Очистить; confirm Очистить? | Empties the cells; the Schema stays. Not «Очистить всё», which was Delete all |
 | Save Project | Сохранить проект | The SaveBox button; the name field's Save stays Сохранить |
-| Delete all | Очистить всё | Empties the cells; the Pattern stays |
+| Delete all | Очистить всё | Empties the cells; the Schema stays |
 | Mirror | Отражение | Estimated size / Примерный размер |
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
-| piece | фрагмент | Beads that touch; 1 фрагмент, 2 фрагмента, 5 фрагментов |
-| Canvas · Hand · Rulers | Холст · Рука · Линейки | The open drawing area, the tool that moves it, the row and column numbers |
+| Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
+| Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | Image colors / Цвета изображения |
 
@@ -70,7 +71,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | English | Ukrainian | Belarusian |
 | --- | --- | --- |
 | Project | проєкт | праект |
-| Pattern | схема | схема |
+| Schema | схема | схема |
 | Bead / beads | бісерина / бісер | бісерына / бісер |
 | Technique | техніка плетіння | тэхніка пляцення |
 | Loom · Peyote · Brick stitch | Ткацтво · Мозаїчне плетіння · Цегляне плетіння | Ткацтва · Мазаічнае пляценне · Цаглянае пляценне |
@@ -78,7 +79,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Row progress | прогрес за рядами | прагрэс па радках |
 | Beads needed | Потрібно бісеру | Патрэбна бісеру |
 | Frame | рамка | рамка |
-| piece | фрагмент | фрагмент |
+| Piece | шматочок | кавалачак |
 | Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
 | Mirror | Відображення | Адлюстраванне |
 | Convert image | Конвертувати зображення | Канвертаваць выяву |
@@ -86,7 +87,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | English | Chinese | Spanish | Polish |
 | --- | --- | --- | --- |
 | Project | 项目 | proyecto | projekt |
-| Pattern | 图案 | patrón | wzór |
+| Schema | 图样 | esquema | schemat |
 | Bead / beads | 珠子 | cuenta / cuentas | koralik / koraliki |
 | Technique | 编织技法 | técnica | technika |
 | Loom · Peyote · Brick stitch | 织机编织 · 佩奥特编织 · 砖形编织 | Telar · Peyote · Punto ladrillo | Krosno · Peyote · Ścieg ceglasty |
@@ -94,7 +95,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Row progress | 行进度 | progreso por filas | postęp rzędów |
 | Beads needed | 所需珠子 | Cuentas necesarias | Potrzebne koraliki |
 | Frame | 边框 | marco | ramka |
-| piece | 片段 | pieza | fragment |
+| Piece | 小块 | trozo | kawałek |
 | Canvas · Hand · Rulers | 画布 · 抓手 · 标尺 | Lienzo · Mano · Reglas | Płótno · Ręka · Linijki |
 | Mirror | 镜像 | Espejo | Odbicie |
 | Convert image | 转换图片 | Convertir imagen | Konwertuj obraz |
@@ -119,7 +120,7 @@ The same voice and sentence patterns in each language; domain words are never re
 
 ## Canvas color names
 
-The Canvas color button (Russian "Цвет холста") offers five backgrounds in light and six in dark. The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
+The Canvas color button (Russian "Цвет полотна") offers five backgrounds in light and six in dark. The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
 
 | Choice | Light (EN / RU) | Dark (EN / RU) |
 | --- | --- | --- |
