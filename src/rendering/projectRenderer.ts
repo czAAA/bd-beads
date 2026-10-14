@@ -106,7 +106,7 @@ export function visibleBeadsInSpace(technique: Technique, space: Space, region: 
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'beads' | 'frame' | 'rowProgress' | 'rotation'>
+export type DrawnProject = Pick<Project, 'technique' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'>
 
 export interface RenderInput {
   /** The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded). Anything shaped like one will do: the Convert image preview draws a block of beads that is not a saved Project. */

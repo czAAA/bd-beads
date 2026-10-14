@@ -254,6 +254,13 @@ export const be: Translations = {
       export: 'Экспартаваць',
     },
   },
+  pieceName: {
+    title: 'Назва кавалачка',
+    label: 'Назва',
+    hint: 'Кавалачак з назвай становіцца схемай. Пакіньце поле пустым, каб прыбраць назву.',
+    save: 'Захаваць',
+    cancel: 'Скасаваць',
+  },
   contextBar: {
     label: 'Дзеянні з вылучэннем',
     clearButton: 'Зняць вылучэнне',
@@ -293,6 +300,7 @@ export const be: Translations = {
     removeLineButton: 'Выдаліць вылучаны рад/слупок',
     removeLineShort: 'Выдаліць лінію',
     removeLineName: 'Выдаліць лінію',
+    namePieceButton: 'Назваць кавалачак',
   },
   inputMode: {
     penLabel: 'Рэжым пяра',
@@ -552,6 +560,8 @@ export const be: Translations = {
     rowProgressLockedRemoveLine: 'Выключыце прагрэс па радках, каб выдаліць рад або слупок.',
     removeLine: 'Выдаліць абраны рад або слупок і зрушыць астатняе.',
     removeLineDisabled: 'Спачатку вылучыце цэлы рад або слупок.',
+    namePiece: 'Дайце абранаму кавалачку назву, і ён стане схемай.',
+    namePieceDisabled: 'Спачатку вылучыце адзін кавалачак.',
     clear: 'Ачысціць усё палатно.',
     customColor: 'Дадайце колер у палітру, не больш за {max}.',
     pickFromCanvas: 'Націсніце на бісерыну на палатне, каб узяць яе колер; ён трапіць у палітру, калі ёсць вольнае месца.',

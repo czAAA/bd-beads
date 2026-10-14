@@ -21,7 +21,7 @@ export interface PieceName extends GridPosition {
 export const MAX_PIECE_NAME = MAX_MAKER_NAME
 
 /** A name as it is kept: trimmed and cut to the longest allowed; empty means no name. */
-export const normalizePieceName = normalizeMakerName
+const normalizePieceName = normalizeMakerName
 
 /** The names of a stored Project, keeping only well-formed ones (a hand-edited or newer file may hold anything), each cut to the longest allowed. */
 export function readPieceNames(stored: unknown): PieceName[] {
@@ -42,8 +42,19 @@ export interface NamedPiece extends Frame {
   beads: number
 }
 
+/** The last answer of `namedPieces` per set of beads: the canvas asks on every repaint of the rulers, and the answer only changes when the beads or the names do. */
+const namedCache = new WeakMap<BeadMap, { names: PieceName[]; technique: Technique; found: NamedPiece[] }>()
+
 /** The Piece names that still have a Piece under them, and which Piece each is on. Unresolved names are skipped. */
 export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>): NamedPiece[] {
+  const names = project.pieceNames
+  if (!names?.length) {
+    return []
+  }
+  const known = namedCache.get(project.beads)
+  if (known && known.names === names && known.technique === project.technique) {
+    return known.found
+  }
   const found: NamedPiece[] = []
   for (const { name, row, column } of project.pieceNames ?? []) {
     const members = pieceBeadsAt(project.beads, project.technique, { row, column })
@@ -56,6 +67,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
     const left = Math.min(...columns)
     found.push({ name, row: top, column: left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1, beads: members.length })
   }
+  namedCache.set(project.beads, { names, technique: project.technique, found })
   return found
 }
 
@@ -204,4 +216,34 @@ export function keepNamesApart(before: Project, after: Project): Project {
     }
   })
   return { ...after, beads: withColors(after.beads, reverts) }
+}
+
+/**
+ * The bead that stands for the one Piece a Selection covers (ticket 406): a Piece may be named only when the Selection
+ * holds beads of exactly that Piece. Undefined for a Selection with no bead, or with beads of two or more Pieces.
+ */
+export function pieceInSelection(
+  project: Pick<Project, 'beads' | 'technique'>,
+  selection: { top: number; left: number; rows: number; columns: number },
+): GridPosition | undefined {
+  const labeller = pieceLabeller(project.beads, project.technique)
+  let found: { id: number; at: GridPosition } | undefined
+  for (const [rowKey, columns] of Object.entries(project.beads)) {
+    const row = Number(rowKey)
+    if (row < selection.top || row >= selection.top + selection.rows) {
+      continue
+    }
+    for (const columnKey of Object.keys(columns)) {
+      const column = Number(columnKey)
+      if (column < selection.left || column >= selection.left + selection.columns) {
+        continue
+      }
+      const id = labeller.idOf({ row, column })!
+      if (found && found.id !== id) {
+        return undefined
+      }
+      found = { id, at: { row, column } }
+    }
+  }
+  return found?.at
 }

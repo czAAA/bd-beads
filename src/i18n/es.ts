@@ -253,6 +253,13 @@ export const es: Translations = {
       export: 'Exportar',
     },
   },
+  pieceName: {
+    title: 'Nombra este trozo',
+    label: 'Nombre',
+    hint: 'Un trozo con nombre es un esquema. Déjalo vacío para quitar el nombre.',
+    save: 'Guardar',
+    cancel: 'Cancelar',
+  },
   contextBar: {
     label: 'Acciones de la selección',
     clearButton: 'Borrar selección',
@@ -292,6 +299,7 @@ export const es: Translations = {
     removeLineButton: 'Quitar fila/columna seleccionada',
     removeLineShort: 'Quitar línea',
     removeLineName: 'Quitar línea',
+    namePieceButton: 'Nombrar trozo',
   },
   inputMode: {
     penLabel: 'Modo lápiz',
@@ -549,6 +557,8 @@ export const es: Translations = {
     rowProgressLockedRemoveLine: 'Desactiva el progreso por filas para quitar una fila o columna.',
     removeLine: 'Quita la fila o columna seleccionada y cierra el hueco.',
     removeLineDisabled: 'Selecciona primero una fila o columna entera.',
+    namePiece: 'Pon un nombre al trozo seleccionado y pasará a ser un esquema.',
+    namePieceDisabled: 'Selecciona primero un trozo.',
     clear: 'Vacía todo el lienzo.',
     customColor: 'Añade un color a la paleta, hasta {max}.',
     pickFromCanvas: 'Haz clic en una cuenta del lienzo para usar su color; se añade a la paleta si hay un hueco libre.',

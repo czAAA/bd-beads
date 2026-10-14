@@ -264,6 +264,13 @@ export const ru: Translations = {
       export: 'Экспортировать',
     },
   },
+  pieceName: {
+    title: 'Имя кусочка',
+    label: 'Название',
+    hint: 'Кусочек с именем становится схемой. Оставьте поле пустым, чтобы убрать имя.',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+  },
   contextBar: {
     label: 'Действия с выделением',
     clearButton: 'Снять выделение',
@@ -303,6 +310,7 @@ export const ru: Translations = {
     removeLineButton: 'Удалить выделенный ряд/столбец',
     removeLineShort: 'Удалить линию',
     removeLineName: 'Удалить линию',
+    namePieceButton: 'Назвать кусочек',
   },
   inputMode: {
     penLabel: 'Режим пера',
@@ -562,6 +570,8 @@ export const ru: Translations = {
     rowProgressLockedRemoveLine: 'Выключите прогресс рядов, чтобы удалить ряд или столбец.',
     removeLine: 'Удалить выбранный ряд или столбец и сдвинуть остальное.',
     removeLineDisabled: 'Сначала выделите целый ряд или столбец.',
+    namePiece: 'Дайте выбранному кусочку имя, и он станет схемой.',
+    namePieceDisabled: 'Сначала выделите один кусочек.',
     clear: 'Очистить всё полотно.',
     customColor: 'Добавьте цвет в палитру, не больше {max}.',
     pickFromCanvas: 'Нажмите на бусину на полотне, чтобы взять её цвет; он попадёт в палитру, если есть свободное место.',

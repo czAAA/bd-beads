@@ -3,7 +3,7 @@ import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './margin'
 import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
-import { createProject, paintCells, restoreSnapshot, snapshotOf, type Project } from './project'
+import { createProject, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { changeFrame } from './changeFrame'
 
@@ -92,7 +92,7 @@ describe('piece names', () => {
     const named = withPieceName(projectWith(row(0, 0, 2)), { row: 0, column: 0 }, 'Fox')
 
     expect(keepAllowedEdits(named, named)).toBe(named)
-    expect(paintCells(named, [], R)).toBe(named)
+    expect(keepAllowedEdits(named, { ...named })).toBe(named)
   })
 
   it('follows its beads through Rotate and Remove line', () => {

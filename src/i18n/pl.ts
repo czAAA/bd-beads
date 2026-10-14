@@ -253,6 +253,13 @@ export const pl: Translations = {
       export: 'Eksportuj',
     },
   },
+  pieceName: {
+    title: 'Nazwij ten kawałek',
+    label: 'Nazwa',
+    hint: 'Kawałek z nazwą jest schematem. Zostaw puste, aby usunąć nazwę.',
+    save: 'Zapisz',
+    cancel: 'Anuluj',
+  },
   contextBar: {
     label: 'Działania na zaznaczeniu',
     clearButton: 'Wyczyść zaznaczenie',
@@ -292,6 +299,7 @@ export const pl: Translations = {
     removeLineButton: 'Usuń zaznaczony rząd/kolumnę',
     removeLineShort: 'Usuń linię',
     removeLineName: 'Usuń linię',
+    namePieceButton: 'Nazwij kawałek',
   },
   inputMode: {
     penLabel: 'Tryb rysika',
@@ -551,6 +559,8 @@ export const pl: Translations = {
     rowProgressLockedRemoveLine: 'Wyłącz postęp rzędów, aby usunąć rząd lub kolumnę.',
     removeLine: 'Usuwa zaznaczony rząd lub kolumnę i zamyka lukę.',
     removeLineDisabled: 'Najpierw zaznacz cały rząd lub całą kolumnę.',
+    namePiece: 'Nadaj zaznaczonemu kawałkowi nazwę, a stanie się schematem.',
+    namePieceDisabled: 'Najpierw zaznacz jeden kawałek.',
     clear: 'Czyści wszystko z płótna.',
     customColor: 'Dodaj kolor do palety, maksymalnie {max}.',
     pickFromCanvas: 'Kliknij koralik na płótnie, by użyć jego koloru; trafi do palety, jeśli jest wolne miejsce.',
