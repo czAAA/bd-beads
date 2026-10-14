@@ -62,7 +62,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
     )
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
-    expect(projectExportFileName(project, 'png')).toBe('bd-beads-my-scarf.png')
+    expect(projectExportFileName(project, 'png')).toBe('openbeads-my-scarf.png')
   })
 
   it("hands over the open Project as a PDF, with the labels in the app's language", async () => {
@@ -76,7 +76,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
       expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
     )
-    expect(downloadFile).toHaveBeenCalledWith('bd-beads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
+    expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
   })
 
 })
@@ -94,6 +94,6 @@ describe('App empty, loading and failed states (ticket 158)', () => {
 
     await wrapper.find('[data-testid="save-failed-export"]').trigger('click')
 
-    expect(downloadFile).toHaveBeenCalledWith('bd-beads-my-scarf.json', expect.any(String))
+    expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.json', expect.any(String))
   })
 })

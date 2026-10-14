@@ -5,7 +5,7 @@ import type { Translations } from './translations'
 // Belarusian in the official orthography (narkamaŭka), Cyrillic.
 export const be: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Назва',
@@ -151,7 +151,7 @@ export const be: Translations = {
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
     notes: { you: 'вы', onUs: 'гэта мы', elevenSteps: 'адзінаццаць кароткіх крокаў', youllMakeThis: 'яе вы і створыце' },
-    coffee: { title: 'Адзін чалавек', text: 'bd-beads робіць адзін чалавек, бісерына за бісерынай, і ён бясплатны. Калі ён зэканоміў вам вечар падлікаў, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
+    coffee: { title: 'Адзін чалавек', text: 'openbeads робіць адзін чалавек, бісерына за бісерынай, і ён бясплатны. Калі ён зэканоміў вам вечар падлікаў, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
     plans: {
       label: 'тарыфы',
       heading: 'Тры варыянты',

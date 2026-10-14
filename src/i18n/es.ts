@@ -4,7 +4,7 @@ import type { Translations } from './translations'
 // marco (Frame), trozo (Piece), progreso por filas (Row progress). Neutral Spanish, tuteo ("tú").
 export const es: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Nombre',
@@ -150,7 +150,7 @@ export const es: Translations = {
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
     notes: { you: 'tú', onUs: 'va por nosotros', elevenSteps: 'once pasitos', youllMakeThis: 'harás esto' },
-    coffee: { title: 'Una sola persona', text: 'bd-beads lo hace una sola persona, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
+    coffee: { title: 'Una sola persona', text: 'openbeads lo hace una sola persona, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
       label: 'planes',
       heading: 'Tres formas de usarlo',

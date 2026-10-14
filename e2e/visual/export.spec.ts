@@ -66,7 +66,7 @@ test('PNG export draws each bead in its color, at a legible size, on the print b
   const chartWidth = 12 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
   const chartHeight = 8 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
 
-  expect(name).toBe('bd-beads-fixture-loom.png')
+  expect(name).toBe('openbeads-fixture-loom.png')
   // Wider than tall: the story sits under the chart, so the picture is exactly the chart's width and taller than it.
   expect(png.width).toBe(chartWidth)
   expect(png.height).toBeGreaterThan(chartHeight)
@@ -164,7 +164,7 @@ test('PDF export holds the legend and the chart, and splits a large Project over
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
-  expect(name).toBe('bd-beads-fixture-brick.pdf')
+  expect(name).toBe('openbeads-fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
   // A legend page, then the chart at 4.6 mm a bead: 120 columns don't fit one A4 sheet's width.
   expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBeGreaterThan(3)

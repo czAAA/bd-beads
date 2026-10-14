@@ -87,13 +87,13 @@ describe('single-Project roundtrip', () => {
   })
 
   it('names the file after the Project, without characters a filesystem would choke on', () => {
-    expect(projectFileName(makeProject('Fox'))).toBe('bd-beads-fox.json')
-    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('bd-beads-toho-cube-1-5mm.json')
-    expect(projectFileName(makeProject('a/b:c*?'))).toBe('bd-beads-a-b-c.json')
+    expect(projectFileName(makeProject('Fox'))).toBe('openbeads-fox.json')
+    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('openbeads-toho-cube-1-5mm.json')
+    expect(projectFileName(makeProject('a/b:c*?'))).toBe('openbeads-a-b-c.json')
   })
 
   it('falls back to a generic name for a Project whose name has nothing filename-safe in it', () => {
-    expect(projectFileName(makeProject('???'))).toBe('bd-beads-project.json')
+    expect(projectFileName(makeProject('???'))).toBe('openbeads-project.json')
   })
 })
 
@@ -105,7 +105,7 @@ describe('whole-library roundtrip', () => {
   })
 
   it('exports to one predictable file name', () => {
-    expect(libraryFileName()).toBe('bd-beads-library.json')
+    expect(libraryFileName()).toBe('openbeads-library.json')
   })
 
   it('reads a single-Project file too, so one import button handles both', () => {
@@ -120,7 +120,7 @@ describe('parseProjectsFile', () => {
     expect(() => parseProjectsFile('not json')).toThrow()
   })
 
-  it('rejects JSON that is not a bd-beads file', () => {
+  it('rejects JSON that is not an openbeads file', () => {
     expect(() => parseProjectsFile('{"kind":"something-else","projects":[]}')).toThrow()
   })
 

@@ -13,7 +13,7 @@ describe('CoffeeTile', () => {
   it('says who made it, in one line, in English', () => {
     const wrapper = tile()
     expect(wrapper.find('h3').text()).toBe('Made by one person')
-    expect(wrapper.find('p').text()).toContain('bd-beads is made by one person')
+    expect(wrapper.find('p').text()).toContain('openbeads is made by one person')
   })
 
   it('says it in Russian too', () => {

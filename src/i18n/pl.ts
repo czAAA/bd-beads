@@ -4,7 +4,7 @@ import type { Translations } from './translations'
 // ramka (Frame), kawałek (Piece), postęp rzędów (Row progress). Addressed as "ty", in the imperative.
 export const pl: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Nazwa',
@@ -150,7 +150,7 @@ export const pl: Translations = {
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
     notes: { you: 'ty', onUs: 'na nasz koszt', elevenSteps: 'jedenaście małych kroków', youllMakeThis: 'to zrobisz' },
-    coffee: { title: 'Jedna osoba', text: 'bd-beads robi jedna osoba, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
+    coffee: { title: 'Jedna osoba', text: 'openbeads robi jedna osoba, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
       label: 'plany',
       heading: 'Trzy sposoby użycia',

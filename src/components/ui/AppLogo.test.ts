@@ -30,9 +30,9 @@ describe('AppLogo', () => {
 
   it('is decorative unless it is given a name', () => {
     expect(mount(AppLogo).get('svg').attributes('aria-hidden')).toBe('true')
-    const named = mount(AppLogo, { props: { label: 'bd-beads' } }).get('svg')
+    const named = mount(AppLogo, { props: { label: 'openbeads' } }).get('svg')
     expect(named.attributes('role')).toBe('img')
-    expect(named.attributes('aria-label')).toBe('bd-beads')
+    expect(named.attributes('aria-label')).toBe('openbeads')
   })
 })
 

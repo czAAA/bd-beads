@@ -4,7 +4,7 @@ import type { Translations } from './translations'
 // 边框 (Frame), 小块 (Piece), 行进度 (Row progress). Simplified Chinese; the device's own CJK font draws it (ADR 0039).
 export const zh: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: '名称',
@@ -149,7 +149,7 @@ export const zh: Translations = {
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',
     notes: { you: '你', onUs: '我们请客', elevenSteps: '十一小步', youllMakeThis: '你会做出这个' },
-    coffee: { title: '一个人做的', text: 'bd-beads 由一个人一颗一颗珠子做出来，并且免费。如果它帮你省下一晚上的数珠子，请我喝杯咖啡就是最好的感谢。', button: '请我喝咖啡' },
+    coffee: { title: '一个人做的', text: 'openbeads 由一个人一颗一颗珠子做出来，并且免费。如果它帮你省下一晚上的数珠子，请我喝杯咖啡就是最好的感谢。', button: '请我喝咖啡' },
     plans: {
       label: '方案',
       heading: '三种使用方式',
