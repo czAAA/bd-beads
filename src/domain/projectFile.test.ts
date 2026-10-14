@@ -68,15 +68,33 @@ describe('single-Project roundtrip', () => {
     })
   })
 
-  it('stays readable version-2 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
+  it('stays readable version-3 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     // A Project file exists to move work between devices and to be read; compactness belongs to localStorage only, so
     // export/import is an encode/decode boundary rather than a passthrough of whatever is stored.
-    expect(file.version).toBe(2)
+    expect(file.version).toBe(3)
     expect(file.patterns[0].encodedBeads).toBeUndefined()
     expect(file.patterns[0].beads[2][3]).toBe('#e63746')
     expect(file.patterns[0].frame).toBeDefined()
+  })
+
+  it('keeps Piece names through a file, and still reads a version-2 file that has none (ticket 406)', () => {
+    const named = { ...decoratedProject(), pieceNames: [{ row: 2, column: 3, name: 'Fox' }] }
+    const file = JSON.parse(serializeProject(named))
+
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
+
+    file.version = 2
+    delete file.patterns[0].pieceNames
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toBeUndefined()
+  })
+
+  it('drops Piece names that are not well formed', () => {
+    const file = JSON.parse(serializeProject(decoratedProject()))
+    file.patterns[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
+
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 0, column: 0, name: 'Ok' }])
   })
 
   it('does not write a color-to-bead mapping into the file (ADR 0007)', () => {

@@ -24,8 +24,29 @@ export function touching(technique: Technique, position: GridPosition): GridPosi
 /** A position as one number, for sets that hold thousands of them: cheaper to make and compare than a string. Good for rows and columns within a million of the start. */
 const KEY_SPAN = 2 ** 22
 const KEY_OFFSET = 2 ** 21
-function numericKey({ row, column }: GridPosition): number {
+export function numericKey({ row, column }: GridPosition): number {
   return (row + KEY_OFFSET) * KEY_SPAN + column + KEY_OFFSET
+}
+
+/** The beads of the Piece that holds the bead at `start`, as positions; empty when there is no bead there. */
+export function pieceBeadsAt(beads: BeadMap, technique: Technique, start: GridPosition): GridPosition[] {
+  if (beads[start.row]?.[start.column] === undefined) {
+    return []
+  }
+  const seen = new Set<number>([numericKey(start)])
+  const members: GridPosition[] = []
+  const stack: GridPosition[] = [start]
+  while (stack.length > 0) {
+    const at = stack.pop()!
+    members.push(at)
+    for (const next of touching(technique, at)) {
+      if (beads[next.row]?.[next.column] !== undefined && !seen.has(numericKey(next))) {
+        seen.add(numericKey(next))
+        stack.push(next)
+      }
+    }
+  }
+  return members
 }
 
 const cache = new WeakMap<BeadMap, Map<Technique, Piece[]>>()
