@@ -5,6 +5,7 @@ import {
   copySelection,
   movedSelection,
   pieceSelectionAt,
+  selectionHoldsAllBeads,
   selectionWithEdges,
   mirroredPasteBlock,
   mirroredPastedCells,
@@ -274,5 +275,19 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 
   it('moves by whole beads and keeps its size', () => {
     expect(movedSelection(selection, -1, 2)).toEqual({ top: 1, left: 5, rows: 4, columns: 5 })
+  })
+})
+
+describe('selectionHoldsAllBeads (ticket 415)', () => {
+  const beads = { 1: { 1: RED }, 3: { 2: BLUE } }
+
+  it('is true for the Select all rectangle and anything round it', () => {
+    expect(selectionHoldsAllBeads(beads, { top: 1, left: 1, rows: 3, columns: 2 })).toBe(true)
+    expect(selectionHoldsAllBeads(beads, { top: 0, left: 0, rows: 9, columns: 9 })).toBe(true)
+  })
+
+  it('is false when a bead is left outside, and on an empty canvas', () => {
+    expect(selectionHoldsAllBeads(beads, { top: 1, left: 1, rows: 2, columns: 2 })).toBe(false)
+    expect(selectionHoldsAllBeads({}, { top: 0, left: 0, rows: 9, columns: 9 })).toBe(false)
   })
 })

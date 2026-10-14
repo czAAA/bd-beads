@@ -127,6 +127,53 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBeNull()
   })
 
+  it('Clear selection empties a partial Selection at once, with no confirmation, and keeps the Selection (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await drag(wrapper, [0, 1])
+
+    await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[1]![1]!.color).toBe('#2f6fed')
+    expect(selectedCount(wrapper)).toBeGreaterThan(0)
+  })
+
+  it('Select all then Clear selection asks before wiping the drawing (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await pickTool(wrapper, 'select-all')
+
+    await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('Select all then the Eraser asks before wiping the drawing too (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await pickTool(wrapper, 'select-all')
+
+    await pickTool(wrapper, 'erase')
+
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+
+    await wrapper.find('[data-testid="context-bar-fill"]').trigger('click')
+
+    const grid = frameGrid(loadProjects()[0]!)
+    expect(grid[0]![1]!.color).not.toBeNull()
+    expect(grid[1]![0]!.color).not.toBeNull()
+  })
+
   it.each(['paint', 'fill'] as const)('forgets the selected area when the tool changes to %s', async (tool) => {
     const wrapper = await mountWithProject(6, 6)
     await pickTool(wrapper, 'select')

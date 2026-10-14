@@ -48,7 +48,6 @@ const {
   onSelectImageColor,
   selection,
   pasteProjectionActive,
-  onCopy,
   onRotate,
   onRequestDeleteAll,
   onStartSetFrame,
@@ -100,16 +99,13 @@ const sheetActions = {
   changeMakerName: controlAction('change-maker-name'),
 }
 
-/** The Frame sheet's Edit row (EditControls card): Rotate and Copy act at once; Paste only closes the sheet, so the Projection it already shows on the canvas is what the person sees next. */
+/** The Frame sheet's Edit row (EditControls card): Rotate acts at once. Copy and Paste live on the Selection bar (ticket 415). */
 function onFrameSheetEdit(id: EditControlId) {
   if (id === 'rotate') onRotate()
-  else if (id === 'copy') onCopy()
-  else openPhoneSheet.value = null
 }
 
-/** The sheet has never given its Copy button a testid of its own (ticket 384 keeps that as it was). */
 function frameSheetEditTestId(id: EditControlId): string | undefined {
-  return id === 'copy' ? undefined : `sheet-${id}`
+  return `sheet-${id}`
 }
 
 /** What the actions' enabled states and disabled reasons read (ADR 0035). */
@@ -172,7 +168,7 @@ const deps = computed(() =>
 
   <!--
     The Frame sheet (ticket 295; Dock card): the Frame's own controls and, beneath them, what used to be the Edit sheet --
-    Rotate, Copy and Paste, which all act on the Frame or a Selection; Undo and Redo live in the Zoom pill (ticket 296).
+    Rotate, which acts on the Frame or a Selection (Copy and Paste are on the Selection bar, ticket 415); Undo and Redo live in the Zoom pill (ticket 296).
   -->
   <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
     <FrameControls
@@ -186,7 +182,7 @@ const deps = computed(() =>
       @remove="onRemoveFrame"
     />
     <div class="phone-sheet__edit">
-      <EditControls :ids="['rotate', 'copy', 'paste']" :deps="deps" :test-id-for="frameSheetEditTestId" @activate="onFrameSheetEdit" />
+      <EditControls :ids="['rotate']" :deps="deps" :test-id-for="frameSheetEditTestId" @activate="onFrameSheetEdit" />
     </div>
   </BottomSheet>
 

@@ -31,7 +31,12 @@ export interface ControlDeps {
   onRedo: () => void
   onSelectTool: (tool: Tool) => void
   onSelectColor: (colorId: string) => void
+  /** Clear selection (Del): empties the Selection, or opens Delete all when it holds every bead (ticket 415). */
   onDeleteSelection: () => void
+  /** Cut (Ctrl+X), Fill and Frame from the Selection (ticket 415). */
+  onCut: () => void
+  onFillSelection: () => void
+  onFrameFromSelection: () => void
   onToggleRulers: () => void
   /** Starts Set Frame, or finishes it. */
   onToggleFrame: () => void
@@ -220,7 +225,7 @@ export const CONTROLS: readonly ControlAction[] = [
   {
     id: 'empty-selection',
     icon: 'delete',
-    name: (t) => t.shortcutsHelp.emptySelection,
+    name: (t) => t.contextBar.clearButton,
     group: 'tools',
     chords: [{ key: 'Delete', label: 'Del' }],
     run: (deps) => {
@@ -369,6 +374,27 @@ export const CONTROLS: readonly ControlAction[] = [
     run: (deps, event) => deps.pasteAtPointer(event),
   },
   {
+    id: 'cut',
+    icon: 'cut',
+    name: (t) => t.tools.cutButton,
+    enabled: (deps) => deps.hasSelection(),
+    disabledBody: (t) => t.tooltips.copyDisabled,
+    group: 'edit',
+    chords: [{ key: 'x', mod: true, label: 'X' }],
+    preventDefault: true,
+    run: (deps) => deps.onCut(),
+  },
+  unkeyed('fill-selection', (t) => t.tools.fillLabel, 'edit', {
+    icon: 'fill-selection',
+    body: (t) => t.tooltips.fillSelection,
+  }),
+  unkeyed('frame-from-selection', (t) => t.frame.title, 'canvas', {
+    icon: 'frame',
+    body: (t) => t.tooltips.frameFromSelection,
+    enabled: (deps: ControlDeps) => !frameLocked(deps),
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
+  }),
+  {
     id: 'save',
     icon: 'save',
     name: (t) => t.tools.saveButton,
@@ -484,7 +510,6 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
   }),
   unkeyed('done-frame', (t) => t.frame.done, 'canvas', { icon: 'check', shownKey: 'Esc' }),
-  unkeyed('clear-selection', (t) => t.contextBar.clearButton, 'tools', { icon: 'close', shownKey: 'Esc' }),
   unkeyed('cancel-paste', (t) => t.contextBar.cancelButton, 'tools', { shownKey: 'Esc' }),
   unkeyed('position-marks-dots', (t) => t.canvas.canvasColor.positionMarks.dots, 'canvas', { icon: 'position-dots', body: (t) => t.canvas.canvasColor.positionMarks.dotsBody }),
   unkeyed('position-marks-squares', (t) => t.canvas.canvasColor.positionMarks.squares, 'canvas', { icon: 'position-squares', body: (t) => t.canvas.canvasColor.positionMarks.squaresBody }),
@@ -508,7 +533,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.pieceLabel, t.tools.selectAllLabel, t.tools.eraseLabel, t.tools.handLabel]),
   }),
   unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
-    body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton, t.tools.copyButton, t.tools.pasteLabel]),
+    body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton]),
   }),
   unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),

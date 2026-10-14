@@ -137,6 +137,13 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 4, column: 5, rows: 4, columns: 4 })
   })
 
+  it('sets the Frame to a Selection\'s rectangle as one undo step, without entering Set Frame (ticket 415)', () => {
+    const { deps, settingFrame, setTo } = setup(open)
+    setTo({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(lastFrame(deps)).toEqual({ row: 2, column: 3, rows: 4, columns: 5 })
+    expect(settingFrame.value).toBe(false)
+  })
+
   it('starts and finishes Set Frame, and a tool choice can end it', () => {
     const { settingFrame, start, done, toggle } = setup()
     start()

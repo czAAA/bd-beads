@@ -66,6 +66,12 @@ const {
   selection,
   pasteProjectionActive,
   onCopy,
+  onCut,
+  onPasteSelection,
+  onDeleteSelection,
+  onFillSelection,
+  onFrameFromSelection,
+  hasClipboard,
   canNamePiece,
   onNamePiece,
   backOutOfSelect,
@@ -124,6 +130,20 @@ const frameTooltip = computed(() => {
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
+
+/** The Selection's size for the bar's readout: "12×8 · 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
+const selectionSummary = computed(() => {
+  const project = activeProject.value
+  const current = selection.value
+  if (!project || !current) return undefined
+  const bead = resolveProjectBead(project)
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  return t.value.frame.sizeTooltip.replace('{columns}', String(current.columns)).replace('{rows}', String(current.rows)).replace('{estimate}', estimate)
+})
+
+/** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps aside for the other (ticket 415). */
+const selectionAnchor = ref<InstanceType<typeof ContextBar>['$props']['anchor']>()
+const surfacePressing = ref(false)
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
 const framingControlsEl = ref<HTMLElement>()
@@ -205,6 +225,38 @@ function techniqueWord(technique: Technique): string {
           @move="setZoomPillPlacement"
         />
 
+        <!--
+          The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
+          inside the canvas box; "Tap to paste" and the Frame bar sit at its top-centre.
+        -->
+        <ContextBar
+          v-if="activeProject && !framing"
+          :class="{ 'app-shell__context-bar--top': settingFrame || pasteProjectionActive, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
+          :selection-summary="selectionSummary"
+          :anchor="selectionAnchor"
+          :gesturing="surfacePressing"
+          :paste-armed="pasteProjectionActive"
+          :has-clipboard="hasClipboard()"
+          :project="activeProject"
+          :can-remove-line="canRemoveSelectedLine"
+          :can-name-piece="canNamePiece"
+          :setting-frame="settingFrame"
+          :frame-summary="frameTooltip"
+          @fit-frame="onFitFrame"
+          @remove-frame="onRemoveFrame"
+          @done-frame="onDoneSetFrame"
+          @copy="onCopy"
+          @cut="onCut"
+          @paste="onPasteSelection"
+          @fill="onFillSelection"
+          @frame="onFrameFromSelection"
+          @clear-selection="onDeleteSelection"
+          @rotate="onRotate"
+          @remove-line="onRemoveSelectedLine"
+          @name-piece="onNamePiece"
+          @dismiss="backOutOfSelect"
+        />
+
         <div class="app-shell__canvas-row">
           <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-tour="canvas" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
             <!--
@@ -271,6 +323,8 @@ function techniqueWord(technique: Technique): string {
               @selection-press="onSelectionPress"
               @selection-drag="onSelectionDrag"
               @selection-release="onSelectionRelease"
+              @selection-anchor="selectionAnchor = $event"
+              @pressing="surfacePressing = $event"
             />
             <EmptyCanvas v-else />
           </div>
@@ -287,31 +341,6 @@ function techniqueWord(technique: Technique): string {
 
       <!-- The framing step's controls, in the Progress bar's place (ticket 150; ConvertImage card). -->
       <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
-
-      <!--
-        The Selection context bar (ticket 168; ContextBar card): floats above the Progress bar under 1024px,
-        offering what a Selection can do without a right-click. 
-      -->
-      <ContextBar
-        v-if="activeProject && !framing"
-        class="app-shell__context-bar"
-        :class="{ 'app-shell__context-bar--frame': settingFrame, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
-        :selection-size="selection ? { columns: selection.columns, rows: selection.rows } : undefined"
-        :paste-armed="pasteProjectionActive"
-        :project="activeProject"
-        :can-remove-line="canRemoveSelectedLine"
-        :can-name-piece="canNamePiece"
-        :setting-frame="settingFrame"
-        :frame-summary="frameTooltip"
-        @fit-frame="onFitFrame"
-        @remove-frame="onRemoveFrame"
-        @done-frame="onDoneSetFrame"
-        @copy="onCopy"
-        @rotate="onRotate"
-        @remove-line="onRemoveSelectedLine"
-        @name-piece="onNamePiece"
-        @dismiss="backOutOfSelect"
-      />
 
       <!--
         Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open (not
@@ -336,40 +365,21 @@ function techniqueWord(technique: Technique): string {
 }
 
 /*
- * The Selection context bar (ticket 168; ContextBar card): floats 10px from the canvas box's own edges, just above
- * the Progress bar, at every width (ADR 0046).
+ * "Tap to paste" and the Frame bar (tickets 295, 415; ContextBar card): the same bar, floating at the top-centre of the
+ * drawing area over the beads, so it never takes a row and never reaches the Dock. The Selection bar is placed by its own
+ * component, against the Selection.
  */
-.app-shell__context-bar {
+.app-shell__context-bar--top {
   position: absolute;
-  right: var(--space-10);
-  bottom: calc(var(--progress-height) + var(--space-10));
-  left: var(--space-10);
-  z-index: var(--z-context-bar);
-  display: flex;
-}
-
-/*
- * The Frame bar (ticket 295; Frame bar card): while the Frame is being set, the same bar floats at the top-centre of
- * the canvas box over the beads instead of above the Progress bar, so it never takes a row and never reaches the Dock.
- */
-.app-shell__context-bar--frame {
   top: var(--space-10);
-  right: auto;
-  bottom: auto;
   left: 50%;
+  z-index: var(--z-context-bar);
   max-width: calc(100% - 2 * var(--space-10));
   transform: translateX(-50%);
 }
 
-/*
- * The bars keep clear of the Zoom pill (ticket 297): the Selection bar rises above a pill resting in the lower half, and the
- * Frame bar drops below one resting in the upper half. The pill's own height is its 36px buttons, 4px padding and 1px border.
- */
-.app-shell__context-bar--pill-bottom:not(.app-shell__context-bar--frame) {
-  bottom: calc(var(--progress-height) + var(--space-16) + env(safe-area-inset-bottom) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
-}
-
-.app-shell__context-bar--frame.app-shell__context-bar--pill-top {
+/* The top bars keep clear of the Zoom pill (ticket 297): they drop below one resting in the upper half. The pill's own height is its 36px buttons, 4px padding and 1px border. */
+.app-shell__context-bar--top.app-shell__context-bar--pill-top {
   top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
 }
 
@@ -448,9 +458,9 @@ function techniqueWord(technique: Technique): string {
  * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Project
  * (below), and this broader rule's `relative` used to outrank that in specificity -- `.app-shell__drawing > :not(x)`
  * beats a plain `.app-shell__zoom-pill`, stretching the pill across the top of the canvas box instead of floating it.
- * CanvasHint is excluded for the same reason: it floats over the bottom-left corner.
+ * CanvasHint is excluded for the same reason: it floats over the bottom-left corner, and so is the context bar, which floats over the beads.
  */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill):not(.app-shell__canvas-hint) {
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill):not(.app-shell__canvas-hint):not(.context-bar) {
   position: relative;
 }
 

@@ -82,9 +82,10 @@ export async function selectTool(page: Page, tool: Tool): Promise<void> {
   await settle(page)
 }
 
-/** Copies the Selection by its keyboard chord: the Frame sheet's Copy button has never had a testid of its own (ticket 384). */
+/** Copies the Selection by its keyboard chord, then arms Paste with the Selection bar's Paste, which discards the Selection (ticket 415). */
 export async function copySelection(page: Page): Promise<void> {
   await page.keyboard.press('ControlOrMeta+c')
+  await page.getByTestId('context-bar-paste').click()
   await settle(page)
 }
 
