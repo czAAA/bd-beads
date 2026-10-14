@@ -86,6 +86,7 @@
   --selbar-height-touch: 36px;
   --selbar-radius: 8px;
   --selbar-gap: 6px;
+  --selbar-divider-margin: 3px;
   --swatch-remove-size: 10px;
   --swatch-remove-stroke: 3;
   --swatch-mark-halo: 1px;

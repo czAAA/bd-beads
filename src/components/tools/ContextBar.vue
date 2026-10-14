@@ -90,7 +90,6 @@ const deps = computed(() =>
 /** Touch gets the taller bar with bigger icons (ContextBar card). */
 const touch = useMediaQuery('(pointer: coarse)')
 const iconSize = computed(() => (touch.value ? 18 : 16))
-const buttonPx = computed(() => (touch.value ? 36 : 28))
 
 /** One button of the Selection bar, in the order it is drawn; `group` decides where a divider goes. */
 interface BarItem {
@@ -117,17 +116,21 @@ const items = computed<BarItem[]>(() => {
   return list
 })
 
+/** The bar's own spacing in px, kept in step with `--space-2` (item gap) and the divider's width and margin below. */
+const BAR_ITEM_GAP_PX = 2
+const BAR_PADDING_PX = BAR_ITEM_GAP_PX + 7 // bar padding plus a divider (1px + 2 x --selbar-divider-margin)
+
 const rootEl = ref<HTMLElement>()
 const readoutEl = ref<HTMLElement>()
 const bar = useElementSize(rootEl)
 const readout = useElementSize(readoutEl)
 
-/** How many buttons fit beside the readout in the canvas box's width; every one with no measured box (a test). */
+/** How many buttons fit beside the readout in the canvas box's width (a button is as wide as the bar is high); every one with no measured box (a test). */
 const capacity = computed(() => {
   const viewport = props.anchor?.viewport.width
-  if (!viewport || !readout.width.value) return Infinity
-  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (2 + 7)
-  return Math.max(1, Math.floor(room / (buttonPx.value + 2)))
+  if (!viewport || !readout.width.value || !bar.height.value) return Infinity
+  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * BAR_PADDING_PX
+  return Math.max(1, Math.floor(room / (bar.height.value + BAR_ITEM_GAP_PX)))
 })
 const overflowing = computed(() => items.value.length > capacity.value)
 const shown = computed(() => (overflowing.value ? items.value.slice(0, Math.max(0, capacity.value - 1)) : items.value))
@@ -139,6 +142,10 @@ const placement = computed(() => {
   return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport)
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
+
+/** A folded item is disabled by the same rule as its button would be, and says why on hover. */
+const isDisabled = (item: BarItem) => (item.action.enabled ? !item.action.enabled(deps.value) : false)
+const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
 const showing = computed(() => !!props.settingFrame || props.selectionSummary !== undefined || props.pasteArmed)
 const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? 'armed' : 'selection'))
@@ -193,7 +200,8 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
             v-for="item in folded"
             :key="item.id"
             :icon="item.action.icon"
-            :disabled="item.action.enabled ? !item.action.enabled(deps) : false"
+            :disabled="isDisabled(item)"
+            :title="disabledReason(item)"
             :data-testid="`context-bar-more-${item.id}`"
             @select="item.run()"
           >
@@ -215,10 +223,10 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
 .context-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-2);
   box-sizing: border-box;
   height: var(--selbar-height);
-  padding: 0 2px;
+  padding: 0 var(--space-2);
   color: var(--canvas);
   background: var(--ink);
   border-radius: var(--selbar-radius);
@@ -246,7 +254,7 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
 .context-bar__size,
 .context-bar__hint {
   flex: none;
-  padding: 0 6px;
+  padding: 0 var(--space-6);
   font: var(--type-meta);
   color: color-mix(in srgb, var(--canvas) 74%, transparent);
   white-space: nowrap;
@@ -255,8 +263,8 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
 .context-bar__divider {
   flex: none;
   width: 1px;
-  height: 16px;
-  margin: 0 3px;
+  height: var(--space-16);
+  margin: 0 var(--selbar-divider-margin);
   background: color-mix(in srgb, var(--canvas) 28%, transparent);
 }
 
