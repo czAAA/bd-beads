@@ -136,6 +136,13 @@ const sizeMeta = computed<{ main: string; estimate?: string } | undefined>(() =>
   }
 }
 
+@container (max-width: 399px) {
+  /* A phone: the size line matters more than its heading, which the longer Schema words (Polish "Schemat") no longer leave room for. */
+  .canvas-strip__title {
+    display: none;
+  }
+}
+
 .canvas-strip__hint {
   min-width: 0;
   margin-left: auto;
