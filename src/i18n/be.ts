@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Domain words follow CONTEXT.md and the Russian glossary: праект (Project), схема (Pattern), бісерына / бісер (Bead),
-// палітра (Palette), тэхніка пляцення (Technique), рамка (Frame), фрагмент (Piece), прагрэс па радках (Row progress).
+// Domain words follow CONTEXT.md and the Russian glossary: праект (Project), схема (Schema), бісерына / бісер (Bead),
+// палітра (Palette), тэхніка пляцення (Technique), рамка (Frame), кавалачак (Piece), прагрэс па радках (Row progress).
 // Belarusian in the official orthography (narkamaŭka), Cyrillic.
 export const be: Translations = {
   app: {
@@ -93,7 +93,7 @@ export const be: Translations = {
     widthSize: 'Шырыня {count}',
     heightSize: 'Вышыня {count}',
     canvasTitle: 'Палатно',
-    piecesCount: { one: '{count} фрагмент', few: '{count} фрагменты', many: '{count} фрагментаў', other: '{count} фрагмента' },
+    piecesCount: { one: '{count} кавалачак', few: '{count} кавалачкі', many: '{count} кавалачкаў', other: '{count} кавалачка' },
     noFrame: 'без рамкі',
     settingFrame: 'задаецца рамка',
     rulersLabel: 'Лінейкі',
@@ -437,17 +437,17 @@ export const be: Translations = {
     countNeedsFrame: 'Задайце рамку, каб палічыць бісер.',
     progressNeedsFrame: 'Задайце рамку, каб пачаць',
     rotatedMessage: {
-      one: 'Схема павернута. {count} фрагмент замінаў і зрушаны за рамку.',
-      few: 'Схема павернута. {count} фрагменты замінала і зрушаны за рамку.',
-      many: 'Схема павернута. {count} фрагментаў замінала і зрушаны за рамку.',
-      other: 'Схема павернута. {count} фрагмента замінала і зрушаны за рамку.',
+      one: 'Схема павернута. {count} кавалачак замінаў і зрушаны за рамку.',
+      few: 'Схема павернута. {count} кавалачкі замінала і зрушаны за рамку.',
+      many: 'Схема павернута. {count} кавалачкаў замінала і зрушаны за рамку.',
+      other: 'Схема павернута. {count} кавалачка замінала і зрушаны за рамку.',
     },
     marginLead: { set: 'Рамка зададзена.', moved: 'Рамка перамешчана.', resized: 'Памер рамкі зменены.' },
     marginClearedMessage: {
-      one: '{count} фрагмент быў у полі рамкі і перамешчаны за яго межы.',
-      few: '{count} фрагменты былі ў полі рамкі і перамешчаны за яго межы.',
-      many: '{count} фрагментаў былі ў полі рамкі і перамешчаны за яго межы.',
-      other: '{count} фрагмента былі ў полі рамкі і перамешчаны за яго межы.',
+      one: '{count} кавалачак быў у полі рамкі і перамешчаны за яго межы.',
+      few: '{count} кавалачкі былі ў полі рамкі і перамешчаны за яго межы.',
+      many: '{count} кавалачкаў былі ў полі рамкі і перамешчаны за яго межы.',
+      other: '{count} кавалачка былі ў полі рамкі і перамешчаны за яго межы.',
     },
     keyboardHint: 'стрэлкі рухаюць рамку · Shift і стрэлкі змяняюць памер · Enter: гатова',
   },

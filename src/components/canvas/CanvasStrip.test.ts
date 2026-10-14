@@ -12,7 +12,7 @@ describe('CanvasStrip', () => {
   it('names the board and its size as Width and Height, joined by a middle dot (ticket 342)', () => {
     const wrapper = mount(CanvasStrip, { props: { size: { columns: 40, rows: 1 }, zoomPercent: 100 } })
 
-    expect(wrapper.text()).toContain('Pattern')
+    expect(wrapper.text()).toContain('Schema')
     expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('Width 40 · Height 1')
     expect(wrapper.get('svg').attributes('data-icon')).toBe('grid')
   })

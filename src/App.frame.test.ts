@@ -60,10 +60,10 @@ async function drag(wrapper: Awaited<ReturnType<typeof mountOpen>>, from: { row:
 describe('Set Frame', () => {
   it('draws a Frame with F and a drag over beads, snapped to whole beads, and the drag paints nothing', async () => {
     const wrapper = await mountOpen()
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · no Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
 
     await key({ key: '6' })
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · setting Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · setting Frame')
 
     await drag(wrapper, { row: 4, column: 6 }, { row: 1, column: 2 })
 
@@ -216,7 +216,7 @@ describe('New Project with the Frame optional', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('0 pieces · no Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('0 Pieces · no Frame')
     expect(savedFrame()).toBeUndefined()
     expect(loadProjects()).toHaveLength(1)
     await openSavedProjects(wrapper)
