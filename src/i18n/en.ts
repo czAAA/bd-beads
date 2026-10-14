@@ -454,6 +454,7 @@ export const en: Translations = {
     announceSet: 'Frame set, width {width}, height {height}',
     announceRemoved: 'Frame removed',
     announceNothingToFit: 'Nothing drawn yet to fit the Frame to',
+    refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
     announceTechnique: 'Technique changed to {technique}',
     announceRotated: 'Schema rotated',
     exportPromptTitle: 'Set Frame to export',

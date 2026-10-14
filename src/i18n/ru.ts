@@ -456,6 +456,7 @@ export const ru: Translations = {
     announceSet: 'Рамка задана: ширина {width}, высота {height}',
     announceRemoved: 'Рамка убрана',
     announceNothingToFit: 'Пока нечего обводить рамкой: ничего не нарисовано',
+    refusedCutsSchema: 'Рамка не может разрезать схему «{name}». Обведите её целиком или не трогайте.',
     announceTechnique: 'Техника изменена: {technique}',
     announceRotated: 'Схема повёрнута',
     exportPromptTitle: 'Задайте рамку для экспорта',

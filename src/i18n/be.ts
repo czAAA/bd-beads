@@ -446,6 +446,7 @@ export const be: Translations = {
     announceSet: 'Рамка зададзена: шырыня {width}, вышыня {height}',
     announceRemoved: 'Рамка прыбрана',
     announceNothingToFit: 'Пакуль нечага абводзіць рамкай: нічога не намалявана',
+    refusedCutsSchema: 'Рамка не можа рэзаць схему «{name}». Абвядзіце яе цалкам або не крануйце.',
     announceTechnique: 'Тэхніка зменена: {technique}',
     announceRotated: 'Схема павернута',
     exportPromptTitle: 'Задайце рамку для экспарту',

@@ -144,6 +144,17 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(false)
   })
 
+  it('refuses a Frame that would cut a named Schema, with a Message naming it (ticket 407)', () => {
+    const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
+    const named = { ...open, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+    const { deps, setTo } = setup(named)
+    setTo({ row: 0, column: 2, rows: 1, columns: 4 })
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.stringContaining('Fox'), 'info')
+    setTo({ row: 0, column: 0, rows: 1, columns: 4 })
+    expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
+  })
+
   it('starts and finishes Set Frame, and a tool choice can end it', () => {
     const { settingFrame, start, done, toggle } = setup()
     start()

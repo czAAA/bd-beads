@@ -1,8 +1,9 @@
 import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
-import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, frameWithSizeFrom, movedFrame, sameFrame, type FrameEdge, type FrameSides } from '../../domain/frame'
+import { fitToDrawing, frameFromCells, frameWithEdges, frameWithSize, frameWithSizeFrom, movedFrame, sameFrame, snapRow, type FrameEdge, type FrameSides } from '../../domain/frame'
 import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
+import { namedPieceCutBy } from '../../domain/pieceNames'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -104,6 +105,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function commit(frame: Frame | undefined, action: FrameAction = 'set', announce = true): void {
     // Pieces in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
     const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? { set: frame } : { remove: true }))
+    if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
+      // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
+      const project = deps.currentProject()
+      const name = (project && namedPieceCutBy(project, frame)) ?? ''
+      deps.showToast('frame-cuts-schema', deps.messages().frame.refusedCutsSchema.replace('{name}', name), 'info')
+      return
+    }
     if (outcome.kind !== 'applied') return
     if (outcome.moved > 0) {
       const t = deps.messages()
@@ -195,10 +203,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     pending.value = sameFrame(next, project.frame) ? undefined : { projectId: project.id, frame: next }
   }
 
-  /** Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step. Edit Frame (ticket 417) will follow it. */
+  /**
+   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step. Edit Frame (ticket 417) will follow it.
+   * A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to it, and where rows alternate starts on an even row.
+   */
   function setTo(frame: Frame): void {
     commitPending()
-    commit(frame)
+    const project = deps.currentProject()
+    const top = project ? snapRow(project.technique, frame.row) : frame.row
+    commit({ ...frame, row: top, rows: frame.rows + frame.row - top })
   }
 
   function fit(): void {
