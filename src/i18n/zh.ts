@@ -550,6 +550,7 @@ export const zh: Translations = {
     removeFrame: '移除边框。珠子保持原位。',
     noFrameToRemove: '没有可移除的边框。',
     rowProgressLockedFrame: '关闭行进度后才能更改边框。',
+    fillNeedsColor: '请先选择颜色，再填充所选区域。',
     rowProgressLockedTechnique: '关闭行进度后才能更改编织技法。',
     changeTechnique: '用另一种编织技法编织图样。每颗珠子保持原来的行和列。',
     rowProgressLockedRotate: '关闭行进度后才能旋转。',

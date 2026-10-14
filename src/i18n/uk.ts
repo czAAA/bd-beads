@@ -562,6 +562,7 @@ export const uk: Translations = {
     removeFrame: 'Прибрати рамку. Бісеринки залишаться на місці.',
     noFrameToRemove: 'Немає рамки, щоб прибрати.',
     rowProgressLockedFrame: 'Вимкніть прогрес за рядами, щоб змінювати рамку.',
+    fillNeedsColor: 'Спершу виберіть колір, щоб залити виділення.',
     rowProgressLockedTechnique: 'Вимкніть прогрес за рядами, щоб змінити техніку.',
     changeTechnique: 'Сплести візерунок іншою технікою. Кожна бісеринка лишається у своєму ряду й стовпці.',
     rowProgressLockedRotate: 'Вимкніть прогрес за рядами, щоб повернути.',

@@ -563,6 +563,7 @@ export const be: Translations = {
     removeFrame: 'Прыбраць рамку. Бісерыны застануцца на месцы.',
     noFrameToRemove: 'Няма рамкі, каб прыбраць.',
     rowProgressLockedFrame: 'Выключыце прагрэс па радках, каб змяняць рамку.',
+    fillNeedsColor: 'Спачатку выберыце колер, каб заліць вылучэнне.',
     rowProgressLockedTechnique: 'Выключыце прагрэс па радках, каб змяніць тэхніку.',
     changeTechnique: 'Сплесці ўзор іншай тэхнікай. Кожная бісерына застаецца ў сваім радзе і слупку.',
     rowProgressLockedRotate: 'Выключыце прагрэс па радках, каб павярнуць.',

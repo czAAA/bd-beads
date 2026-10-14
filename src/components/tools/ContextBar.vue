@@ -3,9 +3,10 @@ import { computed, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { BAR_EDGE_PX, selectionBarPlacement, type BarBox } from '../../composables/tools/selectionBarPlacement'
+import { BAR_EDGE_PX, selectionBarPlacement, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
@@ -20,11 +21,11 @@ import type { Project } from '../../domain/project'
  * and Cancel at the canvas box's top-centre, and while the Frame is being set it holds the Frame's size, Fit to drawing,
  * Remove Frame and Done (ticket 295).
  */
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 · 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
   /** The Selection's rectangle and the canvas box it is in, in the box's own pixels: where the bar anchors. */
-  anchor?: { box: BarBox; viewport: { width: number; height: number } }
+  anchor?: SelectionAnchor
   /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
   gesturing?: boolean
   /** Whether a copied block is armed to paste (useSelectionGesture's pasteProjectionActive). */
@@ -36,11 +37,13 @@ const props = defineProps<{
   canRemoveLine: boolean
   /** Whether the Selection holds beads of exactly one Piece, which Name can then name (ticket 406). */
   canNamePiece?: boolean
+  /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told otherwise. */
+  hasPaintColor?: boolean
   /** Whether the Frame is being set: the bar then holds the Frame's size, Fit to drawing and Done (v16). */
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
   frameSummary?: string
-}>()
+}>(), { hasPaintColor: true })
 
 const emit = defineEmits<{
   copy: []
@@ -84,6 +87,7 @@ const deps = computed(() =>
     hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
+    hasPaintColor: () => props.hasPaintColor,
   }),
 )
 
@@ -108,7 +112,8 @@ const items = computed<BarItem[]>(() => {
   ]
   if (props.hasClipboard) list.push({ id: 'paste', action: actions.paste, group: 1, run: () => emit('paste') })
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
-  if (!props.project.frame) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
+  // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).
+  list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
@@ -116,9 +121,14 @@ const items = computed<BarItem[]>(() => {
   return list
 })
 
-/** The bar's own spacing in px, kept in step with `--space-2` (item gap) and the divider's width and margin below. */
+/**
+ * The bar's own spacing in px, kept in step with its CSS: `--space-2` between items and at each side, and a divider
+ * that is 1px wide with `--selbar-divider-margin` (3px) either side. The fit maths reserves a side padding and a
+ * divider for each end of the readout.
+ */
 const BAR_ITEM_GAP_PX = 2
-const BAR_PADDING_PX = BAR_ITEM_GAP_PX + 7 // bar padding plus a divider (1px + 2 x --selbar-divider-margin)
+const BAR_SIDE_PADDING_PX = 2
+const BAR_DIVIDER_PX = 1 + 2 * 3
 
 const rootEl = ref<HTMLElement>()
 const readoutEl = ref<HTMLElement>()
@@ -129,7 +139,7 @@ const readout = useElementSize(readoutEl)
 const capacity = computed(() => {
   const viewport = props.anchor?.viewport.width
   if (!viewport || !readout.width.value || !bar.height.value) return Infinity
-  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * BAR_PADDING_PX
+  const room = viewport - 2 * BAR_EDGE_PX - readout.width.value - 2 * (BAR_SIDE_PADDING_PX + BAR_DIVIDER_PX)
   return Math.max(1, Math.floor(room / (bar.height.value + BAR_ITEM_GAP_PX)))
 })
 const overflowing = computed(() => items.value.length > capacity.value)
@@ -212,7 +222,7 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
       </template>
     </template>
     <template v-else>
-      <span class="context-bar__hint" data-testid="context-bar-hint">{{ t.contextBar.pasteHint }}</span>
+      <AppIcon class="context-bar__hint" name="paste" :size="iconSize" :label="t.contextBar.pasteHint" data-testid="context-bar-hint" />
       <span class="context-bar__divider" aria-hidden="true" />
       <IconButton class="context-bar__button" :icon-size="iconSize" icon="close" :action="actions.cancel" :deps="deps" data-testid="context-bar-cancel" @click="emit('dismiss')" />
     </template>
@@ -252,8 +262,13 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
   max-width: calc(100% - 2 * var(--space-8));
 }
 
-.context-bar__size,
 .context-bar__hint {
+  flex: none;
+  margin: 0 var(--space-6);
+  color: color-mix(in srgb, var(--canvas) 74%, transparent);
+}
+
+.context-bar__size {
   flex: none;
   padding: 0 var(--space-6);
   font: var(--type-meta);

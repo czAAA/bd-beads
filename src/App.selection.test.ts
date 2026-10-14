@@ -127,6 +127,25 @@ describe('App select, copy and paste', () => {
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBeNull()
   })
 
+  it('keeps the copied block armed after a stamp, so repeated stamps still work (ticket 415)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper)
+    await drag(wrapper, [0, 1, 5])
+    await copySelection(wrapper)
+    const stampAt = async (position: { row: number; column: number }) => {
+      await pressBead(wrapper, position)
+      await wrapper.find('.app-shell').trigger('mouseup')
+    }
+
+    await stampAt({ row: 2, column: 2 })
+    await stampAt({ row: 2, column: 0 })
+
+    const grid = frameGrid(loadProjects()[0]!)
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[2]![0]!.color).toBe('#e63746')
+    expect(grid[3]![1]!.color).toBe('#2f6fed')
+  })
+
   it('Clear selection empties a partial Selection at once, with no confirmation, and keeps the Selection (ticket 415)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
@@ -160,6 +179,28 @@ describe('App select, copy and paste', () => {
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+  })
+
+  it('Frame on the Selection bar sets the Frame, and with a Frame already set moves it to the next Selection (ticket 407)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithMotif(wrapper) // red (0,0) and blue (1,1): one Piece
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 15) // a Piece of its own, at (3, 5)
+    await pickTool(wrapper, 'piece')
+    const tap = async (position: { row: number; column: number }) => {
+      await pressBead(wrapper, position)
+      await wrapper.find('.app-shell').trigger('mouseup')
+    }
+
+    await tap({ row: 1, column: 1 })
+    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
+
+    await tap({ row: 3, column: 5 })
+    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.frame).toMatchObject({ row: 3, column: 5, rows: 1, columns: 1 })
   })
 
   it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {

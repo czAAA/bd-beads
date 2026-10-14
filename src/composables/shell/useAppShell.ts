@@ -282,7 +282,7 @@ function wireAppShell(services: Services) {
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
     if (tool === 'erase' && selection.value) {
-      onDeleteSelection()
+      onClearSelection()
     }
     selectTool(tool)
   }
@@ -291,7 +291,7 @@ function wireAppShell(services: Services) {
    * Clear selection (Del, ticket 415): empties the Selection as one Undo step. A Selection that holds every placed bead
    * (Select all) is Delete all instead, through its confirmation, so Row progress resets and no finished row is left behind.
    */
-  function onDeleteSelection() {
+  function onClearSelection() {
     const project = currentProject()
     const current = selection.value
     if (!project || !current) return
@@ -300,6 +300,11 @@ function wireAppShell(services: Services) {
   }
 
   /** Fill (ticket 415): the Selection takes the current color; nothing with no color chosen. */
+  /** Whether a color is chosen to paint with: Fill needs one (ticket 415). */
+  function hasPaintColor() {
+    return selectedColorHex() !== undefined
+  }
+
   function onFillSelection() {
     const color = selectedColorHex()
     if (color) fillSelection(color)
@@ -693,7 +698,7 @@ function wireAppShell(services: Services) {
     onSelectTool,
     onSelectAll,
     onSelectColor,
-    onDeleteSelection,
+    onClearSelection,
     onCut,
     onFillSelection,
     onFrameFromSelection,
@@ -712,6 +717,7 @@ function wireAppShell(services: Services) {
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
     canNamePiece: () => namePiece.canNamePiece.value,
+    hasPaintColor,
     onNamePiece: namePiece.onNamePiece,
     onToggleRowProgress: rowOps.onToggleRowProgress,
     onToggleRowDirection: rowOps.onToggleRowDirection,
@@ -830,8 +836,9 @@ function wireAppShell(services: Services) {
     onCopy,
     onCut,
     onPasteSelection,
-    onDeleteSelection,
+    onClearSelection,
     onFillSelection,
+    hasPaintColor,
     onFrameFromSelection,
     onSelectLine,
     backOutOfSelect,

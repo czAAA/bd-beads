@@ -12,6 +12,7 @@ import ToastRegion from '../ui/ToastRegion.vue'
 import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
+import type { SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
@@ -68,11 +69,12 @@ const {
   onCopy,
   onCut,
   onPasteSelection,
-  onDeleteSelection,
+  onClearSelection,
   onFillSelection,
   onFrameFromSelection,
   hasClipboard,
   canNamePiece,
+  hasPaintColor,
   onNamePiece,
   backOutOfSelect,
   previewCells,
@@ -142,7 +144,7 @@ const selectionSummary = computed(() => {
 })
 
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps aside for the other (ticket 415). */
-const selectionAnchor = ref<InstanceType<typeof ContextBar>['$props']['anchor']>()
+const selectionAnchor = ref<SelectionAnchor>()
 const surfacePressing = ref(false)
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
@@ -240,6 +242,7 @@ function techniqueWord(technique: Technique): string {
           :project="activeProject"
           :can-remove-line="canRemoveSelectedLine"
           :can-name-piece="canNamePiece"
+          :has-paint-color="hasPaintColor()"
           :setting-frame="settingFrame"
           :frame-summary="frameTooltip"
           @fit-frame="onFitFrame"
@@ -250,7 +253,7 @@ function techniqueWord(technique: Technique): string {
           @paste="onPasteSelection"
           @fill="onFillSelection"
           @frame="onFrameFromSelection"
-          @clear-selection="onDeleteSelection"
+          @clear-selection="onClearSelection"
           @rotate="onRotate"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"

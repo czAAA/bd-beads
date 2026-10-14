@@ -637,6 +637,7 @@ export interface Translations {
     noFrameToRemove: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
+    fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
     rowProgressLockedRotate: string
