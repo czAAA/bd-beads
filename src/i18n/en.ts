@@ -271,6 +271,7 @@ export const en: Translations = {
   contextBar: {
     label: 'Selection actions',
     clearButton: 'Clear selection',
+    moreLabel: 'More',
     pasteHint: 'Tap where to paste',
     cancelButton: 'Cancel',
   },
@@ -303,6 +304,7 @@ export const en: Translations = {
     selectHint: 'Drag to mark an area, then copy and paste it.',
     handHint: 'Drag to move around the Canvas.',
     copyButton: 'Copy',
+    cutButton: 'Cut',
     saveButton: 'Save',
     savedConfirmation: 'Saved',
     pasteLabel: 'Paste',
@@ -542,7 +544,6 @@ export const en: Translations = {
   },
   shortcutsHelp: {
     title: 'Keyboard shortcuts',
-    emptySelection: 'Empty the Selection',
     backOut: 'Back out',
     panCanvas: 'Move the Canvas',
     canvasGroup: 'Canvas',
@@ -579,6 +580,8 @@ export const en: Translations = {
     zoomInLimit: 'Already zoomed in as far as it goes.',
     nothingToRedo: 'Nothing to redo.',
     copyDisabled: 'Select an area first.',
+    fillSelection: 'Fill the Selection with the current color.',
+    frameFromSelection: 'Make the Selection the Frame.',
     pasteDisabled: 'Copy an area first.',
     rotate: 'Turn the Frame a quarter turn.',
     setFrameFirst: 'Set a Frame first.',

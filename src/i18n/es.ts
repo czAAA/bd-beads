@@ -262,6 +262,7 @@ export const es: Translations = {
   contextBar: {
     label: 'Acciones de la selección',
     clearButton: 'Borrar selección',
+    moreLabel: 'Más',
     pasteHint: 'Toca donde pegar',
     cancelButton: 'Cancelar',
   },
@@ -294,6 +295,7 @@ export const es: Translations = {
     selectHint: 'Arrastra para marcar una zona y luego cópiala y pégala.',
     handHint: 'Arrastra para moverte por el lienzo.',
     copyButton: 'Copiar',
+    cutButton: 'Cortar',
     saveButton: 'Guardar',
     savedConfirmation: 'Guardado',
     pasteLabel: 'Pegar',
@@ -535,7 +537,6 @@ export const es: Translations = {
   },
   shortcutsHelp: {
     title: 'Atajos de teclado',
-    emptySelection: 'Vaciar la selección',
     backOut: 'Salir',
     panCanvas: 'Mover el lienzo',
     canvasGroup: 'Lienzo',
@@ -572,6 +573,8 @@ export const es: Translations = {
     zoomInLimit: 'Ya está acercado al máximo.',
     nothingToRedo: 'No hay nada que rehacer.',
     copyDisabled: 'Selecciona primero una zona.',
+    fillSelection: 'Rellena la selección con el color actual.',
+    frameFromSelection: 'Convierte la selección en el marco.',
     pasteDisabled: 'Copia primero una zona.',
     rotate: 'Gira el marco un cuarto de vuelta.',
     setFrameFirst: 'Define primero un marco.',

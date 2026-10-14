@@ -6,7 +6,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { GridPosition } from '../../domain/grid'
-import type { Selection } from '../../domain/selection'
+import { selectionFrame, selectionHoldsAllBeads, type Selection } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { changeFrame } from '../../domain/changeFrame'
@@ -230,7 +230,10 @@ function wireAppShell(services: Services) {
     leaveSelectTool,
     copy: onCopy,
     pasteAt: pasteAtCell,
-    deleteSelection: onDeleteSelection,
+    deleteSelection: onEmptySelection,
+    cut: onCut,
+    armPaste: onPasteSelection,
+    fill: fillSelection,
     selectLine,
     tapPiece,
     selectAll: selectAllBeads,
@@ -278,9 +281,32 @@ function wireAppShell(services: Services) {
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
     if (tool === 'erase' && selection.value) {
-      onDeleteSelection()
+      onEmptySelection()
     }
     selectTool(tool)
+  }
+
+  /**
+   * Clear selection (Del, ticket 415): empties the Selection as one Undo step. A Selection that holds every placed bead
+   * (Select all) is Delete all instead, through its confirmation, so Row progress resets and no finished row is left behind.
+   */
+  function onDeleteSelection() {
+    const project = currentProject()
+    const current = selection.value
+    if (!project || !current) return
+    if (selectionHoldsAllBeads(project.beads, current)) deleteAll.onRequestDeleteAll()
+    else onEmptySelection()
+  }
+
+  /** Fill (ticket 415): the Selection takes the current color; nothing with no color chosen. */
+  function onFillSelection() {
+    const color = selectedColorHex()
+    if (color) fillSelection(color)
+  }
+
+  /** Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle. */
+  function onFrameFromSelection() {
+    if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
   }
 
   /** Select all (ticket 414): selects the rectangle round every bead and makes Select the active tool, so the Selection can be copied, cut or resized at once. Nothing on an empty canvas. */
@@ -667,6 +693,9 @@ function wireAppShell(services: Services) {
     onSelectAll,
     onSelectColor,
     onDeleteSelection,
+    onCut,
+    onFillSelection,
+    onFrameFromSelection,
     onToggleRulers: toggleRulers,
     onToggleFrame: () => {
       frameFlow.toggle()
@@ -796,7 +825,13 @@ function wireAppShell(services: Services) {
     onSelectionDrag: dragAdjust,
     onSelectionRelease: endAdjust,
     pasteProjectionActive,
+    hasClipboard,
     onCopy,
+    onCut,
+    onPasteSelection,
+    onDeleteSelection,
+    onFillSelection,
+    onFrameFromSelection,
     onSelectLine,
     backOutOfSelect,
     previewCells,

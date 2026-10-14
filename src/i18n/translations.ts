@@ -245,6 +245,8 @@ export interface Translations {
   contextBar: {
     label: string
     clearButton: string
+    /** The "…" overflow of the Selection bar when its controls do not fit (ticket 415). */
+    moreLabel: string
     pasteHint: string
     cancelButton: string
   }
@@ -285,6 +287,7 @@ export interface Translations {
     selectHint: string
     handHint: string
     copyButton: string
+    cutButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
     saveButton: string
     /** The brief confirmation Save shows once storage took the write. */
@@ -603,7 +606,6 @@ export interface Translations {
   shortcutsHelp: {
     title: string
     /** Del empties the Selection's beads (ticket 329); Escape is the one Back out action. */
-    emptySelection: string
     backOut: string
     /** Ticket 95: Space+drag. */
     panCanvas: string
@@ -645,6 +647,8 @@ export interface Translations {
     zoomInLimit: string
     nothingToRedo: string
     copyDisabled: string
+    fillSelection: string
+    frameFromSelection: string
     pasteDisabled: string
     rotate: string
     setFrameFirst: string

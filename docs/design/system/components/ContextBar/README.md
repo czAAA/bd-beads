@@ -1,6 +1,6 @@
 # ContextBar
 
-The thin bar anchored to a Selection that offers what it can do, and, while the Frame is being set, the Frame bar. The Selection bar below is the design for tickets 414 and 415; until 415 lands the app still draws the older bar described at the end.
+The thin bar anchored to a Selection that offers what it can do, and, while the Frame is being set, the Frame bar. The Selection bar below is the design for tickets 414 and 415, and the app draws it since ticket 415.
 
 ## Selection bar (tickets 414, 415)
 
@@ -25,9 +25,10 @@ Design reference: the "Selection bar on the canvas" board of the design canvas (
 
 **While the Frame is being set (v16), the Frame bar (ticket 295):** the Frame's size ("17×17 · 2.7 × 2.7 cm", `meta`), Fit to drawing (icon only), Remove Frame (✕, only when a Frame is set) and Done (check icon and label), on `ink`. It floats at the **top-centre of the canvas box** over the beads, 10px from its top, instead of taking a row above the Progress bar, and never covers the Dock. Done sets the Frame. From ticket 417 it is the same bar as above, anchored just above the Frame's top edge. Not drawn in the preview yet.
 
-## Until ticket 415 (what the app draws today)
+## What the app does differently
 
-- A floating bar above the Progress bar under 1024px: its size (`meta`), Copy, Rotate, Remove line and a clear ×, on `ink` with `canvas` text, 14px radius, `elevation-3`, 40px buttons with 13px labels, 10px from the screen edges.
-- After Copy it turns `accent` (`on-accent` text): "Tap where to paste", Rotate and Cancel.
+- Until tickets 416 and 417 move them, **Rotate**, **Remove line** and **Name Piece** stay on the bar, after Fill and Frame and before the divider; Remove line and Name Piece are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece).
+- The "…" menu folds the last items first, Clear selection among them when it comes to that.
+- The Frame bar keeps its Done label until ticket 417.
 
 Hand-written from the responsive sign-off, then redrawn for tickets 414 and 415 from the design canvas; static rendition.

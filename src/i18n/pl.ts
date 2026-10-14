@@ -262,6 +262,7 @@ export const pl: Translations = {
   contextBar: {
     label: 'Działania na zaznaczeniu',
     clearButton: 'Wyczyść zaznaczenie',
+    moreLabel: 'Więcej',
     pasteHint: 'Dotknij miejsca, w które wkleić',
     cancelButton: 'Anuluj',
   },
@@ -294,6 +295,7 @@ export const pl: Translations = {
     selectHint: 'Przeciągnij, aby zaznaczyć obszar, a potem skopiuj go i wklej.',
     handHint: 'Przeciągnij, aby przesuwać się po płótnie.',
     copyButton: 'Kopiuj',
+    cutButton: 'Wytnij',
     saveButton: 'Zapisz',
     savedConfirmation: 'Zapisano',
     pasteLabel: 'Wklej',
@@ -537,7 +539,6 @@ export const pl: Translations = {
   },
   shortcutsHelp: {
     title: 'Skróty klawiszowe',
-    emptySelection: 'Opróżnij zaznaczenie',
     backOut: 'Wyjdź',
     panCanvas: 'Przesuń płótno',
     canvasGroup: 'Płótno',
@@ -574,6 +575,8 @@ export const pl: Translations = {
     zoomInLimit: 'Powiększono już maksymalnie.',
     nothingToRedo: 'Nie ma czego ponowić.',
     copyDisabled: 'Najpierw zaznacz obszar.',
+    fillSelection: 'Wypełnia zaznaczenie bieżącym kolorem.',
+    frameFromSelection: 'Zamienia zaznaczenie w ramkę.',
     pasteDisabled: 'Najpierw skopiuj obszar.',
     rotate: 'Obraca ramkę o ćwierć obrotu.',
     setFrameFirst: 'Najpierw ustaw ramkę.',

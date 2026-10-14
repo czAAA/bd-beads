@@ -112,11 +112,13 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
-  it('draws the Frame sheet\'s Paste button with the paste icon, not the unrelated import icon (ticket 188)', async () => {
+  it('keeps Copy and Paste off the Frame sheet: they are on the Selection bar (ticket 415)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="dock-frame"]').trigger('click')
 
-    expect(wrapper.get('[data-testid="sheet-paste"] svg').attributes('data-icon')).toBe('paste')
+    expect(wrapper.find('[data-testid="sheet-paste"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="sheet-copy"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(true)
   })
 
   it('changes the Technique from the Frame sheet as one Undo step (ticket 351)', async () => {
