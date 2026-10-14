@@ -133,7 +133,6 @@ export interface Translations {
       dragToMove: string
       scrollToZoom: string
       hand: string
-      setFrame: string
       rulers: string
     }
   }
@@ -277,6 +276,9 @@ export interface Translations {
     eraseLabel: string
     /** The Hand tool (v16): moves the open canvas by dragging and never changes a bead. */
     handLabel: string
+    /** The Piece tool and the Select all tile (ticket 414). */
+    pieceLabel: string
+    selectAllLabel: string
     /** The one-line descriptions in the Tool buttons' Tooltips (ticket 251); Eraser needs none. */
     paintHint: string
     fillHint: string
@@ -617,6 +619,8 @@ export interface Translations {
     fill: string
     select: string
     erase: string
+    piece: string
+    selectAll: string
     hand: string
     setFrame: string
     removeFrame: string

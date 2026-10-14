@@ -3,11 +3,10 @@ import { type GridPosition, type PreviewCell, type Technique } from '../domain/g
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { lineOfPass, passCount, passOf } from '../domain/passes'
-import type { Selection } from '../domain/selection'
+import { selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
-import { drawFrameEditing, drawRulers } from './rulerRenderer'
-import { cachedSprite } from './sprites'
+import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
@@ -63,8 +62,10 @@ export interface OverlayInput {
   preview?: HoverPreview
   /** The marker that stands for the pointer over the beads (ticket 353), with the OS pointer hidden. */
   pointer?: BeadPointer
-  /** The rectangle the Select tool has marked out (ticket 31): a wash over its beads and an outline that reads as one rectangle. */
+  /** The rectangle the Select, Piece or Select all marked out (tickets 31, 414): drawn as its outer border. */
   selection?: Selection
+  /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four larger ones. Without it the Selection has no handles. */
+  selectionHandles?: { surface: SurfaceView; touch: boolean }
   /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */
   mirrorAxisCounts?: MirrorAxisCounts
   /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping back. */
@@ -237,101 +238,29 @@ function drawPointer(context: DrawingContext, technique: Technique, zoom: number
   }
 }
 
-/** How much of a bead the Selection's wash covers: its inside, the rim left as it is. */
-const WASH_OPACITY = 0.3
-/** How thick, in the Project's own px, the Selection's outline is, inside each bead on the rectangle's edge. */
+/** How thick, in the Project's own px, the Selection's border is, inside the edge of the rectangle. */
 const OUTLINE_PX = 2
 
-/** The Selection's wash on a rounded bead, kept as a bitmap: a big Selection is thousands of these, and it is redrawn as it is dragged. */
-function washSprite(cornerRadius: number, deviceScale: number, theme: ProjectTheme) {
-  const size = CELL_SIZE_PX - 2
-  const pixels = Math.max(1, Math.round(size * deviceScale))
-  return cachedSprite(['wash', pixels, cornerRadius, theme.marker].join('|'), pixels, size, (context) => {
-    context.globalAlpha = WASH_OPACITY
-    context.fillStyle = theme.marker
-    context.beginPath()
-    roundedRect(context, 0, 0, size, size, cornerRadius)
-    context.fill()
-  })
-}
-
 /**
- * The Selection (ticket 31): a wash over each of its beads, inside the rim so it tints whatever color the bead holds
- * without touching the rim, and an outline drawn on the beads at its edge — bead by bead, because peyote and brick
- * stitch shift alternate rows by half a bead, and one rectangle would sit half a bead off on every other row. Only the
- * beads on screen are drawn, however big the Selection is.
+ * The Selection (ticket 414): the rectangle's outer border in the Selection colour, with no wash on its beads. One
+ * rectangle round the beads, so on peyote and brick stitch, whose alternate rows sit half a bead over, it spans the
+ * furthest left and right any of its rows reach. Handles, when the surface is known, are drawn later in the viewport's px.
  */
-function drawSelection(
-  context: DrawingContext,
-  project: DrawnProject,
-  space: Space,
-  selection: Selection,
-  region: Region,
-  zoom: number,
-  pixelRatio: number,
-  theme: ProjectTheme,
-): void {
+function drawSelection(context: DrawingContext, project: DrawnProject, space: Space, selection: Selection, theme: ProjectTheme): void {
   const { technique } = project
-  const visible = visibleBeadsInSpace(technique, space, region, zoom, project.rotation)
-  const size = CELL_SIZE_PX - 2
-  const rounded = technique === 'peyote'
-  const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
-  const firstRow = Math.max(selection.top, visible.firstRow)
-  const lastRow = Math.min(bottom, visible.lastRow)
-  const sprite = rounded ? washSprite(radius, zoom * pixelRatio, theme) : undefined
+  const shifts = [selection.top, Math.min(selection.top + 1, bottom)].map((row) => shiftOf(space, technique, row))
+  const x = Math.min(...shifts) + selection.left * CELL_SIZE_PX
+  const width = Math.max(...shifts) + (right + 1) * CELL_SIZE_PX - x
+  const y = rowTopPx(technique, selection.top)
+  const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - y
 
   context.fillStyle = theme.marker
-  for (let row = firstRow; row <= lastRow; row += 1) {
-    const { first, last } = visible.columnsOf(row)
-    for (let column = Math.max(first, selection.left); column <= Math.min(last, right); column += 1) {
-      const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
-      const y = rowTopPx(technique, row) + 1
-      if (sprite) {
-        context.drawImage(sprite, x, y, size, size)
-      } else {
-        context.globalAlpha = WASH_OPACITY
-        context.fillRect(x, y, size, size)
-      }
-    }
-  }
-  context.globalAlpha = 1
-
-  for (let row = firstRow; row <= lastRow; row += 1) {
-    const { first, last } = visible.columnsOf(row)
-    const onSideRow = row === selection.top || row === bottom
-    for (let column = Math.max(first, selection.left); column <= Math.min(last, right); column += 1) {
-      // Only the beads on the rectangle's edge carry an outline.
-      if (!onSideRow && column !== selection.left && column !== right) {
-        continue
-      }
-      const sides = [
-        [row === selection.top, 0, 0, size, OUTLINE_PX],
-        [row === bottom, 0, size - OUTLINE_PX, size, OUTLINE_PX],
-        [column === selection.left, 0, 0, OUTLINE_PX, size],
-        [column === right, size - OUTLINE_PX, 0, OUTLINE_PX, size],
-      ] as const
-
-      const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
-      const y = rowTopPx(technique, row) + 1
-      if (rounded) {
-        // The outline follows the bead's rounded inside, as an inset shadow does.
-        context.save()
-        context.beginPath()
-        roundedRect(context, x, y, size, size, radius)
-        context.clip()
-      }
-      for (const [onEdge, dx, dy, width, height] of sides) {
-        if (onEdge) {
-          context.fillRect(x + dx, y + dy, width, height)
-        }
-      }
-      if (rounded) {
-        context.restore()
-      }
-    }
-  }
+  context.fillRect(x, y, width, OUTLINE_PX)
+  context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
+  context.fillRect(x, y, OUTLINE_PX, height)
+  context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
 }
 
 /**
@@ -491,7 +420,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, marginOutline = 0, pointer } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, pointer } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -519,7 +448,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawDimmed(context, project, space, dimmed, region, zoom, pixelRatio, theme)
   }
   if (selection) {
-    drawSelection(context, project, space, selection, region, zoom, pixelRatio, theme)
+    drawSelection(context, project, space, selection, theme)
   }
   if (preview) {
     drawPreview(context, project, space, preview, theme)
@@ -561,6 +490,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       // A size is a number too: the Rulers toggle hides it with the rest.
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
+  }
+  if (selection && selectionHandles && space.open) {
+    drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection)), pixelRatio, theme, selectionHandles.touch)
   }
   if (pointer) {
     drawPointer(context, project.technique, zoom, pixelRatio, pointer, theme)

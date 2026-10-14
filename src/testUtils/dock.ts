@@ -20,7 +20,7 @@ export async function openSheet(wrapper: Wrapper, dock: DockSheet): Promise<void
 }
 
 /** Picks a Tool through the Dock's Tool sheet (ToolTiles card), opening the sheet first when it is not showing. */
-export async function pickTool(wrapper: Wrapper, tool: Tool): Promise<void> {
+export async function pickTool(wrapper: Wrapper, tool: Tool | 'select-all'): Promise<void> {
   if (!wrapper.find(`[data-testid="sheet-tool-${tool}"]`).exists()) {
     await openSheet(wrapper, 'dock-tool')
   }

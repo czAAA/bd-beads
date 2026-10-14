@@ -42,6 +42,7 @@ const {
   customColor,
   selectedImageColor,
   onSelectTool,
+  onSelectAll,
   onSelectColor,
   onSelectCustomColor,
   onSelectImageColor,
@@ -126,7 +127,7 @@ const deps = computed(() =>
 <template>
   <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
     <div class="phone-sheet__tiles">
-      <ToolTiles :active-tool="activeTool" @select="onSelectTool" />
+      <ToolTiles :active-tool="activeTool" @select="onSelectTool" @select-all="onSelectAll" />
     </div>
     <div class="phone-sheet__links">
       <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">

@@ -3,14 +3,20 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { paintCells, type Project } from '../../domain/project'
 import {
+  allBeadsSelection,
   copySelection,
   mirroredPasteBlock,
   mirroredPastedCells,
+  movedSelection,
+  pieceSelectionAt,
   selectionBetween,
+  selectionWithEdges,
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
+import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
+import type { FramePress } from '../../rendering/frameHandles'
 
 /**
  * The Select tool's whole gesture (ticket 63, architecture review): the Selection itself, the in-session clipboard,
@@ -50,6 +56,15 @@ export function useSelectionGesture(
   const pasteDismissed = ref(false)
   /** Whether Select should show the live paste preview and treat a click-in-place as a stamp (ticket 92) -- copiedBlock present and not dismissed. */
   const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
+
+  /**
+   * A press on the Selection's handles or inside it (ticket 414): a handle resizes the rectangle, the inside moves its
+   * outline, and neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do.
+   */
+  let adjust:
+    | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
+    | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool: 'select' | 'piece' }
+    | undefined
 
   /**
    * Where a Select-tool press started, and whether it has left that cell yet. A press under Select is ambiguous
@@ -102,6 +117,71 @@ export function useSelectionGesture(
     edit('drawing', (current) => mirroredPasteBlock(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
+  /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, and tapping empty space clears it. */
+  function tapPiece(row: number, column: number) {
+    const project = currentProject()
+    if (!project) {
+      return
+    }
+    dropClipboard()
+    selection.value = pieceSelectionAt(project.beads, project.technique, { row, column })
+  }
+
+  /** Select all (ticket 414): the Selection becomes the rectangle round every placed bead. Returns false, changing nothing, on an empty canvas. */
+  function selectAll(): boolean {
+    const project = currentProject()
+    const all = project ? allBeadsSelection(project.beads) : undefined
+    if (!all) {
+      return false
+    }
+    dropClipboard()
+    selection.value = all
+    return true
+  }
+
+  /** Begins resizing (a handle) or moving (the inside) the Selection (ticket 414); `cell` is the bead position under the press. */
+  function beginAdjust(target: FramePress, cell: GridPosition, tool: 'select' | 'piece') {
+    const start = selection.value
+    if (!start) {
+      return
+    }
+    if (target.kind === 'handle') {
+      adjust = { kind: 'resize', edges: target.edges, start }
+    } else if (target.kind === 'inside') {
+      adjust = { kind: 'move', origin: cell, start, moved: false, tool }
+    }
+  }
+
+  /** Carries the adjust on to the bead position the drag has reached. */
+  function dragAdjust(cell: GridPosition) {
+    if (!adjust) {
+      return
+    }
+    if (adjust.kind === 'resize') {
+      selection.value = selectionWithEdges(adjust.start, adjust.edges, cell)
+      return
+    }
+    const rows = cell.row - adjust.origin.row
+    const columns = cell.column - adjust.origin.column
+    adjust.moved ||= rows !== 0 || columns !== 0
+    selection.value = movedSelection(adjust.start, rows, columns)
+  }
+
+  /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
+  function endAdjust() {
+    const done = adjust
+    adjust = undefined
+    if (done?.kind !== 'move' || done.moved) {
+      return
+    }
+    if (done.tool === 'piece') {
+      tapPiece(done.origin.row, done.origin.column)
+    } else {
+      dropClipboard()
+      selection.value = selectionBetween(done.origin, done.origin)
+    }
+  }
+
   /** A new Selection (drag or ruler click) is one of the two things that clear the clipboard (ADR 0016), the other being a new Copy replacing it. */
   function dropClipboard() {
     copiedBlock.value = undefined
@@ -135,7 +215,7 @@ export function useSelectionGesture(
   }
 
   /**
-   * Leaving the Select tool (ADR 0016): forgets what it was holding outright, unlike cancel(), which only backs out
+   * Leaving the Select and Piece tools (ADR 0016; a Selection survives switching between them, ticket 414): forgets what it was holding outright, unlike cancel(), which only backs out
    * one step at a time. The marquee is noise once you're painting rather than selecting, and a clipboard that
    * outlived its marquee would be invisible state -- coming back to Select and clicking would stamp a block out of
    * nowhere. This module never branches on which tool is active (ticket 63 decision): the app shell calls this only
@@ -246,6 +326,11 @@ export function useSelectionGesture(
     pasteAt,
     deleteSelection,
     selectLine,
+    tapPiece,
+    selectAll,
+    beginAdjust,
+    dragAdjust,
+    endAdjust,
     pastePreviewCells,
     clearSelection,
     /** Whether a copied block is armed to paste (ticket 168's ContextBar: "Tap where to paste" replaces the Selection's own controls once this is true). */
