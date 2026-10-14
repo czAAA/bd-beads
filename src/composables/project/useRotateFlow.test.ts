@@ -36,7 +36,7 @@ describe('useRotateFlow', () => {
   it('only announces it when nothing was in the way', () => {
     const { deps, onRotate } = setup()
     onRotate()
-    expect(deps.announce).toHaveBeenCalledWith('Pattern rotated')
+    expect(deps.announce).toHaveBeenCalledWith('Schema rotated')
     expect(deps.showToast).not.toHaveBeenCalled()
   })
 
@@ -50,7 +50,7 @@ describe('useRotateFlow', () => {
     expect(deps.showToast).toHaveBeenCalledTimes(1)
     const [id, text, tone, action] = deps.showToast.mock.calls[0]!
     expect(id).toBe('project-rotated')
-    expect(text).toBe('Pattern rotated. 1 piece was in the way and moved outside the Frame.')
+    expect(text).toBe('Schema rotated. 1 Piece was in the way and moved outside the Frame.')
     expect(tone).toBe('info')
     expect(action.label).toBe('Undo')
     action.run()

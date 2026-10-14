@@ -257,7 +257,8 @@ When a change touches how something looks, reads or behaves, edit `docs/design/s
 If the app deliberately differs from a card, fix the card to say what the app does (and why, in one line), not the
 other way round.
 
-**Version in the repo:** design system **v18** is the baseline. Changes since are in the Version section of
+**Version in the repo:** design system **v19** is the baseline. Changes since are in the Version section of
 [`docs/design/system/README.md`](docs/design/system/README.md). v17 is vocabulary only (Project and Pattern); v18 adds
-the Frame margin and the icon-tile Toolbox.
+the Frame margin and the icon-tile Toolbox; v19 is vocabulary only again (Piece, Schema, Project and Canvas in
+every language, ticket 405).
 The `CanvasStrip` card still carries the "pieces outside the Frame" count (§4.2).

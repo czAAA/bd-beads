@@ -1,7 +1,7 @@
 import type { Translations } from './translations'
 
-// Domain words follow CONTEXT.md and the Russian glossary: проєкт (Project), схема (Pattern), бісерина / бісер (Bead),
-// палітра (Palette), техніка плетіння (Technique), рамка (Frame), фрагмент (Piece), прогрес за рядами (Row progress).
+// Domain words follow CONTEXT.md and the Russian glossary: проєкт (Project), схема (Schema), бісерина / бісер (Bead),
+// палітра (Palette), техніка плетіння (Technique), рамка (Frame), шматочок (Piece), прогрес за рядами (Row progress).
 export const uk: Translations = {
   app: {
     title: 'bd-beads',
@@ -92,7 +92,7 @@ export const uk: Translations = {
     widthSize: 'Ширина {count}',
     heightSize: 'Висота {count}',
     canvasTitle: 'Полотно',
-    piecesCount: { one: '{count} фрагмент', few: '{count} фрагменти', many: '{count} фрагментів', other: '{count} фрагмента' },
+    piecesCount: { one: '{count} шматочок', few: '{count} шматочки', many: '{count} шматочків', other: '{count} шматочка' },
     noFrame: 'без рамки',
     settingFrame: 'задається рамка',
     rulersLabel: 'Лінійки',
@@ -436,17 +436,17 @@ export const uk: Translations = {
     countNeedsFrame: 'Задайте рамку, щоб порахувати бісер.',
     progressNeedsFrame: 'Задайте рамку, щоб почати',
     rotatedMessage: {
-      one: 'Схему повернуто. {count} фрагмент заважав і його зсунуто за рамку.',
-      few: 'Схему повернуто. {count} фрагменти заважали й їх зсунуто за рамку.',
-      many: 'Схему повернуто. {count} фрагментів заважали й їх зсунуто за рамку.',
-      other: 'Схему повернуто. {count} фрагмента заважали й їх зсунуто за рамку.',
+      one: 'Схему повернуто. {count} шматочок заважав і його зсунуто за рамку.',
+      few: 'Схему повернуто. {count} шматочки заважали й їх зсунуто за рамку.',
+      many: 'Схему повернуто. {count} шматочків заважали й їх зсунуто за рамку.',
+      other: 'Схему повернуто. {count} шматочка заважали й їх зсунуто за рамку.',
     },
     marginLead: { set: 'Рамку задано.', moved: 'Рамку переміщено.', resized: 'Розмір рамки змінено.' },
     marginClearedMessage: {
-      one: '{count} фрагмент був у полі рамки й переміщений за його межі.',
-      few: '{count} фрагменти були в полі рамки й переміщені за його межі.',
-      many: '{count} фрагментів були в полі рамки й переміщені за його межі.',
-      other: '{count} фрагмента були в полі рамки й переміщені за його межі.',
+      one: '{count} шматочок був у полі рамки й переміщений за його межі.',
+      few: '{count} шматочки були в полі рамки й переміщені за його межі.',
+      many: '{count} шматочків були в полі рамки й переміщені за його межі.',
+      other: '{count} шматочка були в полі рамки й переміщені за його межі.',
     },
     keyboardHint: 'стрілки рухають рамку · Shift і стрілки змінюють розмір · Enter: готово',
   },

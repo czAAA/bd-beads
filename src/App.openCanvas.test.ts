@@ -76,25 +76,25 @@ describe('drawing anywhere', () => {
     expect(beadColor(reloaded, { row: -30, column: -12 })).toBe(RED)
   })
 
-  it('reads "Canvas · 2 pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
+  it('reads "Canvas · 2 Pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
     saveProjects([openCanvas()])
     const wrapper = mountApp()
     await flushPromises()
 
     expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · no Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
 
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, { row: 5, column: 5 })
     await wrapper.trigger('mouseup')
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('3 pieces · no Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('3 Pieces · no Frame')
 
     // A bead between two pieces joins them: (10, 10) and (5, 5) are bridged by painting a path.
     for (let step = 6; step <= 9; step += 1) {
       await pressBead(wrapper, { row: step, column: step })
       await wrapper.trigger('mouseup')
     }
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 pieces · no Frame')
+    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
   })
 })
 
