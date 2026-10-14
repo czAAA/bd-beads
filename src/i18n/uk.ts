@@ -242,7 +242,7 @@ export const uk: Translations = {
       },
       rows: {
         title: 'Позначайте ряди',
-        body: 'Прогрес за рядами запам’ятовує, де ви зупинилися. Увімкніть його, тричі натисніть «Ряд готовий», потім один раз «Ряд не готовий», щоб повернути ряд 3.',
+        body: 'Прогрес за рядами запам’ятовує, де ви зупинилися. Увімкніть його, тричі натисніть «Готово», потім один раз «Ряд не готовий», щоб повернути ряд 3.',
       },
     },
     final: {
@@ -315,7 +315,11 @@ export const uk: Translations = {
     directionButton: 'Повернути напрям рядів',
     positionLabel: 'Ряд',
     previousButton: 'Ряд не готовий',
-    nextButton: 'Ряд готовий',
+    nextButton: 'Готово',
+    columnPreviousButton: 'Стовпець не готовий',
+    columnNextButton: 'Стовпець готовий',
+    directionToastRows: 'Ряди тепер ідуть зверху вниз.',
+    directionToastColumns: 'Ряди тепер ідуть зліва направо.',
     ofTotal: 'з {total} · {direction}',
     topToBottom: 'Зверху вниз',
     leftToRight: 'Зліва направо',

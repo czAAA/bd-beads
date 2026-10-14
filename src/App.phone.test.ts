@@ -42,7 +42,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await createProjectViaPhoneSheet(wrapper)
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(drawnProject(wrapper).frame).toBeUndefined() // an open canvas: its size is set in the Frame section (ticket 342)
+    expect(drawnProject(wrapper).frame).toBeUndefined() // a Canvas: its size is set in the Frame section (ticket 342)
     // After creation the Dock replaces the project-management bar.
     expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(false)
@@ -202,18 +202,21 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
-  it('turns Row progress on from the Zoom pill and shows the Progress bar with it, off hides both (ticket 338)', async () => {
+  it('always shows the Progress bar, and its switch is the only way to turn Row progress on or off: the Zoom pill has no button for it (ticket 411)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__progress--hidden')
-    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('false')
+    const bar = () => wrapper.get('[data-testid="progress-bar"]')
+    expect(wrapper.find('[data-testid="zoom-pill-progress"]').exists()).toBe(false)
+    expect(bar().classes()).not.toContain('app-shell__progress--hidden')
+    const toggle = wrapper.get('[data-testid="progress-bar-switch"]')
+    expect(toggle.attributes('aria-checked')).toBe('false')
 
-    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).not.toContain('app-shell__progress--hidden')
-    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('true')
+    await toggle.trigger('click')
+    expect(wrapper.get('[data-testid="progress-bar-switch"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
 
-    await wrapper.get('[data-testid="zoom-pill-progress"]').trigger('click')
-    expect(wrapper.get('[data-testid="progress-bar"]').classes()).toContain('app-shell__progress--hidden')
-    expect(wrapper.get('[data-testid="zoom-pill-progress"]').attributes('aria-pressed')).toBe('false')
+    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
+    expect(wrapper.get('[data-testid="progress-bar-switch"]').attributes('aria-checked')).toBe('false')
+    expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 
   it('shows the Project sheet\'s Save box for the open Project', async () => {

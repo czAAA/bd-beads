@@ -18,7 +18,7 @@ import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 /**
- * The open canvas drawn by the Project renderer in its open space (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
+ * The Canvas drawn by the Project renderer in its open space (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
  * drawing area edge to edge with two canvases the size of what is on screen, one for the beads and the dots round them
  * and one over it for what comes and goes with a tool or the pointer (see overlayRenderer). There is no board, no edge
  * and no scroll container: what is shown is decided by the `scroll` and the `zoom` it is given, so a canvas of any size
@@ -90,7 +90,7 @@ const emit = defineEmits<{
   'zoom-by': [factor: number, anchor: Scroll]
   /** A ruler number was pressed: the whole row or column it numbers is to be selected. */
   'select-line': [selection: Selection]
-  /** Set Frame: a press grabbed a handle, the inside of the Frame or the open canvas, at this bead position. */
+  /** Set Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
   'frame-press': [target: FramePress, cell: GridPosition]
   /** Set Frame: the pointer moved with the press held, over this bead position. */
   'frame-drag': [cell: GridPosition]

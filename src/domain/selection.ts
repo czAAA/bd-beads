@@ -39,7 +39,7 @@ export interface PastedCell extends GridPosition {
 
 /**
  * The Selection a drag from `anchor` to `focus` marks out. Either corner may be the one the drag started from, so
- * dragging up-left covers the same rectangle as dragging down-right. The open canvas has no edge to clamp to
+ * dragging up-left covers the same rectangle as dragging down-right. The Canvas has no edge to clamp to
  * (ADR 0026): a Selection covers whatever positions the drag crossed, painted or not.
  */
 export function selectionBetween(anchor: GridPosition, focus: GridPosition): Selection {
@@ -140,7 +140,7 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
 /**
  * Where a block's painted cells land when stamped with its top-left corner at `at`. The block's own empty cells are
  * left out: they are holes that leave the destination's color alone (stamping a motif onto painted background mustn't
- * punch through it). Nothing is clipped, since the open canvas has no edge (ADR 0026).
+ * punch through it). Nothing is clipped, since the Canvas has no edge (ADR 0026).
  */
 export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] {
   const cells: PastedCell[] = []

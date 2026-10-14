@@ -29,9 +29,19 @@ describe('changeFrame', () => {
       ['removeLine', { removeLine: { axis: 'row', index: 0 } }],
       ['technique', { technique: 'peyote' }],
     ]
-    it.each(changes)('refuses %s while Row progress is on', (_name, change) => {
+    it.each(changes)('refuses %s once Row progress is on and a pass is done (ticket 411)', (_name, change) => {
       const project = framed({ rowProgress: woven('rows') })
       expect(changeFrame(project, change)).toEqual({ kind: 'refused', reason: 'locked' })
+    })
+
+    it.each(changes)('allows %s while Row progress is on but no pass is done (ticket 411)', (_name, change) => {
+      const project = framed({ rowProgress: woven('rows', 0, 0) })
+      expect(changeFrame(project, change).kind).not.toBe('refused')
+    })
+
+    it('is allowed again once Row progress is turned off, with passes done', () => {
+      const project = framed({ rowProgress: woven('rows', 5, 3, false) })
+      expect(changeFrame(project, { remove: true }).kind).toBe('changed')
     })
 
     it('needs a Frame to rotate or remove a line from', () => {
@@ -61,6 +71,47 @@ describe('changeFrame', () => {
     })
   })
 
+  describe('Row progress on by itself (ticket 411)', () => {
+    const open = (): Project => {
+      const project = framed()
+      delete project.frame
+      return project
+    }
+
+    it('turns on at the first Frame set, the pointers at the first pass', () => {
+      const result = changeFrame({ ...open(), rowProgress: { ...woven('columns', 3, 2, false) } }, { set: frame })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.rowProgress).toMatchObject({ enabled: true, decided: true, currentRow: 0, currentColumn: 0 })
+    })
+
+    it('stays off when the weaver turned it off: later Frame edits and a re-set do not turn it on', () => {
+      const off = { ...open(), rowProgress: { ...woven('rows', 0, 0, false), decided: true } }
+      const first = changeFrame(off, { set: frame })
+      if (first.kind !== 'changed') throw new Error('expected a change')
+      expect(first.project.rowProgress.enabled).toBe(false)
+      const moved = changeFrame(first.project, { set: { ...frame, rows: 8 } })
+      if (moved.kind !== 'changed') throw new Error('expected a change')
+      expect(moved.project.rowProgress.enabled).toBe(false)
+    })
+
+    it('does not turn on again for a Frame moved or resized after it was turned on and off', () => {
+      const turnedOn = changeFrame(open(), { set: frame })
+      if (turnedOn.kind !== 'changed') throw new Error('expected a change')
+      const off = { ...turnedOn.project, rowProgress: { ...turnedOn.project.rowProgress, enabled: false } }
+      const removed = changeFrame(off, { remove: true })
+      if (removed.kind !== 'changed') throw new Error('expected a change')
+      const reset = changeFrame(removed.project, { set: frame })
+      if (reset.kind !== 'changed') throw new Error('expected a change')
+      expect(reset.project.rowProgress.enabled).toBe(false)
+    })
+
+    it('leaves a Project with a Frame as it is, on or off', () => {
+      const result = changeFrame(framed({ rowProgress: woven('rows', 0, 0, false) }), { set: { ...frame, rows: 8 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.rowProgress.enabled).toBe(false)
+    })
+  })
+
   describe('Row progress pointers', () => {
     const cases: ['rows' | 'columns', FrameChange][] = [
       ['rows', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
@@ -76,8 +127,9 @@ describe('changeFrame', () => {
       const result = changeFrame(wide, change)
       if (result.kind !== 'changed') throw new Error('expected a change')
       const next = result.project.frame!
-      expect(result.project.rowProgress.currentRow).toBeLessThan(next.rows)
-      expect(result.project.rowProgress.currentColumn).toBeLessThan(next.columns)
+      // One past the last pass means every pass is done (ticket 411).
+      expect(result.project.rowProgress.currentRow).toBeLessThanOrEqual(next.rows)
+      expect(result.project.rowProgress.currentColumn).toBeLessThanOrEqual(next.columns)
     })
   })
 

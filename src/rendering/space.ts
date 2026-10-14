@@ -5,7 +5,7 @@ import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
 
 /**
  * Where a Project's positions live (ADR 0018, ADR 0026), the one thing the Project renderer and the overlay both need
- * to agree on. On the open canvas every position is real, measured from row 0, column 0, and the Frame, when there is
+ * to agree on. On the Canvas every position is real, measured from row 0, column 0, and the Frame, when there is
  * one, sits where it is; drawn on its own (an export, a picture, the Overview) the Project is the Frame and its first
  * bead is position (0, 0). A surface builds it once and hands the same value to both layers.
  */
@@ -16,9 +16,9 @@ export interface Space {
   columns: number
   rows: number
   hasFrame: boolean
-  /** What to add to a position in this space to get the bead's own row and column: nothing on the open canvas, the Frame's first on its own. */
+  /** What to add to a position in this space to get the bead's own row and column: nothing on the Canvas, the Frame's first on its own. */
   toAbsolute: GridPosition
-  /** The size of what is drawn, for the transform: nothing on the open canvas, the box round the Frame's beads on its own. */
+  /** The size of what is drawn, for the transform: nothing on the Canvas, the box round the Frame's beads on its own. */
   extent: Extent
 }
 
@@ -36,10 +36,10 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
   }
 }
 
-/** Whether a position can be drawn on: anywhere on the open canvas, inside the Project otherwise. */
+/** Whether a position can be drawn on: anywhere on the Canvas, inside the Project otherwise. */
 export function inSpace(space: Space, row: number, column: number): boolean {
   return space.open || (row >= 0 && row < space.rows && column >= 0 && column < space.columns)
 }
 
-/** The open canvas with no Project to measure: every position real, none yet drawn. For the layers that only need its geometry (the rulers). */
+/** The Canvas with no Project to measure: every position real, none yet drawn. For the layers that only need its geometry (the rulers). */
 export const OPEN_SPACE: Space = { open: true, origin: { row: 0, column: 0 }, columns: 0, rows: 0, hasFrame: false, toAbsolute: { row: 0, column: 0 }, extent: OPEN_EXTENT }

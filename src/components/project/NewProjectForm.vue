@@ -94,7 +94,7 @@ const techniqueOptions = computed(() => [
   { value: 'brick' as const, label: t.value.form.techniqueBrick },
 ])
 
-/** What Create Project makes: an open canvas, its size set later in the Frame section (ticket 342). */
+/** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
@@ -118,7 +118,7 @@ function onSubmit() {
   emit('submit', currentInput())
 }
 
-/** A decoded picture waiting for its Pattern size (ticket 342, ADR 0026); the size step is open while there is one. */
+/** A decoded picture waiting for its Schema size (ticket 342, ADR 0026); the size step is open while there is one. */
 const pendingImage = ref<PixelData>()
 
 /** The size is stated: the draft carries it first, so the frame the shell builds has a size to follow, then framing starts. */
@@ -194,7 +194,7 @@ function onDropImage(file: File) {
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the left column's first box: Name (optional), Maker's
     name (ticket 182, also optional and blank by default), Bead, Technique, Create Project, then "or" and Convert image.
-    It states no size (ticket 342): a Project starts as an open canvas and its size is set in the Frame
+    It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame
     sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.
   -->
   <form ref="formEl" class="new-project-form" data-tour="new-project" novalidate @submit.prevent="onSubmit">
