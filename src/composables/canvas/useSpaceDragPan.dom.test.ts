@@ -82,6 +82,50 @@ describe('useSpaceDragPan', () => {
     }
   })
 
+  it('pans right after a Toolbox click and a stroke on the canvas, without Esc (ticket 424)', () => {
+    const { state } = mountHost()
+    const button = document.createElement('button')
+    document.body.appendChild(button)
+
+    try {
+      button.focus()
+      pointer('pointerdown', { clientX: 5, clientY: 5 })
+      pointer('pointerup', { clientX: 5, clientY: 5 })
+      expect(document.activeElement).not.toBe(button)
+
+      keydown({ code: 'Space' }, document.activeElement ?? document.body)
+      expect(state.spaceHeld.value).toBe(true)
+    } finally {
+      button.remove()
+    }
+  })
+
+  it('keeps a Tab-focused button focused until the pointer presses elsewhere, and keeps focus when the press is on a button', () => {
+    mountHost()
+    const button = document.createElement('button')
+    document.body.appendChild(button)
+
+    try {
+      button.focus()
+      button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+      expect(document.activeElement).toBe(button)
+    } finally {
+      button.remove()
+    }
+  })
+
+  it('ignores Space pressed mid-stroke: no grab cursor, no pan', () => {
+    const panBy = vi.fn()
+    const { state } = mountHost(panBy)
+
+    pointer('pointerdown', { clientX: 0, clientY: 0 })
+    keydown({ code: 'Space' })
+    expect(state.spaceHeld.value).toBe(false)
+    pointer('pointermove', { clientX: 10, clientY: 10 })
+    expect(panBy).not.toHaveBeenCalled()
+    pointer('pointerup', { clientX: 10, clientY: 10 })
+  })
+
   it('moves the canvas both ways, with the pointer, while dragging with Space held', () => {
     const panBy = vi.fn()
     const { state } = mountHost(panBy)
