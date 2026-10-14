@@ -10,6 +10,11 @@ function activatesOnSpace(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button')
 }
 
+/** The nearest button at or above `target`, so a press on an icon inside a button counts as a press on the button. */
+function closestButton(target: EventTarget | null): EventTarget | null {
+  return target instanceof Element ? target.closest('button, [role="button"]') : null
+}
+
 /**
  * Holding Space and dragging moves the canvas (tickets 95, 233): a pure pan, regardless of which tool
  * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
@@ -26,6 +31,8 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
 
   let lastX = 0
   let lastY = 0
+  /** A pointer is down (a stroke or drag in progress): Space pressed now must not arm a pan or paint stray cells. */
+  let pointerIsDown = false
 
   function onKeyDown(event: KeyboardEvent) {
     if (event.code !== 'Space' || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
@@ -33,6 +40,11 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
     }
     // Without this, holding Space also triggers the browser's own page-down scroll wherever focus happens to be.
     event.preventDefault()
+    // Mid-stroke (ticket 424): arming happens on pointerdown, so Space now would only show a grab cursor over a stroke
+    // that keeps painting. Ignore it; release and press Space again to pan.
+    if (pointerIsDown) {
+      return
+    }
     spaceHeld.value = true
   }
 
@@ -45,6 +57,13 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   }
 
   function onPointerDown(event: PointerEvent) {
+    pointerIsDown = true
+    // A button the user clicked keeps focus after they move on to the canvas, and would swallow Space (ticket 424).
+    // Pressing anywhere but a button hands that focus back; a button reached with Tab keeps it until then.
+    const active = document.activeElement
+    if (active instanceof HTMLElement && activatesOnSpace(active) && !activatesOnSpace(closestButton(event.target))) {
+      active.blur()
+    }
     if (!spaceHeld.value) {
       return
     }
@@ -67,6 +86,7 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   }
 
   function onPointerEnd() {
+    pointerIsDown = false
     panning.value = false
   }
 
