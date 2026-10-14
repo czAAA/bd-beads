@@ -58,9 +58,9 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     /*
      * Leaving Select forgets what it was holding. The marquee is noise once you're painting rather than selecting,
      * and a clipboard that outlived its marquee would be invisible state: coming back to Select and clicking would
-     * stamp a block out of nowhere. Re-choosing Select while it's already active leaves both alone.
+     * stamp a block out of nowhere. Re-choosing Select while it's already active leaves both alone, and Select and Piece share one Selection (ticket 414).
      */
-    if (tool !== 'select') {
+    if (tool !== 'select' && tool !== 'piece') {
       deps.leaveSelectTool()
     }
 

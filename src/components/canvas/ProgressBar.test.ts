@@ -167,7 +167,6 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     expect(toggle.attributes('aria-disabled')).toBe('true')
     expect(toggle.attributes('aria-checked')).toBe('false')
     expect(wrapper.text()).toContain(ru.tooltips.setFrameFirst)
-    expect(wrapper.text()).toContain('6')
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)

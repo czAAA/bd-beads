@@ -3,7 +3,7 @@
 The Dock and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Dock's sheets, the Context bar and the Zoom pill.
 
 **Tool group**:
-A titled set of related controls — Tools (Paint, Fill, Select, Eraser, Hand), Colors, Edit, Mirror, Row progress. The Dock's sheets and the keyboard shortcuts help gather the same controls under the same names.
+A titled set of related controls — Tools (Paint, Fill, Select, Piece, Select all, Eraser, Hand; Select all acts at once instead of becoming the active tool, ticket 414), Colors, Edit, Mirror, Row progress. The Dock's sheets and the keyboard shortcuts help gather the same controls under the same names.
 _Avoid_: subbox, card, section, panel
 
 **Dock layout**:

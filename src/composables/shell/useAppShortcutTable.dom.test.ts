@@ -20,6 +20,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onUndo: vi.fn(),
     onRedo: vi.fn(),
     onSelectTool: vi.fn(),
+    onSelectAll: vi.fn(),
     onSelectColor: vi.fn(),
     onDeleteSelection: vi.fn(),
     onToggleRulers: vi.fn(),
@@ -93,15 +94,15 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('F toggles Set Frame only while a Project is open', () => {
+  it('7 selects all only while a Project is open (ticket 414)', () => {
     const none = mountTable()
-    press({ key: '6' })
-    expect(none.deps.onToggleFrame).not.toHaveBeenCalled()
+    press({ key: '7' })
+    expect(none.deps.onSelectAll).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
-    press({ key: '6' })
-    expect(deps.onToggleFrame).toHaveBeenCalledOnce()
+    press({ key: '7' })
+    expect(deps.onSelectAll).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 
@@ -224,12 +225,16 @@ describe('useAppShortcutTable', () => {
     open.wrapper.unmount()
   })
 
-  it('4, 5 and 6 pick Erase, Hand and Frame (ticket 292)', () => {
+  it('4, 5 and 6 pick Erase, Hand and Piece, and 7 and Ctrl+A select all (tickets 292, 414)', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     for (const key of ['4', '5', '6']) press({ key })
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
-    expect(deps.onToggleFrame).toHaveBeenCalledTimes(1)
+    expect(deps.onSelectTool).toHaveBeenNthCalledWith(3, 'piece')
+    expect(deps.onToggleFrame).not.toHaveBeenCalled()
+    press({ key: '7' })
+    press({ key: 'a', ctrlKey: true })
+    expect(deps.onSelectAll).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

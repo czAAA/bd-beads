@@ -46,6 +46,13 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
+/** Starts Set Frame from the Dock's Frame sheet (it has no key since the Piece tool took 6, ticket 414). */
+async function startSetFrame(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+  await openSheet(wrapper, 'dock-frame')
+  await wrapper.get('[data-testid="frame-set"]').trigger('click')
+  await flushPromises()
+}
+
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
 const savedFrame = () => loadProjects()[0]!.frame
 
@@ -58,11 +65,11 @@ async function drag(wrapper: Awaited<ReturnType<typeof mountOpen>>, from: { row:
 }
 
 describe('Set Frame', () => {
-  it('draws a Frame with F and a drag over beads, snapped to whole beads, and the drag paints nothing', async () => {
+  it('draws a Frame from the Frame sheet and a drag over beads, snapped to whole beads, and the drag paints nothing', async () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
 
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
     expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · setting Frame')
 
     await drag(wrapper, { row: 4, column: 6 }, { row: 1, column: 2 })
@@ -75,7 +82,7 @@ describe('Set Frame', () => {
   it('moves a Frame with the Hand tool chosen before, and goes back to the Hand tool after (ticket 294)', async () => {
     const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
     await key({ key: '5' })
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
 
     await drag(wrapper, { row: 2, column: 2 }, { row: 3, column: 4 })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
@@ -89,24 +96,24 @@ describe('Set Frame', () => {
     const wrapper = await mountOpen()
     const strip = () => wrapper.find('[data-testid="canvas-strip-size"]').text()
 
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
     expect(strip()).toContain('setting Frame')
     await key({ key: 'Escape' })
     expect(strip()).not.toContain('setting Frame')
 
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
     await flushPromises()
     expect(strip()).not.toContain('setting Frame')
 
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
     await pickTool(wrapper, 'fill')
     expect(strip()).not.toContain('setting Frame')
   })
 
   it('works from the keyboard: arrows start a Frame, move it, and Shift resizes it', async () => {
     const wrapper = await mountOpen()
-    await key({ key: '6' })
+    await startSetFrame(wrapper)
 
     await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
     expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 1, columns: 1 })
