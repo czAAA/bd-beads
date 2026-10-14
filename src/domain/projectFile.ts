@@ -49,16 +49,16 @@ function fileNameSlug(name: string): string {
 }
 
 export function projectFileName(project: Project): string {
-  return `bd-beads-${fileNameSlug(project.name)}.json`
+  return `openbeads-${fileNameSlug(project.name)}.json`
 }
 
-/** The name a picture or document of the Project is saved under (ticket 73, 74), e.g. `bd-beads-my-scarf.png`. */
+/** The name a picture or document of the Project is saved under (ticket 73, 74), e.g. `openbeads-my-scarf.png`. */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  return `bd-beads-${fileNameSlug(project.name)}.${extension}`
+  return `openbeads-${fileNameSlug(project.name)}.${extension}`
 }
 
 export function libraryFileName(): string {
-  return 'bd-beads-library.json'
+  return 'openbeads-library.json'
 }
 
 function looksLikeProject(value: unknown): value is Project | GridProject {
@@ -77,7 +77,7 @@ function looksLikeProject(value: unknown): value is Project | GridProject {
 
 /**
  * Reads the Projects out of an exported file, whether it holds one Project or a whole library, so a single import
- * action handles both. Throws when the file isn't one bd-beads wrote, or was written by a format version this build
+ * action handles both. Throws when the file isn't one openbeads wrote, or was written by a format version this build
  * doesn't know.
  */
 export function parseProjectsFile(text: string): ProjectFileContents {
@@ -85,7 +85,7 @@ export function parseProjectsFile(text: string): ProjectFileContents {
   try {
     parsed = JSON.parse(text)
   } catch {
-    throw new Error('Not a bd-beads file: it is not valid JSON')
+    throw new Error('Not an openbeads file: it is not valid JSON')
   }
 
   const file = parsed as Partial<ProjectFile> | null
@@ -94,15 +94,15 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     file === null ||
     (file.kind !== PROJECT_FILE_KIND && file.kind !== LIBRARY_FILE_KIND)
   ) {
-    throw new Error('Not a bd-beads file')
+    throw new Error('Not an openbeads file')
   }
 
   if (typeof file.version !== 'number' || !FILE_VERSIONS.includes(file.version)) {
-    throw new Error(`Unsupported bd-beads file version: ${String(file.version)}`)
+    throw new Error(`Unsupported openbeads file version: ${String(file.version)}`)
   }
 
   if (!Array.isArray(file.patterns) || !file.patterns.every(looksLikeProject)) {
-    throw new Error('This bd-beads file does not contain readable Projects')
+    throw new Error('This openbeads file does not contain readable Projects')
   }
 
   return {

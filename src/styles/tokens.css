@@ -200,7 +200,7 @@
   --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
   /* Type roles: font shorthand, plus letter-spacing where the role has one */
-  --type-brand: 700 1.125rem/1 var(--font-sans);
+  --type-brand: italic 400 1.5rem/1 var(--font-serif);
   --tracking-brand: -0.3px;
   --type-title: 600 1rem/1.5rem var(--font-sans);
   --type-control: 500 0.875rem/1.25rem var(--font-sans);

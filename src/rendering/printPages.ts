@@ -262,10 +262,10 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   context.restore()
 }
 
-/** The top line on every page: the mark and "bd-beads" on the left, the maker, date and time on the right. */
+/** The top line on every page: the mark and "openbeads" on the left, the maker, date and time on the right. */
 function drawTopLine(context: CanvasRenderingContext2D, page: PageSize, words: PrintText, y: number): void {
   drawMark(context, PRINT_MARGIN, y - mm(4.2), mm(5.5), PRINT_COLORS.accent)
-  text(context, 'bd-beads', PRINT_MARGIN + mm(7), y, font('700', 10, SANS), PRINT_COLORS.ink)
+  text(context, 'openbeads', PRINT_MARGIN + mm(7), y, font('700', 10, SANS), PRINT_COLORS.ink)
   const right = [headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
   text(context, right, page.width - PRINT_MARGIN, y, font('400', 7.5, MONO), PRINT_COLORS.muted, 'right')
 }
@@ -558,7 +558,7 @@ function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan,
   // The 8 mm footer: the brand, and where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  text(context, 'bd-beads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
   const next = continuation(plan, part)
   const onward =
     next.right && next.below
@@ -621,7 +621,7 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
   // The footer: the brand, and (from the last part on the sheet) where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  text(context, 'bd-beads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
   const next = continuation(plan, parts.at(-1)!)
   const onward = next.right ? labels.continuesRight.replace('{right}', String(next.right)) : labels.lastPart
   text(context, onward, page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
