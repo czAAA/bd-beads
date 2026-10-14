@@ -67,11 +67,11 @@ function drawStoryHeader(context: CanvasRenderingContext2D, words: PrintText, x:
   return y + mm(7)
 }
 
-/** The date, the X1 mark and "bd-beads": the last thing every layout shows, bottom-left of its own block. */
+/** The date, the X1 mark and "openbeads": the last thing every layout shows, bottom-left of its own block. */
 function drawStoryBrand(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number): number {
   text(context, words.exportedAt, x, y, font('400', 7, MONO), PRINT_COLORS.muted)
   drawMark(context, x, y + mm(3.5), mm(4.5), PRINT_COLORS.accent)
-  text(context, 'bd-beads', x + mm(6), y + mm(5), font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, 'openbeads', x + mm(6), y + mm(5), font('700', 7.5, SANS), PRINT_COLORS.ink)
   return y + mm(7)
 }
 

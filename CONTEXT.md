@@ -2,6 +2,8 @@
 
 **bd-beads** is a personal tool for designing and tracking beadwork Projects (hand weaving and loom weaving).
 
+**Public name:** people see **openbeads** (ticket 401), set in the slogan's serif. `bd-beads` stays the code, repo, storage-key and file-kind name until the repo is renamed; only visible text changed.
+
 ## Quick start
 
 - **Issue tracker**: `.scratch/` (markdown, in the private docs repo `bd-beads-docs`, linked in; ADR 0047)

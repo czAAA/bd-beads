@@ -62,7 +62,7 @@ const wordStyle = computed(() => ({ height: `calc(${wordHeight.value} * var(--p)
 <template>
   <ExampleFrame>
     <div class="paper" :style="paperStyle" data-testid="example-paper">
-      <span class="paper__brand"><AppLogo :size="16" />bd-beads</span>
+      <span class="paper__brand"><AppLogo :size="16" />openbeads</span>
       <span class="paper__mark paper__mark--top"><AppLogo :size="96" /></span>
       <span class="paper__mark paper__mark--left"><AppLogo :size="45" /></span>
       <span class="paper__mark paper__mark--right"><AppLogo :size="24" /></span>
@@ -113,7 +113,7 @@ const wordStyle = computed(() => ({ height: `calc(${wordHeight.value} * var(--p)
   display: flex;
   align-items: center;
   gap: calc(4 * var(--p));
-  font: 700 calc(7 * var(--p)) / 1 var(--font-sans);
+  font: italic 400 calc(9 * var(--p)) / 1 var(--font-serif);
   color: var(--paper-ink);
 }
 
