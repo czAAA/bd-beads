@@ -61,9 +61,9 @@ export type DrawingContext = Pick<
  * a stylesheet to ask; projectThemes.test.ts keeps them equal to tokens.json.
  */
 export interface ProjectTheme {
-  /** The open canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
+  /** The Canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
   canvas: string
-  /** The Position marks on the open canvas, dots or squares (`position-mark`). */
+  /** The Position marks on the Canvas, dots or squares (`position-mark`). */
   positionMark: string
   /** The rectangle round a piece (`line-strong`), and round the piece being drawn (`muted`). */
   pieceLine: string

@@ -46,7 +46,7 @@ describe('the Surface view maps beads and points both ways', () => {
       })
     })
 
-    it('gives no bead for a point outside a Project drawn on its own, and the nearest cell for one on the open canvas', () => {
+    it('gives no bead for a point outside a Project drawn on its own, and the nearest cell for one on the Canvas', () => {
       const own = surfaceView({ space: FRAME_ONLY(technique), technique, rotation: 0, zoom: 1 })
       expect(own.pointToBead({ x: -3, y: 5 })).toBeUndefined()
       expect(own.pointToBead({ x: COLUMNS * CELL_SIZE_PX + 20, y: 5 })).toBeUndefined()

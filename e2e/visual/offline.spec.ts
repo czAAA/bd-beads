@@ -35,7 +35,7 @@ async function reloadsIntoTheApp(page: Page): Promise<void> {
   await expect(page.getByTestId('app-canvas')).toBeVisible()
 }
 
-/** Creates a Pattern through the New Pattern form, paints a bead, saves, and checks it is stored. New Project and Save
+/** Creates a Project through the New Project form, paints a bead, saves, and checks it is stored. New Project and Save
  * both sit in the Dock's Project sheet, which creating the Project closes. */
 async function createEditAndSave(page: Page, name: string): Promise<void> {
   await openDockSheet(page, 'dock-project')

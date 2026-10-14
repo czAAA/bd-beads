@@ -14,7 +14,7 @@ export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undef
 }
 
 /**
- * Where the open canvas is looked at from and how closely (ADR 0026): the zoom, and the scroll that says which part of
+ * Where the Canvas is looked at from and how closely (ADR 0026): the zoom, and the scroll that says which part of
  * the endless field the drawing area shows. Moving the canvas is changing the scroll; there is no edge to stop at.
  *
  * A view starts, and `fit` returns it, at the level that shows the Frame (or, with none, everything drawn) whole, and an
@@ -31,7 +31,7 @@ export function useCanvasView(
   /** Whether the view still tracks the fit rather than a place the person chose. */
   const isAtFit = ref(true)
 
-  /** The open canvas as the view stands, or at another zoom. */
+  /** The Canvas as the view stands, or at another zoom. */
   function surfaceOf(project: Pick<Project, 'technique' | 'rotation'>): SurfaceView {
     return surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }

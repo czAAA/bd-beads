@@ -154,7 +154,7 @@ describe('App select, copy and paste', () => {
     expect(wrapper.find('[data-testid=\"context-bar-copy\"]').exists()).toBe(false)
 
     // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
-    // The new Project is an open canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
+    // The new Project is a Canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
     await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(newProject().beads[0]?.[0]).toBe('#e63746')

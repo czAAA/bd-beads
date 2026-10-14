@@ -63,7 +63,7 @@ export interface Translations {
     emptyBead: string
     /** The Project's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
     projectLabel: string
-    /** The Project's name for a screen reader while it has no Frame: an open canvas, with no size to state. */
+    /** The Project's name for a screen reader while it has no Frame: a Canvas, with no size to state. */
     canvasLabel: string
     colorsCount: PluralForms
     progressDone: string
@@ -274,7 +274,7 @@ export interface Translations {
     selectLabel: string
     /** The 4th Tool group member (ticket 89): flood-erases a clicked region's connected same-color cells. */
     eraseLabel: string
-    /** The Hand tool (v16): moves the open canvas by dragging and never changes a bead. */
+    /** The Hand tool (v16): moves the Canvas by dragging and never changes a bead. */
     handLabel: string
     /** The Piece tool and the Select all tile (ticket 414). */
     pieceLabel: string
@@ -448,7 +448,7 @@ export interface Translations {
     fitToDrawing: string
     removeFrame: string
     done: string
-    /** The Frame section's size controls (ticket 342): the Pattern size is Width and Height, in beads or mm. */
+    /** The Frame section's size controls (ticket 342): the Schema size is Width and Height, in beads or mm. */
     widthLabel: string
     heightLabel: string
     decreaseWidth: string

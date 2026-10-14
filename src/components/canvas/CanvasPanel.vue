@@ -469,7 +469,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /*
- * The row takes the whole drawing area; the surface inside it fills it, so the open canvas has no box of its own to centre.
+ * The row takes the whole drawing area; the surface inside it fills it, so the Canvas has no box of its own to centre.
  */
 .app-shell__canvas-row {
   position: relative;
@@ -478,7 +478,7 @@ function techniqueWord(technique: Technique): string {
   min-height: 0;
 }
 
-/* Fills the drawing area: the open canvas's surface (and Convert image's framing step) is laid over all of it. */
+/* Fills the drawing area: the Canvas's surface (and Convert image's framing step) is laid over all of it. */
 .app-shell__canvas-scroll {
   position: absolute;
   inset: 0;

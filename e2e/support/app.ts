@@ -141,7 +141,7 @@ export async function gridBox(page: Page): Promise<Box> {
   return projectBox(page, box)
 }
 
-/** States the Pattern size in the size step Convert image opens after a picture is chosen (ticket 342), in beads, and continues to framing. */
+/** States the Schema size in the size step Convert image opens after a picture is chosen (ticket 342), in beads, and continues to framing. */
 export async function stateConvertSize(page: Page, columns: number, rows: number): Promise<void> {
   const unit = page.getByTestId('convert-size-unit').locator('[data-value="beads"]')
   await unit.click()

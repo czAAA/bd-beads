@@ -68,13 +68,13 @@ export interface Project {
   technique: Technique
   beadId: string
   /**
-   * What is painted on the Open canvas, by position (ADR 0026); see BeadMap. A Project stores no real-world size —
+   * What is painted on the Canvas, by position (ADR 0026); see BeadMap. A Project stores no real-world size —
    * what the editor shows in millimetres is an Estimated size worked out on demand from the Frame (estimatedSizeMm).
    */
   beads: BeadMap
   /**
    * The Frame (CONTEXT.md): which beads are the Project, and so its size in beads. Absent on a canvas that has none
-   * yet; a Project saved before the open canvas has one the size of its old grid (see normalizeProject).
+   * yet; a Project saved before the Canvas has one the size of its old grid (see normalizeProject).
    */
   frame?: Frame
   rowProgress: RowProgress
@@ -125,7 +125,7 @@ export interface CreateProjectInput {
   beadId: string
   /**
    * How big the Project's Frame is, in beads or in mm/cm — the latter converted once to a grid and not remembered
-   * (ADR 0026). Left out, the Project is an open canvas with no Frame (ADR 0026).
+   * (ADR 0026). Left out, the Project is a Canvas with no Frame (ADR 0026).
    */
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
@@ -286,13 +286,13 @@ export function withFrameGrid(project: Project, grid: Grid): Project {
   }
 }
 
-/** The color at a position on the open canvas: a hex, or null where nothing is painted. */
+/** The color at a position on the Canvas: a hex, or null where nothing is painted. */
 export function beadColorAt(project: Pick<Project, 'beads'>, row: number, column: number): string | null {
   return colorAt(project.beads, row, column)
 }
 
 /**
- * A Project as it was saved before the open canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
+ * A Project as it was saved before the Canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
  * beads by position and a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid.
  */
 export type GridProject = Omit<Project, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
@@ -346,7 +346,7 @@ export function normalizeProject(project: Project | GridProject): Project {
     ...rest
   } = legacy
 
-  // A Project saved before the open canvas becomes beads by position with a Frame the size of its old grid.
+  // A Project saved before the Canvas becomes beads by position with a Frame the size of its old grid.
   const placed = isGridProject(project)
     ? {
         beads: beadsFromColors(project.grid.map((row) => row.map((cell) => cell.color))),
