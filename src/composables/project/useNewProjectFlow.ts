@@ -19,14 +19,14 @@ export interface NewProjectFlowDeps {
 /** New-Project creation, blank or from Convert image (tickets 58, 196; ADR 0020). Deps are read lazily. */
 export function useNewProjectFlow(deps: NewProjectFlowDeps) {
   /**
-   * The last New Project form state that named a real size (a form with none is an open canvas, which has no frame to follow). The frame follows the form's fields as they're edited
+   * The last New Project form state that named a real size (a form with none is a Canvas, which has no frame to follow). The frame follows the form's fields as they're edited
    * during framing, and this is what a Create reads — holding the last *valid* state rather than the live one is what
    * keeps the frame put while a width field is momentarily empty mid-retype, instead of collapsing it to a single cell.
    */
   const newProjectDraft = ref<(CreateProjectInput & { size: StatedSize }) | undefined>()
 
   function onNewProjectDraft(draft: CreateProjectInput) {
-    // A draft with no size (an open canvas, or a field mid-retype) is no frame to follow: Convert image needs a size.
+    // A draft with no size (a Canvas, or a field mid-retype) is no frame to follow: Convert image needs a size.
     if (!draft.size) {
       return
     }

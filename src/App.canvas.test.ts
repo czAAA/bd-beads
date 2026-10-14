@@ -9,7 +9,7 @@ import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/bea
 import { openSheet, pickColor } from './testUtils/dock'
 
 /**
- * The open canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
+ * The Canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
  * anywhere, move with the wheel, the Hand tool and Space, and read through the rulers of its pieces.
  */
 
@@ -25,7 +25,7 @@ afterEach(() => {
 })
 
 /** A Project with no Frame and a few beads in two places. */
-function openCanvas(extra: Partial<Project> = {}): Project {
+function unframedProject(extra: Partial<Project> = {}): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
   return {
     ...base,
@@ -53,7 +53,7 @@ const surface = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-te
 
 describe('drawing anywhere', () => {
   it('paints far from the first bead, at positions the canvas never had a size for, and keeps it through a reload', async () => {
-    saveProjects([openCanvas()])
+    saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
     await pickColor(wrapper, 'red')
@@ -77,7 +77,7 @@ describe('drawing anywhere', () => {
   })
 
   it('reads "Canvas · 2 Pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
-    saveProjects([openCanvas()])
+    saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
 
@@ -100,7 +100,7 @@ describe('drawing anywhere', () => {
 
 describe('the Hand tool', () => {
   it('is the fifth tool, picked by H, and drags the canvas without changing a bead or previewing one', async () => {
-    saveProjects([openCanvas()])
+    saveProjects([unframedProject()])
     const wrapper = mountApp()
     await flushPromises()
     await pickColor(wrapper, 'red')

@@ -39,7 +39,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
     const dimensions = projectDimensions(project)
     const [columns, rows] = rotationSwapsAxes(project.rotation) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
     const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)
-    // With no Frame the canvas has no size to say: it is named as an open canvas.
+    // With no Frame the canvas has no size to say: it is named as a Canvas.
     const parts = [
       (project.frame ? t.a11y.projectLabel : t.a11y.canvasLabel)
         .replace('{name}', project.name)

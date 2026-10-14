@@ -476,7 +476,7 @@ describe('ProjectSurface', () => {
         expect(redShown()).toBe(false)
       })
 
-      /** Far enough along the finished row to be past the Frame's last column: open canvas, not a bead of the Frame. */
+      /** Far enough along the finished row to be past the Frame's last column: Canvas, not a bead of the Frame. */
       const PAST_THE_FRAME = 40
       const moveTo = (surface: ReturnType<VueWrapper['find']>, at: { clientX: number; clientY: number }) =>
         surface.trigger('pointermove', { ...at, pointerType: 'mouse', buttons: 0 })
@@ -831,7 +831,7 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-primary-down']).toBeUndefined()
     })
 
-    it('finds a bead anywhere on the open canvas: far from the first bead, and at negative positions', async () => {
+    it('finds a bead anywhere on the Canvas: far from the first bead, and at negative positions', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project, 1, { x: -2000, y: -2000 })
       const surface = wrapper.find('[data-testid="project-surface"]')
@@ -1141,7 +1141,7 @@ describe('ProjectSurface while setting the Frame', () => {
     await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
   }
 
-  it('reports a press on the open canvas, the drag and the release, and draws no bead', async () => {
+  it('reports a press on the Canvas, the drag and the release, and draws no bead', async () => {
     const project = { ...projectOf(4, 3), frame: undefined }
     const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { settingFrame: true })
     await gesture(wrapper, [65, 45], [165, 85])

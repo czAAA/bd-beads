@@ -72,7 +72,7 @@ describe('selectionBetween', () => {
     })
   })
 
-  it('does not clamp a corner anywhere: the open canvas has no edge, and rows and columns may be negative', () => {
+  it('does not clamp a corner anywhere: the Canvas has no edge, and rows and columns may be negative', () => {
     expect(selectionBetween({ row: -5, column: -2 }, { row: 3, column: 1 })).toEqual({
       top: -5,
       left: -2,
@@ -139,7 +139,7 @@ describe('pastedCells', () => {
     expect(cells).not.toContainEqual(expect.objectContaining({ row: 1, column: 0 }))
   })
 
-  it('keeps the whole block wherever it lands: the open canvas has no edge to clip at, negative positions included', () => {
+  it('keeps the whole block wherever it lands: the Canvas has no edge to clip at, negative positions included', () => {
     expect(pastedCells(block, { row: -1, column: -1 })).toEqual([
       { row: -1, column: -1, color: RED },
       { row: 0, column: 0, color: BLUE },

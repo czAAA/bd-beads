@@ -155,13 +155,13 @@ describe('ProgressBar', () => {
 })
 
 describe('ProgressBar with no Frame (ticket 233)', () => {
-  function openCanvas(): Project {
+  function unframedProject(): Project {
     const { frame: _frame, ...rest } = makeProject()
     return rest
   }
 
   it('shows the switch off and disabled, "Set Frame to start" and a Set Frame button, and no row buttons', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: openCanvas() } })
+    const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
     expect(toggle.attributes('aria-disabled')).toBe('true')
