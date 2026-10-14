@@ -30,7 +30,7 @@ describe('useNewProjectFlow', () => {
     expect(deps.addProject.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 } })
   })
 
-  it('creates an open canvas, with no Frame, when the form states no size', () => {
+  it('creates a Canvas, with no Frame, when the form states no size', () => {
     const { deps, flow } = setup()
     flow.onCreateProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     const created = deps.addProject.mock.calls[0][0]

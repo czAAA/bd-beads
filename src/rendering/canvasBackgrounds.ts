@@ -57,7 +57,7 @@ function isAsh(theme: ResolvedTheme, choice: number): boolean {
   return canvasBackgroundOf(theme, choice)?.id === 'ash'
 }
 
-/** The colors the Project is drawn in on the open canvas: the theme's, on the chosen background. Exports don't use this (they print on PRINT_THEME). */
+/** The colors the Project is drawn in on the Canvas: the theme's, on the chosen background. Exports don't use this (they print on PRINT_THEME). */
 export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme {
   const base = PROJECT_THEMES[theme]
   const background = canvasBackgroundOf(theme, choice)

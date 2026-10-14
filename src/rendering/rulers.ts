@@ -6,7 +6,7 @@ import { rulerScale, type RulerScale } from './rulerScale'
 import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
 
 /**
- * The rulers and the lines they hang from on the open canvas (Rulers and BeadBoard cards, ADR 0026): every row and
+ * The rulers and the lines they hang from on the Canvas (Rulers and BeadBoard cards, ADR 0026): every row and
  * column number of the Frame on all four sides, or, until a Frame is set, of each Piece above and to the left of its
  * rectangle, counted from 1 at its top-left bead.
  *
@@ -279,7 +279,7 @@ function labelAt(labels: readonly RulerLabel[], point: { x: number; y: number })
 }
 
 /**
- * The rulers of one view of the open canvas (`surface` must be one): the boxes near the viewport that carry them, their
+ * The rulers of one view of the Canvas (`surface` must be one): the boxes near the viewport that carry them, their
  * numbers and dots, and what a press selects. Drawing and picking read this one value, so they cannot disagree.
  * A surface not yet measured (a 0 by 0 viewport) has no edge to cut the numbers at.
  */

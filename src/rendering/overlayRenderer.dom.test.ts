@@ -629,7 +629,7 @@ describe('the bead cursor (ticket 159)', () => {
   })
 })
 
-describe('on the open canvas (ADR 0026)', () => {
+describe('on the Canvas (ADR 0026)', () => {
   /** A 3-wide, 4-tall Frame at row 6, column 5: positions are the bead's own row and column, so the Frame is not at the origin. */
   function openProject(rowProgress: Partial<RowProgress>): Project {
     const project = projectOf('loom', 3, 4, rowProgress, 0, false)

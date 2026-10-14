@@ -21,7 +21,7 @@ export function useCanvasBackground(preferences: DevicePreferences = useDevicePr
   /** The technique word's own color, where the background needs one. */
   wordColor: ComputedRef<string | undefined>
   setChoice: (next: number) => void
-  /** How the open canvas draws its Position marks, Dots or Squares (ticket 348). */
+  /** How the Canvas draws its Position marks, Dots or Squares (ticket 348). */
   positionMarks: Readonly<Ref<PositionMarkStyle>>
   setPositionMarks: (next: PositionMarkStyle) => void
 } {

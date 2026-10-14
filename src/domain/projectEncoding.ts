@@ -2,7 +2,7 @@ import { forEachBead, type BeadMap } from './canvas'
 import type { Grid, GridProject, Project } from './project'
 
 /**
- * The compact form a Project's beads are stored in (ADR 0009, reshaped for the open canvas by ADR 0026): the distinct
+ * The compact form a Project's beads are stored in (ADR 0009, reshaped for the Canvas by ADR 0026): the distinct
  * colors the Project holds, listed once each, plus, for every row that has a bead, where that row's beads start and
  * the beads themselves as runs of indexes into that list. A 60×90 Project costs about 3KB this way instead of about
  * 100KB as an object per bead, which is what moves the library's ceiling from roughly 50 Projects to roughly 1,600.
@@ -29,14 +29,14 @@ interface EncodedBeads {
 }
 
 /**
- * A Project as the open canvas stores it: every field it has, verbatim, except that `beads` is replaced by its compact
+ * A Project as the Canvas stores it: every field it has, verbatim, except that `beads` is replaced by its compact
  * form. Passing the rest through by spread rather than field by field is what lets a field added after this encoding —
  * Image colors, say, or the Frame — round-trip untouched without this module knowing it exists.
  */
 export type EncodedProject = Omit<Project, 'beads'> & { encodedBeads: EncodedBeads }
 
 /**
- * A Project as it was stored before the open canvas (ADR 0009's original shape): `columns` × `rows` cells as runs in
+ * A Project as it was stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as runs in
  * row-major order. Still read, never written.
  */
 interface EncodedCells {

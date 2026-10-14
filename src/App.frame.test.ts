@@ -21,7 +21,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function openCanvas(): Project {
+function unframedProject(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
   return {
     ...base,
@@ -34,7 +34,7 @@ function openCanvas(): Project {
   }
 }
 
-async function mountOpen(project = openCanvas()) {
+async function mountOpen(project = unframedProject()) {
   saveProjects([project])
   const wrapper = mount(App, { attachTo: document.body })
   await flushPromises()
@@ -80,7 +80,7 @@ describe('Set Frame', () => {
   })
 
   it('moves a Frame with the Hand tool chosen before, and goes back to the Hand tool after (ticket 294)', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
     await key({ key: '5' })
     await startSetFrame(wrapper)
 
@@ -150,7 +150,7 @@ describe('the Frame sheet', () => {
 })
 
 describe('the Frame sheet\'s size steppers apply once (ticket 410)', () => {
-  const framed = (): Project => ({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+  const framed = (): Project => ({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
 
   async function openRow(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
     await openSheet(wrapper, 'dock-frame')
@@ -176,7 +176,7 @@ describe('the Frame sheet\'s size steppers apply once (ticket 410)', () => {
 
 describe('Rotate, Export and Row progress on the Frame', () => {
   const framed = (): Project => ({
-    ...openCanvas(),
+    ...unframedProject(),
     frame: { row: 2, column: 3, rows: 2, columns: 3 },
   })
 
@@ -251,7 +251,7 @@ describe('Row progress on by itself (ticket 411)', () => {
   })
 
   it('holds the Frame still only once a pass is done: Row done locks it, switching off unlocks it', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
     await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
 
     await rotate(wrapper)
@@ -270,7 +270,7 @@ describe('Row progress on by itself (ticket 411)', () => {
   })
 
   it('says the new direction in a toast when D turns it, once per press', async () => {
-    const wrapper = await mountOpen({ ...openCanvas(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
     await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
 
     await key({ key: 'd' })
@@ -284,7 +284,7 @@ describe('Row progress on by itself (ticket 411)', () => {
 })
 
 describe('New Project with the Frame optional', () => {
-  it('creates an open canvas from the empty form, and lists it in the library', async () => {
+  it('creates a Canvas from the empty form, and lists it in the library', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     await openNewProject(wrapper)

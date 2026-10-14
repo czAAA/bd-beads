@@ -6,7 +6,7 @@ import { type InputMode } from '../domain/inputMode'
 import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
-import type { PatternSizeUnit } from '../domain/projectSize'
+import type { SchemaSizeUnit } from '../domain/projectSize'
 import { DEFAULT_FRAME_SIDES, type FrameSides } from '../domain/frame'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -56,7 +56,7 @@ export const PREFERENCES = {
     },
     write: String,
   }),
-  /** How the open canvas draws its Position marks (ticket 348): Dots until Squares is chosen. Never saved with a Project. */
+  /** How the Canvas draws its Position marks (ticket 348): Dots until Squares is chosen. Never saved with a Project. */
   positionMarks: preference<PositionMarkStyle>({
     key: 'bd-beads:position-marks',
     fallback: 'dots',
@@ -91,8 +91,8 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : undefined),
     write: (pick) => (pick === 'device' ? null : pick),
   }),
-  /** The unit the Frame section states the Pattern size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
-  sizeUnit: preference<PatternSizeUnit>({
+  /** The unit the Frame section states the Schema size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
+  sizeUnit: preference<SchemaSizeUnit>({
     key: 'bd-beads:size-unit',
     fallback: 'beads',
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),

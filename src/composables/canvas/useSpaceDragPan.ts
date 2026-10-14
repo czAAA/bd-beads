@@ -13,7 +13,7 @@ function activatesOnSpace(target: EventTarget | null): boolean {
 /**
  * Holding Space and dragging moves the canvas (tickets 95, 233): a pure pan, regardless of which tool
  * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
- * than this composable trying to intercept those events itself. Both directions move the open canvas (`panBy`); the page
+ * than this composable trying to intercept those events itself. Both directions move the Canvas (`panBy`); the page
  * itself never scrolls (ticket 141).
  * Bound to the window, the same way useKeyboardShortcuts is: the canvas takes no keyboard focus of its own, and a
  * drag can wander (or start) anywhere once Space is held.

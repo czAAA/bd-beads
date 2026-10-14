@@ -48,7 +48,7 @@ export interface GridDimensions {
   rows: number
 }
 
-/** A rectangle of positions: dimensions, and — for a Frame on an Open canvas — where its top-left bead sits (0, 0 when left out). */
+/** A rectangle of positions: dimensions, and — for a Frame on a Canvas — where its top-left bead sits (0, 0 when left out). */
 export interface GridBounds extends GridDimensions {
   row?: number
   column?: number

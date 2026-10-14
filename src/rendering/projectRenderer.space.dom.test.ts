@@ -73,7 +73,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     })
   })
 
-  it('fills the background only on its own; the open canvas stays transparent and is marked outside the Frame', () => {
+  it('fills the background only on its own; the Canvas stays transparent and is marked outside the Frame', () => {
     const project = framedProject(technique)
     const onItsOwn = render(project, false)
     const open = render(project, true)
@@ -120,7 +120,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
       expect(topOf(false, 2)[1]).toBe(rowTopPx(technique, 2) - seam)
       expect(topOf(false, 0)[1]).toBe(rowTopPx(technique, 0))
       expect(topOf(true, 8)[1]).toBe(rowTopPx(technique, 8) - seam)
-      // The Frame's own first row has no seam above it, on the open canvas either.
+      // The Frame's own first row has no seam above it, on the Canvas either.
       expect(topOf(true, 6)[1]).toBe(rowTopPx(technique, 6))
     })
   })
@@ -140,7 +140,7 @@ describe('brick seams', () => {
     expect(open).toEqual([7, 8, 9].map((row) => [rowShiftPx('brick', row) + 5 * CELL_SIZE_PX, rowTopPx('brick', row) - 1, 60, 1]))
   })
 
-  it('are not drawn on an open canvas with no Frame', () => {
+  it('are not drawn on a Canvas with no Frame', () => {
     const project: Project = { ...framedProject('brick'), frame: undefined }
 
     expect(seams(project, true)).toEqual([])
@@ -179,7 +179,7 @@ describe('a Project with no Frame whose top bead is on an odd row (regression)',
   })
 })
 
-describe('the Frame margin on the open canvas (ticket 276)', () => {
+describe('the Frame margin on the Canvas (ticket 276)', () => {
   it('fills no marks in the margin or the Frame, leaving a flat gap', () => {
     const project = framedProject('loom')
     const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3 } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
