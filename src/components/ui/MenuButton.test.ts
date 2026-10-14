@@ -1,12 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
-import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import AppMenuItem from './AppMenuItem.vue'
 import MenuButton from './MenuButton.vue'
 import { menuTooltipBody } from './menuTooltipBody'
-
-const NARROW = '(max-width: 1023px)'
 
 function mountMenu(props: Record<string, unknown> = {}, onSelect = vi.fn(), withSheet = false) {
   const Host = defineComponent({
@@ -98,9 +95,7 @@ describe('MenuButton', () => {
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })
 
-  it('opens the sheet slot under 1024px, and closes it from the sheet', async () => {
-    const media = fakeMatchMedia({ [NARROW]: true })
-    vi.stubGlobal('matchMedia', media.matchMedia)
+  it('opens the sheet slot at every width, and closes it from the sheet', async () => {
     const wrapper = mountMenu({}, vi.fn(), true)
     const button = wrapper.find('[aria-haspopup]')
     expect(button.attributes('aria-haspopup')).toBe('dialog')
@@ -147,15 +142,13 @@ describe('MenuButton', () => {
     expect(wrapper.find('[data-testid="footer"]').exists()).toBe(true)
   })
 
-  it('falls back to a popover under 1024px when it has no sheet', async () => {
-    vi.stubGlobal('matchMedia', fakeMatchMedia({ [NARROW]: true }).matchMedia)
+  it('falls back to a popover when it has no sheet', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup]').trigger('click')
     expect(wrapper.find('[role="menu"]').exists()).toBe(true)
   })
 
   it('keeps a sheet open for a press inside it, even one outside its own element', async () => {
-    vi.stubGlobal('matchMedia', fakeMatchMedia({ [NARROW]: true }).matchMedia)
     const wrapper = mountMenu({}, vi.fn(), true)
     const button = wrapper.find('[aria-haspopup]')
     await button.trigger('click')
@@ -165,19 +158,6 @@ describe('MenuButton', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="sheet"]').exists()).toBe(true)
-  })
-
-  it('closes when the viewport crosses 1024px while open', async () => {
-    const media = fakeMatchMedia({ [NARROW]: false })
-    vi.stubGlobal('matchMedia', media.matchMedia)
-    const wrapper = mountMenu({}, vi.fn(), true)
-    const button = wrapper.find('[aria-haspopup]')
-    await button.trigger('click')
-
-    media.set(NARROW, true)
-    await wrapper.vm.$nextTick()
-
-    expect(button.attributes('aria-expanded')).toBe('false')
   })
 
   it('writes the Tooltip body from the names of what it opens', () => {

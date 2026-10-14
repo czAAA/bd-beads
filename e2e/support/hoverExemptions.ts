@@ -26,14 +26,6 @@ export const INFO_POPOVERS: InfoPopover[] = []
  */
 export const UNREACHED: Record<string, string> = {
   MirrorControls: 'not mounted anywhere in the app today (ticket 79 pulled it out of the Toolbox for a Mirror ToolSheet that is not built); only its own unit test renders it',
-  // The Toolbox layout (header, left column, Toolbox) is not mounted with the Dock layout on, which this check is
-  // built with by default since ticket 385 (ADR 0046); these three are Toolbox-layout-only.
-  AppHeader: 'not mounted with the Dock layout on (AppShell.vue); only built with VITE_DOCK_LAYOUT=off, which this check no longer is',
-  Toolbox: 'not mounted with the Dock layout on (AppSidebar.vue); only built with VITE_DOCK_LAYOUT=off, which this check no longer is',
-  // CanvasStrip itself is reached (the Canvas strip stays in the Dock layout, ADR 0046); its Rulers toggle specifically
-  // is not: the Zoom pill owns Rulers there instead (CanvasPanel.vue's `rulers` prop is always undefined on the strip
-  // once the flag is on), so the strip's own toggle can never show to be reached.
-  CanvasStrip: "the Rulers toggle (CanvasStrip.vue's `rulers-toggle`) is the Zoom pill's with the Dock layout on; the strip's own one never shows then",
   // A false positive of the source scan (TOOLTIP_MAKERS treats every IconButton as one): the notice row's close
   // button (AppMessage.vue) gives IconButton neither `tooltip` nor `action`, so IconButton's own tooltipProps is
   // always undefined there -- it renders a plain button, never AppTooltip. Nothing a screen could ever open.

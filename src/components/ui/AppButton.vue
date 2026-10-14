@@ -9,7 +9,7 @@ import type { IconName } from './icons'
 /**
  * The one labelled button (tickets 157, 331; Button card): an optional leading icon, the label, and an optional
  * trailing icon. `primary` is the single most likely next action in a region (two never sit side by side), `secondary`
- * sits on the page, `in-box` inside the save box and Saved Projects, `toolbox` is the Toolbox's own, `box` the canvas
+ * sits on the page, `in-box` inside the save box and Saved Projects, `toolbox` the sheets' own, `box` the canvas
  * box's Progress bar, `text` Import a file, `danger` only a destructive modal's confirm, and `link`
  * reads as a link (Remove line in `ink`; `danger` makes it Delete all's `danger`). `selected` is the segment look (an
  * `ink` fill), announced with aria-pressed. Attributes and listeners (data-testid, @click) go to the <button> itself,

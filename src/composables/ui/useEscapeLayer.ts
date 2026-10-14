@@ -2,7 +2,7 @@ import { onBeforeUnmount, watch } from 'vue'
 
 /**
  * Escape closes the top-most thing first (ticket 76; `accessibility.md`, Keyboard): a modal, then a sheet or the
- * drawer, then a menu, and only then the app's own Escape (the Selection, an open disclosure row). Every open overlay
+ * drawer, then a menu, and only then the app's own Escape (the Selection, Set Frame). Every open overlay
  * is a layer on one stack; a single window listener, in the capture phase so it runs before the app's shortcuts,
  * closes the last one opened and keeps the key from everything behind it.
  */

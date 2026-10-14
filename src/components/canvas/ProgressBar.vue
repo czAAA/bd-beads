@@ -193,47 +193,15 @@ const directionLabel = computed(() =>
   white-space: nowrap;
 }
 
-/* The phone layout's compact mode (ticket 188, 295: under 1024px): swaps the spelled-out row count and text row buttons for a short
-   counter and icon-only ones, same rule as the header's own app-header__phone-only/-hide. */
+/* The compact mode (ticket 188, 295; ADR 0046): the short counter and icon-only buttons stand in for the spelled-out row count and text row buttons. */
 .progress-bar__phone-only {
-  display: none;
-}
-
-/* The wide and compact buttons sit in these spans: the shared controls take their classes on the button itself, inside a Tooltip wrapper, so the swap has to happen out here. */
-.progress-bar__phone-hide,
-.progress-bar__phone-only {
+  display: inline-flex;
   flex: none;
 }
 
-@media (max-width: 1023px) {
-  .progress-bar__phone-hide {
-    display: none;
-  }
-
-  .progress-bar__phone-only {
-    display: inline-flex;
-  }
-}
-
-/* The Dock layout (ticket 383, ADR 0046): the same rules at every width, under the shell's class. */
-:global(.app-shell--dock .progress-bar__phone-hide) {
+/* The wide buttons sit in these spans: the shared controls take their classes on the button itself, inside a Tooltip wrapper, so the swap has to happen out here. */
+.progress-bar__phone-hide {
   display: none;
-}
-
-:global(.app-shell--dock .progress-bar__phone-only) {
-  display: inline-flex;
-}
-
-/* The same compact mode wherever the bar itself is too narrow for the spelled-out one, e.g. beside the Tour card or
-   the Toolbox at tablet widths (ticket 246). */
-@container (max-width: 51rem) {
-  .progress-bar__phone-hide {
-    display: none;
-  }
-
-  .progress-bar__phone-only {
-    display: inline-flex;
-  }
 }
 
 .progress-bar__track {

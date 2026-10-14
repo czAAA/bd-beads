@@ -6,16 +6,15 @@ import type { IconSize } from '../ui/icons'
 export type EditControlId = 'undo' | 'redo' | 'rotate' | 'copy' | 'paste'
 
 /**
- * Undo, Redo, Rotate, Copy and Paste (Toolbox and Frame-sheet cards; ticket 384), shared by the Toolbox's Edit group
- * (undo, redo, rotate, copy) and the phone Frame sheet (rotate, copy, paste -- Undo and Redo live in the Zoom pill
- * there, ticket 296): both read the same registry actions and the same enabled state.
+ * Undo, Redo, Rotate, Copy and Paste (ticket 384) for the Frame sheet (rotate, copy, paste -- Undo and Redo live in the Zoom pill, ticket 296); they read
+ * the registry actions and their enabled state.
  */
 const props = withDefaults(
   defineProps<{
     ids: readonly EditControlId[]
     deps?: unknown
     iconSize?: IconSize
-    /** Each caller names its own testid pattern (`${id}-button` in the Toolbox, `sheet-${id}` in the sheet);
+    /** Each caller names its own testid pattern (`sheet-${id}` in the sheet);
      * `undefined` leaves the attribute off, as the sheet's Copy button does today. */
     testIdFor: (id: EditControlId) => string | undefined
   }>(),

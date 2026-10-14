@@ -572,14 +572,6 @@ function wireAppShell(services: Services) {
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
 
-  /** For the Escape precedence: asks every Tool group to collapse before backing out of Select (ticket 41). */
-  const toolbox = ref<{ collapseExpandedGroup: () => boolean } | null>(null)
-
-  /** A template function ref for the Toolbox, for the same reason as bindCanvasScroll. */
-  function bindToolbox(el: unknown) {
-    toolbox.value = (el as typeof toolbox.value) ?? null
-  }
-
   /**
    * The Tour (ticket 80): a walk through this same editor, reading the state above and making its edits through the same
    * commit paths. Its dim layer is drawn by TourLayer; what it needs from the wiring is whether the Project is open to
@@ -640,7 +632,6 @@ function wireAppShell(services: Services) {
       !!savedProjectConfirms.pendingSwitch.value ||
       storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
-    collapseExpandedToolGroup: () => toolbox.value?.collapseExpandedGroup() ?? false,
     backOutOfSelect,
     onUndo,
     onRedo,
@@ -795,7 +786,6 @@ function wireAppShell(services: Services) {
     onProjectKeyboardFocus,
     onProjectKey: unlessTourLocks(onProjectKey),
     onProjectKeyUp,
-    bindToolbox,
     tour,
     ...rowOps,
     onRotate: rotateFlow.onRotate,

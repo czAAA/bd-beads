@@ -14,7 +14,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     addedColorCount: () => 0,
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
-    collapseExpandedToolGroup: () => false,
     cancelColorPick: () => false,
     paletteColorIdAt: () => undefined,
     backOutOfSelect: vi.fn(() => false),
@@ -177,17 +176,6 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('Escape collapses an expanded Tool group before backing out of Select', () => {
-    const { deps, wrapper } = mountTable({ collapseExpandedToolGroup: () => true })
-    press({ key: 'Escape' })
-    expect(deps.backOutOfSelect).not.toHaveBeenCalled()
-    wrapper.unmount()
-    const other = mountTable()
-    press({ key: 'Escape' })
-    expect(other.deps.backOutOfSelect).toHaveBeenCalled()
-    other.wrapper.unmount()
-  })
-
   it('Escape with nothing to dismiss selects Paint from any other tool', () => {
     for (const tool of ['fill', 'select', 'erase'] as const) {
       const { deps, wrapper } = mountTable({ activeTool: () => tool })
@@ -221,10 +209,6 @@ describe('useAppShortcutTable', () => {
     press({ key: 'Escape' })
     expect(backed.deps.onSelectTool).not.toHaveBeenCalled()
     backed.wrapper.unmount()
-    const group = mountTable({ activeTool: () => 'fill', collapseExpandedToolGroup: () => true })
-    press({ key: 'Escape' })
-    expect(group.deps.onSelectTool).not.toHaveBeenCalled()
-    group.wrapper.unmount()
   })
 
   it('Ctrl+S saves only while a Project is open', () => {
@@ -286,9 +270,9 @@ describe('useAppShortcutTable', () => {
     off.wrapper.unmount()
   })
 
-  it('leaves Enter and Space to a focused Toolbox or Progress bar button, so one press does not also move the row', () => {
+  it('leaves Enter and Space to a focused Progress bar button, so one press does not also move the row', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never })
-    for (const container of ['toolbox', 'progress-bar']) {
+    for (const container of ['progress-bar']) {
       const holder = document.createElement('div')
       holder.dataset.testid = container
       const button = document.createElement('button')

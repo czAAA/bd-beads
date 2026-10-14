@@ -1,8 +1,7 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { openApp, projectBox, settle, stateConvertSize } from '../support/app'
+import { copySelection, currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
-import { DOCK_LAYOUT_ENABLED } from '../../src/features'
 
 /**
  * The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`. It drives the production build in a real
@@ -19,10 +18,6 @@ import { DOCK_LAYOUT_ENABLED } from '../../src/features'
  * browser produces a frame only when the main thread is free, so a slow render shows up as few frames), and the main
  * thread's busy milliseconds per frame. "open" and "zoom" are one-off actions, so they report how long one takes.
  */
-
-// Drives the Toolbox layout directly (ticket 385 ported the visual check's own helpers to the Dock, not this one): skip
-// while the build's default is the Dock layout, rather than fail on controls the build no longer mounts.
-test.skip(DOCK_LAYOUT_ENABLED, 'drives the Toolbox layout; port when the Dock layout gets its own perf helpers')
 
 const SLOWDOWNS = (process.env.PERF_SLOWDOWNS ?? '4,6').split(',').map(Number)
 const SIZES = (process.env.PERF_SIZES ?? '60x90,70x250,250x250').split(',').map((size) => {
@@ -124,9 +119,17 @@ function libraryFor(columns: number, rows: number) {
 }
 
 async function openProject(page: Page, id: string): Promise<void> {
-  await page.getByTestId(`select-project-${id}`).click()
-  await page.getByTestId('confirm-modal-confirm').click()
+  await openDockSheet(page, 'dock-project')
+  await page.getByTestId('phone-saved-projects-button').click()
   await settle(page)
+  await page.getByTestId(`select-project-${id}`).click()
+  await settle(page)
+  // Picking the Project that is already open asks nothing and changes nothing.
+  const confirm = page.getByTestId('confirm-modal-confirm')
+  if ((await confirm.count()) > 0) {
+    await confirm.click()
+    await settle(page)
+  }
 }
 
 /**
@@ -182,11 +185,11 @@ for (const slowdown of SLOWDOWNS) {
 
       // The zoom a Project opens at: fit for a big one, 100% for a small one. Hover and paint are measured on the beads
       // that are on screen at that zoom, with the top of the grid brought to the top of the window.
-      await page.getByTestId('zoom-reset').click()
+      await page.getByTestId('zoom-pill-fit').click()
       const grid = page.getByTestId('project-surface')
       await grid.evaluate((element) => window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 120))
       await settle(page)
-      const zoomPercent = Number.parseInt((await page.getByTestId('zoom-level').textContent()) ?? '100', 10)
+      const zoomPercent = await currentZoomPercent(page)
       const zoom = zoomPercent / 100
       const box = await projectBox(page, (await grid.boundingBox())!)
       const beads = onScreenBeads(big, box, zoom, page.viewportSize()!)
@@ -206,7 +209,7 @@ for (const slowdown of SLOWDOWNS) {
 
       if (wanted('select')) {
         // A Selection marked out by dragging the marquee to and fro across the beads on screen.
-        await page.getByTestId('tool-select').click()
+        await selectTool(page, 'select')
         await page.mouse.move(beads[0]!.x, beads[0]!.y)
         await page.mouse.down()
         const { fps, ms } = await burst(page, cdp, sweep(page, beads))
@@ -221,11 +224,11 @@ for (const slowdown of SLOWDOWNS) {
           await page.mouse.down()
           await page.mouse.move(corner.x, corner.y + 30, { steps: 4 })
           await page.mouse.up()
-          await page.getByTestId('copy-button').click()
+          await copySelection(page)
           const hovered = await burst(page, cdp, sweep(page, beads))
           results.push({ slowdown, size: name, what: 'paste hover', fps: hovered.fps, ms: hovered.ms, note: `at ${zoomPercent}% zoom` })
         }
-        await page.getByTestId('tool-paint').click()
+        await selectTool(page, 'paint')
       }
 
       if (wanted('scroll')) {
@@ -239,11 +242,11 @@ for (const slowdown of SLOWDOWNS) {
       if (wanted('zoom')) {
         const busyBefore = await busyMs(cdp)
         const started = Date.now()
-        await page.getByTestId('zoom-in').click()
+        await page.getByTestId('zoom-pill-in').click()
         await settle(page)
         const inMs = Date.now() - started
         const started2 = Date.now()
-        await page.getByTestId('zoom-out').click()
+        await page.getByTestId('zoom-pill-out').click()
         await settle(page)
         results.push({ slowdown, size: name, what: 'zoom step', ms: (inMs + Date.now() - started2) / 2, note: `busy ${Math.round(((await busyMs(cdp)) - busyBefore) / 2)} ms` })
       }
@@ -256,6 +259,7 @@ for (const slowdown of SLOWDOWNS) {
 
       test(`framing ${name} at ${slowdown}× slowdown`, async ({ page }) => {
         await openApp(page, [])
+        await openNewProjectForm(page)
         await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
         await page.getByTestId('convert-image-input').setInputFiles({
           name: 'fixture.png',

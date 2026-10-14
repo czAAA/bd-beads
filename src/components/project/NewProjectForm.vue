@@ -194,8 +194,8 @@ function onDropImage(file: File) {
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the left column's first box: Name (optional), Maker's
     name (ticket 182, also optional and blank by default), Bead, Technique, Create Project, then "or" and Convert image.
-    It states no size (ticket 342): a Project starts as an open canvas and its size is set in the Toolbox's Frame
-    section. Convert image still needs one, so choosing a picture opens its own size step before framing.
+    It states no size (ticket 342): a Project starts as an open canvas and its size is set in the Frame
+    sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.
   -->
   <form ref="formEl" class="new-project-form" data-tour="new-project" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">

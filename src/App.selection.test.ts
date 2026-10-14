@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
+import { copySelection, openSheet, pickColor, pickTool } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
@@ -32,25 +33,26 @@ describe('App select, copy and paste', () => {
 
   /** A 4x4 Project with a red cell at (0,0) and a blue one at (1,1), ready to copy as a two-color motif. */
   async function projectWithMotif(wrapper: ReturnType<typeof mount>) {
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     await click(wrapper, 0) // (0,0)
-    await wrapper.find('[data-color-id="blue"]').trigger('click')
+    await pickColor(wrapper, 'blue')
     await click(wrapper, 5) // (1,1)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
   }
 
   it('offers Select alongside Paint and Fill, chosen the same way', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
 
-    expect(wrapper.find('[data-testid="tool-select"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="tool-paint"]').attributes('aria-pressed')).toBe('false')
+    await openSheet(wrapper, 'dock-tool')
+    expect(wrapper.find('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="sheet-tool-paint"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('marks out a rectangle as the cursor is dragged, and keeps it after the drag ends', async () => {
     const wrapper = await mountWithProject(6, 6) // 4x4
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
 
     await drag(wrapper, [0, 1, 5]) // (0,0) -> (1,1)
 
@@ -59,20 +61,20 @@ describe('App select, copy and paste', () => {
 
   it('enables Copy only once something is selected', async () => {
     const wrapper = await mountWithProject(6, 6)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
+    expect(wrapper.find('[data-testid=\"context-bar-copy\"]').exists()).toBe(false)
 
     await drag(wrapper, [0, 1])
 
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(false)
+    expect(wrapper.find('[data-testid=\"context-bar-copy\"]').exists()).toBe(true)
   })
 
   it('stamps the copied block where it is clicked, as a single undo step', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
-    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await copySelection(wrapper)
 
     await click(wrapper, 10) // (2,2)
 
@@ -80,10 +82,21 @@ describe('App select, copy and paste', () => {
     expect(grid[2]![2]!.color).toBe('#e63746')
     expect(grid[3]![3]!.color).toBe('#2f6fed')
 
-    await wrapper.find('[data-testid="undo-button"]').trigger('click')
+    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
 
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBeNull()
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBeNull()
+  })
+
+  it.each(['paint', 'fill'] as const)('forgets the selected area when the tool changes to %s', async (tool) => {
+    const wrapper = await mountWithProject(6, 6)
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1, 4, 5])
+    expect(selectedCount(wrapper)).toBe(4)
+
+    await pickTool(wrapper, tool)
+
+    expect(selectedCount(wrapper)).toBe(0)
   })
 
   it('resets the Selection, but keeps the clipboard armed, when a different Project is opened (ticket 92)', async () => {
@@ -91,16 +104,15 @@ describe('App select, copy and paste', () => {
     await projectWithMotif(wrapper)
     const firstId = loadProjects()[0]!.id
     await drag(wrapper, [0, 1, 5])
-    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await copySelection(wrapper)
 
-    await wrapper.find('[data-testid="new-project-button"]').trigger('click')
     await createProjectViaForm(wrapper)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     const newProject = () => loadProjects().find((p) => p.id !== firstId)!
 
     // The Selection itself still resets on a Project switch, same as before ticket 92.
     expect(selectedCount(wrapper)).toBe(0)
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="copy-button"]').attributes('aria-disabled') === 'true').toBe(true)
+    expect(wrapper.find('[data-testid=\"context-bar-copy\"]').exists()).toBe(false)
 
     // But the clipboard survives the switch (ticket 92), so a click under Select still stamps the motif.
     // The new Project is an open canvas (ticket 342): the stamp lands at its first bead, with no Frame to count it in.
@@ -126,11 +138,11 @@ describe('App clipboard lifecycle (ticket 92)', () => {
 
   /** A 4x4 Project with a red cell at (0,0), Select active and that cell copied. */
   async function projectWithCopiedCell(wrapper: ReturnType<typeof mount>) {
-    await wrapper.find('[data-color-id="red"]').trigger('click')
+    await pickColor(wrapper, 'red')
     await click(wrapper, 0) // (0,0)
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
+    await pickTool(wrapper, 'select')
     await drag(wrapper, [0])
-    await wrapper.find('[data-testid="copy-button"]').trigger('click')
+    await copySelection(wrapper)
   }
 
   async function hoverCell(wrapper: ReturnType<typeof mount>, index: number) {
@@ -152,44 +164,15 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
   })
 
-})
-
-describe('App Tool group Escape precedence (ticket 41)', () => {
-  function selectedCount(wrapper: ReturnType<typeof mount>) {
-    return selectedBeadCount(wrapper)
-  }
-
-  async function createProjectWithSelection(wrapper: ReturnType<typeof mount>) {
-    await wrapper.find('[data-testid="tool-select"]').trigger('click')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await hoverBead(wrapper, 5, { buttons: 1 })
-    await wrapper.find('.app-shell').trigger('mouseup')
-  }
-
-  /*
-   * No real Tool group exceeds 14 controls yet (ToolGroup.test.ts covers the expand/collapse mechanics itself with
-   * a synthetic one that does), so this stands in for "some Tool group is currently hover-expanded" by making the
-   * mounted Toolbox's own exposed collapseExpandedGroup — the exact function the app's shortcut table calls — report
-   * one was, for exactly one call. It's proving the wiring: Escape asks Toolbox first, and only backs out of Select
-   * once that reports nothing was expanded.
-   */
-  function stubOneExpandedGroup(wrapper: ReturnType<typeof mount>) {
-    // The exposed object itself, which is what the app holds on to: a spy on the test wrapper's own proxy would not reach it.
-    const exposed = wrapper.findComponent({ name: 'Toolbox' }).vm.$.exposed as { collapseExpandedGroup: () => boolean }
-    vi.spyOn(exposed, 'collapseExpandedGroup').mockReturnValueOnce(true)
-  }
-
-  it('lets an expanded Tool group swallow the first Escape, leaving the Selection untouched', async () => {
+  it.each(['paint', 'fill'] as const)('pastes via Ctrl/Cmd+V while %s is the active tool', async (tool) => {
     const wrapper = await mountWithProject(6, 6)
-    await createProjectWithSelection(wrapper)
-    expect(selectedCount(wrapper)).toBe(4)
+    await projectWithCopiedCell(wrapper)
+    await pickTool(wrapper, tool)
+    await hoverCell(wrapper, 10)
 
-    stubOneExpandedGroup(wrapper)
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    pasteAtHoveredCell()
     await flushPromises()
 
-    expect(selectedCount(wrapper)).toBe(4)
+    expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
   })
-
 })

@@ -5,6 +5,7 @@ import App from './App.vue'
 import { beadColors, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
 import { createProject, type Technique } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
+import { pickColor } from './testUtils/dock'
 
 /**
  * The ruler-click Selection and "remove selected row/column" Tool (ticket 123): clicking a ruler number selects
@@ -29,7 +30,7 @@ async function mountSized(columns: number, rows: number, technique: Technique = 
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId = 'red') {
-  await wrapper.find(`[data-color-id="${colorId}"]`).trigger('click')
+  await pickColor(wrapper, colorId)
   await pressBead(wrapper, index)
   await wrapper.find('.app-shell').trigger('mouseup')
 }
@@ -37,8 +38,8 @@ async function paint(wrapper: ReturnType<typeof mount>, index: number, colorId =
 const stored = () => loadProjects()[0]!
 
 const removeLineButton = (wrapper: ReturnType<typeof mount>) =>
-  wrapper.find<HTMLButtonElement>('[data-testid="tool-remove-line"]')
-const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="undo-button"]').trigger('click')
+  wrapper.find<HTMLButtonElement>('[data-testid="context-bar-remove-line"]')
+const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
 
 describe('Ruler click selects a whole row/column (ticket 123)', () => {
   it('selects the whole row when a row ruler number is clicked', async () => {
@@ -48,10 +49,10 @@ describe('Ruler click selects a whole row/column (ticket 123)', () => {
 
     expect(selectedBeadCount(wrapper)).toBe(4)
   })
-
 })
 
 describe('"Remove selected row/column" Tool (ticket 123)', () => {
+
   it('enables once a ruler click selects a whole row or column', async () => {
     const wrapper = await mountSized(4, 4)
 
@@ -80,5 +81,4 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     expect(stored().frame!.rows).toBe(4)
     expect(beadColors(wrapper)[3]![1]).toBe(BLUE)
   })
-
 })

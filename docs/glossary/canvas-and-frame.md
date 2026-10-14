@@ -38,7 +38,7 @@ _Avoid_: border, crop, artboard, page, grid size
 The 3 bead positions all the way round a set Frame, outside its line (ADR 0027, ticket 261), drawn flat: a gap in the Position marks, with a dashed outline that shows only while the Frame is being set, moved or resized and for 1s after a press in it is refused; the pointer shows not-allowed there. Nothing can be drawn there: Paint, Fill, Paste, Mirror and Rotate all leave it empty (a stroke across it paints only the beads outside it, still one Undo step); Erase still works on anything. Setting, moving or resizing the Frame, and Rotate, move any Piece that reaches it clear, outward, with a Message that counts the Pieces moved and one Undo step. Removing the Frame removes the margin. Projects saved with beads in a margin open unchanged; those beads are dealt with the first time the Frame is edited. Export, Beads needed and Row progress count the Frame only, so they ignore it.
 
 **Set Frame**:
-The mode (6, or the Frame row in the Toolbox) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. It takes the drag whichever Tool was chosen, the Hand tool included, and the Tool is back when it ends. Also: Fit to drawing (wraps every bead; disabled while the canvas has no beads) and Remove Frame, and Width/Height steppers once set. Each stepper grows and shrinks the Frame from a side chosen before it (Left | Right for Width, Top | Bottom for Height; Right and Bottom until chosen, kept on the device, never in the Project), and its presses are pending until the row or sheet closes (ticket 410): the canvas shows the pending Frame as it shows a drag, closing commits it once with one Undo step and one move of the Pieces its margin reaches, a Frame closed at its own size takes no step, Undo and Redo drop it. The arrow keys still commit on every press.
+The mode (6, or the Frame sheet's Set Frame) in which dragging on the canvas draws the Frame, snapped to whole beads, with eight handles (four on touch) and a size tooltip. It takes the drag whichever Tool was chosen, the Hand tool included, and the Tool is back when it ends. Also: Fit to drawing (wraps every bead; disabled while the canvas has no beads) and Remove Frame, and Width/Height steppers once set. Each stepper grows and shrinks the Frame from a side chosen before it (Left | Right for Width, Top | Bottom for Height; Right and Bottom until chosen, kept on the device, never in the Project), and its presses are pending until the sheet closes (ticket 410): the canvas shows the pending Frame as it shows a drag, closing commits it once with one Undo step and one move of the Pieces its margin reaches, a Frame closed at its own size takes no step, Undo and Redo drop it. The arrow keys still commit on every press.
 _Avoid_: crop, resize, set size
 
 **Hand tool**:
@@ -46,7 +46,7 @@ The tool (5) that moves the view by dragging and never changes a bead. Space + d
 _Avoid_: pan mode, grab tool
 
 **Pen mode** / **Mouse mode**:
-The input mode: which pointer draws with the current Tool and which one moves the canvas. In Pen mode the pen draws, and a finger or mouse drags the canvas like the Hand tool, so a palm resting on an iPad does not paint. In Mouse mode (the default) a finger or mouse draws and the pen drags the canvas. Told apart by each event's pointer type, not by the Tool; two-finger pinch, the wheel and Space + drag work in both. One toggle picks it (after the Frame tool in the Toolbox, first in the phone Dock), offered only once a pen has been seen (the first pen event of a visit, kept on the device), and that first pen switches to Pen mode unless a mode was chosen before; the choice is kept on the device.
+The input mode: which pointer draws with the current Tool and which one moves the canvas. In Pen mode the pen draws, and a finger or mouse drags the canvas like the Hand tool, so a palm resting on an iPad does not paint. In Mouse mode (the default) a finger or mouse draws and the pen drags the canvas. Told apart by each event's pointer type, not by the Tool; two-finger pinch, the wheel and Space + drag work in both. One toggle picks it (first in the Dock), offered only once a pen has been seen (the first pen event of a visit, kept on the device), and that first pen switches to Pen mode unless a mode was chosen before; the choice is kept on the device.
 _Avoid_: stylus mode, touch mode, palm rejection
 
 **Rulers toggle**:
@@ -54,7 +54,7 @@ The button (and R, and the phone's zoom pill) that shows or hides every ruler an
 _Avoid_: ruler switch, numbers toggle
 
 **Canvas zoom**:
-The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the header, the Toolbox, the Dock and every sheet keep their size (ADR 0034).
+The zoom the app's own controls and gestures change (zoom buttons, pinch and Ctrl/⌘ + wheel over the canvas, Ctrl/⌘ + plus, minus and 0), applied to the canvas alone. It is the only zoom there is: the Dock and every sheet keep their size (ADR 0034).
 _Avoid_: scale, magnify, page zoom (a different thing)
 
 **Page zoom**:

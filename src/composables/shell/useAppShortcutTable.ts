@@ -5,16 +5,15 @@ import { useKeyboardShortcuts, type KeyboardShortcut } from './useKeyboardShortc
 export type AppShortcutTableDeps = ControlDeps
 
 /**
- * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Toolbox or Progress bar button has
- * focus — otherwise Tab+Enter would both click that button and move the row. Progress bar (ticket 124) moved
- * Previous/Next onto the canvas, outside the Toolbox, so this checks both containers.
+ * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Progress bar button has focus —
+ * otherwise Tab+Enter would both click that button and move the row.
  */
-function isFocusedOnToolboxButton(event: KeyboardEvent): boolean {
+function isFocusedOnProgressBarButton(event: KeyboardEvent): boolean {
   const target = event.target
   return (
     target instanceof HTMLElement &&
     target.tagName === 'BUTTON' &&
-    target.closest('[data-testid="toolbox"], [data-testid="progress-bar"]') !== null
+    target.closest('[data-testid="progress-bar"]') !== null
   )
 }
 
@@ -34,7 +33,7 @@ export function useAppShortcutTable(deps: AppShortcutTableDeps) {
     return {
       matches: (event) =>
         control.chords.some((chord) => chordMatches(chord, event)) &&
-        !(control.givesWayToFocusedButton && isFocusedOnToolboxButton(event)),
+        !(control.givesWayToFocusedButton && isFocusedOnProgressBarButton(event)),
       guard: () => (modals !== 'block' || noModalOpen()) && (!control.needsProject || !!deps.activeProject()),
       allowWhileTyping: control.allowWhileTyping,
       action: (event) => {

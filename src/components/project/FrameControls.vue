@@ -208,8 +208,7 @@ const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
 
 <style scoped>
 /*
- * As wide as the Tool group it sits in (a full row of ToolGroup's fixed columns — ticket 114 made the Toolbox a narrow
- * rail), so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
+ * As wide as the sheet it sits in, so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
  * wrap, and each row's counter and "change from" choice fall onto as many lines as they need.
  */
 .frame-controls {

@@ -9,9 +9,7 @@ import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 
 /**
- * The Mirror group's controls (MirrorSizeControls card; ticket 79), pulled out of Toolbox.vue so both it (inside a
- * DisclosureRow) and the phone tier's Mirror ToolSheet can use the same markup and axis-vs-rotation math, rather than
- * two copies drifting apart.
+ * The Mirror group's controls (MirrorSizeControls card; ticket 79), the Mirror ToolSheet's markup and axis-vs-rotation math.
  */
 const props = defineProps<{
   project: Project
@@ -131,7 +129,7 @@ const topBottomMax = computed(() => maxAxisCount(swapped.value ? projectDimensio
 </template>
 
 <style scoped>
-/* One control per line: its name, then its controls at the right (same layout Toolbox's disclosure rows use). */
+/* One control per line: its name, then its controls at the right (the layout the sheets use). */
 .mirror-controls__line {
   display: flex;
   align-items: center;
