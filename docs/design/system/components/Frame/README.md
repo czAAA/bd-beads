@@ -1,6 +1,6 @@
 # Frame
 
-The rectangle that marks which beads are the Pattern: set over the open canvas before or after drawing, and required for Export, Row progress and Rotate.
+The rectangle that marks which beads are the Pattern: set over the open canvas before or after drawing, and required for Export and Row progress.
 
 - **One Frame per canvas. It limits drawing in one place only: its margin.** Beads outside the margin stay on the saved canvas, stay editable, and can be exported later by moving the Frame over them.
 - **Margin (v18):** three bead positions of clear space on all four sides of the Frame, measured from its outermost beads (51px at the smallest bead, 15px plus the 2px gap). No bead can be placed in it: Paint, Fill, Select and paste skip it, and the pointer shows `not-allowed` there. Three is the least that holds the 28px ruler gutter and the Frame line and handles at every bead size.
@@ -11,8 +11,8 @@ The rectangle that marks which beads are the Pattern: set over the open canvas b
 - **Frame row:** the DisclosureRow that takes Size's place in the Toolbox. Closed: the `frame` icon, "Frame", then "not set", or the Frame number and the measured size. Open: the beads | mm switch, Width and Height Steppers, Fit to drawing (frames every bead on the canvas) and Remove Frame.
 - **Frame number:** a 22px chip ("1"; DM Mono 12 on `elevated`, 1px `line-strong`, radius 6) in the Frame row. Pressing it brings the Frame into view. Name: "Frame 1, bring it into view".
 - **Once set:** inside it, empty positions draw as full `bead-empty` beads. Piece rulers hide and the Frame's rulers show on all four sides, inside the margin (Rulers card). The header reads "Star · 21×19" and the canvas strip "Width 21 · Height 19 · 3.4 × 3.0 cm". Beads needed and Row progress count the Frame only.
-- **What needs a Frame:** Export, Row progress (Row done, Row not done) and Rotate. Without one, Export ▾ opens "Set Frame to export" (SaveBox card), the Progress bar shows "Set Frame to start" with a Set Frame button, and Rotate is disabled and named "Rotate, Set Frame first".
-- **Rotate** turns the Frame and its beads a quarter turn about the Frame's centre. If the turned Frame or its margin would cover a piece, that piece moves to the nearest empty space clear of the margin, and a Message says "Pattern rotated. 1 piece was in the way and moved outside the Frame." with Undo.
+- **What needs a Frame:** Export, Row progress (Row done, Row not done). Without one, Export ▾ opens "Set Frame to export" (SaveBox card) and the Progress bar shows "Set Frame to start" with a Set Frame button.
+- **Rotate** no longer touches the Frame: it turns the Selection (ContextBar card, ticket 416, ADR 0052). Turning the whole drawing is Select all, Rotate, then Set Frame again.
 - **Export** takes only the beads inside the Frame. PNG and PDF never draw the Frame line.
 - **Naming:** the action is always "Set Frame". "Frame" alone names the thing, the Toolbox row and the Dock button.
 - The consumer provides the Frame's position and size in beads, the Bead's size for the measured size, and whether the Frame is being set.

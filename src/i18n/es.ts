@@ -447,14 +447,14 @@ export const es: Translations = {
     announceNothingToFit: 'Aún no hay nada dibujado a lo que ajustar el marco',
     refusedCutsSchema: 'Un marco no puede cortar el esquema «{name}». Enmárcalo entero o déjalo fuera.',
     announceTechnique: 'Técnica cambiada a {technique}',
-    announceRotated: 'Esquema girado',
+    announceSelectionRotated: 'Selección girada',
     exportPromptTitle: 'Define el marco para exportar',
     countNeedsFrame: 'Define el marco para contar las cuentas.',
     progressNeedsFrame: 'Define el marco para empezar',
-    rotatedMessage: {
-      one: 'Esquema girado. {count} trozo estorbaba y se movió fuera del marco.',
-      many: 'Esquema girado. {count} de trozos estorbaban y se movieron fuera del marco.',
-      other: 'Esquema girado. {count} trozos estorbaban y se movieron fuera del marco.',
+    rotateCoveredMessage: {
+      one: 'Se cubrió {count} cuenta.',
+      many: 'Se cubrieron {count} de cuentas.',
+      other: 'Se cubrieron {count} cuentas.',
     },
     marginLead: { set: 'Marco definido.', moved: 'Marco movido.', resized: 'Marco redimensionado.' },
     marginClearedMessage: {
@@ -582,7 +582,7 @@ export const es: Translations = {
     fillSelection: 'Rellena la selección con el color actual.',
     frameFromSelection: 'Convierte la selección en el marco.',
     pasteDisabled: 'Copia primero una zona.',
-    rotate: 'Gira el marco un cuarto de vuelta.',
+    rotate: 'Gira la selección un cuarto de vuelta.',
     setFrameFirst: 'Define primero un marco.',
     fitToDrawing: 'Ajusta el marco a todas las cuentas.',
     noBeadsToFit: 'No hay cuentas a las que ajustar.',

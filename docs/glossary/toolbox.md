@@ -11,7 +11,7 @@ The main layout at every width (ADR 0046): the canvas first, the Dock below it (
 _Avoid_: phone layout, mobile layout, touch layout
 
 **Dock**:
-The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046), with no header above the canvas. Five slots, each opening its own sheet: Tool, Colour, Frame (which also holds Rotate, Copy and Paste), Project, Menu. icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred. With no Project open, a New Project / Import bar takes its place, with the Menu button still at the bottom right.
+The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046), with no header above the canvas. Five slots, each opening its own sheet: Tool, Colour, Frame, Project, Menu. icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred. With no Project open, a New Project / Import bar takes its place, with the Menu button still at the bottom right.
 _Avoid_: toolbar, rail, tab bar
 
 **Menu**:

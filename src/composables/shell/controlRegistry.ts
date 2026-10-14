@@ -415,8 +415,8 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'rotate',
     name: (t) => t.palette.rotateButton,
     body: (t) => t.tooltips.rotate,
-    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.setFrameFirst),
+    enabled: (deps) => deps.hasSelection() && !frameLocked(deps),
+    disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.copyDisabled),
     group: 'edit',
     chords: [{ key: 'r', shift: true, label: 'R' }],
     run: (deps) => deps.onRotate(),
@@ -537,7 +537,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.pieceLabel, t.tools.selectAllLabel, t.tools.eraseLabel, t.tools.handLabel]),
   }),
   unkeyed('dock-frame', (t) => t.frame.title, 'canvas', {
-    body: (t) => t.tooltips.list([t.frame.setFrame, t.palette.rotateButton]),
+    body: (t) => t.tooltips.list([t.frame.setFrame]),
   }),
   unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),
