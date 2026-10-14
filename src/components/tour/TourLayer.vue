@@ -45,7 +45,7 @@ const CHAINS: Record<TourControl, string[]> = {
   ruler: ['board'],
   'remove-line': ['remove-line', 'dock-tool', 'header-tools'],
   undo: ['undo', 'dock-edit'],
-  size: ['frame-row', 'dock-frame', 'header-tools'],
+  size: ['frame-row', 'dock-project', 'header-tools'],
   'progress-switch': ['progress-switch'],
   'progress-next': ['progress-next'],
   'progress-previous': ['progress-previous'],

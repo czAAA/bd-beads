@@ -24,7 +24,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onSelectColor: vi.fn(),
     onClearSelection: vi.fn(),
     onToggleRulers: vi.fn(),
-    onToggleFrame: vi.fn(),
+    onEditFrame: vi.fn(),
     settingFrame: () => false,
     finishFrame: vi.fn(),
     onCopy: vi.fn(),
@@ -235,7 +235,7 @@ describe('useAppShortcutTable', () => {
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(3, 'piece')
-    expect(deps.onToggleFrame).not.toHaveBeenCalled()
+    expect(deps.onEditFrame).not.toHaveBeenCalled()
     press({ key: '7' })
     press({ key: 'a', ctrlKey: true })
     expect(deps.onSelectAll).toHaveBeenCalledTimes(2)

@@ -48,9 +48,7 @@ const {
   selection,
   pasteProjectionActive,
   onRequestDeleteAll,
-  onStartSetFrame,
-  onSetFrameSize,
-  pendingFrame,
+  onEditFrame,
   onSetTechnique,
   onFitFrame,
   onRemoveFrame,
@@ -156,23 +154,6 @@ const deps = computed(() =>
   </BottomSheet>
 
   <!--
-    The Frame sheet (ticket 295; Dock card): the Frame's own controls. Rotate, Copy and Paste are on the Selection bar
-    (tickets 415, 416); Undo and Redo live in the Zoom pill (ticket 296).
-  -->
-  <BottomSheet v-if="openPhoneSheet === 'frame' && activeProject" :title="t.frame.title" @close="openPhoneSheet = null">
-    <FrameControls
-      :project="activeProject"
-      :pending-frame="pendingFrame"
-      with-set-frame
-      @set-frame="onStartSetFrame(); openPhoneSheet = null"
-      @set-size="onSetFrameSize"
-      @set-technique="onSetTechnique"
-      @fit="onFitFrame"
-      @remove="onRemoveFrame"
-    />
-  </BottomSheet>
-
-  <!--
     The Project sheet (PhoneForms, ToolSheet cards): modal, taller, with a scrim -- an accidental tap past its edge
     shouldn't lose the way back to New Project or Import, unlike the five light sheets above.
   -->
@@ -200,6 +181,14 @@ const deps = computed(() =>
           </option>
         </AppSelect>
       </p>
+      <!-- The Frame's Technique, Edit Frame, Fit and Remove (ticket 417): the Frame sheet is gone with the Dock's Frame slot. -->
+      <FrameControls
+        :project="activeProject"
+        @edit-frame="onEditFrame(); openPhoneSheet = null"
+        @set-technique="onSetTechnique"
+        @fit="onFitFrame"
+        @remove="onRemoveFrame"
+      />
       <SaveBox
         :has-frame="activeProject.frame !== undefined"
         :save-failed="saveFailed"
@@ -211,7 +200,6 @@ const deps = computed(() =>
         @export-png="onExportPng"
         @export-pdf="onExportPdf"
         @fit-frame="onFitFrame(); openPhoneSheet = null"
-        @set-frame="onStartSetFrame(); openPhoneSheet = null"
       />
       <BeadQuantities :project="settledProject" />
     </template>

@@ -20,8 +20,6 @@ const props = defineProps<{
   activeTool: Tool
   selectedColorId?: string
   openSheet: PhoneSheet | null
-  /** Whether the Frame is being set: its button sits on `panel` like an open sheet's (Dock card). */
-  settingFrame?: boolean
   /** Pen mode or Mouse mode (ticket 325): its toggle is the Dock's first button; absent, the device has no use for it and there is none. */
   inputMode?: InputMode
 }>()
@@ -38,22 +36,16 @@ const inputModeAction = computed(() => (props.inputMode ? controlAction(props.in
 
 const activeToolAction = computed(() => controlAction(`tool-${props.activeTool}`))
 
-/** The first button shows the active tool's own icon, name and key, and its Tooltip lists the tools; Frame has no key since Piece took 6 (ticket 414). */
+/** The first button shows the active tool's own icon, name and key, and its Tooltip lists the tools; the Frame has no slot, it is edited on the canvas (ticket 417). */
 const slots = computed<{ id: PhoneSheet; action: ReturnType<typeof controlAction>; label?: string; icon?: ReturnType<typeof controlAction>['icon']; key?: string; testid: string }[]>(() => [
   { id: 'tool', action: controlAction('dock-tool'), label: activeToolAction.value.name(t.value), icon: activeToolAction.value.icon, key: TOOL_HOTKEYS[props.activeTool], testid: 'dock-tool' },
   { id: 'color', action: controlAction('dock-colors'), icon: 'palette', testid: 'dock-color' },
   ...(MIRROR_ENABLED
     ? [{ id: 'mirror' as const, action: controlAction('dock-mirror'), icon: 'mirror-horizontal' as const, testid: 'dock-mirror' }]
     : []),
-  { id: 'frame', action: controlAction('dock-frame'), icon: 'frame', testid: 'dock-frame' },
   { id: 'project', action: controlAction('dock-project'), icon: 'pattern', testid: 'dock-project' },
   { id: 'menu', action: controlAction('dock-menu'), icon: 'menu', testid: 'dock-menu' },
 ])
-
-/** Set Frame is a mode, so the Frame button lights up while it is on (ticket 258). */
-function frameOn(id: string): boolean {
-  return id === 'frame' && !!props.settingFrame
-}
 </script>
 
 <template>
@@ -78,9 +70,9 @@ function frameOn(id: string): boolean {
       :tooltip="{ placement: 'top' }"
       :hotkey="slot.key"
       show-hotkey
-      :selected="openSheet === slot.id || frameOn(slot.id)"
+      :selected="openSheet === slot.id"
       :accent="slot.id === 'tool'"
-      :marked="slot.id === 'tool' || frameOn(slot.id)"
+      :marked="slot.id === 'tool'"
       :data-testid="slot.testid"
       :data-tour="`dock-${slot.id}`"
       @click="emit('select-sheet', slot.id)"

@@ -53,8 +53,8 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
-/** One of the Dock's five sheets (Dock card). */
-type DockSheetButton = 'dock-tool' | 'dock-color' | 'dock-frame' | 'dock-project' | 'dock-menu'
+/** One of the Dock's four sheets (Dock card). */
+type DockSheetButton = 'dock-tool' | 'dock-color' | 'dock-project' | 'dock-menu'
 
 /** Opens a Dock sheet (Dock card), closing whichever one is already open first — its Dock button toggles, so clicking
  * it while open would close it instead. Does nothing if the right one is already open. */
