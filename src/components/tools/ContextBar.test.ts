@@ -38,17 +38,27 @@ describe('ContextBar', () => {
     }
   })
 
+  it('disables Fill, with its reason, until a color is chosen (ticket 415)', async () => {
+    const wrapper = mount(ContextBar, { props: { project, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false, hasPaintColor: false } })
+
+    const fill = wrapper.get('[data-testid="context-bar-fill"]')
+    expect(fill.attributes('aria-disabled')).toBe('true')
+    await fill.trigger('click')
+    expect(wrapper.emitted('fill')).toBeUndefined()
+  })
+
   it('has no Add or Subtract toggle', () => {
     const wrapper = mount(ContextBar, { props: { project, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false } })
     expect(wrapper.text()).not.toMatch(/add|subtract/i)
   })
 
-  it('renders only what applies: Paste with a clipboard, Frame without a Frame, Remove line with a line selected', async () => {
+  it('renders only what applies: Paste with a clipboard, Remove line with a line selected, and Frame whether or not there is a Frame (it moves it, ticket 407)', async () => {
     const wrapper = mount(ContextBar, {
       props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true, hasClipboard: true },
     })
 
-    expect(wrapper.find('[data-testid="context-bar-frame"]').exists()).toBe(false)
+    expect(project.frame).toBeDefined()
+    expect(wrapper.get('[data-testid="context-bar-frame"]').attributes('aria-label')).toBe('Frame')
     expect(wrapper.get('[data-testid="context-bar-paste"]').attributes('aria-label')).toBe('Paste')
     expect(wrapper.get('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
 
@@ -82,7 +92,7 @@ describe('ContextBar', () => {
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: true, canRemoveLine: false } })
 
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="context-bar-hint"]').text()).toBe('Tap where to paste')
+    expect(wrapper.get('[data-testid="context-bar-hint"]').attributes('aria-label')).toBe('Tap where to paste')
     expect(wrapper.get('[data-testid="context-bar-cancel"]').attributes('aria-label')).toBe('Cancel')
 
     await wrapper.get('[data-testid="context-bar-cancel"]').trigger('click')

@@ -34,7 +34,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(true)
     await wrapper.find('[data-testid="context-bar-paste"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="context-bar-hint"]').text()).toBe('Tap where to paste')
+    expect(wrapper.find('[data-testid="context-bar-hint"]').attributes('aria-label')).toBe('Tap where to paste')
 
     await wrapper.find('[data-testid="context-bar-cancel"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)

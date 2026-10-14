@@ -562,6 +562,7 @@ export const pl: Translations = {
     removeFrame: 'Usuwa ramkę. Koraliki zostają na miejscu.',
     noFrameToRemove: 'Nie ma ramki do usunięcia.',
     rowProgressLockedFrame: 'Wyłącz postęp rzędów, aby zmienić ramkę.',
+    fillNeedsColor: 'Najpierw wybierz kolor, aby wypełnić zaznaczenie.',
     rowProgressLockedTechnique: 'Wyłącz postęp rzędów, aby zmienić technikę.',
     changeTechnique: 'Pleć schemat inną techniką. Każdy koralik zachowuje swój rząd i kolumnę.',
     rowProgressLockedRotate: 'Wyłącz postęp rzędów, aby obrócić.',

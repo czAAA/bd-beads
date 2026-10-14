@@ -567,6 +567,7 @@ export const en: Translations = {
     removeFrame: 'Remove the Frame. Beads stay where they are.',
     noFrameToRemove: 'There is no Frame to remove.',
     rowProgressLockedFrame: 'Turn off Row progress to change the Frame.',
+    fillNeedsColor: 'Pick a color first to fill the Selection.',
     rowProgressLockedTechnique: 'Turn off Row progress to change the Technique.',
     changeTechnique: 'Weave the Schema in another Technique. Every bead keeps its row and column.',
     rowProgressLockedRotate: 'Turn off Row progress to rotate.',

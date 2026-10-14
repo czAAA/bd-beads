@@ -108,8 +108,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
       const project = deps.currentProject()
-      const name = (project && namedPieceCutBy(project, frame)) ?? ''
-      deps.showToast('frame-cuts-schema', deps.messages().frame.refusedCutsSchema.replace('{name}', name), 'info')
+      const name = project && namedPieceCutBy(project, frame)
+      if (name !== undefined) deps.showToast('frame-cuts-schema', deps.messages().frame.refusedCutsSchema.replace('{name}', name), 'info')
       return
     }
     if (outcome.kind !== 'applied') return
@@ -204,8 +204,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /**
-   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step. Edit Frame (ticket 417) will follow it.
-   * A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to it, and where rows alternate starts on an even row.
+   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step. Edit Frame
+   * (ticket 417) will follow it. A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
+   * it, and where rows alternate starts on an even row. With a Frame already set it moves the Frame there.
    */
   function setTo(frame: Frame): void {
     commitPending()

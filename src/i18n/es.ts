@@ -560,6 +560,7 @@ export const es: Translations = {
     removeFrame: 'Quita el marco. Las cuentas se quedan donde están.',
     noFrameToRemove: 'No hay ningún marco que quitar.',
     rowProgressLockedFrame: 'Desactiva el progreso por filas para cambiar el marco.',
+    fillNeedsColor: 'Elige primero un color para rellenar la selección.',
     rowProgressLockedTechnique: 'Desactiva el progreso por filas para cambiar la técnica.',
     changeTechnique: 'Teje el esquema con otra técnica. Cada cuenta conserva su fila y su columna.',
     rowProgressLockedRotate: 'Desactiva el progreso por filas para girar.',

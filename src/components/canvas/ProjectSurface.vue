@@ -13,6 +13,7 @@ import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
+import type { SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -105,7 +106,7 @@ const emit = defineEmits<{
   /** Set Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
-  'selection-anchor': [anchor: { box: { left: number; top: number; width: number; height: number }; viewport: { width: number; height: number } } | undefined]
+  'selection-anchor': [anchor: SelectionAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
   pressing: [pressing: boolean]
 }>()
@@ -131,11 +132,27 @@ function onPress(event: PointerEvent) {
 /** The pointers down on the surface now: the Selection bar returns when the last one lifts (ticket 415). */
 const activePointers = new Set<number>()
 
+/** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back (ticket 415). */
+const WHEEL_IDLE_MS = 150
+let wheeling = false
+let wheelTimer: ReturnType<typeof setTimeout> | undefined
+
+/** The wheel is a pan or pinch with no press to end it: it holds the bar away until it has been quiet for WHEEL_IDLE_MS. */
+function noteWheel() {
+  if (!wheeling && activePointers.size === 0) emit('pressing', true)
+  wheeling = true
+  clearTimeout(wheelTimer)
+  wheelTimer = setTimeout(() => {
+    wheeling = false
+    if (activePointers.size === 0) emit('pressing', false)
+  }, WHEEL_IDLE_MS)
+}
+
 function releasePointer(event?: PointerEvent) {
   if (activePointers.size === 0) return
   if (event) activePointers.delete(event.pointerId)
   else activePointers.clear()
-  if (activePointers.size === 0) emit('pressing', false)
+  if (activePointers.size === 0 && !wheeling) emit('pressing', false)
 }
 
 function onFocus() {
@@ -844,6 +861,7 @@ function wheelPx(delta: number, mode: number): number {
 /** Ctrl/⌘ + wheel zooms (a trackpad's pinch arrives the same way); the wheel on its own moves the canvas, Shift turning a vertical wheel sideways. */
 function onWheel(event: WheelEvent): void {
   event.preventDefault()
+  noteWheel()
   const box = rootEl.value?.getBoundingClientRect()
   const dx = wheelPx(event.deltaX, event.deltaMode)
   const dy = wheelPx(event.deltaY, event.deltaMode)
@@ -866,6 +884,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  clearTimeout(wheelTimer)
   clearTimeout(refusedTimer)
   clearTimeout(settleTimer)
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)

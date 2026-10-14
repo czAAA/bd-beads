@@ -3,7 +3,7 @@ import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './margin'
 import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
-import { createProject, deleteAll, restoreSnapshot, snapshotOf, type Project } from './project'
+import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { changeFrame } from './changeFrame'
 
@@ -159,6 +159,16 @@ describe('piece names', () => {
 
       expect(namedPieceCutBy(project, { row: 0, column: 11, rows: 1, columns: 5 })).toBeUndefined()
       expect(namedPieceCutBy(project, { row: 0, column: 0, rows: 1, columns: 20 })).toBeUndefined()
+    })
+
+    it('leaves the beads of every other Schema out of what the Frame holds, which is what Export, Beads needed and Row progress read', () => {
+      const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
+      const onFox = changeFrame(both, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      if (onFox.kind !== 'changed') throw new Error('expected a change')
+
+      const colors = frameGrid(onFox.project).flat().map((cell) => cell.color)
+
+      expect(colors).toEqual([R, R, R, R])
     })
 
     it('keeps the Schema and its name when the Frame moves to another Schema or is removed', () => {
