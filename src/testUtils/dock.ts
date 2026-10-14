@@ -5,7 +5,7 @@ import { chooseLanguage } from './chooseLanguage'
 
 type Wrapper = ReturnType<typeof mount>
 
-type DockSheet = 'dock-tool' | 'dock-color' | 'dock-frame' | 'dock-project' | 'dock-menu'
+type DockSheet = 'dock-tool' | 'dock-color' | 'dock-project' | 'dock-menu'
 
 /**
  * Opens one of the Dock's sheets (Dock card): its Dock button toggles, so a sheet that is already open is left alone and

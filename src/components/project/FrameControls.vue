@@ -2,66 +2,39 @@
 import { computed, useId } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
-import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { TECHNIQUES, type Technique } from '../../domain/grid'
 import { resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
-import { estimatedSizeMm, formatMm, formatOtherUnit } from '../../domain/projectSize'
-import { useFrameSides } from '../../composables/project/useFrameSides'
+import { formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
-import type { Frame } from '../../domain/canvas'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
- * The body of the Frame row (MirrorSizeControls card, ticket 233): the beads | mm switch (ticket 342, remembered on
- * this device), Width and Height steppers that move one bead per press in either unit, each after a choice of the side
- * it grows and shrinks the Frame from (ticket 410, also remembered on this device), Fit to drawing and Remove
- * Frame, and the Frame's Estimated size in the other unit with its warning as a Note (ticket 328). The steppers change
- * a pending Frame, committed when the sheet closes: this shows it (`pendingFrame`) in place of the Project's own.
- * With no Frame it says what a Frame is and offers Fit to drawing; opening the row starts Set Frame on the canvas. While Row progress is on the Frame's size is locked and
- * the reason is written under the controls.
+ * The Frame's part of the Project sheet (MirrorSizeControls card, ticket 233): the Technique choice, Edit Frame, Fit to
+ * drawing and Remove Frame, and the Frame's Estimated size with its warning as a Note (ticket 328). The Frame's size is
+ * changed on the canvas, in Edit Frame (ticket 417), so there are no size steppers here. With no Frame it says what a
+ * Frame is: one is made from a Selection or by Fit to drawing. While Row progress is on the Frame is locked and the
+ * reason is written under the controls.
  */
-const props = defineProps<{
-  project: Project
-  /** Offers Set Frame itself, for where opening the controls doesn't start it (the phone's Frame sheet). */
-  withSetFrame?: boolean
-  /** The size the steppers set and nothing has committed yet (ticket 410): the fields and the estimate follow it. */
-  pendingFrame?: Frame
-}>()
+const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{
-  'set-size': [columns: number, rows: number]
   'set-technique': [technique: Technique]
   fit: []
   remove: []
-  'set-frame': []
+  'edit-frame': []
 }>()
 
 const { t, locale } = useI18n()
 
-const frame = computed(() => props.pendingFrame ?? props.project.frame)
+const frame = computed(() => props.project.frame)
 const locked = computed(() => rowProgressStarted(props.project))
 const bead = computed(() => resolveProjectBead(props.project))
 
-const columns = computed({
-  get: () => frame.value?.columns ?? 0,
-  set: (value: number) => emit('set-size', value, frame.value?.rows ?? 1),
-})
-const rows = computed({
-  get: () => frame.value?.rows ?? 0,
-  set: (value: number) => emit('set-size', frame.value?.columns ?? 1, value),
-})
-
-/** The unit the size is stated in: kept on the device, never in the Project (ticket 342). */
-const { unit, unitOptions } = useSizeUnit()
-const unitLabelId = useId()
-
-/** The Frame's width and height in mm, for the steppers' fields while the unit is mm (the beads still step one at a time). */
-const sizeMm = computed(() => (bead.value && frame.value ? estimatedSizeMm(frame.value, bead.value) : undefined))
-const widthDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? formatMm(sizeMm.value.widthMm, locale.value) : undefined))
-const heightDisplay = computed(() => (unit.value === 'mm' && sizeMm.value ? formatMm(sizeMm.value.heightMm, locale.value) : undefined))
+/** The unit the Estimated size leads with: kept on the device, never in the Project (ticket 342). */
+const { unit } = useSizeUnit()
 
 /** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
 const estimate = computed(() =>
@@ -88,28 +61,10 @@ const techniqueOptions = computed(() => {
 
 const lockedNoteId = useId()
 
-/** The side each stepper changes the Frame from (ticket 410). */
-const { widthSide, heightSide, widthSideOptions, heightSideOptions } = useFrameSides()
-const widthSideLabelId = useId()
-const heightSideLabelId = useId()
-
-const setFrameAction = controlAction('set-frame')
+const editAction = controlAction('edit-frame')
 const fitAction = controlAction('fit-to-drawing')
 const removeAction = controlAction('remove-frame')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
-/** The steppers' reason while Row progress holds the Frame still. */
-const lockedReason = computed(() => removeAction.disabledBody?.(t.value, deps.value))
-
-/** A side choice's options with their Tooltips; while Row progress holds the Frame still each says why. */
-function sideOptions<T extends string>(options: readonly { value: T; label: string; body: string }[]) {
-  return options.map(({ value, label, body }) => ({
-    value,
-    label,
-    tooltip: { name: label, body, disabledBody: lockedReason.value },
-  }))
-}
-const widthSideChoices = computed(() => sideOptions(widthSideOptions.value))
-const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
 </script>
 
 <template>
@@ -128,72 +83,9 @@ const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
       />
     </div>
 
-    <template v-if="frame">
-      <div class="frame-controls__setting">
-        <span :id="unitLabelId">{{ t.frame.unitLabel }}</span>
-        <SegmentedControl v-model="unit" :options="unitOptions" mono small :labelledby="unitLabelId" data-testid="frame-unit" />
-      </div>
-      <div class="frame-controls__side" data-testid="frame-width-side-row">
-        <span :id="widthSideLabelId">{{ t.frame.widthSideLabel }}</span>
-        <SegmentedControl
-          v-model="widthSide"
-          :options="widthSideChoices"
-          :disabled="locked"
-          small
-          :labelledby="widthSideLabelId"
-          data-testid="frame-width-side"
-        />
-      </div>
-      <label class="frame-controls__setting">
-        <span>{{ t.frame.widthLabel }}</span>
-        <AppStepper
-          v-model="columns"
-          :min="1"
-          :disabled="locked"
-          tooltip
-          :disabled-body="lockedReason"
-          :display="widthDisplay"
-          :value-label="t.frame.widthLabel"
-          :decrease-label="t.frame.decreaseWidth"
-          :increase-label="t.frame.increaseWidth"
-          decrease-testid="frame-columns-decrease"
-          increase-testid="frame-columns-increase"
-          value-testid="frame-columns"
-        />
-      </label>
-      <div class="frame-controls__side" data-testid="frame-height-side-row">
-        <span :id="heightSideLabelId">{{ t.frame.heightSideLabel }}</span>
-        <SegmentedControl
-          v-model="heightSide"
-          :options="heightSideChoices"
-          :disabled="locked"
-          small
-          :labelledby="heightSideLabelId"
-          data-testid="frame-height-side"
-        />
-      </div>
-      <label class="frame-controls__setting">
-        <span>{{ t.frame.heightLabel }}</span>
-        <AppStepper
-          v-model="rows"
-          :min="1"
-          :disabled="locked"
-          tooltip
-          :disabled-body="lockedReason"
-          :display="heightDisplay"
-          :value-label="t.frame.heightLabel"
-          :decrease-label="t.frame.decreaseHeight"
-          :increase-label="t.frame.increaseHeight"
-          decrease-testid="frame-rows-decrease"
-          increase-testid="frame-rows-increase"
-          value-testid="frame-rows"
-        />
-      </label>
-    </template>
-
     <!-- While Row progress is on the buttons stay hoverable and say why they are locked, and the reason is written below. -->
     <div class="frame-controls__actions">
-      <AppButton v-if="withSetFrame" variant="primary" :action="setFrameAction" data-testid="frame-set" @click="emit('set-frame')" />
+      <AppButton v-if="frame" variant="primary" :action="editAction" :deps="deps" data-testid="frame-edit" @click="emit('edit-frame')" />
       <AppButton variant="toolbox" :action="fitAction" :deps="deps" data-testid="frame-fit" @click="emit('fit')" />
       <AppButton v-if="frame" variant="toolbox" :action="removeAction" :deps="deps" data-testid="frame-remove" @click="emit('remove')" />
     </div>
@@ -209,7 +101,7 @@ const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
 <style scoped>
 /*
  * As wide as the sheet it sits in, so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
- * wrap, and each row's counter and "change from" choice fall onto as many lines as they need.
+ * wrap, and the buttons fall onto as many lines as they need.
  */
 .frame-controls {
   display: flex;
@@ -218,16 +110,7 @@ const heightSideChoices = computed(() => sideOptions(heightSideOptions.value))
   min-width: 0;
 }
 
-.frame-controls__setting {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  font: var(--type-control);
-}
-
-.frame-controls__technique,
-.frame-controls__side {
+.frame-controls__technique {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);

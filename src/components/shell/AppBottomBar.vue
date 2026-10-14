@@ -10,7 +10,6 @@ const newProjectAction = controlAction('new-project')
 const menuAction = controlAction('dock-menu')
 
 const {
-  settingFrame,
   inputMode,
   inputModeAvailable,
   toggleInputMode,
@@ -44,7 +43,6 @@ const {
     :active-tool="activeTool"
     :selected-color-id="selectedColorId"
     :open-sheet="openPhoneSheet"
-    :setting-frame="settingFrame"
     :input-mode="inputModeAvailable ? inputMode : undefined"
     @toggle-input-mode="toggleInputMode"
     @select-sheet="onSelectPhoneSheet"

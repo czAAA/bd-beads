@@ -43,8 +43,6 @@ export interface EditDeps {
   resetAfterFrameChange: () => void
   /** Writes the save every stroke step deferred. */
   flushPendingSave: () => void
-  /** Runs before any change: commits the Frame the size steppers have pending, so the change never acts on a stale one (ticket 410). */
-  beforeEdit?: () => void
 }
 
 /**
@@ -62,7 +60,6 @@ export function useEdit(deps: EditDeps) {
   }
 
   const edit: EditFn = (kind, command) => {
-    deps.beforeEdit?.()
     const project = deps.currentProject()
     if (!project) {
       return { kind: 'unchanged' }
@@ -94,7 +91,6 @@ export function useEdit(deps: EditDeps) {
 
   /** Starts a Paint/Eraser stroke: the baseline its one Undo step will go back to (ticket 55). */
   function beginStroke() {
-    deps.beforeEdit?.()
     const project = deps.currentProject()
     strokeBaseline = project && snapshotOf(project, deps.mirrorAxisCounts())
   }

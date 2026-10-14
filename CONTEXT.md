@@ -37,7 +37,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 
 | Area | Terms |
 |---|---|
-| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Set Frame, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
+| [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Edit Frame, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Technique |
 | [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Dock and controls](docs/glossary/toolbox.md) | Tool group, Dock layout, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |

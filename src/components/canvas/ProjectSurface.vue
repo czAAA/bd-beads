@@ -50,16 +50,14 @@ const props = defineProps<{
   tourMarks?: TourMarks
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
-  /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Set Frame takes the drag over it, so the Frame can be edited whichever Tool was chosen. */
+  /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Edit Frame takes the drag over it, so the Frame can be edited whichever Tool was chosen. */
   moving?: boolean
   /** Which pointer draws and which one moves the canvas (ticket 325); absent, every pointer draws. */
   inputMode?: InputMode
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
-  /** Whether the Frame is being set (Set Frame): a drag draws, moves or resizes it instead of drawing beads, and its handles show. */
+  /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing beads, and its handles, margin outline and size tooltip show. */
   settingFrame?: boolean
-  /** Whether the Frame shown is one the size steppers have set and nothing has committed: its margin outline shows, as mid-drag (ticket 410). */
-  framePending?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
   frameTooltip?: string
   /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
@@ -91,11 +89,11 @@ const emit = defineEmits<{
   'zoom-by': [factor: number, anchor: Scroll]
   /** A ruler number was pressed: the whole row or column it numbers is to be selected. */
   'select-line': [selection: Selection]
-  /** Set Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
+  /** Edit Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
   'frame-press': [target: FramePress, cell: GridPosition]
-  /** Set Frame: the pointer moved with the press held, over this bead position. */
+  /** Edit Frame: the pointer moved with the press held, over this bead position. */
   'frame-drag': [cell: GridPosition]
-  /** Set Frame: the press ended. */
+  /** Edit Frame: the press ended. */
   'frame-release': []
   /** The Selection's handles or inside were pressed (ticket 414), at this bead position. */
   'selection-press': [target: FramePress, cell: GridPosition]
@@ -103,10 +101,12 @@ const emit = defineEmits<{
   'selection-drag': [cell: GridPosition]
   /** That press ended. */
   'selection-release': []
-  /** Set Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
+  /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
+  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's bar and margin steppers sit. */
+  'frame-anchor': [anchor: SelectionAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
   pressing: [pressing: boolean]
 }>()
@@ -278,6 +278,21 @@ watch(
     }
     const box = surface.value.beadBox(selectionFrame(selected))
     emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
+  },
+  { immediate: true, flush: 'post' },
+)
+
+/** Where the Frame is on screen while it is being edited, told to Edit Frame's bar and margin steppers (ticket 417). */
+watch(
+  [surface, () => props.settingFrame, () => props.project.frame, size],
+  () => {
+    const frame = props.project.frame
+    if (!props.settingFrame || !frame || size.value.width === 0) {
+      emit('frame-anchor', undefined)
+      return
+    }
+    const box = surface.value.frameBox(frame)
+    emit('frame-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
 )
@@ -547,7 +562,7 @@ const adjusting = ref(false)
 const handleCursor = ref<string>()
 let lastBead: GridPosition | undefined
 
-// Starting Set Frame ends the hover preview and forgets the bead, so leaving it hovers the bead under the pointer afresh (ticket 354).
+// Starting Edit Frame ends the hover preview and forgets the bead, so leaving it hovers the bead under the pointer afresh (ticket 354).
 watch(
   () => props.settingFrame,
   (on) => {
@@ -571,7 +586,7 @@ let refusedTimer: ReturnType<typeof setTimeout> | undefined
 let fadeFrame: number | undefined
 
 const marginOutlineWanted = computed(
-  () => props.project.frame !== undefined && (framing.value || refusedPress.value || props.framePending === true),
+  () => props.project.frame !== undefined && (framing.value || refusedPress.value || props.settingFrame === true),
 )
 
 function reducedMotion(): boolean {
@@ -1012,9 +1027,9 @@ onBeforeUnmount(() => {
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 
-/* Set Frame: a crosshair, since a drag marks out beads (Frame card). */
+/* Edit Frame: the plain arrow, since a drag moves or resizes the Frame and draws nothing; the handles bring their resize cursors (Frame card). */
 .project-surface--setting-frame {
-  cursor: crosshair;
+  cursor: default;
 }
 
 .project-surface--dragging {

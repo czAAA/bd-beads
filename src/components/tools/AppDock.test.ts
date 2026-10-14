@@ -16,23 +16,23 @@ describe('AppDock', () => {
     expect(button.attributes('aria-keyshortcuts')).toBe('2')
   })
 
-  it('shows no key on the Frame button (6 is the Piece tool\'s since ticket 414) nor on the group buttons', () => {
+  it('has no Frame button (the Frame is edited on the canvas, ticket 417) and shows no key on the group buttons', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.find('[data-testid="dock-frame"] .icon-btn__key').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-color"] .icon-btn__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-menu"] .icon-btn__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-project"] .icon-btn__key').exists()).toBe(false)
   })
 
-  it('marks whichever sheet is open, and emits select-sheet for each of the five', async () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'frame' } })
-    expect(wrapper.get('[data-testid="dock-frame"]').attributes('aria-pressed')).toBe('true')
+  it('marks whichever sheet is open, and emits select-sheet for each of the four', async () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'project' } })
+    expect(wrapper.get('[data-testid="dock-project"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
 
-    for (const id of ['tool', 'color', 'frame', 'project', 'menu']) {
+    for (const id of ['tool', 'color', 'project', 'menu']) {
       await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['frame'], ['project'], ['menu']])
+    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['project'], ['menu']])
   })
 
   it('has no input mode button without an input mode, and a first one with it (ticket 325)', async () => {
