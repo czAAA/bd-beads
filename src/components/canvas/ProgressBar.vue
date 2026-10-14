@@ -137,7 +137,7 @@ const directionLabel = computed(() =>
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Set Frame to start" in `meta`, and the Set Frame button pushed to the right. */
+/* No Frame (ProgressBar card): "Set Frame to start" in `meta`, and the Fit to drawing button pushed to the right. */
 .progress-bar__need {
   font: var(--type-meta);
   color: var(--box-muted);

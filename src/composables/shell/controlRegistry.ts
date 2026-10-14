@@ -1,7 +1,7 @@
 import { type Chord } from '../../domain/chord'
 import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
-import { frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
+import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -127,8 +127,6 @@ const frameLocked = (deps: ControlDeps) => {
 }
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
-
-const FRAME_EDGES: readonly FrameEdge[] = ['top', 'bottom', 'left', 'right']
 
 /** One of Edit Frame's margin steppers (ticket 417): an edge a bead out or in, named for its edge. Moving in stops at one bead. */
 const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlAction => ({

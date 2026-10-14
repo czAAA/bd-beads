@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import type { SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
-import type { FrameEdge } from '../../domain/frame'
+import { STEPPER_GAP_PX, TOUCH_STEPPER_GAP_PX, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { FRAME_EDGES, type FrameEdge } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 
@@ -24,18 +24,24 @@ const emit = defineEmits<{ step: [edge: FrameEdge, step: 1 | -1] }>()
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
-const EDGES: readonly FrameEdge[] = ['top', 'bottom', 'left', 'right']
-const pairs = EDGES.map((edge) => ({ edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`) }))
+const pairs = FRAME_EDGES.map((edge) => ({ edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`) }))
 
 const boxStyle = computed(() => {
   const { left, top, width, height } = props.anchor.box
-  return { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` }
+  return {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+    '--stepper-gap': `${STEPPER_GAP_PX}px`,
+    '--stepper-gap-touch': `${TOUCH_STEPPER_GAP_PX}px`,
+  }
 })
 </script>
 
 <template>
   <div class="edit-frame-steppers" :style="boxStyle" data-testid="edit-frame-steppers">
-    <div v-for="pair in pairs" :key="pair.edge" class="edit-frame-steppers__pair" :class="`edit-frame-steppers__pair--${pair.edge}`" role="group" :aria-label="t.frame.edgeOut[pair.edge]">
+    <div v-for="pair in pairs" :key="pair.edge" class="edit-frame-steppers__pair" :class="`edit-frame-steppers__pair--${pair.edge}`">
       <AppButton
         class="edit-frame-steppers__button"
         variant="box"
@@ -72,7 +78,6 @@ const boxStyle = computed(() => {
   display: flex;
   gap: var(--space-2);
   pointer-events: auto;
-  --stepper-gap: var(--space-16);
 }
 
 .edit-frame-steppers__pair--top {
@@ -116,8 +121,20 @@ const boxStyle = computed(() => {
     height: var(--selbar-height-touch);
   }
 
-  .edit-frame-steppers__pair {
-    --stepper-gap: var(--space-24);
+  .edit-frame-steppers__pair--top {
+    transform: translate(-50%, calc(-100% - var(--stepper-gap-touch)));
+  }
+
+  .edit-frame-steppers__pair--bottom {
+    transform: translate(-50%, calc(100% + var(--stepper-gap-touch)));
+  }
+
+  .edit-frame-steppers__pair--left {
+    transform: translate(calc(-100% - var(--stepper-gap-touch)), -50%);
+  }
+
+  .edit-frame-steppers__pair--right {
+    transform: translate(calc(100% + var(--stepper-gap-touch)), -50%);
   }
 }
 </style>
