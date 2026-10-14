@@ -260,7 +260,7 @@ function stillToMark(grid: Grid, list: readonly TourCell[], color: string | null
 }
 
 /** The tool, then the color, then the Project: each is pointed at only until it is the one in use. */
-function toolThenColor(snapshot: TourSnapshot, tool: Tool, colorId: 'black' | 'yellow'): TourControl | undefined {
+function toolThenColor(snapshot: TourSnapshot, tool: 'paint' | 'fill', colorId: 'black' | 'yellow'): TourControl | undefined {
   if (snapshot.tool !== tool) {
     return `tool-${tool}`
   }

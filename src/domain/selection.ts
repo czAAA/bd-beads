@@ -1,6 +1,9 @@
 import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
-import { colorAt, withColors, type BeadChange, type Frame } from './canvas'
+import { beadBounds, colorAt, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import type { FrameEdge } from './frame'
+import type { Technique } from './grid'
+import { pieceBeadsAt } from './pieces'
 import { restoreBeads, type Project } from './project'
 
 /**
@@ -51,6 +54,61 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition): Sel
     rows: Math.max(...rowsSpanned) - top + 1,
     columns: Math.max(...columnsSpanned) - left + 1,
   }
+}
+
+/** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its handles). */
+export function selectionFrame(selection: Selection): Frame {
+  return { row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }
+}
+
+/** The Selection over a rectangle of beads given as a Frame-shaped box (a Piece's area, the box round every bead). */
+function selectionOfBox(box: Frame): Selection {
+  return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
+}
+
+/**
+ * The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the Piece the tapped bead belongs
+ * to. Beads of other Pieces inside that rectangle are inside the Selection too. None when the tap is on an empty position.
+ */
+export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridPosition): Selection | undefined {
+  const members = pieceBeadsAt(beads, technique, at)
+  if (members.length === 0) {
+    return undefined
+  }
+  const rows = members.map((member) => member.row)
+  const columns = members.map((member) => member.column)
+  const top = Math.min(...rows)
+  const left = Math.min(...columns)
+  return { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }
+}
+
+/** The Selection Select all makes (ticket 414): the rectangle round every placed bead, or none on an empty canvas. */
+export function allBeadsSelection(beads: BeadMap): Selection | undefined {
+  const bounds = beadBounds(beads)
+  return bounds ? selectionOfBox(bounds) : undefined
+}
+
+/**
+ * The Selection with the sides a handle drags moved to a bead (ticket 414): `edges` are the sides (a corner drags two),
+ * `cell` the bead the pointer is over. A side never passes the one opposite it, so a Selection stays one bead each way.
+ */
+export function selectionWithEdges(selection: Selection, edges: readonly FrameEdge[], cell: GridPosition): Selection {
+  let top = selection.top
+  let bottom = selection.top + selection.rows - 1
+  let left = selection.left
+  let right = selection.left + selection.columns - 1
+
+  if (edges.includes('top')) top = Math.min(cell.row, bottom)
+  if (edges.includes('bottom')) bottom = Math.max(cell.row, top)
+  if (edges.includes('left')) left = Math.min(cell.column, right)
+  if (edges.includes('right')) right = Math.max(cell.column, left)
+
+  return { top, left, rows: bottom - top + 1, columns: right - left + 1 }
+}
+
+/** The Selection moved by whole beads, its size kept; its beads stay where they are. */
+export function movedSelection(selection: Selection, rows: number, columns: number): Selection {
+  return { ...selection, top: selection.top + rows, left: selection.left + columns }
 }
 
 /** Snapshots a Selection's cells — the empty ones included, as holes — into a block Paste can stamp anywhere. */

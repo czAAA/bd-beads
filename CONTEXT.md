@@ -41,7 +41,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Technique |
 | [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Dock and controls](docs/glossary/toolbox.md) | Tool group, Dock layout, Dock, Menu, Zoom pill, Tool button, Tooltip, Note |
-| [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
+| [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](docs/glossary/overview-and-tour.md) | Overview, Tour |

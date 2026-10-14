@@ -108,7 +108,7 @@ describe('the Hand tool', () => {
     await key({ key: '5' })
     await openSheet(wrapper, 'dock-tool')
     expect(wrapper.find('[data-testid="sheet-tool-hand"]').classes()).toContain('icon-btn--selected')
-    expect(wrapper.findAll('[data-testid^="sheet-tool-"]')).toHaveLength(5)
+    expect(wrapper.findAll('[data-testid^="sheet-tool-"]')).toHaveLength(7)
     await wrapper.get('[data-testid="sheet-close"]').trigger('click')
 
     const before = JSON.stringify(loadProjects()[0]!.beads)

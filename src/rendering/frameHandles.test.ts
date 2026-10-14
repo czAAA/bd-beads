@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frameHandles, handleAt, handleEdges, HANDLE_PX, TOUCH_HANDLE_PX } from './frameHandles'
+import { boxPressAt, frameHandles, handleAt, handleEdges, hitRadius, HANDLE_PX, TOUCH_HANDLE_PX } from './frameHandles'
 
 const box = { x: 100, y: 50, width: 200, height: 100 }
 
@@ -20,12 +20,45 @@ describe('frame handles', () => {
     expect(handles.every((h) => h.size === TOUCH_HANDLE_PX)).toBe(true)
   })
 
-  it('are found under a point, with a little slack, and not away from them', () => {
+  it('are grabbed within 14px of their centre with a pointer and 24px with a finger, and not away from them', () => {
     const handles = frameHandles(box, false)
 
-    expect(handleAt(handles, { x: 100, y: 50 })?.id).toBe('top-left')
-    expect(handleAt(handles, { x: 107, y: 52 })?.id).toBe('top-left')
-    expect(handleAt(handles, { x: 200, y: 100 })).toBeUndefined()
+    expect(handleAt(handles, { x: 100, y: 50 }, 14)?.id).toBe('top-left')
+    expect(handleAt(handles, { x: 110, y: 58 }, 14)?.id).toBe('top-left')
+    expect(handleAt(handles, { x: 200, y: 100 }, 14)).toBeUndefined()
+    expect(hitRadius(box, false)).toBe(14)
+    expect(hitRadius(box, true)).toBe(24 > 100 / 3 ? 100 / 3 : 24)
+  })
+
+  it('give the nearest handle, but a corner in reach beats an edge handle that is nearer', () => {
+    const wide = { x: 0, y: 0, width: 60, height: 300 }
+    const handles = frameHandles(wide, false)
+
+    // Nearer the top edge’s middle (30, 0) than the corner (0, 0), yet the corner is within reach.
+    expect(handleAt(handles, { x: 16, y: 0 }, 16)?.id).toBe('top-left')
+    // Out of any corner's reach, the edge handle wins.
+    expect(handleAt(handles, { x: 30, y: 4 }, 10)?.id).toBe('top')
+  })
+
+  it('cap their reach at a third of the shorter side, so a small rectangle keeps an inside to move', () => {
+    const small = { x: 100, y: 100, width: 30, height: 60 }
+
+    expect(hitRadius(small, false)).toBe(10)
+    expect(hitRadius(small, true)).toBe(10)
+    expect(boxPressAt(small, 0, { x: 115, y: 130 }, false)).toEqual({ kind: 'inside' })
+  })
+
+  it('give a press inside the rectangle, within a corner’s reach, that corner', () => {
+    expect(boxPressAt(box, 0, { x: 108, y: 58 }, false)).toEqual({ kind: 'handle', edges: ['top', 'left'] })
+    expect(boxPressAt(box, 0, { x: 200, y: 100 }, false)).toEqual({ kind: 'inside' })
+    expect(boxPressAt(box, 0, { x: 20, y: 20 }, false)).toEqual({ kind: 'outside' })
+  })
+
+  it('reach further on touch, where only the corners are handles', () => {
+    expect(boxPressAt(box, 0, { x: 115, y: 65 }, true)).toEqual({ kind: 'handle', edges: ['top', 'left'] })
+    expect(boxPressAt(box, 0, { x: 115, y: 65 }, false)).toEqual({ kind: 'inside' })
+    // The middle of a side is no handle on touch.
+    expect(boxPressAt(box, 0, { x: 200, y: 50 }, true)).toEqual({ kind: 'inside' })
   })
 
   it('drag the sides they stand on, a corner two', () => {

@@ -138,6 +138,26 @@ const TOOLTIP_PAD_X = 8
 const TOOLTIP_HEIGHT = 24
 const TOOLTIP_GAP = 10
 
+/** The handles round a box in the viewport's px: squares with a 1.5px `frameLine` edge, filled with the canvas. */
+function drawHandles(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, theme: ProjectTheme, touch: boolean): void {
+  context.setLineDash([])
+  context.lineWidth = FRAME_LINE_PX
+  context.strokeStyle = theme.frameLine
+  context.fillStyle = theme.canvas
+  for (const handle of frameHandles(box, touch)) {
+    context.beginPath()
+    context.roundRect(handle.x - handle.size / 2, handle.y - handle.size / 2, handle.size, handle.size, 2)
+    context.fill()
+    context.stroke()
+  }
+}
+
+/** The Selection's handles (ticket 414): the Frame's own squares, over a Selection's box in the viewport's px. */
+export function drawBoxHandles(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, pixelRatio: number, theme: ProjectTheme, touch: boolean): void {
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  drawHandles(context, box, theme, touch)
+}
+
 /**
  * What the Frame carries while it is being set (Frame card): its handles, 9px squares (four 16px ones on touch) with a
  * 1.5px `ink` line, filled with the canvas, and the size tooltip hanging off its bottom-right corner (none when the tooltip is empty). In the viewport's
@@ -149,16 +169,7 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   const box = surface.frameBox(frame)
 
-  context.setLineDash([])
-  context.lineWidth = FRAME_LINE_PX
-  context.strokeStyle = theme.frameLine
-  context.fillStyle = theme.canvas
-  for (const handle of frameHandles(box, touch)) {
-    context.beginPath()
-    context.roundRect(handle.x - handle.size / 2, handle.y - handle.size / 2, handle.size, handle.size, 2)
-    context.fill()
-    context.stroke()
-  }
+  drawHandles(context, box, theme, touch)
 
   if (tooltip === '') {
     return

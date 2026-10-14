@@ -104,6 +104,9 @@ const {
   onFrameDrag,
   onFrameRelease,
   onFrameCancel,
+  onSelectionPress,
+  onSelectionDrag,
+  onSelectionRelease,
 } = useAppShell()
 
 /** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
@@ -246,6 +249,7 @@ function techniqueWord(technique: Technique): string {
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
+              :selecting="activeTool === 'select' || activeTool === 'piece'"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
               :cursor="cursorShown ? beadCursor : undefined"
@@ -268,6 +272,9 @@ function techniqueWord(technique: Technique): string {
               @frame-drag="onFrameDrag"
               @frame-release="onFrameRelease"
               @frame-cancel="onFrameCancel"
+              @selection-press="onSelectionPress"
+              @selection-drag="onSelectionDrag"
+              @selection-release="onSelectionRelease"
             />
             <EmptyCanvas v-else />
           </div>

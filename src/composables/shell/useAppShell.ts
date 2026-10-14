@@ -5,7 +5,9 @@ import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
+import type { GridPosition } from '../../domain/grid'
 import type { Selection } from '../../domain/selection'
+import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { changeFrame } from '../../domain/changeFrame'
 import { rotationSwapsAxes } from '../../domain/grid'
@@ -230,6 +232,11 @@ function wireAppShell(services: Services) {
     pasteAt: pasteAtCell,
     deleteSelection: onDeleteSelection,
     selectLine,
+    tapPiece,
+    selectAll: selectAllBeads,
+    beginAdjust,
+    dragAdjust,
+    endAdjust,
     pastePreviewCells,
     clearSelection: resetSelection,
     pasteProjectionActive,
@@ -274,6 +281,18 @@ function wireAppShell(services: Services) {
       onDeleteSelection()
     }
     selectTool(tool)
+  }
+
+  /** Select all (ticket 414): selects the rectangle round every bead and makes Select the active tool, so the Selection can be copied, cut or resized at once. Nothing on an empty canvas. */
+  function onSelectAll() {
+    if (!selectAllBeads()) return
+    // Select and Piece share a Selection, so switching to Select keeps the one just made.
+    onSelectTool('select')
+  }
+
+  /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. */
+  function onSelectionPress(target: FramePress, cell: GridPosition) {
+    beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
   }
 
   /** A ruler number was pressed (ticket 313): selecting a line is the Select tool's job, so it becomes the active tool. */
@@ -407,6 +426,7 @@ function wireAppShell(services: Services) {
     beginSelectPress,
     extendSelection,
     backOutOfSelect,
+    tapPiece,
     beginOrCommitPress: (mode, color, row, column) => {
       beginOrCommitPress(mode, color, row, column)
       if (mode === 'paint' && color) onPaintColorUsed(color)
@@ -644,6 +664,7 @@ function wireAppShell(services: Services) {
     onUndo,
     onRedo,
     onSelectTool,
+    onSelectAll,
     onSelectColor,
     onDeleteSelection,
     onToggleRulers: toggleRulers,
@@ -766,10 +787,14 @@ function wireAppShell(services: Services) {
     selectedImageColor,
     previewColor,
     onSelectTool,
+    onSelectAll,
     onSelectColor,
     onSelectCustomColor,
     onSelectImageColor,
     selection,
+    onSelectionPress,
+    onSelectionDrag: dragAdjust,
+    onSelectionRelease: endAdjust,
     pasteProjectionActive,
     onCopy,
     onSelectLine,

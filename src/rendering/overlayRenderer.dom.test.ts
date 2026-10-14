@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import { createProject, withFrameGrid, type Project, type RowProgress, type Technique } from '../domain/project'
 import type { Frame } from '../domain/canvas'
@@ -7,7 +7,7 @@ import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay } from './overlayRenderer'
 import { spaceOf } from './space'
-import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX } from './surfaceView'
+import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX, surfaceView } from './surfaceView'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -240,76 +240,37 @@ describe('renderOverlay', () => {
     const noProgress = { enabled: false }
     const selected = { top: 1, left: 1, rows: 3, columns: 4 }
 
-    it('washes each selected bead inside its rim, faintly, on loom and brick stitch', () => {
+    it('is drawn as the rectangle\'s outer border, 2px thick inside its edge, with no wash on its beads (ticket 414)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, selection: selected })
 
-      const washes = named('fillRect').filter((call) => call.globalAlpha === 0.3)
-      expect(washes).toHaveLength(12)
-      expect(washes[0]!.args).toEqual([21, 21, 18, 18])
-      expect(washes.every((call) => call.fillStyle === DEFAULT_THEME.marker)).toBe(true)
-      expect(context.globalAlpha).toBe(1)
+      // Beads 1..3 down and 1..4 across: a box from (20, 20) that is 80 wide and 60 tall.
+      const strips = named('fillRect')
+      expect(strips.map((call) => call.args)).toEqual([
+        [20, 20, 80, 2],
+        [20, 78, 80, 2],
+        [20, 20, 2, 60],
+        [98, 20, 2, 60],
+      ])
+      expect(strips.every((call) => call.fillStyle === DEFAULT_THEME.marker && call.globalAlpha === 1)).toBe(true)
+      expect(named('drawImage')).toHaveLength(0)
     })
 
-    it('outlines the rectangle: the edge beads carry a 2px strip on the sides that are its edge, and inside beads carry none', () => {
-      const project = projectOf('loom', 6, 5, noProgress)
-      const { context, named } = recordingContext()
-
-      renderOverlay(context, { project, region: whole(project), zoom: 1, selection: selected })
-
-      const strips = named('fillRect').filter((call) => call.globalAlpha === 1).map((call) => call.args as number[])
-      // The top-left bead (row 1, column 1) is at the corner: its top and its left.
-      expect(strips).toContainEqual([21, 21, 18, 2])
-      expect(strips).toContainEqual([21, 21, 2, 18])
-      // A bead in the middle of the rectangle's top edge has only a top strip.
-      expect(strips.filter((rect) => rect[0] === 41 && rect[1] === 21)).toEqual([[41, 21, 18, 2]])
-      // The interior (row 2, columns 2 and 3) has none: nothing is drawn at (41, 41) or (61, 41).
-      expect(strips.some((rect) => rect[0] >= 41 && rect[0] <= 61 && rect[1] >= 41 && rect[1] < 59)).toBe(false)
-      // The far corner (row 3, column 4): a bottom and a right.
-      expect(strips).toContainEqual([81, 77, 18, 2])
-      expect(strips).toContainEqual([97, 61, 2, 18])
-    })
-
-    it('shifts with the Technique\'s rows, so the outline reads as one rectangle on peyote and brick stitch', () => {
+    it('spans the furthest left and right its rows reach on brick stitch, so it reads as one rectangle', () => {
       const brick = projectOf('brick', 6, 5, noProgress)
       const { context, named } = recordingContext()
 
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1, selection: { top: 1, left: 0, rows: 2, columns: 2 } })
 
-      // Row 1 is half a bead across and 21px down: its first bead's wash starts at (11, 22); row 2 is back at the left.
-      const washes = named('fillRect').filter((call) => call.globalAlpha === 0.3).map((call) => call.args)
-      expect(washes[0]).toEqual([11, 22, 18, 18])
-      expect(washes[2]).toEqual([1, 43, 18, 18])
+      // Row 1 is half a bead across, row 2 is back at the left: the box runs from 0 to 10 + 40.
+      const [top] = named('fillRect')
+      expect(top!.args).toEqual([0, 21, 50, 2])
     })
 
-    describe('on peyote', () => {
-      afterEach(() => vi.restoreAllMocks())
-
-      it('blits a rounded wash for each bead, and clips each edge bead\'s outline to its rounded inside', () => {
-        const spriteContext = recordingContext()
-        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(spriteContext.context as unknown as CanvasRenderingContext2D)
-        const project = projectOf('peyote', 6, 5, noProgress)
-        const { context, named } = recordingContext()
-
-        renderOverlay(context, { project, region: whole(project), zoom: 1, selection: selected })
-
-        expect(named('drawImage')).toHaveLength(12)
-        expect(named('drawImage')[0]!.args.slice(1)).toEqual([31, 16, 18, 18])
-        // The wash was made once, faintly, in the marker color.
-        expect(spriteContext.named('roundRect')).toHaveLength(1)
-        expect(spriteContext.named('fill')[0]!.fillStyle).toBe(DEFAULT_THEME.marker)
-        expect(spriteContext.named('fill')[0]!.globalAlpha).toBe(0.3)
-        // Each of the 10 beads on the edge is clipped to its rounded inside (22% of the bead, less the gap) before its strips.
-        expect(named('clip')).toHaveLength(10)
-        expect(named('roundRect')[0]!.args.slice(0, 4)).toEqual([31, 16, 18, 18])
-        expect(named('roundRect')[0]!.args[4]).toBeCloseTo(3.4)
-      })
-    })
-
-    it('draws only the beads on screen, however big the Selection is', () => {
-      const project = projectOf('loom', 250, 250, noProgress)
+    it('is one border on peyote too, with no per-bead work however big the Selection is', () => {
+      const project = projectOf('peyote', 250, 250, noProgress)
       const { context, named } = recordingContext()
 
       renderOverlay(context, {
@@ -319,8 +280,7 @@ describe('renderOverlay', () => {
         selection: { top: 0, left: 0, rows: 250, columns: 250 },
       })
 
-      // 100 × 60 px is 5 × 3 beads (with the one that reaches the edge, 6 × 4).
-      expect(named('fillRect').filter((call) => call.globalAlpha === 0.3).length).toBeLessThan(30)
+      expect(named('fillRect')).toHaveLength(4)
     })
 
     it('clips a Selection that reaches past the Project', () => {
@@ -329,7 +289,9 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, selection: { top: 1, left: 2, rows: 9, columns: 9 } })
 
-      expect(named('fillRect').filter((call) => call.globalAlpha === 0.3)).toHaveLength(4)
+      // Down to the last row (2) and across to the last column (3): a 40 wide, 40 tall box from (40, 20).
+      expect(named('fillRect')[0]!.args).toEqual([40, 20, 40, 2])
+      expect(named('fillRect')[3]!.args).toEqual([78, 20, 2, 40])
     })
 
     it('is drawn under the hover preview and the Row progress marker', () => {
@@ -346,12 +308,23 @@ describe('renderOverlay', () => {
 
       const order = calls
         .filter((call) => call.name === 'fillRect' || call.name === 'stroke')
-        .map((call) => (call.name === 'stroke' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : call.globalAlpha === 0.3 ? 'wash' : 'outline'))
-      // Beads of the row are lifted before all of it (ticket 375), so look from the first wash on.
-      const fromWash = order.slice(order.indexOf('wash'))
-      expect(fromWash.indexOf('wash')).toBeLessThan(fromWash.indexOf('outline'))
-      expect(fromWash.indexOf('outline')).toBeLessThan(fromWash.indexOf('preview'))
-      expect(fromWash.indexOf('preview')).toBeLessThan(fromWash.indexOf('marker'))
+        .map((call) => (call.name === 'stroke' ? 'marker' : call.fillStyle === '#e63746' ? 'preview' : 'border'))
+      // Beads of the row are lifted before all of it (ticket 375), so look from the first border strip on.
+      const fromBorder = order.slice(order.indexOf('border'))
+      expect(fromBorder.indexOf('border')).toBeLessThan(fromBorder.indexOf('preview'))
+      expect(fromBorder.indexOf('preview')).toBeLessThan(fromBorder.indexOf('marker'))
+    })
+
+    it('shows the Frame\'s eight handles round it when the surface is known, and four on touch (ticket 414)', () => {
+      const project = projectOf('loom', 6, 5, noProgress)
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+
+      for (const [touch, count] of [[false, 8], [true, 4]] as const) {
+        const { context, named } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: selected, selectionHandles: { surface, touch } })
+
+        expect(named('roundRect')).toHaveLength(count)
+      }
     })
   })
 
@@ -474,7 +447,7 @@ describe('renderOverlay', () => {
       expect(named('fillRect')).toHaveLength(2)
     })
 
-    it('is drawn under the Selection\'s wash', () => {
+    it('is drawn under the Selection\'s border', () => {
       const project = projectOf('loom', 4, 3, noProgress)
       const { context, named } = recordingContext()
 
@@ -488,7 +461,7 @@ describe('renderOverlay', () => {
 
       const rects = named('fillRect')
       expect(rects[0]!.args).toEqual([1, 1, 18, 18])
-      expect(rects.at(-5)!.globalAlpha).toBe(0.3)
+      expect(rects.at(-4)!.args).toEqual([0, 0, 20, 2])
     })
   })
 })
@@ -658,14 +631,10 @@ describe('on the open canvas (ADR 0026)', () => {
     expect(overlay(project, {}).named('stroke')).toEqual([])
   })
 
-  it('washes a Selection that reaches outside the Frame and into the negative', () => {
+  it('borders a Selection that reaches outside the Frame and into the negative', () => {
     const { named } = overlay(openProject({ enabled: false }), { selection: { top: -1, left: -1, rows: 1, columns: 2 } })
 
-    const washes = named('fillRect').filter((call) => call.globalAlpha === 0.3)
-    expect(washes.map((call) => call.args)).toEqual([
-      [-19, -19, 18, 18],
-      [1, -19, 18, 18],
-    ])
+    expect(named('fillRect')[0]!.args).toEqual([-20, -20, 40, 2])
   })
 
   it('shows the hover preview on any bead, Frame or not', () => {

@@ -16,9 +16,9 @@ describe('AppDock', () => {
     expect(button.attributes('aria-keyshortcuts')).toBe('2')
   })
 
-  it('shows the Frame button\'s F key, and no key on the group buttons', () => {
+  it('shows no key on the Frame button (6 is the Piece tool\'s since ticket 414) nor on the group buttons', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.get('[data-testid="dock-frame"]').get('.icon-btn__key').text()).toBe('6')
+    expect(wrapper.find('[data-testid="dock-frame"] .icon-btn__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-color"] .icon-btn__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-menu"] .icon-btn__key').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-project"] .icon-btn__key').exists()).toBe(false)

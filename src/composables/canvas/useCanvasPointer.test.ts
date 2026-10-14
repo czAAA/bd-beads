@@ -26,6 +26,7 @@ function setup(options: Options = {}) {
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),
     backOutOfSelect: vi.fn(),
+    tapPiece: vi.fn(),
     beginOrCommitPress: vi.fn(),
     paintStrokeCell: vi.fn(),
     pasteAt: vi.fn(() => true),
@@ -86,6 +87,16 @@ describe('useCanvasPointer', () => {
       expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
     })
 
+    it('taps a Piece under Piece, with no preview and no stroke (ticket 414)', () => {
+      const { deps, onCellPrimaryDown, onCellHover, previewCells } = setup({ tool: 'piece' })
+      onCellHover(1, 1)
+      onCellPrimaryDown(1, 1)
+      expect(deps.tapPiece).toHaveBeenCalledWith(1, 1)
+      expect(deps.beginSelectPress).not.toHaveBeenCalled()
+      expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
+      expect(previewCells.value).toEqual([])
+    })
+
     it('does nothing with no color chosen, no Project open, or Space held', () => {
       for (const options of [{ color: null }, { project: null }, { spaceHeld: true }, { tool: 'select' as const, spaceHeld: true }]) {
         const { deps, onCellPrimaryDown } = setup(options)
@@ -134,7 +145,7 @@ describe('useCanvasPointer', () => {
     })
 
     it('backs out of Select rather than erasing under it', () => {
-      const { deps, onCellSecondaryDown } = setup({ tool: 'select' })
+      const { deps, onCellSecondaryDown } = setup({ tool: 'piece' })
       onCellSecondaryDown(2, 2)
       expect(deps.backOutOfSelect).toHaveBeenCalled()
       expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
