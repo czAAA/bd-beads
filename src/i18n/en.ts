@@ -2,7 +2,7 @@ import type { Translations } from './translations'
 
 export const en: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Name',
@@ -148,7 +148,7 @@ export const en: Translations = {
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
     notes: { you: 'you', onUs: 'on us', elevenSteps: 'eleven small steps', youllMakeThis: "you'll make this" },
-    coffee: { title: 'Made by one person', text: "bd-beads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
+    coffee: { title: 'Made by one person', text: "openbeads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
       label: 'plans',
       heading: 'Three ways to use it',

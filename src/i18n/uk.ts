@@ -4,7 +4,7 @@ import type { Translations } from './translations'
 // палітра (Palette), техніка плетіння (Technique), рамка (Frame), шматочок (Piece), прогрес за рядами (Row progress).
 export const uk: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Назва',
@@ -150,7 +150,7 @@ export const uk: Translations = {
     previousFeature: 'Попередня можливість',
     nextFeature: 'Наступна можливість',
     notes: { you: 'ви', onUs: 'це ми', elevenSteps: 'одинадцять коротких кроків', youllMakeThis: 'її ви й створите' },
-    coffee: { title: 'Одна людина', text: 'bd-beads робить одна людина, бісеринка за бісеринкою, і він безкоштовний. Якщо він заощадив вам вечір підрахунків, кава буде найкращою подякою.', button: 'Пригостити кавою' },
+    coffee: { title: 'Одна людина', text: 'openbeads робить одна людина, бісеринка за бісеринкою, і він безкоштовний. Якщо він заощадив вам вечір підрахунків, кава буде найкращою подякою.', button: 'Пригостити кавою' },
     plans: {
       label: 'тарифи',
       heading: 'Три варіанти',

@@ -60,7 +60,7 @@ describe('ProjectImport import', () => {
     expect(frameGrid(added[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('says so and imports nothing when the file is not a bd-beads file', async () => {
+  it('says so and imports nothing when the file is not an openbeads file', async () => {
     const wrapper = mount(ProjectImport, { props: { projects: [] } })
 
     await pickFile(wrapper, 'this is not a project')

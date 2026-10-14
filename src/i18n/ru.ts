@@ -4,7 +4,7 @@ import type { Translations } from './translations'
 // reuse that exact wording rather than retranslating.
 export const ru: Translations = {
   app: {
-    title: 'bd-beads',
+    title: 'openbeads',
   },
   form: {
     nameLabel: 'Название',
@@ -150,7 +150,7 @@ export const ru: Translations = {
     previousFeature: 'Предыдущая возможность',
     nextFeature: 'Следующая возможность',
     notes: { you: 'вы', onUs: 'это мы', elevenSteps: 'одиннадцать коротких шагов', youllMakeThis: 'её вы и сделаете' },
-    coffee: { title: 'Один человек', text: 'bd-beads делает один человек, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
+    coffee: { title: 'Один человек', text: 'openbeads делает один человек, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо.', button: 'Угостить кофе' },
     plans: {
       label: 'тарифы',
       heading: 'Три способа работать',
