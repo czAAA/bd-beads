@@ -35,9 +35,6 @@ const ALL_PENDING: PendingEntry[] = [
   // Saved Projects is reachable at every width only from ticket 385 on (the Dock's own nested sheet, not the Toolbox's
   // always-wide column); its "Export all" button is narrower there in some languages than the Toolbox ever gave it.
   { screen: 'Saved Projects expanded', texts: 'any', at: { ru: [390, 360, 320], uk: [320], be: [320], pl: [320] }, fixedBy: 'unassigned' },
-  // The ContextBar is reachable only from ticket 385 on (its own screen used a Toolbox-only testid before, so a
-  // Selection was never actually made); its "Remove selected row/column" label doesn't fit a phone-width bar.
-  { screen: 'selection', texts: 'any', at: { en: [390, 360, 320], ru: [390, 360, 320], uk: [390, 360, 320], be: [390, 360, 320], zh: [320], es: [390, 360, 320], pl: [390, 360, 320] }, fixedBy: 'unassigned' },
 ]
 
 /** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as stale. */

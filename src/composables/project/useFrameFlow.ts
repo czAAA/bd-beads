@@ -195,6 +195,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     pending.value = sameFrame(next, project.frame) ? undefined : { projectId: project.id, frame: next }
   }
 
+  /** Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step. Edit Frame (ticket 417) will follow it. */
+  function setTo(frame: Frame): void {
+    commitPending()
+    commit(frame)
+  }
+
   function fit(): void {
     commitPending()
     const project = deps.currentProject()
@@ -259,6 +265,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setSize,
     setTechnique,
     fit,
+    setTo,
     remove,
     onKey,
     bringIntoView,

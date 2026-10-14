@@ -104,6 +104,10 @@ const emit = defineEmits<{
   'selection-release': []
   /** Set Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
+  /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
+  'selection-anchor': [anchor: { box: { left: number; top: number; width: number; height: number }; viewport: { width: number; height: number } } | undefined]
+  /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
+  pressing: [pressing: boolean]
 }>()
 
 /** Whether the chosen Tool moves the canvas right now: the Hand tool, but not while the Frame is being set, which takes every drag so the Frame can be edited whichever Tool was chosen. */
@@ -117,8 +121,21 @@ const eyedropperShown = computed(() => props.picking === true && !props.markerHi
  */
 let pressed = false
 
-function onPress() {
+function onPress(event: PointerEvent) {
   pressed = true
+  const was = activePointers.size > 0
+  activePointers.add(event.pointerId)
+  if (!was) emit('pressing', true)
+}
+
+/** The pointers down on the surface now: the Selection bar returns when the last one lifts (ticket 415). */
+const activePointers = new Set<number>()
+
+function releasePointer(event?: PointerEvent) {
+  if (activePointers.size === 0) return
+  if (event) activePointers.delete(event.pointerId)
+  else activePointers.clear()
+  if (activePointers.size === 0) emit('pressing', false)
 }
 
 function onFocus() {
@@ -232,6 +249,21 @@ function rulerFontPx(): number {
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two cannot disagree. */
 const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
+
+/** Where the Selection is on screen, told to the Selection bar (ticket 415). */
+watch(
+  [surface, () => props.selection, size],
+  () => {
+    const selected = props.selection
+    if (!selected || size.value.width === 0) {
+      emit('selection-anchor', undefined)
+      return
+    }
+    const box = surface.value.beadBox(selectionFrame(selected))
+    emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
+  },
+  { immediate: true, flush: 'post' },
+)
 
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers })
@@ -774,7 +806,8 @@ function onPointerMove(event: PointerEvent): void {
   }
 }
 
-function onPointerEnd(): void {
+function onPointerEnd(event?: PointerEvent): void {
+  releasePointer(event)
   dragging.value = false
   if (adjusting.value) {
     adjusting.value = false

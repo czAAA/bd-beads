@@ -262,6 +262,7 @@ export const uk: Translations = {
   contextBar: {
     label: 'Дії з виділенням',
     clearButton: 'Зняти виділення',
+    moreLabel: 'Ще',
     pasteHint: 'Натисніть, куди вставити',
     cancelButton: 'Скасувати',
   },
@@ -294,6 +295,7 @@ export const uk: Translations = {
     selectHint: 'Обведіть область, потім скопіюйте й вставте її.',
     handHint: 'Перетягуйте, щоб рухатися полотном.',
     copyButton: 'Копіювати',
+    cutButton: 'Вирізати',
     saveButton: 'Зберегти',
     savedConfirmation: 'Збережено',
     pasteLabel: 'Вставити',
@@ -541,7 +543,6 @@ export const uk: Translations = {
   },
   shortcutsHelp: {
     title: 'Гарячі клавіші',
-    emptySelection: 'Очистити виділення',
     backOut: 'Вийти з режиму',
     panCanvas: 'Рухати полотно',
     canvasGroup: 'Полотно',
@@ -578,6 +579,8 @@ export const uk: Translations = {
     zoomInLimit: 'Далі збільшувати нікуди.',
     nothingToRedo: 'Нічого повторювати.',
     copyDisabled: 'Спершу виділіть область.',
+    fillSelection: 'Заливає виділення поточним кольором.',
+    frameFromSelection: 'Робить виділення рамкою.',
     pasteDisabled: 'Спершу скопіюйте область.',
     rotate: 'Повернути рамку на чверть обертання.',
     setFrameFirst: 'Спершу задайте рамку.',

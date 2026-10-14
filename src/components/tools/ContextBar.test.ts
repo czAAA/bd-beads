@@ -18,41 +18,72 @@ describe('ContextBar', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('shows the Selection\'s size, Copy, Rotate, Remove line and a clear x while it exists', async () => {
+  it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
-      props: { project, selectionSize: { columns: 3, rows: 5 }, pasteArmed: false, canRemoveLine: true },
+      props: { project: noFrame, selectionSummary: '3×5 · 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
     })
 
-    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5')
-    expect(wrapper.get('[data-testid="context-bar-copy"]').text()).toContain('Copy')
-    expect(wrapper.get('[data-testid="context-bar-rotate"]').text()).toContain('Rotate')
-    expect(wrapper.get('[data-testid="context-bar-remove-line"]').text()).toContain('Remove selected row/column')
+    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 · 0.5 × 0.8 cm')
+    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
+    expect(ids).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-clear'])
+    for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
+    expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-label')).toBe('Copy')
+    expect(wrapper.get('[data-testid="context-bar-clear"]').attributes('aria-label')).toBe('Clear selection')
+    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="context-bar-remove-line"]').exists()).toBe(false)
+
+    for (const [id, event] of [['copy', 'copy'], ['cut', 'cut'], ['fill', 'fill'], ['frame', 'frame'], ['clear', 'clear-selection']]) {
+      await wrapper.get(`[data-testid="context-bar-${id}"]`).trigger('click')
+      expect(wrapper.emitted(event), id).toHaveLength(1)
+    }
+  })
+
+  it('has no Add or Subtract toggle', () => {
+    const wrapper = mount(ContextBar, { props: { project, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false } })
+    expect(wrapper.text()).not.toMatch(/add|subtract/i)
+  })
+
+  it('renders only what applies: Paste with a clipboard, Frame without a Frame, Remove line with a line selected', async () => {
+    const wrapper = mount(ContextBar, {
+      props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true, hasClipboard: true },
+    })
+
+    expect(wrapper.find('[data-testid="context-bar-frame"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="context-bar-paste"]').attributes('aria-label')).toBe('Paste')
     expect(wrapper.get('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
 
-    await wrapper.get('[data-testid="context-bar-copy"]').trigger('click')
-    expect(wrapper.emitted('copy')).toHaveLength(1)
-    await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
-    expect(wrapper.emitted('rotate')).toHaveLength(1)
+    await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
     await wrapper.get('[data-testid="context-bar-remove-line"]').trigger('click')
+    expect(wrapper.emitted('paste')).toHaveLength(1)
     expect(wrapper.emitted('remove-line')).toHaveLength(1)
-    await wrapper.get('[data-testid="context-bar-clear"]').trigger('click')
-    expect(wrapper.emitted('dismiss')).toHaveLength(1)
   })
 
-  it('disables Remove line when the Selection is not a whole row or column', () => {
+  it('is placed against the Selection when anchored', () => {
     const wrapper = mount(ContextBar, {
-      props: { project, selectionSize: { columns: 3, rows: 5 }, pasteArmed: false, canRemoveLine: false },
+      props: {
+        project,
+        selectionSummary: '3×5',
+        pasteArmed: false,
+        canRemoveLine: false,
+        anchor: { box: { left: 100, top: 200, width: 80, height: 60 }, viewport: { width: 600, height: 400 } },
+      },
     })
-    expect(wrapper.get('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBe('true')
+    const root = wrapper.get('[data-testid="context-bar"]')
+    expect(root.classes()).toContain('context-bar--placed')
+    expect(root.attributes('style')).toMatch(/top:/)
   })
 
-  it('turns into "Tap where to paste", Rotate and Cancel once armed', async () => {
+  it('steps aside while a gesture runs', () => {
+    const wrapper = mount(ContextBar, { props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, gesturing: true } })
+    expect(wrapper.get('[data-testid="context-bar"]').attributes('style')).toContain('display: none')
+  })
+
+  it('turns into "Tap to paste" and Cancel once armed', async () => {
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: true, canRemoveLine: false } })
 
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="context-bar-hint"]').text()).toBe('Tap where to paste')
-    expect(wrapper.get('[data-testid="context-bar-rotate"]').text()).toContain('Rotate')
-    expect(wrapper.get('[data-testid="context-bar-cancel"]').text()).toBe('Cancel')
+    expect(wrapper.get('[data-testid="context-bar-cancel"]').attributes('aria-label')).toBe('Cancel')
 
     await wrapper.get('[data-testid="context-bar-cancel"]').trigger('click')
     expect(wrapper.emitted('dismiss')).toHaveLength(1)
@@ -87,7 +118,7 @@ describe('ContextBar', () => {
 
     it('takes the bar over from a Selection', () => {
       const wrapper = mount(ContextBar, {
-        props: { project, settingFrame: true, selectionSize: { columns: 2, rows: 2 }, pasteArmed: false, canRemoveLine: true },
+        props: { project, settingFrame: true, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: true },
       })
       expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="context-bar-done-frame"]').exists()).toBe(true)
@@ -96,7 +127,7 @@ describe('ContextBar', () => {
 
   it('disables Rotate, and does nothing on a click, when the Frame cannot be turned', async () => {
     const wrapper = mount(ContextBar, {
-      props: { project: noFrame, selectionSize: { columns: 3, rows: 5 }, pasteArmed: false, canRemoveLine: true },
+      props: { project: noFrame, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true },
     })
     const rotate = wrapper.get('[data-testid="context-bar-rotate"]')
     expect(rotate.attributes('aria-disabled')).toBe('true')
@@ -106,7 +137,7 @@ describe('ContextBar', () => {
 
   it('carries no native title: the Tooltip names a control whose label has hidden', () => {
     const wrapper = mount(ContextBar, {
-      props: { project, selectionSize: { columns: 3, rows: 5 }, pasteArmed: false, canRemoveLine: true },
+      props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true },
     })
     expect(wrapper.find('[title]').exists()).toBe(false)
   })

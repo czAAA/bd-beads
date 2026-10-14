@@ -85,10 +85,11 @@ export const SCENARIOS: Scenario[] = [
     name: `${technique}-selection`,
     prepare: (page, context) => dragSelection(page, context, [2, 3], [6, 9]),
     place: pointerAway,
-    overlaid: beadsIn(1, 2, 7, 9),
+    // The Selection bar floats over the Canvas above the Selection's top edge (ticket 415), wherever the zoom and the turn put that.
+    overlaid: 'all',
   })),
 
-  // A paste preview: the copied block in its own colors under the pointer, with the Selection still marked.
+  // A paste preview: the copied block in its own colors under the pointer; arming Paste discards the Selection (ticket 415).
   ...perTechnique((technique) => ({
     name: `${technique}-paste-preview`,
     prepare: async (page, context) => {
@@ -96,7 +97,7 @@ export const SCENARIOS: Scenario[] = [
       await copySelection(page)
     },
     place: (page, context) => pointerOnBead(page, context, 5, 8),
-    // The Selection's beads, and the block of 3 × 4 stamped with its corner at (5, 8).
+    // The block of 3 × 4 stamped with its corner at (5, 8), and the beads it was copied from.
     overlaid: [...beadsIn(1, 1, 3, 4), ...beadsIn(5, 8, 3, 4)],
   })),
 

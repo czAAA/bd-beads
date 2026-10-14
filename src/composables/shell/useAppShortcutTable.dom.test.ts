@@ -28,6 +28,9 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     settingFrame: () => false,
     finishFrame: vi.fn(),
     onCopy: vi.fn(),
+    onCut: vi.fn(),
+    onFillSelection: vi.fn(),
+    onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),
     onSave: vi.fn(),
     onRotate: vi.fn(),
@@ -291,6 +294,14 @@ describe('useAppShortcutTable', () => {
       holder.remove()
     }
     expect(deps.onMoveRow).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('Ctrl/Cmd+X cuts the Selection (ticket 415)', () => {
+    const { deps, wrapper } = mountTable()
+    press({ key: 'x', ctrlKey: true })
+    press({ key: 'x', metaKey: true })
+    expect(deps.onCut).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

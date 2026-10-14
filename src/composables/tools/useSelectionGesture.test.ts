@@ -32,12 +32,13 @@ function setup(
   return { gesture, commitGridChange: harness.replaceProject, harness }
 }
 
-/** Drags a Selection over the top-left cell and copies it, leaving a paste projection armed. */
+/** Drags a Selection over the top-left cell, copies it and arms Paste, leaving a paste projection armed. */
 function copyTopLeft(gesture: ReturnType<typeof setup>['gesture']) {
   gesture.beginPress(0, 0)
   gesture.extendPress(0, 0)
   gesture.endPress()
   gesture.copy()
+  gesture.armPaste()
 }
 
 describe('useSelectionGesture', () => {
@@ -94,7 +95,7 @@ describe('useSelectionGesture', () => {
   })
 
   describe('Copy and Paste by click', () => {
-    it('Copy clears the Selection marquee straight away and arms a paste preview', () => {
+    it('Copy keeps the Selection and does not arm Paste (ticket 415)', () => {
       const project = paintedProject()
       const { gesture } = setup(project)
       gesture.beginPress(0, 0)
@@ -103,10 +104,36 @@ describe('useSelectionGesture', () => {
 
       gesture.copy()
 
+      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 1, columns: 1 })
+      expect(gesture.hasClipboard()).toBe(true)
+      expect(gesture.pasteProjectionActive.value).toBe(false)
+    })
+
+    it('arming Paste discards the Selection and arms a paste preview (ticket 415)', () => {
+      const project = paintedProject()
+      const { gesture } = setup(project)
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 0)
+      gesture.endPress()
+      gesture.copy()
+
+      gesture.armPaste()
+
       expect(gesture.selection.value).toBeUndefined()
       expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([
         { row: 2, column: 2, color: RED },
       ])
+    })
+
+    it('arming Paste with nothing copied does nothing', () => {
+      const { gesture } = setup(paintedProject())
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 0)
+      gesture.endPress()
+
+      gesture.armPaste()
+
+      expect(gesture.selection.value).toBeDefined()
     })
 
     it('Copy with no Selection does nothing', () => {
@@ -177,6 +204,46 @@ describe('useSelectionGesture', () => {
 
       expect(commitGridChange).toHaveBeenCalledTimes(1)
       expect(frameGrid(harness.project)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
+    })
+  })
+
+  describe('Cut and Fill (ticket 415)', () => {
+    it('Cut copies the Selection and empties it as one Undo step, keeping the Selection', () => {
+      const { gesture, harness } = setup(paintedProject())
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 0)
+      gesture.endPress()
+
+      gesture.cut()
+
+      expect(gesture.hasClipboard()).toBe(true)
+      expect(gesture.selection.value).toBeDefined()
+      expect(frameGrid(harness.project)[0]![0]!.color).toBeNull()
+
+      harness.history.onUndo()
+      expect(frameGrid(harness.project)[0]![0]!.color).toBe(RED)
+    })
+
+    it('Fill gives every position in the Selection the colour, empty ones too, as one Undo step', () => {
+      const { gesture, harness } = setup(paintedProject())
+      gesture.beginPress(0, 0)
+      gesture.extendPress(1, 1)
+      gesture.endPress()
+
+      gesture.fill('#00ff00')
+
+      for (const [row, column] of [[0, 0], [0, 1], [1, 0], [1, 1]]) {
+        expect(frameGrid(harness.project)[row!]![column!]!.color).toBe('#00ff00')
+      }
+      harness.history.onUndo()
+      expect(frameGrid(harness.project)[0]![0]!.color).toBe(RED)
+      expect(frameGrid(harness.project)[1]![1]!.color).toBeNull()
+    })
+
+    it('Fill with no Selection does nothing', () => {
+      const { gesture, commitGridChange } = setup(paintedProject())
+      gesture.fill('#00ff00')
+      expect(commitGridChange).not.toHaveBeenCalled()
     })
   })
 

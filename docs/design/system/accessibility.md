@@ -58,7 +58,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 | --- | --- | --- |
 | `z-canvas-overlay` | 10 | Rulers, current-row marker, Selection, paste preview, ZoomPill: inside the canvas box. |
 | `z-chrome` | 20 | Header, Dock, Progress bar when they overlap scrolling content. |
-| `z-context-bar` | 30 | The Selection ContextBar (above the Progress bar today; anchored to the Selection from ticket 415). |
+| `z-context-bar` | 30 | The Selection ContextBar (anchored to the Selection since ticket 415). |
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
 | `z-popover` | 60 | Menus, the Image colors popover, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |

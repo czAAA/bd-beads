@@ -263,6 +263,7 @@ export const be: Translations = {
   contextBar: {
     label: 'Дзеянні з вылучэннем',
     clearButton: 'Зняць вылучэнне',
+    moreLabel: 'Яшчэ',
     pasteHint: 'Націсніце, куды ўставіць',
     cancelButton: 'Скасаваць',
   },
@@ -295,6 +296,7 @@ export const be: Translations = {
     selectHint: 'Абвядзіце вобласць, потым скапіруйце і ўставьце яе.',
     handHint: 'Перацягвайце, каб рухацца па палатне.',
     copyButton: 'Капіраваць',
+    cutButton: 'Выразаць',
     saveButton: 'Захаваць',
     savedConfirmation: 'Захавана',
     pasteLabel: 'Уставіць',
@@ -542,7 +544,6 @@ export const be: Translations = {
   },
   shortcutsHelp: {
     title: 'Гарачыя клавішы',
-    emptySelection: 'Ачысціць вылучэнне',
     backOut: 'Выйсці з рэжыму',
     panCanvas: 'Рухаць палатно',
     canvasGroup: 'Палатно',
@@ -579,6 +580,8 @@ export const be: Translations = {
     zoomInLimit: 'Далей павялічваць няма куды.',
     nothingToRedo: 'Няма чаго паўтараць.',
     copyDisabled: 'Спачатку вылучыце вобласць.',
+    fillSelection: 'Залівае вылучэнне бягучым колерам.',
+    frameFromSelection: 'Робіць вылучэнне рамкай.',
     pasteDisabled: 'Спачатку скапіруйце вобласць.',
     rotate: 'Павярнуць рамку на чвэрць абароту.',
     setFrameFirst: 'Спачатку задайце рамку.',

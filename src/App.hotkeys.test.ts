@@ -128,7 +128,21 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'c', ctrlKey: true })
 
-    expect(selectedBeadCount(wrapper)).toBe(0) // the marquee hides, same as a click on Copy
+    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0) // Copy keeps the Selection (ticket 415)
+    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(true)
+  })
+
+  it('Ctrl+X cuts the Selection: copies it, empties it and keeps it (ticket 415)', async () => {
+    const wrapper = await mountApp(6, 6)
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    await wrapper.trigger('mouseup')
+
+    await pressKey({ key: 'x', ctrlKey: true })
+
+    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
+    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(true)
   })
 
   it('R shows and hides the rulers, and the choice is kept on the device', async () => {
