@@ -36,30 +36,32 @@ const colorHex = computed(() => (props.selectedColorId ? palette.value.find((col
 const inputModeAction = computed(() => (props.inputMode ? controlAction(props.inputMode === 'pen' ? 'pen-mode' : 'mouse-mode') : undefined))
 
 /** The tool tiles, in the Dock's fixed order. */
-const tools = DOCK_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
+const tiles = DOCK_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
+const colorAction = controlAction('dock-colors')
+const mirrorAction = MIRROR_ENABLED ? controlAction('dock-mirror') : undefined
 </script>
 
 <template>
   <nav class="dock" :aria-label="t.a11y.toolsLandmark" data-testid="dock">
     <IconButton
-      v-for="slot in tools"
-      :key="slot.tool"
+      v-for="tile in tiles"
+      :key="tile.tool"
       variant="dock"
-      :action="slot.action"
+      :action="tile.action"
       :tooltip="{ placement: 'top' }"
-      :hotkey="slot.key"
+      :hotkey="tile.key"
       show-hotkey
-      :selected="activeTool === slot.tool"
+      :selected="activeTool === tile.tool"
       accent
-      :marked="activeTool === slot.tool"
-      :data-testid="`dock-tool-${slot.tool}`"
-      :data-tour="`tool-${slot.tool}`"
-      @click="emit('select-tool', slot.tool)"
+      :marked="activeTool === tile.tool"
+      :data-testid="`dock-tool-${tile.tool}`"
+      :data-tour="`tool-${tile.tool}`"
+      @click="emit('select-tool', tile.tool)"
     />
     <span class="dock__divider" role="presentation" />
     <IconButton
       variant="dock"
-      :action="controlAction('dock-colors')"
+      :action="colorAction"
       icon="palette"
       :tooltip="{ placement: 'top' }"
       :selected="openSheet === 'color'"
@@ -70,9 +72,9 @@ const tools = DOCK_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${to
       <span class="dock__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
     </IconButton>
     <IconButton
-      v-if="MIRROR_ENABLED"
+      v-if="mirrorAction"
       variant="dock"
-      :action="controlAction('dock-mirror')"
+      :action="mirrorAction"
       icon="mirror-horizontal"
       :tooltip="{ placement: 'top' }"
       :selected="openSheet === 'mirror'"
@@ -108,10 +110,14 @@ const tools = DOCK_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${to
   border-top: 1px solid var(--line-soft);
 }
 
-/* A phone under 400px: 44px tiles with no digit badges, so six tools, the colour button, Pen/Mouse and both dividers fit 360px. */
+/* A phone under 400px: tiles of at most the touch target (44px) that may shrink a little, with no digit badges, so six tools, the colour button, Pen/Mouse and both dividers fit 360px. */
 @media (max-width: 399px) {
+  .dock {
+    justify-content: center;
+  }
+
   .dock :deep(.icon-btn-wrap--dock) {
-    flex: 0 0 44px;
+    flex: 0 1 var(--touch-target);
   }
 
   .dock :deep(.icon-btn__key) {
