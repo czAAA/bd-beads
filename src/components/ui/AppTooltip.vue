@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId } from 'vue'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
+import KeyChip from './KeyChip.vue'
 import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
