@@ -420,7 +420,6 @@ export const be: Translations = {
     removeConfirmMessage: 'Разам з ёй сотруцца рады, пазначаныя гатовымі. Гэта дзеянне можна адмяніць.',
     removeConfirmButton: 'Прыбраць рамку',
     removeConfirmCancel: 'Скасаваць',
-    done: 'Гатова',
     explainer: 'Рамка пазначае, якія бісерыны ўвойдуць у схему. Бісерыны за рамкай застаюцца на палатне.',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: 'Рамка зададзена: шырыня {width}, вышыня {height}',

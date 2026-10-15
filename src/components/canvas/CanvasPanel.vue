@@ -12,8 +12,7 @@ import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
-import { frameBarAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { resolveProjectBead } from '../../domain/project'
@@ -97,7 +96,6 @@ const {
   locale,
   settingFrame,
   surfaceInputMode,
-  onDoneSetFrame,
   onFitFrame,
   onStepFrameEdge,
   onRemoveFrame,
@@ -139,10 +137,8 @@ const selectionSummary = computed(() => {
 
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
-/** Where the Frame is while it is edited: Edit Frame's margin steppers sit round it, and its bar above them (ticket 417). */
-const frameAnchor = ref<SelectionAnchor>()
-const touchPointer = useMediaQuery('(pointer: coarse)')
-const barAnchor = computed(() => (settingFrame.value && frameAnchor.value ? frameBarAnchor(frameAnchor.value, touchPointer.value) : selectionAnchor.value))
+/** Where the Frame and its margin are while it is edited: Edit Frame's margin steppers sit in the margin (tickets 417, 427). */
+const frameAnchor = ref<FrameAnchor>()
 const surfacePressing = ref(false)
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
@@ -208,13 +204,13 @@ function techniqueWord(technique: Technique): string {
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box; "Tap to paste" sits at its top-centre, and Edit Frame's bar is anchored above the Frame (ticket 417).
+          inside the canvas box; "Tap to paste" sits at its top-centre.
         -->
         <ContextBar
-          v-if="activeProject && !framing"
+          v-if="activeProject && !framing && !settingFrame"
           :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
-          :anchor="barAnchor"
+          :anchor="selectionAnchor"
           :gesturing="surfacePressing"
           :paste-armed="pasteProjectionActive"
           :has-clipboard="hasClipboard()"
@@ -222,12 +218,7 @@ function techniqueWord(technique: Technique): string {
           :can-remove-line="canRemoveSelectedLine"
           :can-name-piece="canNamePiece"
           :has-paint-color="hasPaintColor()"
-          :setting-frame="settingFrame"
           :select-active="activeTool === 'select'"
-          :frame-summary="frameTooltip"
-          @fit-frame="onFitFrame"
-          @remove-frame="onRemoveFrame"
-          @done-frame="onDoneSetFrame"
           @copy="onCopy"
           @cut="onCut"
           @paste="onPasteSelection"

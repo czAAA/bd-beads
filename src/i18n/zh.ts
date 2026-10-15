@@ -417,7 +417,6 @@ export const zh: Translations = {
     removeConfirmMessage: '已标记完成的行会一并清除。此操作可以撤销。',
     removeConfirmButton: '移除边框',
     removeConfirmCancel: '取消',
-    done: '完成',
     explainer: '边框标出哪些珠子成为图样。边框之外的珠子仍留在画布上。',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: '边框已设置，宽 {width}，高 {height}',

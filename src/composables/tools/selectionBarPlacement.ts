@@ -37,18 +37,43 @@ export function selectionBarPlacement(selection: BarBox, bar: { width: number; h
   return { left, top, below }
 }
 
-/** The gap between the Frame's line and Edit Frame's margin steppers, in px (EditFrameSteppers reads it from here); a stepper is `--selbar-height` square, 28px or 36px on touch. */
-export const STEPPER_GAP_PX = 16
-export const TOUCH_STEPPER_GAP_PX = 24
-const STEPPER_REACH_PX = STEPPER_GAP_PX + 28
-const TOUCH_STEPPER_REACH_PX = TOUCH_STEPPER_GAP_PX + 36
+/** Where the Frame is while it is edited (ticket 427): its line's box, the margin's outer edge and how far the ruler numbers reach past the line. */
+export interface FrameAnchor extends SelectionAnchor {
+  /** The margin's outer edge, in the canvas box's pixels. */
+  outer: BarBox
+  /** How far the ruler numbers reach past the Frame's line: their width on the left and right, their height above and below. */
+  numbers: { across: number; down: number }
+}
+
+/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` apart. */
+const STEPPER_PX = 28
+const TOUCH_STEPPER_PX = 36
+const STEPPER_PAIR_GAP_PX = 8
+
+/** The centre of each edge's stepper pair, in the canvas box's pixels. */
+export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
 
 /**
- * What Edit Frame's bar anchors to (ticket 417): the Frame grown by the margin steppers' reach above and below, so the bar
- * sits just above the top stepper, and when it flips below the Frame, under the bottom one.
+ * Where Edit Frame's margin steppers go (ticket 427, ADR 0055): each pair centred on its edge, in the margin between the
+ * ruler numbers and the margin's outer edge, then clamped so the whole pair stays inside the canvas box.
  */
-export function frameBarAnchor(frame: SelectionAnchor, touch: boolean): SelectionAnchor {
-  const reach = touch ? TOUCH_STEPPER_REACH_PX : STEPPER_REACH_PX
-  const { left, top, width, height } = frame.box
-  return { box: { left, top: top - reach, width, height: height + 2 * reach }, viewport: frame.viewport }
+export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameStepperCentres {
+  const { box, outer, numbers, viewport } = anchor
+  const size = touch ? TOUCH_STEPPER_PX : STEPPER_PX
+  const pair = 2 * size + STEPPER_PAIR_GAP_PX
+  const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
+  const midX = box.left + box.width / 2
+  const midY = box.top + box.height / 2
+  const topY = (box.top - numbers.down + outer.top) / 2
+  const bottomY = (box.top + box.height + numbers.down + outer.top + outer.height) / 2
+  const leftX = (box.left - numbers.across + outer.left) / 2
+  const rightX = (box.left + box.width + numbers.across + outer.left + outer.width) / 2
+  const across = (x: number) => clamp(x, size, viewport.width)
+  const down = (y: number) => clamp(y, size, viewport.height)
+  return {
+    top: { x: clamp(midX, pair, viewport.width), y: down(topY) },
+    bottom: { x: clamp(midX, pair, viewport.width), y: down(bottomY) },
+    left: { x: across(leftX), y: clamp(midY, pair, viewport.height) },
+    right: { x: across(rightX), y: clamp(midY, pair, viewport.height) },
+  }
 }

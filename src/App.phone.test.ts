@@ -72,11 +72,10 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="frame-edit"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="context-bar-frame-size"]').text()).toMatch(/^10×20/)
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
 
-    await wrapper.find('[data-testid="context-bar-done-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar-frame-size"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="project-surface"]').trigger('keydown', { key: 'Escape' })
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
   })
 

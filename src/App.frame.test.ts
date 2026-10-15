@@ -65,8 +65,8 @@ async function drag(wrapper: Awaited<ReturnType<typeof mountOpen>>, from: { row:
 }
 
 const framedProject = (): Project => ({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
-/** Whether Edit Frame is on: its bar, with the Frame's size, is up. */
-const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="context-bar-frame-size"]').exists()
+/** Whether Edit Frame is on: its margin steppers are up (it has no bar, ticket 427). */
+const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="edit-frame-steppers"]').exists()
 
 describe('Edit Frame', () => {
   it('is entered from the Project sheet and only with a Frame', async () => {
@@ -110,7 +110,8 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
 
     await startEditFrame(wrapper)
-    await wrapper.get('[data-testid="context-bar-done-frame"]').trigger('click')
+    await surface(wrapper).trigger('keydown', { key: 'Escape' })
+    await flushPromises()
     expect(editing(wrapper)).toBe(false)
 
     await startEditFrame(wrapper)
@@ -157,7 +158,7 @@ describe('Edit Frame', () => {
   it('is left when Remove Frame takes the Frame away, and does not return for the Undo', async () => {
     const wrapper = await mountOpen(framedProject())
     await startEditFrame(wrapper)
-    await wrapper.get('[data-testid="context-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
     expect(editing(wrapper)).toBe(false)

@@ -1,6 +1,6 @@
 # ContextBar
 
-The thin bar anchored to a Selection that offers what it can do, and, while the Frame is being set, the Frame bar. The Selection bar below is the design for tickets 414 and 415, and the app draws it since ticket 415.
+The thin bar anchored to a Selection that offers what it can do. It has no Frame mode: Edit Frame has no bar (ticket 427, ADR 0055). The Selection bar below is the design for tickets 414 and 415, and the app draws it since ticket 415.
 
 ## Selection bar (tickets 414, 415)
 
@@ -22,14 +22,13 @@ A Selection is always **one rectangle** (ticket 414). It is made three ways: the
 
 Design reference: the "Selection bar on the canvas" board of the design canvas (rectangle, a piece, select all, touch).
 
-## Frame bar
+## Frame bar (retired)
 
-**While the Frame is being set (v16), the Frame bar (ticket 295):** the Frame's size ("17×17 · 2.7 × 2.7 cm", `meta`), Fit to drawing (icon only), Remove Frame (✕, only when a Frame is set) and Done (check icon and label), on `ink`. It floats at the **top-centre of the canvas box** over the beads, 10px from its top, instead of taking a row above the Progress bar, and never covers the Dock. Done sets the Frame. From ticket 417 it is the same bar as above, anchored just above the Frame's top edge. Not drawn in the preview yet.
+The Frame bar of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0055). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
 
 ## What the app does differently
 
 - **Rotate** (Shift+R) turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection, the Frame is untouched, and beads under the new footprint are replaced (ticket 416, ADR 0052). It is not rendered once a Row progress pass is done (the Frame lock of ticket 411). Until ticket 417 moves them, **Remove line** and **Name Piece** stay on the bar, after Fill, Frame and Rotate and before the divider; they are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece).
 - The "…" menu folds the last items first, Clear selection among them when it comes to that.
-- The Frame bar keeps its Done label until ticket 417.
 
 Hand-written from the responsive sign-off, then redrawn for tickets 414 and 415 from the design canvas; static rendition.

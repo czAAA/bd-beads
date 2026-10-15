@@ -428,7 +428,6 @@ export const en: Translations = {
     removeConfirmMessage: 'The rows you marked as done are cleared with it. This can be undone.',
     removeConfirmButton: 'Remove Frame',
     removeConfirmCancel: 'Cancel',
-    done: 'Done',
     explainer: 'The Frame marks which beads become the Schema. Beads outside it stay on the Canvas.',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: 'Frame set, width {width}, height {height}',

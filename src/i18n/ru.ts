@@ -430,7 +430,6 @@ export const ru: Translations = {
     removeConfirmMessage: 'Вместе с ней сотрутся отмеченные готовыми ряды. Это действие можно отменить.',
     removeConfirmButton: 'Убрать рамку',
     removeConfirmCancel: 'Отмена',
-    done: 'Готово',
     explainer: 'Рамка отмечает, какие бисеринки войдут в схему. Бисеринки за рамкой остаются на полотне.',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: 'Рамка задана: ширина {width}, высота {height}',

@@ -10,7 +10,12 @@ beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'en')
 })
 
-const anchor = { box: { left: 100, top: 80, width: 200, height: 120 }, viewport: { width: 600, height: 400 } }
+const anchor = {
+  box: { left: 100, top: 80, width: 200, height: 120 },
+  outer: { left: 50, top: 30, width: 300, height: 220 },
+  numbers: { across: 20, down: 14 },
+  viewport: { width: 600, height: 400 },
+}
 
 function framed(frame = { row: 2, column: 3, rows: 4, columns: 5 }): Project {
   return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame }
@@ -21,12 +26,15 @@ function mountSteppers(project = framed()) {
 }
 
 describe('EditFrameSteppers (ticket 417)', () => {
-  it('sits over the Frame\'s rectangle', () => {
-    const style = mountSteppers().get('[data-testid="edit-frame-steppers"]').attributes('style')
-    expect(style).toContain('left: 100px')
-    expect(style).toContain('top: 80px')
-    expect(style).toContain('width: 200px')
-    expect(style).toContain('height: 120px')
+  it('puts each pair in the margin, between the ruler numbers and its outer edge (ticket 427)', () => {
+    const wrapper = mountSteppers()
+    const at = (edge: string) => wrapper.get(`[data-testid="frame-edge-${edge}-out"]`).element.closest('.edit-frame-steppers__pair')!.getAttribute('style')
+    expect(at('top')).toContain('left: 200px')
+    expect(at('top')).toContain('top: 48px')
+    expect(at('left')).toContain('left: 65px')
+    expect(at('left')).toContain('top: 140px')
+    expect(at('right')).toContain('left: 335px')
+    expect(at('bottom')).toContain('top: 232px')
   })
 
   it('has a − and a + on each of the four edges, each named for its edge', () => {

@@ -77,11 +77,9 @@ describe('the control registry', () => {
     }
   })
 
-  it('shows Back out\'s Esc on Done and Cancel without claiming the key twice', () => {
-    for (const id of ['done-frame', 'cancel-paste']) {
-      expect(actionKey(controlAction(id))).toBe('Esc')
-      expect(controlAction(id).chords).toEqual([])
-    }
+  it('shows Back out\'s Esc on Cancel without claiming the key twice', () => {
+    expect(actionKey(controlAction('cancel-paste'))).toBe('Esc')
+    expect(controlAction('cancel-paste').chords).toEqual([])
   })
 
   it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
