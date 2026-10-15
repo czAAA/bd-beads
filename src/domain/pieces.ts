@@ -138,6 +138,14 @@ function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean 
   }, b)
 }
 
+/** A box of beads carries guides (rulers, selection handles) once it spans at least this many beads in total, i.e. more than 4 (tickets 377, 434); a single row of five does. */
+const GUIDED_MIN_BEADS = 5
+
+/** Whether a box of this many rows and columns is big enough for guides: the one rule behind a Piece area's rulers and a Selection's handles. */
+export function hasGuides(box: { rows: number; columns: number }): boolean {
+  return box.rows * box.columns >= GUIDED_MIN_BEADS
+}
+
 const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
 
 /**
