@@ -33,23 +33,23 @@ const { t, tour, announce } = useAppShell()
 /** For each control, the `data-tour` marks that can be it, the first showing wins; the later ones open it. */
 const CHAINS: Record<TourControl, string[]> = {
   'new-project': ['new-project', 'phone-new-project', 'header-tools'],
-  'tool-paint': ['tool-paint', 'dock-tool'],
-  'tool-fill': ['tool-fill', 'dock-tool'],
-  'tool-select': ['tool-select', 'dock-tool'],
-  'tool-erase': ['tool-erase', 'dock-tool'],
-  'tool-hand': ['tool-hand', 'dock-tool'],
+  'tool-paint': ['tool-paint'],
+  'tool-fill': ['tool-fill'],
+  'tool-select': ['tool-select'],
+  'tool-erase': ['tool-erase'],
+  'tool-hand': ['tool-hand'],
   'color-black': ['color-black', 'bottom-color', 'dock-color'],
   'color-yellow': ['color-yellow', 'bottom-color', 'dock-color'],
   copy: ['copy', 'dock-edit', 'header-tools'],
   // The rulers are drawn on the canvas now (ADR 0026), so the step points at the canvas itself.
   ruler: ['board'],
-  'remove-line': ['remove-line', 'dock-tool', 'header-tools'],
+  'remove-line': ['remove-line', 'header-tools'],
   undo: ['undo', 'dock-edit'],
-  size: ['frame-row', 'dock-project', 'header-tools'],
+  size: ['frame-row', 'strip-project', 'header-tools'],
   'progress-switch': ['progress-switch'],
   'progress-next': ['progress-next'],
   'progress-previous': ['progress-previous'],
-  export: ['export', 'dock-project', 'header-tools'],
+  export: ['export', 'strip-project', 'header-tools'],
   board: ['board'],
 }
 

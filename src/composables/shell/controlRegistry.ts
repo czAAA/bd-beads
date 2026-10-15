@@ -235,10 +235,7 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.tools.selectAllLabel,
     body: (t) => t.tooltips.selectAll,
     group: 'tools',
-    chords: [
-      { key: '7', label: '7' },
-      { key: 'a', mod: true, label: 'A' },
-    ],
+    chords: [{ key: 'a', mod: true, label: 'A' }],
     preventDefault: true,
     needsProject: true,
     run: (deps) => deps.onSelectAll(),
@@ -543,13 +540,12 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => (deps.activeProject()?.imageColors?.length ?? 0) > 0,
     disabledBody: (t: Translations) => t.tooltips.imageColorsDisabled,
   }),
-  unkeyed('dock-tool', (t) => t.toolbox.groups.tools, 'tools', {
-    body: (t) => t.tooltips.list([t.tools.paintLabel, t.tools.fillLabel, t.tools.selectLabel, t.tools.pieceLabel, t.tools.selectAllLabel, t.tools.eraseLabel, t.tools.handLabel]),
-  }),
-  unkeyed('dock-project', (t) => t.header.projectSheetLabel, 'edit', {
+  unkeyed('strip-project', (t) => t.header.projectSheetLabel, 'edit', {
+    icon: 'pattern',
     body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),
   }),
-  unkeyed('dock-menu', (t) => t.header.menuButton, 'edit', {
+  unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
+    icon: 'menu',
     body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.saveBox.nameOnExports, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
   }),
   unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),

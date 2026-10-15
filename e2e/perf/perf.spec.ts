@@ -119,7 +119,7 @@ function libraryFor(columns: number, rows: number) {
 }
 
 async function openProject(page: Page, id: string): Promise<void> {
-  await openDockSheet(page, 'dock-project')
+  await openDockSheet(page, 'strip-project')
   await page.getByTestId('phone-saved-projects-button').click()
   await settle(page)
   await page.getByTestId(`select-project-${id}`).click()

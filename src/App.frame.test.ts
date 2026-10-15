@@ -48,7 +48,7 @@ async function key(init: KeyboardEventInit) {
 
 /** Starts Edit Frame from the Project sheet's Edit Frame button (the Dock has no Frame slot, ticket 417). */
 async function startEditFrame(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   await wrapper.get('[data-testid="frame-edit"]').trigger('click')
   await flushPromises()
 }
@@ -71,7 +71,7 @@ const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find
 describe('Edit Frame', () => {
   it('is entered from the Project sheet and only with a Frame', async () => {
     const wrapper = await mountOpen()
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
     await wrapper.get('[data-testid="sheet-close"]').trigger('click')
@@ -93,8 +93,7 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
 
     await key({ key: 'Escape' })
-    await openSheet(wrapper, 'dock-tool')
-    expect(wrapper.find('[data-testid="sheet-tool-hand"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="dock-tool-hand"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('is left by Escape, Enter, Done and by choosing a tool', async () => {
@@ -185,7 +184,7 @@ describe('Edit Frame', () => {
 describe('the Project sheet\'s Frame controls', () => {
   it('fits to the drawing and removes the Frame, each as an Undo step', async () => {
     const wrapper = await mountOpen()
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
 
     await sheet.find('[data-testid="frame-fit"]').trigger('click')
@@ -202,7 +201,7 @@ describe('the Project sheet\'s Frame controls', () => {
 
   it('has no size steppers, unit switch or side choice: the size is changed in Edit Frame', async () => {
     const wrapper = await mountOpen(framedProject())
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     for (const gone of ['frame-columns', 'frame-rows', 'frame-unit', 'frame-width-side', 'frame-height-side']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     }
@@ -235,7 +234,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
 
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
     const wrapper = await mountOpen()
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
     expect(wrapper.find('[data-testid="export-needs-frame"]').text()).toContain(en.frame.exportPromptTitle)
 
@@ -247,7 +246,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   it('has Fit to drawing in the Progress bar with no Frame, and Beads needed asks for one', async () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(en.frame.progressNeedsFrame)
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe(en.frame.countNeedsFrame)
 
     await wrapper.get('[data-testid="sheet-close"]').trigger('click')

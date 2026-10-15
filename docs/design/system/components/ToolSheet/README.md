@@ -1,14 +1,14 @@
 # ToolSheet
 
-The bottom sheet a Dock button opens on the phone, holding every option of that kind.
+The bottom sheet a Dock button or the Canvas strip's Menu or Project button opens, holding every option of that kind.
 
-- **Tools (ticket 292):** Paint, Fill, Select, Eraser, Hand and Frame as the Toolbox's tabs (up to 56px wide, 72px tall, 34px icon, wrapping rather than shrinking below 44px, a full-width `line-strong` rule per row, the active one marked by a 2px accent underline; flagged for a visual check on a real phone), then Remove line and Clear (`danger`), then Remove line and Clear (`danger`). Phone and Dock tiles keep their size and labels on purpose: they are thumb targets, not the desktop Toolbox tiles. **Hotkey corner (repo, ticket 275):** each tool tile also prints its key (1 to 6) in the top-right corner, as the Dock does: DM Mono 12px (nothing is below 12px on a phone), `muted`, `accent` on the active tile, absolutely positioned so the icon and label stay centered (`aria-hidden`, `kc`). Remove line and Clear have no key.
+- **Tools (gone, ticket 431):** the Tool sheet and its tiles are removed; the six tool tiles are in the Dock (Dock card). Remove line and Name piece are on the Context bar only; Select all is its button. **Delete all** (`danger`) moved to the bottom of the Project sheet, with its usual confirmation.
 - **Colour:** the Palette as 5-column swatches (selected: `ring`), Image colors, Custom colour.
 - **Edit:** Undo, Redo, Copy, and Paste (enabled after Copy). Rotate is on the Selection bar (ticket 416).
 - **Frame (v16, in Size's place):** Set Frame, Fit to drawing, the beads | mm switch, Width and Height steppers, Remove Frame, and the measured size with its info. The preview still draws the v15 Size sheet.
-- **Pattern:** Save Pattern and Export (PNG, PDF), the Bead pill and Replace bead, Beads needed, Saved Patterns, New Pattern, Import file.
+- **Pattern:** Save Pattern and Export (PNG, PDF), the Bead pill and Replace bead, Beads needed, Saved Patterns, New Pattern, Import file, and last Delete all (ticket 431). The sheet opens from the Canvas strip's Project button.
 - Tool sheets are light: `panel`, 18px top corners, a grab handle, title and close; no scrim and only as tall as their content, so the Pattern stays in view. The Pattern sheet is modal: taller, with the scrim; its header carries the Canvas color button between the title and Close (CanvasBackground).
-- Choosing a tool, a Palette swatch, a Custom color or an Image color closes the sheet it was chosen in (every pick control does, through the sheet; the same controls in the Toolbox close nothing). A Custom color closes when its native dialog commits, not while it is still being dragged.
+- Choosing a Palette swatch, a Custom color or an Image color closes the sheet it was chosen in (every pick control does, through the sheet). A Custom color closes when its native dialog commits, not while it is still being dragged.
 - Tapping or dragging the grab handle down, the close button, Escape, and a press anywhere outside the sheet (the modal Pattern sheet too) close a sheet. An outside press only closes: it and its click reach nothing under them, so no stroke, fill or Frame starts and a Dock button does not re-open the sheet it closed. A press inside another dialog is not outside. Sheets slide with `transform`; the drawing surface never resizes.
 
 Hand-written from the responsive sign-off; static rendition.

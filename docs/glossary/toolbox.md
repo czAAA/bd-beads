@@ -1,25 +1,29 @@
 # Glossary: Dock and controls
 
-The Dock and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Dock's sheets, the Context bar and the Zoom pill.
+The Dock and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Dock, the Context bar, the Project and Menu sheets and the Canvas strip (the Zoom pill is gone, ticket 425).
 
 **Tool group**:
-A titled set of related controls — Tools (Paint, Fill, Select, Piece, Select all, Eraser, Hand; Select all acts at once instead of becoming the active tool, ticket 414), Colors, Edit, Mirror, Row progress. The Dock's sheets and the keyboard shortcuts help gather the same controls under the same names.
+A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, Hand; Select all is a button on the Context bar, not a Tool, tickets 414, 428), Colors, Edit, Mirror, Row progress. The Dock, the sheets and the keyboard shortcuts help gather the same controls under the same names.
 _Avoid_: subbox, card, section, panel
 
 **Dock layout**:
-The main layout at every width (ADR 0046): the canvas first, the Dock below it (about 480px wide, centred), sheets for the controls, the slim Canvas strip always visible; no header, no left column. It is the only layout (ticket 412 removed the Toolbox layout and its flag).
+The main layout at every width (ADR 0046): the canvas first, the Dock below it (about 480px wide, centred), sheets for the controls, the slim Canvas strip always visible; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag).
 _Avoid_: phone layout, mobile layout, touch layout
 
 **Dock**:
-The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046), with no header above the canvas. Five slots, each opening its own sheet: Tool, Colour, Frame, Project, Menu. icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred. With no Project open, a New Project / Import bar takes its place, with the Menu button still at the bottom right.
+The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046, 0055), with no header above the canvas. Six tool tiles (Paint, Fill, Select, Piece, Eraser, Hand), a divider, the colour button (it shows the chosen colour and opens the Colour sheet) and, where the device needs it, a second divider and the Pen/Mouse toggle. A tile picks its tool at once; there is no Tool sheet. Icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred; on a phone under 400px the tiles are 44px with the digit badges hidden. With no Project open, a New Project / Import bar takes its place (Menu is in the Canvas strip).
 _Avoid_: toolbar, rail, tab bar
 
 **Menu**:
-The Dock's last slot: a modal sheet of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link). Everything about the open Project lives in the Project sheet instead.
+The modal sheet of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project sheet instead.
 _Avoid_: More, header menu
 
+**Project sheet**:
+The modal sheet the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique and Edit Frame, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
+_Avoid_: Pattern sheet, Tool sheet (gone)
+
 **Canvas strip**:
-The slim row along the top of the canvas box, at every width (ticket 425, ADR 0055). Right-aligned: the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone the cluster scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds the framing step's own zoom alone. It replaced the draggable Zoom pill.
+The slim row along the top of the canvas box, at every width (tickets 425, 431, ADR 0055). Left to right: Menu, Project (each an icon and its word; Project only with a Project open), the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone Menu, Project and Canvas color stay in place and the middle scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. It replaced the draggable Zoom pill.
 _Avoid_: Zoom pill, Canvas header
 
 **Canvas hint**:
@@ -31,7 +35,7 @@ A notice or toast. A toast (a short-lived result) shows at the top-right of the 
 _Avoid_: snackbar, alert
 
 **Tool button**:
-A Tools-group tool shown as an icon-only tab (Paint is a pencil), 56px wide, five to a row, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
+A Tools-group tool shown as an icon-only tile in the Dock, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Piece (7 is free again; tickets 292, 431), shown as a small badge beside the icon on every device but a phone under 400px. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
 _Avoid_: tab, tool tab
 
 **Tooltip**:
