@@ -43,6 +43,20 @@ describe('the control registry', () => {
     expect(CONTROLS.find((control) => control.id === 'clear')?.chords).toEqual([])
   })
 
+  it('has no Row progress switch or P key, and Remove frame is allowed with a Frame whatever the progress (ticket 426)', () => {
+    expect(CONTROLS.find((control) => control.id === 'row-progress')).toBeUndefined()
+    expect(CONTROLS.some((control) => control.chords.some((chord) => chord.key === 'p'))).toBe(false)
+
+    const remove = CONTROLS.find((control) => control.id === 'remove-frame')!
+    const project = (framed: boolean, currentRow: number) =>
+      ({ frame: framed ? { row: 0, column: 0, rows: 4, columns: 4 } : undefined, rowProgress: { enabled: framed, currentRow, currentColumn: 0 } }) as never
+    const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
+    expect(remove.enabled?.(deps(project(true, 0)))).toBe(true)
+    expect(remove.enabled?.(deps(project(true, 2)))).toBe(true)
+    expect(remove.enabled?.(deps(project(false, 0)))).toBe(false)
+    expect(remove.disabledBody?.(en, deps(project(false, 0)))).toBe(en.tooltips.noFrameToRemove)
+  })
+
   it('gives every action that can be disabled a reason, in both languages', () => {
     for (const control of CONTROLS.filter((c) => c.enabled)) {
       const project = { rowProgress: { enabled: false }, beads: {} } as never

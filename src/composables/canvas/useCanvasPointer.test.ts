@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { useCanvasPointer } from './useCanvasPointer'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -60,7 +61,7 @@ describe('useCanvasPointer', () => {
     })
 
     it('leaves out beads in rows already woven', () => {
-      const woven = moveToRow(setRowProgressEnabled(base, true), 3)
+      const woven = moveToRow(rowProgressOn(base), 3)
       const { previewCells, onCellHover } = setup({ project: woven })
       onCellHover(0, 0)
       expect(previewCells.value).toEqual([])

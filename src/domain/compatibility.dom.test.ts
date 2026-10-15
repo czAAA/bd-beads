@@ -32,7 +32,7 @@ const peyotePicture = ['RRB..', '.KKR.', 'B...R', '..KBB']
 const brickPicture = ['R.K', '.BR', 'K.B', 'R..']
 
 const BEAD = 'toho-cube-1.5mm'
-const noProgress: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
+const noProgress: RowProgress = { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
 function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pick<Project, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
