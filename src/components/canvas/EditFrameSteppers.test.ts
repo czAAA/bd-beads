@@ -14,6 +14,7 @@ const anchor = {
   box: { left: 100, top: 80, width: 200, height: 120 },
   outer: { left: 50, top: 30, width: 300, height: 220 },
   numbers: { across: 20, down: 14 },
+  scale: 1,
   viewport: { width: 600, height: 400 },
 }
 

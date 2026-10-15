@@ -13,26 +13,26 @@ function count(beads: BeadMap): number {
 }
 
 describe('the keep-out margin', () => {
-  it('is the 3 positions all round the Frame, outside its line', () => {
-    expect(MARGIN).toBe(3)
-    expect(inMargin(frame, { row: 7, column: 10 })).toBe(true)
-    expect(inMargin(frame, { row: 6, column: 10 })).toBe(false)
+  it('is the 6 positions all round the Frame, outside its line', () => {
+    expect(MARGIN).toBe(6)
+    expect(inMargin(frame, { row: 4, column: 10 })).toBe(true)
+    expect(inMargin(frame, { row: 3, column: 10 })).toBe(false)
     expect(inMargin(frame, { row: 14 + 2, column: 16 + 2 })).toBe(true)
     expect(inMargin(frame, { row: 11, column: 11 })).toBe(false)
     expect(inMargin(undefined, { row: 7, column: 10 })).toBe(false)
-    expect(withMargin(frame)).toEqual({ row: 7, column: 7, rows: 10, columns: 12 })
+    expect(withMargin(frame)).toEqual({ row: 4, column: 4, rows: 16, columns: 18 })
   })
 
   it('stops Paint writing into it, and a stroke across it paints only the allowed beads', () => {
-    const positions = [6, 7, 8, 9, 10, 11].map((column) => ({ row: 8, column }))
-    const stroke = [{ row: 12, column: 6 }, { row: 12, column: 7 }, { row: 12, column: 9 }, { row: 12, column: 10 }, ...positions]
+    const positions = [3, 4, 5, 6, 7, 8].map((column) => ({ row: 8, column }))
+    const stroke = [{ row: 12, column: 3 }, { row: 12, column: 4 }, { row: 12, column: 9 }, { row: 12, column: 10 }, ...positions]
     const painted = keepAllowedEdits(framed, paintCells(framed, stroke, '#ff0000', none))
     expect(colorAt(painted.beads, 12, 10)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 12, 6)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 12, 7)).toBeNull()
+    expect(colorAt(painted.beads, 12, 3)).toBe('#ff0000')
+    expect(colorAt(painted.beads, 12, 4)).toBeNull()
     expect(colorAt(painted.beads, 12, 9)).toBeNull()
-    expect(colorAt(painted.beads, 8, 6)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 8, 7)).toBeNull()
+    expect(colorAt(painted.beads, 8, 3)).toBe('#ff0000')
+    expect(colorAt(painted.beads, 8, 4)).toBeNull()
   })
 
   it('hands back the same Project when everything an edit did was in the margin', () => {
@@ -103,8 +103,8 @@ describe('clampOutOfMargin (ticket 428)', () => {
   })
 
   it('pulls a drag begun outside the margin back to the margin\'s outer edge', () => {
-    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 6, column: 8 })
-    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 17, column: 17 })
+    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 3, column: 8 })
+    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 20, column: 17 })
   })
 })
 
@@ -119,7 +119,7 @@ describe('a Selection never covers the margin (ticket 428)', () => {
 
   it('stops a drag from outside before the margin instead of crossing the Frame', () => {
     // from above the margin to the far side of the Frame: held at the margin's outer edge above it
-    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 20, column: 12 })).toEqual({ row: 6, column: 12 })
+    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 20, column: 12 })).toEqual({ row: 3, column: 12 })
     // from a corner across the whole Frame: the clamp keeps the larger rectangle
     const end = clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })
     expect(selectionCoversMargin(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(false)

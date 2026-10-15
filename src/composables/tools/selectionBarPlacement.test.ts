@@ -33,6 +33,7 @@ describe('frameStepperCentres (ticket 427)', () => {
     box: { left: 150, top: 100, width: 100, height: 60 },
     outer: { left: 100, top: 50, width: 200, height: 160 },
     numbers: { across: 20, down: 14 },
+    scale: 1,
     viewport,
   }
 
@@ -51,5 +52,11 @@ describe('frameStepperCentres (ticket 427)', () => {
     expect(centres.top.y).toBe(8 + 18)
     expect(centres.left.x).toBe(8 + 18)
     expect(centres.top.x).toBeGreaterThanOrEqual(8 + 37)
+  })
+
+  it('shrinks the pairs with the zoom, so a smaller pair may sit closer to the canvas box\'s edge (ticket 427)', () => {
+    const corner = { ...anchor, box: { left: -40, top: -30, width: 100, height: 60 }, outer: { left: -90, top: -80, width: 200, height: 160 } }
+    expect(frameStepperCentres({ ...corner, scale: 0.5 }, false).top.y).toBe(8 + 7)
+    expect(frameStepperCentres({ ...corner, scale: 1 }, false).top.y).toBe(8 + 14)
   })
 })
