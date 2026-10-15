@@ -40,12 +40,12 @@ describe('one layout at every width (ticket 412, ADR 0046)', () => {
     expect(shell).toContain('grid-template-columns: minmax(0, 1fr);')
   })
 
-  it('makes the Dock 48px plus the safe-area inset, at most 480px wide, with one layout in both orientations', () => {
+  it('makes the Dock 48px plus a safe-area inset capped at 4px, at most 480px wide, with one layout in both orientations', () => {
     expect(layoutPx('dock-height')).toBe(48)
     expect(layoutPx('dock-max-width')).toBe(480)
     const dock = source('tools/AppDock')
     expect(dock).toContain('max-width: var(--dock-max-width);')
-    expect(dock).toContain('padding-bottom: env(safe-area-inset-bottom);')
+    expect(dock).toContain('padding-bottom: min(env(safe-area-inset-bottom), var(--space-4));')
     expect(dock).not.toMatch(/max-height/)
   })
 })
