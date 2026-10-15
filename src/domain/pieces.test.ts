@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, withColors } from './canvas'
-import { hasGuides, pieceAreasOf, piecesOf } from './pieces'
+import { pieceAreasOf, piecesOf } from './pieces'
 
 const R = '#e63746'
 const place = (...at: [number, number][]) => withColors({}, at.map(([row, column]) => ({ row, column, color: R })))
@@ -121,12 +121,5 @@ describe('piece areas', () => {
   it('gives the same array for the same beads', () => {
     const beads = place([0, 0])
     expect(pieceAreasOf(beads, 'loom')).toBe(pieceAreasOf(beads, 'loom'))
-  })
-})
-
-describe('hasGuides', () => {
-  it('is true from five beads in total, whatever the shape', () => {
-    expect([[1, 1], [2, 2], [1, 4]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([false, false, false])
-    expect([[1, 5], [5, 1], [2, 3]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([true, true, true])
   })
 })
