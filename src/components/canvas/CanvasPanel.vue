@@ -42,6 +42,7 @@ const {
   zoom,
   scroll,
   onSelectLine,
+  selectionRefusals,
   activeTool,
   showRulers,
   toggleRulers,
@@ -113,6 +114,9 @@ const {
 const colorPick = useColorPick()
 
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
+/** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets 414, 433). */
+const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
+
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
@@ -278,8 +282,9 @@ function techniqueWord(technique: Technique): string {
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
-              :selection-blocks-margin="activeTool === 'select'"
-              :selecting="activeTool === 'select' || activeTool === 'piece'"
+              :selection-blocks-margin="selecting"
+              :selection-refusals="selectionRefusals"
+              :selecting="selecting"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
               :cursor="cursorShown ? beadCursor : undefined"
