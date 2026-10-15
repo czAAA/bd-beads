@@ -3,8 +3,8 @@ import type { Toast } from '../../composables/ui/useToasts'
 import AppMessage from './AppMessage.vue'
 
 /**
- * Where toasts show (ticket 76; Message and StackingOrder cards): the bottom-right of the canvas box, 16px in, above
- * the Progress bar, on the toast layer (above sheets, below modals). A result goes after 5s unless hovered or focused;
+ * Where toasts show (ticket 76; Message and StackingOrder cards): the top-right of the canvas box, 16px in, under the
+ * strip and stacking downward, on the toast layer (above sheets, below modals). A result goes after 5s unless hovered or focused;
  * an error, or a prompt such as Update ready, stays until closed.
  */
 defineProps<{ toasts: Toast[] }>()
@@ -43,7 +43,7 @@ const TOAST_MS = 5000
 .toast-region {
   position: absolute;
   right: var(--space-16);
-  bottom: var(--toast-bottom, var(--space-16));
+  top: calc(var(--strip-height) + var(--space-16));
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
@@ -67,7 +67,7 @@ const TOAST_MS = 5000
   cursor: pointer;
 }
 
-/* Arriving 200ms, leaving 150ms, rising 8px (Motion card); reduced motion fades without the rise. */
+/* Arriving 200ms, leaving 150ms, dropping in 8px (Motion card); reduced motion fades without the rise. */
 .toast-enter-active {
   transition:
     opacity var(--duration-base) var(--ease-out),
@@ -83,7 +83,7 @@ const TOAST_MS = 5000
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
-  transform: translateY(var(--space-8));
+  transform: translateY(calc(-1 * var(--space-8)));
 }
 
 @media (prefers-reduced-motion: reduce) {
