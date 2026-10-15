@@ -47,6 +47,27 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
   return !!frame && frameContains(withMargin(frame), position) && !frameContains(frame, position)
 }
 
+/** One axis of `clampOutOfMargin`: `start`/`length` is the Frame's span; a coordinate in either margin band moves to the band's edge facing the anchor. */
+function clampAxis(start: number, length: number, anchor: number, value: number): number {
+  const end = start + length
+  if (value >= start - MARGIN && value < start) return anchor < start - MARGIN ? start - MARGIN - 1 : anchor >= start ? start : start - MARGIN - 1
+  if (value >= end && value < end + MARGIN) return anchor >= end + MARGIN ? end + MARGIN : anchor < end ? end - 1 : end + MARGIN
+  return value
+}
+
+/**
+ * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055): a cell in the
+ * Frame's margin is pulled back to the margin's edge on the anchor's side (the Frame's own edge when the drag began
+ * inside the Frame), so a Selection never ends in the margin. A cell outside the margin is returned unchanged.
+ */
+export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
+  if (!frame || !inMargin(frame, cell)) return cell
+  return {
+    row: clampAxis(frame.row, frame.rows, anchor.row, cell.row),
+    column: clampAxis(frame.column, frame.columns, anchor.column, cell.column),
+  }
+}
+
 /**
  * What an edit did, with every bead it newly painted in the margin taken back (erasing there stays). An edit left with
  * nothing to change hands back `before` itself, the same "unchanged" signal the drawing commands give.

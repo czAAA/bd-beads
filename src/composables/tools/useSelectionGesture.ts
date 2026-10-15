@@ -3,7 +3,7 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { paintCells, type Project } from '../../domain/project'
 import {
-  allBeadsSelection,
+  selectAllSelection,
   copySelection,
   mirroredPasteBlock,
   mirroredPastedCells,
@@ -14,6 +14,7 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
+import { clampOutOfMargin } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -111,7 +112,7 @@ export function useSelectionGesture(
 
     press.moved = true
     dropClipboard()
-    selection.value = selectionBetween(press.anchor, { row, column })
+    selection.value = selectionBetween(press.anchor, clampOutOfMargin(project.frame, press.anchor, { row, column }))
   }
 
   /** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
@@ -138,10 +139,10 @@ export function useSelectionGesture(
     selection.value = pieceSelectionAt(project.beads, project.technique, { row, column })
   }
 
-  /** Select all (ticket 414): the Selection becomes the rectangle round every placed bead. Returns false, changing nothing, on an empty canvas. */
+  /** Select all (tickets 414, 428): the Selection becomes the Frame's inside, or without a Frame the rectangle round every placed bead. Returns false, changing nothing, on an empty canvas with no Frame. */
   function selectAll(): boolean {
     const project = currentProject()
-    const all = project ? allBeadsSelection(project.beads) : undefined
+    const all = project ? selectAllSelection(project.beads, project.frame) : undefined
     if (!all) {
       return false
     }

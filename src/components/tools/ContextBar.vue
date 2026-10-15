@@ -43,6 +43,8 @@ const props = withDefaults(defineProps<{
   settingFrame?: boolean
   /** The Frame's size as it is now, "17×17 · 2.7 × 2.7 cm", while it is being set. */
   frameSummary?: string
+  /** Whether the Select tool is active: the bar then offers Select all, even with no Selection (ticket 428, ADR 0055). */
+  selectActive?: boolean
 }>(), { hasPaintColor: true })
 
 const emit = defineEmits<{
@@ -53,6 +55,7 @@ const emit = defineEmits<{
   frame: []
   'clear-selection': []
   rotate: []
+  'select-all': []
   'remove-line': []
   'name-piece': []
   'fit-frame': []
@@ -68,6 +71,7 @@ const actions = {
   fit: controlAction('fit-to-drawing'),
   removeFrame: controlAction('remove-frame'),
   done: controlAction('done-frame'),
+  selectAll: controlAction('select-all'),
   copy: controlAction('copy'),
   cut: controlAction('cut'),
   paste: controlAction('paste'),
@@ -107,6 +111,7 @@ interface BarItem {
 /** What applies to this Selection, in order (ContextBar card). */
 const items = computed<BarItem[]>(() => {
   const list: BarItem[] = [
+    ...(props.selectActive ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
     { id: 'copy', action: actions.copy, group: 1, run: () => emit('copy') },
     { id: 'cut', action: actions.cut, group: 1, run: () => emit('cut') },
   ]
@@ -158,8 +163,8 @@ const placedStyle = computed(() => (placement.value ? { left: `${placement.value
 const isDisabled = (item: BarItem) => (item.action.enabled ? !item.action.enabled(deps.value) : false)
 const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
-const showing = computed(() => !!props.settingFrame || props.selectionSummary !== undefined || props.pasteArmed)
-const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? 'armed' : 'selection'))
+const showing = computed(() => !!props.settingFrame || props.selectionSummary !== undefined || props.pasteArmed || !!props.selectActive)
+const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? 'armed' : props.selectionSummary === undefined ? 'select-all' : 'selection'))
 </script>
 
 <template>
@@ -188,6 +193,16 @@ const mode = computed(() => (props.settingFrame ? 'frame' : props.pasteArmed ? '
         @click="emit('remove-frame')"
       />
       <AppButton class="context-bar__button context-bar__done" :action="actions.done" :deps="deps" data-testid="context-bar-done-frame" @click="emit('done-frame')" />
+    </template>
+    <template v-else-if="!pasteArmed && selectionSummary === undefined">
+      <IconButton
+        class="context-bar__button context-bar__select-all"
+        :icon-size="iconSize"
+        :action="actions.selectAll"
+        :deps="deps"
+        data-testid="context-bar-select-all"
+        @click="emit('select-all')"
+      />
     </template>
     <template v-else-if="!pasteArmed">
       <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>

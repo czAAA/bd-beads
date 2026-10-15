@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type BeadMap, type Frame } from './canvas'
-import { clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
+import { clampOutOfMargin, clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -84,5 +84,22 @@ describe('the keep-out margin', () => {
     expect(performance.now() - started).toBeLessThan(2000)
     expect(moved).toBe(1)
     expect(count(project.beads)).toBe(150 * 150)
+  })
+})
+
+describe('clampOutOfMargin (ticket 428)', () => {
+  it('leaves a cell outside the margin, and any cell without a Frame, alone', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 12, column: 12 })).toEqual({ row: 12, column: 12 })
+    expect(clampOutOfMargin(undefined, { row: 0, column: 0 }, { row: 7, column: 10 })).toEqual({ row: 7, column: 10 })
+  })
+
+  it('pulls a drag begun inside the Frame back to the Frame\'s own edge', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 8, column: 12 })).toEqual({ row: 10, column: 12 })
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 16, column: 18 })).toEqual({ row: 13, column: 15 })
+  })
+
+  it('pulls a drag begun outside the margin back to the margin\'s outer edge', () => {
+    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 6, column: 6 })
+    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 17, column: 19 })
   })
 })
