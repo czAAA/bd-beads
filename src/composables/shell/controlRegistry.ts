@@ -58,7 +58,6 @@ export interface ControlDeps {
   /** Whether a color is chosen to paint with: Fill needs one. */
   hasPaintColor: () => boolean
   onNamePiece: () => void
-  onToggleRowProgress: (enabled: boolean) => void
   onToggleRowDirection: () => void
   onMoveRow: (delta: number) => void
   openShortcutsHelp: () => void
@@ -468,19 +467,6 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   ...(MIRROR_ENABLED ? MIRROR_CONTROLS : []),
   {
-    id: 'row-progress',
-    icon: 'check',
-    name: (t) => t.rowProgress.enabledLabel,
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
-    group: 'rowProgress',
-    chords: [{ key: 'p', label: 'P' }],
-    run: (deps) => {
-      const project = deps.activeProject()
-      if (project) deps.onToggleRowProgress(!project.rowProgress.enabled)
-    },
-  },
-  {
     id: 'row-direction',
     icon: 'turn-row-direction',
     name: (t) => t.rowProgress.directionButton,
@@ -519,8 +505,9 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
     icon: 'close',
     body: (t) => t.tooltips.removeFrame,
-    enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t: Translations, deps: ControlDeps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noFrameToRemove),
+    // Allowed once a pass is done too: it asks first, and clears the passes with the Frame (ticket 426).
+    enabled: hasFrame,
+    disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
   }),
   unkeyed('change-technique', (t) => t.form.techniqueLabel, 'canvas', {
     body: (t) => t.tooltips.changeTechnique,

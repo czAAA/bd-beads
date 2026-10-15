@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { colorAt, withColors } from '../../domain/canvas'
-import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateSelectionFlow } from './useRotateSelectionFlow'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
@@ -83,7 +84,7 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('does nothing with no Selection, no Project, or once a Row progress pass is done (ticket 411)', () => {
-    const locked = moveToRow(setRowProgressEnabled(framed, true), 1)
+    const locked = moveToRow(rowProgressOn(framed), 1)
     for (const [project, selection] of [[framed, null], [null, strip], [locked, strip]] as const) {
       const { harness, onRotate } = setup(project, selection)
       onRotate()

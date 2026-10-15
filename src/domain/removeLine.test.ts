@@ -1,9 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
-import { createProject, moveToRow, setRowProgressEnabled, type Project, type Technique } from './project'
+import { createProject, moveToRow, type Project, type Technique } from './project'
 import { removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
+import { rowProgressOn } from '../testUtils/rowProgress'
 
 /** A Project whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
 function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
@@ -93,7 +94,7 @@ describe('removeSelectedLine', () => {
   })
 
   it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-    const woven = moveToRow(setRowProgressEnabled(numbered(3, 4), true), 1)
+    const woven = moveToRow(rowProgressOn(numbered(3, 4)), 1)
     expect(removeLineRefusal(woven, rowOf(woven, 0))).toBe('locked')
     expect(removeSelectedLine(woven, rowOf(woven, 0))).toBe(woven)
   })
@@ -105,7 +106,7 @@ describe('removeSelectedLine', () => {
   })
 
   it('clamps Row progress\'s pointers onto a row that still exists', () => {
-    const before = { ...moveToRow(setRowProgressEnabled(numbered(3, 4), true), 4) }
+    const before = { ...moveToRow(rowProgressOn(numbered(3, 4)), 4) }
     const off: Project = { ...before, rowProgress: { ...before.rowProgress, enabled: false } }
     expect(removeSelectedLine(off, rowOf(off, 0)).rowProgress.currentRow).toBe(3)
   })

@@ -3,14 +3,14 @@ import { sameFrame } from './frame'
 import type { GridPosition, Technique } from './grid'
 import { clearMargin } from './margin'
 import { carryNames, namedPieceCutBy } from './pieceNames'
-import { rowProgressStarted, withFrame, withRowProgressOnByItself, withTechnique, type Project } from './project'
+import { rowProgressStarted, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 /**
  * The one operation behind every change of the Frame (ticket 361): Set Frame, moving and resizing it, Fit to drawing,
  * Remove Frame and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
- * Row progress's lock (once a pass is done), Row progress turning on by itself at the first Frame,
- * Row progress's pointers ending inside the new Frame, and the keep-out margin left empty with each
+ * Row progress's lock (once a pass is done; only Remove Frame passes it, clearing the passes), Row progress following the
+ * Frame, its pointers ending inside the new Frame, and the keep-out margin left empty with each
  * Piece it reached moved clear, whole (ADR 0027).
  */
 export type FrameChange =
@@ -44,7 +44,8 @@ export type FrameChangeResult =
 
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
-  if (rowProgressStarted(project)) {
+  // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
+  if (rowProgressStarted(project) && !('remove' in change)) {
     return 'locked'
   }
   const frame = project.frame
@@ -93,7 +94,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   if (sameFrame(project.frame, next)) {
     return { kind: 'unchanged', project }
   }
-  return settled(withRowProgressOnByItself(project, withFrame(project, next)))
+  return settled(withFrame(project, next))
 }
 
 /** The framed Project with its margin cleared, as the changed result. */

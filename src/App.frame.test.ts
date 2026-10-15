@@ -255,7 +255,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   })
 })
 
-describe('Row progress on by itself (ticket 411)', () => {
+describe('Row progress follows the Frame (tickets 411, 426)', () => {
   const savedProgress = () => loadProjects()[0]!.rowProgress
 
   it('turns on with the first Frame, the pointer at the first pass, and one Undo takes both back', async () => {
@@ -273,41 +273,71 @@ describe('Row progress on by itself (ticket 411)', () => {
     expect(savedProgress().enabled).toBe(false)
   })
 
-  it('stays off once the switch is turned off, through a Frame removed and fitted again', async () => {
-    const wrapper = await mountOpen()
-    await openSheet(wrapper, 'dock-project')
-    const row = wrapper.get('[data-testid="bottom-sheet"]')
-    await row.find('[data-testid="frame-fit"]').trigger('click')
-    expect(savedProgress().enabled).toBe(true)
+  it('opens with Row progress on for a saved Frame, whatever an older file stored', async () => {
+    const framed = { ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } }
+    saveProjects([{ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } }])
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
 
-    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
-    expect(savedProgress().enabled).toBe(false)
-
-    await row.find('[data-testid="frame-remove"]').trigger('click')
-    await row.find('[data-testid="frame-fit"]').trigger('click')
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(savedProgress().enabled).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
   })
 
-  it('offers Rotate only until a pass is done: Row done hides it, switching off brings it back (tickets 411, 416)', async () => {
+  it('removes the Frame at once while no pass is done, and one Undo brings it back', async () => {
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
+    expect(savedFrame()).toBeUndefined()
+    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(true)
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(false)
+  })
+
+  it('asks before Remove frame throws away a done pass; one Undo brings the Frame and the progress back', async () => {
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
+    expect(savedProgress().currentRow).toBe(1)
+
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+
+    await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    expect(savedFrame()).toBeUndefined()
+    expect(savedProgress()).toMatchObject({ enabled: false, currentRow: 0 })
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(savedProgress()).toMatchObject({ enabled: true, currentRow: 1 })
+  })
+
+  it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
-    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
     await pickTool(wrapper, 'select-all')
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
-    await rotate(wrapper)
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
-    expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 8, columns: 8 })
+    await pickTool(wrapper, 'select-all')
+    expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
   })
 
   it('says the new direction in a toast when D turns it, once per press', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
-    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
 
     await key({ key: 'd' })
     expect(wrapper.text()).toContain(en.rowProgress.directionToastColumns)

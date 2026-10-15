@@ -437,6 +437,11 @@ export interface Translations {
     numberName: string
     fitToDrawing: string
     removeFrame: string
+    /** The question before Remove frame throws away finished rows (ticket 426). */
+    removeConfirmTitle: string
+    removeConfirmMessage: string
+    removeConfirmButton: string
+    removeConfirmCancel: string
     done: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string

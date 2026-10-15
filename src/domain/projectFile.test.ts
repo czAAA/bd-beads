@@ -14,11 +14,11 @@ import {
   createProjectFromImage,
   moveToRow,
   paintCells,
-  setRowProgressEnabled,
   withTechnique,
   type Project,
   frameGrid,
 } from './project'
+import { rowProgressOn } from '../testUtils/rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -33,7 +33,7 @@ function makeProject(name = 'Fox'): Project {
 
 function decoratedProject(): Project {
   const painted = paintCells(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
-  return moveToRow(setRowProgressEnabled(painted, true), 4)
+  return moveToRow(rowProgressOn(painted), 4)
 }
 
 describe('single-Project roundtrip', () => {
@@ -65,8 +65,18 @@ describe('single-Project roundtrip', () => {
       direction: 'rows',
       currentRow: 4,
       currentColumn: 0,
-      decided: true,
     })
+  })
+
+  it('writes Row progress without its flag, and reads an old file that has one with the Frame deciding (ticket 426)', () => {
+    const project = decoratedProject()
+    const file = JSON.parse(serializeProject(project))
+    expect(file.patterns[0].rowProgress).not.toHaveProperty('enabled')
+
+    file.patterns[0].rowProgress.enabled = false
+    file.patterns[0].rowProgress.decided = true
+    const [restored] = parseProjectsFile(JSON.stringify(file)).projects
+    expect(restored!.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
   it('stays readable version-3 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
@@ -163,7 +173,7 @@ describe('parseProjectsFile', () => {
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
     expect(projects[0]!.rowProgress).toEqual({
-      enabled: false,
+      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
