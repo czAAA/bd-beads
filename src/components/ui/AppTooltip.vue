@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId } from 'vue'
+import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
@@ -28,7 +29,8 @@ const props = withDefaults(defineProps<TooltipProps>(), {
 
 /** What the bubble's second line says: the reason when disabled, the body otherwise. */
 const detail = computed(() => (props.disabled ? props.disabledBody : props.body))
-const shownKey = computed(() => (props.disabled ? undefined : props.hotkey))
+const { shown: hintsShown } = useKeyHints()
+const shownKey = computed(() => (props.disabled || !hintsShown.value ? undefined : props.hotkey))
 const rich = computed(() => !!detail.value || !!shownKey.value)
 
 /** The bubble's clearance from the screen's edges (ticket 169). */
@@ -197,7 +199,7 @@ onBeforeUnmount(hide)
         <template v-if="rich">
           <span class="app-tooltip__head">
             <strong class="app-tooltip__name">{{ name }}</strong>
-            <kbd v-if="shownKey" class="app-tooltip__key">{{ shownKey }}</kbd>
+            <KeyChip v-if="shownKey" class="app-tooltip__key">{{ shownKey }}</KeyChip>
           </span>
           <span v-if="detail" class="app-tooltip__body" :class="{ 'app-tooltip__body--disabled': disabled }">{{ detail }}</span>
         </template>

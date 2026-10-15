@@ -94,4 +94,15 @@ describe('ShortcutsHelp', () => {
 
     expect(true).toBe(true)
   })
+
+  it('has a key hints switch at the top that reads the device and stores the first flip (ticket 438)', async () => {
+    const wrapper = mountHelp()
+    const row = wrapper.get('[data-testid="shortcuts-help-key-hints"]')
+    expect(row.text()).toContain(ru.shortcutsHelp.keyHints)
+    expect(row.get('[aria-checked="true"]').text()).toBe(ru.shortcutsHelp.keyHintsOn)
+
+    await row.get('[data-value="off"]').trigger('click')
+    expect(localStorage.getItem('bd-beads:key-hints')).toBe('off')
+    expect(wrapper.findAll('.shortcuts-help__kbd').length).toBeGreaterThan(0) // the help's own chips stay
+  })
 })

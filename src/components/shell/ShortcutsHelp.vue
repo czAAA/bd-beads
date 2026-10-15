@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useKeyHints } from '../../composables/ui/useKeyHints'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppModal from '../ui/AppModal.vue'
 import IconButton from '../ui/IconButton.vue'
+import KeyChip from '../ui/KeyChip.vue'
 import { chordParts } from '../../domain/chord'
 import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, type ControlGroup } from '../../composables/shell/controlRegistry'
 
@@ -21,6 +24,17 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const closeAction = controlAction('close')
+
+/** The switch for hotkey chips (ticket 438): reads the effective state, and its first flip keeps a choice on this device. */
+const { shown: hintsShown, setShown: setHintsShown } = useKeyHints()
+const hintsChoice = computed<'on' | 'off'>({
+  get: () => (hintsShown.value ? 'on' : 'off'),
+  set: (next) => setHintsShown(next === 'on'),
+})
+const hintsOptions = computed(() => [
+  { value: 'on' as const, label: t.value.shortcutsHelp.keyHintsOn },
+  { value: 'off' as const, label: t.value.shortcutsHelp.keyHintsOff },
+])
 
 interface HelpRow {
   id: string
@@ -81,6 +95,11 @@ function spoken(keys: HelpRow['keys']): string {
       />
     </template>
 
+    <div class="shortcuts-help__switch" data-testid="shortcuts-help-key-hints">
+      <span id="shortcuts-help-key-hints-label" class="shortcuts-help__label">{{ t.shortcutsHelp.keyHints }}</span>
+      <SegmentedControl v-model="hintsChoice" :options="hintsOptions" labelledby="shortcuts-help-key-hints-label" small />
+    </div>
+
     <div class="shortcuts-help__groups">
       <section v-for="group in groups" :key="group.group" class="shortcuts-help__group" data-testid="shortcuts-help-group">
         <h3 class="shortcuts-help__group-title">{{ group.title }}</h3>
@@ -92,7 +111,7 @@ function spoken(keys: HelpRow['keys']): string {
                 <span v-if="alternative > 0" class="shortcuts-help__or" aria-hidden="true">,</span>
                 <template v-for="(key, index) in chord" :key="index">
                   <span v-if="index > 0" class="shortcuts-help__plus" aria-hidden="true">+</span>
-                  <kbd class="shortcuts-help__kbd" aria-hidden="true">{{ key }}</kbd>
+                  <KeyChip always class="shortcuts-help__kbd" aria-hidden="true">{{ key }}</KeyChip>
                 </template>
               </template>
               <span class="shortcuts-help__spoken">{{ spoken(shortcut.keys) }}</span>
@@ -105,6 +124,14 @@ function spoken(keys: HelpRow['keys']): string {
 </template>
 
 <style scoped>
+.shortcuts-help__switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-16);
+}
+
 .shortcuts-help__groups {
   /* Two columns when each has room, one on a phone (ticket 231). */
   columns: 2 11rem;

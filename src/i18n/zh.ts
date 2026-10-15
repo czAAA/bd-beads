@@ -506,6 +506,9 @@ export const zh: Translations = {
     canvasGroup: '画布',
     zoomCanvas: '缩放画布',
     paletteColors: '按调色板顺序选择调色板颜色',
+    keyHints: '显示按键提示',
+    keyHintsOn: '开',
+    keyHintsOff: '关',
   },
   tooltips: {
     paint: '右键擦除。',
