@@ -80,7 +80,6 @@ describe('App', () => {
     expect(canvas.element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
     expect(canvas.find('[data-testid="canvas-backdrop"]').attributes('aria-hidden')).toBe('true')
     expect(canvas.find('[data-testid="canvas-backdrop"]').text()).not.toBe('')
-    expect(canvas.find('[data-testid="canvas-strip-size"]').exists()).toBe(true)
   })
 
   it('paints a cell with the selected palette color', async () => {
@@ -132,7 +131,7 @@ describe('App', () => {
 
     expect(frameGrid(loadProjects()[0]!)[0]![1]!.color).toBe('#2f6fed')
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
     const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![0]!.color).toBe('#e63746')
@@ -254,10 +253,10 @@ describe('App', () => {
 
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#2f6fed')
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
   })
 

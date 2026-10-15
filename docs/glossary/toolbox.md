@@ -18,8 +18,9 @@ _Avoid_: toolbar, rail, tab bar
 The Dock's last slot: a modal sheet of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link). Everything about the open Project lives in the Project sheet instead.
 _Avoid_: More, header menu
 
-**Zoom pill**:
-The movable pill floating over the canvas: Rulers, Undo, Redo, zoom out, the zoom level, zoom in, Fit. Dragging it from anywhere on it (past about 6px; a tap still presses the button) moves it anywhere inside the canvas box, and it stays exactly where it is dropped, with no snapping; Alt + an arrow key nudges it a step. It is always fully visible: when the canvas box shrinks or the screen turns it is pulled back inside, and it keeps its relative place when the box grows again. The position is kept on the device. It has no Row progress button: the Progress bar's switch (`P`) is the only way to turn Row progress on or off (ticket 411).
+**Canvas strip**:
+The slim row along the top of the canvas box, at every width (ticket 425, ADR 0055). Right-aligned: the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone the cluster scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds the framing step's own zoom alone. It replaced the draggable Zoom pill.
+_Avoid_: Zoom pill, Canvas header
 
 **Tool button**:
 A Tools-group tool shown as an icon-only tab (Paint is a pencil), 56px wide, five to a row, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Frame (7 to `=` are left free for later tools; ticket 292), shown as a small badge beside the icon on every device. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.

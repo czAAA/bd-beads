@@ -10,7 +10,6 @@ import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
-import ZoomPill from './ZoomPill.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
 import { frameBarAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
@@ -47,8 +46,6 @@ const {
   activeTool,
   showRulers,
   toggleRulers,
-  zoomPillPlacement,
-  setZoomPillPlacement,
   canUndo,
   canRedo,
   onUndo,
@@ -59,8 +56,6 @@ const {
   zoomIn,
   zoomOut,
   resetZoom,
-  zoomPercent,
-  stripSize,
   stripZoomPercent,
   spaceHeld,
   spacePanning,
@@ -89,7 +84,6 @@ const {
   onCellHover,
   onHoverEnd,
   beadCursor,
-  keyboardOnProject,
   cursorShown,
   onProjectKeyboardFocus,
   onProjectKey,
@@ -104,7 +98,6 @@ const {
   locale,
   settingFrame,
   surfaceInputMode,
-  settledProject,
   onDoneSetFrame,
   onFitFrame,
   onStepFrameEdge,
@@ -184,23 +177,24 @@ function techniqueWord(technique: Technique): string {
       data-testid="app-canvas"
     >
       <!--
-        The canvas box's header strip (ticket 143): what is on the board and its zoom. While a picture is being
-        framed (ticket 58) its zoom is the framing step's own, over its own 100–800% range (domain/imageFraming),
-        since that zoom moves the picture under a fixed frame rather than scaling the Project on screen. The strip
-        never scrolls, zooms or rotates with the Project below it. The Dock layout otherwise leaves zoom to the
-        Zoom pill (ADR 0046), but the pill excludes framing (there is no Project yet to float over), so the strip
-        keeps its own cluster then even with the flag on (ticket 385).
+        The canvas box's header strip (ticket 143, ADR 0055): the canvas controls (Rulers, Undo, Redo, zoom, Fit) and
+        Canvas color. While a picture is being framed (ticket 58) its zoom is the framing step's own, over its own
+        100–800% range (domain/imageFraming), since that zoom moves the picture under a fixed frame rather than
+        scaling the Project on screen. The strip never scrolls, zooms or rotates with the Project below it.
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
-        :project="settledProject"
-        :size="stripSize"
-        :zoom-percent="framing ? stripZoomPercent : undefined"
+        :project="framing ? undefined : activeProject"
+        :rulers="showRulers"
+        :can-undo="canUndo"
+        :can-redo="canRedo"
+        :zoom-percent="stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
-        :hint="keyboardOnProject ? (settingFrame ? t.frame.keyboardHint : t.a11y.keyboardHint) : undefined"
-        :title="framing ? t.convertImage.heading : undefined"
         :canvas-color="activeProject && !framing"
+        @toggle-rulers="toggleRulers"
+        @undo="onUndo"
+        @redo="onRedo"
         @zoom-in="framing ? convertZoomIn() : zoomIn()"
         @zoom-out="framing ? convertZoomOut() : zoomOut()"
         @reset="framing ? convertResetZoom() : resetZoom()"
@@ -213,32 +207,13 @@ function techniqueWord(technique: Technique): string {
         <!-- How to move the canvas and its shortcuts: at 1024px and up (CanvasHint card). -->
         <CanvasHint v-if="activeProject && !framing" class="app-shell__canvas-hint" />
 
-        <!-- The phone tier's own zoom (ticket 79; ZoomPill card): no canvas strip there, so this floats over the Project's bottom-right corner instead. -->
-        <ZoomPill
-          v-if="activeProject && !framing"
-          class="app-shell__zoom-pill"
-          :placement="zoomPillPlacement"
-          :zoom-percent="zoomPercent"
-          :rulers="showRulers"
-          :project="activeProject"
-          :can-undo="canUndo"
-          :can-redo="canRedo"
-          @toggle-rulers="toggleRulers"
-          @undo="onUndo"
-          @redo="onRedo"
-          @zoom-in="zoomIn"
-          @zoom-out="zoomOut"
-          @reset="resetZoom"
-          @move="setZoomPillPlacement"
-        />
-
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
           inside the canvas box; "Tap to paste" sits at its top-centre, and Edit Frame's bar is anchored above the Frame (ticket 417).
         -->
         <ContextBar
           v-if="activeProject && !framing"
-          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary), [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
+          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
           :anchor="barAnchor"
           :gesturing="surfacePressing"
@@ -396,33 +371,9 @@ function techniqueWord(technique: Technique): string {
   transform: translateX(-50%);
 }
 
-/* The top bars keep clear of the Zoom pill (ticket 297): they drop below one resting in the upper half. The pill's own height is its 36px buttons, 4px padding and 1px border. */
-.app-shell__context-bar--top.app-shell__context-bar--pill-top {
-  top: calc(var(--space-16) + var(--zoom-pill-button) + 2 * var(--space-4) + 2px + var(--space-10));
-}
-
 /* With the bar gone (while a picture is framed), the toasts and the Selection bar sit where it was. */
 .app-shell__canvas--no-progress {
   --progress-height: 0px;
-}
-
-.app-shell__zoom-pill {
-  position: absolute;
-  z-index: var(--z-canvas-overlay);
-  display: inline-flex;
-  /* Never wider than the box it floats in, so a narrow phone can't push it out (ticket 297). */
-  max-width: calc(100% - 2 * var(--space-16));
-}
-
-/*
- * The pill rests anywhere in the drawing area (tickets 297, 321), a --space-16 gap from its edges (ZOOM_PILL_INSET_PX).
- * Its placement is the share of the room it has to move in, so it is fully visible at any box size: `left` / `top`
- * put its own top-left corner that share of the way along, and `translate` takes back that share of its own size.
- */
-.app-shell__zoom-pill {
-  left: calc(var(--space-16) + var(--zoom-pill-x) * (100% - 2 * var(--space-16)));
-  top: calc(var(--space-16) + var(--zoom-pill-y) * (100% - 2 * var(--space-16)));
-  translate: calc(var(--zoom-pill-x) * -100%) calc(var(--zoom-pill-y) * -100%);
 }
 
 /* The canvas box's cell: the rest of the width, the full height. */
@@ -472,13 +423,8 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/*
- * ZoomPill excluded (ticket 188): it already sets its own `position: absolute` to float over the phone's Project
- * (below), and this broader rule's `relative` used to outrank that in specificity -- `.app-shell__drawing > :not(x)`
- * beats a plain `.app-shell__zoom-pill`, stretching the pill across the top of the canvas box instead of floating it.
- * CanvasHint is excluded for the same reason: it floats over the bottom-left corner, and so is the context bar, which floats over the beads.
- */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__zoom-pill):not(.app-shell__canvas-hint):not(.context-bar) {
+/* CanvasHint is excluded: it floats over the bottom-left corner, and so is the context bar, which floats over the beads. */
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar) {
   position: relative;
 }
 
