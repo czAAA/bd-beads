@@ -45,7 +45,6 @@ export const uk: Translations = {
     canvasLabel: '{name}, вільне полотно без рамки, {colors}',
     colorsCount: { one: '{count} колір', few: '{count} кольори', many: '{count} кольорів', other: '{count} кольору' },
     progressDone: 'готово рядів: {row} з {total}',
-    keyboardHint: 'стрілки рухають · пропуск малює · esc вихід',
     closeMessage: 'Закрити',
     expandPanel: 'Показати все',
     collapsePanel: 'Показати менше',
@@ -87,12 +86,6 @@ export const uk: Translations = {
     zoomInLabel: 'Збільшити',
     zoomOutLabel: 'Зменшити',
     zoomResetLabel: 'Вписати',
-    zoomPillMovedAnnouncement: 'Кнопки масштабу переміщено',
-    stripTitle: 'Схема',
-    widthSize: 'Ширина {count}',
-    heightSize: 'Висота {count}',
-    canvasTitle: 'Полотно',
-    piecesCount: { one: '{count} шматочок', few: '{count} шматочки', many: '{count} шматочків', other: '{count} шматочка' },
     noFrame: 'без рамки',
     rulersLabel: 'Лінійки',
     canvasColor: {
@@ -447,7 +440,6 @@ export const uk: Translations = {
       many: '{count} шматочків були в полі рамки й переміщені за його межі.',
       other: '{count} шматочка були в полі рамки й переміщені за його межі.',
     },
-    keyboardHint: 'стрілки рухають рамку · Shift і стрілки змінюють розмір · Enter: готово',
   },
   size: {
     estimateLabel: 'Приблизний розмір',

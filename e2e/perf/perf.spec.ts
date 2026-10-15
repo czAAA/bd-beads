@@ -185,7 +185,7 @@ for (const slowdown of SLOWDOWNS) {
 
       // The zoom a Project opens at: fit for a big one, 100% for a small one. Hover and paint are measured on the beads
       // that are on screen at that zoom, with the top of the grid brought to the top of the window.
-      await page.getByTestId('zoom-pill-fit').click()
+      await page.getByTestId('zoom-reset').click()
       const grid = page.getByTestId('project-surface')
       await grid.evaluate((element) => window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - 120))
       await settle(page)
@@ -242,11 +242,11 @@ for (const slowdown of SLOWDOWNS) {
       if (wanted('zoom')) {
         const busyBefore = await busyMs(cdp)
         const started = Date.now()
-        await page.getByTestId('zoom-pill-in').click()
+        await page.getByTestId('zoom-in').click()
         await settle(page)
         const inMs = Date.now() - started
         const started2 = Date.now()
-        await page.getByTestId('zoom-pill-out').click()
+        await page.getByTestId('zoom-out').click()
         await settle(page)
         results.push({ slowdown, size: name, what: 'zoom step', ms: (inMs + Date.now() - started2) / 2, note: `busy ${Math.round(((await busyMs(cdp)) - busyBefore) / 2)} ms` })
       }

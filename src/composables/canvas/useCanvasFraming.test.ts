@@ -31,23 +31,20 @@ describe('useCanvasFraming', () => {
     stop()
   })
 
-  it('leaves the size to the strip itself for the open Project, and shows its zoom', () => {
+  it('shows the open Project’s zoom', () => {
     const { result, stop } = setup()
-    expect(result.stripSize.value).toBeUndefined()
     expect(result.stripZoomPercent.value).toBe(result.zoomPercent.value)
     stop()
   })
 
-  it('shows the framed Project’s grid and the framing zoom while framing, even with a Project open', () => {
+  it('shows the framing zoom while framing, even with a Project open', () => {
     const { result, stop } = setup({ framing: { columns: 10, rows: 12 } })
-    expect(result.stripSize.value).toEqual({ columns: 10, rows: 12 })
     expect(result.stripZoomPercent.value).toBe(60)
     stop()
   })
 
   it('shows nothing with nothing on the board', () => {
     const { result, stop } = setup({ open: false })
-    expect(result.stripSize.value).toBeUndefined()
     expect(result.stripZoomPercent.value).toBeUndefined()
     stop()
   })

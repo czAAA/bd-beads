@@ -72,7 +72,6 @@
     "components/TourPattern/tour-pattern.json",
     "components/TourStep/README.md",
     "components/WritingPatterns/README.md",
-    "components/ZoomPill/README.md",
     "components/bundle.css",
     "forms-and-states.md",
     "interaction-and-motion.md",
@@ -407,11 +406,6 @@
       "name": "WritingPatterns",
       "group": "Writing",
       "summary": "How the app talks: the voice, and one sentence pattern for each kind of message, in English and Russian."
-    },
-    {
-      "name": "ZoomPill",
-      "group": "Responsive",
-      "summary": "The phone's zoom control: zoom out, the zoom level, zoom in and fit, floating over the Pattern, bottom-right to start with and then wherever the person drops it."
     }
   ],
   "assetGroups": [

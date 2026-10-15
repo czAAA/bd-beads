@@ -218,7 +218,7 @@
   --field-height: 40px; /* Text, number and select fields, Steppers and form buttons: taller than the 34px controls because people type and read in them. */
   --field-height-phone: 48px; /* Form buttons (Create Pattern, Convert image) on a phone. */
   --loading-delay: 300ms; /* Wait before any loading indicator appears, so fast work never flashes. */
-  --z-canvas-overlay: 10; /* Rulers, current-row marker, Selection, paste preview, ZoomPill: inside the canvas box. */
+  --z-canvas-overlay: 10; /* Rulers, current-row marker, Selection, paste preview: inside the canvas box. */
   --z-chrome: 20; /* Header, Dock, Progress bar when they overlap scrolling content. */
   --z-context-bar: 30; /* The Selection ContextBar above the Progress bar. */
   --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */

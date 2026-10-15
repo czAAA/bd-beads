@@ -1,14 +1,15 @@
 # CanvasStrip
 
-The 46px header strip at the top of the canvas box: what is on the canvas, whether rulers show, which background the drawing area has, and a zoom cluster.
+The 46px header strip at the top of the canvas box: the canvas's own controls, right-aligned, and the Canvas color picker last. It names nothing (ticket 425, ADR 0055).
 
 - The canvas box: `box` fill, 1px `box-line`, radius-lg, `elevation-2` (light only), overflow hidden; it takes all the width right of the left column.
-- Strip: padding 0 10 0 16, gap 12, bottom divider `box-muted` at 22%.
-- **No Frame (v16):** grid icon + "Canvas" (`control`), then "3 pieces · no Frame" (`meta` in `box-muted`). (Edit Frame needs a Frame, so the strip has no "setting Frame" wording since ticket 417.)
-- **Frame set:** grid icon + "Pattern", "Width 21 · Height 19 · 3.4 × 3.0 cm". The app does not count pieces outside the Frame (ticket 259 removed it), so there is no divider and no count.
-- **Narrow strip (ticket 315):** the size line never clips. Below 800px of strip width the printed-size estimate ("· 3.4 × 3.0 cm") is hidden; below 700px the grid icon is hidden too and the title and size line sit 10px closer. At 1024px the strip is about 630px wide, so both apply there. The strip's title, size and hint still truncate with an ellipsis as a last resort, and the zoom cluster never shrinks.
-- Right-aligned: the Rulers toggle, the Canvas color button, zoom out, the zoom level, zoom in, then Fit, in that order (ticket 287; the level is DM Mono `type-meta`, 48px wide and centered so the buttons don't shift). Zoom runs 10% to 400% in 10% steps; the tier's smallest-bead floor wins where it is higher. Icon buttons 30px, radius-sm, no fill.
+- Strip: padding 0 10 0 16, gap 8, bottom divider `box-muted` at 22%, content right-aligned.
+- **No title, size line, printed-size estimate, grid icon or keyboard-focus hint** (ticket 425 removed them; before it the strip read "Canvas · 3 pieces · no Frame" or "Pattern · Width 21 · Height 19 · 3.4 × 3.0 cm"). The Project's size lives in the Project sheet and the Frame's size tooltip.
+- **Controls, in this order:** the Rulers toggle, Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color button. Rulers, Undo and Redo show only with a Project open (not while a picture is framed); with nothing open the strip is empty. The level is DM Mono `type-meta`, 48px wide and centered so the buttons don't shift. Zoom runs 10% to 400% in 10% steps; the tier's smallest-bead floor wins where it is higher. Icon buttons 30px (44px on a coarse pointer), 18px icons, radius-sm, no fill.
+- **At every width, phones included.** When the strip is too narrow for the cluster it scrolls sideways (no visible scrollbar) and the buttons are never squeezed; Canvas color stays beside it.
+- **Convert image framing:** the strip keeps only its own zoom (out, level, in, Fit) over the framing step's 100–800% range, since that zoom moves the picture under the fixed frame.
 - **Rulers toggle:** the `ruler` icon; pressed is an `ink` fill with a `canvas` icon. Name "Rulers", `aria-pressed`. Shortcut `R`.
-- **Canvas color button:** 30px, a 16px round dot showing the current background with a 1.5px `field-line` ring (so near-white stays visible). Name "Canvas color" with its own Tooltip, `aria-haspopup`, `aria-expanded`. It is the shared MenuButton (ticket 338) in its popover form, with the dot as its face. The Rulers and zoom buttons are control-registry icon buttons, so their Tooltips carry the key chip (`R`, `Ctrl/Cmd+−`, `Ctrl/Cmd++`, `Ctrl/Cmd+0`). It opens the five-swatch picker (see CanvasBackground). In the high-contrast theme, where every choice is white, the popover holds the Dots | Squares choice alone.
+- **Canvas color button:** 30px, a 16px round dot showing the current background with a 1.5px `field-line` ring (so near-white stays visible). Name "Canvas color" with its own Tooltip, `aria-haspopup`, `aria-expanded`. It is the shared MenuButton (ticket 338) in its popover form, with the dot as its face. Every other button is a control-registry icon button, so its Tooltip carries the key chip (`R`, `Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`, `Ctrl/Cmd+−`, `Ctrl/Cmd++`, `Ctrl/Cmd+0`) and says why it is disabled. The picker opens the five-swatch picker (see CanvasBackground). In the high-contrast theme, where every choice is white, the popover holds the Dots | Squares choice alone.
+- The Zoom pill (a draggable pill with the same buttons, ticket 79) is gone; its buttons moved here.
 
-Hand-written from DESIGN.md §4.3 and the v16 sign-off; static rendition.
+Hand-written from DESIGN.md §4.3, the v16 sign-off and ADR 0055.
