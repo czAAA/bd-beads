@@ -62,15 +62,15 @@ describe('App select, copy and paste', () => {
     expect(selectedCount(wrapper)).toBe(0)
   })
 
-  it('Select all selects the rectangle round every bead and leaves Select active; on an empty canvas it does nothing (ticket 414)', async () => {
-    const wrapper = await mountWithProject(6, 6)
+  it('Select all selects the Frame\'s inside, beads or not, and leaves Select active (tickets 414, 428)', async () => {
+    const wrapper = await mountWithProject(6, 6) // a 4x4 Frame
     await pickTool(wrapper, 'select-all')
-    expect(selectedCount(wrapper)).toBe(0)
+    expect(selectedCount(wrapper)).toBe(16)
 
     await projectWithMotif(wrapper)
     await pickTool(wrapper, 'select-all')
 
-    expect(selectedCount(wrapper)).toBe(4)
+    expect(selectedCount(wrapper)).toBe(16)
     await openSheet(wrapper, 'dock-tool')
     expect(wrapper.find('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-testid="sheet-tool-select-all"]').attributes('aria-pressed')).toBeUndefined()
@@ -82,9 +82,9 @@ describe('App select, copy and paste', () => {
     await pickTool(wrapper, 'select-all')
 
     await pickTool(wrapper, 'piece')
-    expect(selectedCount(wrapper)).toBe(4)
+    expect(selectedCount(wrapper)).toBe(16)
     await pickTool(wrapper, 'select')
-    expect(selectedCount(wrapper)).toBe(4)
+    expect(selectedCount(wrapper)).toBe(16)
     await pickTool(wrapper, 'paint')
     expect(selectedCount(wrapper)).toBe(0)
   })
