@@ -539,6 +539,33 @@ describe('useSelectionGesture', () => {
     })
   })
 
+  describe('a legacy Project with beads in the margin (ticket 433)', () => {
+    const frame = { row: 10, column: 10, rows: 4, columns: 6 }
+    const legacy = () => {
+      const project = withFrame(makeProject(), frame)
+      return setup({ ...project, beads: { 8: { 11: RED }, 11: { 11: RED } } })
+    }
+
+    it('no path can select a margin bead: drag, ruler, key and Piece tap all keep out', () => {
+      const { gesture } = legacy()
+      gesture.beginPress(8, 11)
+      expect(gesture.extendPress(8, 11)).toBe(false)
+      expect(gesture.selection.value).toBeUndefined()
+      gesture.tapPiece(8, 11)
+      expect(gesture.selection.value).toBeUndefined()
+      expect(gesture.selectLine({ top: 8, left: 0, rows: 1, columns: 100 })).toBe(false)
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('Cut and Clear selection leave a margin bead alone, while Erase still clears it', () => {
+      const { gesture, harness } = legacy()
+      gesture.selectAll()
+      gesture.cut()
+      expect(harness.currentProject()!.beads[8]?.[11]).toBe(RED)
+      expect(harness.currentProject()!.beads[11]?.[11]).toBeUndefined()
+    })
+  })
+
   describe('handles (ticket 414)', () => {
     function selected() {
       const harness = setup()
