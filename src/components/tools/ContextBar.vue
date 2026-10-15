@@ -108,7 +108,7 @@ interface BarItem {
   danger?: boolean
 }
 
-/** What applies to this Selection, in order (ContextBar card). */
+/** What applies to this Selection, in order, Select all first while the Select tool is active (ContextBar card). */
 const items = computed<BarItem[]>(() => {
   const list: BarItem[] = [
     ...(props.selectActive ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),

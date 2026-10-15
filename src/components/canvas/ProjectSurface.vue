@@ -662,9 +662,14 @@ watch(
   },
 )
 
+/** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket 428). */
+function refusesSelectionStart(bead: GridPosition): boolean {
+  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
+}
+
 function refusesMargin(bead: GridPosition | undefined): boolean {
   if (bead === undefined) return false
-  if (props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)) return true
+  if (refusesSelectionStart(bead)) return true
   return props.blocksMargin === true && !mayPlace(props.project, bead)
 }
 
@@ -763,7 +768,7 @@ function onPointerDown(event: PointerEvent): void {
   // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
   if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
     refusePress()
-    if (props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)) return
+    if (refusesSelectionStart(bead)) return
   }
 
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.
