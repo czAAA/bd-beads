@@ -4,8 +4,8 @@ import { useI18n } from '../../i18n/useI18n'
 import { TOOL_HOTKEYS } from '../tools/toolIcons'
 
 /**
- * The one line in the drawing area's bottom-left corner that says how to move the Canvas and names its shortcuts
- * (CanvasHint card): "scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers". It does not move
+ * The one line at the drawing area's top-centre, under the strip, shown while the Project has no beads (ticket 429),
+ * that says how to move the Canvas and names its shortcuts (CanvasHint card): "scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers". It does not move
  * with the canvas, is decoration for the eye (the same shortcuts are in Keyboard shortcuts), and is left to the phone,
  * which has no wheel and no keyboard, to leave out. On Windows and Linux the ⌘ chip reads "Ctrl".
  */
@@ -35,8 +35,11 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
 <style scoped>
 .canvas-hint {
   position: absolute;
-  bottom: var(--space-12);
-  left: 14px;
+  top: var(--space-12);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 2 * var(--space-16));
+  justify-content: center;
   z-index: var(--z-canvas-overlay);
   display: flex;
   flex-wrap: wrap;
@@ -46,6 +49,13 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
   font: 400 0.75rem/1rem var(--font-sans);
   color: var(--muted);
   pointer-events: none;
+}
+
+/* A phone has no wheel and no keyboard to hint at (CanvasHint card); the width is controls.css's phone width. */
+@media (max-width: 30rem) {
+  .canvas-hint {
+    display: none;
+  }
 }
 
 .canvas-hint__dot {

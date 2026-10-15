@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { beadBounds, beadCount, beadsFromColors, beadsInFrame, colorAt, colorsInFrame, forEachBead, withColors } from './canvas'
+import { beadBounds, beadCount, beadsFromColors, beadsInFrame, colorAt, colorsInFrame, forEachBead, hasBeads, withColors } from './canvas'
 
 describe('beads by position', () => {
   it('reads null where nothing is painted, far or negative included', () => {
@@ -41,5 +41,13 @@ describe('beads by position', () => {
     const frame = { row: 0, column: 0, rows: 2, columns: 2 }
     expect(colorsInFrame(beads, frame)).toEqual([['#f00', null], [null, '#0f0']])
     expect(beadsInFrame(beads, frame)).toEqual(beadsFromColors([['#f00', null], [null, '#0f0']]))
+  })
+})
+
+describe('hasBeads', () => {
+  it('is false for no beads or only empty rows, true once one is painted', () => {
+    expect(hasBeads({})).toBe(false)
+    expect(hasBeads({ 0: {} })).toBe(false)
+    expect(hasBeads({ 2: { 3: '#fff' } })).toBe(true)
   })
 })
