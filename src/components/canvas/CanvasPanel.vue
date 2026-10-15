@@ -43,6 +43,7 @@ const {
   zoom,
   scroll,
   onSelectLine,
+  selectionRefusals,
   activeTool,
   showRulers,
   toggleRulers,
@@ -287,7 +288,8 @@ function techniqueWord(technique: Technique): string {
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
-              :selection-blocks-margin="activeTool === 'select'"
+              :selection-blocks-margin="activeTool === 'select' || activeTool === 'piece'"
+              :selection-refusals="selectionRefusals"
               :selecting="activeTool === 'select' || activeTool === 'piece'"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"

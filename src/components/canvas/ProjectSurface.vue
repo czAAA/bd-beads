@@ -66,6 +66,8 @@ const props = defineProps<{
   blocksMargin?: boolean
   /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
   selectionBlocksMargin?: boolean
+  /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket 433): each one shows the not-allowed cue, the margin outline for 1s. */
+  selectionRefusals?: number
   /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped marker, and the Selection shows its handles. */
   selecting?: boolean
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead marker give way, and a chip by the pointer shows the color of the bead under it. */
@@ -613,6 +615,13 @@ watch(marginOutlineWanted, (wanted) => {
   }
   fadeFrame = requestAnimationFrame(step)
 })
+
+watch(
+  () => props.selectionRefusals,
+  (now, before) => {
+    if (now !== undefined && now !== before) refusePress()
+  },
+)
 
 function refusePress(): void {
   refusedPress.value = true

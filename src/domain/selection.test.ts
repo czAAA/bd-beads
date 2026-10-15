@@ -14,6 +14,7 @@ import {
   selectionBetween,
   type CopiedBlock,
 } from './selection'
+import { withColors } from './canvas'
 import { createProject, withFrameGrid, type Project, frameGrid } from './project'
 import { BEAD_CATALOG } from './beads'
 
@@ -293,5 +294,23 @@ describe('selectionHoldsAllBeads (ticket 415)', () => {
   it('is false when a bead is left outside, and on an empty canvas', () => {
     expect(selectionHoldsAllBeads(beads, { top: 1, left: 1, rows: 2, columns: 2 })).toBe(false)
     expect(selectionHoldsAllBeads({}, { top: 0, left: 0, rows: 9, columns: 9 })).toBe(false)
+  })
+})
+
+describe('pieceSelectionAt with a Frame (ticket 433)', () => {
+  const frame = { row: 10, column: 10, rows: 4, columns: 6 }
+  const beads = withColors(
+    {},
+    [
+      { row: 12, column: 9, color: '#e63746' },
+      { row: 12, column: 10, color: '#e63746' },
+      { row: 12, column: 11, color: '#e63746' },
+      { row: 12, column: 8, color: '#e63746' },
+    ],
+  )
+
+  it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
+    expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
+    expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 9 }, frame)).toBeUndefined()
   })
 })
