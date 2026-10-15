@@ -45,10 +45,10 @@ export interface FrameAnchor extends SelectionAnchor {
   numbers: { across: number; down: number }
 }
 
-/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` apart. */
+/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` (2px) apart. */
 const STEPPER_PX = 28
 const TOUCH_STEPPER_PX = 36
-const STEPPER_PAIR_GAP_PX = 8
+const STEPPER_PAIR_GAP_PX = 2
 
 /** The centre of each edge's stepper pair, in the canvas box's pixels. */
 export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>

@@ -10,8 +10,8 @@ import { useI18n } from '../../i18n/useI18n'
 
 /**
  * Edit Frame's margin steppers (ticket 417, ADR 0054, ticket 427): a mini −/+ on each of the Frame's four edges, in the
- * margin between the ruler numbers and its outer edge, clamped inside the canvas box. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge changes by
- * itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
+ * margin between the ruler numbers and its outer edge, clamped inside the canvas box. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
+ * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
  * pixels), so they track pan and zoom. Rendered only while the Frame is being edited, never for a Selection.
  */
 const props = defineProps<{

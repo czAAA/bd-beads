@@ -146,7 +146,7 @@ describe('useFrameFlow', () => {
   })
 
   it('ends Edit Frame on a tap outside the Frame, not on a press inside it or a cancelled one (ticket 427)', () => {
-    const { settingFrame, start, press, release, cancel } = setup()
+    const { settingFrame, start, press, drag, release, cancel } = setup()
     start()
     press({ kind: 'inside' }, { row: 1, column: 1 })
     release()
@@ -154,6 +154,11 @@ describe('useFrameFlow', () => {
 
     press({ kind: 'outside' }, { row: 9, column: 9 })
     cancel()
+    release()
+    expect(settingFrame.value).toBe(true)
+
+    press({ kind: 'outside' }, { row: 9, column: 9 })
+    drag({ row: 9, column: 8 })
     release()
     expect(settingFrame.value).toBe(true)
 
