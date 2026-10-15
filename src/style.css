@@ -30,7 +30,7 @@ body {
 
 /*
  * touch-action is not inherited: a scrolling sheet body or any control left at `auto` would let Safari pinch-zoom the
- * page there. Every element is locked to panning; the canvas (ProjectSurface, ZoomPill) sets its own `none`, which
+ * page there. Every element is locked to panning; the canvas (ProjectSurface) sets its own `none`, which
  * out-ranks this zero-specificity rule.
  */
 :where(*) {

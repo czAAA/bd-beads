@@ -45,7 +45,6 @@ export const es: Translations = {
     canvasLabel: '{name}, lienzo sin marco, {colors}',
     colorsCount: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },
     progressDone: 'fila {row} de {total} terminada',
-    keyboardHint: 'flechas mueven · espacio pinta · esc sale',
     closeMessage: 'Cerrar',
     expandPanel: 'Mostrar todo',
     collapsePanel: 'Mostrar menos',
@@ -87,12 +86,6 @@ export const es: Translations = {
     zoomInLabel: 'Acercar',
     zoomOutLabel: 'Alejar',
     zoomResetLabel: 'Ajustar',
-    zoomPillMovedAnnouncement: 'Controles de zoom movidos',
-    stripTitle: 'Esquema',
-    widthSize: 'Ancho {count}',
-    heightSize: 'Alto {count}',
-    canvasTitle: 'Lienzo',
-    piecesCount: { one: '{count} trozo', many: '{count} de trozos', other: '{count} trozos' },
     noFrame: 'sin marco',
     rulersLabel: 'Reglas',
     canvasColor: {
@@ -445,7 +438,6 @@ export const es: Translations = {
       many: '{count} de trozos estaban en el margen y se movieron fuera de él.',
       other: '{count} trozos estaban en el margen y se movieron fuera de él.',
     },
-    keyboardHint: 'las flechas mueven el marco · mayús y flechas lo redimensionan · intro termina',
   },
   size: {
     estimateLabel: 'Tamaño estimado',

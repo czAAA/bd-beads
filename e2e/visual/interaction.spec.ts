@@ -107,7 +107,7 @@ test.describe('the pointer tools', () => {
     expect([1, 2, 3, 4, 5, 6].map((column) => colorAt(saved, 2, column))).toEqual(Array(6).fill(DEFAULT_COLOR))
     expect(colorAt(saved, 2, 0)).toBeNull()
 
-    await page.getByTestId('zoom-pill-undo').click()
+    await page.getByTestId('strip-undo').click()
     expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 

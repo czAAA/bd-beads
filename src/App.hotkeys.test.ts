@@ -115,7 +115,7 @@ describe('App keyboard shortcuts', () => {
 
     expect(firstCellColor()).toBeNull()
     expect(selectedBeadCount(wrapper)).toBe(4)
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(firstCellColor()).toBe('#e63746')
   })
 
@@ -150,7 +150,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'r' })
 
-    expect(wrapper.find('[data-testid="zoom-pill-rulers"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')).toBe('false')
     expect(localStorage.getItem('bd-beads:rulers')).toBe('off')
   })
 
@@ -212,7 +212,7 @@ describe('App Eraser tool', () => {
 
     const grid = frameGrid(loadProjects()[0]!)
     expect([grid[0]![0]!.color, grid[0]![1]!.color]).toEqual([null, '#e63746'])
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
   })
 })

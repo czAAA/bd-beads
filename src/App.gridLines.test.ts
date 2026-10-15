@@ -39,7 +39,7 @@ const stored = () => loadProjects()[0]!
 
 const removeLineButton = (wrapper: ReturnType<typeof mount>) =>
   wrapper.find<HTMLButtonElement>('[data-testid="context-bar-remove-line"]')
-const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+const undo = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
 describe('Ruler click selects a whole row/column (ticket 123)', () => {
   it('selects the whole row when a row ruler number is clicked', async () => {
