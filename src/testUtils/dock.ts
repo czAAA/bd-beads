@@ -57,10 +57,9 @@ export async function openNewProject(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="phone-new-project-button"]').trigger('click')
 }
 
-/** Copies the Selection with the Selection bar's Copy, then arms Paste with its Paste (which discards the Selection). */
+/** Copies the Selection with the Selection bar's Copy, which clears the Selection and arms paste mode (ticket 437). */
 export async function copySelection(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="context-bar-copy"]').trigger('click')
-  await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
 }
 
 /** Rotates the Selection with the Selection bar's Rotate. */

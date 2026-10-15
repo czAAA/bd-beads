@@ -89,14 +89,15 @@ export const SCENARIOS: Scenario[] = [
     overlaid: 'all',
   })),
 
-  // A paste preview: the copied block in its own colors under the pointer; arming Paste discards the Selection (ticket 415).
+  // A paste preview: the copied block in its own colors under the pointer; Copy arms paste mode and clears the Selection (ticket 437).
   ...perTechnique((technique) => ({
     name: `${technique}-paste-preview`,
     prepare: async (page, context) => {
       await dragSelection(page, context, [1, 1], [3, 4])
       await copySelection(page)
     },
-    place: (page, context) => pointerOnBead(page, context, 5, 8),
+    // The fixture's bead (1, 1) is empty, so the copy is anchored on its first drawn bead, (1, 2): aiming at (5, 9) puts the block's corner at (5, 8).
+    place: (page, context) => pointerOnBead(page, context, 5, 9),
     // The block of 3 × 4 stamped with its corner at (5, 8), and the beads it was copied from.
     overlaid: [...beadsIn(1, 1, 3, 4), ...beadsIn(5, 8, 3, 4)],
   })),

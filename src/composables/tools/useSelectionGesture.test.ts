@@ -32,13 +32,12 @@ function setup(
   return { gesture, commitGridChange: harness.replaceProject, harness }
 }
 
-/** Drags a Selection over the top-left cell, copies it and arms Paste, leaving a paste projection armed. */
+/** Drags a Selection over the top-left cell and copies it, which arms paste mode (ticket 437). */
 function copyTopLeft(gesture: ReturnType<typeof setup>['gesture']) {
   gesture.beginPress(0, 0)
   gesture.extendPress(0, 0)
   gesture.endPress()
   gesture.copy()
-  gesture.armPaste()
 }
 
 describe('useSelectionGesture', () => {
@@ -95,44 +94,44 @@ describe('useSelectionGesture', () => {
   })
 
   describe('Copy and Paste by click', () => {
-    it('Copy keeps the Selection and does not arm Paste (ticket 415)', () => {
+    it('Copy clears the Selection and arms paste mode at once (ticket 437)', () => {
       const project = paintedProject()
       const { gesture } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(0, 0)
       gesture.endPress()
 
-      gesture.copy()
-
-      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 1, columns: 1 })
-      expect(gesture.hasClipboard()).toBe(true)
-      expect(gesture.pasteProjectionActive.value).toBe(false)
-    })
-
-    it('arming Paste discards the Selection and arms a paste preview (ticket 415)', () => {
-      const project = paintedProject()
-      const { gesture } = setup(project)
-      gesture.beginPress(0, 0)
-      gesture.extendPress(0, 0)
-      gesture.endPress()
-      gesture.copy()
-
-      gesture.armPaste()
+      expect(gesture.copy()).toBe(true)
 
       expect(gesture.selection.value).toBeUndefined()
-      expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([
-        { row: 2, column: 2, color: RED },
-      ])
+      expect(gesture.hasClipboard()).toBe(true)
+      expect(gesture.pasteProjectionActive.value).toBe(true)
+      expect(gesture.pastePreviewCells(project, { row: 2, column: 2 })).toEqual([{ row: 2, column: 2, color: RED }])
     })
 
-    it('arming Paste with nothing copied does nothing', () => {
+    it('Copy of a Selection with no drawn bead copies nothing and keeps the Selection', () => {
+      const { gesture } = setup(paintedProject())
+      gesture.beginPress(3, 3)
+      gesture.extendPress(3, 3)
+      gesture.endPress()
+
+      expect(gesture.copy()).toBe(false)
+
+      expect(gesture.hasClipboard()).toBe(false)
+      expect(gesture.pasteProjectionActive.value).toBe(false)
+      expect(gesture.selection.value).toBeDefined()
+    })
+
+    it('Cut copies without arming paste mode and keeps the Selection', () => {
       const { gesture } = setup(paintedProject())
       gesture.beginPress(0, 0)
       gesture.extendPress(0, 0)
       gesture.endPress()
 
-      gesture.armPaste()
+      gesture.cut()
 
+      expect(gesture.hasClipboard()).toBe(true)
+      expect(gesture.pasteProjectionActive.value).toBe(false)
       expect(gesture.selection.value).toBeDefined()
     })
 
@@ -169,17 +168,45 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeUndefined()
     })
 
-    it('a drag drops the clipboard, so the click that ends it stamps nothing', () => {
-      const project = paintedProject()
-      const { gesture, commitGridChange } = setup(project)
+    it('a drag in paste mode is one stamp at the press point and never selects (ticket 437)', () => {
+      const { gesture, commitGridChange, harness } = setup(paintedProject())
       copyTopLeft(gesture)
+
+      gesture.beginPress(1, 1)
+      gesture.extendPress(2, 2)
+      gesture.extendPress(3, 3)
+      gesture.endPress()
+
+      expect(gesture.selection.value).toBeUndefined()
+      expect(commitGridChange).toHaveBeenCalledTimes(1)
+      expect(frameGrid(harness.project)[1]![1]!.color).toBe(RED)
+      expect(gesture.pasteProjectionActive.value).toBe(true)
+    })
+
+    it('after leaving paste mode a drag selects again and drops the clipboard', () => {
+      const { gesture, commitGridChange } = setup(paintedProject())
+      copyTopLeft(gesture)
+      gesture.dismissPaste()
 
       gesture.beginPress(1, 1)
       gesture.extendPress(2, 2)
       gesture.endPress()
 
       expect(commitGridChange).not.toHaveBeenCalled()
-      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
+      expect(gesture.selection.value).toEqual({ top: 1, left: 1, rows: 2, columns: 2 })
+      expect(gesture.hasClipboard()).toBe(false)
+    })
+
+    it('leaving paste mode keeps the clipboard, and pasteAt re-arms it', () => {
+      const { gesture } = setup(paintedProject())
+      copyTopLeft(gesture)
+
+      gesture.dismissPaste()
+      expect(gesture.pasteProjectionActive.value).toBe(false)
+      expect(gesture.hasClipboard()).toBe(true)
+
+      expect(gesture.pasteAt({ row: 2, column: 2 })).toBe(true)
+      expect(gesture.pasteProjectionActive.value).toBe(true)
     })
 
     it('can stamp the same block again without copying again', () => {

@@ -255,8 +255,6 @@ export const pl: Translations = {
     label: 'Działania na zaznaczeniu',
     clearButton: 'Wyczyść zaznaczenie',
     moreLabel: 'Więcej',
-    pasteHint: 'Dotknij miejsca, w które wkleić',
-    cancelButton: 'Anuluj',
   },
   palette: {
     pickerLabel: 'Kolory palety',
@@ -283,6 +281,8 @@ export const pl: Translations = {
     pieceLabel: 'Kawałek',
     selectAllLabel: 'Zaznacz wszystko',
     copyButton: 'Kopiuj',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'W zaznaczeniu nie ma koralików do skopiowania.',
     cutButton: 'Wytnij',
     saveButton: 'Zapisz',
     savedConfirmation: 'Zapisano',

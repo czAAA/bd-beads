@@ -68,15 +68,12 @@ const {
   pasteProjectionActive,
   onCopy,
   onCut,
-  onPasteSelection,
   onClearSelection,
   onFillSelection,
   onFrameFromSelection,
-  hasClipboard,
   canNamePiece,
   hasPaintColor,
   onNamePiece,
-  backOutOfSelect,
   previewCells,
   previewedMirrorAxisCounts,
   mirrorCurrentDimmedCells,
@@ -214,16 +211,15 @@ function techniqueWord(technique: Technique): string {
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box; "Tap to paste" sits at its top-centre.
+          inside the canvas box; Select all sits at its top-centre.
         -->
         <ContextBar
           v-if="activeProject && !framing && !settingFrame"
-          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary) }"
+          :class="{ 'app-shell__context-bar--top': (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
           :paste-armed="pasteProjectionActive"
-          :has-clipboard="hasClipboard()"
           :project="activeProject"
           :can-remove-line="canRemoveSelectedLine"
           :can-name-piece="canNamePiece"
@@ -231,7 +227,6 @@ function techniqueWord(technique: Technique): string {
           :select-active="activeTool === 'select'"
           @copy="onCopy"
           @cut="onCut"
-          @paste="onPasteSelection"
           @fill="onFillSelection"
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
@@ -239,7 +234,6 @@ function techniqueWord(technique: Technique): string {
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
-          @dismiss="backOutOfSelect"
         />
 
         <EditFrameSteppers
@@ -353,7 +347,7 @@ function techniqueWord(technique: Technique): string {
 
 <style scoped>
 /*
- * "Tap to paste" and the Frame bar (tickets 295, 415; ContextBar card): the same bar, floating at the top-centre of the
+ * Select all and the Frame bar (tickets 295, 415, 437; ContextBar card): the same bar, floating at the top-centre of the
  * drawing area over the beads, so it never takes a row and never reaches the Dock. The Selection bar is placed by its own
  * component, against the Selection.
  */

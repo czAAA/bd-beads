@@ -121,6 +121,8 @@ describe('App keyboard shortcuts', () => {
 
   it('Ctrl+C copies the Selection, as the Copy button does', async () => {
     const wrapper = await mountApp(6, 6)
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0) // one drawn bead for Copy to take
     await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -128,8 +130,8 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'c', ctrlKey: true })
 
-    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0) // Copy keeps the Selection (ticket 415)
-    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(true)
+    expect(selectedBeadCount(wrapper)).toBe(0) // Copy clears the Selection and arms paste mode (ticket 437)
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
   it('Ctrl+X cuts the Selection: copies it, empties it and keeps it (ticket 415)', async () => {
@@ -142,7 +144,6 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ key: 'x', ctrlKey: true })
 
     expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
-    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(true)
   })
 
   it('R shows and hides the rulers, and the choice is kept on the device', async () => {
