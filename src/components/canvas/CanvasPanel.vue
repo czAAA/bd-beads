@@ -271,6 +271,7 @@ function techniqueWord(technique: Technique): string {
               :project="shownProject!"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
+              :selection-tooltip="selectionSummary"
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
