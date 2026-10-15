@@ -216,7 +216,10 @@ describe('Rotate, Export and Row progress on the Frame', () => {
 
   it('turns the Selection and not the Frame, and one Undo turns it back (ticket 416)', async () => {
     const wrapper = await mountOpen({ ...framed(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
-    await pickTool(wrapper, 'select-all')
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, { row: 2, column: 3 }) // drag out the box round the beads (Select all would take the Frame's inside, ticket 428)
+    await hoverBead(wrapper, { row: 3, column: 5 }, { buttons: 1 })
+    await wrapper.find('.app-shell').trigger('mouseup')
     await rotate(wrapper)
     await flushPromises()
 

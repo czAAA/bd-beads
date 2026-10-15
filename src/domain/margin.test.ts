@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type BeadMap, type Frame } from './canvas'
-import { clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
+import { clampOutOfMargin, selectionCoversMargin, clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -84,5 +84,44 @@ describe('the keep-out margin', () => {
     expect(performance.now() - started).toBeLessThan(2000)
     expect(moved).toBe(1)
     expect(count(project.beads)).toBe(150 * 150)
+  })
+})
+
+describe('clampOutOfMargin (ticket 428)', () => {
+  it('leaves a cell outside the margin, and any cell without a Frame, alone', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 12, column: 12 })).toEqual({ row: 12, column: 12 })
+    expect(clampOutOfMargin(undefined, { row: 0, column: 0 }, { row: 7, column: 10 })).toEqual({ row: 7, column: 10 })
+  })
+
+  it('pulls a drag begun inside the Frame back to the Frame\'s own edge', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 8, column: 12 })).toEqual({ row: 10, column: 12 })
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 16, column: 18 })).toEqual({ row: 13, column: 15 })
+  })
+
+  it('holds a drag begun inside the Frame to the Frame, even past the margin', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 40, column: 2 })).toEqual({ row: 13, column: 10 })
+  })
+
+  it('pulls a drag begun outside the margin back to the margin\'s outer edge', () => {
+    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 6, column: 8 })
+    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 17, column: 17 })
+  })
+})
+
+describe('a Selection never covers the margin (ticket 428)', () => {
+  it('knows when a Selection covers it', () => {
+    expect(selectionCoversMargin(frame, { top: 10, left: 10, rows: 4, columns: 6 })).toBe(false)
+    expect(selectionCoversMargin(frame, { top: 0, left: 0, rows: 3, columns: 3 })).toBe(false)
+    expect(selectionCoversMargin(frame, { top: 5, left: 11, rows: 6, columns: 2 })).toBe(true)
+    expect(selectionCoversMargin(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(true)
+    expect(selectionCoversMargin(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
+  })
+
+  it('stops a drag from outside before the margin instead of crossing the Frame', () => {
+    // from above the margin to the far side of the Frame: held at the margin's outer edge above it
+    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 20, column: 12 })).toEqual({ row: 6, column: 12 })
+    // from a corner across the whole Frame: the clamp keeps the larger rectangle
+    const end = clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })
+    expect(selectionCoversMargin(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(false)
   })
 })

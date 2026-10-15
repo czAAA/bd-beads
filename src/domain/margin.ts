@@ -3,6 +3,7 @@ import { isOffsetTechnique, positionKey, type GridPosition } from './grid'
 import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import { touching } from './pieces'
+import type { Selection } from './selection'
 
 /**
  * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 3 bead positions all the way round it,
@@ -45,6 +46,60 @@ function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: rea
 /** Whether a position lies in the Frame's margin: within 3 of the Frame, but not in it. */
 export function inMargin(frame: Frame | undefined, position: GridPosition): boolean {
   return !!frame && frameContains(withMargin(frame), position) && !frameContains(frame, position)
+}
+
+/** Whether a Selection covers any of the Frame's margin (ticket 428): it reaches into the margin from inside the Frame or from outside, or surrounds the Frame. */
+export function selectionCoversMargin(frame: Frame | undefined, selection: Selection): boolean {
+  if (!frame) return false
+  const box = withMargin(frame)
+  const overlaps =
+    selection.top < box.row + box.rows &&
+    selection.top + selection.rows > box.row &&
+    selection.left < box.column + box.columns &&
+    selection.left + selection.columns > box.column
+  const inside =
+    selection.top >= frame.row &&
+    selection.left >= frame.column &&
+    selection.top + selection.rows <= frame.row + frame.rows &&
+    selection.left + selection.columns <= frame.column + frame.columns
+  return overlaps && !inside
+}
+
+/** The cell one step back from `value` on an axis, on the anchor's side of the margin band `[start - MARGIN, end + MARGIN)`: the margin's outer edge there. Unchanged when the anchor is level with the band. */
+function outsideEdge(start: number, length: number, anchor: number, value: number): number {
+  if (anchor < start - MARGIN) return Math.min(value, start - MARGIN - 1)
+  if (anchor >= start + length + MARGIN) return Math.max(value, start + length + MARGIN)
+  return value
+}
+
+/**
+ * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055), so the Selection
+ * never covers the margin. A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds). One
+ * begun outside is stopped at the margin's outer edge on the anchor's side, on whichever axis (the one that keeps more
+ * of the drag) takes the rectangle out of the margin, so it cannot end in the margin nor cross it. A drag begun in the
+ * margin (a Project saved with beads there) is left alone.
+ */
+export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
+  if (!frame) return cell
+  if (frameContains(frame, anchor)) {
+    return {
+      row: Math.min(Math.max(cell.row, frame.row), frame.row + frame.rows - 1),
+      column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
+    }
+  }
+  if (inMargin(frame, anchor)) return cell
+  const between = (to: GridPosition): Selection => ({
+    top: Math.min(anchor.row, to.row),
+    left: Math.min(anchor.column, to.column),
+    rows: Math.abs(anchor.row - to.row) + 1,
+    columns: Math.abs(anchor.column - to.column) + 1,
+  })
+  if (!selectionCoversMargin(frame, between(cell))) return cell
+  const row = outsideEdge(frame.row, frame.rows, anchor.row, cell.row)
+  const column = outsideEdge(frame.column, frame.columns, anchor.column, cell.column)
+  const area = (to: GridPosition) => between(to).rows * between(to).columns
+  const candidates = [{ row, column: cell.column }, { row: cell.row, column }, { row, column }]
+  return candidates.filter((to) => !selectionCoversMargin(frame, between(to))).sort((x, y) => area(y) - area(x))[0] ?? { row, column }
 }
 
 /**

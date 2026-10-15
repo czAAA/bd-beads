@@ -3,7 +3,7 @@ import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { createProject, frameGrid, paintCells, type Project } from '../../domain/project'
+import { createProject, frameGrid, paintCells, withFrame, type Project } from '../../domain/project'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -471,14 +471,31 @@ describe('useSelectionGesture', () => {
       expect(gesture.hasClipboard()).toBe(false)
     })
 
-    it('Select all selects the rectangle round every bead, and does nothing on an empty canvas', () => {
-      const { gesture } = twoPieces()
+    it('Select all selects the rectangle round every bead without a Frame, and does nothing on an empty canvas', () => {
+      const { gesture, harness } = twoPieces()
+      harness.replaceProject(withFrame(harness.currentProject()!, undefined))
       expect(gesture.selectAll()).toBe(true)
       expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 4, columns: 4 })
 
-      const empty = setup()
+      const empty = setup(withFrame(makeProject(), undefined))
       expect(empty.gesture.selectAll()).toBe(false)
       expect(empty.gesture.selection.value).toBeUndefined()
+    })
+
+    it('Select all selects the Frame\'s inside when there is a Frame (ticket 428)', () => {
+      const framed = withFrame(makeProject(), { row: 5, column: 6, rows: 7, columns: 8 })
+      const { gesture } = setup(framed)
+      expect(gesture.selectAll()).toBe(true)
+      expect(gesture.selection.value).toEqual({ top: 5, left: 6, rows: 7, columns: 8 })
+    })
+  })
+
+  describe('the keep-out margin (ticket 428)', () => {
+    it('clamps a drag that ends in the margin to the Frame\'s edge', () => {
+      const { gesture } = setup(withFrame(makeProject(), { row: 10, column: 10, rows: 4, columns: 6 }))
+      gesture.beginPress(11, 11)
+      gesture.extendPress(8, 12)
+      expect(gesture.selection.value).toEqual({ top: 10, left: 11, rows: 2, columns: 2 })
     })
   })
 

@@ -18,6 +18,16 @@ describe('ContextBar', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
+  it('shows Select all alone with the Select tool and no Selection, and it emits (ticket 428)', async () => {
+    const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, selectActive: true } })
+
+    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
+    expect(ids).toEqual(['context-bar-select-all'])
+    expect(wrapper.get('[data-testid="context-bar-select-all"]').attributes('aria-label')).toBe('Select all')
+    await wrapper.get('[data-testid="context-bar-select-all"]').trigger('click')
+    expect(wrapper.emitted('select-all')).toHaveLength(1)
+  })
+
   it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
       props: { project: noFrame, selectionSummary: '3×5 · 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
