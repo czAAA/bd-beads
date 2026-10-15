@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
+import KeyChip from '../ui/KeyChip.vue'
+import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { TOOL_HOTKEYS } from '../tools/toolIcons'
 
 /**
@@ -10,24 +12,26 @@ import { TOOL_HOTKEYS } from '../tools/toolIcons'
  * which has no wheel and no keyboard, to leave out. On Windows and Linux the ⌘ chip reads "Ctrl".
  */
 const { t } = useI18n()
+/** The line is made of key chips, so it goes when they do (ticket 438). */
+const { shown } = useKeyHints()
 
 /** Whether this is an Apple device, where the zoom key is ⌘. */
 const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent || navigator.platform || ''))
 </script>
 
 <template>
-  <p class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
+  <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
     <span>{{ t.canvas.hint.scrollOr }}</span>
-    <kbd class="canvas-hint__key">{{ t.canvas.hint.spaceKey }}</kbd>
+    <KeyChip class="canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
     <span>{{ t.canvas.hint.dragToMove }}</span>
     <span class="canvas-hint__dot">·</span>
-    <kbd class="canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</kbd>
+    <KeyChip class="canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</KeyChip>
     <span>{{ t.canvas.hint.scrollToZoom }}</span>
     <span class="canvas-hint__dot">·</span>
-    <kbd class="canvas-hint__key">{{ TOOL_HOTKEYS.hand }}</kbd>
+    <KeyChip class="canvas-hint__key">{{ TOOL_HOTKEYS.hand }}</KeyChip>
     <span>{{ t.canvas.hint.hand }}</span>
     <span class="canvas-hint__dot">·</span>
-    <kbd class="canvas-hint__key">R</kbd>
+    <KeyChip class="canvas-hint__key">R</KeyChip>
     <span>{{ t.canvas.hint.rulers }}</span>
   </p>
 </template>

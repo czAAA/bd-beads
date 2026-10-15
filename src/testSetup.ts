@@ -72,7 +72,8 @@ beforeEach(() => {
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = ((query: string) =>
     ({
-      matches: false,
+      // A desk with a mouse, so hotkey chips show unless a test says otherwise (ticket 438).
+      matches: query.includes('any-pointer: fine'),
       media: query,
       addEventListener: () => {},
       removeEventListener: () => {},

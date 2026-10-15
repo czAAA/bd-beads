@@ -519,6 +519,9 @@ export const be: Translations = {
     canvasGroup: 'Палатно',
     zoomCanvas: 'Змяняць маштаб палатна',
     paletteColors: 'Абраць колер палітры, па парадку палітры',
+    keyHints: 'Паказваць падказкі клавіш',
+    keyHintsOn: 'Укл.',
+    keyHintsOff: 'Выкл.',
   },
   tooltips: {
     paint: 'Правая кнопка мышы сцірае.',

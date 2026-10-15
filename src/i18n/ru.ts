@@ -529,6 +529,9 @@ export const ru: Translations = {
     canvasGroup: 'Полотно',
     zoomCanvas: 'Менять масштаб полотна',
     paletteColors: 'Выбрать цвет палитры, по порядку палитры',
+    keyHints: 'Показывать подсказки клавиш',
+    keyHintsOn: 'Вкл',
+    keyHintsOff: 'Выкл',
   },
   tooltips: {
     paint: 'Правая кнопка мыши стирает.',
