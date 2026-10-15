@@ -49,8 +49,9 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
 }
 
 /**
- * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, or wholly
- * clear of the Frame's margin band, never anything else. With no Frame there is no rule. Every path that makes a
+ * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
+ * clear of the Frame's margin band, or round the whole Frame and its band (so it never stops in the margin or cuts the
+ * Frame, but can take in everything), never anything else. With no Frame there is no rule. Every path that makes a
  * Selection asks this: a drag clamps to it, a resize or move is refused by it, a one-shot Selection is trimmed to it.
  */
 export function selectionAllowed(frame: Frame | undefined, selection: Selection): boolean {
@@ -66,7 +67,12 @@ export function selectionAllowed(frame: Frame | undefined, selection: Selection)
     selection.left >= frame.column &&
     selection.top + selection.rows <= frame.row + frame.rows &&
     selection.left + selection.columns <= frame.column + frame.columns
-  return !overlaps || inside
+  const encloses =
+    selection.top <= box.row &&
+    selection.left <= box.column &&
+    selection.top + selection.rows >= box.row + box.rows &&
+    selection.left + selection.columns >= box.column + box.columns
+  return !overlaps || inside || encloses
 }
 
 /** A row or column Selection (a ruler number, ticket 433) cut to the Frame's inside; none when it lies outside the Frame. With no Frame it is unchanged. */
