@@ -1,8 +1,9 @@
 import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
-import { beadBounds, colorAt, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Technique } from './grid'
+import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { restoreBeads, type Project } from './project'
 
@@ -69,17 +70,23 @@ function selectionOfBox(box: Frame): Selection {
 /**
  * The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the Piece the tapped bead belongs
  * to. Beads of other Pieces inside that rectangle are inside the Selection too. None when the tap is on an empty position.
+ * With a Frame (ticket 433) only the part of the Piece on the tapped bead's side counts, inside the Frame or clear of its
+ * margin, and the rectangle is trimmed to a legal one; a tap in the margin selects nothing.
  */
-export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridPosition): Selection | undefined {
-  const members = pieceBeadsAt(beads, technique, at)
-  if (members.length === 0) {
+export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridPosition, frame?: Frame): Selection | undefined {
+  const members = pieceBeadsAt(beads, technique, at).filter((member) => {
+    if (!frame) return true
+    if (frameContains(frame, at)) return frameContains(frame, member)
+    return !frameContains(withMargin(frame), member)
+  })
+  if (members.length === 0 || inMargin(frame, at)) {
     return undefined
   }
   const rows = members.map((member) => member.row)
   const columns = members.map((member) => member.column)
   const top = Math.min(...rows)
   const left = Math.min(...columns)
-  return { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }
+  return trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
 }
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle round every placed bead, or none on an empty canvas. */
