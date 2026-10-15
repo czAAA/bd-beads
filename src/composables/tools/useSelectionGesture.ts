@@ -14,7 +14,7 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
-import { clampOutOfMargin } from '../../domain/margin'
+import { clampOutOfMargin, selectionCoversMargin } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -170,13 +170,18 @@ export function useSelectionGesture(
       return
     }
     if (adjust.kind === 'resize') {
-      selection.value = selectionWithEdges(adjust.start, adjust.edges, cell)
+      keepOutOfMargin(selectionWithEdges(adjust.start, adjust.edges, cell))
       return
     }
     const rows = cell.row - adjust.origin.row
     const columns = cell.column - adjust.origin.column
     adjust.moved ||= rows !== 0 || columns !== 0
-    selection.value = movedSelection(adjust.start, rows, columns)
+    keepOutOfMargin(movedSelection(adjust.start, rows, columns))
+  }
+
+  /** Takes a resized or moved Selection only if it covers none of the Frame's margin (ticket 428); otherwise the Selection stays as it was. */
+  function keepOutOfMargin(next: Selection) {
+    if (!selectionCoversMargin(currentProject()?.frame, next)) selection.value = next
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
