@@ -50,18 +50,26 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
 /** One axis of `clampOutOfMargin`: `start`/`length` is the Frame's span; a coordinate in either margin band moves to the band's edge facing the anchor. */
 function clampAxis(start: number, length: number, anchor: number, value: number): number {
   const end = start + length
-  if (value >= start - MARGIN && value < start) return anchor < start - MARGIN ? start - MARGIN - 1 : anchor >= start ? start : start - MARGIN - 1
-  if (value >= end && value < end + MARGIN) return anchor >= end + MARGIN ? end + MARGIN : anchor < end ? end - 1 : end + MARGIN
+  if (value >= start - MARGIN && value < start) return anchor >= start ? start : start - MARGIN - 1
+  if (value >= end && value < end + MARGIN) return anchor < end ? end - 1 : end + MARGIN
   return value
 }
 
 /**
- * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055): a cell in the
- * Frame's margin is pulled back to the margin's edge on the anchor's side (the Frame's own edge when the drag began
- * inside the Frame), so a Selection never ends in the margin. A cell outside the margin is returned unchanged.
+ * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055), so a Selection
+ * never covers the margin. A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds); one
+ * begun outside, ending in the margin, is pulled to the margin's outer edge on the anchor's side. A drag from one
+ * side of the Frame to the other still crosses the margin: only where it ends is clamped.
  */
 export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
-  if (!frame || !inMargin(frame, cell)) return cell
+  if (!frame) return cell
+  if (frameContains(frame, anchor)) {
+    return {
+      row: Math.min(Math.max(cell.row, frame.row), frame.row + frame.rows - 1),
+      column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
+    }
+  }
+  if (!inMargin(frame, cell)) return cell
   return {
     row: clampAxis(frame.row, frame.rows, anchor.row, cell.row),
     column: clampAxis(frame.column, frame.columns, anchor.column, cell.column),

@@ -98,6 +98,10 @@ describe('clampOutOfMargin (ticket 428)', () => {
     expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 16, column: 18 })).toEqual({ row: 13, column: 15 })
   })
 
+  it('holds a drag begun inside the Frame to the Frame, even past the margin', () => {
+    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 40, column: 2 })).toEqual({ row: 13, column: 10 })
+  })
+
   it('pulls a drag begun outside the margin back to the margin\'s outer edge', () => {
     expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 6, column: 6 })
     expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 17, column: 19 })
