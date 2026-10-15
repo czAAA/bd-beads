@@ -48,18 +48,16 @@ type RowDirection = 'rows' | 'columns'
 
 /** Which row the weaver is on, and whether the editor is showing that overlay (see CONTEXT.md's Row progress entry). */
 export interface RowProgress {
+  /**
+   * Whether the overlay shows: on exactly when the Project has a Frame (ticket 426, ADR 0055). Kept in memory so the
+   * renderers read one flag, always set from the Frame and never written to storage; an old file's stored value is ignored.
+   */
   enabled: boolean
   direction: RowDirection
   /** Zero-based index of the row being woven now; every row before it counts as finished. */
   currentRow: number
   /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses either place. */
   currentColumn: number
-  /**
-   * Whether Row progress has been settled for this Project (ticket 411): switched on by itself at its first Frame, or
-   * switched by the weaver. Once set, no later Frame edit turns it on again; absent on a Project that never had either, and
-   * so on one saved before ticket 411, which opens exactly as it was saved.
-   */
-  decided?: boolean
 }
 
 export interface Project {
@@ -135,6 +133,18 @@ export interface CreateProjectInput {
 /** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }
 
+/**
+ * The Project as it is written to storage or a file: Row progress without its `enabled` flag, which follows the Frame and
+ * is worked out again on reading (ticket 426). Typed as a Project because reading (normalizeProject) takes what it is given.
+ */
+export function forStorage(project: Project): Project {
+  const { enabled: _derived, ...rowProgress } = project.rowProgress
+  return { ...project, rowProgress: rowProgress as RowProgress }
+}
+
+/** Row progress is on exactly when there is a Frame to count rows on (ticket 426, ADR 0055). */
+const hasFrameToCount = (frame: Frame | undefined): boolean => frame !== undefined
+
 /** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
 export interface ProjectGeometry extends GridDimensions {
   bead: Bead
@@ -175,7 +185,7 @@ export function createProject(input: CreateProjectInput): Project {
     beadId: input.beadId,
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows } } : {}),
-    rowProgress: { ...INITIAL_ROW_PROGRESS },
+    rowProgress: { ...INITIAL_ROW_PROGRESS, enabled: dimensions !== undefined },
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -333,7 +343,7 @@ function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
  * read back from storage or an imported file is safe to use whatever version wrote it, and never re-saves them.
  */
 export function normalizeProject(project: Project | GridProject): Project {
-  const rowProgress = project.rowProgress ?? { enabled: false, currentRow: 0 }
+  const rowProgress: Partial<RowProgress> & { currentRow: number } = project.rowProgress ?? { currentRow: 0 }
   const legacy = project as ProjectWithLegacyFields
   const {
     colorBeadOverrides: _legacyOverrides,
@@ -364,8 +374,9 @@ export function normalizeProject(project: Project | GridProject): Project {
     ...placed,
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
-      ...rowProgress,
       direction: rowProgress.direction ?? 'rows',
+      // An old file's `enabled` and `decided` are read and dropped: Row progress follows the Frame (ticket 426).
+      enabled: hasFrameToCount(placed.frame),
       currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(technique, frame.columns)),
     },
@@ -383,7 +394,10 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
     return project
   }
   const { frame: _previous, ...rest } = project
-  const rowProgress = frame ? clampPointer(project.rowProgress, frame, project.technique) : project.rowProgress
+  // A Frame turns Row progress on; with the Frame gone the passes are gone too (ticket 426).
+  const rowProgress = frame
+    ? { ...clampPointer(project.rowProgress, frame, project.technique), enabled: true }
+    : { ...project.rowProgress, enabled: false, currentRow: 0, currentColumn: 0 }
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
 }
 
@@ -399,26 +413,6 @@ export function withTechnique(project: Project, technique: Technique): Project {
     return touch(project, { technique })
   }
   return touch(project, { technique, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
-}
-
-/** Shows or hides the row-progress overlay, leaving the pointer where it is. */
-export function setRowProgressEnabled(project: Project, enabled: boolean): Project {
-  // Row progress counts the Frame's rows, so with no Frame there is nothing to switch on.
-  if (enabled && !project.frame) {
-    return project
-  }
-  return touch(project, { rowProgress: { ...project.rowProgress, enabled, decided: true } })
-}
-
-/**
- * The Frame set for the first time on a Project turns Row progress on by itself, the pointer at the first pass (ticket
- * 411), unless the weaver has already settled the switch. Every other Frame change leaves Row progress as it is.
- */
-export function withRowProgressOnByItself(before: Project, after: Project): Project {
-  if (before.frame || !after.frame || after.rowProgress.decided) {
-    return after
-  }
-  return { ...after, rowProgress: { ...after.rowProgress, enabled: true, decided: true, currentRow: 0, currentColumn: 0 } }
 }
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it (ticket 411). */
@@ -559,7 +553,6 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
 function isInitialRowProgress(rowProgress: RowProgress): boolean {
   return (
-    rowProgress.enabled === INITIAL_ROW_PROGRESS.enabled &&
     rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
     rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
     rowProgress.currentColumn === INITIAL_ROW_PROGRESS.currentColumn
@@ -582,7 +575,7 @@ export function deleteAll(project: Project): Project {
   const { pieceNames: _names, ...rest } = project
   return touch(rest, {
     beads: {},
-    rowProgress: { ...INITIAL_ROW_PROGRESS },
+    rowProgress: { ...INITIAL_ROW_PROGRESS, enabled: hasFrameToCount(project.frame) },
   })
 }
 

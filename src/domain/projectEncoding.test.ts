@@ -146,7 +146,9 @@ describe('encodeProject / decodeProject', () => {
 
     const decoded = decodeProject(JSON.parse(JSON.stringify(encodeProject(project))))
 
-    expect(decoded).toEqual(project)
+    // Row progress's flag follows the Frame and is not written (ticket 426), so the decoded one lacks it until read by normalizeProject.
+    const { enabled: _derived, ...writtenRowProgress } = project.rowProgress
+    expect(decoded).toEqual({ ...project, rowProgress: writtenRowProgress })
   })
 
   it('does not fold the grid colors into a field of their own on the Project', () => {

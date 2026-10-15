@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt } from '../../domain/canvas'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createProject, moveToRow, paintCells, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, paintCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 function setup(tool: Tool = 'paint', initial?: Project) {
   const harness = editHarness(
@@ -76,7 +77,7 @@ describe('usePaintStroke', () => {
   })
 
   it('leaves finished rows alone', () => {
-    const { stroke, at, frame } = setup('paint', moveToRow(setRowProgressEnabled(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), true), 1))
+    const { stroke, at, frame } = setup('paint', moveToRow(rowProgressOn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })), 1))
     stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
     stroke.paintStrokeCell(frame.row + 1, frame.column, '#ff0000')
     stroke.endStroke()

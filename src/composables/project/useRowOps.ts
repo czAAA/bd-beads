@@ -1,7 +1,6 @@
 import {
   moveToRow,
   rowProgressPosition,
-  setRowProgressEnabled,
   toggleRowDirection,
   type Project,
 } from '../../domain/project'
@@ -22,13 +21,6 @@ export interface RowOpsDeps {
  * undo step, and this composable has no dependency on history. Deps are read lazily.
  */
 export function useRowOps(deps: RowOpsDeps) {
-  function onToggleRowProgress(enabled: boolean) {
-    const project = deps.currentProject()
-    if (project) {
-      deps.replaceProject(setRowProgressEnabled(project, enabled))
-    }
-  }
-
   /**
    * Flips row progress between running along the grid's rows and down its columns (ticket 32). Its own toggle,
    * separate from Rotate: turning the Project doesn't change which way the weaver's rows run. Not a grid edit, so not an
@@ -53,5 +45,5 @@ export function useRowOps(deps: RowOpsDeps) {
     }
   }
 
-  return { onToggleRowProgress, onToggleRowDirection, onMoveRow }
+  return { onToggleRowDirection, onMoveRow }
 }

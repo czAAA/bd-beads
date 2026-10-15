@@ -164,20 +164,18 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
-  it('always shows the Progress bar, and its switch is the only way to turn Row progress on or off: the Zoom pill has no button for it (ticket 411)', async () => {
+  it('always shows the Progress bar, whose Remove frame replaces the Row progress switch: the Zoom pill has no button for it (tickets 411, 426)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const bar = () => wrapper.get('[data-testid="progress-bar"]')
     expect(wrapper.find('[data-testid="zoom-pill-progress"]').exists()).toBe(false)
     expect(bar().classes()).not.toContain('app-shell__progress--hidden')
-    const toggle = wrapper.get('[data-testid="progress-bar-switch"]')
-    expect(toggle.attributes('aria-checked')).toBe('false')
-
-    await toggle.trigger('click')
-    expect(wrapper.get('[data-testid="progress-bar-switch"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBeUndefined()
 
-    await wrapper.get('[data-testid="progress-bar-switch"]').trigger('click')
-    expect(wrapper.get('[data-testid="progress-bar-switch"]').attributes('aria-checked')).toBe('false')
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBe('true')
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 

@@ -23,12 +23,8 @@ async function replaceSelect(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('App row progress', () => {
-  it('shows the overlay only once it is toggled on, without leaving the editor', async () => {
+  it('shows the overlay as soon as the Project has a Frame, without leaving the editor (ticket 426)', async () => {
     const wrapper = await mountWithProject(15, 30)
-
-    expect(rowProgressView(wrapper).markerShown).toBe(false)
-
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     expect(rowProgressView(wrapper).markerShown).toBe(true)
     await openSheet(wrapper, 'dock-color')
@@ -37,7 +33,6 @@ describe('App row progress', () => {
 
   it('advances the pointer as rows are finished, dimming the rows behind it', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -54,7 +49,6 @@ describe('App row progress', () => {
 
     it('turns rows to run down the columns: the readout counts columns and the steps move through them', async () => {
       const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
-      await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
 
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
@@ -74,7 +68,6 @@ describe('App row progress', () => {
 describe('App finished rows', () => {
   /** Opens a 10-column x 20-row Project with Row progress on and rows 1-2 marked done, red selected; returns its cells. */
   async function withTwoRowsWoven(wrapper: ReturnType<typeof mount>) {
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await pickColor(wrapper, 'red')
@@ -104,7 +97,6 @@ describe('App finished rows', () => {
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 4) // (0,4)
     await wrapper.trigger('mouseup')
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
@@ -135,12 +127,11 @@ describe('App delete all', () => {
     expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
   })
 
-  it('empties every cell and turns Row progress off with both direction pointers back at the first row, once confirmed', async () => {
+  it('empties every cell and keeps Row progress on with both direction pointers back at the first row, once confirmed', async () => {
     const wrapper = await mountWithProject(15, 30) // 10 columns x 20 rows
     await pickColor(wrapper, 'red')
     await click(wrapper, 0)
     await click(wrapper, 25)
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
@@ -151,19 +142,17 @@ describe('App delete all', () => {
 
     expect(frameGrid(loadedProject()).flat().every((cell) => cell.color === null)).toBe(true)
     expect(loadedProject().rowProgress).toEqual({
-      enabled: false,
+      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
     })
   })
 
-
   it('is one undo step: a single Undo restores both the painted grid and Row progress together, including woven rows', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'red')
     await click(wrapper, 4) // (0,4)
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click') // rows 0-1 finished
 
@@ -177,7 +166,6 @@ describe('App delete all', () => {
     expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
-      decided: true,
       currentRow: 2,
       currentColumn: 0,
     })
@@ -243,7 +231,6 @@ describe('App replace bead', () => {
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
@@ -259,7 +246,6 @@ describe('App replace bead', () => {
     expect(loadedProject().rowProgress).toEqual({
       enabled: true,
       direction: 'rows',
-      decided: true,
       currentRow: 1,
       currentColumn: 0,
     })

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import { turnedClockwise } from '../../testUtils/rotated'
-import { createProject, moveToRow, setRowProgressEnabled, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
+import { rowProgressOff, rowProgressOn } from '../../testUtils/rowProgress'
 
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho-cube-1.5mm')!
-const base = createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } })
+// Row progress off, so the label is the plain name, size and colors; the one test that wants the position turns it on.
+const base = rowProgressOff(createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } }))
 
 function setup(project: Project | undefined = base) {
   return useProjectLabels({ currentProject: () => project, messages: () => en, locale: () => 'en' })
@@ -48,7 +50,7 @@ describe('useProjectLabels', () => {
     })
 
     it('adds the Row progress once it is on', () => {
-      const tracking = moveToRow(setRowProgressEnabled(base, true), 2)
+      const tracking = moveToRow(rowProgressOn(base), 2)
       expect(setup(tracking).projectLabel.value).toMatch(/, row 2 of 3 done$/)
     })
 

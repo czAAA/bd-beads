@@ -1,4 +1,4 @@
-import { normalizeProject, type GridProject, type Project } from './project'
+import { forStorage, normalizeProject, type GridProject, type Project } from './project'
 
 /**
  * The export file format. There is no backend to migrate a Project for us (ADR 0001), so a file carries the kind it
@@ -27,7 +27,7 @@ export interface ProjectFileContents {
 }
 
 function serialize(kind: ProjectFile['kind'], projects: Project[]): string {
-  const file: ProjectFile = { kind, version: FILE_VERSION, patterns: projects }
+  const file: ProjectFile = { kind, version: FILE_VERSION, patterns: projects.map(forStorage) }
   return JSON.stringify(file, null, 2)
 }
 

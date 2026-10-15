@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { withColors } from '../../domain/canvas'
-import { createProject, moveToRow, setRowProgressEnabled, withFrame, type Project } from '../../domain/project'
+import { createProject, moveToRow, withFrame, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
@@ -54,7 +55,7 @@ describe('useFrameFlow', () => {
   })
 
   it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-    const locked = moveToRow(setRowProgressEnabled(sized, true), 1)
+    const locked = moveToRow(rowProgressOn(sized), 1)
     const { deps, frameLocked, start, settingFrame, press, drag, release, stepEdge, remove } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'inside' }, { row: 0, column: 0 })
@@ -63,8 +64,31 @@ describe('useFrameFlow', () => {
     stepEdge('right', 1)
     start()
     expect(settingFrame.value).toBe(false)
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+    // Remove Frame is the way out: it asks first, and does nothing until confirmed (ticket 426).
     remove()
     expect(deps.replaceProject).not.toHaveBeenCalled()
+  })
+
+  it('asks before removing the Frame once a pass is done, and removes it with the passes on confirm (ticket 426)', () => {
+    const { deps, remove, removeConfirmOpen, cancelRemove, confirmRemove } = setup(moveToRow(rowProgressOn(sized), 1))
+    remove()
+    expect(removeConfirmOpen.value).toBe(true)
+    cancelRemove()
+    expect(removeConfirmOpen.value).toBe(false)
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+
+    remove()
+    confirmRemove()
+    expect(removeConfirmOpen.value).toBe(false)
+    expect(lastFrame(deps)).toBeUndefined()
+  })
+
+  it('removes the Frame without asking while no pass is done (ticket 426)', () => {
+    const { removeConfirmOpen, remove, deps } = setup()
+    remove()
+    expect(removeConfirmOpen.value).toBe(false)
+    expect(lastFrame(deps)).toBeUndefined()
   })
 
   it('removes the Frame, and says so', () => {
@@ -122,7 +146,7 @@ describe('useFrameFlow', () => {
   })
 
   it('does not start with no Project open, with no Frame, or once Row progress holds the Frame (ticket 411)', () => {
-    for (const project of [null, open, moveToRow(setRowProgressEnabled(sized, true), 1)]) {
+    for (const project of [null, open, moveToRow(rowProgressOn(sized), 1)]) {
       const { settingFrame, start } = setup(project)
       start()
       expect(settingFrame.value).toBe(false)
@@ -180,7 +204,7 @@ describe('useFrameFlow', () => {
     })
 
     it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-      const { deps, setTechnique } = setup(moveToRow(setRowProgressEnabled(sized, true), 1))
+      const { deps, setTechnique } = setup(moveToRow(rowProgressOn(sized), 1))
       setTechnique('brick')
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -242,7 +266,7 @@ describe('useFrameFlow', () => {
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {
-      for (const project of [open, moveToRow(setRowProgressEnabled(sized, true), 1)]) {
+      for (const project of [open, moveToRow(rowProgressOn(sized), 1)]) {
         const { deps, stepEdge } = setup(project)
         stepEdge('right', 1)
         expect(deps.replaceProject).not.toHaveBeenCalled()

@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContextBar from './ContextBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, moveToRow, setRowProgressEnabled, withFrame } from '../../domain/project'
+import { createProject, moveToRow, withFrame } from '../../domain/project'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const painted = { ...project, beads: { 0: { 0: '#ff0000' } } }
@@ -141,7 +142,7 @@ describe('ContextBar', () => {
     await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
     expect(wrapper.emitted('rotate')).toHaveLength(1)
 
-    const woven = moveToRow(setRowProgressEnabled(project, true), 1)
+    const woven = moveToRow(rowProgressOn(project), 1)
     expect(mount(ContextBar, { props: { ...props, project: woven } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
     expect(mount(ContextBar, { props: { pasteArmed: false, canRemoveLine: false, project } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
   })

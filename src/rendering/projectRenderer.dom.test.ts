@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
+import { rowProgressOff } from '../testUtils/rowProgress'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
@@ -24,7 +25,8 @@ function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = f
 
 function projectOf(technique: Technique, columns: number, rows: number, extra: Partial<Project> & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
-  const project = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  // Row progress starts off here, so the tests that want its dimming say so (a Frame turns it on in the app).
+  const project = { ...rowProgressOff(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })), ...rest }
   return grid ? withFrameGrid(project, grid) : project
 }
 

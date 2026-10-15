@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, moveToRow, setRowProgressEnabled, toggleRowDirection, type Project } from '../../domain/project'
+import { createProject, moveToRow, toggleRowDirection, type Project } from '../../domain/project'
 import { ru } from '../../i18n/ru'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
@@ -18,7 +19,7 @@ function makeProject(): Project {
     beadId: cubeBead.id,
     size: { width: 15, height: 30, unit: 'mm' },
   })
-  return setRowProgressEnabled(project, true)
+  return rowProgressOn(project)
 }
 
 describe('ProgressBar', () => {
@@ -106,12 +107,12 @@ describe('ProgressBar', () => {
     expect(wrapper.find('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
   })
 
-  it('puts Turn row direction beside the switch, ahead of the do/undo pair (ticket 411)', () => {
+  it('puts Turn row direction beside Remove frame, ahead of the do/undo pair (ticket 411)', () => {
     const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
     const order = wrapper
-      .findAll('[data-testid="progress-bar-switch"], [data-testid="progress-bar-direction"], [data-testid="progress-bar-previous"], [data-testid="progress-bar-next"]')
+      .findAll('[data-testid="progress-bar-remove-frame"], [data-testid="progress-bar-direction"], [data-testid="progress-bar-previous"], [data-testid="progress-bar-next"]')
       .map((element) => element.attributes('data-testid'))
-    expect(order).toEqual(['progress-bar-switch', 'progress-bar-direction', 'progress-bar-previous', 'progress-bar-next'])
+    expect(order).toEqual(['progress-bar-remove-frame', 'progress-bar-direction', 'progress-bar-previous', 'progress-bar-next'])
   })
 
   it('says which way the rows run after the total', () => {
@@ -122,15 +123,12 @@ describe('ProgressBar', () => {
     expect(columns.find('[data-testid="progress-bar-position"]').text()).toContain(ru.rowProgress.leftToRight)
   })
 
-  it('shows only the switch and a label while Row progress is off, and turns it on', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: setRowProgressEnabled(makeProject(), false) } })
+  it('has no Row progress switch, and shows no Fit to drawing while there is a Frame (ticket 426)', () => {
+    const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
 
-    expect(wrapper.findAll('button')).toHaveLength(1)
-    expect(wrapper.find('.progress-bar__off-label').text()).toBe(ru.toolbox.groups.rowProgress)
-    expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('progress-bar--off')
-
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
-    expect(wrapper.emitted('toggle-row-progress')).toEqual([[true]])
+    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('gives every control its key in a Tooltip and no native title (ticket 339)', () => {
@@ -139,18 +137,17 @@ describe('ProgressBar', () => {
     expect(text).toContain('Enter, Space')
     expect(text).toContain('Shift+Enter, Shift+Space')
     expect(text).toContain('D')
-    expect(text).toContain('P')
     expect(wrapper.find('[title]').exists()).toBe(false)
   })
 
-  it('turns Row progress off from the switch and the row direction from its button', async () => {
-    const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
+  it('turns the row direction from its button and asks to remove the Frame from the first control', async () => {
+    const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-remove-frame"]').trigger('click')
 
     expect(wrapper.emitted('toggle-row-direction')).toHaveLength(1)
-    expect(wrapper.emitted('toggle-row-progress')).toEqual([[false]])
+    expect(wrapper.emitted('remove-frame')).toHaveLength(1)
   })
 })
 
@@ -160,13 +157,14 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows the switch off and disabled, "Set Frame to start" and a Fit to drawing button, and no row buttons', async () => {
+  it('shows Remove frame disabled with its reason, "Set Frame to start" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
-    const toggle = wrapper.find('[data-testid="progress-bar-switch"]')
-    expect(toggle.attributes('aria-disabled')).toBe('true')
-    expect(toggle.attributes('aria-checked')).toBe('false')
-    expect(wrapper.text()).toContain(ru.tooltips.setFrameFirst)
+    const remove = wrapper.find('[data-testid="progress-bar-remove-frame"]')
+    expect(remove.attributes('aria-disabled')).toBe('true')
+    await remove.trigger('click')
+    expect(wrapper.emitted('remove-frame')).toBeUndefined()
+    expect(wrapper.text()).toContain(ru.tooltips.noFrameToRemove)
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)

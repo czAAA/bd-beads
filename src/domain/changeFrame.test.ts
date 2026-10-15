@@ -24,7 +24,6 @@ describe('changeFrame', () => {
   describe('refusals', () => {
     const changes: [string, FrameChange][] = [
       ['set', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
-      ['remove', { remove: true }],
       ['removeLine', { removeLine: { axis: 'row', index: 0 } }],
       ['technique', { technique: 'peyote' }],
     ]
@@ -38,9 +37,12 @@ describe('changeFrame', () => {
       expect(changeFrame(project, change).kind).not.toBe('refused')
     })
 
-    it('is allowed again once Row progress is turned off, with passes done', () => {
-      const project = framed({ rowProgress: woven('rows', 5, 3, false) })
-      expect(changeFrame(project, { remove: true }).kind).toBe('changed')
+    it('lets Remove Frame through with passes done, clearing them with the Frame (ticket 426)', () => {
+      const project = framed({ rowProgress: woven('columns', 5, 3) })
+      const result = changeFrame(project, { remove: true })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.frame).toBeUndefined()
+      expect(result.project.rowProgress).toEqual({ enabled: false, direction: 'columns', currentRow: 0, currentColumn: 0 })
     })
 
     it('needs a Frame to remove a line from', () => {
@@ -69,44 +71,31 @@ describe('changeFrame', () => {
     })
   })
 
-  describe('Row progress on by itself (ticket 411)', () => {
+  describe('Row progress follows the Frame (ticket 426)', () => {
     const open = (): Project => {
       const project = framed()
       delete project.frame
       return project
     }
 
-    it('turns on at the first Frame set, the pointers at the first pass', () => {
+    it('is on at the first Frame set, the pointers at the first pass', () => {
       const result = changeFrame({ ...open(), rowProgress: { ...woven('columns', 3, 2, false) } }, { set: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(result.project.rowProgress).toMatchObject({ enabled: true, decided: true, currentRow: 0, currentColumn: 0 })
+      expect(result.project.rowProgress).toMatchObject({ enabled: true, currentRow: 3, currentColumn: 2 })
     })
 
-    it('stays off when the weaver turned it off: later Frame edits and a re-set do not turn it on', () => {
-      const off = { ...open(), rowProgress: { ...woven('rows', 0, 0, false), decided: true } }
-      const first = changeFrame(off, { set: frame })
-      if (first.kind !== 'changed') throw new Error('expected a change')
-      expect(first.project.rowProgress.enabled).toBe(false)
-      const moved = changeFrame(first.project, { set: { ...frame, rows: 8 } })
-      if (moved.kind !== 'changed') throw new Error('expected a change')
-      expect(moved.project.rowProgress.enabled).toBe(false)
-    })
-
-    it('does not turn on again for a Frame moved or resized after it was turned on and off', () => {
+    it('stays on for a Frame moved or resized, and comes on again when a removed Frame is set anew', () => {
       const turnedOn = changeFrame(open(), { set: frame })
       if (turnedOn.kind !== 'changed') throw new Error('expected a change')
-      const off = { ...turnedOn.project, rowProgress: { ...turnedOn.project.rowProgress, enabled: false } }
-      const removed = changeFrame(off, { remove: true })
+      const moved = changeFrame(turnedOn.project, { set: { ...frame, rows: 8 } })
+      if (moved.kind !== 'changed') throw new Error('expected a change')
+      expect(moved.project.rowProgress.enabled).toBe(true)
+      const removed = changeFrame(moved.project, { remove: true })
       if (removed.kind !== 'changed') throw new Error('expected a change')
+      expect(removed.project.rowProgress.enabled).toBe(false)
       const reset = changeFrame(removed.project, { set: frame })
       if (reset.kind !== 'changed') throw new Error('expected a change')
-      expect(reset.project.rowProgress.enabled).toBe(false)
-    })
-
-    it('leaves a Project with a Frame as it is, on or off', () => {
-      const result = changeFrame(framed({ rowProgress: woven('rows', 0, 0, false) }), { set: { ...frame, rows: 8 } })
-      if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(result.project.rowProgress.enabled).toBe(false)
+      expect(reset.project.rowProgress).toMatchObject({ enabled: true, currentRow: 0, currentColumn: 0 })
     })
   })
 

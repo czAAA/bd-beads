@@ -4,7 +4,6 @@ import {
   frameGrid,
   moveToRow,
   projectDimensions,
-  setRowProgressEnabled,
   withFrameGrid,
   type CreateProjectInput,
   type Project,
@@ -224,7 +223,7 @@ export function useTour(deps: TourDeps) {
         return
       case 'rows':
         if (project) {
-          deps.replaceProject(moveToRow(setRowProgressEnabled(project, true), 2))
+          deps.replaceProject(moveToRow(project, 2))
         }
         markDone(current)
         return

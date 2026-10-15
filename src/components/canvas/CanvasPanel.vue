@@ -95,7 +95,6 @@ const {
   onProjectKey,
   onProjectKeyUp,
   onRotate,
-  onToggleRowProgress,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
@@ -358,13 +357,13 @@ function techniqueWord(technique: Technique): string {
 
       <!--
         Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open (not
-        while a picture is being framed), since its first control is the switch that turns Row progress on.
+        while a picture is being framed), since its first control is Remove frame (ticket 426).
       -->
       <ProgressBar
         v-if="activeProject && !framing"
         :project="activeProject"
         @move-row="onMoveRow"
-        @toggle-row-progress="onToggleRowProgress"
+        @remove-frame="onRemoveFrame"
         @toggle-row-direction="onToggleRowDirection"
         @fit-frame="onFitFrame"
       />

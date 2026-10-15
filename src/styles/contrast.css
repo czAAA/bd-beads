@@ -69,26 +69,15 @@
       .stepper,
       .file-button__target,
       .custom-color-picker,
-      .app-switch,
       .project-list__remove
     ) {
     border: 1px solid ButtonText;
   }
 
-  html:root :is(.app-switch[aria-checked='true'], .segmented__option[aria-checked='true'], .app-button--selected, .icon-btn--selected) {
+  html:root :is(.segmented__option[aria-checked='true'], .app-button--selected, .icon-btn--selected) {
     forced-color-adjust: none;
     color: HighlightText;
     background: Highlight;
-  }
-
-  html:root .app-switch[aria-checked='true'] .app-switch__knob {
-    forced-color-adjust: none;
-    background: HighlightText;
-  }
-
-  html:root .app-switch__knob {
-    forced-color-adjust: none;
-    background: ButtonText;
   }
 
   html:root .icon-btn-wrap--tool .icon-btn[aria-pressed='true']:not(.icon-btn--accent) {

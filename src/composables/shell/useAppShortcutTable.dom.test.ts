@@ -39,7 +39,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasPaintColor: () => true,
     onNamePiece: vi.fn(),
     onRemoveSelectedLine: vi.fn(),
-    onToggleRowProgress: vi.fn(),
     onToggleRowDirection: vi.fn(),
     onMoveRow: vi.fn(),
     openShortcutsHelp: vi.fn(),
@@ -257,10 +256,10 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('P and D toggle Row progress and its direction (ticket 94)', () => {
+  it('D turns the Row progress direction and P does nothing (tickets 94, 426)', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: false } }) as never })
     press({ key: 'p' })
-    expect(deps.onToggleRowProgress).toHaveBeenCalledWith(true)
+    expect(deps.onToggleRowDirection).not.toHaveBeenCalled()
     press({ key: 'd' })
     expect(deps.onToggleRowDirection).toHaveBeenCalledTimes(1)
     wrapper.unmount()
@@ -327,7 +326,7 @@ describe('useAppShortcutTable', () => {
       field.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }))
     }
     field.remove()
-    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowProgress, deps.onToggleRowDirection, deps.onClearSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.onToggleRulers, deps.onToggleRowDirection, deps.onClearSelection, deps.onMoveRow, deps.openShortcutsHelp, deps.onCopy, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()
@@ -336,7 +335,7 @@ describe('useAppShortcutTable', () => {
   it('answers no key while a dialog is open, except Escape', () => {
     const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ rowProgress: { enabled: true } }) as never, paletteColorIdAt: () => 'red' })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
-    for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onToggleRowProgress, deps.onSelectColor]) {
+    for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()
     }
     wrapper.unmount()

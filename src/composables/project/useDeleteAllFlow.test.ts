@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, moveToRow, setRowProgressEnabled, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { useDeleteAllFlow } from './useDeleteAllFlow'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const blank = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const painted: Project = withFrameGrid(
@@ -49,7 +50,7 @@ describe('useDeleteAllFlow', () => {
   })
 
   it('ignores the Row progress lock: progress resets along with the grid, and Undo restores both', () => {
-    const inProgress = moveToRow(setRowProgressEnabled(painted, true), 2)
+    const inProgress = moveToRow(rowProgressOn(painted), 2)
     const { harness, onConfirmDeleteAll } = setup(inProgress)
     onConfirmDeleteAll()
     expect(isEmpty(harness.project)).toBe(true)

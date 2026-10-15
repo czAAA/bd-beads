@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const other = BEAD_CATALOG.find((bead) => bead.id !== base.beadId)!
@@ -87,7 +88,7 @@ describe('useReplaceBeadFlow', () => {
   })
 
   it('is not refused by the Row progress lock, since it does not draw', () => {
-    const { harness, onPickReplaceBead, onConfirmReplaceBead } = setup(setRowProgressEnabled(base, true))
+    const { harness, onPickReplaceBead, onConfirmReplaceBead } = setup(rowProgressOn(base))
     onPickReplaceBead(selectWith(other.id))
     onConfirmReplaceBead()
     expect(harness.project.beadId).toBe(other.id)
