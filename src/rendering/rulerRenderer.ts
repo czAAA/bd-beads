@@ -2,6 +2,7 @@ import type { Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/passes'
 import { namedPieces } from '../domain/pieceNames'
+import { rowProgressOn } from '../domain/project'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -31,8 +32,8 @@ export interface RulerDrawInput {
   theme: ProjectTheme
   /** The keyboard's bead cursor: its row and column numbers are marked. */
   cursor?: GridPosition
-  /** Whether Row progress is on, so the current row's number is bold (ticket 434). */
-  rowMarks: boolean
+  /** Whether the current row's number is bold. Defaults to `rowProgressOn(project)` (ticket 434). */
+  rowMarks?: boolean
 }
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
@@ -92,7 +93,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
  * viewport's own px over whatever is drawn.
  */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
-  const { project, surface, layout, pixelRatio, theme, cursor, rowMarks } = input
+  const { project, surface, layout, pixelRatio, theme, cursor, rowMarks = rowProgressOn(project) } = input
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
