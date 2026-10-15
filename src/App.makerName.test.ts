@@ -21,7 +21,7 @@ function mountApp() {
 }
 
 async function openNameModal(wrapper: ReturnType<typeof mountApp>) {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
   await wrapper.find('[data-testid="name-on-exports-change"]').trigger('click')
   await flushPromises()
@@ -32,7 +32,7 @@ const row = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid
 describe('App name on exports (ticket 161)', () => {
   it('ends the Export menu with the name on exports: "Not set" and Add until one is set', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="name-on-exports"]').text()).toContain(en.saveBox.nameOnExports)
@@ -56,7 +56,7 @@ describe('App name on exports (ticket 161)', () => {
 
     expect(wrapper.find('[data-testid="name-on-exports-modal"]').exists()).toBe(false)
     expect(localStorage.getItem(MAKER_NAME_KEY)).toBe('Maria Kovaleva')
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
     expect(row(wrapper)).toBe('Maria Kovaleva')
     expect(wrapper.find('[data-testid="name-on-exports-change"]').text()).toBe(en.saveBox.changeName)
@@ -73,7 +73,7 @@ describe('App name on exports (ticket 161)', () => {
     wrapper.unmount()
 
     const again = mountApp()
-    await openSheet(again, 'dock-project')
+    await openSheet(again, 'strip-project')
     await again.find('[data-testid="export-menu-button"]').trigger('click')
     expect(row(again)).toBe('Anna')
   })
@@ -87,7 +87,7 @@ describe('App name on exports (ticket 161)', () => {
     await wrapper.find('#name-on-exports-form').trigger('submit')
 
     expect(localStorage.getItem(MAKER_NAME_KEY)).toBeNull()
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
     expect(row(wrapper)).toBe(en.saveBox.nameNotSet)
   })

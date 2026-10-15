@@ -139,8 +139,8 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
             // A scroll container scrolls vertically, so text cut at its bottom edge is not a fault; hidden is.
             vertical: clipsY && style.overflowY !== 'auto' && style.overflowY !== 'scroll',
             scrolls: style.overflowY === 'auto' || style.overflowY === 'scroll',
-            // A strip that snaps as it scrolls sideways (the Overview carousel) is meant to have cards cut at its edge.
-            snaps: (style.overflowX === 'auto' || style.overflowX === 'scroll') && style.scrollSnapType !== 'none',
+            // A strip that scrolls sideways (the Overview carousel, the Canvas strip's middle on a phone, ticket 431) is meant to have its content cut at its edge.
+            snaps: style.overflowX === 'auto' || style.overflowX === 'scroll',
           })
         }
         clips.push({ name: 'the viewport', left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight, vertical: false, scrolls: false, snaps: false })
