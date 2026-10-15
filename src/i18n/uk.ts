@@ -518,6 +518,9 @@ export const uk: Translations = {
     canvasGroup: 'Полотно',
     zoomCanvas: 'Змінювати масштаб полотна',
     paletteColors: 'Вибрати колір палітри, за порядком палітри',
+    keyHints: 'Показувати підказки клавіш',
+    keyHintsOn: 'Увімк.',
+    keyHintsOff: 'Вимк.',
   },
   tooltips: {
     paint: 'Права кнопка миші стирає.',

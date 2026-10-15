@@ -16,6 +16,7 @@ import {
 import { TOUR_STEPS, type TourControl, type TourStepId } from '../../domain/tour'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
+import KeyChip from '../ui/KeyChip.vue'
 import type { IconName } from '../ui/icons'
 
 /**
@@ -423,7 +424,7 @@ const strand = computed(() =>
       <div class="tour-card__top">
         <span class="tour-card__tile" aria-hidden="true"><AppIcon :name="tool.icon" :size="17" /></span>
         <span class="tour-card__tool">{{ name }}</span>
-        <kbd v-if="showKey" class="tour-card__key" aria-hidden="true">{{ tool.key }}</kbd>
+        <KeyChip v-if="showKey" class="tour-card__key" aria-hidden="true">{{ tool.key }}</KeyChip>
         <span v-if="!tour.finalCard.value" class="tour-card__count">
           <span data-testid="tour-progress">{{ t.tour.progress.replace('{n}', String(tour.stepNumber.value)).replace('{total}', String(tour.stepCount)) }}</span>
           <span class="tour-card__strand" aria-hidden="true">

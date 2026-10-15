@@ -24,6 +24,14 @@ export default tseslint.config(
       'vue/multi-word-component-names': ['error', { ignores: ['Toolbox'] }],
     },
   },
+  // Every hotkey chip is drawn by KeyChip (ticket 438), so it follows the device and the Keyboard shortcuts switch.
+  {
+    files: ['src/**/*.vue'],
+    ignores: ['src/components/ui/KeyChip.vue'],
+    rules: {
+      'vue/no-restricted-syntax': ['error', { selector: "VElement[name='kbd']", message: 'Draw a key chip with <KeyChip> (ticket 438).' }],
+    },
+  },
   // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by
   // import. Placed before the folder rules below, which replace it for their files.
   {
