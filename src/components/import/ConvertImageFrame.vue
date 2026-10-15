@@ -169,7 +169,7 @@ const drawnProject = computed(() => {
   return {
     technique: props.technique,
     ...framedGrid(grid),
-    rowProgress: { enabled: false, direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
+    rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
     rotation: 0 as const,
   }
 })
@@ -261,6 +261,7 @@ watchPostEffect(() => {
     // The board look in light, whatever the app's theme (ticket 150), like the Project the picture becomes will print.
     theme: LIGHT_THEME,
     drawBead: props.drawBead,
+    rowMarks: false,
   })
 })
 

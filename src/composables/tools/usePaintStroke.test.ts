@@ -5,7 +5,6 @@ import { createProject, moveToRow, paintCells, type Project } from '../../domain
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
-import { rowProgressOn } from '../../testUtils/rowProgress'
 
 function setup(tool: Tool = 'paint', initial?: Project) {
   const harness = editHarness(
@@ -77,7 +76,7 @@ describe('usePaintStroke', () => {
   })
 
   it('leaves finished rows alone', () => {
-    const { stroke, at, frame } = setup('paint', moveToRow(rowProgressOn(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })), 1))
+    const { stroke, at, frame } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1))
     stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)
     stroke.paintStrokeCell(frame.row + 1, frame.column, '#ff0000')
     stroke.endStroke()

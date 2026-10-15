@@ -142,7 +142,6 @@ describe('App delete all', () => {
 
     expect(frameGrid(loadedProject()).flat().every((cell) => cell.color === null)).toBe(true)
     expect(loadedProject().rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
@@ -164,7 +163,6 @@ describe('App delete all', () => {
 
     expect(frameGrid(loadedProject())[0]![4]!.color).toBe('#e63746')
     expect(loadedProject().rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 2,
       currentColumn: 0,
@@ -244,7 +242,6 @@ describe('App replace bead', () => {
     expect(loadedProject().frame!.rows).toBe(20)
     expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
     expect(loadedProject().rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 1,
       currentColumn: 0,

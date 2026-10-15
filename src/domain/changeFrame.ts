@@ -42,10 +42,18 @@ export type FrameChangeResult =
   /** `moved` is how many Pieces moved clear of the Frame's margin. */
   | { kind: 'changed'; project: Project; moved: number }
 
+/**
+ * Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the Frame
+ * (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before showing its confirmation.
+ */
+export function frameChangeDiscardsProgress(project: Project, change: FrameChange): boolean {
+  return 'remove' in change && rowProgressStarted(project)
+}
+
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
-  if (rowProgressStarted(project) && !('remove' in change)) {
+  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change)) {
     return 'locked'
   }
   const frame = project.frame

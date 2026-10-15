@@ -52,7 +52,7 @@ describe('an edit shares the rows it leaves alone', () => {
   })
 
   it('keepFinishedRows leaves an edit to the row being woven as it is, and shares the rest', () => {
-    const before = { ...blank(6, 5), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const before = { ...blank(6, 5), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
     const after = paintCells(before, [{ row: 3, column: 1 }], '#e63746', NO_MIRROR)
 
     const kept = keepFinishedRows(before, after)
@@ -63,14 +63,14 @@ describe('an edit shares the rows it leaves alone', () => {
   })
 
   it('keepFinishedRows takes back an edit to a finished row, and says nothing changed', () => {
-    const before = { ...blank(6, 5), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const before = { ...blank(6, 5), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
     const after = paintCells(before, [{ row: 1, column: 1 }], '#e63746', NO_MIRROR)
 
     expect(keepFinishedRows(before, after)).toBe(before)
   })
 
   it('keepFinishedRows takes back the finished columns of an edit, and keeps the rest of it', () => {
-    const before = { ...blank(6, 4), rowProgress: { enabled: true, direction: 'columns' as const, currentRow: 0, currentColumn: 3 } }
+    const before = { ...blank(6, 4), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 3 } }
     const after = paintCells(before, [{ row: 1, column: 1 }, { row: 1, column: 4 }], '#e63746', NO_MIRROR)
 
     const kept = keepFinishedRows(before, after)

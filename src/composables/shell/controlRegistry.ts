@@ -3,7 +3,7 @@ import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { rowProgressOn, rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -123,6 +123,11 @@ const selectTool = (id: Tool, key: string, icon: IconName, name: (t: Translation
 const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressStarted(project)
+}
+/** Whether the open Project has Row progress on (it has a Frame), so Enter and Space move the row (ticket 434). */
+const rowProgressIsOn = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && rowProgressOn(project)
 }
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
@@ -482,7 +487,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(1)
+      if (rowProgressIsOn(deps)) deps.onMoveRow(1)
     },
   },
   {
@@ -496,7 +501,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)
+      if (rowProgressIsOn(deps)) deps.onMoveRow(-1)
     },
   },
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {

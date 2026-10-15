@@ -71,12 +71,12 @@ export const SCENARIOS: Scenario[] = [
   // Row progress, both directions, on every Technique: finished beads dimmed, the current row or column outlined.
   ...perTechnique((technique) => ({
     name: `${technique}-progress-rows`,
-    rowProgress: { enabled: true, direction: 'rows', currentRow: 4 },
+    rowProgress: { direction: 'rows', currentRow: 4 },
     place: pointerAway,
   })),
   ...perTechnique((technique) => ({
     name: `${technique}-progress-columns`,
-    rowProgress: { enabled: true, direction: 'columns', currentColumn: 6 },
+    rowProgress: { direction: 'columns', currentColumn: 6 },
     place: pointerAway,
   })),
 

@@ -3,7 +3,6 @@ import { mount } from '@vue/test-utils'
 import EditFrameSteppers from './EditFrameSteppers.vue'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
-import { rowProgressOn } from '../../testUtils/rowProgress'
 
 beforeEach(() => {
   localStorage.clear()
@@ -67,7 +66,7 @@ describe('EditFrameSteppers (ticket 417)', () => {
   })
 
   it('is locked once Row progress is on and a pass is done (ticket 411)', async () => {
-    const wrapper = mountSteppers({ ...moveToRow(rowProgressOn(framed()), 1) })
+    const wrapper = mountSteppers({ ...moveToRow(framed(), 1) })
     const button = wrapper.get('[data-testid="frame-edge-right-out"]')
     expect(button.attributes('aria-disabled')).toBe('true')
     await button.trigger('click')

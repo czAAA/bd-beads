@@ -80,7 +80,7 @@ const SCREENS: Screen[] = [
   {
     // The Progress bar's buttons only show while Row progress is on, and it clips its overflow: its Tooltips are the hard case (ticket 264).
     name: 'Row progress',
-    project: fixtureProject({ technique: 'loom', rowProgress: { enabled: true } }),
+    project: fixtureProject({ technique: 'loom', rowProgress: {} }),
     visit: async (_page, measure) => measure(),
   },
   {

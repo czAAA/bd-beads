@@ -5,7 +5,7 @@ import type { Frame } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
-import { renderOverlay } from './overlayRenderer'
+import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX, surfaceView } from './surfaceView'
 
@@ -16,14 +16,21 @@ function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
   return calls.slice(begin, stroke).filter((call) => call.name === 'roundRect')
 }
 
+/** A test Project that draws no Row progress says `marks: false` on its Row progress; the wrapper below hands that to the renderer as `rowMarks`, as an export does. */
+type TestRowProgress = RowProgress & { marks?: boolean }
+
+function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: Parameters<typeof renderOverlayWith>[1]): void {
+  renderOverlayWith(context, { rowMarks: (input.project.rowProgress as TestRowProgress).marks !== false, ...input })
+}
+
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
-function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<RowProgress>, rotation: Rotation = 0, filled = true): Project {
+function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const beads: Project['beads'] = {}
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  return { ...project, beads, rotation, rowProgress: { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  return { ...project, beads, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
 }
 
 function whole(project: Project, zoom = 1) {
@@ -33,7 +40,7 @@ function whole(project: Project, zoom = 1) {
 
 describe('renderOverlay', () => {
   it('clears the layer, and draws nothing else while Row progress is off', () => {
-    const project = projectOf('loom', 4, 4, { enabled: false })
+    const project = projectOf('loom', 4, 4, { marks: false })
     const { context, calls } = recordingContext()
 
     renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -42,7 +49,7 @@ describe('renderOverlay', () => {
   })
 
   it('clears the whole backing store, at the pixel ratio', () => {
-    const project = projectOf('loom', 4, 3, { enabled: false })
+    const project = projectOf('loom', 4, 3, { marks: false })
     const { context, named } = recordingContext()
 
     renderOverlay(context, { project, region: whole(project), zoom: 1, pixelRatio: 2 })
@@ -173,7 +180,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the hover preview', () => {
-    const noProgress = { enabled: false }
+    const noProgress = { marks: false }
 
     it('shows the paint color faintly on the bead, inside its rim', () => {
       const project = projectOf('loom', 4, 3, noProgress)
@@ -261,7 +268,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the Selection', () => {
-    const noProgress = { enabled: false }
+    const noProgress = { marks: false }
     const selected = { top: 1, left: 1, rows: 3, columns: 4 }
 
     it('is drawn as the rectangle\'s outer border, 2px thick inside its edge, with no wash on its beads (ticket 414)', () => {
@@ -365,7 +372,7 @@ describe('renderOverlay', () => {
   })
 
   describe('Mirror\'s axis lines', () => {
-    const noProgress = { enabled: false }
+    const noProgress = { marks: false }
 
     it('draws a line for each axis of a direction, across the whole Project, super-thin and faint', () => {
       const project = projectOf('loom', 10, 6, noProgress)
@@ -439,7 +446,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the beads a hovered "Mirror current" button would overwrite', () => {
-    const noProgress = { enabled: false }
+    const noProgress = { marks: false }
 
     it('draws each faded over the paper, in its own color, covering the bead underneath', () => {
       const grid = [[{ color: '#e63746' }, { color: null }], [{ color: '#2f6fed' }, { color: '#1a1a1a' }]]
@@ -503,7 +510,7 @@ describe('renderOverlay', () => {
 })
 
 describe('the bead-shaped pointer (ticket 353)', () => {
-  const noProgress = { enabled: false }
+  const noProgress = { marks: false }
 
   it('is 90% of a bead as drawn, centred on the pointer, in the chosen color at 60%', () => {
     const project = projectOf('loom', 8, 8, noProgress)
@@ -553,7 +560,7 @@ describe('the bead-shaped pointer (ticket 353)', () => {
 
 describe('the bead-shaped pointer on a rotated Project (ticket 353)', () => {
   it('stays upright in the surface\'s own px: the Project turns under it, the marker does not', () => {
-    const project = projectOf('loom', 8, 8, { enabled: false }, 90)
+    const project = projectOf('loom', 8, 8, { marks: false }, 90)
     const upright = recordingContext()
     const turned = recordingContext()
 
@@ -566,7 +573,7 @@ describe('the bead-shaped pointer on a rotated Project (ticket 353)', () => {
 
 describe('the bead cursor (ticket 159)', () => {
   it('rings the bead 2px outside it in the focus-ring color, drawn over everything else', () => {
-    const project = projectOf('loom', 4, 3, { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 })
+    const project = projectOf('loom', 4, 3, { direction: 'rows', currentRow: 1, currentColumn: 0 })
     const { context, calls } = recordingContext()
 
     renderOverlay(context, { project, region: whole(project), zoom: 1, cursor: { row: 1, column: 2 } })
@@ -582,7 +589,7 @@ describe('the bead cursor (ticket 159)', () => {
   })
 
   it('draws nothing without a cursor', () => {
-    const project = projectOf('loom', 4, 3, { enabled: false })
+    const project = projectOf('loom', 4, 3, { marks: false })
     const { context, named } = recordingContext()
 
     renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -591,7 +598,7 @@ describe('the bead cursor (ticket 159)', () => {
   })
 
   describe('the Frame margin outline (ticket 276)', () => {
-    const framed = { ...projectOf('loom', 4, 4, { enabled: false }), frame: { row: 5, column: 5, rows: 4, columns: 4 } }
+    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { row: 5, column: 5, rows: 4, columns: 4 } }
 
     it('strokes a dashed 1px outline round the margin at the given opacity', () => {
       const { context, calls, named } = recordingContext()
@@ -605,7 +612,7 @@ describe('the bead cursor (ticket 159)', () => {
 
     // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
     const outline = (technique: Technique, frame: Frame) => {
-      const project = { ...projectOf(technique, 4, 4, { enabled: false }), frame }
+      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame }
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
@@ -643,7 +650,7 @@ describe('the bead cursor (ticket 159)', () => {
 
 describe('on the Canvas (ADR 0026)', () => {
   /** A 3-wide, 4-tall Frame at row 6, column 5: positions are the bead's own row and column, so the Frame is not at the origin. */
-  function openProject(rowProgress: Partial<RowProgress>): Project {
+  function openProject(rowProgress: Partial<TestRowProgress>): Project {
     const project = projectOf('loom', 3, 4, rowProgress, 0, false)
     const beads: Project['beads'] = {}
     for (let row = 6; row < 10; row += 1) {
@@ -672,13 +679,13 @@ describe('on the Canvas (ADR 0026)', () => {
   })
 
   it('borders a Selection that reaches outside the Frame and into the negative', () => {
-    const { named } = overlay(openProject({ enabled: false }), { selection: { top: -1, left: -1, rows: 1, columns: 2 } })
+    const { named } = overlay(openProject({ marks: false }), { selection: { top: -1, left: -1, rows: 1, columns: 2 } })
 
     expect(named('fillRect')[0]!.args).toEqual([-20, -20, 40, 2])
   })
 
   it('shows the hover preview on any bead, Frame or not', () => {
-    const { named } = overlay(openProject({ enabled: false }), { preview: { cells: [{ row: 8, column: 7 }, { row: -2, column: -3 }], color: '#e63746' } })
+    const { named } = overlay(openProject({ marks: false }), { preview: { cells: [{ row: 8, column: 7 }, { row: -2, column: -3 }], color: '#e63746' } })
 
     expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
       ['#e63746', 0.6, 141, 161, 18, 18],
@@ -687,7 +694,7 @@ describe('on the Canvas (ADR 0026)', () => {
   })
 
   it('rings the keyboard cursor on the bead at its own row and column', () => {
-    const { calls } = overlay(openProject({ enabled: false }), { cursor: { row: 7, column: 6 } })
+    const { calls } = overlay(openProject({ marks: false }), { cursor: { row: 7, column: 6 } })
 
     const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
     expect(rects).toEqual([
