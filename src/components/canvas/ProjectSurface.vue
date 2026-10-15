@@ -107,7 +107,7 @@ const emit = defineEmits<{
   'frame-cancel': []
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's bar and margin steppers sit. */
+  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's margin steppers sit, with the margin and the ruler numbers' reach. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
   pressing: [pressing: boolean]

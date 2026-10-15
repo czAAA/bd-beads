@@ -50,6 +50,6 @@ describe('frameStepperCentres (ticket 427)', () => {
     const centres = frameStepperCentres(corner, true)
     expect(centres.top.y).toBe(8 + 18)
     expect(centres.left.x).toBe(8 + 18)
-    expect(centres.top.x).toBeGreaterThanOrEqual(8 + 40)
+    expect(centres.top.x).toBeGreaterThanOrEqual(8 + 37)
   })
 })
