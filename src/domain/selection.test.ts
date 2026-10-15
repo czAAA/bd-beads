@@ -4,6 +4,7 @@ import {
   allBeadsSelection,
   selectAllSelection,
   copySelection,
+  hasGuides,
   movedSelection,
   pieceSelectionAt,
   selectionHoldsAllBeads,
@@ -312,5 +313,12 @@ describe('pieceSelectionAt with a Frame (ticket 433)', () => {
   it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
     expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
     expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 9 }, frame)).toBeUndefined()
+  })
+})
+
+describe('hasGuides', () => {
+  it('is true from five beads in total, whatever the shape', () => {
+    expect([[1, 1], [2, 2], [1, 4]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([false, false, false])
+    expect([[1, 5], [5, 1], [2, 3]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([true, true, true])
   })
 })

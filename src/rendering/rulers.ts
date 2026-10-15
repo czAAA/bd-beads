@@ -1,7 +1,7 @@
 import type { Frame } from '../domain/canvas'
 import type { Technique } from '../domain/grid'
-import { hasGuides, pieceAreasOf } from '../domain/pieces'
-import type { Selection } from '../domain/selection'
+import { pieceAreasOf } from '../domain/pieces'
+import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
 

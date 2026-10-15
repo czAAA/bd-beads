@@ -5,10 +5,9 @@ import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { inMargin, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
-import { hasGuides } from '../../domain/pieces'
-import { selectionFrame, type Selection } from '../../domain/selection'
+import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
-import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, type FramePress } from '../../rendering/frameHandles'
+import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -755,7 +754,10 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
-    const target = boxPressAt(surface.value.beadBox(selectionFrame(props.selection)), props.project.rotation, pointInSurface(event), touchInput.value, hasGuides(props.selection))
+    // A Selection too small for handles (ticket 434) has none to grab: a press inside it only moves it.
+    const box = surface.value.beadBox(selectionFrame(props.selection))
+    const point = pointInSurface(event)
+    const target: FramePress = hasGuides(props.selection) ? boxPressAt(box, props.project.rotation, point, touchInput.value) : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
     if (target.kind !== 'outside') {
       adjusting.value = true
       hideMarker()
