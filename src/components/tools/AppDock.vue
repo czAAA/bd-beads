@@ -52,7 +52,7 @@ const mirrorAction = MIRROR_ENABLED ? controlAction('dock-mirror') : undefined
       :hotkey="tile.key"
       show-hotkey
       :selected="activeTool === tile.tool"
-      accent
+      :accent="activeTool === tile.tool"
       :marked="activeTool === tile.tool"
       :data-testid="`dock-tool-${tile.tool}`"
       :data-tour="`tool-${tile.tool}`"
