@@ -594,6 +594,16 @@ describe('useSelectionGesture', () => {
       expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toHaveLength(2)
     })
 
+    it('Cut on a Selection round the whole Frame and its margin empties the margin bead too', () => {
+      const { gesture, harness } = legacy()
+      gesture.beginPress(2, 2)
+      gesture.extendPress(30, 30)
+      gesture.endPress()
+      gesture.cut()
+      expect(harness.currentProject()!.beads[8]?.[11]).toBeUndefined()
+      expect(harness.currentProject()!.beads[11]?.[11]).toBeUndefined()
+    })
+
     it('Cut and Clear selection leave a margin bead alone, while Erase still clears it', () => {
       const { gesture, harness } = legacy()
       gesture.selectAll()
