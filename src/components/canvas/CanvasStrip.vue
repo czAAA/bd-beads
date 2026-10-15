@@ -14,7 +14,7 @@ import CanvasColorPicker from './CanvasColorPicker.vue'
  * then the canvas's own controls, Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit, and the Canvas color picker
  * last (ticket 425). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
  * hint. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. At phone width
- * Menu and Canvas color stay put and the middle scrolls sideways, with touch-sized buttons.
+ * Menu, Project and Canvas color stay put and the middle scrolls sideways, with touch-sized buttons.
  */
 const props = defineProps<{
   project?: Project
@@ -60,10 +60,24 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 
 <template>
   <div class="canvas-strip" data-testid="canvas-strip">
-    <AppButton variant="text" class="canvas-strip__menu" :action="actions.menu" :selected="openSheet === 'menu' ? true : undefined" data-testid="strip-menu" @click="emit('select-sheet', 'menu')" />
+    <div class="canvas-strip__sheets">
+      <AppButton
+        variant="text"
+        :action="actions.menu"
+        :selected="openSheet === 'menu' ? true : undefined"
+        data-testid="strip-menu"
+        @click="emit('select-sheet', 'menu')"
+      />
+      <AppButton
+        v-if="project"
+        variant="text"
+        :action="actions.project"
+        :selected="openSheet === 'project' ? true : undefined"
+        data-testid="strip-project"
+        @click="emit('select-sheet', 'project')"
+      />
+    </div>
     <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
-      <AppButton v-if="project" variant="text" :action="actions.project" :selected="openSheet === 'project' ? true : undefined" data-testid="strip-project" @click="emit('select-sheet', 'project')" />
-      <span class="canvas-strip__spacer" />
       <template v-if="project">
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" data-tour="undo" @click="emit('undo')" />
@@ -93,17 +107,25 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
-.canvas-strip__menu {
+/* Menu and Project stay at the left edge of the strip, even on a phone. */
+.canvas-strip__sheets {
+  display: flex;
   flex: none;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-/* Project leads the cluster and the canvas controls follow it to the right; the cluster scrolls sideways when the strip is too narrow (a phone), with Menu and Canvas color pinned either side. */
+/*
+ * The canvas controls sit to the right of them. On a phone, too narrow for the cluster, it scrolls sideways with
+ * Canvas color pinned beside it.
+ */
 .canvas-strip__controls {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  margin-left: auto;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -116,9 +138,6 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   flex: none;
 }
 
-.canvas-strip__controls > .canvas-strip__spacer {
-  flex: 1 0 0;
-}
 
 .canvas-strip__level {
   flex: none;
