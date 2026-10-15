@@ -412,7 +412,7 @@ export const es: Translations = {
     removeConfirmButton: 'Quitar marco',
     removeConfirmCancel: 'Cancelar',
     explainer: 'El marco señala qué cuentas pasan a ser el esquema. Las cuentas fuera de él se quedan en el lienzo.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Marco definido, ancho {width}, alto {height}',
     announceRemoved: 'Marco quitado',
     announceNothingToFit: 'Aún no hay nada dibujado a lo que ajustar el marco',

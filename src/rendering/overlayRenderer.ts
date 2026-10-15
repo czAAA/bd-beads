@@ -69,7 +69,7 @@ export interface OverlayInput {
   selection?: Selection
   /**
    * Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four larger ones. Without it the Selection has no handles.
-   * `tooltip` is the size bar hanging off its corner ("12×8 · 4.2 × 2.6 cm"), shown while the handles and the ruler numbers are.
+   * `tooltip` is the size bar hanging off its corner ("12×8 ≈ 4.2 × 2.6 cm"), shown while the handles and the ruler numbers are.
    */
   selectionHandles?: { surface: SurfaceView; touch: boolean; tooltip?: string }
   /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */

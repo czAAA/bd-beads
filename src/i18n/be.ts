@@ -413,7 +413,7 @@ export const be: Translations = {
     removeConfirmButton: 'Прыбраць рамку',
     removeConfirmCancel: 'Скасаваць',
     explainer: 'Рамка пазначае, якія бісерыны ўвойдуць у схему. Бісерыны за рамкай застаюцца на палатне.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Рамка зададзена: шырыня {width}, вышыня {height}',
     announceRemoved: 'Рамка прыбрана',
     announceNothingToFit: 'Пакуль нечага абводзіць рамкай: нічога не намалявана',

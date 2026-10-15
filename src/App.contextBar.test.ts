@@ -27,7 +27,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
-    expect(wrapper.find('[data-testid="context-bar-size"]').text()).toMatch(/^2×1 · /)
+    expect(wrapper.find('[data-testid="context-bar-size"]').text()).toMatch(/^2×1 ≈ /)
     expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
 
