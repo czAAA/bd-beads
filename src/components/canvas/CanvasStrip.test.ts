@@ -9,48 +9,39 @@ beforeEach(() => {
 })
 
 describe('CanvasStrip', () => {
-  it('names the board and its size as Width and Height, joined by a middle dot (ticket 342)', () => {
-    const wrapper = mount(CanvasStrip, { props: { size: { columns: 40, rows: 1 }, zoomPercent: 100 } })
+  const project = { frame: undefined, beads: {}, technique: 'loom' } as unknown as Project
 
-    expect(wrapper.text()).toContain('Schema')
-    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('Width 40 · Height 1')
-    expect(wrapper.get('svg').attributes('data-icon')).toBe('grid')
-  })
+  it('holds Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (ticket 425)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
-  it('does not count pieces outside the Frame', () => {
-    const beads = { '0,0': { color: '#e63746' }, '40,40': { color: '#e63746' } }
-    const project = { frame: { row: 0, column: 0, rows: 5, columns: 5 }, beads, technique: 'loom' } as unknown as Project
-    const wrapper = mount(CanvasStrip, { props: { project } })
-
-    expect(wrapper.find('[data-testid="canvas-strip-outside"]').exists()).toBe(false)
-    expect(wrapper.text()).not.toMatch(/outside/i)
-  })
-
-  it('says Width and Height in Russian too (ticket 342)', () => {
-    localStorage.setItem('bd-beads:locale', 'ru')
-    const wrapper = mount(CanvasStrip, { props: { size: { columns: 21, rows: 3 } } })
-
-    expect(wrapper.get('[data-testid="canvas-strip-size"]').text()).toBe('Ширина 21 · Высота 3')
-  })
-
-  it('holds the zoom, in the order zoom out, level, zoom in, fit, and passes each press on', async () => {
-    const wrapper = mount(CanvasStrip, { props: { size: { columns: 4, rows: 4 }, zoomPercent: 125 } })
-
-    const order = wrapper.findAll('[data-testid^="zoom-"]').map((element) => element.attributes('data-testid'))
-    expect(order).toEqual(['zoom-controls', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
+    const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
     expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('125%')
 
-    await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-    await wrapper.get('[data-testid="zoom-out"]').trigger('click')
-    await wrapper.get('[data-testid="zoom-reset"]').trigger('click')
-    expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['zoom-in', 'zoom-out', 'reset']))
+    for (const id of ['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
+    expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
   })
 
-  it('shows just its title with nothing on the board', () => {
+  it('names nothing: no title, size line, estimate, grid icon or hint', () => {
+    const wrapper = mount(CanvasStrip, { props: { project, rulers: true, zoomPercent: 100 } })
+
+    expect(wrapper.text()).not.toMatch(/Schema|Canvas|Width|Height|Pieces/i)
+    expect(wrapper.find('svg[data-icon="grid"]').exists()).toBe(false)
+  })
+
+  it('shows only the zoom while a picture is framed, over the framing step\'s own range', async () => {
+    const wrapper = mount(CanvasStrip, { props: { rulers: true, zoomPercent: 800, zoomMinPercent: 100, zoomMaxPercent: 800 } })
+
+    expect(wrapper.find('[data-testid="strip-undo"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="zoom-in"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('is empty with nothing on the board', () => {
     const wrapper = mount(CanvasStrip)
 
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="zoom-controls"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="strip-rulers"]').exists()).toBe(false)
   })
 })
 

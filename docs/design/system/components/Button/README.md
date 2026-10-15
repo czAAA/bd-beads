@@ -20,7 +20,7 @@ Height 34 (38 in the save box and Edit row, 32 in the Saved Patterns footer). Ic
 One component covers every labelled button (ticket 331, ADR 0035), the Link included: an optional leading icon, the label, an optional trailing icon. It shows a Tooltip only when given one, and then only a sentence the label doesn't already say ("Start an empty canvas."), or from a control-registry action, which supplies its label, key chip, enabled state and, when disabled, the reason. A disabled button is `aria-disabled`, still hoverable and focusable, a click does nothing, and its Tooltip says why.
 
 ## Icon button
-One component covers every icon-only control (ticket 330, ADR 0035): the Tool tab, plain (the canvas strip and ZoomPill), in-box, toolbox, box, round and the sheet close. It shows a Tooltip only when given one (a name, an optional body, the key chip), either explicitly or from a control-registry action, which also supplies its enabled state and, when disabled, the reason (`aria-disabled`, still hoverable, the reason in the Tooltip in place of the key chip).
+One component covers every icon-only control (ticket 330, ADR 0035): the Tool tab, plain (the canvas strip), in-box, toolbox, box, round and the sheet close. It shows a Tooltip only when given one (a name, an optional body, the key chip), either explicitly or from a control-registry action, which also supplies its enabled state and, when disabled, the reason (`aria-disabled`, still hoverable, the reason in the Tooltip in place of the key chip).
 
 ## What the consumer provides
 The label (sentence case), an optional leading icon from the Icons group, and an accessible name for icon-only buttons.

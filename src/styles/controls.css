@@ -68,8 +68,6 @@
   --swatch-touch-min: 2.25rem;
   /* ContextBar card: its own radius, not one of tokens.json's radius steps */
   --context-bar-radius: 0.875rem;
-  /* ZoomPill card: its own 36px buttons, bigger than the reference tier's zoom cluster */
-  --zoom-pill-button: 2.25rem;
 }
 
 /* Phone widths: the Progress bar's buttons take a second row (ProgressBar.vue, ticket 411). */

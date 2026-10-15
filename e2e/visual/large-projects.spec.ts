@@ -101,10 +101,10 @@ for (const { columns, rows } of SIZES) {
       await page.mouse.up()
       expect(frameGrid((await savedProject(page))).flat().filter((cell) => cell.color === RED).length).toBeGreaterThan(3)
 
-      await page.getByTestId('zoom-pill-undo').click()
+      await page.getByTestId('strip-undo').click()
       expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
 
-      await page.getByTestId('zoom-pill-redo').click()
+      await page.getByTestId('strip-redo').click()
       expect(frameGrid((await savedProject(page)))[2]![3]!.color).toBe(RED)
     })
 

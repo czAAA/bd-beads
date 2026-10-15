@@ -18,7 +18,7 @@ test('memory with a long Undo history at 250 × 250', async ({ page }) => {
     return Math.round(usedSize / 1024 / 1024)
   }
 
-  await page.getByTestId('zoom-pill-fit').click()
+  await page.getByTestId('zoom-reset').click()
   const box = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
   const zoom = (await currentZoomPercent(page)) / 100
   const at = (row: number, column: number) => beadCentre({ technique: 'loom', rotation: 0 }, box, zoom, { row, column })
