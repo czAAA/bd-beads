@@ -3,6 +3,7 @@ import { type GridPosition, type PreviewCell, type Technique } from '../domain/g
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { lineOfPass, passCount, passOf } from '../domain/passes'
+import { hasGuides } from '../domain/pieces'
 import { selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
@@ -495,7 +496,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
   }
-  if (selection && selectionHandles && space.open) {
+  if (selection && selectionHandles && space.open && hasGuides(selection)) {
     drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection)), pixelRatio, theme, selectionHandles.touch)
   }
   if (pointer) {

@@ -1,6 +1,6 @@
 import type { Frame } from '../domain/canvas'
 import type { Technique } from '../domain/grid'
-import { pieceAreasOf } from '../domain/pieces'
+import { hasGuides, pieceAreasOf } from '../domain/pieces'
 import type { Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
@@ -14,8 +14,6 @@ import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceV
  * the ones a press is tested against, and a test can find a number the way a pointer does (ADR 0033).
  */
 
-/** A Piece area carries rulers once it spans at least this many beads in total, i.e. more than 4 (ticket 377); a single row of five does. */
-const RULED_PIECE_MIN_BEADS = 5
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
 const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
@@ -65,7 +63,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
     return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
   return pieceAreasOf(project.beads, project.technique)
-    .filter((area) => area.rows * area.columns >= RULED_PIECE_MIN_BEADS)
+    .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
 

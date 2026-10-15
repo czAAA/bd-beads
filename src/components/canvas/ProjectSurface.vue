@@ -5,6 +5,7 @@ import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { inMargin, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
+import { hasGuides } from '../../domain/pieces'
 import { selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, type FramePress } from '../../rendering/frameHandles'
@@ -754,7 +755,7 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
-    const target = boxPressAt(surface.value.beadBox(selectionFrame(props.selection)), props.project.rotation, pointInSurface(event), touchInput.value)
+    const target = boxPressAt(surface.value.beadBox(selectionFrame(props.selection)), props.project.rotation, pointInSurface(event), touchInput.value, hasGuides(props.selection))
     if (target.kind !== 'outside') {
       adjusting.value = true
       hideMarker()
@@ -825,7 +826,7 @@ function onPointerMove(event: PointerEvent): void {
     emit('selection-drag', cellUnder(event))
     return
   }
-  if (props.selecting && props.selection && event.pointerType !== 'touch') {
+  if (props.selecting && props.selection && event.pointerType !== 'touch' && hasGuides(props.selection)) {
     const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection)), pointInSurface(event), false)
     handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
   } else {
