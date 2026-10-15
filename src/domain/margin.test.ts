@@ -117,7 +117,10 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(selectionAllowed(frame, { top: 5, left: 11, rows: 6, columns: 2 })).toBe(false)
     expect(selectionAllowed(frame, { top: 0, left: 0, rows: 5, columns: 5 })).toBe(false)
     expect(selectionAllowed(frame, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
-    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 4, left: 4, rows: 16, columns: 18 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 5, left: 4, rows: 16, columns: 18 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 15 })).toBe(false)
     expect(selectionAllowed(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(true)
   })
 
@@ -147,5 +150,12 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     // from a corner across the whole Frame: the clamp keeps the larger rectangle
     const end = clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })
     expect(selectionAllowed(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(true)
+  })
+
+  it('lets a drag from outside go all the way across the Frame and its margin to take it in whole', () => {
+    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })).toEqual({ row: 30, column: 30 })
+    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2 })
+    // across in one direction only still cuts through the margin, so it is held back
+    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 30, column: 12 })).toEqual({ row: 3, column: 12 })
   })
 })

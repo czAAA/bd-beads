@@ -49,8 +49,9 @@ export function inMargin(frame: Frame | undefined, position: GridPosition): bool
 }
 
 /**
- * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, or wholly
- * clear of the Frame's margin band, never anything else. With no Frame there is no rule. Every path that makes a
+ * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
+ * clear of the Frame's margin band, or round the whole Frame and its band (so it never stops in the margin or cuts the
+ * Frame, but can take in everything), never anything else. With no Frame there is no rule. Every path that makes a
  * Selection asks this: a drag clamps to it, a resize or move is refused by it, a one-shot Selection is trimmed to it.
  */
 export function selectionAllowed(frame: Frame | undefined, selection: Selection): boolean {
@@ -66,7 +67,12 @@ export function selectionAllowed(frame: Frame | undefined, selection: Selection)
     selection.left >= frame.column &&
     selection.top + selection.rows <= frame.row + frame.rows &&
     selection.left + selection.columns <= frame.column + frame.columns
-  return !overlaps || inside
+  const encloses =
+    selection.top <= box.row &&
+    selection.left <= box.column &&
+    selection.top + selection.rows >= box.row + box.rows &&
+    selection.left + selection.columns >= box.column + box.columns
+  return !overlaps || inside || encloses
 }
 
 /** A row or column Selection (a ruler number, ticket 433) cut to the Frame's inside; none when it lies outside the Frame. With no Frame it is unchanged. */
@@ -117,9 +123,9 @@ function outsideEdge(start: number, length: number, anchor: number, value: numbe
 
 /**
  * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055), so the Selection
- * never covers the margin. A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds). One
+ * never stops in the margin or cuts it (a drag that goes right across the Frame and its margin is allowed). A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds). One
  * begun outside is stopped at the margin's outer edge on the anchor's side, on whichever axis (the one that keeps more
- * of the drag) takes the rectangle out of the margin, so it cannot end in the margin nor cross it. A drag begun in the
+ * of the drag) takes the rectangle out of the margin, so it cannot end in the margin nor stop part-way across it. A drag begun in the
  * margin (a Project saved with beads there) is refused (ticket 433): the Selection cannot start there, so the anchor is returned.
  */
 export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
