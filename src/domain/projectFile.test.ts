@@ -18,7 +18,6 @@ import {
   type Project,
   frameGrid,
 } from './project'
-import { rowProgressOn } from '../testUtils/rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -33,7 +32,7 @@ function makeProject(name = 'Fox'): Project {
 
 function decoratedProject(): Project {
   const painted = paintCells(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
-  return moveToRow(rowProgressOn(painted), 4)
+  return moveToRow(painted, 4)
 }
 
 describe('single-Project roundtrip', () => {
@@ -61,7 +60,6 @@ describe('single-Project roundtrip', () => {
     expect(restored!.beadId).toBe(cubeBead.id)
     expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
     expect(restored!.rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 4,
       currentColumn: 0,
@@ -76,7 +74,7 @@ describe('single-Project roundtrip', () => {
     file.patterns[0].rowProgress.enabled = false
     file.patterns[0].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
-    expect(restored!.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
   it('stays readable version-3 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
@@ -173,7 +171,6 @@ describe('parseProjectsFile', () => {
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
     expect(projects[0]!.rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,

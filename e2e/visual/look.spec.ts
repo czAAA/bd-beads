@@ -21,12 +21,12 @@ const scenarios = [
   ...TECHNIQUES.map((technique) => ({
     name: `${technique}-progress-rows`,
     technique,
-    rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } as const,
+    rowProgress: { direction: 'rows', currentRow: 4 } as const,
   })),
   ...TECHNIQUES.map((technique) => ({
     name: `${technique}-progress-columns`,
     technique,
-    rowProgress: { enabled: true, direction: 'columns', currentColumn: 6 } as const,
+    rowProgress: { direction: 'columns', currentColumn: 6 } as const,
   })),
 ]
 
@@ -96,7 +96,7 @@ test.describe('the check notices a wrong picture', () => {
   }
 
   test('a Row progress marker the reference does not have', async ({ page }) => {
-    await openApp(page, [fixtureProject({ technique: 'loom', rowProgress: { enabled: true, direction: 'rows', currentRow: 4 } })])
+    await openApp(page, [fixtureProject({ technique: 'loom', rowProgress: { direction: 'rows', currentRow: 4 } })])
     await setZoom(page, 100)
     await page.mouse.move(5, 5)
 

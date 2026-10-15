@@ -3,6 +3,7 @@ import { type GridPosition, type PreviewCell, type Technique } from '../domain/g
 import { withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { lineOfPass, passCount, passOf } from '../domain/passes'
+import { rowProgressOn } from '../domain/project'
 import { selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
@@ -51,6 +52,8 @@ interface BeadPointer {
 }
 
 export interface OverlayInput {
+  /** Whether Row progress is drawn (the current pass lifted, its row number bold). Defaults to `rowProgressOn(project)` (ticket 434). */
+  rowMarks?: boolean
   /** The Project whose overlay this is: its Row progress decides the marker. */
   project: DrawnProject
   /** The part of the displayed Project the surface shows, as for renderProject. */
@@ -424,12 +427,12 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, pointer } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
-  const { enabled } = project.rowProgress
+  const enabled = rowMarks ?? rowProgressOn(project)
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
@@ -482,6 +485,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       cursor,
+      rowMarks: enabled,
     })
   }
   if (space.open && rulers && frameEditing && project.frame) {

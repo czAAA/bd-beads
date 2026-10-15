@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, forEachBead, withColors, type Frame } from './canvas'
-import { changeFrame, type FrameChange } from './changeFrame'
+import { changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { inMargin } from './margin'
-import { createProject, type Project } from './project'
+import { createProject, rowProgressOn, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 6, columns: 4 }
 
@@ -12,7 +12,7 @@ function framed(overrides: Partial<Project> = {}): Project {
   return { ...base, frame, ...overrides }
 }
 
-const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3, enabled = true) => ({ enabled, direction, currentRow, currentColumn })
+const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
 
 const beadCount = (project: Project) => {
   let count = 0
@@ -42,7 +42,7 @@ describe('changeFrame', () => {
       const result = changeFrame(project, { remove: true })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(result.project.frame).toBeUndefined()
-      expect(result.project.rowProgress).toEqual({ enabled: false, direction: 'columns', currentRow: 0, currentColumn: 0 })
+      expect(result.project.rowProgress).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
     })
 
     it('needs a Frame to remove a line from', () => {
@@ -79,9 +79,10 @@ describe('changeFrame', () => {
     }
 
     it('is on at the first Frame set, the pointers at the first pass', () => {
-      const result = changeFrame({ ...open(), rowProgress: { ...woven('columns', 3, 2, false) } }, { set: frame })
+      const result = changeFrame({ ...open(), rowProgress: { ...woven('columns', 3, 2) } }, { set: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(result.project.rowProgress).toMatchObject({ enabled: true, currentRow: 3, currentColumn: 2 })
+      expect(result.project.rowProgress).toMatchObject({ currentRow: 3, currentColumn: 2 })
+      expect(rowProgressOn(result.project)).toBe(true)
     })
 
     it('stays on for a Frame moved or resized, and comes on again when a removed Frame is set anew', () => {
@@ -89,32 +90,43 @@ describe('changeFrame', () => {
       if (turnedOn.kind !== 'changed') throw new Error('expected a change')
       const moved = changeFrame(turnedOn.project, { set: { ...frame, rows: 8 } })
       if (moved.kind !== 'changed') throw new Error('expected a change')
-      expect(moved.project.rowProgress.enabled).toBe(true)
+      expect(rowProgressOn(moved.project)).toBe(true)
       const removed = changeFrame(moved.project, { remove: true })
       if (removed.kind !== 'changed') throw new Error('expected a change')
-      expect(removed.project.rowProgress.enabled).toBe(false)
+      expect(rowProgressOn(removed.project)).toBe(false)
       const reset = changeFrame(removed.project, { set: frame })
       if (reset.kind !== 'changed') throw new Error('expected a change')
-      expect(reset.project.rowProgress).toMatchObject({ enabled: true, currentRow: 0, currentColumn: 0 })
+      expect(rowProgressOn(reset.project)).toBe(true)
+      expect(reset.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    })
+  })
+
+  describe('frameChangeDiscardsProgress (ticket 434)', () => {
+    const changes: FrameChange[] = [{ set: frame }, { removeLine: { axis: 'row', index: 0 } }, { technique: 'peyote' }]
+
+    it('is true only for Remove Frame once a pass is done', () => {
+      expect(frameChangeDiscardsProgress(framed({ rowProgress: woven('rows', 1, 0) }), { remove: true })).toBe(true)
+      expect(frameChangeDiscardsProgress(framed({ rowProgress: woven('columns', 0, 2) }), { remove: true })).toBe(true)
+    })
+
+    it('is false for Remove Frame while no pass is done, since nothing is thrown away', () => {
+      expect(frameChangeDiscardsProgress(framed({ rowProgress: woven('rows', 0, 0) }), { remove: true })).toBe(false)
+      const { frame: _frame, ...unframed } = framed()
+      expect(frameChangeDiscardsProgress(unframed as Project, { remove: true })).toBe(false)
+    })
+
+    it.each(changes)('is false for every other change, passes done or not (%j)', (change) => {
+      expect(frameChangeDiscardsProgress(framed({ rowProgress: woven('rows', 3, 0) }), change)).toBe(false)
     })
   })
 
   describe('Row progress pointers', () => {
-    const cases: ['rows' | 'columns', FrameChange][] = [
-      ['rows', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
-      ['columns', { set: { row: 0, column: 0, rows: 2, columns: 2 } }],
-      ['rows', { removeLine: { axis: 'row', index: 0 } }],
-      ['columns', { removeLine: { axis: 'column', index: 0 } }],
-    ]
-    it.each(cases)('keeps both pointers inside the new Frame (%s, %j)', (direction, change) => {
-      // Row progress off, so the change is allowed; the pointers are what it had saved.
-      const wide = framed({ frame: { row: 10, column: 10, rows: 50, columns: 30 }, rowProgress: woven(direction, 40, 25, false) })
-      const result = changeFrame(wide, change)
-      if (result.kind !== 'changed') throw new Error('expected a change')
-      const next = result.project.frame!
+    it.each(['rows', 'columns'] as const)('keeps both pointers inside a smaller Frame (%s)', (direction) => {
+      const wide = framed({ frame: { row: 10, column: 10, rows: 50, columns: 30 }, rowProgress: woven(direction, 40, 25) })
+      const next = withFrame(wide, { row: 0, column: 0, rows: 2, columns: 2 })
       // One past the last pass means every pass is done (ticket 411).
-      expect(result.project.rowProgress.currentRow).toBeLessThanOrEqual(next.rows)
-      expect(result.project.rowProgress.currentColumn).toBeLessThanOrEqual(next.columns)
+      expect(next.rowProgress.currentRow).toBeLessThanOrEqual(2)
+      expect(next.rowProgress.currentColumn).toBeLessThanOrEqual(2)
     })
   })
 

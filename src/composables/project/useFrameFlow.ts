@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition, Technique } from '../../domain/grid'
-import { changeFrame } from '../../domain/changeFrame'
+import { changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
@@ -191,7 +191,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function remove(): void {
     const project = deps.currentProject()
     if (!project?.frame) return
-    if (rowProgressStarted(project)) {
+    if (frameChangeDiscardsProgress(project, { remove: true })) {
       removeConfirmOpen.value = true
       return
     }

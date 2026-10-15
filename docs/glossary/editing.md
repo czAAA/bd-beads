@@ -7,7 +7,7 @@ The 4th Tools-group tool, selectable by clicking its own button alongside Paint,
 _Avoid_: erase mode, clear tool
 
 **Clear**:
-Resets the open Project to how it was when first created at its size: every cell empty and Row progress turned off with its pointers back at the first row, after a confirmation. The Project's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
+Resets the open Project to how it was when first created at its size: every cell empty and Row progress's pointers back at the first row (it stays on with the Frame), after a confirmation. The Project's name, size, Technique, Bead and rotation are kept. One undo step, which brings back both the grid and Row progress. Unlike other drawing commands it ignores the Row progress lock, since clearing progress is part of what it does.
 _Avoid_: delete all, reset, wipe
 
 **Schema size**:

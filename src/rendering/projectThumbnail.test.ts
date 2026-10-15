@@ -10,7 +10,7 @@ function project(grid: (string | null)[][], rotation: Rotation = 0): Project {
     technique: 'loom',
     beadId: 'toho-cube-1.5mm',
     ...framedGrid(grid.map((row) => row.map((color) => ({ color })))),
-    rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+    rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
     rotation,
     createdAt: 0,
     updatedAt: 0,

@@ -18,11 +18,6 @@ import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
  * needs at any moment, is bounded by the band or the page, not the Project (ADR 0018's 250 × 250 included).
  */
 
-/** A finished row's fade is a weaving aid; a chart shows every bead at full color, so Row progress is switched off for the drawing. */
-function forExport(project: Project): Project {
-  return { ...project, rowProgress: { ...project.rowProgress, enabled: false } }
-}
-
 function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -101,8 +96,7 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
  * large Project still stays within today's pixel budget (see pngZoom) — the story is small next to the chart, so
  * redrawing it in full on every band costs nothing next to the beads.
  */
-export async function exportProjectPng(source: Project, words: PrintText): Promise<Blob> {
-  const project = forExport(source)
+export async function exportProjectPng(project: Project, words: PrintText): Promise<Blob> {
   const zoom = pngZoom(project)
   const displayed = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation)
   const beadsWidth = Math.ceil(displayed.width)
@@ -136,6 +130,8 @@ export async function exportProjectPng(source: Project, words: PrintText): Promi
       region: { x: -PNG_MARGIN_PX, y: y - PNG_MARGIN_PX, width: chart.width, height: canvas.height },
       zoom,
       theme: PRINT_THEME,
+      // A finished row's fade is a weaving aid; a chart shows every bead at full color (ticket 434).
+      rowMarks: false,
     })
     context.restore()
     // After the board, not before (ticket 183 regression): renderProject repaints its own whole region — taller than
@@ -168,8 +164,7 @@ function jpegOf(canvas: HTMLCanvasElement): Promise<Uint8Array> {
  * beads and grams, then the chart pages, the Project split into equal parts that each fill their page (see planPrint).
  * Pages are drawn and compressed one at a time, so memory stays bounded by a page, not the Project (ADR 0019).
  */
-export async function exportProjectPdf(source: Project, words: PrintText): Promise<Blob> {
-  const project = forExport(source)
+export async function exportProjectPdf(project: Project, words: PrintText): Promise<Blob> {
   const plan = planPrint(project)
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed before.
   const { drawChartPage, drawPageOne, loadPrintFonts } = await import('./printPages')

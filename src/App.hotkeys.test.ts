@@ -52,7 +52,7 @@ describe('App Progress bar', () => {
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    expect(loadProjects()[0]!.rowProgress).toMatchObject({ enabled: true, currentRow: 1 })
+    expect(loadProjects()[0]!.rowProgress).toMatchObject({ currentRow: 1 })
   })
 })
 

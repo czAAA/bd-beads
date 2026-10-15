@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
-import { rowProgressOff } from '../testUtils/rowProgress'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
@@ -9,24 +8,24 @@ import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, t
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
-  renderInSpace(context, { space: spaceOf(input.project, false), ...input })
+  renderInSpace(context, { space: spaceOf(input.project, false), rowMarks: false, ...input })
 }
 
 /** A bead drawer that draws nothing, to leave only what the renderer itself draws. */
 const noBead: BeadDrawer = () => undefined
 
 /** Renders with a bead drawer that only takes note of each bead it is asked for. */
-function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = false): BeadShape[] {
+function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = false, rowMarks = false): BeadShape[] {
   const beads: BeadShape[] = []
   const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
-  renderProject(recordingContext().context, { project, region, zoom, showFinished, drawBead })
+  renderProject(recordingContext().context, { project, region, zoom, showFinished, rowMarks, drawBead })
   return beads
 }
 
 function projectOf(technique: Technique, columns: number, rows: number, extra: Partial<Project> & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
-  // Row progress starts off here, so the tests that want its dimming say so (a Frame turns it on in the app).
-  const project = { ...rowProgressOff(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })), ...rest }
+  // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
+  const project = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
   return grid ? withFrameGrid(project, grid) : project
 }
 
@@ -307,7 +306,6 @@ describe('renderProject', () => {
 
   describe('finished rows', () => {
     const progress = (direction: 'rows' | 'columns') => ({
-      enabled: true,
       direction,
       currentRow: 1,
       currentColumn: 2,
@@ -316,7 +314,7 @@ describe('renderProject', () => {
     it('fades the beads in rows before the current one, when rows run along the grid\'s rows', () => {
       const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
 
-      const dimmed = beadsDrawn(project, whole(project)).map(({ dimmed }) => dimmed)
+      const dimmed = beadsDrawn(project, whole(project), 1, false, true).map(({ dimmed }) => dimmed)
 
       expect(dimmed).toEqual([true, true, true, false, false, false, false, false, false])
     })
@@ -324,7 +322,7 @@ describe('renderProject', () => {
     it('fades the beads in columns before the current one, when rows run down the grid\'s columns', () => {
       const project = projectOf('loom', 3, 3, { rowProgress: progress('columns') })
 
-      const dimmed = beadsDrawn(project, whole(project)).map(({ dimmed }) => dimmed)
+      const dimmed = beadsDrawn(project, whole(project), 1, false, true).map(({ dimmed }) => dimmed)
 
       expect(dimmed).toEqual([true, true, false, true, true, false, true, true, false])
     })
@@ -332,7 +330,7 @@ describe('renderProject', () => {
     it('fades nothing while the pointer is still on the first row, the row being woven', () => {
       const project = projectOf('loom', 3, 3, { rowProgress: { ...progress('rows'), currentRow: 0, currentColumn: 0 } })
 
-      expect(beadsDrawn(project, whole(project)).some(({ dimmed }) => dimmed)).toBe(false)
+      expect(beadsDrawn(project, whole(project), 1, false, true).some(({ dimmed }) => dimmed)).toBe(false)
     })
 
     it('draws finished rows at their normal color while they are shown (hover or a tap, ticket 352)', () => {
@@ -340,7 +338,7 @@ describe('renderProject', () => {
       const { context } = recordingContext()
       const beads: BeadShape[] = []
 
-      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, drawBead: (_context, bead) => beads.push(bead) })
+      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, rowMarks: true, drawBead: (_context, bead) => beads.push(bead) })
 
       expect(beads.some(({ dimmed }) => dimmed)).toBe(false)
     })
@@ -349,7 +347,7 @@ describe('renderProject', () => {
       const project = projectOf('brick', 2, 3, { rowProgress: { ...progress('rows'), currentRow: 2, currentColumn: 0 } })
       const { context, named } = recordingContext()
 
-      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, drawBead: noBead })
+      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, rowMarks: true, drawBead: noBead })
 
       expect(named('fillRect').slice(1).map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
     })
@@ -367,7 +365,7 @@ describe('renderProject', () => {
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
       const colors = (direction: 'rows' | 'columns', showFinished: boolean) => {
         const project = filled(projectOf('loom', 3, 3, { rowProgress: progress(direction) }))
-        return beadsDrawn(project, whole(project), 1, showFinished).map(({ color }) => color)
+        return beadsDrawn(project, whole(project), 1, showFinished, true).map(({ color }) => color)
       }
       const red = '#e63746'
       const lit = brighten(red, 0.1)
@@ -383,7 +381,7 @@ describe('renderProject', () => {
     it('brightens only the pass on peyote, not the whole line', () => {
       const project = filled(projectOf('peyote', 4, 3, { rowProgress: { ...progress('rows'), currentRow: 1 } }))
 
-      const lit = beadsDrawn(project, whole(project)).filter(({ color }) => color === brighten('#e63746', 0.1)).length
+      const lit = beadsDrawn(project, whole(project), 1, false, true).filter(({ color }) => color === brighten('#e63746', 0.1)).length
 
       expect(lit).toBe(2)
     })
@@ -391,11 +389,11 @@ describe('renderProject', () => {
     it('leaves an empty cell of the current row as it is: no brightening where there is no bead (ticket 411)', () => {
       const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
 
-      expect(beadsDrawn(project, whole(project)).every(({ color }) => color === null)).toBe(true)
+      expect(beadsDrawn(project, whole(project), 1, false, true).every(({ color }) => color === null)).toBe(true)
     })
 
-    it('fades nothing while Row progress is off', () => {
-      const project = projectOf('loom', 3, 3, { rowProgress: { ...progress('rows'), enabled: false } })
+    it('fades nothing while the renderer is told to draw no row marks (an export)', () => {
+      const project = projectOf('loom', 3, 3, { rowProgress: progress('rows') })
 
       expect(beadsDrawn(project, whole(project)).some(({ dimmed }) => dimmed)).toBe(false)
     })
@@ -404,7 +402,7 @@ describe('renderProject', () => {
       const seamAlpha = (direction: 'rows' | 'columns') => {
         const project = projectOf('brick', 2, 3, { rowProgress: { ...progress(direction), currentRow: 2, currentColumn: 0 } })
         const { context, named } = recordingContext()
-        renderProject(context, { project, region: whole(project), zoom: 1, drawBead: noBead })
+        renderProject(context, { project, region: whole(project), zoom: 1, rowMarks: true, drawBead: noBead })
         return named('fillRect').slice(1).map((call) => call.fillStyle)
       }
 

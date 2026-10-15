@@ -4,6 +4,7 @@ import {
   frameGrid,
   moveToRow,
   projectDimensions,
+  rowProgressOn,
   withFrameGrid,
   type CreateProjectInput,
   type Project,
@@ -100,7 +101,8 @@ export function useTour(deps: TourDeps) {
       colorId: deps.selectedColorId(),
       selection: deps.selection(),
       pasteArmed: deps.pasteArmed(),
-      rowProgress: project?.rowProgress ?? { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+      rowProgress: project?.rowProgress ?? { direction: 'rows', currentRow: 0, currentColumn: 0 },
+      rowProgressOn: project ? rowProgressOn(project) : false,
     }
   })
 

@@ -22,13 +22,14 @@ const props = withDefaults(
     technique?: Technique
     /** How much the Project is enlarged by; 1 is a bead 20px across. */
     zoom: number
+    /** Row progress to draw (current row marked, finished ones faded); left out, no row marks. */
     rowProgress?: RowProgress
     selection?: Selection
     preview?: HoverPreview
     /** Drawn as an export is: light whatever the theme, on the print board (DESIGN.md §4.3). */
     print?: boolean
   }>(),
-  { technique: 'loom', print: false, rowProgress: () => ({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 }), selection: undefined, preview: undefined },
+  { technique: 'loom', print: false, rowProgress: undefined, selection: undefined, preview: undefined },
 )
 
 const theme = useResolvedTheme()
@@ -38,12 +39,12 @@ const marksEl = ref<HTMLCanvasElement>()
 const project = computed(() => ({
   technique: props.technique,
   ...framedGrid(props.grid),
-  rowProgress: props.rowProgress,
+  rowProgress: props.rowProgress ?? { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
   rotation: 0 as const,
 }))
 const extent = computed(() => displayedExtentPx(props.technique, props.grid[0]?.length ?? 0, props.grid.length, props.zoom, 0))
 const space = computed(() => spaceOf(project.value, false))
-const hasMarks = computed(() => props.rowProgress.enabled || !!props.selection || !!props.preview)
+const hasMarks = computed(() => props.rowProgress !== undefined || !!props.selection || !!props.preview)
 
 function size(canvas: HTMLCanvasElement, pixelRatio: number) {
   canvas.width = Math.round(extent.value.width * pixelRatio)
@@ -53,7 +54,7 @@ function size(canvas: HTMLCanvasElement, pixelRatio: number) {
 function draw() {
   const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1)
   const region = { x: 0, y: 0, width: extent.value.width, height: extent.value.height }
-  const input = { project: project.value, space: space.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PROJECT_THEMES[theme.value] }
+  const input = { project: project.value, space: space.value, region, zoom: props.zoom, pixelRatio, theme: props.print ? PRINT_THEME : PROJECT_THEMES[theme.value], rowMarks: props.rowProgress !== undefined }
   const picture = pictureEl.value
   const pictureContext = picture?.getContext('2d')
   if (picture && pictureContext) {

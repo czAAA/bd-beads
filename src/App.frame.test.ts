@@ -261,22 +261,23 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
 
   it('turns on with the first Frame, the pointer at the first pass, and one Undo takes both back', async () => {
     const wrapper = await mountOpen()
-    expect(savedProgress().enabled).toBe(false)
+    expect(savedFrame()).toBeUndefined()
+    expect(savedProgress()).not.toHaveProperty('enabled')
 
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
 
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(savedProgress()).toMatchObject({ enabled: true, currentRow: 0, currentColumn: 0 })
+    expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
 
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toBeUndefined()
-    expect(savedProgress().enabled).toBe(false)
+    expect(savedProgress()).not.toHaveProperty('enabled')
   })
 
   it('opens with Row progress on for a saved Frame, whatever an older file stored', async () => {
     const framed = { ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } }
-    saveProjects([{ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } }])
+    saveProjects([{ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } as Project['rowProgress'] }])
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
 
@@ -315,11 +316,11 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
-    expect(savedProgress()).toMatchObject({ enabled: false, currentRow: 0 })
+    expect(savedProgress()).toMatchObject({ currentRow: 0 })
 
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(savedProgress()).toMatchObject({ enabled: true, currentRow: 1 })
+    expect(savedProgress()).toMatchObject({ currentRow: 1 })
   })
 
   it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {

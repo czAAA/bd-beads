@@ -4,7 +4,6 @@ import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, moveToRow, toggleRowDirection, type Project } from '../../domain/project'
 import { ru } from '../../i18n/ru'
-import { rowProgressOn } from '../../testUtils/rowProgress'
 
 beforeEach(() => {
   localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
@@ -19,7 +18,7 @@ function makeProject(): Project {
     beadId: cubeBead.id,
     size: { width: 15, height: 30, unit: 'mm' },
   })
-  return rowProgressOn(project)
+  return project
 }
 
 describe('ProgressBar', () => {

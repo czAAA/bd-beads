@@ -30,7 +30,8 @@ function snapshot(overrides: Partial<TourSnapshot> = {}): TourSnapshot {
     colorId: 'black',
     selection: undefined,
     pasteArmed: false,
-    rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+    rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
+    rowProgressOn: false,
     ...overrides,
   }
 }
@@ -101,12 +102,12 @@ describe('evaluateStep', () => {
 
   it('row progress is done when rows 1 to 3 were marked and row 3 opened again', () => {
     const full = afterStep(8)
-    const progress = (currentRow: number, enabled = true) => ({ enabled, direction: 'rows' as const, currentRow, currentColumn: 0 })
-    let result = evaluateStep('rows', snapshot({ grid: full, rowProgress: progress(2) }), {})
+    const progress = (currentRow: number) => ({ rowProgressOn: true, rowProgress: { direction: 'rows' as const, currentRow, currentColumn: 0 } })
+    let result = evaluateStep('rows', snapshot({ grid: full, ...progress(2) }), {})
     expect(result.done).toBe(false)
-    result = evaluateStep('rows', snapshot({ grid: full, rowProgress: progress(3) }), result.memo)
+    result = evaluateStep('rows', snapshot({ grid: full, ...progress(3) }), result.memo)
     expect(result.done).toBe(false)
-    result = evaluateStep('rows', snapshot({ grid: full, rowProgress: progress(2) }), result.memo)
+    result = evaluateStep('rows', snapshot({ grid: full, ...progress(2) }), result.memo)
     expect(result.done).toBe(true)
   })
 })
@@ -149,9 +150,9 @@ describe('tourTargets', () => {
 
   it('walks Row progress through the switch, Row done and Row not done', () => {
     const full = afterStep(8)
-    const progress = (currentRow: number, enabled: boolean) => ({ enabled, direction: 'rows' as const, currentRow, currentColumn: 0 })
+    const progress = (currentRow: number) => ({ rowProgressOn: true, rowProgress: { direction: 'rows' as const, currentRow, currentColumn: 0 } })
     expect(tourTargets('rows', snapshot({ grid: full }), {}).control).toBe('progress-switch')
-    expect(tourTargets('rows', snapshot({ grid: full, rowProgress: progress(1, true) }), {}).control).toBe('progress-next')
-    expect(tourTargets('rows', snapshot({ grid: full, rowProgress: progress(3, true) }), { reachedRow3: true }).control).toBe('progress-previous')
+    expect(tourTargets('rows', snapshot({ grid: full, ...progress(1) }), {}).control).toBe('progress-next')
+    expect(tourTargets('rows', snapshot({ grid: full, ...progress(3) }), { reachedRow3: true }).control).toBe('progress-previous')
   })
 })
