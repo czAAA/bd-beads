@@ -45,7 +45,7 @@ function mountApp() {
 
 /** The exports are items of the save box's Export menu (ticket 148). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 }
 
@@ -87,7 +87,7 @@ describe('App empty, loading and failed states (ticket 158)', () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="save-button"]').trigger('click')
     setItem.mockRestore()
     vi.mocked(downloadFile).mockClear()

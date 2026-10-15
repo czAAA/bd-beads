@@ -28,7 +28,9 @@ describe('App shell, the Dock layout (ticket 383, ADR 0046; the only layout sinc
     const wrapper = await mountWithProject(15, 30)
     const strip = wrapper.get('[data-testid="canvas-strip"]')
     const order = strip.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => ['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset', 'canvas-color-button'].includes(id!))).toEqual([
+    expect(order.filter((id) => ['strip-menu', 'strip-project', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset', 'canvas-color-button'].includes(id!))).toEqual([
+      'strip-menu',
+      'strip-project',
       'strip-rulers',
       'strip-undo',
       'strip-redo',
@@ -45,7 +47,7 @@ describe('App shell, the Dock layout (ticket 383, ADR 0046; the only layout sinc
 
   it('leaves the Canvas color picker out of the Project sheet header', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.get('[data-testid="dock-project"]').trigger('click')
+    await wrapper.get('[data-testid="strip-project"]').trigger('click')
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
     expect(sheet.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
   })

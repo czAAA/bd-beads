@@ -51,7 +51,7 @@ The Tools-group tool that selects a whole Piece with one tap, no dragging (ticke
 _Avoid_: Lasso, Point tool, magic wand
 
 **Select all**:
-A button on the Context bar, shown whenever the Select tool is active, even with no Selection, at the canvas box's top-centre (ticket 428, ADR 0055; also Ctrl/⌘+A, and for now still the tool-strip tile and key `7` of ticket 414). With a Frame it sets the Selection to the Frame's inside (always allowed, ticket 433); without one, to the bounding rectangle of every placed bead (the box Fit to drawing finds). It makes Select the active tool; with no Frame and an empty canvas it does nothing.
+A button on the Context bar, shown whenever the Select tool is active, even with no Selection, at the canvas box's top-centre (ticket 428, ADR 0055; also Ctrl/⌘+A, ticket 431 removed the Tool sheet tile and key `7`). With a Frame it sets the Selection to the Frame's inside (always allowed, ticket 433); without one, to the bounding rectangle of every placed bead (the box Fit to drawing finds). It makes Select the active tool; with no Frame and an empty canvas it does nothing.
 _Avoid_: select everything
 
 **Copy**:

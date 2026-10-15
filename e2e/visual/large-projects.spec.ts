@@ -77,7 +77,7 @@ for (const { columns, rows } of SIZES) {
       // The whole Project goes out in a Project file, and reads back the same. Export Project is in Saved Projects'
       // footer (ticket 147; ExpandablePanel), which only renders once expanded. Saved Projects is a sheet of its own,
       // opened from the Project sheet (PhoneSheets card).
-      await openDockSheet(page, 'dock-project')
+      await openDockSheet(page, 'strip-project')
       await page.getByTestId('phone-saved-projects-button').click()
       await settle(page)
       await page.getByTestId('project-list').getByTestId('panel-expand').click()

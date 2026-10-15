@@ -7,7 +7,6 @@ import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
 import IconButton from '../ui/IconButton.vue'
-import ToolTiles from '../tools/ToolTiles.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -36,26 +35,17 @@ const {
   onNewProjectDraft,
   onCreateProject,
   startConvertImage,
-  activeTool,
   selectedColorId,
   customColor,
   selectedImageColor,
-  onSelectTool,
-  onSelectAll,
   onSelectColor,
   onSelectCustomColor,
   onSelectImageColor,
-  selection,
-  pasteProjectionActive,
   onRequestDeleteAll,
   onEditFrame,
   onSetTechnique,
   onFitFrame,
   onRemoveFrame,
-  canRemoveSelectedLine,
-  onRemoveSelectedLine,
-  canNamePiece,
-  onNamePiece,
   replaceBeadCandidates,
   onPickReplaceBead,
   onImportProjects,
@@ -87,8 +77,6 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
 
 const sheetActions = {
-  removeLine: controlAction('remove-line'),
-  namePiece: controlAction('name-piece'),
   clear: controlAction('clear'),
   newProject: controlAction('new-project'),
   savedProjects: controlAction('saved-projects'),
@@ -99,32 +87,11 @@ const sheetActions = {
 const deps = computed(() =>
   controlDeps({
     activeProject: () => activeProject.value,
-    canRemoveSelectedLine: () => canRemoveSelectedLine.value,
-    canNamePiece: () => canNamePiece.value,
-    hasSelection: () => !!selection.value,
-    hasClipboard: () => pasteProjectionActive.value,
   }),
 )
 </script>
 
 <template>
-  <BottomSheet v-if="openPhoneSheet === 'tool' && activeProject" :title="t.toolbox.groups.tools" @close="openPhoneSheet = null">
-    <div class="phone-sheet__tiles">
-      <ToolTiles :active-tool="activeTool" @select="onSelectTool" @select-all="onSelectAll" />
-    </div>
-    <div class="phone-sheet__links">
-      <AppButton variant="link" icon="remove-line" :action="sheetActions.removeLine" :deps="deps" data-testid="sheet-remove-line" data-tour="remove-line" @click="onRemoveSelectedLine(); openPhoneSheet = null">
-        {{ t.tools.removeLineShort }}
-      </AppButton>
-      <AppButton variant="link" icon="piece" :action="sheetActions.namePiece" :deps="deps" data-testid="sheet-name-piece" @click="onNamePiece(); openPhoneSheet = null">
-        {{ t.tools.namePieceButton }}
-      </AppButton>
-      <AppButton variant="link" icon="delete" danger :action="sheetActions.clear" :deps="deps" data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
-        {{ t.deleteAll.button }}
-      </AppButton>
-    </div>
-  </BottomSheet>
-
   <BottomSheet v-if="openPhoneSheet === 'color' && activeProject" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
     <ToolColorControls
       :selected-color-id="selectedColorId"
@@ -214,6 +181,12 @@ const deps = computed(() =>
         @click="phoneSavedProjectsOpen = true"
       />
     </div>
+    <!-- Delete all (ticket 431): the Project sheet's last line, with its usual confirmation. -->
+    <div v-if="activeProject" class="phone-sheet__links">
+      <AppButton variant="link" icon="delete" danger :action="sheetActions.clear" :deps="deps" data-testid="sheet-delete-all" @click="onRequestDeleteAll(); openPhoneSheet = null">
+        {{ t.deleteAll.button }}
+      </AppButton>
+    </div>
   </BottomSheet>
 
   <!-- New Project (PhoneForms card): its own full-height modal sheet from the Project sheet, the same form the wider tiers show inline. -->
@@ -277,15 +250,7 @@ const deps = computed(() =>
 </template>
 
 <style scoped>
-/* The phone ToolSheets' own content (ticket 79; ToolSheet card). */
-.phone-sheet__tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 56px);
-  justify-content: space-between;
-  grid-auto-rows: 72px;
-  background-image: repeating-linear-gradient(to bottom, transparent 0 71px, var(--line-strong) 71px 72px);
-}
-
+/* The phone sheets' own content (ticket 79; ToolSheet card). */
 .phone-sheet__links {
   display: flex;
   flex-wrap: wrap;

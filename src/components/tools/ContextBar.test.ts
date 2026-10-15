@@ -78,6 +78,13 @@ describe('ContextBar', () => {
     expect(wrapper.emitted('remove-line')).toHaveLength(1)
   })
 
+  it('keeps Name piece on the bar, with no Tool sheet to carry it (ticket 431)', async () => {
+    const wrapper = mount(ContextBar, { props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, canNamePiece: true } })
+
+    await wrapper.get('[data-testid="context-bar-name-piece"]').trigger('click')
+    expect(wrapper.emitted('name-piece')).toHaveLength(1)
+  })
+
   it('is placed against the Selection when anchored', () => {
     const wrapper = mount(ContextBar, {
       props: {

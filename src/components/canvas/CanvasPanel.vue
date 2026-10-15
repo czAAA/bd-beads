@@ -22,6 +22,8 @@ import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
 const {
   t,
+  openPhoneSheet,
+  onSelectPhoneSheet,
   activeProject,
   projectLabel,
   toasts,
@@ -188,10 +190,12 @@ function techniqueWord(technique: Technique): string {
         :rulers="showRulers"
         :can-undo="canUndo"
         :can-redo="canRedo"
+        :open-sheet="openPhoneSheet"
         :zoom-percent="stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         :canvas-color="activeProject && !framing"
+        @select-sheet="onSelectPhoneSheet"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
         @redo="onRedo"
