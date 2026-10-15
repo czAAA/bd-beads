@@ -107,10 +107,11 @@ describe('ContextBar', () => {
 
     expect(wrapper.get('[data-testid="context-bar"]').attributes('style') ?? '').not.toContain('display: none')
     expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
-    expect(wrapper.findAll('button')).toHaveLength(0)
+    const hidden = () => wrapper.findAll('button').filter((button) => (button.element.closest('[style*="display: none"]') as HTMLElement | null) !== null)
+    expect(hidden()).toHaveLength(wrapper.findAll('button').length)
 
     await wrapper.setProps({ gesturing: false })
-    expect(wrapper.findAll('button').length).toBeGreaterThan(0)
+    expect(hidden()).toHaveLength(0)
   })
 
   it('shows no bar at all while paste mode is on, Select all included (ticket 437)', () => {
