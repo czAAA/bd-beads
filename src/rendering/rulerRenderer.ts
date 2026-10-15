@@ -174,19 +174,11 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
 
   drawHandles(context, box, theme, touch)
 
-  drawSizeTooltip(context, box, viewport, theme, tooltip)
-}
-
-/**
- * The size tooltip (Frame card): `text` on a `frameLine` pill hanging off the bottom-right corner of a box in the viewport's px,
- * kept inside the viewport. The Frame being set and a Selection with handles share it. Nothing is drawn for empty text.
- */
-export function drawSizeTooltip(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, viewport: { width: number; height: number }, theme: ProjectTheme, text: string): void {
-  if (text === '') {
+  if (tooltip === '') {
     return
   }
   context.font = `500 12px ${MONO_FONT}`
-  const width = text.length * 12 * 0.6 + TOOLTIP_PAD_X * 2
+  const width = tooltip.length * 12 * 0.6 + TOOLTIP_PAD_X * 2
   const x = Math.min(box.x + box.width - width, viewport.width - width - 4)
   const y = Math.min(box.y + box.height + TOOLTIP_GAP, viewport.height - TOOLTIP_HEIGHT - 4)
   context.fillStyle = theme.frameLine
@@ -196,5 +188,5 @@ export function drawSizeTooltip(context: DrawingContext, box: { x: number; y: nu
   context.fillStyle = theme.canvas
   context.textAlign = 'left'
   context.textBaseline = 'middle'
-  context.fillText(text, Math.max(4, x) + TOOLTIP_PAD_X, Math.max(4, y) + TOOLTIP_HEIGHT / 2)
+  context.fillText(tooltip, Math.max(4, x) + TOOLTIP_PAD_X, Math.max(4, y) + TOOLTIP_HEIGHT / 2)
 }

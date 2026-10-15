@@ -16,6 +16,7 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { hasBeads } from '../../domain/canvas'
+import { hasGuides } from '../../domain/selection'
 import { resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -129,6 +130,9 @@ const frameTooltip = computed(() => {
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
 
+/** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar then shrinks to the size instead of hiding. */
+const selectionGuided = computed(() => !!selection.value && hasGuides(selection.value) && showRulers.value !== false)
+
 /** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
 const selectionSummary = computed(() => {
   const project = activeProject.value
@@ -219,6 +223,7 @@ function techniqueWord(technique: Technique): string {
           :selection-summary="selectionSummary"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
+          :size-only="selectionGuided"
           :paste-armed="pasteProjectionActive"
           :project="activeProject"
           :can-remove-line="canRemoveSelectedLine"
@@ -271,7 +276,6 @@ function techniqueWord(technique: Technique): string {
               :project="shownProject!"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
-              :selection-tooltip="surfacePressing ? selectionSummary : undefined"
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
