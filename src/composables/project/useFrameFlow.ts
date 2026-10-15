@@ -186,6 +186,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (commit(undefined)) done()
   }
 
+  /** The Remove frame question answered No: nothing changes. */
   function cancelRemove(): void {
     removeConfirmOpen.value = false
   }
