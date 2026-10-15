@@ -412,7 +412,7 @@ export const uk: Translations = {
     removeConfirmButton: 'Прибрати рамку',
     removeConfirmCancel: 'Скасувати',
     explainer: 'Рамка позначає, які бісеринки ввійдуть у схему. Бісеринки за рамкою лишаються на полотні.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Рамку задано: ширина {width}, висота {height}',
     announceRemoved: 'Рамку прибрано',
     announceNothingToFit: 'Поки нічого обводити рамкою: нічого не намальовано',

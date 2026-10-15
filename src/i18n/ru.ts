@@ -423,7 +423,7 @@ export const ru: Translations = {
     removeConfirmButton: 'Убрать рамку',
     removeConfirmCancel: 'Отмена',
     explainer: 'Рамка отмечает, какие бисеринки войдут в схему. Бисеринки за рамкой остаются на полотне.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Рамка задана: ширина {width}, высота {height}',
     announceRemoved: 'Рамка убрана',
     announceNothingToFit: 'Пока нечего обводить рамкой: ничего не нарисовано',
