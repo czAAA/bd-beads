@@ -89,8 +89,9 @@ interface BarItem {
 
 /** What applies to this Selection, in order, Select all first while the Select tool is active (ContextBar card). */
 const items = computed<BarItem[]>(() => {
+  const showSelectAll = props.selectActive && !props.pasteArmed
   const list: BarItem[] = [
-    ...(props.selectActive && !props.pasteArmed ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
+    ...(showSelectAll ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
     { id: 'copy', action: actions.copy, group: 1, run: () => emit('copy') },
     { id: 'cut', action: actions.cut, group: 1, run: () => emit('cut') },
   ]

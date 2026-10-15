@@ -293,13 +293,6 @@ export function useSelectionGesture(
     deleteSelection()
   }
 
-  /** Re-arms paste mode (ADR 0057) on the kept clipboard; false with nothing copied. */
-  function armPaste(): boolean {
-    if (!copiedBlock.value) return false
-    pasteDismissed.value = false
-    return true
-  }
-
   /**
    * Fill (ticket 415): every position in the Selection, empty ones too, takes `color`, as one Undo step. The keep-out
    * margin and finished rows trim it silently, as Paste, since the edit is a drawing one.
@@ -392,7 +385,6 @@ export function useSelectionGesture(
     leaveSelectTool,
     copy,
     cut,
-    armPaste,
     dismissPaste,
     fill,
     pasteAt,

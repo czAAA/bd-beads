@@ -135,13 +135,6 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeDefined()
     })
 
-    it('arming paste mode again with nothing copied does nothing', () => {
-      const { gesture } = setup(paintedProject())
-
-      expect(gesture.armPaste()).toBe(false)
-      expect(gesture.pasteProjectionActive.value).toBe(false)
-    })
-
     it('Copy with no Selection does nothing', () => {
       const project = paintedProject()
       const { gesture } = setup(project)
@@ -204,7 +197,7 @@ describe('useSelectionGesture', () => {
       expect(gesture.hasClipboard()).toBe(false)
     })
 
-    it('leaving paste mode keeps the clipboard, and armPaste re-arms it', () => {
+    it('leaving paste mode keeps the clipboard, and pasteAt re-arms it', () => {
       const { gesture } = setup(paintedProject())
       copyTopLeft(gesture)
 
@@ -212,7 +205,7 @@ describe('useSelectionGesture', () => {
       expect(gesture.pasteProjectionActive.value).toBe(false)
       expect(gesture.hasClipboard()).toBe(true)
 
-      expect(gesture.armPaste()).toBe(true)
+      expect(gesture.pasteAt({ row: 2, column: 2 })).toBe(true)
       expect(gesture.pasteProjectionActive.value).toBe(true)
     })
 

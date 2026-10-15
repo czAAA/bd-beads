@@ -232,13 +232,13 @@ export function mirroredPastedCells(
   copyMode = false,
 ): PastedCell[] {
   // `at` is where the block's anchor bead lands (ticket 437); the rest works from the block's top-left corner.
-  at = { row: at.row - block.anchor.row, column: at.column - block.anchor.column }
+  const topLeft = { row: at.row - block.anchor.row, column: at.column - block.anchor.column }
   // Mirror's axes divide the Frame; with none, or none turned on, a stamp is only itself.
   if (!frame || (axes.columns === 0 && axes.rows === 0)) {
-    return pastedCells(block, at)
+    return pastedCells(block, topLeft)
   }
-  const rowPlacements = mirrorBlockPlacements(at.row - frame.row, block.rows, frame.rows, axes.rows, copyMode)
-  const columnPlacements = mirrorBlockPlacements(at.column - frame.column, block.columns, frame.columns, axes.columns, copyMode)
+  const rowPlacements = mirrorBlockPlacements(topLeft.row - frame.row, block.rows, frame.rows, axes.rows, copyMode)
+  const columnPlacements = mirrorBlockPlacements(topLeft.column - frame.column, block.columns, frame.columns, axes.columns, copyMode)
 
   const cellsByPosition = new Map<string, PastedCell>()
   for (const rowPlacement of rowPlacements) {
