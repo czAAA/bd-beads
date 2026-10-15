@@ -119,7 +119,7 @@ const selecting = computed(() => activeTool.value === 'select' || activeTool.val
 
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
-/** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
+/** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
   const project = shownProject.value
   const frame = project?.frame
@@ -129,7 +129,7 @@ const frameTooltip = computed(() => {
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
 
-/** The Selection's size for the bar's readout: "12×8 · 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
+/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
 const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
@@ -271,6 +271,7 @@ function techniqueWord(technique: Technique): string {
               :project="shownProject!"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
+              :selection-tooltip="surfacePressing ? selectionSummary : undefined"
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"

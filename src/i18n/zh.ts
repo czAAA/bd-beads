@@ -410,7 +410,7 @@ export const zh: Translations = {
     removeConfirmButton: '移除边框',
     removeConfirmCancel: '取消',
     explainer: '边框标出哪些珠子成为图样。边框之外的珠子仍留在画布上。',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: '边框已设置，宽 {width}，高 {height}',
     announceRemoved: '边框已移除',
     announceNothingToFit: '还没有画任何东西，无法让边框贴合',

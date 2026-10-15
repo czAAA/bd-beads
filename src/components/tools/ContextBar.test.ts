@@ -29,10 +29,10 @@ describe('ContextBar', () => {
 
   it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
-      props: { project: noFrame, selectionSummary: '3×5 · 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
+      props: { project: noFrame, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
     })
 
-    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 · 0.5 × 0.8 cm')
+    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
     expect(ids).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-fill', 'context-bar-frame', 'context-bar-rotate', 'context-bar-clear'])
     for (const id of ids) expect(wrapper.get(`[data-testid="${id}"]`).text(), id).toBe('')
