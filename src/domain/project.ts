@@ -174,7 +174,7 @@ export function createProject(input: CreateProjectInput): Project {
     beadId: input.beadId,
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows } } : {}),
-    rowProgress: INITIAL_ROW_PROGRESS,
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -563,7 +563,7 @@ export function deleteAll(project: Project): Project {
   const { pieceNames: _names, ...rest } = project
   return touch(rest, {
     beads: {},
-    rowProgress: INITIAL_ROW_PROGRESS,
+    rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
 }
 
