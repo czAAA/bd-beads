@@ -14,7 +14,10 @@ export interface ToolAtCursorDeps {
   /** Ends the stroke a press began (the pointer release). */
   endStroke: () => void
   beginSelectPress: (row: number, column: number) => void
-  extendSelection: (row: number, column: number) => void
+  /** Grows the Selection to a cell; false when the keep-out margin held it back (ticket 433). */
+  extendSelection: (row: number, column: number) => boolean
+  /** Shows the not-allowed cue for a Selection step the margin refused. */
+  refuseSelection: () => void
   announce: (text: string) => void
   colorWords: (hex: string | null | undefined) => string
 }
@@ -45,13 +48,15 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
     )
   }
 
-  /** Stretches the Selection from `from` to `to`, beginning it at `from` on the first call. */
-  function extendSelectionTo(from: GridPosition, to: GridPosition) {
+  /** Stretches the Selection from `from` to `to`, beginning it at `from` on the first call. Returns false, with the not-allowed cue, when the keep-out margin stops it a cell short, so the cursor stays put (ticket 433). */
+  function extendSelectionTo(from: GridPosition, to: GridPosition): boolean {
     if (!extending) {
       extending = true
       deps.beginSelectPress(from.row, from.column)
     }
-    deps.extendSelection(to.row, to.column)
+    const reached = deps.extendSelection(to.row, to.column)
+    if (!reached) deps.refuseSelection()
+    return reached
   }
 
   /** Ends the stretch, if one is under way. */

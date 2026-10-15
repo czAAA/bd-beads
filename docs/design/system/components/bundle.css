@@ -739,7 +739,7 @@ body {
 .p-dk.cur .kc,.m-tbar b.on .kc{color:var(--accent-strong)}
 .p-dock.rail .p-dk .kc{right:8px}
 [data-theme="contrast"] .kc{color:var(--ink)}
-/* v18: the Frame's margin, three bead positions of clear space on every side */
+/* v18: the Frame's margin, six bead positions of clear space on every side */
 .bb-frame-clear { position: absolute; box-sizing: border-box; background: var(--box); border-radius: 12px; pointer-events: none; }
 .bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
 .bb-frame-margin[hidden] { display: block; opacity: 0; }

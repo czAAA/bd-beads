@@ -612,7 +612,7 @@ describe('the bead cursor (ticket 159)', () => {
     })
 
     it('starts at the margin\'s own column even when its first row is a shifted one', () => {
-      const shiftedFirstRow = { ...frame, row: 6 }
+      const shiftedFirstRow = { ...frame, row: 7, column: 8 }
       const { x, outer } = outline('peyote', shiftedFirstRow)
 
       expect(outer.row % 2).toBe(1)

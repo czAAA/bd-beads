@@ -1,5 +1,6 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt, type CreateProjectInput } from '../../domain/project'
+import { lineWithinFrame } from '../../domain/margin'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -215,6 +216,8 @@ function wireAppShell(services: Services) {
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that isn't tied to a tool. */
   const {
     selection,
+    refusals: selectionRefusals,
+    refuse: refuseSelection,
     beginPress: beginSelectPress,
     extendPress: extendSelection,
     endPress: endSelectPress,
@@ -321,6 +324,8 @@ function wireAppShell(services: Services) {
 
   /** A ruler number was pressed (ticket 313): selecting a line is the Select tool's job, so it becomes the active tool. */
   function onSelectLine(newSelection: Selection) {
+    // A number for a row or column outside the Frame does nothing (ticket 433), not even a change of tool.
+    if (!lineWithinFrame(currentProject()?.frame, newSelection)) return
     selectTool('select')
     selectLine(newSelection)
   }
@@ -476,6 +481,7 @@ function wireAppShell(services: Services) {
     endStroke,
     beginSelectPress,
     extendSelection,
+    refuseSelection,
     announce,
     colorWords,
   })
@@ -800,6 +806,7 @@ function wireAppShell(services: Services) {
     hasPaintColor,
     onFrameFromSelection,
     onSelectLine,
+    selectionRefusals,
     backOutOfSelect,
     previewCells,
     previewedMirrorAxisCounts,
@@ -834,7 +841,6 @@ function wireAppShell(services: Services) {
     frameDraft: frameFlow.draft,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
-    onDoneSetFrame: frameFlow.done,
     onFramePress: frameFlow.press,
     onFrameDrag: frameFlow.drag,
     onFrameRelease: frameFlow.release,
