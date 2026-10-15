@@ -419,7 +419,6 @@ export const pl: Translations = {
     removeConfirmMessage: 'Razem z nią zniknie zaznaczony postęp rzędów. Można to cofnąć.',
     removeConfirmButton: 'Usuń ramkę',
     removeConfirmCancel: 'Anuluj',
-    done: 'Gotowe',
     explainer: 'Ramka zaznacza, które koraliki stają się schematem. Koraliki poza nią zostają na płótnie.',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: 'Ustawiono ramkę, szerokość {width}, wysokość {height}',

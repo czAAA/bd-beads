@@ -419,7 +419,6 @@ export const es: Translations = {
     removeConfirmMessage: 'Las filas marcadas como hechas se borrarán con él. Se puede deshacer.',
     removeConfirmButton: 'Quitar marco',
     removeConfirmCancel: 'Cancelar',
-    done: 'Listo',
     explainer: 'El marco señala qué cuentas pasan a ser el esquema. Las cuentas fuera de él se quedan en el lienzo.',
     sizeTooltip: '{columns}×{rows} · {estimate}',
     announceSet: 'Marco definido, ancho {width}, alto {height}',
