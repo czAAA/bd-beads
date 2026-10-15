@@ -89,6 +89,7 @@ const {
   onProjectKey,
   onProjectKeyUp,
   onRotate,
+  onSelectAll,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
@@ -211,7 +212,7 @@ function techniqueWord(technique: Technique): string {
         -->
         <ContextBar
           v-if="activeProject && !framing"
-          :class="{ 'app-shell__context-bar--top': pasteProjectionActive }"
+          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
           :anchor="barAnchor"
           :gesturing="surfacePressing"
@@ -222,6 +223,7 @@ function techniqueWord(technique: Technique): string {
           :can-name-piece="canNamePiece"
           :has-paint-color="hasPaintColor()"
           :setting-frame="settingFrame"
+          :select-active="activeTool === 'select'"
           :frame-summary="frameTooltip"
           @fit-frame="onFitFrame"
           @remove-frame="onRemoveFrame"
@@ -233,6 +235,7 @@ function techniqueWord(technique: Technique): string {
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
           @rotate="onRotate"
+          @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
           @dismiss="backOutOfSelect"
@@ -284,6 +287,7 @@ function techniqueWord(technique: Technique): string {
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
+              :selection-blocks-margin="activeTool === 'select'"
               :selecting="activeTool === 'select' || activeTool === 'piece'"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"

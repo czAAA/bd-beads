@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   allBeadsSelection,
+  selectAllSelection,
   copySelection,
   movedSelection,
   pieceSelectionAt,
@@ -257,6 +258,9 @@ describe('Piece and Select all selections (ticket 414)', () => {
   it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
     expect(allBeadsSelection(picture.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
     expect(allBeadsSelection(project(3, 3).beads)).toBeUndefined()
+    // ticket 428: with a Frame, Select all is the Frame's inside, whatever the beads
+    expect(selectAllSelection(picture.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12 })
+    expect(selectAllSelection(picture.beads, undefined)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
   })
 })
 
