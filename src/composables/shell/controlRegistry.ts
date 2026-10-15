@@ -456,7 +456,7 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'name-piece',
-    icon: 'piece',
+    icon: 'name-piece',
     name: (t) => t.tools.namePieceButton,
     body: (t) => t.tooltips.namePiece,
     enabled: (deps) => deps.canNamePiece(),
