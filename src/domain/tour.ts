@@ -219,9 +219,9 @@ export function evaluateStep(step: TourStepId, snapshot: TourSnapshot, memo: Tou
     }
     case 'rows': {
       const { currentRow } = snapshot.rowProgress
-      const enabled = snapshot.rowProgressOn
-      const reachedRow3 = memo.reachedRow3 || (enabled && currentRow >= 3)
-      return { memo: { ...memo, reachedRow3 }, done: !!reachedRow3 && enabled && currentRow === 2 }
+      const on = snapshot.rowProgressOn
+      const reachedRow3 = memo.reachedRow3 || (on && currentRow >= 3)
+      return { memo: { ...memo, reachedRow3 }, done: !!reachedRow3 && on && currentRow === 2 }
     }
     default:
       return { memo, done: false }

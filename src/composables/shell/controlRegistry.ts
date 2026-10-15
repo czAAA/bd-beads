@@ -124,6 +124,11 @@ const frameLocked = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && rowProgressStarted(project)
 }
+/** Whether the open Project has Row progress on (it has a Frame), so Enter and Space move the row (ticket 434). */
+const rowProgressIsOn = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && rowProgressOn(project)
+}
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
@@ -485,8 +490,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      const project = deps.activeProject()
-      if (project && rowProgressOn(project)) deps.onMoveRow(1)
+      if (rowProgressIsOn(deps)) deps.onMoveRow(1)
     },
   },
   {
@@ -500,8 +504,7 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      const project = deps.activeProject()
-      if (project && rowProgressOn(project)) deps.onMoveRow(-1)
+      if (rowProgressIsOn(deps)) deps.onMoveRow(-1)
     },
   },
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {

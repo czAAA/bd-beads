@@ -432,12 +432,12 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
-  const enabled = rowMarks ?? rowProgressOn(project)
+  const showRows = rowMarks ?? rowProgressOn(project)
   const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!enabled && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -447,8 +447,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, the marker lifted above its row, and Mirror's axes above everything.
-  const inPass = enabled ? beadsInPass(project, space) : []
-  if (enabled) {
+  const inPass = showRows ? beadsInPass(project, space) : []
+  if (showRows) {
     drawLiftedBeads(context, inPass, project, zoom, pixelRatio, theme)
   }
   if (dimmed) {
@@ -485,7 +485,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       cursor,
-      rowMarks: enabled,
+      rowMarks: showRows,
     })
   }
   if (space.open && rulers && frameEditing && project.frame) {
