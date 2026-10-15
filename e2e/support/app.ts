@@ -54,7 +54,7 @@ export async function settle(page: Page): Promise<void> {
 }
 
 /** One of the Dock's four sheets (Dock card). */
-type DockSheetButton = 'dock-tool' | 'dock-color' | 'dock-project' | 'dock-menu'
+type DockSheetButton = 'dock-color' | 'strip-project' | 'strip-menu'
 
 /** Opens a Dock sheet (Dock card), closing whichever one is already open first — its Dock button toggles, so clicking
  * it while open would close it instead. Does nothing if the right one is already open. */
@@ -75,10 +75,9 @@ export async function closeSheet(page: Page): Promise<void> {
   }
 }
 
-/** Picks a Tool through the Dock's Tool sheet (ToolTiles card): opens it, then taps the tile, which closes the sheet itself. */
+/** Picks a Tool with its Dock tile (Dock card; ticket 431: no sheet in between). */
 export async function selectTool(page: Page, tool: Tool): Promise<void> {
-  await openDockSheet(page, 'dock-tool')
-  await page.getByTestId(`sheet-tool-${tool}`).click()
+  await page.getByTestId(`dock-tool-${tool}`).click()
   await settle(page)
 }
 
@@ -153,7 +152,7 @@ export async function stateConvertSize(page: Page, columns: number, rows: number
 
 /** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
 export async function savedProject(page: Page): Promise<Project> {
-  await openDockSheet(page, 'dock-project')
+  await openDockSheet(page, 'strip-project')
   await page.getByTestId('save-button').click()
   const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
   await closeSheet(page)

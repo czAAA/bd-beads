@@ -11,15 +11,29 @@ beforeEach(() => {
 describe('CanvasStrip', () => {
   const project = { frame: undefined, beads: {}, technique: 'loom' } as unknown as Project
 
-  it('holds Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (ticket 425)', async () => {
+  it('holds Menu, Project, Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (tickets 425, 431)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
     expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('125%')
 
     for (const id of ['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
     expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
+  })
+
+  it('shows Menu and Project as icon + text, and asks for their sheets (ticket 431)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, openSheet: 'project' } })
+
+    expect(wrapper.get('[data-testid="strip-menu"]').text()).toBe('Menu')
+    expect(wrapper.find('[data-testid="strip-menu"] svg').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="strip-project"]').text()).toBe('Project')
+    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBeUndefined()
+
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="strip-project"]').trigger('click')
+    expect(wrapper.emitted('select-sheet')).toEqual([['menu'], ['project']])
   })
 
   it('names nothing: no title, size line, estimate, grid icon or hint', () => {
@@ -29,17 +43,21 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('svg[data-icon="grid"]').exists()).toBe(false)
   })
 
-  it('shows only the zoom while a picture is framed, over the framing step\'s own range', async () => {
+  it('shows Menu and the zoom alone while a picture is framed, over the framing step\'s own range', async () => {
     const wrapper = mount(CanvasStrip, { props: { rulers: true, zoomPercent: 800, zoomMinPercent: 100, zoomMaxPercent: 800 } })
 
+    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-undo"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="zoom-in"]').attributes('aria-disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeUndefined()
   })
 
-  it('is empty with nothing on the board', () => {
+  it('holds Menu alone with no Project open (ticket 431)', () => {
     const wrapper = mount(CanvasStrip)
 
+    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-rulers"]').exists()).toBe(false)
   })

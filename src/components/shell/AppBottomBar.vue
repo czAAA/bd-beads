@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import AppButton from '../ui/AppButton.vue'
 import AppDock from '../tools/AppDock.vue'
-import IconButton from '../ui/IconButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 const newProjectAction = controlAction('new-project')
-const menuAction = controlAction('dock-menu')
 
 const {
   inputMode,
@@ -21,6 +19,7 @@ const {
   onImportProjects,
   onImportToast,
   openPhoneSheet,
+  onSelectTool,
   onSelectPhoneSheet,
   phoneNewProjectOpen,
 } = useAppShell()
@@ -29,13 +28,12 @@ const {
 <template>
   <!--
     Bottom of the phone layout (under 1024px, ticket 295): two states. With no Project open, a focused project-management
-    bar (New Project + Import) replaces the Dock so the first action is immediately obvious, with the Menu
-    button at its bottom right so language and theme stay reachable. Once a Project is open the Dock appears.
+    bar (New Project + Import) replaces the Dock so the first action is immediately obvious; Menu, for language and
+    theme, is in the Canvas strip (ticket 431). Once a Project is open the Dock appears.
   -->
   <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
     <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true" />
     <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
-    <IconButton :action="menuAction" :tooltip="{ placement: 'top' }" data-testid="phone-bar-menu" @click="openPhoneSheet = 'menu'" />
   </div>
   <AppDock
     v-else-if="!framing && !!activeProject"
@@ -45,6 +43,7 @@ const {
     :open-sheet="openPhoneSheet"
     :input-mode="inputModeAvailable ? inputMode : undefined"
     @toggle-input-mode="toggleInputMode"
+    @select-tool="onSelectTool"
     @select-sheet="onSelectPhoneSheet"
   />
 </template>
@@ -63,14 +62,14 @@ const {
   align-items: center;
   gap: var(--space-4);
   height: var(--dock-height);
-  /* Tight enough that New Project, both imports and Menu fit a 320px screen in Russian. */
+  /* Tight enough that New Project and both imports fit a 320px screen in Russian. */
   padding: 0 var(--space-12);
   padding-bottom: env(safe-area-inset-bottom);
   background: var(--canvas);
   border-top: 1px solid var(--line-soft);
 }
 
-/* New Project grows to take the remaining width; the import icons and Menu sit at a fixed square size beside it. */
+/* New Project grows to take the remaining width; the import icons sit at a fixed square size beside it. */
 .app-shell__phone-project-bar :deep(.app-button) {
   flex: 1 1 0;
 }
