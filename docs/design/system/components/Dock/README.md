@@ -1,17 +1,16 @@
 # Dock
 
-The phone layout's five icon-only buttons, each opening its own sheet: the active tool, Colour, Frame, Pattern and Menu (ticket 295). There is no Mirror button: the app hides Mirror pending a redesign (ticket 174). The Edit button is gone: Undo and Redo move to the Zoom pill (ticket 296), and Rotate, Copy and Paste join the Frame sheet.
+The bottom bar: the six tool tiles, the colour button and, where the device needs it, the Pen/Mouse toggle (ticket 431, ADR 0055). Menu and Project are not here: they are the first two buttons of the Canvas strip.
 
-- **48px** tall plus `env(safe-area-inset-bottom)`, at most 480px wide and centred, on `canvas` with a 1px `line-soft` rule above, in portrait and landscape alike (there is no left rail). Five equal slots, a 22px icon each, `muted`. **No text labels at any height:** each button's name is its accessible name and its Tooltip.
-- **Same icons, key and underline as the Toolbox (v18, ticket 292):** the selected tool carries the Toolbox's 2px accent underline; the first button shows the active tool's own icon (`paint`, `fill`, `select`, `erase`, `hand`) and its hotkey in the top-right corner (1, 2, 3, 4, 5), and the Frame button shows `frame` and 6: DM Mono 12px (nothing is below 12px on a phone), `muted`, 3px from the top and 6px from the right, `accent` on the active tool. Colour, Pattern and Menu are not tools and have no key.
-- The first button shows the active tool's icon in `accent`; Colour shows the current colour as a 22px swatch with a ring. The button whose sheet is open sits on `panel`.
-- **Slots:** Tool, Colour, Pattern (`pattern` icon), Menu (`menu` icon, last). There is no Frame slot (ticket 417): the Frame is edited on the canvas, from the Project sheet or a Selection.
-- **Input mode toggle (ticket 325):** once a pen has been seen (ticket 326) a sixth slot, the Pen mode / Mouse mode toggle, comes first (bottom-left). It shows `pen-mode` (Pen mode) or `pen-mode-off` (Mouse mode) in `accent`, with no underline and no key; `aria-pressed` is true in Pen mode, and its Tooltip names the mode and what it does. It opens no sheet.
-- **Frame (v16, gone in ticket 417):** the Frame slot and its sheet are removed. Technique, Edit Frame, Fit to drawing and Remove Frame are in the Pattern (Project) sheet; Rotate, Copy and Paste are on the Selection bar (tickets 415 and 416); Undo and Redo are in the Canvas strip. While the Frame is being edited its bar floats just above the Frame (ContextBar and Frame cards).
-- **Next (tickets 414 and 417; not in the app yet):** the first button can show `piece` (key 6) as the active tool; `select-all` (key 7) is an action in the Tool sheet, not a tool: pressing it selects every piece and leaves Select active. The Selection bar is the ContextBar card.
-- **Menu:** a modal sheet with Language, Theme, Name on exports, Keyboard shortcuts (only with a keyboard or fine pointer attached), Overview and Source code. Everything about the open Pattern stays in the Pattern sheet; nothing is repeated.
-- **No Pattern open:** the New Pattern / Import bar takes the Dock's place, with the Menu button at its bottom right, so language and theme stay reachable.
+- **48px** tall plus `env(safe-area-inset-bottom)`, at most 480px wide and centred, on `canvas` with a 1px `line-soft` rule above, in portrait and landscape alike (there is no left rail). **No text labels at any height:** each button's name is its accessible name and its Tooltip.
+- **Layout, left to right:** `Paint | Fill | Select | Piece | Eraser | Hand`, a divider, the colour button, and, once a pen has been seen (ticket 326), a second divider and the Pen/Mouse toggle. Slots share the width equally, a 22px icon each, `muted`; the tiles take the width they need and the bar stays centred, so with fewer slots it reads narrower than before.
+- **Tool tiles:** each picks its tool at once (there is no Tool sheet). The active one is `accent` with the Toolbox's 2px accent underline and sits on `panel`; the others are `muted`. The hotkey sits in the top-right corner (1, 2, 3, 4, 5, 6 for Paint, Fill, Select, Eraser, Hand, Piece): DM Mono 12px, `muted`, 3px from the top and 6px from the right, `accent` on the active tool. Select all is not a tile: it is the Context bar's button, and key 7 is free.
+- **Colour button:** shows the chosen colour as a 22px swatch with a ring, has no key, and opens the Colour sheet; it sits on `panel` while that sheet is open.
+- **Dividers:** 1px `line-soft`, 24px tall, centred in the bar, between the tiles and the colour button, and between the colour button and Pen/Mouse.
+- **Pen/Mouse toggle (ticket 325):** shows `pen-mode` (Pen mode) or `pen-mode-off` (Mouse mode) in `accent`, with no underline and no key; `aria-pressed` is true in Pen mode, and its Tooltip names the mode and what it does. It opens no sheet.
+- **Phones under 400px:** tiles are 44px wide and the digit badges are hidden, so all eight slots and both dividers fit 360px without scrolling.
+- **No Project open:** the New Project / Import bar takes the Dock's place; Menu is in the Canvas strip, which always shows.
+- There is no Mirror button: the app hides Mirror pending a redesign (ticket 174).
 - The consumer provides the active tool, the current colour and which sheet is open.
-- Hand joins the tools in the first button's sheet; two fingers always move the canvas.
 
 Hand-written from the responsive sign-off; static rendition.

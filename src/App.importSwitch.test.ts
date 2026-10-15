@@ -26,7 +26,7 @@ function makeProject(name: string): Project {
 /** Picks a file for the import control: the project bar's with no Project open, the Project sheet's otherwise. */
 async function pick(wrapper: Wrapper, contents: string) {
   if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
   }
   const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
   Object.defineProperty(input.element, 'files', {
@@ -40,7 +40,7 @@ async function pick(wrapper: Wrapper, contents: string) {
 const modal = (wrapper: Wrapper) => wrapper.find('[data-testid="import-switch-modal"]')
 /** The open Project's summary line, in the Project sheet (PhoneSheets card). */
 const openName = async (wrapper: Wrapper) => {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   return wrapper.find('[data-testid="phone-project-summary"]').text()
 }
 const libraryNames = () => loadProjects().map((project) => project.name).sort()

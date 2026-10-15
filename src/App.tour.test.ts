@@ -108,7 +108,7 @@ describe('App Tour (ticket 80)', () => {
     await flushPromises()
     expect(card(wrapper).exists()).toBe(false)
 
-    await wrapper.find('[data-testid="phone-bar-menu"], [data-testid="dock-menu"]').trigger('click')
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-item-tour"]').trigger('click')
     await flushPromises()
 

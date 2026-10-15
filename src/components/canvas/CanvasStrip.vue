@@ -4,18 +4,22 @@ import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
+import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
+import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 import CanvasColorPicker from './CanvasColorPicker.vue'
 
 /**
- * The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): the canvas's own controls, right-aligned,
- * Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit, then the Canvas color picker last (ticket 425). It names
- * nothing: no title, size line or hint. While a picture is being framed (Convert image) it holds the framing step's
- * own zoom alone. At phone width the cluster scrolls sideways, with touch-sized buttons.
+ * The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (icon + text, ticket 431),
+ * then the canvas's own controls, Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit, and the Canvas color picker
+ * last (ticket 425). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
+ * hint. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. At phone width
+ * Menu and Canvas color stay put and the middle scrolls sideways, with touch-sized buttons.
  */
 const props = defineProps<{
-
   project?: Project
+  /** The open Dock sheet, so Menu and Project show lit while theirs is open. */
+  openSheet?: PhoneSheet | null
   rulers?: boolean
   canUndo?: boolean
   canRedo?: boolean
@@ -27,6 +31,7 @@ const props = defineProps<{
   canvasColor?: boolean
 }>()
 const emit = defineEmits<{
+  'select-sheet': [sheet: 'menu' | 'project']
   'toggle-rulers': []
   undo: []
   redo: []
@@ -39,6 +44,8 @@ const { t } = useI18n()
 
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there (ADR 0035). */
 const actions = {
+  menu: controlAction('strip-menu'),
+  project: controlAction('strip-project'),
   rulers: controlAction('rulers'),
   undo: controlAction('undo'),
   redo: controlAction('redo'),
@@ -53,7 +60,10 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 
 <template>
   <div class="canvas-strip" data-testid="canvas-strip">
+    <AppButton variant="text" class="canvas-strip__menu" :action="actions.menu" :selected="openSheet === 'menu' ? true : undefined" data-testid="strip-menu" @click="emit('select-sheet', 'menu')" />
     <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
+      <AppButton v-if="project" variant="text" :action="actions.project" :selected="openSheet === 'project' ? true : undefined" data-testid="strip-project" @click="emit('select-sheet', 'project')" />
+      <span class="canvas-strip__spacer" />
       <template v-if="project">
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" data-tour="undo" @click="emit('undo')" />
@@ -75,7 +85,6 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-8);
   box-sizing: border-box;
   height: var(--strip-height);
@@ -84,10 +93,14 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
-/* The cluster scrolls sideways when the strip is too narrow for it (a phone); Canvas color stays pinned beside it. */
+.canvas-strip__menu {
+  flex: none;
+}
+
+/* Project leads the cluster and the canvas controls follow it to the right; the cluster scrolls sideways when the strip is too narrow (a phone), with Menu and Canvas color pinned either side. */
 .canvas-strip__controls {
   display: flex;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
@@ -101,6 +114,10 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 
 .canvas-strip__controls > :deep(*) {
   flex: none;
+}
+
+.canvas-strip__controls > .canvas-strip__spacer {
+  flex: 1 0 0;
 }
 
 .canvas-strip__level {

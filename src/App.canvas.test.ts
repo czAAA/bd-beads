@@ -5,7 +5,7 @@ import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
-import { openSheet, pickColor } from './testUtils/dock'
+import { pickColor } from './testUtils/dock'
 
 /**
  * The Canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
@@ -85,10 +85,8 @@ describe('the Hand tool', () => {
     await pickColor(wrapper, 'red')
 
     await key({ key: '5' })
-    await openSheet(wrapper, 'dock-tool')
-    expect(wrapper.find('[data-testid="sheet-tool-hand"]').classes()).toContain('icon-btn--selected')
-    expect(wrapper.findAll('[data-testid^="sheet-tool-"]')).toHaveLength(7)
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+    expect(wrapper.find('[data-testid="dock-tool-hand"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.findAll('[data-testid^="dock-tool-"]')).toHaveLength(6)
 
     const before = JSON.stringify(loadProjects()[0]!.beads)
     const root = surface(wrapper)

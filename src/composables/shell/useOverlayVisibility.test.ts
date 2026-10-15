@@ -16,15 +16,15 @@ describe('useOverlayVisibility', () => {
 
   it('opens a phone sheet from its Dock button, and closes it on the same button again', () => {
     const { openPhoneSheet, onSelectPhoneSheet } = setup()
-    onSelectPhoneSheet('tool')
-    expect(openPhoneSheet.value).toBe('tool')
-    onSelectPhoneSheet('tool')
+    onSelectPhoneSheet('menu')
+    expect(openPhoneSheet.value).toBe('menu')
+    onSelectPhoneSheet('menu')
     expect(openPhoneSheet.value).toBeNull()
   })
 
   it('switches straight to another phone sheet from a different Dock button', () => {
     const { openPhoneSheet, onSelectPhoneSheet } = setup()
-    onSelectPhoneSheet('tool')
+    onSelectPhoneSheet('menu')
     onSelectPhoneSheet('color')
     expect(openPhoneSheet.value).toBe('color')
   })

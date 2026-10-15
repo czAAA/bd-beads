@@ -58,7 +58,7 @@ describe('App Save (ticket 115)', () => {
     await startUnfinishedStroke(wrapper)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
 
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
 
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
@@ -73,7 +73,7 @@ describe('App Save (ticket 115)', () => {
     await startUnfinishedStroke(wrapper)
 
     refuseStorageWrites(PROJECTS_KEY)
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     await wrapper.find('[data-testid="save-button"]').trigger('click')
 
     expect(wrapper.find('[data-testid="save-failed-message"]').text()).toBe(en.storage.saveFailedMessage)

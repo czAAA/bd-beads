@@ -97,14 +97,16 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('7 selects all only while a Project is open (ticket 414)', () => {
+  it('Ctrl+A selects all only while a Project is open, and 7 is free (tickets 414, 431)', () => {
     const none = mountTable()
-    press({ key: '7' })
+    press({ key: 'a', ctrlKey: true })
     expect(none.deps.onSelectAll).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     press({ key: '7' })
+    expect(deps.onSelectAll).not.toHaveBeenCalled()
+    press({ key: 'a', ctrlKey: true })
     expect(deps.onSelectAll).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
@@ -228,16 +230,15 @@ describe('useAppShortcutTable', () => {
     open.wrapper.unmount()
   })
 
-  it('4, 5 and 6 pick Erase, Hand and Piece, and 7 and Ctrl+A select all (tickets 292, 414)', () => {
+  it('4, 5 and 6 pick Erase, Hand and Piece, and Ctrl+A selects all (tickets 292, 414, 431)', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     for (const key of ['4', '5', '6']) press({ key })
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(3, 'piece')
     expect(deps.onEditFrame).not.toHaveBeenCalled()
-    press({ key: '7' })
     press({ key: 'a', ctrlKey: true })
-    expect(deps.onSelectAll).toHaveBeenCalledTimes(2)
+    expect(deps.onSelectAll).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 

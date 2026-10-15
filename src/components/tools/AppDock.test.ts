@@ -3,48 +3,63 @@ import { mount } from '@vue/test-utils'
 import AppDock from './AppDock.vue'
 import { PALETTE } from '../../domain/palette'
 
+const TOOL_IDS = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
+
 describe('AppDock', () => {
   beforeEach(() => {
     localStorage.setItem('bd-beads:locale', 'en')
   })
 
-  it('shows the active tool\'s own icon, name and hotkey on the first button', () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
-    const button = wrapper.get('[data-testid="dock-tool"]')
-    expect(button.attributes('aria-label')).toBe('Fill')
-    expect(button.get('.icon-btn__key').text()).toBe('2')
-    expect(button.attributes('aria-keyshortcuts')).toBe('2')
-  })
-
-  it('has no Frame button (the Frame is edited on the canvas, ticket 417) and shows no key on the group buttons', () => {
+  it('holds the six tool tiles, the colour button and nothing else without an input mode (ticket 431)', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-color"] .icon-btn__key').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-menu"] .icon-btn__key').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-project"] .icon-btn__key').exists()).toBe(false)
+    expect(wrapper.findAll('button').map((button) => button.attributes('data-testid'))).toEqual([...TOOL_IDS.map((id) => `dock-tool-${id}`), 'dock-color'])
+    expect(wrapper.findAll('.dock__divider')).toHaveLength(1)
   })
 
-  it('marks whichever sheet is open, and emits select-sheet for each of the four', async () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'project' } })
-    expect(wrapper.get('[data-testid="dock-project"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="dock-tool"]').attributes('aria-pressed')).toBe('false')
-
-    for (const id of ['tool', 'color', 'project', 'menu']) {
-      await wrapper.get(`[data-testid="dock-${id}"]`).trigger('click')
+  it('has no Project, Menu or Tool sheet slot: Menu and Project are in the Canvas strip', () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
+    for (const id of ['dock-tool', 'dock-project', 'dock-menu', 'dock-frame']) {
+      expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(false)
     }
-    expect(wrapper.emitted('select-sheet')).toEqual([['tool'], ['color'], ['project'], ['menu']])
   })
 
-  it('has no input mode button without an input mode, and a first one with it (ticket 325)', async () => {
+  it('shows each tool\'s icon, name and hotkey, lights the active one, and emits the tool picked', async () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
+    const fill = wrapper.get('[data-testid="dock-tool-fill"]')
+    expect(fill.attributes('aria-label')).toBe('Fill')
+    expect(fill.get('.icon-btn__key').text()).toBe('2')
+    expect(fill.attributes('aria-keyshortcuts')).toBe('2')
+    expect(fill.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="dock-tool-paint"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('[data-testid="dock-tool-paint"] svg').attributes('data-icon')).toBe('paint')
+
+    for (const id of TOOL_IDS) await wrapper.get(`[data-testid="dock-tool-${id}"]`).trigger('click')
+    expect(wrapper.emitted('select-tool')).toEqual(TOOL_IDS.map((id) => [id]))
+  })
+
+  it('has no key on the colour button, marks it while its sheet is open, and emits select-sheet for it', async () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'color' } })
+    const color = wrapper.get('[data-testid="dock-color"]')
+    expect(color.find('.icon-btn__key').exists()).toBe(false)
+    expect(color.attributes('aria-pressed')).toBe('true')
+
+    await color.trigger('click')
+    expect(wrapper.emitted('select-sheet')).toEqual([['color']])
+  })
+
+  it('has no input mode button without an input mode, and a last one after a second divider with it (ticket 325)', async () => {
     expect(mount(AppDock, { props: { activeTool: 'paint', openSheet: null } }).find('[data-testid="dock-input-mode"]').exists()).toBe(false)
 
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null, inputMode: 'pen' } })
     const buttons = wrapper.findAll('button')
-    expect(buttons[0]!.attributes('data-testid')).toBe('dock-input-mode')
-    expect(buttons[0]!.attributes('aria-label')).toBe('Pen mode')
-    expect(buttons[0]!.attributes('aria-pressed')).toBe('true')
+    const last = buttons[buttons.length - 1]!
+    expect(last.attributes('data-testid')).toBe('dock-input-mode')
+    expect(last.attributes('aria-label')).toBe('Pen mode')
+    expect(last.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.findAll('.dock__divider')).toHaveLength(2)
+    expect(wrapper.element.children[wrapper.element.children.length - 2]!.classList).toContain('dock__divider')
 
-    await buttons[0]!.trigger('click')
+    await last.trigger('click')
     expect(wrapper.emitted('toggle-input-mode')).toHaveLength(1)
     expect(wrapper.emitted('select-sheet')).toBeUndefined()
 
@@ -62,10 +77,5 @@ describe('AppDock', () => {
   it('shows the selected Palette color as the Colour button\'s swatch', () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null, selectedColorId: PALETTE[0]!.id } })
     expect((wrapper.get('.dock__swatch').element as HTMLElement).style.backgroundColor).not.toBe('')
-  })
-
-  it('draws the pencil for the Paint tool (ticket 249)', () => {
-    const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: null } })
-    expect(wrapper.get('[data-testid="dock-tool"] svg').attributes('data-icon')).toBe('paint')
   })
 })
