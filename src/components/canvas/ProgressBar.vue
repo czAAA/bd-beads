@@ -4,6 +4,7 @@ import { rowProgressPosition, type Project } from '../../domain/project'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
+import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
 /**
@@ -65,8 +66,12 @@ const directionLabel = computed(() =>
     <AppButton variant="box" :action="actions.removeFrame" :deps="deps" data-testid="progress-bar-remove-frame" @click="emit('remove-frame')" />
 
     <template v-if="!hasFrame">
-      <span class="progress-bar__row">{{ t.toolbox.groups.rowProgress }}</span>
-      <span class="progress-bar__need" data-testid="progress-bar-needs-frame">{{ t.frame.progressNeedsFrame }}</span>
+      <!-- Styled like the CanvasHint: Select, then Set Frame to start, each with its icon. -->
+      <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
+        <span class="progress-bar__need-step"><AppIcon name="select" :size="16" />{{ t.tools.selectLabel }}</span>
+        <span class="progress-bar__need-dot">·</span>
+        <span class="progress-bar__need-step"><AppIcon name="frame" :size="16" />{{ t.frame.progressNeedsFrame }}</span>
+      </p>
       <span class="progress-bar__fit-frame">
         <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
       </span>
@@ -132,11 +137,25 @@ const directionLabel = computed(() =>
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Set Frame to start" in `meta`, and the Fit to drawing button pushed to the right. */
+/* No Frame (ProgressBar card): "Select · Set Frame to start" set like the CanvasHint, and the Fit to drawing button pushed to the right. */
 .progress-bar__need {
-  font: var(--type-meta);
-  color: var(--box-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin: 0;
+  font: 400 0.75rem/1rem var(--font-sans);
+  color: var(--muted);
   white-space: nowrap;
+}
+
+.progress-bar__need-step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.progress-bar__need-dot {
+  margin: 0 var(--space-4);
 }
 
 .progress-bar__fit-frame {
