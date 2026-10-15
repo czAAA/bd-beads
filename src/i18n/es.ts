@@ -255,8 +255,6 @@ export const es: Translations = {
     label: 'Acciones de la selección',
     clearButton: 'Borrar selección',
     moreLabel: 'Más',
-    pasteHint: 'Toca donde pegar',
-    cancelButton: 'Cancelar',
   },
   palette: {
     pickerLabel: 'Colores de la paleta',
@@ -283,6 +281,8 @@ export const es: Translations = {
     pieceLabel: 'Trozo',
     selectAllLabel: 'Seleccionar todo',
     copyButton: 'Copiar',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'No hay cuentas en la selección para copiar.',
     cutButton: 'Cortar',
     saveButton: 'Guardar',
     savedConfirmation: 'Guardado',

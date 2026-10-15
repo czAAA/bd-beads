@@ -266,8 +266,6 @@ export const ru: Translations = {
     label: 'Действия с выделением',
     clearButton: 'Снять выделение',
     moreLabel: 'Ещё',
-    pasteHint: 'Нажмите, куда вставить',
-    cancelButton: 'Отмена',
   },
   palette: {
     pickerLabel: 'Цвета палитры',
@@ -294,6 +292,8 @@ export const ru: Translations = {
     pieceLabel: 'Кусочек',
     selectAllLabel: 'Выделить всё',
     copyButton: 'Копировать',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'В выделении нет бусин для копирования.',
     cutButton: 'Вырезать',
     saveButton: 'Сохранить',
     savedConfirmation: 'Сохранено',

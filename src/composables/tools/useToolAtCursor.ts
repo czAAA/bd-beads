@@ -14,6 +14,8 @@ export interface ToolAtCursorDeps {
   /** Ends the stroke a press began (the pointer release). */
   endStroke: () => void
   beginSelectPress: (row: number, column: number) => void
+  /** Leaves paste mode, so a Shift+arrow step makes a Selection instead (ticket 437, ADR 0057). */
+  leavePasteMode: () => void
   /** Grows the Selection to a cell; false when the keep-out margin held it back (ticket 433). */
   extendSelection: (row: number, column: number) => boolean
   /** Shows the not-allowed cue for a Selection step the margin refused. */
@@ -52,6 +54,7 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
   function extendSelectionTo(from: GridPosition, to: GridPosition): boolean {
     if (!extending) {
       extending = true
+      deps.leavePasteMode()
       deps.beginSelectPress(from.row, from.column)
     }
     const reached = deps.extendSelection(to.row, to.column)
