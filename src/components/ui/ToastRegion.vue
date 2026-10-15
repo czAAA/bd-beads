@@ -4,8 +4,8 @@ import AppMessage from './AppMessage.vue'
 
 /**
  * Where toasts show (ticket 76; Message and StackingOrder cards): the top-right of the canvas box, 16px in, under the
- * strip and stacking downward, on the toast layer (above sheets, below modals). A result goes after 5s unless hovered or focused;
- * an error, or a prompt such as Update ready, stays until closed.
+ * strip and stacking downward, on the toast layer (above sheets, below modals). A result goes after 5s unless hovered
+ * or focused; an error, or a prompt such as Update ready, stays until closed.
  */
 defineProps<{ toasts: Toast[] }>()
 const emit = defineEmits<{ dismiss: [id: string] }>()
@@ -67,7 +67,7 @@ const TOAST_MS = 5000
   cursor: pointer;
 }
 
-/* Arriving 200ms, leaving 150ms, dropping in 8px (Motion card); reduced motion fades without the rise. */
+/* Arriving 200ms, leaving 150ms, dropping in 8px (Motion card); reduced motion fades without the drop. */
 .toast-enter-active {
   transition:
     opacity var(--duration-base) var(--ease-out),

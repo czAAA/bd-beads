@@ -200,7 +200,8 @@ function techniqueWord(technique: Technique): string {
       <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
         <CanvasBackdrop v-if="activeProject && !framing" :word="techniqueWord(activeProject.technique)" />
 
-        <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads; not on a phone (CanvasHint card). -->
+        <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
+          not on a phone (CanvasHint card). -->
         <CanvasHint v-if="activeProject && !framing && !hasBeads(activeProject.beads)" class="app-shell__canvas-hint" />
 
         <!--
