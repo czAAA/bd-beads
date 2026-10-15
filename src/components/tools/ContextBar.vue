@@ -19,7 +19,7 @@ import { rowProgressStarted, type Project } from '../../domain/project'
  * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
  */
 const props = withDefaults(defineProps<{
-  /** The Selection's size, "12×8 · 4.2 × 2.6 cm"; absent when there is no Selection. */
+  /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
   /** The Selection's rectangle and the canvas box it is in, in the box's own pixels: where the bar anchors. */
   anchor?: SelectionAnchor

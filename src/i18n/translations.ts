@@ -434,7 +434,7 @@ export interface Translations {
     removeConfirmCancel: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
-    /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */
+    /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 ≈ 2.1 × 2.1 cm". */
     sizeTooltip: string
     announceSet: string
     announceRemoved: string

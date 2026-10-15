@@ -421,7 +421,7 @@ export const en: Translations = {
     removeConfirmButton: 'Remove Frame',
     removeConfirmCancel: 'Cancel',
     explainer: 'The Frame marks which beads become the Schema. Beads outside it stay on the Canvas.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Frame set, width {width}, height {height}',
     announceRemoved: 'Frame removed',
     announceNothingToFit: 'Nothing drawn yet to fit the Frame to',

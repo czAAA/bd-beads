@@ -412,7 +412,7 @@ export const pl: Translations = {
     removeConfirmButton: 'Usuń ramkę',
     removeConfirmCancel: 'Anuluj',
     explainer: 'Ramka zaznacza, które koraliki stają się schematem. Koraliki poza nią zostają na płótnie.',
-    sizeTooltip: '{columns}×{rows} · {estimate}',
+    sizeTooltip: '{columns}×{rows} ≈ {estimate}',
     announceSet: 'Ustawiono ramkę, szerokość {width}, wysokość {height}',
     announceRemoved: 'Usunięto ramkę',
     announceNothingToFit: 'Nic jeszcze nie narysowano, do czego można dopasować ramkę',
