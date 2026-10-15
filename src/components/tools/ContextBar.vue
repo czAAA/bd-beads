@@ -25,6 +25,8 @@ const props = withDefaults(defineProps<{
   anchor?: SelectionAnchor
   /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
   gesturing?: boolean
+  /** While `gesturing`, shrink to the size readout alone, in place, instead of hiding; the buttons return when the gesture ends. */
+  sizeOnly?: boolean
   /** Whether paste mode is on (useSelectionGesture's pasteProjectionActive): the bar then hides, Select all with it. */
   pasteArmed: boolean
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
@@ -142,6 +144,8 @@ const placedStyle = computed(() => (placement.value ? { left: `${placement.value
 const isDisabled = (item: BarItem) => (item.action.enabled ? !item.action.enabled(deps.value) : false)
 const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
+/** Gesturing with a size to show: only the readout, no buttons. */
+const compact = computed(() => !!props.gesturing && !!props.sizeOnly && props.selectionSummary !== undefined)
 const showing = computed(() => props.selectionSummary !== undefined || (!!props.selectActive && !props.pasteArmed))
 const mode = computed(() => (props.selectionSummary === undefined ? 'select-all' : 'selection'))
 </script>
@@ -150,7 +154,7 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
   <div
     v-if="showing"
     ref="rootEl"
-    v-show="!gesturing"
+    v-show="!gesturing || (sizeOnly && selectionSummary !== undefined)"
     class="context-bar"
     :class="[`context-bar--${mode}`, { 'context-bar--placed': placement, 'context-bar--below': placement?.below }]"
     :style="placedStyle"
@@ -170,7 +174,7 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
     </template>
     <template v-else>
       <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
-      <template v-for="(item, index) in shown" :key="item.id">
+      <template v-for="(item, index) in compact ? [] : shown" :key="item.id">
         <span v-if="index === 0 || shown[index - 1].group !== item.group" class="context-bar__divider" aria-hidden="true" />
         <IconButton
           class="context-bar__button"
@@ -183,7 +187,7 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
           @click="item.run()"
         />
       </template>
-      <template v-if="folded.length">
+      <template v-if="folded.length && !compact">
         <span class="context-bar__divider" aria-hidden="true" />
         <MenuButton class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
           <AppMenuItem

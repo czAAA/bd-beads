@@ -7,7 +7,7 @@ import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
-import { drawBoxHandles, drawFrameEditing, drawRulers, drawSizeTooltip } from './rulerRenderer'
+import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
@@ -67,11 +67,8 @@ export interface OverlayInput {
   pointer?: BeadPointer
   /** The rectangle the Select, Piece or Select all marked out (tickets 31, 414): drawn as its outer border. */
   selection?: Selection
-  /**
-   * Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four larger ones. Without it the Selection has no handles.
-   * `tooltip` is the size bar hanging off its corner ("12×8 ≈ 4.2 × 2.6 cm"), shown while the handles and the ruler numbers are.
-   */
-  selectionHandles?: { surface: SurfaceView; touch: boolean; tooltip?: string }
+  /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four larger ones. Without it the Selection has no handles. */
+  selectionHandles?: { surface: SurfaceView; touch: boolean }
   /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */
   mirrorAxisCounts?: MirrorAxisCounts
   /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping back. */
@@ -503,12 +500,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     })
   }
   if (selection && selectionHandles && space.open && hasGuides(selection)) {
-    const box = selectionHandles.surface.beadBox(selectionFrame(selection))
-    drawBoxHandles(context, box, pixelRatio, theme, selectionHandles.touch)
-    // Like the Frame's size, the Selection's is a number: the Rulers toggle hides it with the rest.
-    if (selectionHandles.tooltip && rulers?.layout.numbers !== false) {
-      drawSizeTooltip(context, box, selectionHandles.surface.viewport, theme, selectionHandles.tooltip)
-    }
+    drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection)), pixelRatio, theme, selectionHandles.touch)
   }
   if (pointer) {
     drawPointer(context, project.technique, zoom, pixelRatio, pointer, theme)
