@@ -27,11 +27,6 @@ const ALL_PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
-  // The Canvas strip stays at every width in the Dock layout (ADR 0046), reached for the first time by this check once
-  // ticket 385 built it Dock-layout helpers; its size line (both here and the matching text on the regular Project
-  // view, which an earlier screen already claims the identical text from) and, once framing shows its own zoom
-  // buttons too (ticket 385), its "100%" readout, don't fit a phone-width strip.
-  { screen: 'New Project: Convert image', texts: 'any', at: { en: [360, 320], ru: [390, 360, 320], uk: [390, 360, 320], be: [390, 360, 320], zh: [320], es: [360, 320], pl: [390, 360, 320] }, fixedBy: 'unassigned' },
   // Saved Projects is reachable at every width only from ticket 385 on (the Dock's own nested sheet, not the Toolbox's
   // always-wide column); its "Export all" button is narrower there in some languages than the Toolbox ever gave it.
   { screen: 'Saved Projects expanded', texts: 'any', at: { ru: [390, 360, 320], uk: [320], be: [320], pl: [320] }, fixedBy: 'unassigned' },
