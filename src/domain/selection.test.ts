@@ -191,6 +191,15 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     expect(mirroredPastedCells(target.frame, dot, at, axes)).toEqual(pastedCells(dot, at))
   })
 
+  it('aims the anchor bead, not the block corner, and mirrors the rest of the block around it (ticket 437)', () => {
+    const target = painted(['......', '......', '......', '......'])
+    const lean: CopiedBlock = { rows: 1, columns: 2, colors: [[null, RED]], anchor: { row: 0, column: 1 } }
+
+    const result = mirroredPasteBlock(target, lean, { row: 2, column: 1 }, { rows: 0, columns: 1 })
+
+    expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
+  })
+
   it('with a single center axis on, stamps both the aimed spot and its one mirrored counterpart', () => {
     const target = painted(['......', '......', '......', '......'])
 
