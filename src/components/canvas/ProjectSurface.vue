@@ -754,7 +754,7 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
-    // A Selection too small for handles (ticket 434) has none to grab: a press inside it only moves it.
+    // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it.
     const box = surface.value.beadBox(selectionFrame(props.selection))
     const point = pointInSurface(event)
     const target: FramePress = hasGuides(props.selection) ? boxPressAt(box, props.project.rotation, point, touchInput.value) : { kind: pointInBox(box, point) ? 'inside' : 'outside' }

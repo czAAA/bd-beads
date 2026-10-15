@@ -351,7 +351,7 @@ describe('renderOverlay', () => {
       }
     })
 
-    it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 434)', () => {
+    it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 435)', () => {
       const project = projectOf('loom', 6, 5, noProgress)
       const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
 
