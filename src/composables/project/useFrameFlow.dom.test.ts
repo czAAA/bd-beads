@@ -145,6 +145,23 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(false)
   })
 
+  it('ends Edit Frame on a tap outside the Frame, not on a press inside it or a cancelled one (ticket 427)', () => {
+    const { settingFrame, start, press, release, cancel } = setup()
+    start()
+    press({ kind: 'inside' }, { row: 1, column: 1 })
+    release()
+    expect(settingFrame.value).toBe(true)
+
+    press({ kind: 'outside' }, { row: 9, column: 9 })
+    cancel()
+    release()
+    expect(settingFrame.value).toBe(true)
+
+    press({ kind: 'outside' }, { row: 9, column: 9 })
+    release()
+    expect(settingFrame.value).toBe(false)
+  })
+
   it('does not start with no Project open, with no Frame, or once Row progress holds the Frame (ticket 411)', () => {
     for (const project of [null, open, moveToRow(rowProgressOn(sized), 1)]) {
       const { settingFrame, start } = setup(project)

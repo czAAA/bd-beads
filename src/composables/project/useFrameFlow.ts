@@ -45,6 +45,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   let gesture: Gesture | undefined
   /** Whether the pointer has moved since the press: a click that drew nothing is not a Frame. */
   let dragged = false
+  /** A press landed outside the Frame: letting go ends Edit Frame (ticket 427). */
+  let leavesOnRelease = false
 
   const locked = computed(() => {
     const project = deps.currentProject()
@@ -115,6 +117,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || locked.value) return
     const frame = project.frame
     dragged = false
+    leavesOnRelease = target.kind === 'outside'
     if (!frame) return
     if (target.kind === 'handle') gesture = { kind: 'resize', edges: target.edges, start: frame }
     else if (target.kind === 'inside') gesture = { kind: 'move', origin: cell, start: frame }
@@ -137,10 +140,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     gesture = undefined
     draft.value = undefined
     if (result && dragged) commit(result, kind === 'move' ? 'moved' : 'resized')
+    // A tap outside the Frame ends Edit Frame (ticket 427, ADR 0055); a press there that became a pinch is cancelled first.
+    else if (leavesOnRelease) done()
+    leavesOnRelease = false
   }
 
   /** Lets go of a drag without committing it: a second finger arrived, so it was a pinch. */
   function cancel(): void {
+    leavesOnRelease = false
     gesture = undefined
     draft.value = undefined
   }

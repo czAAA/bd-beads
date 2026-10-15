@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { inMargin, mayPlace } from '../../domain/margin'
+import { inMargin, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import { selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -13,7 +13,7 @@ import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
-import type { SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -108,7 +108,7 @@ const emit = defineEmits<{
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
   /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's bar and margin steppers sit. */
-  'frame-anchor': [anchor: SelectionAnchor | undefined]
+  'frame-anchor': [anchor: FrameAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
   pressing: [pressing: boolean]
 }>()
@@ -284,7 +284,7 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** Where the Frame is on screen while it is being edited, told to Edit Frame's bar and margin steppers (ticket 417). */
+/** Where the Frame is on screen while it is being edited, told to Edit Frame's margin steppers (tickets 417, 427). */
 watch(
   [surface, () => props.settingFrame, () => props.project.frame, size],
   () => {
@@ -294,7 +294,15 @@ watch(
       return
     }
     const box = surface.value.frameBox(frame)
-    emit('frame-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
+    const outer = surface.value.beadBox(withMargin(frame))
+    const { fontPx, gap } = rulers.value.scale
+    emit('frame-anchor', {
+      box: { left: box.x, top: box.y, width: box.width, height: box.height },
+      outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
+      // Three digits across, one line down, past the Frame's line (Rulers card).
+      numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
+      viewport: { ...size.value },
+    })
   },
   { immediate: true, flush: 'post' },
 )
