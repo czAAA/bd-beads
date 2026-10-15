@@ -198,10 +198,12 @@ describe('App select, copy and paste', () => {
     await wrapper.get('[data-testid="project-surface"]').trigger('keydown', { key: 'Escape' })
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
 
-    await tap({ row: 3, column: 5 })
+    // A Frame already set takes Frame again (ticket 407). The second Piece cannot be framed from here: a 6-bead margin (ADR 0056)
+    // fills this small Project, and a Selection cannot start in it.
+    await tap({ row: 1, column: 1 })
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()
-    expect(loadProjects()[0]!.frame).toMatchObject({ row: 3, column: 5, rows: 1, columns: 1 })
+    expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
   })
 
   it('Fill gives every position in the Selection the current colour (ticket 415)', async () => {

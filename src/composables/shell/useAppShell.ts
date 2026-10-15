@@ -841,7 +841,6 @@ function wireAppShell(services: Services) {
     frameDraft: frameFlow.draft,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
-    onDoneSetFrame: frameFlow.done,
     onFramePress: frameFlow.press,
     onFrameDrag: frameFlow.drag,
     onFrameRelease: frameFlow.release,
