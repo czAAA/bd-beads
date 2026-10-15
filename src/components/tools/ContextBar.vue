@@ -174,9 +174,10 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
     </template>
     <template v-else>
       <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
-      <template v-for="(item, index) in compact ? [] : shown" :key="item.id">
-        <span v-if="index === 0 || shown[index - 1].group !== item.group" class="context-bar__divider" aria-hidden="true" />
+      <template v-for="(item, index) in shown" :key="item.id">
+        <span v-if="index === 0 || shown[index - 1].group !== item.group" v-show="!compact" class="context-bar__divider" aria-hidden="true" />
         <IconButton
+          v-show="!compact"
           class="context-bar__button"
           :class="{ 'context-bar__button--danger': item.danger }"
           :icon-size="iconSize"
@@ -187,9 +188,9 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
           @click="item.run()"
         />
       </template>
-      <template v-if="folded.length && !compact">
-        <span class="context-bar__divider" aria-hidden="true" />
-        <MenuButton class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
+      <template v-if="folded.length">
+        <span v-show="!compact" class="context-bar__divider" aria-hidden="true" />
+        <MenuButton v-show="!compact" class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
           <AppMenuItem
             v-for="item in folded"
             :key="item.id"
