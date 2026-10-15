@@ -69,7 +69,7 @@ The Dock layout is the only layout (ADR 0046, ticket 412), so no unit test mocks
 
 Two things differ from a layout that keeps its controls on screen. Picking a Tool, a color or a Project closes the sheet it was picked in, so a test that reads the Palette again opens the sheet again. And a sheet that is open withholds the keyboard shortcuts and swallows the first press outside it, so a test that presses a key or the canvas closes the sheet first (`sheet-close`).
 
-The visual check's helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) and the perf specs (`e2e/perf/perf.spec.ts`, `e2e/perf/memory.spec.ts`) drive the same Dock and its sheets: opening a sheet before a control that sits in one (`openDockSheet`), picking a Tool through the Tool sheet (`selectTool`), Copy by its chord (`copySelection`), and reading or stepping the zoom wherever it is: the Zoom pill normally, the Canvas strip's own cluster while framing, which the pill excludes (`currentZoomPercent`, `setZoom`). The perf specs are not part of CI; run them by hand with `npm run perf`.
+The visual check's helpers (`e2e/support/app.ts`, `e2e/visual/scenarios.ts`) and the perf specs (`e2e/perf/perf.spec.ts`, `e2e/perf/memory.spec.ts`) drive the same Dock and its sheets: opening a sheet before a control that sits in one (`openDockSheet`), picking a Tool through the Tool sheet (`selectTool`), Copy by its chord (`copySelection`), and reading or stepping the zoom in the Canvas strip's cluster (`currentZoomPercent`, `setZoom`). The perf specs are not part of CI; run them by hand with `npm run perf`.
 
 ## The offline shell
 

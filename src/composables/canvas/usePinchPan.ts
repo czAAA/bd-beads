@@ -32,7 +32,7 @@ function distance(a: Point, b: Point): number {
  * landing takes back the stroke the first began, with every bead it painted, and from then until every finger is up
  * the surface hears nothing, so neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
  * and the point between them stays under them as the zoom changes; moving them together scrolls the Project.
- * Only touch takes part: a mouse or pen has no second contact, and the zoom pill and keys cover them.
+ * Only touch takes part: a mouse or pen has no second contact, and the Canvas strip's zoom and keys cover them.
  */
 export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDeps) {
   const touches = new Map<number, Point>()

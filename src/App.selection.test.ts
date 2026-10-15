@@ -121,7 +121,7 @@ describe('App select, copy and paste', () => {
     expect(grid[2]![2]!.color).toBe('#e63746')
     expect(grid[3]![3]!.color).toBe('#2f6fed')
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBeNull()
     expect(frameGrid(loadProjects()[0]!)[3]![3]!.color).toBeNull()

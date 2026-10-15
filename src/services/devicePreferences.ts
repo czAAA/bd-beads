@@ -1,7 +1,6 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
-import { DEFAULT_ZOOM_PILL_PLACEMENT, formatPlacement, parsePlacement, type ZoomPillPlacement } from '../domain/zoomPillPlacement'
 import { type InputMode } from '../domain/inputMode'
 import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
@@ -38,13 +37,6 @@ function onUntilOff(key: string): Preference<boolean> {
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('bd-beads:rulers'),
-  /** Where the phone's Zoom pill rests (tickets 297, 321). Corner names saved before 321 still load, as their corner's placement. */
-  zoomPillPlacement: preference<ZoomPillPlacement>({
-    key: 'bd-beads:zoom-pill',
-    fallback: DEFAULT_ZOOM_PILL_PLACEMENT,
-    parse: parsePlacement,
-    write: formatPlacement,
-  }),
   /** The Canvas color (ticket 252): a number, 1 to 6, so it survives a change of theme. */
   canvasBackground: preference({
     key: 'bd-beads:canvas-background',
