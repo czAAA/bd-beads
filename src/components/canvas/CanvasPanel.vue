@@ -95,6 +95,7 @@ const {
   onProjectKey,
   onProjectKeyUp,
   onRotate,
+  onSelectAll,
   onToggleRowProgress,
   onToggleRowDirection,
   onMoveRow,
@@ -237,7 +238,7 @@ function techniqueWord(technique: Technique): string {
         -->
         <ContextBar
           v-if="activeProject && !framing"
-          :class="{ 'app-shell__context-bar--top': pasteProjectionActive, [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
+          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary), [`app-shell__context-bar--pill-${zoomPillPlacement.y >= 0.5 ? 'bottom' : 'top'}`]: true }"
           :selection-summary="selectionSummary"
           :anchor="barAnchor"
           :gesturing="surfacePressing"
@@ -248,6 +249,7 @@ function techniqueWord(technique: Technique): string {
           :can-name-piece="canNamePiece"
           :has-paint-color="hasPaintColor()"
           :setting-frame="settingFrame"
+          :select-active="activeTool === 'select'"
           :frame-summary="frameTooltip"
           @fit-frame="onFitFrame"
           @remove-frame="onRemoveFrame"
@@ -259,6 +261,7 @@ function techniqueWord(technique: Technique): string {
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
           @rotate="onRotate"
+          @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
           @dismiss="backOutOfSelect"
@@ -310,6 +313,7 @@ function techniqueWord(technique: Technique): string {
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
+              :selection-blocks-margin="activeTool === 'select'"
               :selecting="activeTool === 'select' || activeTool === 'piece'"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"
