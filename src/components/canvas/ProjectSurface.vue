@@ -60,8 +60,6 @@ const props = defineProps<{
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
   frameTooltip?: string
-  /** The Selection's size bar text beside its handles ("12×8 ≈ 4.2 × 2.6 cm"), redrawn as the Selection grows or shrinks. */
-  selectionTooltip?: string
   /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
   markerHidden?: boolean
   /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
@@ -521,7 +519,7 @@ function drawOverlay(): void {
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
-      selectionHandles: props.selecting && !props.settingFrame ? { surface: surface.value, touch: touchInput.value, tooltip: props.selectionTooltip } : undefined,
+      selectionHandles: props.selecting && !props.settingFrame ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
     })
   }
@@ -559,7 +557,6 @@ watch(
     () => props.selecting,
     () => props.picking,
     () => props.frameTooltip,
-    () => props.selectionTooltip,
     marginOpacity,
     touchInput,
     theme,

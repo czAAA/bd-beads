@@ -122,6 +122,7 @@ In `index.html`:
 Current: **v18** (Oct 4, 2026) plus the repo changes below. From v18 on the repo owns this design system (ADR 0030); edits are made here, and a change is copied back to the claude.ai project only when that copy needs it.
 
 - **Repo changes after v18** (one line each: date, ticket, what changed) (the claude.ai project was brought up to the repo on 2026-10-13, through ticket 398). The log of tickets 269 to 398 was dropped from here then; it stays in the claude.ai README and in git history.
+  - Repo, 2026-10-15, no ticket: the ContextBar card replaces that pill with the bar itself: while a Selection with handles and ruler numbers is dragged or resized, the bar shrinks in place to its size readout and expands to the full bar on release
   - Repo, 2026-10-15, no ticket: the ContextBar card gains a short size pill shown at the Selection's corner while it is dragged or resized (the bar's start, never beside the full bar), and the size readout reads "11×6 ≈ 3.5 × 1.9 cm" (≈, not a dot) here and in the Frame's size Tooltip
   - Repo, 2026-10-15, no ticket: the Dock and the New Project / Import bar pad their bottom by `env(safe-area-inset-bottom)` capped at 4px, not the full inset; app chrome text is not selectable (fields stay selectable). No token change.
   - Repo, 2026-10-15: new `name-piece` icon (Icons group: 62 icons) for the Selection bar's Name button: a tag whose string hole is a bead (one closed stroke, corners 2.5 at the tag's head, the bead at 2.6). It replaces `piece`, which stays the Piece tool's icon. No token change.

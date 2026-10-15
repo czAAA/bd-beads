@@ -369,18 +369,6 @@ describe('renderOverlay', () => {
         expect(named('roundRect')).toHaveLength(count)
       }
     })
-
-    it('hangs the size bar off a Selection that has handles, and not off one too small for them', () => {
-      const project = projectOf('loom', 6, 5, noProgress)
-      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
-
-      for (const [rows, columns, count] of [[1, 1, 0], [2, 3, 1]] as const) {
-        const { context, named } = recordingContext()
-        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: { top: 0, left: 0, rows, columns }, selectionHandles: { surface, touch: false, tooltip: `${columns}×${rows} · 1 × 1 cm` } })
-
-        expect(named('fillText')).toHaveLength(count)
-      }
-    })
   })
 
   describe('Mirror\'s axis lines', () => {

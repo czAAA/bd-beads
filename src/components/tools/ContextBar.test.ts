@@ -102,6 +102,18 @@ describe('ContextBar', () => {
     expect(wrapper.get('[data-testid="context-bar"]').attributes('style')).toContain('display: none')
   })
 
+  it('shrinks to the size alone, in place, while a gesture runs on a Selection with guides, and expands after', async () => {
+    const wrapper = mount(ContextBar, { props: { project, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false, gesturing: true, sizeOnly: true } })
+
+    expect(wrapper.get('[data-testid="context-bar"]').attributes('style') ?? '').not.toContain('display: none')
+    expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
+    const hidden = () => wrapper.findAll('button').filter((button) => (button.element.closest('[style*="display: none"]') as HTMLElement | null) !== null)
+    expect(hidden()).toHaveLength(wrapper.findAll('button').length)
+
+    await wrapper.setProps({ gesturing: false })
+    expect(hidden()).toHaveLength(0)
+  })
+
   it('shows no bar at all while paste mode is on, Select all included (ticket 437)', () => {
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: true, selectActive: true, canRemoveLine: false } })
 
