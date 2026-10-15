@@ -82,6 +82,11 @@ function sortedKeys(record: Record<number, unknown>): number[] {
     .sort((a, b) => a - b)
 }
 
+/** Whether at least one bead is painted; stops at the first. */
+export function hasBeads(beads: BeadMap): boolean {
+  return Object.values(beads).some((row) => Object.keys(row).length > 0)
+}
+
 /** How many beads are painted. */
 export function beadCount(beads: BeadMap): number {
   let count = 0

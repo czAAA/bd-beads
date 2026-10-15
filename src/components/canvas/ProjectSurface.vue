@@ -109,7 +109,7 @@ const emit = defineEmits<{
   'frame-cancel': []
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's bar and margin steppers sit. */
+  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's margin steppers sit, with the margin and the ruler numbers' reach. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
   pressing: [pressing: boolean]
@@ -286,6 +286,10 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
+/** The coarsest Ruler step at which Edit Frame's steppers still show, and the least they shrink to (ticket 427). */
+const STEPPER_MAX_RULER_STEP = 5
+const STEPPER_MIN_SCALE = 0.5
+
 /** Where the Frame is on screen while it is being edited, told to Edit Frame's margin steppers (tickets 417, 427). */
 watch(
   [surface, () => props.settingFrame, () => props.project.frame, size],
@@ -298,11 +302,17 @@ watch(
     const box = surface.value.frameBox(frame)
     const outer = surface.value.beadBox(withMargin(frame))
     const { fontPx, gap } = rulers.value.scale
+    // The steppers go once the rulers show fewer than every 5th number (or the Rulers are off); until then they shrink with the zoom (ticket 427).
+    if (props.showRulers === false || rulers.value.step > STEPPER_MAX_RULER_STEP) {
+      emit('frame-anchor', undefined)
+      return
+    }
     emit('frame-anchor', {
       box: { left: box.x, top: box.y, width: box.width, height: box.height },
       outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
       // Three digits across, one line down, past the Frame's line (Rulers card).
       numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
+      scale: Math.min(1, Math.max(STEPPER_MIN_SCALE, surface.value.zoom)),
       viewport: { ...size.value },
     })
   },

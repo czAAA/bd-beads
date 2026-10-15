@@ -6,13 +6,13 @@ import { touching } from './pieces'
 import type { Selection } from './selection'
 
 /**
- * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 3 bead positions all the way round it,
+ * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 6 bead positions all the way round it (3 until ticket 427, ADR 0056),
  * outside its line, where nothing can be drawn, so beads never end up right against the Frame and its rulers. Erase
  * still works there. A change of the Frame that leaves beads in it moves each Piece in the way clear, whole.
  */
 
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers, and between a moved Piece and anything else. */
-export const MARGIN = 3
+export const MARGIN = 6
 
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Frame): Frame {
@@ -43,7 +43,7 @@ function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: rea
   }
 }
 
-/** Whether a position lies in the Frame's margin: within 3 of the Frame, but not in it. */
+/** Whether a position lies in the Frame's margin: within MARGIN of the Frame, but not in it. */
 export function inMargin(frame: Frame | undefined, position: GridPosition): boolean {
   return !!frame && frameContains(withMargin(frame), position) && !frameContains(frame, position)
 }
