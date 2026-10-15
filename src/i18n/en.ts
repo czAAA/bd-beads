@@ -43,7 +43,6 @@ export const en: Translations = {
     canvasLabel: '{name}, Canvas with no Frame, {colors}',
     colorsCount: { one: '{count} color', other: '{count} colors' },
     progressDone: 'row {row} of {total} done',
-    keyboardHint: 'arrows move · space paints · esc leaves',
     closeMessage: 'Close',
     expandPanel: 'Show all',
     collapsePanel: 'Show fewer',
@@ -85,12 +84,6 @@ export const en: Translations = {
     zoomInLabel: 'Zoom in',
     zoomOutLabel: 'Zoom out',
     zoomResetLabel: 'Fit',
-    zoomPillMovedAnnouncement: 'Zoom controls moved',
-    stripTitle: 'Schema',
-    widthSize: 'Width {count}',
-    heightSize: 'Height {count}',
-    canvasTitle: 'Canvas',
-    piecesCount: { one: '{count} Piece', other: '{count} Pieces' },
     noFrame: 'no Frame',
     rulersLabel: 'Rulers',
     canvasColor: {
@@ -456,7 +449,6 @@ export const en: Translations = {
       one: '{count} Piece was in the margin and moved outside it.',
       other: '{count} Pieces were in the margin and moved outside it.',
     },
-    keyboardHint: 'arrows move the Frame · shift and arrows resize it · enter is done',
   },
   size: {
     estimateLabel: 'Estimated size',

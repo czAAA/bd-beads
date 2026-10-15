@@ -45,7 +45,6 @@ export const pl: Translations = {
     canvasLabel: '{name}, płótno bez ramki, {colors}',
     colorsCount: { one: '{count} kolor', few: '{count} kolory', many: '{count} kolorów', other: '{count} koloru' },
     progressDone: 'rząd {row} z {total} gotowy',
-    keyboardHint: 'strzałki przesuwają · spacja maluje · esc wychodzi',
     closeMessage: 'Zamknij',
     expandPanel: 'Pokaż wszystko',
     collapsePanel: 'Pokaż mniej',
@@ -87,12 +86,6 @@ export const pl: Translations = {
     zoomInLabel: 'Powiększ',
     zoomOutLabel: 'Pomniejsz',
     zoomResetLabel: 'Dopasuj',
-    zoomPillMovedAnnouncement: 'Przesunięto przyciski powiększenia',
-    stripTitle: 'Schemat',
-    widthSize: 'Szerokość {count}',
-    heightSize: 'Wysokość {count}',
-    canvasTitle: 'Płótno',
-    piecesCount: { one: '{count} kawałek', few: '{count} kawałki', many: '{count} kawałków', other: '{count} kawałka' },
     noFrame: 'bez ramki',
     rulersLabel: 'Linijki',
     canvasColor: {
@@ -451,7 +444,6 @@ export const pl: Translations = {
       many: '{count} kawałków było w marginesie i zostało przeniesionych poza niego.',
       other: '{count} kawałka było w marginesie i zostało przeniesionych poza niego.',
     },
-    keyboardHint: 'strzałki przesuwają ramkę · shift i strzałki zmieniają rozmiar · enter kończy',
   },
   size: {
     estimateLabel: 'Szacunkowy rozmiar',

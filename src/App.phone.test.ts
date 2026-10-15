@@ -129,7 +129,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
     expect(drawnProject(wrapper).technique).toBe('peyote')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').attributes('aria-checked')).toBe('true')
-    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
     expect(drawnProject(wrapper).technique).toBe('loom')
   })
 
@@ -146,28 +146,27 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('undoes and redoes from the Zoom pill, and the Project sheet does not hold them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="zoom-pill-redo"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="strip-redo"]').attributes('aria-disabled')).toBeDefined()
 
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
-    await wrapper.get('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBeNull()
-    expect(wrapper.get('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
 
-    await wrapper.get('[data-testid="zoom-pill-redo"]').trigger('click')
+    await wrapper.get('[data-testid="strip-redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
     await wrapper.find('[data-testid="dock-project"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
-  it('always shows the Progress bar, whose Remove frame replaces the Row progress switch: the Zoom pill has no button for it (tickets 411, 426)', async () => {
+  it('always shows the Progress bar, whose Remove frame replaces the Row progress switch (tickets 411, 426)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const bar = () => wrapper.get('[data-testid="progress-bar"]')
-    expect(wrapper.find('[data-testid="zoom-pill-progress"]').exists()).toBe(false)
     expect(bar().classes()).not.toContain('app-shell__progress--hidden')
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)

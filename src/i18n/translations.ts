@@ -67,8 +67,6 @@ export interface Translations {
     canvasLabel: string
     colorsCount: PluralForms
     progressDone: string
-    /** Shown in the canvas strip while the Project has keyboard focus. */
-    keyboardHint: string
     /** A message's close ×. */
     closeMessage: string
     /** An expandable panel's expand button (BeadsNeeded, SavedProjects cards). */
@@ -101,18 +99,7 @@ export interface Translations {
     zoomInLabel: string
     zoomOutLabel: string
     zoomResetLabel: string
-    /** Announced once when Alt + an arrow key moves the Zoom pill (ticket 302), (ticket 321: no corner to name any more). */
-    zoomPillMovedAnnouncement: string
-    /** The canvas strip's title (ticket 143). */
-    stripTitle: string
-    /** The strip's size meta, "Width 40 · Height 30" (ticket 342): each is one of these with its bead count, joined by a spaced middle dot. */
-    widthSize: string
-    heightSize: string
-    /** The strip's title while the canvas has no Frame (CanvasStrip card, v16). */
-    canvasTitle: string
-    /** "3 pieces": how many Pieces the canvas holds. */
-    piecesCount: PluralForms
-    /** The strip's meta with no Frame ("3 pieces · no Frame") and while the Frame is being set ("3 pieces · setting Frame"). */
+    /** A Project with no Frame, in the Saved Projects list ("no Frame"). */
     noFrame: string
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
@@ -480,8 +467,6 @@ export interface Translations {
     marginLead: Record<'set' | 'moved' | 'resized', string>
     /** The rest of the margin Message, after the lead: how many beads were in the margin. */
     marginClearedMessage: PluralForms
-    /** The cursor and the keyboard while the Frame is being set. */
-    keyboardHint: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

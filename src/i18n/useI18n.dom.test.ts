@@ -46,7 +46,7 @@ describe('copy rules (writing.md)', () => {
     for (const locale of LOCALES) {
       const dictionary = dictionaries[locale]
       const needed = new Intl.PluralRules(locale).resolvedOptions().pluralCategories
-      for (const forms of [dictionary.canvas.piecesCount, dictionary.print.beadsCount, dictionary.a11y.colorsCount]) {
+      for (const forms of [dictionary.print.beadsCount, dictionary.a11y.colorsCount]) {
         for (const category of needed) {
           expect(forms, `${locale} ${category}`).toHaveProperty(category)
         }

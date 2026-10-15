@@ -45,7 +45,6 @@ export const ru: Translations = {
     canvasLabel: '{name}, свободное полотно без рамки, {colors}',
     colorsCount: { one: '{count} цвет', few: '{count} цвета', many: '{count} цветов', other: '{count} цвета' },
     progressDone: 'готово рядов: {row} из {total}',
-    keyboardHint: 'стрелки двигают · пробел рисует · esc выход',
     closeMessage: 'Закрыть',
     expandPanel: 'Показать все',
     collapsePanel: 'Показать меньше',
@@ -87,12 +86,6 @@ export const ru: Translations = {
     zoomInLabel: 'Увеличить',
     zoomOutLabel: 'Уменьшить',
     zoomResetLabel: 'Вписать',
-    zoomPillMovedAnnouncement: 'Кнопки масштаба перемещены',
-    stripTitle: 'Схема',
-    widthSize: 'Ширина {count}',
-    heightSize: 'Высота {count}',
-    canvasTitle: 'Полотно',
-    piecesCount: { one: '{count} кусочек', few: '{count} кусочка', many: '{count} кусочков', other: '{count} кусочка' },
     noFrame: 'без рамки',
     rulersLabel: 'Линейки',
     canvasColor: {
@@ -462,7 +455,6 @@ export const ru: Translations = {
       many: '{count} кусочков были в поле рамки и перемещены за его пределы.',
       other: '{count} кусочка были в поле рамки и перемещены за его пределы.',
     },
-    keyboardHint: 'стрелки двигают рамку · Shift и стрелки меняют размер · Enter: готово',
   },
   size: {
     estimateLabel: 'Примерный размер',

@@ -354,8 +354,6 @@ describe('New Project with the Frame optional', () => {
     await wrapper.find('form.new-project-form').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('0 Pieces · no Frame')
     expect(savedFrame()).toBeUndefined()
     expect(loadProjects()).toHaveLength(1)
     await openSavedProjects(wrapper)

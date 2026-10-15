@@ -45,7 +45,6 @@ export const zh: Translations = {
     canvasLabel: '{name}，无边框的画布，{colors}',
     colorsCount: { other: '{count} 种颜色' },
     progressDone: '共 {total} 行，已完成第 {row} 行',
-    keyboardHint: '方向键移动 · 空格涂色 · Esc 退出',
     closeMessage: '关闭',
     expandPanel: '显示全部',
     collapsePanel: '收起',
@@ -87,12 +86,6 @@ export const zh: Translations = {
     zoomInLabel: '放大',
     zoomOutLabel: '缩小',
     zoomResetLabel: '适应',
-    zoomPillMovedAnnouncement: '缩放控件已移动',
-    stripTitle: '图样',
-    widthSize: '宽 {count}',
-    heightSize: '高 {count}',
-    canvasTitle: '画布',
-    piecesCount: { other: '{count} 个小块' },
     noFrame: '无边框',
     rulersLabel: '标尺',
     canvasColor: {
@@ -443,7 +436,6 @@ export const zh: Translations = {
     marginClearedMessage: {
       other: '{count} 个小块位于边距内，已移到边距之外。',
     },
-    keyboardHint: '方向键移动边框 · Shift 加方向键调整大小 · Enter 完成',
   },
   size: {
     estimateLabel: '估算尺寸',
