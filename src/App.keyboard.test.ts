@@ -46,7 +46,7 @@ describe('the Project from the keyboard (ticket 159)', () => {
 
     expect(surface(wrapper).attributes('tabindex')).toBe('0')
     expect(surface(wrapper).attributes('role')).toBe('img')
-    expect(surface(wrapper).attributes('aria-label')).toMatch(/, 6 by 4 beads, 0 colors$/)
+    expect(surface(wrapper).attributes('aria-label')).toMatch(/, 6 by 4 beads, 0 colors, row 0 of 4 done$/)
   })
 
   it('paints with Space, as one undo step, and says so', async () => {
