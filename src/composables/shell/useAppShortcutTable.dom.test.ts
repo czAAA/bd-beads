@@ -258,7 +258,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('D turns the Row progress direction and P does nothing (tickets 94, 426)', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: false } }) as never })
+    const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     press({ key: 'p' })
     expect(deps.onToggleRowDirection).not.toHaveBeenCalled()
     press({ key: 'd' })
@@ -267,14 +267,14 @@ describe('useAppShortcutTable', () => {
   })
 
   it('Enter and Space move one row on, with Shift one back, and only while Row progress is on (tickets 94, 178)', () => {
-    const on = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never })
+    const on = mountTable({ activeProject: () => ({ frame: {} }) as never })
     press({ key: 'Enter' })
     press({ key: ' ' })
     press({ key: 'Enter', shiftKey: true })
     press({ key: ' ', shiftKey: true })
     expect(vi.mocked(on.deps.onMoveRow).mock.calls).toEqual([[1], [1], [-1], [-1]])
     on.wrapper.unmount()
-    const off = mountTable({ activeProject: () => ({ rowProgress: { enabled: false } }) as never })
+    const off = mountTable({ activeProject: () => ({}) as never })
     press({ key: 'Enter' })
     press({ key: ' ', shiftKey: true })
     expect(off.deps.onMoveRow).not.toHaveBeenCalled()
@@ -282,7 +282,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('leaves Enter and Space to a focused Progress bar button, so one press does not also move the row', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never })
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ frame: {} }) as never })
     for (const container of ['progress-bar']) {
       const holder = document.createElement('div')
       holder.dataset.testid = container
@@ -317,7 +317,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while typing in a form field, except those marked to', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => ({ rowProgress: { enabled: true } }) as never, hasSelection: () => true, paletteColorIdAt: () => 'red' })
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ frame: {} }) as never, hasSelection: () => true, paletteColorIdAt: () => 'red' })
     const field = document.createElement('input')
     document.body.appendChild(field)
     for (const init of [
@@ -334,7 +334,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while a dialog is open, except Escape', () => {
-    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ rowProgress: { enabled: true } }) as never, paletteColorIdAt: () => 'red' })
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ frame: {} }) as never, paletteColorIdAt: () => 'red' })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
     for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()

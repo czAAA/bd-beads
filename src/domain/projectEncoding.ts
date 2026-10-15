@@ -1,5 +1,5 @@
 import { forEachBead, type BeadMap } from './canvas'
-import { forStorage, type Grid, type GridProject, type Project } from './project'
+import type { Grid, GridProject, Project } from './project'
 
 /**
  * The compact form a Project's beads are stored in (ADR 0009, reshaped for the Canvas by ADR 0026): the distinct
@@ -168,7 +168,7 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
 }
 
 export function encodeProject(project: Project): EncodedProject {
-  const { beads, ...rest } = forStorage(project)
+  const { beads, ...rest } = project
   return { ...rest, encodedBeads: encodeBeads(beads) }
 }
 

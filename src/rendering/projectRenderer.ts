@@ -1,7 +1,7 @@
 import type { GridPosition, Rotation, Technique } from '../domain/grid'
 import { colorAt, frameContains } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
-import { isInCurrentRow, isInFinishedRow, type Project } from '../domain/project'
+import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
   beadRoundness,
   brighten,
@@ -122,6 +122,8 @@ export interface RenderInput {
   theme?: ProjectTheme
   /** Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a finished row. Off, they are dimmed. */
   showFinished?: boolean
+  /** Whether Row progress is drawn: finished rows faded, the current one brighter. Defaults to `rowProgressOn(project)`; an export, a chart that shows every bead as it is, passes false (ticket 434). */
+  rowMarks?: boolean
   /**
    * Draw only these rows (numbered in the space) again, and what they touch, leaving the rest of the surface as it is:
    * what an edit that changed a few beads needs, in place of drawing every bead on screen. Everything in the band the
@@ -224,7 +226,7 @@ function bandOnSurface(
  * (the Canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
  */
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project) } = input
   const { technique, beads, frame, rotation } = project
   const { extent, origin } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
@@ -269,7 +271,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const frameColumns = { first: origin.column, last: origin.column + space.columns - 1 }
   // The current row's beads are drawn 10% brighter than the todo rows (ticket 352); an empty cell is left as it is (ticket 411).
   const lightenCurrent = (color: string | null, position: GridPosition): string | null =>
-    color !== null && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
+    color !== null && rowMarks && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
   const drawAt = (row: number, column: number, color: string | null) => {
     const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
     drawBead(context, {
@@ -278,7 +280,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       size: CELL_SIZE_PX,
       cornerRadius,
       color: lightenCurrent(color ?? colorAt(beads, position.row, position.column), position),
-      dimmed: !showFinished && isInFinishedRow(project, position),
+      dimmed: rowMarks && !showFinished && isInFinishedRow(project, position),
       deviceScale: zoom * pixelRatio,
       theme: look,
     })
@@ -288,7 +290,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     if (seamAbove(technique, space, row)) {
       // Whether the seam is faded is asked of a position inside the Frame: the row-wise Row progress fades rows, the column-wise one fades beads down a column and leaves seams alone.
       const inside = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + origin.column }
-      drawSeam(context, shiftOf(space, technique, row) + origin.column * CELL_SIZE_PX, rowTopPx(technique, row) - SEAM_PX, space.columns * CELL_SIZE_PX, !showFinished && project.rowProgress.direction === 'rows' && isInFinishedRow(project, inside), look)
+      drawSeam(context, shiftOf(space, technique, row) + origin.column * CELL_SIZE_PX, rowTopPx(technique, row) - SEAM_PX, space.columns * CELL_SIZE_PX, rowMarks && !showFinished && project.rowProgress.direction === 'rows' && isInFinishedRow(project, inside), look)
     }
     const { first, last } = visible.columnsOf(row)
     for (let column = Math.max(first, frameColumns.first); column <= Math.min(last, frameColumns.last); column += 1) {

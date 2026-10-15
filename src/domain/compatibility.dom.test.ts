@@ -32,7 +32,7 @@ const peyotePicture = ['RRB..', '.KKR.', 'B...R', '..KBB']
 const brickPicture = ['R.K', '.BR', 'K.B', 'R..']
 
 const BEAD = 'toho-cube-1.5mm'
-const noProgress: RowProgress = { enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 }
+const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
 function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pick<Project, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
@@ -58,7 +58,7 @@ const v1Library: Project[] = [
     technique: 'loom',
     grid: grid(loomPicture),
     // Saved before direction and the column pointer existed: they come back defaulted, the row pointer as it was.
-    rowProgress: { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 },
+    rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 },
     createdAt: 1700000000000,
     updatedAt: 1700000001000,
   }),
@@ -67,7 +67,7 @@ const v1Library: Project[] = [
     name: 'Peyote strap',
     technique: 'peyote',
     grid: grid(peyotePicture),
-    rowProgress: { enabled: true, direction: 'columns', currentRow: 2, currentColumn: 3 },
+    rowProgress: { direction: 'columns', currentRow: 2, currentColumn: 3 },
     rotation: 90,
     imageColors: ['#c81e3c', '#1e64c8', '#1f1f1f'],
     createdAt: 1700000002000,
@@ -89,7 +89,7 @@ const v2Library: Project[] = [
     name: 'Loom rotated',
     technique: 'loom',
     grid: grid(loomPicture),
-    rowProgress: { enabled: true, direction: 'columns', currentRow: 2, currentColumn: 1 },
+    rowProgress: { direction: 'columns', currentRow: 2, currentColumn: 1 },
     rotation: 90,
     imageColors: ['#c81e3c', '#1e64c8'],
     createdAt: 1710000002000,
@@ -104,12 +104,12 @@ const overCapProject = expectedProject({
   name: 'Over the cap',
   technique: 'peyote',
   grid: grid(overCapRows),
-  rowProgress: { enabled: true, direction: 'rows', currentRow: 50, currentColumn: 0 },
+  rowProgress: { direction: 'rows', currentRow: 50, currentColumn: 0 },
   createdAt: 1720000000000,
   updatedAt: 1720000001000,
 })
 
-const fileRowProgress: RowProgress = { enabled: true, direction: 'rows', currentRow: 1, currentColumn: 0 }
+const fileRowProgress: RowProgress = { direction: 'rows', currentRow: 1, currentColumn: 0 }
 const fileProjects = {
   peyote: expectedProject({
     id: 'file-one',

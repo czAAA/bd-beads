@@ -26,15 +26,14 @@ import {
   type Cell,
   type Project,
   type Technique,
-  forStorage,
   frameGrid,
   withFrame,
   withFrameGrid,
+  rowProgressOn,
   rowProgressStarted,
 } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
-import { rowProgressOff, rowProgressOn } from '../testUtils/rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
@@ -719,7 +718,6 @@ describe('row progress', () => {
 
   it('starts on with the Frame its size makes, pointing at the first row (ticket 426)', () => {
     expect(project().rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
@@ -728,13 +726,14 @@ describe('row progress', () => {
 
   it('is on exactly when there is a Frame, and a Frame set or removed carries the pointer with it (ticket 426)', () => {
     const started = moveToRow(project(), 4)
-    expect(started.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(started.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
 
     const removed = withFrame(started, undefined)
-    expect(removed.rowProgress).toEqual({ enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOn(removed)).toBe(false)
+    expect(removed.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
 
     const back = withFrame(removed, { row: 0, column: 0, columns: 2, rows: 2 })
-    expect(back.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(back.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('moves the pointer forward and backward through the rows', () => {
@@ -764,17 +763,18 @@ describe('row progress', () => {
   })
 
   it('has no current pass once every pass is done, so nothing is marked', () => {
-    const woven = rowProgressOn(project())
+    const woven = project()
     const done = moveToRow(woven, woven.frame!.rows)
     expect(isInCurrentRow(done, { row: 0, column: 0 })).toBe(false)
     expect(isInFinishedRow(done, { row: woven.frame!.rows - 1, column: 0 })).toBe(true)
   })
 
   it('is started only while on with a pass done (ticket 411)', () => {
-    const woven = rowProgressOn(project())
+    const woven = project()
     expect(rowProgressStarted(woven)).toBe(false)
     expect(rowProgressStarted(moveToRow(woven, 1))).toBe(true)
-    expect(rowProgressStarted(rowProgressOff(moveToRow(woven, 1)))).toBe(false)
+    const { frame: _frame, ...unframed } = moveToRow(woven, 1)
+    expect(rowProgressStarted(unframed)).toBe(false)
     // The pointer of the other direction counts too.
     expect(rowProgressStarted(moveToRow(toggleRowDirection(woven), 1))).toBe(true)
   })
@@ -827,10 +827,10 @@ describe('keepFinishedRows', () => {
 
   /** 10 columns x 20 rows, with the overlay on and rows 0-2 finished. */
   function onRowThree() {
-    return rowProgressOn(moveToRow(
+    return moveToRow(
         createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
         3,
-      ))
+      )
   }
 
   it('leaves beads in finished rows as they were, keeping the edit on the current row and after', () => {
@@ -857,7 +857,7 @@ describe('keepFinishedRows', () => {
   })
 
   it('locks the finished columns instead once rows run down them', () => {
-    const before = rowProgressOn(moveToRow(toggleRowDirection(onRowThree()), 2))
+    const before = moveToRow(toggleRowDirection(onRowThree()), 2)
     const edited = paintCells(before, [{ row: 15, column: 1 }, { row: 15, column: 2 }], '#e63746', NO_MIRROR)
 
     const kept = keepFinishedRows(before, edited)
@@ -866,8 +866,9 @@ describe('keepFinishedRows', () => {
     expect(frameGrid(kept)[15]![2]!.color).toBe('#e63746')
   })
 
-  it('locks nothing while the overlay is off', () => {
-    const before = rowProgressOff(onRowThree())
+  it('locks nothing without a Frame', () => {
+    const { frame: _frame, ...unframed } = onRowThree()
+    const before = unframed as Project
     const edited = paintCells(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
 
     expect(frameGrid(keepFinishedRows(before, edited))[0]![0]!.color).toBe('#e63746')
@@ -920,7 +921,7 @@ describe('deleteAll', () => {
     )
     const rotated = turnedClockwise(painted)
     const turned = toggleRowDirection(rotated)
-    return rowProgressOn(moveToRow(turned, 3))
+    return moveToRow(turned, 3)
   }
 
   it('empties every cell', () => {
@@ -932,7 +933,7 @@ describe('deleteAll', () => {
   it('puts both direction pointers back at the first row, Row progress staying on with the Frame', () => {
     const cleared = deleteAll(paintedAndWoven())
 
-    expect(cleared.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(cleared.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
@@ -1009,7 +1010,7 @@ describe('replaceBead', () => {
   )
 
   it('keeps Row progress exactly as it was', () => {
-    const before = rowProgressOn(moveToRow(distinctlyPainted(), 1))
+    const before = moveToRow(distinctlyPainted(), 1)
 
     const replaced = replaceBead(before, cubeBead)
 
@@ -1044,7 +1045,7 @@ describe('replaceBead', () => {
 
 describe('snapshotOf and restoreSnapshot', () => {
   it('put back everything an Edit can change: the grid, Row progress, the Bead and the Frame', () => {
-    const before = rowProgressOn(moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3))
+    const before = moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3)
     const counts = { columns: 1, rows: 0 }
     const snapshot = snapshotOf(before, counts)
     const changed = withFrame(replaceBead(deleteAll(before), cubeBead), { row: 0, column: 0, columns: 2, rows: 5 })
@@ -1098,7 +1099,6 @@ describe('normalizeProject', () => {
     const normalized = normalizeProject(legacy as Project)
 
     expect(normalized.rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
@@ -1141,11 +1141,10 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject({
       ...base,
-      rowProgress: { enabled: true, currentRow: 5 } as Project['rowProgress'],
+      rowProgress: { currentRow: 5 } as Project['rowProgress'],
     })
 
     expect(normalized.rowProgress).toEqual({
-      enabled: true,
       direction: 'rows',
       currentRow: 5,
       currentColumn: 0,
@@ -1174,7 +1173,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject({
       ...base,
-      rowProgress: { enabled: true, direction: 'columns', currentRow: 999, currentColumn: 999 },
+      rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 },
     })
 
     expect(normalized.rowProgress.currentRow).toBe(20)
@@ -1212,7 +1211,7 @@ describe('createProjectFromImage', () => {
       ['#00ff00', '#0000ff'],
     ])
     expect(project.name).toBe('Fox')
-    expect(project.rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(project.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('saves the colors the conversion found on the Project', () => {
@@ -1304,7 +1303,7 @@ describe('Image colors are frozen (ADR 0011)', () => {
 
 describe('Row progress on the Frame (ticket 233)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const framed: Project = { ...base, frame: { row: 10, column: 10, rows: 6, columns: 4 }, rowProgress: { ...base.rowProgress, enabled: true, currentRow: 2 } }
+  const framed: Project = { ...base, frame: { row: 10, column: 10, rows: 6, columns: 4 }, rowProgress: { ...base.rowProgress, currentRow: 2 } }
 
   it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 10 })).toBe(true)
@@ -1312,7 +1311,8 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(isInCurrentRow(framed, { row: 11, column: 10 })).toBe(false)
     expect(isInCurrentRow(framed, { row: 13, column: 10 })).toBe(false)
     expect(isInCurrentRow(framed, { row: 12, column: 20 })).toBe(false)
-    expect(isInCurrentRow({ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } }, { row: 12, column: 10 })).toBe(false)
+    const { frame: _frame, ...unframed } = framed
+    expect(isInCurrentRow(unframed, { row: 12, column: 10 })).toBe(false)
     const columnWise: Project = { ...framed, rowProgress: { ...framed.rowProgress, direction: 'columns', currentColumn: 1 } }
     expect(isInCurrentRow(columnWise, { row: 15, column: 11 })).toBe(true)
     expect(isInCurrentRow(columnWise, { row: 15, column: 12 })).toBe(false)
@@ -1328,16 +1328,32 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(isInFinishedRow(framed, { row: 11, column: 20 })).toBe(false)
   })
 
-  it('opens on with a Frame whatever an old file stored, and off without one (ticket 426)', () => {
+  it('is on exactly when there is a Frame (ticket 434)', () => {
     const { frame: _frame, ...open } = base
-    const stored = (project: Project, enabled: boolean) => ({ ...project, rowProgress: { ...project.rowProgress, enabled, decided: true } })
-    expect(normalizeProject(stored(base, false) as Project).rowProgress).toEqual({ enabled: true, direction: 'rows', currentRow: 0, currentColumn: 0 })
-    expect(normalizeProject(stored(open as Project, true) as Project).rowProgress.enabled).toBe(false)
+    expect(rowProgressOn(base)).toBe(true)
+    expect(rowProgressOn(open as Project)).toBe(false)
+    expect(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }).frame).toBeUndefined()
   })
 
-  it('is written without the flag, since the Frame says it', () => {
-    expect(forStorage(base).rowProgress).not.toHaveProperty('enabled')
-    expect(forStorage(base).rowProgress.currentRow).toBe(base.rowProgress.currentRow)
+  it('opens with Row progress on for a Frame whatever an old file stored, and never carries the flag on (tickets 426, 434)', () => {
+    const { frame: _frame, ...open } = base
+    const stored = (project: Project, enabled: boolean) => ({ ...project, rowProgress: { ...project.rowProgress, enabled, decided: true } })
+    const fromOffFile = normalizeProject(stored(base, false) as Project)
+    expect(rowProgressOn(fromOffFile)).toBe(true)
+    expect(fromOffFile.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    const fromFramelessFile = normalizeProject(stored(open as Project, true) as Project)
+    expect(rowProgressOn(fromFramelessFile)).toBe(false)
+    expect(fromFramelessFile.rowProgress).not.toHaveProperty('enabled')
+  })
+
+  it('turns on with a Frame set and off with it removed, passes cleared, without any flag to set (ticket 434)', () => {
+    const { frame: _frame, ...open } = base
+    const framedNow = withFrame(open as Project, { row: 0, column: 0, rows: 3, columns: 3 })
+    expect(rowProgressOn(framedNow)).toBe(true)
+    const removed = withFrame(moveToRow(framedNow, 2), undefined)
+    expect(rowProgressOn(removed)).toBe(false)
+    expect(removed.rowProgress.currentRow).toBe(0)
+    expect(deleteAll(framedNow).rowProgress).not.toHaveProperty('enabled')
   })
 })
 
@@ -1345,7 +1361,7 @@ describe('peyote passes (ticket 347)', () => {
   /** 3 columns x 7 rows, the reporter's example. */
   function peyote(direction: 'rows' | 'columns', pass: number) {
     const project = createProject({ technique: 'peyote', beadId: cubeBead.id, size: { width: 4.5, height: 10.5, unit: 'mm' } })
-    const down = direction === 'columns' ? toggleRowDirection(rowProgressOn(project)) : rowProgressOn(project)
+    const down = direction === 'columns' ? toggleRowDirection(project) : project
     return moveToRow(down, pass)
   }
 

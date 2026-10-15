@@ -175,7 +175,7 @@ function drawBoard(context: CanvasRenderingContext2D, project: Project, region: 
   tile.height = Math.max(1, Math.ceil(region.height))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom, theme: PRINT_THEME })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom, theme: PRINT_THEME, rowMarks: false })
   context.drawImage(tile, at.x, at.y)
 }
 
