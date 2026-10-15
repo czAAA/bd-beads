@@ -43,12 +43,14 @@ export interface FrameAnchor extends SelectionAnchor {
   outer: BarBox
   /** How far the ruler numbers reach past the Frame's line: their width on the left and right, their height above and below. */
   numbers: { across: number; down: number }
+  /** How much the steppers shrink at this zoom, 0.5 to 1 (ticket 427). */
+  scale: number
 }
 
-/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` apart. */
+/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` (2px) apart. */
 const STEPPER_PX = 28
 const TOUCH_STEPPER_PX = 36
-const STEPPER_PAIR_GAP_PX = 8
+const STEPPER_PAIR_GAP_PX = 2
 
 /** The centre of each edge's stepper pair, in the canvas box's pixels. */
 export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
@@ -59,8 +61,8 @@ export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { 
  */
 export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameStepperCentres {
   const { box, outer, numbers, viewport } = anchor
-  const size = touch ? TOUCH_STEPPER_PX : STEPPER_PX
-  const pair = 2 * size + STEPPER_PAIR_GAP_PX
+  const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
+  const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
   const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
   const midX = box.left + box.width / 2
   const midY = box.top + box.height / 2

@@ -149,6 +149,8 @@ export interface RulerLayout {
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
+  /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none (Edit Frame's steppers hide above 5, ticket 427). */
+  step: number
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]
   /** The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch; none while `numbers` is off. */
@@ -165,6 +167,8 @@ export interface RulerLayout {
 interface BoxLayout {
   labels: RulerLabel[]
   beads: RulerDot[]
+  /** The Ruler step of the box's coarser ruler, in beads between numbers. */
+  step: number
 }
 
 /**
@@ -264,7 +268,7 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
     columnsAt(lastRow, bottom, [0, 1])
     rowsAt(right, [1, 0])
   }
-  return { labels, beads }
+  return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 
 /** The label under a point of the viewport, if any: the last drawn wins where two boxes crowd. */
@@ -300,6 +304,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     scale,
     numbers,
     boxes,
+    step: Math.max(1, ...laid.map((box) => box.step)),
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
     pick: (point) => {

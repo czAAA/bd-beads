@@ -125,7 +125,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function drag(cell: GridPosition): void {
     const project = deps.currentProject()
-    if (!project || !gesture) return
+    if (!project) return
+    // A drag that starts outside the Frame is not a tap, so it no longer ends Edit Frame.
+    if (!gesture) {
+      leavesOnRelease = false
+      return
+    }
     dragged = true
     if (gesture.kind === 'resize') {
       draft.value = frameWithEdges(project.technique, gesture.start, gesture.edges, cell)
