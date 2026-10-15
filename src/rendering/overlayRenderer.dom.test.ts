@@ -350,6 +350,18 @@ describe('renderOverlay', () => {
         expect(named('roundRect')).toHaveLength(count)
       }
     })
+
+    it('shows no handles on a Selection of fewer than five beads, the same size rulers need (ticket 435)', () => {
+      const project = projectOf('loom', 6, 5, noProgress)
+      const surface = surfaceView({ technique: 'loom', space: spaceOf(project, true), rotation: 0, zoom: 1, viewport: { width: 200, height: 160 } })
+
+      for (const [rows, columns, count] of [[1, 1, 0], [2, 2, 0], [1, 5, 8], [2, 3, 8]] as const) {
+        const { context, named } = recordingContext()
+        renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true), selection: { top: 0, left: 0, rows, columns }, selectionHandles: { surface, touch: false } })
+
+        expect(named('roundRect')).toHaveLength(count)
+      }
+    })
   })
 
   describe('Mirror\'s axis lines', () => {
