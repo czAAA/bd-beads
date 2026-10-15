@@ -4,7 +4,6 @@ import { createProject, moveToRow, withFrame, type Project } from '../../domain/
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
-import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
@@ -55,7 +54,7 @@ describe('useFrameFlow', () => {
   })
 
   it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-    const locked = moveToRow(rowProgressOn(sized), 1)
+    const locked = moveToRow(sized, 1)
     const { deps, frameLocked, start, settingFrame, press, drag, release, stepEdge, remove } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'inside' }, { row: 0, column: 0 })
@@ -71,7 +70,7 @@ describe('useFrameFlow', () => {
   })
 
   it('asks before removing the Frame once a pass is done, and removes it with the passes on confirm (ticket 426)', () => {
-    const { deps, remove, removeConfirmOpen, cancelRemove, confirmRemove } = setup(moveToRow(rowProgressOn(sized), 1))
+    const { deps, remove, removeConfirmOpen, cancelRemove, confirmRemove } = setup(moveToRow(sized, 1))
     remove()
     expect(removeConfirmOpen.value).toBe(true)
     cancelRemove()
@@ -168,7 +167,7 @@ describe('useFrameFlow', () => {
   })
 
   it('does not start with no Project open, with no Frame, or once Row progress holds the Frame (ticket 411)', () => {
-    for (const project of [null, open, moveToRow(rowProgressOn(sized), 1)]) {
+    for (const project of [null, open, moveToRow(sized, 1)]) {
       const { settingFrame, start } = setup(project)
       start()
       expect(settingFrame.value).toBe(false)
@@ -226,7 +225,7 @@ describe('useFrameFlow', () => {
     })
 
     it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-      const { deps, setTechnique } = setup(moveToRow(rowProgressOn(sized), 1))
+      const { deps, setTechnique } = setup(moveToRow(sized, 1))
       setTechnique('brick')
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -288,7 +287,7 @@ describe('useFrameFlow', () => {
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {
-      for (const project of [open, moveToRow(rowProgressOn(sized), 1)]) {
+      for (const project of [open, moveToRow(sized, 1)]) {
         const { deps, stepEdge } = setup(project)
         stepEdge('right', 1)
         expect(deps.replaceProject).not.toHaveBeenCalled()

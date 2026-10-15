@@ -7,7 +7,7 @@ import { HILLS } from './exampleArt'
 
 /** Row progress (ticket 218): five rows done and faded, the sixth marked as the current one, and the mini Progress bar that moves it. */
 const { t } = useI18n()
-const ROW_PROGRESS = { enabled: true, direction: 'rows', currentRow: 5, currentColumn: 0 } as const
+const ROW_PROGRESS = { direction: 'rows', currentRow: 5, currentColumn: 0 } as const
 </script>
 
 <template>

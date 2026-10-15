@@ -17,7 +17,7 @@ import { displayedExtentPx } from '../rendering/surfaceView'
 const PROJECT: DrawnProject = {
   technique: 'loom',
   ...framedGrid(tourFinishedGrid()),
-  rowProgress: { enabled: false, direction: 'rows', currentRow: 0, currentColumn: 0 },
+  rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
   rotation: 270,
 }
 
@@ -43,6 +43,7 @@ function draw() {
     zoom: ZOOM,
     pixelRatio,
     theme: PROJECT_THEMES[theme.value],
+    rowMarks: false,
   })
 }
 

@@ -103,7 +103,7 @@ describe('useTour', () => {
     expect(saved.status).toBe('finished')
     expect(tour.finalCard.value).toBe(true)
     expect(gridsEqual(frameGrid(current()!), afterStep(8))).toBe(true)
-    expect(current()!.rowProgress).toMatchObject({ enabled: true, currentRow: 2 })
+    expect(current()!.rowProgress).toMatchObject({ currentRow: 2 })
     tour.keepEditing()
     expect(tour.active.value).toBe(false)
   })

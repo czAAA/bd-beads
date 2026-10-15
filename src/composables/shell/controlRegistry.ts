@@ -3,7 +3,7 @@ import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { rowProgressOn, rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -485,7 +485,8 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(1)
+      const project = deps.activeProject()
+      if (project && rowProgressOn(project)) deps.onMoveRow(1)
     },
   },
   {
@@ -499,7 +500,8 @@ export const CONTROLS: readonly ControlAction[] = [
     chipAllKeys: true,
     givesWayToFocusedButton: true,
     run: (deps) => {
-      if (deps.activeProject()?.rowProgress.enabled) deps.onMoveRow(-1)
+      const project = deps.activeProject()
+      if (project && rowProgressOn(project)) deps.onMoveRow(-1)
     },
   },
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {

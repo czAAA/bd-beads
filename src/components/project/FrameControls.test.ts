@@ -30,7 +30,7 @@ describe('FrameControls', () => {
     })
 
     it('is disabled once Row progress is on and a pass is done, and does not emit (ticket 411)', async () => {
-      const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
+      const project = { ...framed(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
       const wrapper = mount(FrameControls, { props: { project } })
       const group = wrapper.find('[data-testid="frame-technique"]')
       expect(group.attributes('aria-disabled')).toBe('true')
@@ -78,7 +78,7 @@ describe('FrameControls', () => {
   })
 
   it('does not run Edit Frame once Row progress is on and a pass is done, and says why (ticket 411)', async () => {
-    const project = { ...framed(), rowProgress: { enabled: true, direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
+    const project = { ...framed(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
     const wrapper = mount(FrameControls, { props: { project } })
     const edit = wrapper.find('[data-testid="frame-edit"]')
     expect(edit.attributes('aria-disabled')).toBe('true')

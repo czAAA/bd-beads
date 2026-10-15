@@ -1,4 +1,4 @@
-import { beadColorAt, frameGrid, projectDimensions } from '../domain/project'
+import { beadColorAt, frameGrid, projectDimensions, rowProgressOn } from '../domain/project'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation, type Technique } from '../domain/grid'
@@ -137,7 +137,9 @@ export function dimmedBeads(wrapper: Anywhere): GridPosition[] {
 
 /** How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed; the one at it is outlined. */
 export function rowProgressView(wrapper: Anywhere) {
-  const { enabled, direction, currentRow, currentColumn } = drawnProject(wrapper).rowProgress
+  const project = drawnProject(wrapper)
+  const enabled = rowProgressOn(project)
+  const { direction, currentRow, currentColumn } = project.rowProgress
   const current = direction === 'rows' ? currentRow : currentColumn
   return { enabled, direction, current, finished: enabled ? current : 0, markerShown: enabled }
 }

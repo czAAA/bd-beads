@@ -49,7 +49,7 @@ describe('the control registry', () => {
 
     const remove = CONTROLS.find((control) => control.id === 'remove-frame')!
     const project = (framed: boolean, currentRow: number) =>
-      ({ frame: framed ? { row: 0, column: 0, rows: 4, columns: 4 } : undefined, rowProgress: { enabled: framed, currentRow, currentColumn: 0 } }) as never
+      ({ frame: framed ? { row: 0, column: 0, rows: 4, columns: 4 } : undefined, rowProgress: { currentRow, currentColumn: 0 } }) as never
     const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
     expect(remove.enabled?.(deps(project(true, 0)))).toBe(true)
     expect(remove.enabled?.(deps(project(true, 2)))).toBe(true)
@@ -59,7 +59,7 @@ describe('the control registry', () => {
 
   it('gives every action that can be disabled a reason, in both languages', () => {
     for (const control of CONTROLS.filter((c) => c.enabled)) {
-      const project = { rowProgress: { enabled: false }, beads: {} } as never
+      const project = { beads: {}, rowProgress: { currentRow: 0, currentColumn: 0 } } as never
       const deps = { activeProject: () => project, addedColorCount: () => 0 } as never
       for (const t of [en, ru]) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
     }

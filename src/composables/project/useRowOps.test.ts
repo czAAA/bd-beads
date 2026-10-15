@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { createProject, toggleRowDirection, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
-import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
-const tracking = rowProgressOn(base)
+const tracking = base
 
 function setup(project: Project | null = base) {
   const deps = {

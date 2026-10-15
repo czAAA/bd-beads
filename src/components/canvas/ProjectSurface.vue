@@ -205,7 +205,6 @@ function sameLayout(a: Project, b: Project): boolean {
     a.technique === b.technique &&
     a.frame === b.frame &&
     a.rotation === b.rotation &&
-    progress(a).enabled === progress(b).enabled &&
     progress(a).direction === progress(b).direction &&
     progress(a).currentRow === progress(b).currentRow &&
     progress(a).currentColumn === progress(b).currentColumn

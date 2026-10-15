@@ -4,11 +4,9 @@ import { turnedClockwise } from '../../testUtils/rotated'
 import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
-import { rowProgressOff, rowProgressOn } from '../../testUtils/rowProgress'
 
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho-cube-1.5mm')!
-// Row progress off, so the label is the plain name, size and colors; the one test that wants the position turns it on.
-const base = rowProgressOff(createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } }))
+const base = createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } })
 
 function setup(project: Project | undefined = base) {
   return useProjectLabels({ currentProject: () => project, messages: () => en, locale: () => 'en' })
@@ -38,19 +36,19 @@ describe('useProjectLabels', () => {
   describe('projectLabel', () => {
     it('names the Project, its size and its colors', () => {
       const painted = withColors(base, ['#ff0000', '#00ff00', '#ff0000'])
-      expect(setup(painted).projectLabel.value).toBe('Logo panel, 4 by 3 beads, 2 colors')
+      expect(setup(painted).projectLabel.value).toBe('Logo panel, 4 by 3 beads, 2 colors, row 0 of 3 done')
     })
 
     it('says one color in the singular', () => {
-      expect(setup(withColors(base, ['#ff0000'])).projectLabel.value).toBe('Logo panel, 4 by 3 beads, 1 color')
+      expect(setup(withColors(base, ['#ff0000'])).projectLabel.value).toBe('Logo panel, 4 by 3 beads, 1 color, row 0 of 3 done')
     })
 
     it('swaps the axes once the Project is turned a quarter', () => {
-      expect(setup(turnedClockwise(base)).projectLabel.value).toBe('Logo panel, 3 by 4 beads, 0 colors')
+      expect(setup(turnedClockwise(base)).projectLabel.value).toBe('Logo panel, 3 by 4 beads, 0 colors, row 0 of 3 done')
     })
 
     it('adds the Row progress once it is on', () => {
-      const tracking = moveToRow(rowProgressOn(base), 2)
+      const tracking = moveToRow(base, 2)
       expect(setup(tracking).projectLabel.value).toMatch(/, row 2 of 3 done$/)
     })
 

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
-import { resolveProjectBead, rowProgressPosition, type Project, projectDimensions } from '../../domain/project'
+import { resolveProjectBead, rowProgressOn, rowProgressPosition, type Project, projectDimensions } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 
@@ -47,7 +47,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
         .replace('{rows}', String(rows))
         .replace('{colors}', colorWords),
     ]
-    if (project.rowProgress.enabled) {
+    if (rowProgressOn(project)) {
       const { current: position, total } = rowProgressPosition(project)
       parts.push(t.a11y.progressDone.replace('{row}', String(position)).replace('{total}', String(total)))
     }

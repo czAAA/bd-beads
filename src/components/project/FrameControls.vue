@@ -15,7 +15,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
  * The Frame's part of the Project sheet (MirrorSizeControls card, ticket 233): the Technique choice, Edit Frame, Fit to
  * drawing and Remove Frame, and the Frame's Estimated size with its warning as a Note (ticket 328). The Frame's size is
  * changed on the canvas, in Edit Frame (ticket 417), so there are no size steppers here. With no Frame it says what a
- * Frame is: one is made from a Selection or by Fit to drawing. While Row progress is on the Frame is locked and the
+ * Frame is: one is made from a Selection or by Fit to drawing. Once a Row progress pass is done the Frame is locked and the
  * reason is written under the controls.
  */
 const props = defineProps<{ project: Project }>()

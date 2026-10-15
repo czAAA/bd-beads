@@ -292,7 +292,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: { ...project, rowProgress: { enabled: true, direction: 'rows', currentRow: 5, currentColumn: 0 } } })
+      await wrapper.setProps({ project: { ...project, rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } } })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -317,16 +317,16 @@ describe('ProjectSurface', () => {
     expect(root.attributes('data-scroll-x')).toBe('-300')
   })
 
-  it('draws the Row progress marker on the overlay, and no marker while it is off', async () => {
-    const progress = (enabled: boolean): RowProgress => ({ enabled, direction: 'rows', currentRow: 2, currentColumn: 0 })
+  it('draws the Row progress marker on the overlay, and no marker when no bead is in the pass', async () => {
+    const progress: RowProgress = { direction: 'rows', currentRow: 2, currentColumn: 0 }
     // Only a cell that holds a bead is marked (ticket 411).
     const beads = { 2: { 0: '#e63746', 1: '#e63746' } }
 
-    await mountSurface(projectOf(20, 10, { beads, rowProgress: progress(false) }))
+    await mountSurface(projectOf(20, 10, { beads, rowProgress: { ...progress, currentRow: 0 } }))
     const without = context.named('stroke').length
 
     context.calls.length = 0
-    await mountSurface(projectOf(20, 10, { beads, rowProgress: progress(true) }))
+    await mountSurface(projectOf(20, 10, { beads, rowProgress: progress }))
     // The marker is one stroke: the rings round the beads in the pass (tickets 375, 376), over whatever else the overlay strokes.
     expect(context.named('stroke')).toHaveLength(without + 1)
   })
@@ -465,7 +465,7 @@ describe('ProjectSurface', () => {
       function weaving(): Project {
         const project = projectOf(20, 10)
         const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
-        return { ...painted, rowProgress: { enabled: true, direction: 'rows', currentRow: 2, currentColumn: 0 } }
+        return { ...painted, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
       }
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
       const finishedCentre = (project: Project) => centreOf(project, project.frame!.row, project.frame!.column)
@@ -524,7 +524,7 @@ describe('ProjectSurface', () => {
       })
 
       it('follows a finished column when the Row progress runs down the columns', async () => {
-        const project = { ...weaving(), rowProgress: { enabled: true, direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
+        const project = { ...weaving(), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
         const { wrapper } = await mountSurface(project)
         const surface = wrapper.find('[data-testid="project-surface"]')
 

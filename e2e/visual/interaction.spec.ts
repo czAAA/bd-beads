@@ -156,7 +156,7 @@ test.describe('the pointer tools', () => {
   test('finished rows are never touched, and the row being woven is', async ({ page }) => {
     const project = await openBlank(page, 'loom', false, {
       technique: 'loom',
-      rowProgress: { enabled: true, direction: 'rows', currentRow: 4 },
+      rowProgress: { direction: 'rows', currentRow: 4 },
     })
 
     for (const row of [1, 4]) {

@@ -178,6 +178,8 @@ export interface TourSnapshot {
   /** A copied block is armed to paste (the Select tool's paste projection). */
   pasteArmed: boolean
   rowProgress: RowProgress
+  /** Whether Row progress is on, which it is whenever the Project has a Frame (rowProgressOn). */
+  rowProgressOn: boolean
 }
 
 /** What a step remembers between looks that the app's state doesn't hold on its own. */
@@ -216,7 +218,8 @@ export function evaluateStep(step: TourStepId, snapshot: TourSnapshot, memo: Tou
       return { memo: { ...memo, sizeLeft }, done: !!sizeLeft && atTourSize(snapshot) && gridsEqual(snapshot.grid, afterStep(8)) }
     }
     case 'rows': {
-      const { enabled, currentRow } = snapshot.rowProgress
+      const { currentRow } = snapshot.rowProgress
+      const enabled = snapshot.rowProgressOn
       const reachedRow3 = memo.reachedRow3 || (enabled && currentRow >= 3)
       return { memo: { ...memo, reachedRow3 }, done: !!reachedRow3 && enabled && currentRow === 2 }
     }
@@ -319,8 +322,8 @@ export function tourTargets(step: TourStepId, snapshot: TourSnapshot, memo: Tour
     case 'size':
       return memo.sizeLeft || !atTourSize(snapshot) ? { control: 'undo' } : { control: 'size' }
     case 'rows': {
-      const { enabled, currentRow } = snapshot.rowProgress
-      if (!enabled) {
+      const { currentRow } = snapshot.rowProgress
+      if (!snapshot.rowProgressOn) {
         return { control: 'progress-switch' }
       }
       return { control: memo.reachedRow3 || currentRow >= 3 ? 'progress-previous' : 'progress-next' }

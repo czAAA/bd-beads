@@ -13,7 +13,7 @@ function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const frame = { row: 6, column: 5, rows: 4, columns: 3 }
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: frame.row + Math.floor(index / 3), column: frame.column + (index % 3), color: '#e63746' }))
-  return { ...project, technique, rotation, frame, beads: withColors(project.beads, cells), rowProgress: { enabled: true, direction: 'rows', currentRow: 2, currentColumn: 0 } }
+  return { ...project, technique, rotation, frame, beads: withColors(project.beads, cells), rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }
