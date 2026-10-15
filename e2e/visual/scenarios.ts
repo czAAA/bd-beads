@@ -89,7 +89,7 @@ export const SCENARIOS: Scenario[] = [
     overlaid: 'all',
   })),
 
-  // A paste preview: the copied block in its own colors under the pointer; arming Paste discards the Selection (ticket 415).
+  // A paste preview: the copied block in its own colors under the pointer; Copy arms paste mode and clears the Selection (ticket 437).
   ...perTechnique((technique) => ({
     name: `${technique}-paste-preview`,
     prepare: async (page, context) => {
