@@ -15,6 +15,7 @@ import { useColorPick } from '../../composables/tools/usePalette'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
+import { hasBeads } from '../../domain/canvas'
 import { resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -199,8 +200,8 @@ function techniqueWord(technique: Technique): string {
       <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
         <CanvasBackdrop v-if="activeProject && !framing" :word="techniqueWord(activeProject.technique)" />
 
-        <!-- How to move the canvas and its shortcuts: at 1024px and up (CanvasHint card). -->
-        <CanvasHint v-if="activeProject && !framing" class="app-shell__canvas-hint" />
+        <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads; not on a phone (CanvasHint card). -->
+        <CanvasHint v-if="activeProject && !framing && !hasBeads(activeProject.beads)" class="app-shell__canvas-hint" />
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
@@ -315,9 +316,8 @@ function techniqueWord(technique: Technique): string {
         </div>
       </div>
 
-      <!-- Short-lived results (ticket 76): bottom-right of the canvas box, above the Progress bar. -->
+      <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
       <ToastRegion
-        :class="{ 'app-shell__toasts--above-progress': activeProject && !framing }"
         :toasts="toasts"
         @dismiss="dismissToast"
       />
@@ -342,11 +342,6 @@ function techniqueWord(technique: Technique): string {
 </template>
 
 <style scoped>
-/* Toasts sit 16px above the Progress bar while it shows. */
-.app-shell__toasts--above-progress {
-  --toast-bottom: calc(var(--progress-height) + var(--space-16));
-}
-
 /*
  * "Tap to paste" and the Frame bar (tickets 295, 415; ContextBar card): the same bar, floating at the top-centre of the
  * drawing area over the beads, so it never takes a row and never reaches the Dock. The Selection bar is placed by its own
@@ -413,7 +408,7 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the bottom-left corner, and so is the context bar, which floats over the beads. */
+/* CanvasHint is excluded: it floats over the top-centre, and so is the context bar, which floats over the beads. */
 .app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar) {
   position: relative;
 }
@@ -459,9 +454,11 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* The phone layout has no wheel and no keyboard to hint at (CanvasHint card). */
-.app-shell__canvas-hint {
-  display: none;
+/* The phone layout has no wheel and no keyboard to hint at (CanvasHint card, ticket 429). */
+@media (max-width: 30rem) {
+  .app-shell__canvas-hint {
+    display: none;
+  }
 }
 
 </style>
