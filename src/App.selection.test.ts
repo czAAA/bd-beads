@@ -4,7 +4,7 @@ import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
-import { copySelection, openSheet, pickColor, pickTool } from './testUtils/dock'
+import { copySelection, pickColor, pickTool } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
@@ -45,9 +45,8 @@ describe('App select, copy and paste', () => {
 
     await pickTool(wrapper, 'select')
 
-    await openSheet(wrapper, 'dock-tool')
-    expect(wrapper.find('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="sheet-tool-paint"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="dock-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="dock-tool-paint"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('Piece selects the rectangle round the tapped bead\'s Piece, and a tap on empty space clears it (ticket 414)', async () => {
@@ -71,9 +70,7 @@ describe('App select, copy and paste', () => {
     await pickTool(wrapper, 'select-all')
 
     expect(selectedCount(wrapper)).toBe(16)
-    await openSheet(wrapper, 'dock-tool')
-    expect(wrapper.find('[data-testid="sheet-tool-select"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="sheet-tool-select-all"]').attributes('aria-pressed')).toBeUndefined()
+    expect(wrapper.find('[data-testid="dock-tool-select"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('keeps the Selection across Select and Piece, and drops it for any other tool (ticket 414)', async () => {

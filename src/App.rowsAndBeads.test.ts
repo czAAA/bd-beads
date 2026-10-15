@@ -18,7 +18,7 @@ beforeEach(() => {
 
 /** The Project sheet's Replace bead select, which opens the sheet for it and leaves it open. */
 async function replaceSelect(wrapper: ReturnType<typeof mount>) {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   return wrapper.get<HTMLSelectElement>('[data-testid="phone-replace-bead-select"]')
 }
 
@@ -275,7 +275,7 @@ describe('App bead quantities', () => {
     expect((await sheetRead(wrapper, 'quantity-count-red')).text).toBe('2')
     expect((await sheetRead(wrapper, 'quantity-count-blue')).text).toBe('1')
     expect((await sheetRead(wrapper, 'bead-quantities')).exists).toBe(true)
-    await openSheet(wrapper, 'dock-project')
+    await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 })
@@ -316,7 +316,7 @@ describe('App project transfer', () => {
   /** Picks the file in the import control the person has in reach: the project bar's with no Project open, the Project sheet's otherwise. */
   async function importFile(wrapper: ReturnType<typeof mount>, contents: string) {
     if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-      await openSheet(wrapper, 'dock-project')
+      await openSheet(wrapper, 'strip-project')
     }
     const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
     Object.defineProperty(input.element, 'files', {

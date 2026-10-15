@@ -35,7 +35,7 @@ const click = async (wrapper: Wrapper, testId: string) => {
 }
 /** The open Project's summary line, in the Project sheet (PhoneSheets card). */
 const openName = async (wrapper: Wrapper) => {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   return wrapper.find('[data-testid="phone-project-summary"]').text()
 }
 const names = () => loadProjects().map((project) => project.name).sort()

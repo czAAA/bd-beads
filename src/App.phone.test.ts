@@ -35,6 +35,15 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
+  it('has Menu alone in the strip, and none on the project-management bar, with no Project open (ticket 431)', async () => {
+    const wrapper = mount(App)
+    expect(wrapper.find('[data-testid="phone-bar-menu"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-item-overview"]').exists()).toBe(true)
+  })
+
   it('creates a Project from the phone project-management bar', async () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="phone-bar-new-project"]').trigger('click')
@@ -52,10 +61,9 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
 
     for (const [dockId, expectFound] of [
-      ['dock-tool', () => wrapper.find('[data-testid="sheet-tool-paint"]').exists()],
       ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
-      ['dock-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
-      ['dock-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
+      ['strip-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
+      ['strip-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
     ] as const) {
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(expectFound()).toBe(true)
@@ -68,7 +76,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     await wrapper.find('[data-testid="frame-edit"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
@@ -79,21 +87,19 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
   })
 
-  it('picks a tool from the Tool sheet and closes the sheet (ticket 397)', async () => {
+  it('picks a tool straight from the Dock, with no sheet in between (tickets 397, 431)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
 
-    await wrapper.find('[data-testid="sheet-tool-erase"]').trigger('click')
+    await wrapper.find('[data-testid="dock-tool-erase"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
-    expect(wrapper.find('[data-testid="sheet-tool-erase"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="dock-tool-erase"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="dock-tool"]').exists()).toBe(false)
   })
 
   it('closes the Colour sheet on a Palette color and on the first Custom color picked, and leaves Fill active (ticket 397)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
-    await wrapper.find('[data-testid="sheet-tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="dock-tool-fill"]').trigger('click')
 
     await wrapper.find('[data-testid="dock-color"]').trigger('click')
     await wrapper.get('[data-testid="bottom-sheet"] [data-color-id="blue"]').trigger('click')
@@ -106,13 +112,12 @@ describe('App at the phone tier (ticket 79)', () => {
     // The first pick is the answer (ticket 398): it selects, joins the Palette and closes the sheet.
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="dock-tool"]').trigger('click')
-    expect(wrapper.find('[data-testid="sheet-tool-fill"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="dock-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
   it('keeps Rotate, Copy and Paste off the Project sheet: they are on the Selection bar (tickets 415, 416)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     expect(wrapper.find('[data-testid="sheet-paste"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="sheet-copy"]').exists()).toBe(false)
@@ -121,7 +126,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('changes the Technique from the Project sheet as one Undo step (ticket 351)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
 
     await wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
@@ -159,7 +164,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.get('[data-testid="strip-redo"]').trigger('click')
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
@@ -179,7 +184,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('shows the Project sheet\'s Save box for the open Project', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const sheet = wrapper.find('[data-testid="bottom-sheet"]')
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(true)
@@ -188,7 +193,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const btn = wrapper.find('[data-testid="phone-saved-projects-button"]')
     expect(btn.attributes('disabled')).toBeUndefined()
@@ -204,7 +209,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('exports a Project file and the whole library from the Saved Projects sheet (ticket 385)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
 
     // Scoped to the Saved Projects sheet, the last one rendered: another ProjectList has its own panel-expand too.
@@ -224,11 +229,11 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = mount(App)
     // Create two projects so a second one can be selected.
     await createProjectViaForm(wrapper)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-new-project-button"]').trigger('click')
     await createProjectViaPhoneSheet(wrapper)
     // Now two projects saved; open the project sheet and the saved-projects drawer.
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
     await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
 
     // The saved-projects sheet is the last bottom-sheet rendered; scope the click to it so
@@ -244,7 +249,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('shows the open Project\'s name, size and save state in the Project sheet (ticket 295)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
     expect(sheet.get('[data-testid="phone-project-summary"]').text()).not.toBe('')
@@ -254,7 +259,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
   it('opens the Menu from the Dock with language, theme, Name on exports, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-menu"]').trigger('click')
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
     expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)

@@ -11,7 +11,7 @@ import { findTextMisfits } from '../support/textFit'
 import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-const PHONE_SHEETS = ['dock-tool', 'dock-color', 'dock-project', 'dock-menu']
+const PHONE_SHEETS = ['dock-color', 'strip-project', 'strip-menu']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -64,7 +64,7 @@ async function click(page: Page, testid: string): Promise<void> {
 const TOUR_SCREEN: Screen = {
   name: 'Tour',
   visit: async (page, measure) => {
-    await click(page, 'dock-menu')
+    await click(page, 'strip-menu')
     await click(page, 'menu-item-tour')
     for (let step = 1; step <= 20; step += 1) {
       await page.getByTestId('tour-card').waitFor()
@@ -88,10 +88,8 @@ const SCREENS: Screen[] = [
     // Selection (ADR 0042, pen mode decides per pointer), so this has to run first.
     name: 'selection',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'sheet-tool-select'))) return false
-      await click(page, 'sheet-tool-select')
-      // On the phone the tool sheet is still open over the canvas.
-      if (await shown(page, 'sheet-close')) await click(page, 'sheet-close')
+      if (!(await shown(page, 'dock-tool-select'))) return false
+      await click(page, 'dock-tool-select')
       const box = await vis(page, 'project-surface').boundingBox()
       if (!box) return false
       await page.mouse.move(box.x + 40, box.y + 40)

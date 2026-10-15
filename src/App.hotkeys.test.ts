@@ -78,7 +78,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: '2' })
 
-    expect((await toolState(wrapper, 'fill')).pressed).toBe(true)
+    expect(toolState(wrapper, 'fill').pressed).toBe(true)
   })
 
   it('Escape switches Fill back to Paint', async () => {
@@ -87,7 +87,7 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'Escape' })
 
-    expect((await toolState(wrapper, 'paint')).pressed).toBe(true)
+    expect(toolState(wrapper, 'paint').pressed).toBe(true)
   })
 
   it('Shift+a color key switches to Paint and paints with that Palette color', async () => {
@@ -97,7 +97,7 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ code: 'Digit2', shiftKey: true })
     await click(wrapper, 0)
 
-    expect((await toolState(wrapper, 'paint')).pressed).toBe(true)
+    expect(toolState(wrapper, 'paint').pressed).toBe(true)
     expect(firstCellColor()).not.toBeNull()
     expect(firstCellColor()).not.toBe('#e63746') // not the default red
   })

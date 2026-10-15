@@ -5,26 +5,30 @@ import { chooseLanguage } from './chooseLanguage'
 
 type Wrapper = ReturnType<typeof mount>
 
-type DockSheet = 'dock-tool' | 'dock-color' | 'dock-project' | 'dock-menu'
+type DockSheet = 'dock-color' | 'strip-project' | 'strip-menu'
 
 /**
- * Opens one of the Dock's sheets (Dock card): its Dock button toggles, so a sheet that is already open is left alone and
- * a different open one is replaced by the press.
+ * Opens one of the sheets (Dock, CanvasStrip cards): the Dock's Colour button or the strip's Menu or Project button
+ * toggles, so a sheet that is already open is left alone and a different open one is replaced by the press.
  */
 export async function openSheet(wrapper: Wrapper, dock: DockSheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const sheetOpen = wrapper.find('[data-testid="bottom-sheet"]').exists()
-  if (!sheetOpen || !button.classes().includes('icon-btn--selected')) {
+  if (!sheetOpen || button.attributes('aria-pressed') !== 'true') {
     await button.trigger('click')
   }
 }
 
-/** Picks a Tool through the Dock's Tool sheet (ToolTiles card), opening the sheet first when it is not showing. */
+/**
+ * Picks a Tool with its Dock tile, or presses the Context bar's Select all (ticket 431: neither is behind a sheet).
+ * Select all shows only with the Select tool, so that is picked first when its button is not up.
+ */
 export async function pickTool(wrapper: Wrapper, tool: Tool | 'select-all'): Promise<void> {
-  if (!wrapper.find(`[data-testid="sheet-tool-${tool}"]`).exists()) {
-    await openSheet(wrapper, 'dock-tool')
+  if (tool === 'select-all' && !wrapper.find('[data-testid="context-bar-select-all"]').exists()) {
+    await pickTool(wrapper, 'select')
   }
-  await wrapper.get(`[data-testid="sheet-tool-${tool}"]`).trigger('click')
+  const testid = tool === 'select-all' ? 'context-bar-select-all' : `dock-tool-${tool}`
+  await wrapper.get(`[data-testid="${testid}"]`).trigger('click')
 }
 
 /** Picks a palette color through the Dock's Color sheet (PalettePicker card), opening the sheet first when it is not showing. */
@@ -49,7 +53,7 @@ export async function openNewProject(wrapper: Wrapper): Promise<void> {
     await bar.trigger('click')
     return
   }
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   await wrapper.get('[data-testid="phone-new-project-button"]').trigger('click')
 }
 
@@ -64,23 +68,18 @@ export async function rotate(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
 }
 
-/** Presses Delete all in the Tool sheet, which opens first; the confirmation it raises is the caller's. */
+/** Presses Delete all at the bottom of the Project sheet, which opens first; the confirmation it raises is the caller's. */
 export async function deleteAll(wrapper: Wrapper): Promise<void> {
   if (!wrapper.find('[data-testid="sheet-delete-all"]').exists()) {
-    await openSheet(wrapper, 'dock-tool')
+    await openSheet(wrapper, 'strip-project')
   }
   await wrapper.get('[data-testid="sheet-delete-all"]').trigger('click')
 }
 
-/** Picks a language from the Menu sheet's switcher (ticket 368): the sheet opens first, from the Dock or the project bar. */
+/** Picks a language from the Menu sheet's switcher (ticket 368): the sheet opens first, from the strip's Menu button. */
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
   if (!wrapper.find('[data-testid="language-switcher"]').exists()) {
-    const bar = wrapper.find('[data-testid="phone-bar-menu"]')
-    if (bar.exists()) {
-      await bar.trigger('click')
-    } else {
-      await openSheet(wrapper, 'dock-menu')
-    }
+    await openSheet(wrapper, 'strip-menu')
   }
   await chooseLanguage(wrapper, locale)
 }
@@ -90,17 +89,14 @@ export async function openSavedProjects(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="project-list"]').exists()) {
     return
   }
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   await wrapper.get('[data-testid="phone-saved-projects-button"]').trigger('click')
 }
 
-/** Whether a Tool tile shows lit, read from the Tool sheet, which opens for it and closes again (a key waits while one is open). */
-export async function toolState(wrapper: Wrapper, tool: Tool): Promise<{ pressed: boolean; selected: boolean }> {
-  await openSheet(wrapper, 'dock-tool')
-  const tile = wrapper.get(`[data-testid="sheet-tool-${tool}"]`)
-  const state = { pressed: tile.attributes('aria-pressed') === 'true', selected: tile.classes().includes('icon-btn--selected') }
-  await wrapper.get('[data-testid="sheet-close"]').trigger('click')
-  return state
+/** Whether a Tool's Dock tile shows lit. */
+export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; selected: boolean } {
+  const tile = wrapper.get(`[data-testid="dock-tool-${tool}"]`)
+  return { pressed: tile.attributes('aria-pressed') === 'true', selected: tile.classes().includes('icon-btn--selected') }
 }
 
 /**
@@ -108,7 +104,7 @@ export async function toolState(wrapper: Wrapper, tool: Tool): Promise<{ pressed
  * the canvas that follows is not swallowed by it.
  */
 export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
-  await openSheet(wrapper, 'dock-project')
+  await openSheet(wrapper, 'strip-project')
   const element = wrapper.find(`[data-testid="${testId}"]`)
   const read = { exists: element.exists(), text: element.exists() ? element.text() : '' }
   await wrapper.get('[data-testid="sheet-close"]').trigger('click')
