@@ -4,7 +4,6 @@ import App from './App.vue'
 import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { en } from './i18n/en'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { openSheet, pickColor } from './testUtils/dock'
 
@@ -76,26 +75,6 @@ describe('drawing anywhere', () => {
     expect(beadColor(reloaded, { row: -30, column: -12 })).toBe(RED)
   })
 
-  it('reads "Canvas · 2 Pieces · no Frame" on the strip, and counts a bead joined to a piece as the same piece', async () => {
-    saveProjects([unframedProject()])
-    const wrapper = mountApp()
-    await flushPromises()
-
-    expect(wrapper.find('[data-testid="canvas-strip-title"]').text()).toBe(en.canvas.canvasTitle)
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
-
-    await pickColor(wrapper, 'red')
-    await pressBead(wrapper, { row: 5, column: 5 })
-    await wrapper.trigger('mouseup')
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('3 Pieces · no Frame')
-
-    // A bead between two pieces joins them: (10, 10) and (5, 5) are bridged by painting a path.
-    for (let step = 6; step <= 9; step += 1) {
-      await pressBead(wrapper, { row: step, column: step })
-      await wrapper.trigger('mouseup')
-    }
-    expect(wrapper.find('[data-testid="canvas-strip-size"]').text()).toBe('2 Pieces · no Frame')
-  })
 })
 
 describe('the Hand tool', () => {
@@ -122,7 +101,7 @@ describe('the Hand tool', () => {
     expect(Number(root.attributes('data-scroll-x'))).toBe(startX + 30)
     expect(JSON.stringify(loadProjects()[0]!.beads)).toBe(before)
     expect(previewedBeads(wrapper)).toEqual([])
-    expect(wrapper.find('[data-testid="zoom-pill-undo"]').attributes('aria-disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
   })
 })
 

@@ -78,7 +78,7 @@ describe('App finished rows', () => {
   }
 
   function undoDisabled(wrapper: ReturnType<typeof mount>) {
-    return wrapper.find<HTMLButtonElement>('[data-testid="zoom-pill-undo"]').attributes('aria-disabled') === 'true'
+    return wrapper.find<HTMLButtonElement>('[data-testid="strip-undo"]').attributes('aria-disabled') === 'true'
   }
 
   it('will not paint a bead in a finished row, and records no undo step for trying', async () => {
@@ -99,7 +99,7 @@ describe('App finished rows', () => {
     await wrapper.trigger('mouseup')
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
     expect(colorAt(0, 4)).toBeNull()
   })
@@ -158,9 +158,9 @@ describe('App delete all', () => {
 
     await deleteAll(wrapper)
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="zoom-pill-undo"]').attributes('aria-disabled') === 'true').toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="strip-undo"]').attributes('aria-disabled') === 'true').toBe(false)
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
     expect(frameGrid(loadedProject())[0]![4]!.color).toBe('#e63746')
     expect(loadedProject().rowProgress).toEqual({
@@ -235,9 +235,9 @@ describe('App replace bead', () => {
 
     await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(wrapper.find<HTMLButtonElement>('[data-testid="zoom-pill-undo"]').attributes('aria-disabled') === 'true').toBe(false)
+    expect(wrapper.find<HTMLButtonElement>('[data-testid="strip-undo"]').attributes('aria-disabled') === 'true').toBe(false)
 
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
     expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
     expect(loadedProject().frame!.columns).toBe(10)
@@ -250,7 +250,7 @@ describe('App replace bead', () => {
       currentColumn: 0,
     })
 
-    await wrapper.find('[data-testid="zoom-pill-redo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-redo"]').trigger('click')
 
     expect(loadedProject().beadId).toBe('toho-round-11-0')
     expect(loadedProject().frame!.columns).toBe(10)

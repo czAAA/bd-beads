@@ -59,7 +59,7 @@ describe('the Project from the keyboard (ticket 159)', () => {
 
     expect(colorAt(0, 1)).toBe('#2f6fed')
     expect(await heard(wrapper)).toBe('Painted Blue')
-    await wrapper.find('[data-testid="zoom-pill-undo"]').trigger('click')
+    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
     expect(colorAt(0, 1)).toBeNull()
   })
 
@@ -68,7 +68,6 @@ describe('the Project from the keyboard (ticket 159)', () => {
     await focusProject(wrapper)
     await key(wrapper, 'ArrowDown')
 
-    expect(wrapper.find('[data-testid="canvas-strip-hint"]').exists()).toBe(true)
     expect(document.activeElement).toBe(surface(wrapper).element)
     // The surface is handed the cursor, and the rulers mark its row and column (drawn on the canvas, from this).
     expect(wrapper.findComponent(ProjectSurface).props('cursor')).toEqual({ row: 1, column: 0 })

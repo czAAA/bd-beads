@@ -68,7 +68,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Icons v2 (61 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
-One layout (ticket 412): the app has the Dock layout at every width (ADR 0046). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `Dock`, `ToolSheet` and `ZoomPill` cards say where their controls live now. The `Toolbox` card is kept as the record of the v18 rail.
+One layout (ticket 412): the app has the Dock layout at every width (ADR 0046). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `Dock`, `ToolSheet` and `CanvasStrip` cards say where their controls live now. The `Toolbox` card is kept as the record of the v18 rail.
 
 ### 3.1 Old section numbers
 
@@ -87,7 +87,7 @@ Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve he
 | §4 | Layout | README, Layout; `responsive.md`; `ScreenSizes` card |
 | §4.1 | Header | `Header`, `BeadPill`, `OverflowMenu` cards |
 | §4.2 | Left column | `Toolbox`, `SaveBox`, `BeadsNeeded`, `SavedPatterns` cards |
-| §4.3 | Canvas box | `CanvasStrip`, `ZoomPill`, `BeadBoard`, `ProgressBar` cards |
+| §4.3 | Canvas box | `CanvasStrip`, `BeadBoard`, `ProgressBar` cards |
 | §4.4 | Background highlight | `BeadBoard` card; `word` and `curve` tokens |
 | §5 | Components | the component cards |
 | §5.1 | Buttons and selects | `Button`, `InteractionStates` cards; `interaction-and-motion.md` |

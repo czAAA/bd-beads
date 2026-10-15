@@ -24,14 +24,23 @@ describe('App shell, the Dock layout (ticket 383, ADR 0046; the only layout sinc
     expect(wrapper.find('[data-testid="app-main-panel"]').exists()).toBe(false)
   })
 
-  it('keeps the strip to the title, size line and Canvas color picker, with no zoom buttons or Rulers toggle', async () => {
+  it('holds Rulers, Undo, Redo, zoom out, level, zoom in, Fit and Canvas color in that order, with no title, size line or hint (ticket 425)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const strip = wrapper.get('[data-testid="canvas-strip"]')
-    expect(strip.find('[data-testid="canvas-strip-title"]').exists()).toBe(true)
-    expect(strip.find('[data-testid="canvas-strip-size"]').exists()).toBe(true)
-    expect(strip.find('[data-testid="canvas-color-button"]').exists()).toBe(true)
-    expect(strip.find('[data-testid="rulers-toggle"]').exists()).toBe(false)
-    expect(strip.find('[data-testid="zoom-in"]').exists()).toBe(false)
+    const order = strip.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
+    expect(order.filter((id) => ['strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset', 'canvas-color-button'].includes(id!))).toEqual([
+      'strip-rulers',
+      'strip-undo',
+      'strip-redo',
+      'zoom-out',
+      'zoom-level',
+      'zoom-in',
+      'zoom-reset',
+      'canvas-color-button',
+    ])
+    for (const gone of ['canvas-strip-title', 'canvas-strip-size', 'canvas-strip-hint']) expect(strip.find(`[data-testid="${gone}"]`).exists()).toBe(false)
+    expect(strip.find('svg[data-icon="grid"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="zoom-pill"]').exists()).toBe(false)
   })
 
   it('leaves the Canvas color picker out of the Project sheet header', async () => {

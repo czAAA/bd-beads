@@ -4,7 +4,6 @@ import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
-import type { ZoomPillPlacement } from '../../domain/zoomPillPlacement'
 import type { GridPosition } from '../../domain/grid'
 import { selectionFrame, selectionHoldsAllBeads, type Selection } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -145,12 +144,8 @@ function wireAppShell(services: Services) {
   /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
   const { inputMode, inputModeAvailable, toggleInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
 
-  /** Where the Zoom pill rests under 1024px (tickets 297, 321). */
-  const zoomPillPlacement = services.devicePreferences.get('zoomPillPlacement')
-  const setZoomPillPlacement = (placement: ZoomPillPlacement) => void (zoomPillPlacement.value = placement)
-
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripSize, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripZoomPercent } =
     useCanvasFraming({
       currentProject,
       framing: () => framing.value,
@@ -485,7 +480,7 @@ function wireAppShell(services: Services) {
     colorWords,
   })
 
-  const { beadCursor, keyboardOnProject, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor } = useKeyboardCursor({
+  const { beadCursor, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor } = useKeyboardCursor({
     currentProject,
     reveal,
     hasSelection: () => !!selection.value,
@@ -765,8 +760,6 @@ function wireAppShell(services: Services) {
     toggleInputMode,
     inputModeAvailable,
     surfaceInputMode,
-    zoomPillPlacement,
-    setZoomPillPlacement,
     panBy,
     scrollBy,
     setZoom,
@@ -774,7 +767,6 @@ function wireAppShell(services: Services) {
     zoomOut,
     resetZoom,
     zoomPercent,
-    stripSize,
     stripZoomPercent,
     spaceHeld,
     spacePanning,
@@ -826,7 +818,6 @@ function wireAppShell(services: Services) {
     onCellHover,
     onHoverEnd,
     beadCursor,
-    keyboardOnProject,
     cursorShown,
     onProjectKeyboardFocus,
     onProjectKey: unlessTourLocks(onProjectKey),
