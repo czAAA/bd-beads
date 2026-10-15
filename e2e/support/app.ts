@@ -96,9 +96,9 @@ export async function openNewProjectForm(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** The zoom readout, wherever it is: the Zoom pill normally, or the Canvas strip's own cluster while framing, which the pill excludes (ticket 385). */
+/** The zoom readout in the Canvas strip's cluster (the framing step shows its own there too). */
 function zoomControl(page: Page, part: 'level' | 'in' | 'out'): Locator {
-  return page.getByTestId(`zoom-pill-${part}`).or(page.getByTestId(`zoom-${part}`))
+  return page.getByTestId(`zoom-${part}`)
 }
 
 /** The zoom level on screen right now, in percent. */

@@ -46,7 +46,6 @@ export const be: Translations = {
     canvasLabel: '{name}, вольнае палатно без рамкі, {colors}',
     colorsCount: { one: '{count} колер', few: '{count} колеры', many: '{count} колераў', other: '{count} колеру' },
     progressDone: 'гатова радоў: {row} з {total}',
-    keyboardHint: 'стрэлкі рухаюць · прабел малюе · esc выхад',
     closeMessage: 'Закрыць',
     expandPanel: 'Паказаць усё',
     collapsePanel: 'Паказаць менш',
@@ -88,12 +87,6 @@ export const be: Translations = {
     zoomInLabel: 'Павялічыць',
     zoomOutLabel: 'Паменшыць',
     zoomResetLabel: 'Упісаць',
-    zoomPillMovedAnnouncement: 'Кнопкі маштабу перамешчаны',
-    stripTitle: 'Схема',
-    widthSize: 'Шырыня {count}',
-    heightSize: 'Вышыня {count}',
-    canvasTitle: 'Палатно',
-    piecesCount: { one: '{count} кавалачак', few: '{count} кавалачкі', many: '{count} кавалачкаў', other: '{count} кавалачка' },
     noFrame: 'без рамкі',
     rulersLabel: 'Лінейкі',
     canvasColor: {
@@ -448,7 +441,6 @@ export const be: Translations = {
       many: '{count} кавалачкаў былі ў полі рамкі і перамешчаны за яго межы.',
       other: '{count} кавалачка былі ў полі рамкі і перамешчаны за яго межы.',
     },
-    keyboardHint: 'стрэлкі рухаюць рамку · Shift і стрэлкі змяняюць памер · Enter: гатова',
   },
   size: {
     estimateLabel: 'Прыблізны памер',

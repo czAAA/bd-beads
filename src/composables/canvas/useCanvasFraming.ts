@@ -26,9 +26,6 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
-  /** The canvas strip's size meta while a picture is being framed: the Project it will make. Otherwise the strip describes the open Project itself. */
-  const stripSize = computed(() => deps.framing()?.dimensions)
-
   /** The strip's zoom level: framing's own while framing, the Project's otherwise, none with nothing on the board. */
   const stripZoomPercent = computed(() =>
     deps.framing() ? deps.convertZoomPercent() : deps.currentProject() ? zoomPercent.value : undefined,
@@ -54,7 +51,6 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     centreOn,
     reveal,
     zoomPercent,
-    stripSize,
     stripZoomPercent,
   }
 }
