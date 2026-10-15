@@ -37,7 +37,9 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(wrapper.find('[data-testid="context-bar-hint"]').attributes('aria-label')).toBe('Tap where to paste')
 
     await wrapper.find('[data-testid="context-bar-cancel"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+    // Select is still active, so the bar stays with Select all alone (ticket 428), without a Selection's readout.
+    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(true)
   })
 
   it('removes the selected line through the registry\'s Remove line command', async () => {
@@ -50,7 +52,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
 
     await wrapper.find('[data-testid="context-bar-remove-line"]').trigger('click')
     // A removed line shifts the grid up by one row; the Selection no longer applies (cleared by the command).
-    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
   })
 
   it('sits inside the drawing area, above the Selection when there is room', async () => {

@@ -82,7 +82,12 @@ export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridP
   return { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }
 }
 
-/** The Selection Select all makes (ticket 414): the rectangle round every placed bead, or none on an empty canvas. */
+/** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle round every placed bead, or none on an empty canvas. */
+export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Selection | undefined {
+  return frame ? { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns } : allBeadsSelection(beads)
+}
+
+/** The rectangle round every placed bead (ticket 414), or none on an empty canvas. */
 export function allBeadsSelection(beads: BeadMap): Selection | undefined {
   const bounds = beadBounds(beads)
   return bounds ? selectionOfBox(bounds) : undefined
