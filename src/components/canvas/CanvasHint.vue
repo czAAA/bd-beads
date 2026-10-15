@@ -51,6 +51,13 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
   pointer-events: none;
 }
 
+/* A phone has no wheel and no keyboard to hint at (CanvasHint card); the width is controls.css's phone width. */
+@media (max-width: 30rem) {
+  .canvas-hint {
+    display: none;
+  }
+}
+
 .canvas-hint__dot {
   margin: 0 var(--space-4);
 }

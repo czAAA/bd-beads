@@ -455,11 +455,4 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* The phone layout has no wheel and no keyboard to hint at (CanvasHint card, ticket 429). */
-@media (max-width: 30rem) {
-  .app-shell__canvas-hint {
-    display: none;
-  }
-}
-
 </style>
