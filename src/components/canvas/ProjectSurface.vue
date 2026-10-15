@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { mayPlace } from '../../domain/margin'
+import { inMargin, mayPlace } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import { selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -64,6 +64,8 @@ const props = defineProps<{
   markerHidden?: boolean
   /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
+  /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
+  selectionBlocksMargin?: boolean
   /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped marker, and the Selection shows its handles. */
   selecting?: boolean
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead marker give way, and a chip by the pointer shows the color of the bead under it. */
@@ -660,8 +662,15 @@ watch(
   },
 )
 
+/** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket 428). */
+function refusesSelectionStart(bead: GridPosition): boolean {
+  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
+}
+
 function refusesMargin(bead: GridPosition | undefined): boolean {
-  return props.blocksMargin === true && bead !== undefined && !mayPlace(props.project, bead)
+  if (bead === undefined) return false
+  if (refusesSelectionStart(bead)) return true
+  return props.blocksMargin === true && !mayPlace(props.project, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -759,6 +768,7 @@ function onPointerDown(event: PointerEvent): void {
   // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
   if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
     refusePress()
+    if (refusesSelectionStart(bead)) return
   }
 
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.

@@ -148,7 +148,9 @@ describe('App', () => {
     await wrapper.trigger('mouseup')
     const beforeRotate = loadProjects()[0]!
 
-    await pickTool(wrapper, 'select-all')
+    await pickTool(wrapper, 'piece') // a tap on the strip selects its rectangle (Select all would take the Frame's inside, ticket 428)
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
     await rotate(wrapper)
 
     const afterRotate = loadProjects()[0]!
