@@ -10,7 +10,8 @@ import { useI18n } from '../../i18n/useI18n'
 
 /**
  * Edit Frame's margin steppers (ticket 417, ADR 0054, ticket 427): a mini −/+ on each of the Frame's four edges, in the
- * margin between the ruler numbers and its outer edge, clamped inside the canvas box. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
+ * margin between the ruler numbers and its outer edge, clamped inside the canvas box,
+ * shrinking with the zoom and gone once the rulers drop below every 5th number. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
  * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
  * pixels), so they track pan and zoom. Rendered only while the Frame is being edited, never for a Selection.
  */
@@ -32,7 +33,7 @@ const centres = computed(() => frameStepperCentres(props.anchor, touch.value))
 
 function pairStyle(edge: FrameEdge) {
   const { x, y } = centres.value[edge]
-  return { left: `${x}px`, top: `${y}px` }
+  return { left: `${x}px`, top: `${y}px`, '--stepper-scale': String(props.anchor.scale) }
 }
 </script>
 
@@ -85,9 +86,9 @@ function pairStyle(edge: FrameEdge) {
 }
 
 .edit-frame-steppers :deep(.edit-frame-steppers__button) {
-  width: var(--selbar-height);
+  width: calc(var(--selbar-height) * var(--stepper-scale, 1));
   min-width: 0;
-  height: var(--selbar-height);
+  height: calc(var(--selbar-height) * var(--stepper-scale, 1));
   padding: 0;
   font: var(--type-control);
   border-radius: var(--radius-sm);
@@ -95,8 +96,8 @@ function pairStyle(edge: FrameEdge) {
 
 @media (pointer: coarse) {
   .edit-frame-steppers :deep(.edit-frame-steppers__button) {
-    width: var(--selbar-height-touch);
-    height: var(--selbar-height-touch);
+    width: calc(var(--selbar-height-touch) * var(--stepper-scale, 1));
+    height: calc(var(--selbar-height-touch) * var(--stepper-scale, 1));
   }
 }
 </style>
