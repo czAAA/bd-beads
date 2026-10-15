@@ -255,8 +255,6 @@ export const uk: Translations = {
     label: 'Дії з виділенням',
     clearButton: 'Зняти виділення',
     moreLabel: 'Ще',
-    pasteHint: 'Натисніть, куди вставити',
-    cancelButton: 'Скасувати',
   },
   palette: {
     pickerLabel: 'Кольори палітри',
@@ -287,6 +285,8 @@ export const uk: Translations = {
     selectHint: 'Обведіть область, потім скопіюйте й вставте її.',
     handHint: 'Перетягуйте, щоб рухатися полотном.',
     copyButton: 'Копіювати',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'У виділенні немає намистин для копіювання.',
     cutButton: 'Вирізати',
     saveButton: 'Зберегти',
     savedConfirmation: 'Збережено',

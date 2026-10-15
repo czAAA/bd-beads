@@ -5,6 +5,7 @@ import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { copySelection, pickColor, pickTool } from './testUtils/dock'
+import { ru } from './i18n/ru'
 
 beforeEach(() => {
   localStorage.clear()
@@ -304,5 +305,48 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     await flushPromises()
 
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
+  })
+
+  it('Copy of a Selection with no drawn bead says so, copies nothing and keeps the Selection (ticket 437)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1])
+
+    await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
+
+    expect(wrapper.text()).toContain(ru.tools.copyNothingMessage)
+    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
+  })
+
+  it('a drag in paste mode is one stamp at the press point and selects nothing (ticket 437)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0) // (0,0)
+    await pickColor(wrapper, 'blue')
+    await click(wrapper, 5) // (1,1)
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1, 5])
+    await copySelection(wrapper)
+
+    await drag(wrapper, [10, 11, 17]) // pressed on (2,2)
+
+    expect(selectedBeadCount(wrapper)).toBe(0)
+    const grid = frameGrid(loadProjects()[0]!)
+    expect(grid[2]![2]!.color).toBe('#e63746')
+    expect(grid[3]![3]!.color).toBe('#2f6fed')
+  })
+
+  it('Ctrl/Cmd+V while paste mode is off pastes and turns it back on (ticket 437)', async () => {
+    const wrapper = await mountWithProject(6, 6)
+    await projectWithCopiedCell(wrapper)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    await hoverCell(wrapper, 10)
+
+    pasteAtHoveredCell()
+    await flushPromises()
+
+    expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
+    expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(false)
   })
 })

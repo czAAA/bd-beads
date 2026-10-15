@@ -254,8 +254,6 @@ export const zh: Translations = {
     label: '选区操作',
     clearButton: '清除选区',
     moreLabel: '更多',
-    pasteHint: '点击要粘贴的位置',
-    cancelButton: '取消',
   },
   palette: {
     pickerLabel: '调色板颜色',
@@ -286,6 +284,8 @@ export const zh: Translations = {
     selectHint: '拖动标出一个区域，然后复制和粘贴。',
     handHint: '拖动以在画布上移动。',
     copyButton: '复制',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: '所选区域内没有可复制的珠子。',
     cutButton: '剪切',
     saveButton: '保存',
     savedConfirmation: '已保存',

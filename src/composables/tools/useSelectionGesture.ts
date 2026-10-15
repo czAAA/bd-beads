@@ -63,13 +63,13 @@ export function useSelectionGesture(
    */
   const copiedBlock = ref<CopiedBlock | undefined>()
   /**
-   * Hides the paste projection (the live preview plus click-to-stamp gesture, both Select-tool-only) without
-   * touching copiedBlock itself (ticket 92, ADR 0016): set on leaving Select or on Escape/right-click (see
-   * leaveSelectTool/cancel), and only cleared by a new Copy or a new Selection (see pasteProjectionActive) --
-   * switching back to Select alone does not revive it.
+   * Leaves paste mode (the live preview plus stamp gesture, both Select-tool-only) without touching copiedBlock
+   * itself (ticket 92, ADR 0016): set on leaving Select, on Escape/right-click (see leaveSelectTool/cancel) and on
+   * touch by Undo or a second tap on Select. A new Copy or Ctrl/Cmd+V re-arms it (ticket 437, ADR 0057) --
+   * switching back to Select alone does not.
    */
   const pasteDismissed = ref(false)
-  /** Whether Select should show the live paste preview and treat a click-in-place as a stamp (ticket 92) -- copiedBlock present and not dismissed. */
+  /** Paste mode (ticket 437): Select shows the live paste preview and a click or drag stamps -- copiedBlock present and not dismissed. */
   const pasteProjectionActive = computed(() => !!copiedBlock.value && !pasteDismissed.value)
 
   /**
@@ -121,19 +121,21 @@ export function useSelectionGesture(
     }
 
     press.moved = true
+    // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0057).
+    if (pasteProjectionActive.value) return false
     dropClipboard()
     const reached = clampOutOfMargin(project.frame, press.anchor, { row, column })
     selection.value = selectionBetween(press.anchor, reached)
     return reached.row === row && reached.column === column
   }
 
-  /** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
+  /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag has already updated the Selection as it went. */
   function endPress() {
     const project = currentProject()
     const press = selectPress.value
     selectPress.value = null
 
-    if (!project || !press || press.moved || !pasteProjectionActive.value) {
+    if (!project || !press || !pasteProjectionActive.value) {
       return
     }
 
@@ -262,32 +264,40 @@ export function useSelectionGesture(
     dismissPaste()
   }
 
-  /**
-   * Snapshots the Selection into the in-session clipboard and keeps the Selection (ticket 415, ADR 0051, reversing
-   * ticket 49). Copy does not arm Paste: that is armPaste's job, so the Selection can still be cut, filled or cleared.
-   */
-  function copy() {
+  /** Snapshots the Selection's drawn beads into the clipboard; false, changing nothing, when it holds none (ticket 437). */
+  function snapshotSelection(): boolean {
     const project = currentProject()
-    if (!project || !selection.value) {
-      return
-    }
-
-    copiedBlock.value = copySelection(project, selection.value)
-    pasteDismissed.value = true
+    if (!project || !selection.value) return false
+    const block = copySelection(project, selection.value)
+    if (!block) return false
+    copiedBlock.value = block
+    return true
   }
 
-  /** Cut (ticket 415, Ctrl+X): Copy, then empty the Selection as one Undo step; the Selection is kept. */
+  /**
+   * Copy (ticket 437, ADR 0057, reversing ticket 415): keeps only the drawn beads and arms paste mode at once, so the
+   * Selection is cleared and one stamp lands the first drawn bead on the clicked cell. Returns whether anything was
+   * copied: false for a Selection with no drawn bead, which the app shell turns into a Message.
+   */
+  function copy(): boolean {
+    if (!snapshotSelection()) return false
+    selection.value = undefined
+    pasteDismissed.value = false
+    return true
+  }
+
+  /** Cut (ticket 415, Ctrl+X): copies the drawn beads without arming paste mode, then empties the Selection as one Undo step; the Selection is kept. */
   function cut() {
     if (!selection.value) return
-    copy()
+    if (snapshotSelection()) pasteDismissed.value = true
     deleteSelection()
   }
 
-  /** Arms Paste (ticket 415): the copied block follows the pointer and a tap stamps it, and the Selection is discarded. Nothing with nothing copied. */
-  function armPaste() {
-    if (!copiedBlock.value) return
+  /** Re-arms paste mode (ADR 0057) on the kept clipboard; false with nothing copied. */
+  function armPaste(): boolean {
+    if (!copiedBlock.value) return false
     pasteDismissed.value = false
-    selection.value = undefined
+    return true
   }
 
   /**
@@ -314,6 +324,7 @@ export function useSelectionGesture(
     }
 
     const block = copiedBlock.value
+    pasteDismissed.value = false
     edit('drawing', (current) => mirroredPasteBlock(current, block, cell, mirrorAxisCounts(), mirrorCopyMode()))
     return true
   }
@@ -382,6 +393,7 @@ export function useSelectionGesture(
     copy,
     cut,
     armPaste,
+    dismissPaste,
     fill,
     pasteAt,
     deleteSelection,

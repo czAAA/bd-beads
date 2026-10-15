@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
-import { pickTool } from './testUtils/dock'
+import { pickColor, pickTool } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
@@ -22,6 +22,8 @@ async function drag(wrapper: ReturnType<typeof mount>, indices: number[]) {
 describe('the Selection bar (tickets 168, 295, 415)', () => {
   it('shows Copy, Cut, Fill, Rotate, Remove line and Clear selection for a Selection, wired to the registry actions', async () => {
     const wrapper = await mountWithProject(3, 30) // 2 columns, so a 2-cell drag along a row is the whole line
+    await pickColor(wrapper, 'red')
+    await drag(wrapper, [0]) // one drawn bead for Copy to take
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
@@ -29,15 +31,13 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
 
-    // Copy keeps the Selection; Paste then appears, and arming it discards the Selection (ticket 415).
+    // Copy clears the Selection and arms paste mode at once, so no bar remains, Select all included (ticket 437).
     await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(true)
-    await wrapper.find('[data-testid="context-bar-paste"]').trigger('click')
-    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="context-bar-hint"]').attributes('aria-label')).toBe('Tap where to paste')
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="context-bar-cancel"]').trigger('click')
-    // Select is still active, so the bar stays with Select all alone (ticket 428), without a Selection's readout.
+    // Escape leaves paste mode; Select is still active, so the bar is back with Select all alone (ticket 428).
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(true)
   })

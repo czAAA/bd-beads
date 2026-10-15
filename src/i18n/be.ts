@@ -256,8 +256,6 @@ export const be: Translations = {
     label: 'Дзеянні з вылучэннем',
     clearButton: 'Зняць вылучэнне',
     moreLabel: 'Яшчэ',
-    pasteHint: 'Націсніце, куды ўставіць',
-    cancelButton: 'Скасаваць',
   },
   palette: {
     pickerLabel: 'Колеры палітры',
@@ -288,6 +286,8 @@ export const be: Translations = {
     selectHint: 'Абвядзіце вобласць, потым скапіруйце і ўставьце яе.',
     handHint: 'Перацягвайце, каб рухацца па палатне.',
     copyButton: 'Капіраваць',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'У вылучэнні няма пацерак для капіравання.',
     cutButton: 'Выразаць',
     saveButton: 'Захаваць',
     savedConfirmation: 'Захавана',

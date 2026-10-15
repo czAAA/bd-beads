@@ -264,8 +264,6 @@ export const en: Translations = {
     label: 'Selection actions',
     clearButton: 'Clear selection',
     moreLabel: 'More',
-    pasteHint: 'Tap where to paste',
-    cancelButton: 'Cancel',
   },
   palette: {
     pickerLabel: 'Palette colors',
@@ -296,6 +294,8 @@ export const en: Translations = {
     selectHint: 'Drag to mark an area, then copy and paste it.',
     handHint: 'Drag to move around the Canvas.',
     copyButton: 'Copy',
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: 'No beads in the selection to copy.',
     cutButton: 'Cut',
     saveButton: 'Save',
     savedConfirmation: 'Saved',
