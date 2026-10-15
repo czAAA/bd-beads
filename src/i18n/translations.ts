@@ -233,8 +233,6 @@ export interface Translations {
     clearButton: string
     /** The "…" overflow of the Selection bar when its controls do not fit (ticket 415). */
     moreLabel: string
-    pasteHint: string
-    cancelButton: string
   }
   palette: {
     pickerLabel: string
@@ -273,6 +271,8 @@ export interface Translations {
     selectHint: string
     handHint: string
     copyButton: string
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: string
     cutButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
     saveButton: string

@@ -20,6 +20,7 @@ function setup(tool: Tool = 'paint', changesGrid = true) {
     }),
     endStroke: vi.fn(),
     beginSelectPress: vi.fn(),
+    leavePasteMode: vi.fn(),
     extendSelection: vi.fn(() => true),
     refuseSelection: vi.fn(),
     announce: vi.fn(),
@@ -58,6 +59,8 @@ describe('useToolAtCursor', () => {
     extendSelectionTo({ row: 0, column: 1 }, { row: 0, column: 2 })
     expect(deps.beginSelectPress).toHaveBeenCalledTimes(1)
     expect(deps.beginSelectPress).toHaveBeenCalledWith(0, 0)
+    // A Shift+arrow step leaves paste mode before it selects (ticket 437).
+    expect(deps.leavePasteMode).toHaveBeenCalledTimes(1)
     expect(deps.extendSelection).toHaveBeenLastCalledWith(0, 2)
     finishExtending()
     finishExtending()

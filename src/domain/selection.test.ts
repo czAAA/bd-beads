@@ -86,8 +86,8 @@ describe('selectionBetween', () => {
   })
 })
 
-describe('copySelection', () => {
-  it('snapshots the selected rectangle at the block’s own top-left origin', () => {
+describe('copySelection (ticket 437, ADR 0057)', () => {
+  it('copies the drawn beads at the block’s own top-left origin', () => {
     const source = painted(['....', '.rb.', '.br.', '....'])
 
     expect(copySelection(source, { top: 1, left: 1, rows: 2, columns: 2 })).toEqual({
@@ -97,16 +97,33 @@ describe('copySelection', () => {
         [RED, BLUE],
         [BLUE, RED],
       ],
+      anchor: { row: 0, column: 0 },
     })
   })
 
-  it('records which of the selected cells were empty, rather than dropping them', () => {
-    const source = painted(['r.', '.b'])
+  it('trims to the drawn beads’ bounding box and keeps empty cells inside it as holes', () => {
+    const source = painted(['.....', '..r..', '.....', '.b...', '.....'])
 
-    expect(copySelection(source, { top: 0, left: 0, rows: 2, columns: 2 }).colors).toEqual([
-      [RED, null],
-      [null, BLUE],
-    ])
+    expect(copySelection(source, { top: 0, left: 0, rows: 5, columns: 5 })).toEqual({
+      rows: 3,
+      columns: 2,
+      colors: [
+        [null, RED],
+        [null, null],
+        [BLUE, null],
+      ],
+      anchor: { row: 0, column: 1 },
+    })
+  })
+
+  it('anchors on the leftmost bead of the top row, however the rest lie', () => {
+    const source = painted(['.rr', 'b..'])
+
+    expect(copySelection(source, { top: 0, left: 0, rows: 2, columns: 3 })?.anchor).toEqual({ row: 0, column: 1 })
+  })
+
+  it('copies nothing from a Selection with no drawn bead', () => {
+    expect(copySelection(painted(['..', '..']), { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
   })
 
   it('does not alias the Project’s own grid, so later edits cannot change what was copied', () => {
@@ -115,7 +132,7 @@ describe('copySelection', () => {
 
     frameGrid(source)[0]![0]!.color = BLUE
 
-    expect(block.colors[0]![0]).toBe(RED)
+    expect(block!.colors[0]![0]).toBe(RED)
   })
 })
 
@@ -127,6 +144,7 @@ describe('pastedCells', () => {
       [RED, null],
       [null, BLUE],
     ],
+    anchor: { row: 0, column: 0 },
   }
 
   it('anchors the block’s top-left corner at the given position', () => {
@@ -151,8 +169,19 @@ describe('pastedCells', () => {
   })
 })
 
+describe('a stamp lands the anchor bead on the aimed cell (ticket 437)', () => {
+  it('shifts the block back by the anchor, so no empty corner offsets it', () => {
+    const block: CopiedBlock = { rows: 2, columns: 2, colors: [[null, RED], [BLUE, null]], anchor: { row: 0, column: 1 } }
+
+    expect(mirroredPastedCells(undefined, block, { row: 3, column: 3 }, { rows: 0, columns: 0 })).toEqual([
+      { row: 3, column: 3, color: RED },
+      { row: 4, column: 2, color: BLUE },
+    ])
+  })
+})
+
 describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects through Mirror)', () => {
-  const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]] }
+  const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
 
   it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells stamp', () => {
     const target = painted(['....', '....', '....', '....'])
@@ -176,6 +205,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
       rows: 1,
       columns: 2,
       colors: [[RED, null]],
+      anchor: { row: 0, column: 0 },
     }
     // 6-wide grid, 2 axes -> strips [0,1] [2,3] [4,5]. Anchored at column 0 (spanning 0,1): strip0 stamps as-is
     // (r at 0, hole at 1); strip1 mirrors flipped (hole lands at 2, r lands at 3); strip2 translates unflipped
@@ -188,7 +218,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
   })
 
   it('with copy mode on, translates every copy without flipping', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
     const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 }, true)
@@ -197,7 +227,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
   })
 
   it('leaves each copy’s own holes as holes, independently of the others', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
     const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 1 })
@@ -208,7 +238,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
   })
 
   it('clips each copy independently when it reaches past the grid’s edge', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, RED]] }
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, RED]], anchor: { row: 0, column: 0 } }
     // 6-wide grid, single axis (strips [0,1,2] [3,4,5]). Anchored at column 5 -- the block's own placement already
     // runs one cell past the grid's right edge; its mirror image runs one cell past the *left* edge instead.
     const target = painted(['......'])
@@ -219,7 +249,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
   })
 
   it('honours copy mode in the preview the same way it does in the stamp', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]] }
+    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
     const at = { row: 0, column: 0 }
     const axes = { rows: 0, columns: 2 }

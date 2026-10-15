@@ -31,6 +31,11 @@ export interface CopiedBlock {
    * Selection — a hole, which Paste skips rather than erasing what's underneath it (see pastedCells).
    */
   colors: (string | null)[][]
+  /**
+   * The first drawn bead in reading order (leftmost of the top row), relative to the block's top-left corner: the cell
+   * the pointer's bead lands on when stamping (ticket 437, ADR 0057), so no empty corner offsets the stamp.
+   */
+  anchor: { row: number; column: number }
 }
 
 /** One cell a Paste would land on, with the color it would get — what both the paste preview and the paste itself are built from. */
@@ -143,17 +148,29 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
   return { ...selection, top: selection.top + rows, left: selection.left + columns }
 }
 
-/** Snapshots a Selection's cells — the empty ones included, as holes — into a block Paste can stamp anywhere. */
-export function copySelection(project: Project, selection: Selection): CopiedBlock {
-  const colors = Array.from({ length: selection.rows }, (_row, rowOffset) =>
-    Array.from(
-      { length: selection.columns },
-      (_column, columnOffset) =>
-        colorAt(project.beads, selection.top + rowOffset, selection.left + columnOffset),
-    ),
+/**
+ * Snapshots a Selection's drawn beads into a block Paste can stamp anywhere (ticket 437, ADR 0057): trimmed to their
+ * bounding box, so empty cells inside stay holes and none outside is kept, anchored on the first drawn bead in reading
+ * order. Undefined for a Selection with no drawn bead.
+ */
+export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
+  const drawn: GridPosition[] = []
+  for (let row = selection.top; row < selection.top + selection.rows; row++) {
+    for (let column = selection.left; column < selection.left + selection.columns; column++) {
+      if (colorAt(project.beads, row, column)) drawn.push({ row, column })
+    }
+  }
+  if (drawn.length === 0) return undefined
+
+  const top = drawn[0].row
+  const bottom = Math.max(...drawn.map((cell) => cell.row))
+  const left = Math.min(...drawn.map((cell) => cell.column))
+  const right = Math.max(...drawn.map((cell) => cell.column))
+  const colors = Array.from({ length: bottom - top + 1 }, (_row, rowOffset) =>
+    Array.from({ length: right - left + 1 }, (_column, columnOffset) => colorAt(project.beads, top + rowOffset, left + columnOffset)),
   )
 
-  return { rows: selection.rows, columns: selection.columns, colors }
+  return { rows: colors.length, columns: colors[0].length, colors, anchor: { row: 0, column: drawn[0].column - left } }
 }
 
 /**
@@ -194,11 +211,11 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
   if (flipColumns) {
     colors = colors.map((row) => [...row].reverse())
   }
-  return { rows: block.rows, columns: block.columns, colors }
+  return { ...block, colors }
 }
 
 /**
- * Every cell every Mirror-projected copy of `block` would land on when its own top-left corner is aimed at `at`
+ * Every cell every Mirror-projected copy of `block` would land on when its anchor bead is aimed at `at`
  * (ticket 50, reversing Paste's old "unaffected by Mirror" precedent — see CONTEXT.md's Paste entry): one
  * placement per strip combination the current axis counts (and copy mode) define, each built by flipping the
  * block's content per mirrorBlockPlacements' verdict and then handed to pastedCells exactly like a single
@@ -214,6 +231,8 @@ export function mirroredPastedCells(
   axes: MirrorAxisCounts,
   copyMode = false,
 ): PastedCell[] {
+  // `at` is where the block's anchor bead lands (ticket 437); the rest works from the block's top-left corner.
+  at = { row: at.row - block.anchor.row, column: at.column - block.anchor.column }
   // Mirror's axes divide the Frame; with none, or none turned on, a stamp is only itself.
   if (!frame || (axes.columns === 0 && axes.rows === 0)) {
     return pastedCells(block, at)
