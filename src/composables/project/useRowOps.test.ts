@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, setRowProgressEnabled, toggleRowDirection, type Project } from '../../domain/project'
+import { createProject, toggleRowDirection, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } })
-const tracking = setRowProgressEnabled(base, true)
+const tracking = rowProgressOn(base)
 
 function setup(project: Project | null = base) {
   const deps = {
@@ -19,19 +20,6 @@ function setup(project: Project | null = base) {
 const replaced = (deps: { replaceProject: ReturnType<typeof vi.fn> }) => deps.replaceProject.mock.calls[0]![0] as Project
 
 describe('useRowOps', () => {
-  it('turns Row progress on and off', () => {
-    const { deps, onToggleRowProgress } = setup()
-    onToggleRowProgress(true)
-    expect(replaced(deps).rowProgress.enabled).toBe(true)
-  })
-
-  it('leaves Row progress off with no Frame to count rows on', () => {
-    const { frame: _frame, ...open } = base
-    const { deps, onToggleRowProgress } = setup(open as Project)
-    onToggleRowProgress(true)
-    expect(replaced(deps).rowProgress.enabled).toBe(false)
-  })
-
   it('flips the Row progress direction without touching the rotation', () => {
     const { deps, onToggleRowDirection } = setup(tracking)
     onToggleRowDirection()
@@ -60,8 +48,7 @@ describe('useRowOps', () => {
   })
 
   it('does nothing with no Project open', () => {
-    const { deps, onToggleRowProgress, onToggleRowDirection, onMoveRow } = setup(null)
-    onToggleRowProgress(true)
+    const { deps, onToggleRowDirection, onMoveRow } = setup(null)
     onToggleRowDirection()
     onMoveRow(1)
     expect(deps.replaceProject).not.toHaveBeenCalled()

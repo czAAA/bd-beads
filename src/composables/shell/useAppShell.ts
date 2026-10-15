@@ -655,6 +655,7 @@ function wireAppShell(services: Services) {
     hasOpenLayer,
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||
+      frameFlow.removeConfirmOpen.value ||
       !!pendingColorRemovalId.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
@@ -685,7 +686,6 @@ function wireAppShell(services: Services) {
     canNamePiece: () => namePiece.canNamePiece.value,
     hasPaintColor,
     onNamePiece: namePiece.onNamePiece,
-    onToggleRowProgress: rowOps.onToggleRowProgress,
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
     onStepMirrorAxis,
@@ -713,6 +713,7 @@ function wireAppShell(services: Services) {
     // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
     resetMirrorState()
     deleteAll.onCancelDeleteAll()
+    frameFlow.cancelRemove()
     replaceBead.onCancelReplaceBead()
     clearSavedConfirmation()
     resetImageColor()
@@ -851,6 +852,9 @@ function wireAppShell(services: Services) {
     onSetTechnique: frameFlow.setTechnique,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
+    removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
+    onCancelRemoveFrame: frameFlow.cancelRemove,
+    onConfirmRemoveFrame: frameFlow.confirmRemove,
     onBringFrameIntoView: frameFlow.bringIntoView,
     ...replaceBead,
     ...importSwitch,

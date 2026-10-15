@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../../domain/changeFrame'
 import { colorAt } from '../../domain/canvas'
-import { deleteAll, createProject, moveToRow, paintCells, replaceBead, setRowProgressEnabled, type Project } from '../../domain/project'
+import { deleteAll, createProject, moveToRow, paintCells, replaceBead, type Project } from '../../domain/project'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { editHarness } from '../../testUtils/editHarness'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = base.frame!
@@ -38,7 +39,7 @@ describe('useEdit', () => {
     })
 
     it('leaves finished rows alone and keeps the rest of the edit', () => {
-      const woven = moveToRow(setRowProgressEnabled(base, true), 1)
+      const woven = moveToRow(rowProgressOn(base), 1)
       const ctx = editHarness(woven)
       ctx.edit('drawing', (project) => paintCells(project, [inside(0, 0), inside(1, 0)], '#ff0000', NO_MIRROR_AXES, false))
 
@@ -47,7 +48,7 @@ describe('useEdit', () => {
     })
 
     it('is refused silently when it only touched finished rows', () => {
-      const ctx = editHarness(moveToRow(setRowProgressEnabled(base, true), 1))
+      const ctx = editHarness(moveToRow(rowProgressOn(base), 1))
       expect(ctx.edit('drawing', (project) => paint(project, inside(0, 0)))).toEqual({ kind: 'unchanged' })
       expect(ctx.history.canUndo.value).toBe(false)
     })
@@ -80,10 +81,23 @@ describe('useEdit', () => {
     })
 
     it('hands back the refusal and records nothing', () => {
-      const ctx = editHarness(moveToRow(setRowProgressEnabled(base, true), 1))
-      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'refused', reason: 'locked' })
+      const ctx = editHarness(moveToRow(rowProgressOn(base), 1))
+      expect(ctx.edit('frame', (project) => changeFrame(project, { technique: 'peyote' }))).toEqual({ kind: 'refused', reason: 'locked' })
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.resetAfterFrameChange).not.toHaveBeenCalled()
+    })
+
+    it('Remove Frame with passes done is one Undo step that brings back the Frame and the passes (ticket 426)', () => {
+      const woven = moveToRow(rowProgressOn(base), 2)
+      const ctx = editHarness(woven)
+      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied', moved: 0 })
+      expect(ctx.project.frame).toBeUndefined()
+      expect(ctx.project.rowProgress).toMatchObject({ enabled: false, currentRow: 0 })
+
+      ctx.history.onUndo()
+      expect(ctx.project.frame).toEqual(woven.frame)
+      expect(ctx.project.rowProgress).toEqual(woven.rowProgress)
+      expect(ctx.history.canUndo.value).toBe(false)
     })
 
     it('says unchanged when the Frame already is what was asked', () => {
@@ -95,12 +109,12 @@ describe('useEdit', () => {
 
   describe('an exempt edit', () => {
     it('Delete all clears finished rows too, as one Undo step', () => {
-      const painted = paint(moveToRow(setRowProgressEnabled(base, true), 1), inside(1, 0))
+      const painted = paint(moveToRow(rowProgressOn(base), 1), inside(1, 0))
       const woven: Project = { ...painted, beads: { ...painted.beads, ...paint(base, inside(0, 0)).beads } }
       const ctx = editHarness(woven)
       expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied', moved: 0 })
       expect(ctx.project.beads).toEqual({})
-      expect(ctx.project.rowProgress.enabled).toBe(false)
+      expect(ctx.project.rowProgress).toMatchObject({ enabled: true, currentRow: 0 })
 
       ctx.history.onUndo()
       expect(ctx.project.beads).toEqual(woven.beads)
@@ -178,7 +192,7 @@ describe('useEdit', () => {
     })
 
     it('across finished rows leaves them alone', () => {
-      const ctx = editHarness(moveToRow(setRowProgressEnabled(base, true), 1))
+      const ctx = editHarness(moveToRow(rowProgressOn(base), 1))
       ctx.editing.beginStroke()
       ctx.editing.strokeStep((project) => paint(project, inside(0, 0)))
       ctx.editing.strokeStep((project) => paint(project, inside(1, 0)))
@@ -218,7 +232,7 @@ describe('useEdit', () => {
   it('Undo replays history without the lock: it can restore a finished row', () => {
     const ctx = editHarness(base)
     ctx.edit('drawing', (project) => paint(project, inside(0, 0)))
-    ctx.replaceProject(moveToRow(setRowProgressEnabled(ctx.project, true), 2))
+    ctx.replaceProject(moveToRow(rowProgressOn(ctx.project), 2))
 
     ctx.history.onUndo()
     expect(ctx.project.beads).toEqual(base.beads)

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, moveToRow, setRowProgressEnabled, type Project } from '../../domain/project'
+import { createProject, moveToRow, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
+import { rowProgressOn } from '../../testUtils/rowProgress'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const secondRow: Selection = { top: 1, left: 0, rows: 1, columns: 4 }
@@ -22,7 +23,7 @@ describe('useRemoveLineFlow', () => {
   })
 
   it('is not available under the Row progress lock: on with a pass done (ticket 411)', () => {
-    expect(setup({ project: moveToRow(setRowProgressEnabled(base, true), 1), selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
+    expect(setup({ project: moveToRow(rowProgressOn(base), 1), selection: secondRow }).canRemoveSelectedLine.value).toBe(false)
   })
 
   it('removes the line, resets the session, and Undo brings the Frame back', () => {

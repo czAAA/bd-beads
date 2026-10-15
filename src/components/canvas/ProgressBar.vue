@@ -4,22 +4,23 @@ import { rowProgressPosition, type Project } from '../../domain/project'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
-import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 
 /**
- * Progress bar (CONTEXT.md; tickets 144, 411, ProgressBar card): every Row progress control, in one short bar along the
- * canvas box's bottom edge, always shown at every width whatever the Project's shape. The switch comes first, so the
- * bar is there while Row progress is off: then only the switch and its label show, and the bar keeps its height so the
- * canvas doesn't jump. On, Turn row direction sits beside the switch; then come the current row, the finished share,
- * and the large Row not done and Row done buttons, whose label and arrow follow Row direction. They move the
- * current-row pointer exactly as the hotkeys do (D, Shift+Enter/Shift+Space, Enter/Space (ticket 178); P toggles the switch).
+ * Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one short bar along the
+ * canvas box's bottom edge, always shown at every width whatever the Project's shape. Row progress is on whenever there is
+ * a Frame (ADR 0055), so the first control is Remove frame, disabled with a Tooltip reason while there is none; without a
+ * Frame the bar then offers Fit to drawing, and the bar keeps its height so the canvas doesn't jump. With a Frame, Turn row
+ * direction sits beside Remove frame; then come the current row, the finished share, and the large Row not done and Row
+ * done buttons, whose label and arrow follow Row direction. They move the current-row pointer exactly as the hotkeys do
+ * (D, Shift+Enter/Shift+Space, Enter/Space (ticket 178)).
  */
 const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{
   'move-row': [delta: number]
-  'toggle-row-progress': [enabled: boolean]
+  /** Remove frame, which asks first once a pass is done (ticket 426). */
+  'remove-frame': []
   'toggle-row-direction': []
   /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
   'fit-frame': []
@@ -29,18 +30,13 @@ const { t } = useI18n()
 
 /** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR 0035). */
 const actions = {
-  rowProgress: controlAction('row-progress'),
+  removeFrame: controlAction('remove-frame'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
-
-const enabled = computed({
-  get: () => props.project.rowProgress.enabled && props.project.frame !== undefined,
-  set: (on: boolean) => emit('toggle-row-progress', on),
-})
 
 /** Row progress works on the Frame's rows, so with no Frame the bar can only ask for one. */
 const hasFrame = computed(() => props.project.frame !== undefined)
@@ -65,8 +61,8 @@ const directionLabel = computed(() =>
 </script>
 
 <template>
-  <div class="progress-bar" :class="{ 'progress-bar--off': !enabled }" data-testid="progress-bar">
-    <AppSwitch v-model="enabled" :action="actions.rowProgress" :deps="deps" data-testid="progress-bar-switch" data-tour="progress-switch" />
+  <div class="progress-bar" data-testid="progress-bar">
+    <AppButton variant="box" :action="actions.removeFrame" :deps="deps" data-testid="progress-bar-remove-frame" @click="emit('remove-frame')" />
 
     <template v-if="!hasFrame">
       <span class="progress-bar__row">{{ t.toolbox.groups.rowProgress }}</span>
@@ -75,8 +71,8 @@ const directionLabel = computed(() =>
         <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
       </span>
     </template>
-    <template v-else-if="enabled">
-      <!-- Turn row direction sits beside the switch, away from the do/undo pair, so it can't be hit while doing rows (ticket 411). -->
+    <template v-else>
+      <!-- Turn row direction sits beside Remove frame, away from the do/undo pair, so it can't be hit while doing rows (ticket 411). -->
       <IconButton
         variant="box"
         :action="actions.direction"
@@ -132,7 +128,6 @@ const directionLabel = computed(() =>
         />
       </div>
     </template>
-    <span v-else class="progress-bar__off-label">{{ t.toolbox.groups.rowProgress }}</span>
   </div>
 </template>
 
@@ -191,7 +186,7 @@ const directionLabel = computed(() =>
   display: none;
 }
 
-/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction beside the switch. */
+/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction beside Remove frame. */
 .progress-bar__steps {
   display: flex;
   flex: none;
@@ -221,14 +216,8 @@ const directionLabel = computed(() =>
   transition: width var(--duration-base) var(--ease-standard);
 }
 
-.progress-bar__off-label {
-  font: var(--type-label);
-  color: var(--box-muted);
-  text-transform: lowercase;
-}
-
 /*
- * Phone widths (ticket 411): the large text buttons can't share one row with the switch, Turn row direction and the track
+ * Phone widths (ticket 411): the large text buttons can't share one row with Remove frame, Turn row direction and the track
  * at 360px in every language, so the buttons take a second row of their own, half the bar each. The bar is taller there:
  * --progress-height says so (controls.css), and everything that sits above the bar follows it.
  */

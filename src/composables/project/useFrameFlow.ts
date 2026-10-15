@@ -172,9 +172,27 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
-  /** Remove Frame; with no Frame there is nothing to edit, so Edit Frame ends. */
+  /** Whether the Remove frame confirmation is open: shown only when a pass is done, as removing the Frame throws the passes away (ticket 426). */
+  const removeConfirmOpen = ref(false)
+
+  /** Remove Frame; with no Frame there is nothing to edit, so Edit Frame ends. Once a pass is done it asks first. */
   function remove(): void {
-    if (!deps.currentProject()?.frame) return
+    const project = deps.currentProject()
+    if (!project?.frame) return
+    if (rowProgressStarted(project)) {
+      removeConfirmOpen.value = true
+      return
+    }
+    if (commit(undefined)) done()
+  }
+
+  function cancelRemove(): void {
+    removeConfirmOpen.value = false
+  }
+
+  /** Remove Frame after the question: one Undo step restores the Frame and the passes together. */
+  function confirmRemove(): void {
+    removeConfirmOpen.value = false
     if (commit(undefined)) done()
   }
 
@@ -219,6 +237,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     fit,
     setTo,
     remove,
+    removeConfirmOpen,
+    cancelRemove,
+    confirmRemove,
     onKey,
     bringIntoView,
   }

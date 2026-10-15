@@ -44,12 +44,12 @@ async function click(wrapper: ReturnType<typeof mount>, index: number) {
 const firstCellColor = () => frameGrid(loadProjects()[0]!)[0]![0]!.color
 
 describe('App Progress bar', () => {
-  it('turns Row progress on from its switch, and Row done moves the pointer, saved with the Project', async () => {
+  it('has Row progress on with the Project\'s Frame, and Row done moves the pointer, saved with the Project (ticket 426)', async () => {
     const wrapper = await mountApp(15, 30)
     const bar = wrapper.find('[data-testid="progress-bar"]')
     expect(wrapper.find('[data-testid="app-canvas"]').element.lastElementChild).toBe(bar.element)
 
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
     expect(loadProjects()[0]!.rowProgress).toMatchObject({ enabled: true, currentRow: 1 })
@@ -155,8 +155,7 @@ describe('App keyboard shortcuts', () => {
   })
 
   it('Enter moves to the next row, and Shift+Enter to the previous', async () => {
-    const wrapper = await mountApp(15, 30)
-    await wrapper.find('[data-testid="progress-bar-switch"]').trigger('click')
+    await mountApp(15, 30)
 
     await pressKey({ key: 'Enter' })
     expect(loadProjects()[0]!.rowProgress.currentRow).toBe(1)
@@ -165,13 +164,14 @@ describe('App keyboard shortcuts', () => {
     expect(loadProjects()[0]!.rowProgress.currentRow).toBe(0)
   })
 
-  it('P and D turn Row progress on and its direction', async () => {
+  it('D turns the row direction and P does nothing (ticket 426)', async () => {
     await mountApp(15, 30)
 
     await pressKey({ key: 'p' })
+    expect(loadProjects()[0]!.rowProgress.direction).toBe('rows')
     await pressKey({ key: 'd' })
 
-    expect(loadProjects()[0]!.rowProgress).toMatchObject({ enabled: true, direction: 'columns' })
+    expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
   })
 
   it('Space held stops painting and shows the grab cursor', async () => {

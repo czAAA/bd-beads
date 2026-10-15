@@ -12,6 +12,9 @@ const {
   deleteAllConfirmOpen,
   onCancelDeleteAll,
   onConfirmDeleteAll,
+  removeFrameConfirmOpen,
+  onCancelRemoveFrame,
+  onConfirmRemoveFrame,
   pendingColorRemovalHex,
   onCancelRemoveAddedColor,
   onConfirmRemoveAddedColor,
@@ -56,6 +59,17 @@ const {
     :cancel-label="t.deleteAll.cancelButton"
     @confirm="onConfirmDeleteAll"
     @cancel="onCancelDeleteAll"
+  />
+
+  <ConfirmModal
+    v-if="removeFrameConfirmOpen"
+    data-testid="remove-frame-modal"
+    :title="t.frame.removeConfirmTitle"
+    :message="t.frame.removeConfirmMessage"
+    :confirm-label="t.frame.removeConfirmButton"
+    :cancel-label="t.frame.removeConfirmCancel"
+    @confirm="onConfirmRemoveFrame"
+    @cancel="onCancelRemoveFrame"
   />
 
   <ConfirmModal
