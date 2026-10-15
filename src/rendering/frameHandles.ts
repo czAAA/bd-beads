@@ -90,8 +90,12 @@ export function boxPressAt(box: { x: number; y: number; width: number; height: n
   if (handle) {
     return { kind: 'handle', edges: handleEdges(rotation, handle.id) }
   }
-  const inside = point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height
-  return { kind: inside ? 'inside' : 'outside' }
+  return { kind: pointInBox(box, point) ? 'inside' : 'outside' }
+}
+
+/** Whether a point of the viewport lies within a rectangle on screen. */
+export function pointInBox(box: { x: number; y: number; width: number; height: number }, point: { x: number; y: number }): boolean {
+  return point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height
 }
 
 /** The handle a point is within reach of (ticket 414), for the resize cursor a hover shows. */

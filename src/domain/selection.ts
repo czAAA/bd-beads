@@ -57,6 +57,14 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition): Sel
   }
 }
 
+/** A box of beads carries guides (rulers, selection handles) once it spans at least this many beads in total, i.e. more than 4 (tickets 377, 435); a single row of five does. */
+const GUIDED_MIN_BEADS = 5
+
+/** Whether a box of this many rows and columns is big enough for guides: the one rule behind a Piece area's rulers and a Selection's handles. */
+export function hasGuides(box: { rows: number; columns: number }): boolean {
+  return box.rows * box.columns >= GUIDED_MIN_BEADS
+}
+
 /** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its handles). */
 export function selectionFrame(selection: Selection): Frame {
   return { row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }
