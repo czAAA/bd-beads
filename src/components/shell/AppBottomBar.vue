@@ -64,7 +64,7 @@ const {
   height: var(--dock-height);
   /* Tight enough that New Project and both imports fit a 320px screen in Russian. */
   padding: 0 var(--space-12);
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: min(env(safe-area-inset-bottom), var(--space-4));
   background: var(--canvas);
   border-top: 1px solid var(--line-soft);
 }
