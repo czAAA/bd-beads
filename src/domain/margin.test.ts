@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type BeadMap, type Frame } from './canvas'
-import { clampOutOfMargin, selectionCoversMargin, clearMargin, inMargin, keepAllowedEdits, MARGIN, withMargin } from './margin'
+import { clampOutOfMargin, clearMargin, inMargin, keepAllowedEdits, lineWithinFrame, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -109,12 +109,36 @@ describe('clampOutOfMargin (ticket 428)', () => {
 })
 
 describe('a Selection never covers the margin (ticket 428)', () => {
-  it('knows when a Selection covers it', () => {
-    expect(selectionCoversMargin(frame, { top: 10, left: 10, rows: 4, columns: 6 })).toBe(false)
-    expect(selectionCoversMargin(frame, { top: 0, left: 0, rows: 3, columns: 3 })).toBe(false)
-    expect(selectionCoversMargin(frame, { top: 5, left: 11, rows: 6, columns: 2 })).toBe(true)
-    expect(selectionCoversMargin(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(true)
-    expect(selectionCoversMargin(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
+  it('allows a Selection wholly inside the Frame or wholly clear of the band, and nothing else (ticket 433)', () => {
+    expect(selectionAllowed(frame, { top: 10, left: 10, rows: 4, columns: 6 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 11, left: 11, rows: 1, columns: 1 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 3, columns: 3 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 4, columns: 4 })).toBe(true)
+    expect(selectionAllowed(frame, { top: 5, left: 11, rows: 6, columns: 2 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 5, columns: 5 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 40 })).toBe(false)
+    expect(selectionAllowed(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(true)
+  })
+
+  it('cuts a ruler line to the Frame, and none for a line outside it', () => {
+    expect(lineWithinFrame(frame, { top: 11, left: 0, rows: 1, columns: 100 })).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
+    expect(lineWithinFrame(frame, { top: 0, left: 12, rows: 100, columns: 1 })).toEqual({ top: 10, left: 12, rows: 4, columns: 1 })
+    expect(lineWithinFrame(frame, { top: 8, left: 0, rows: 1, columns: 100 })).toBeUndefined()
+    expect(lineWithinFrame(frame, { top: 0, left: 0, rows: 1, columns: 100 })).toBeUndefined()
+    expect(lineWithinFrame(undefined, { top: 8, left: 0, rows: 1, columns: 100 })).toEqual({ top: 8, left: 0, rows: 1, columns: 100 })
+  })
+
+  it('trims a rectangle to the side of the anchor, and refuses an anchor in the margin', () => {
+    const wide = { top: 0, left: 10, rows: 30, columns: 3 }
+    expect(trimToAllowed(frame, wide, { row: 1, column: 11 })).toEqual({ top: 0, left: 10, rows: 4, columns: 3 })
+    expect(trimToAllowed(frame, wide, { row: 20, column: 11 })).toEqual({ top: 20, left: 10, rows: 10, columns: 3 })
+    expect(trimToAllowed(frame, { top: 11, left: 11, rows: 2, columns: 2 }, { row: 11, column: 11 })).toEqual({ top: 11, left: 11, rows: 2, columns: 2 })
+    expect(trimToAllowed(frame, wide, { row: 8, column: 11 })).toBeUndefined()
+  })
+
+  it('refuses a drag that begins in the margin by returning the anchor', () => {
+    expect(clampOutOfMargin(frame, { row: 8, column: 11 }, { row: 12, column: 12 })).toEqual({ row: 8, column: 11 })
   })
 
   it('stops a drag from outside before the margin instead of crossing the Frame', () => {
@@ -122,6 +146,6 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 20, column: 12 })).toEqual({ row: 3, column: 12 })
     // from a corner across the whole Frame: the clamp keeps the larger rectangle
     const end = clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })
-    expect(selectionCoversMargin(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(false)
+    expect(selectionAllowed(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(true)
   })
 })
