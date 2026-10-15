@@ -14,7 +14,8 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
-import { clampOutOfMargin, selectionCoversMargin } from '../../domain/margin'
+import { clampOutOfMargin, inMargin, lineWithinFrame, selectionAllowed } from '../../domain/margin'
+import { colorAt } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -51,6 +52,8 @@ export function useSelectionGesture(
 ) {
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces it. */
   const selection = ref<Selection | undefined>()
+  /** How many times a Selection has been refused where the pointer cannot show it (a key or a tap, ticket 433): the canvas shows the not-allowed cue each time it grows. */
+  const refusals = ref(0)
 
   /**
    * What Copy last snapshotted, ready to stamp (ticket 92 revised its lifecycle, ADR 0016): it clears only when a
@@ -91,6 +94,10 @@ export function useSelectionGesture(
       return
     }
 
+    // A Selection cannot start in the keep-out margin (ticket 433): nothing begins (the pointer shows the cue itself, a key asks extendPress's caller to).
+    if (inMargin(project.frame, { row, column })) {
+      return
+    }
     selectPress.value = { anchor: { row, column }, moved: false }
 
     // With no active projection, the press can only be the start of a selection, so the marquee appears from the
@@ -102,17 +109,22 @@ export function useSelectionGesture(
     }
   }
 
-  /** Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one (ticket 92: a new Selection is one of the two things that actually clears the clipboard). */
-  function extendPress(row: number, column: number) {
+  /**
+   * Grows the in-progress Selection to the cell the drag has reached. A drag replaces the previous Selection, and with it whatever was copied from one (ticket 92: a new Selection is one of the two things that actually clears the clipboard).
+   * Returns whether the Selection reached that cell: false when the margin held it back (ticket 433), which a key step takes as a refusal.
+   */
+  function extendPress(row: number, column: number): boolean {
     const project = currentProject()
     const press = selectPress.value
     if (!project || !press) {
-      return
+      return false
     }
 
     press.moved = true
     dropClipboard()
-    selection.value = selectionBetween(press.anchor, clampOutOfMargin(project.frame, press.anchor, { row, column }))
+    const reached = clampOutOfMargin(project.frame, press.anchor, { row, column })
+    selection.value = selectionBetween(press.anchor, reached)
+    return reached.row === row && reached.column === column
   }
 
   /** Ends a Select press: a click that never moved stamps the copied block where it landed (a drag has already updated the Selection as it went). */
@@ -129,14 +141,20 @@ export function useSelectionGesture(
     edit('drawing', (current) => mirroredPasteBlock(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
-  /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, and tapping empty space clears it. */
+  /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on the tapped bead's side of the Frame's margin (ticket 433), and tapping empty space clears it. A tap in the margin is refused. */
   function tapPiece(row: number, column: number) {
     const project = currentProject()
     if (!project) {
       return
     }
+    const at = { row, column }
+    const picked = pieceSelectionAt(project.beads, project.technique, at, project.frame)
+    if (inMargin(project.frame, at) || (!picked && colorAt(project.beads, row, column))) {
+      refusals.value += 1
+      return
+    }
     dropClipboard()
-    selection.value = pieceSelectionAt(project.beads, project.technique, { row, column })
+    selection.value = picked
   }
 
   /** Select all (tickets 414, 428): the Selection becomes the Frame's inside, or without a Frame the rectangle round every placed bead. Returns false, changing nothing, on an empty canvas with no Frame. */
@@ -181,7 +199,7 @@ export function useSelectionGesture(
 
   /** Takes a resized or moved Selection only if it covers none of the Frame's margin (ticket 428); otherwise the Selection stays as it was. */
   function keepOutOfMargin(next: Selection) {
-    if (!selectionCoversMargin(currentProject()?.frame, next)) selection.value = next
+    if (selectionAllowed(currentProject()?.frame, next)) selection.value = next
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
@@ -319,11 +337,15 @@ export function useSelectionGesture(
   /**
    * A row or column ruler number was clicked (ticket 123): selects that whole line, the same Selection a
    * Select-tool drag across it would leave -- so it works from whichever tool is active, and clears whatever was
-   * copied, the same as a new drag-marked Selection does (see extendPress).
+   * copied, the same as a new drag-marked Selection does (see extendPress). With a Frame it is the line's part inside the
+   * Frame (ticket 433), and a line outside the Frame selects nothing. Returns whether a Selection was made.
    */
-  function selectLine(newSelection: Selection) {
+  function selectLine(newSelection: Selection): boolean {
+    const line = lineWithinFrame(currentProject()?.frame, newSelection)
+    if (!line) return false
     dropClipboard()
-    selection.value = newSelection
+    selection.value = line
+    return true
   }
 
   /**
@@ -349,6 +371,9 @@ export function useSelectionGesture(
 
   return {
     selection,
+    refusals,
+    /** Asks the canvas to show the not-allowed cue (ticket 433), for a refusal the pointer did not make itself. */
+    refuse: () => (refusals.value += 1),
     beginPress,
     extendPress,
     endPress,
