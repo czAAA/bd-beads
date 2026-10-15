@@ -6,13 +6,13 @@ import { touching } from './pieces'
 import type { Selection } from './selection'
 
 /**
- * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 3 bead positions all the way round it,
+ * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 6 bead positions all the way round it (3 until ticket 427, ADR 0056),
  * outside its line, where nothing can be drawn, so beads never end up right against the Frame and its rulers. Erase
  * still works there. A change of the Frame that leaves beads in it moves each Piece in the way clear, whole.
  */
 
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers, and between a moved Piece and anything else. */
-export const MARGIN = 3
+export const MARGIN = 6
 
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Frame): Frame {
@@ -43,14 +43,18 @@ function movedByRelocation(moving: { changes: readonly BeadChange[]; placed: rea
   }
 }
 
-/** Whether a position lies in the Frame's margin: within 3 of the Frame, but not in it. */
+/** Whether a position lies in the Frame's margin: within MARGIN of the Frame, but not in it. */
 export function inMargin(frame: Frame | undefined, position: GridPosition): boolean {
   return !!frame && frameContains(withMargin(frame), position) && !frameContains(frame, position)
 }
 
-/** Whether a Selection covers any of the Frame's margin (ticket 428): it reaches into the margin from inside the Frame or from outside, or surrounds the Frame. */
-export function selectionCoversMargin(frame: Frame | undefined, selection: Selection): boolean {
-  if (!frame) return false
+/**
+ * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, or wholly
+ * clear of the Frame's margin band, never anything else. With no Frame there is no rule. Every path that makes a
+ * Selection asks this: a drag clamps to it, a resize or move is refused by it, a one-shot Selection is trimmed to it.
+ */
+export function selectionAllowed(frame: Frame | undefined, selection: Selection): boolean {
+  if (!frame) return true
   const box = withMargin(frame)
   const overlaps =
     selection.top < box.row + box.rows &&
@@ -62,7 +66,46 @@ export function selectionCoversMargin(frame: Frame | undefined, selection: Selec
     selection.left >= frame.column &&
     selection.top + selection.rows <= frame.row + frame.rows &&
     selection.left + selection.columns <= frame.column + frame.columns
-  return overlaps && !inside
+  return !overlaps || inside
+}
+
+/** A row or column Selection (a ruler number, ticket 433) cut to the Frame's inside; none when it lies outside the Frame. With no Frame it is unchanged. */
+export function lineWithinFrame(frame: Frame | undefined, line: Selection): Selection | undefined {
+  if (!frame) return line
+  const top = Math.max(line.top, frame.row)
+  const left = Math.max(line.left, frame.column)
+  const bottom = Math.min(line.top + line.rows, frame.row + frame.rows)
+  const right = Math.min(line.left + line.columns, frame.column + frame.columns)
+  return bottom > top && right > left ? { top, left, rows: bottom - top, columns: right - left } : undefined
+}
+
+/**
+ * `selection` cut down to the largest rectangle that holds `anchor` and is allowed (ticket 433): the cut that takes the
+ * band out on whichever axis keeps more. Unchanged when it is allowed already; none when `anchor` is in the margin or
+ * no cut is left.
+ */
+export function trimToAllowed(frame: Frame | undefined, selection: Selection, anchor: GridPosition): Selection | undefined {
+  if (selectionAllowed(frame, selection)) return selection
+  if (!frame || inMargin(frame, anchor)) return undefined
+  const bottom = selection.top + selection.rows
+  const right = selection.left + selection.columns
+  const band = withMargin(frame)
+  const cut = (start: number, end: number, from: number, length: number, at: number): [number, number] => {
+    if (at < from) return [start, Math.min(end, from)]
+    if (at >= from + length) return [Math.max(start, from + length), end]
+    return [start, end]
+  }
+  const [rowStart, rowEnd] = cut(selection.top, bottom, band.row, band.rows, anchor.row)
+  const [columnStart, columnEnd] = cut(selection.left, right, band.column, band.columns, anchor.column)
+  const box = (top: number, bot: number, left: number, rgt: number): Selection => ({ top, left, rows: bot - top, columns: rgt - left })
+  const candidates = [
+    box(rowStart, rowEnd, selection.left, right),
+    box(selection.top, bottom, columnStart, columnEnd),
+    box(rowStart, rowEnd, columnStart, columnEnd),
+  ]
+  return candidates
+    .filter((c) => selectionAllowed(frame, c))
+    .sort((x, y) => y.rows * y.columns - x.rows * x.columns)[0]
 }
 
 /** The cell one step back from `value` on an axis, on the anchor's side of the margin band `[start - MARGIN, end + MARGIN)`: the margin's outer edge there. Unchanged when the anchor is level with the band. */
@@ -77,7 +120,7 @@ function outsideEdge(start: number, length: number, anchor: number, value: numbe
  * never covers the margin. A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds). One
  * begun outside is stopped at the margin's outer edge on the anchor's side, on whichever axis (the one that keeps more
  * of the drag) takes the rectangle out of the margin, so it cannot end in the margin nor cross it. A drag begun in the
- * margin (a Project saved with beads there) is left alone.
+ * margin (a Project saved with beads there) is refused (ticket 433): the Selection cannot start there, so the anchor is returned.
  */
 export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
   if (!frame) return cell
@@ -87,19 +130,19 @@ export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition,
       column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
     }
   }
-  if (inMargin(frame, anchor)) return cell
+  if (inMargin(frame, anchor)) return anchor
   const between = (to: GridPosition): Selection => ({
     top: Math.min(anchor.row, to.row),
     left: Math.min(anchor.column, to.column),
     rows: Math.abs(anchor.row - to.row) + 1,
     columns: Math.abs(anchor.column - to.column) + 1,
   })
-  if (!selectionCoversMargin(frame, between(cell))) return cell
+  if (selectionAllowed(frame, between(cell))) return cell
   const row = outsideEdge(frame.row, frame.rows, anchor.row, cell.row)
   const column = outsideEdge(frame.column, frame.columns, anchor.column, cell.column)
   const area = (to: GridPosition) => between(to).rows * between(to).columns
   const candidates = [{ row, column: cell.column }, { row: cell.row, column }, { row, column }]
-  return candidates.filter((to) => !selectionCoversMargin(frame, between(to))).sort((x, y) => area(y) - area(x))[0] ?? { row, column }
+  return candidates.filter((to) => selectionAllowed(frame, between(to))).sort((x, y) => area(y) - area(x))[0] ?? { row, column }
 }
 
 /**

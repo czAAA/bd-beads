@@ -499,6 +499,73 @@ describe('useSelectionGesture', () => {
     })
   })
 
+  describe('every path keeps out of the margin (ticket 433)', () => {
+    const frame = { row: 10, column: 10, rows: 4, columns: 6 }
+    const framed = () => setup(withFrame(makeProject(), frame))
+
+    it('refuses a drag that starts in the margin', () => {
+      const { gesture } = framed()
+      gesture.beginPress(8, 11)
+      expect(gesture.extendPress(12, 12)).toBe(false)
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('reports a drag the margin held back, and one that reached its cell', () => {
+      const { gesture } = framed()
+      gesture.beginPress(11, 11)
+      expect(gesture.extendPress(11, 12)).toBe(true)
+      expect(gesture.extendPress(8, 12)).toBe(false)
+    })
+
+    it('a ruler number selects the Frame\'s part of the line, and nothing outside the Frame', () => {
+      const { gesture } = framed()
+      expect(gesture.selectLine({ top: 11, left: 0, rows: 1, columns: 100 })).toBe(true)
+      expect(gesture.selection.value).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
+      expect(gesture.selectLine({ top: 8, left: 0, rows: 1, columns: 100 })).toBe(false)
+      expect(gesture.selection.value).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
+    })
+
+    it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue', () => {
+      const beads = [{ row: 11, column: 11 }, { row: 11, column: 12 }, { row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
+      const { gesture } = setup(paintCells(withFrame(makeProject(), frame), beads, RED, NO_MIRROR_AXES))
+      gesture.tapPiece(11, 11)
+      expect(gesture.selection.value).toEqual({ top: 11, left: 11, rows: 1, columns: 2 })
+      gesture.tapPiece(2, 2)
+      expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 1, columns: 2 })
+      const before = gesture.refusals.value
+      gesture.tapPiece(8, 11)
+      expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 1, columns: 2 })
+      expect(gesture.refusals.value).toBe(before + 1)
+    })
+  })
+
+  describe('a legacy Project with beads in the margin (ticket 433)', () => {
+    const frame = { row: 10, column: 10, rows: 4, columns: 6 }
+    const legacy = () => {
+      const project = withFrame(makeProject(), frame)
+      return setup({ ...project, beads: { 8: { 11: RED }, 11: { 11: RED } } })
+    }
+
+    it('no path can select a margin bead: drag, ruler, key and Piece tap all keep out', () => {
+      const { gesture } = legacy()
+      gesture.beginPress(8, 11)
+      expect(gesture.extendPress(8, 11)).toBe(false)
+      expect(gesture.selection.value).toBeUndefined()
+      gesture.tapPiece(8, 11)
+      expect(gesture.selection.value).toBeUndefined()
+      expect(gesture.selectLine({ top: 8, left: 0, rows: 1, columns: 100 })).toBe(false)
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('Cut and Clear selection leave a margin bead alone, while Erase still clears it', () => {
+      const { gesture, harness } = legacy()
+      gesture.selectAll()
+      gesture.cut()
+      expect(harness.currentProject()!.beads[8]?.[11]).toBe(RED)
+      expect(harness.currentProject()!.beads[11]?.[11]).toBeUndefined()
+    })
+  })
+
   describe('handles (ticket 414)', () => {
     function selected() {
       const harness = setup()
