@@ -516,6 +516,9 @@ export const es: Translations = {
     canvasGroup: 'Lienzo',
     zoomCanvas: 'Hacer zoom en el lienzo',
     paletteColors: 'Elegir un color de la paleta, en el orden de la paleta',
+    keyHints: 'Mostrar atajos de teclado',
+    keyHintsOn: 'Sí',
+    keyHintsOff: 'No',
   },
   tooltips: {
     paint: 'El clic derecho borra.',

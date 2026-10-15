@@ -523,6 +523,9 @@ export const en: Translations = {
     canvasGroup: 'Canvas',
     zoomCanvas: 'Zoom the Canvas',
     paletteColors: 'Select a Palette color, in Palette order',
+    keyHints: 'Show key hints',
+    keyHintsOn: 'On',
+    keyHintsOff: 'Off',
   },
   tooltips: {
     paint: 'Right-click erases.',

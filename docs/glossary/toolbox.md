@@ -44,3 +44,7 @@ The design system's hover, keyboard-focus and long-press (on touch) help for a c
 **Note**:
 A thin, always-visible gray block of helper text under a control or panel (for example the Estimated size or the Bead quantities explanation). It replaces every (i) button that had to be clicked to show its text.
 _Avoid_: info tip, (i) popup, hint
+
+## Key chip
+
+A hotkey drawn as a small key beside a control: in a Tooltip, as the badge on a Dock tool, in the Canvas hint. Chips are shown only where a keyboard is likely (ticket 438): by default when the device has a fine pointer that can hover, or, on a touch-only device, once a real keyboard key (Tab, Escape, an arrow, or any key with Ctrl or Cmd) has been seen in the session. The switch at the top of Keyboard shortcuts overrides this on the device: its first flip stores on or off, and the UI has no way back to automatic. The chips inside Keyboard shortcuts itself are never hidden. Every chip is drawn by the shared `KeyChip`, so a new control inherits the behaviour.

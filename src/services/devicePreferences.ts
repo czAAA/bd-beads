@@ -89,6 +89,13 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
     write: (unit) => (unit === 'beads' ? null : unit),
   }),
+  /** Whether hotkey chips show (ticket 438): unset (auto, by the device) until the Keyboard shortcuts switch is flipped. */
+  keyHints: preference<boolean | undefined>({
+    key: 'bd-beads:key-hints',
+    fallback: undefined,
+    parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : undefined),
+    write: (on) => (on === undefined ? null : on ? 'on' : 'off'),
+  }),
   /** The app's language. */
   locale: preference<Locale>({
     key: 'bd-beads:locale',

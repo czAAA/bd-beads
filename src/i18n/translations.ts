@@ -580,6 +580,10 @@ export interface Translations {
     zoomCanvas: string
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
     paletteColors: string
+    /** The switch at the top of Keyboard shortcuts (ticket 438) and its two choices. */
+    keyHints: string
+    keyHintsOn: string
+    keyHintsOff: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One imperative sentence ending in a full stop; keys never appear (they are the key chip). */
   tooltips: {

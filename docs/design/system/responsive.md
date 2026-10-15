@@ -29,7 +29,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 - `@media (pointer: coarse)`: touch and Pencil, at any width: every control keeps its drawn size but gets a `touch-target` (44 × 44px) hit area; tool tiles and swatches are both at least 36px (one grid, so they stay the same size), with their hit areas kept apart by the 6px gap, Dock items are 48px tall and keep their `touch-target` hit area.
 - Nothing is hover-only on a coarse pointer: the Remove × on Saved Pattern thumbnails is always visible, tooltips become long-press, there is no hover paint preview.
-- Keyboard shortcuts shows only when a fine pointer or keyboard is present: `(any-pointer: fine)`.
+- Hotkey chips follow the device (ticket 438): shown with a hovering fine pointer or once a real keyboard key is seen, otherwise hidden; the switch in Keyboard shortcuts overrides it. Keyboard shortcuts itself is in the phone menu on every device.
 - A stroke on the drawing surface never scrolls the page: `touch-action: none` on the surface.
 
 ## Screen edges and height

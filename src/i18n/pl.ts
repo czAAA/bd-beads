@@ -518,6 +518,9 @@ export const pl: Translations = {
     canvasGroup: 'Płótno',
     zoomCanvas: 'Powiększ płótno',
     paletteColors: 'Wybierz kolor palety, w kolejności palety',
+    keyHints: 'Pokazuj podpowiedzi klawiszy',
+    keyHintsOn: 'Wł.',
+    keyHintsOff: 'Wył.',
   },
   tooltips: {
     paint: 'Prawy przycisk wymazuje.',

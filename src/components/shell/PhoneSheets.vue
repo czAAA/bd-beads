@@ -229,7 +229,7 @@ const deps = computed(() =>
       <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>
       <AppButton variant="in-box" size="sm" :action="sheetActions.changeMakerName" :label="makerName ? undefined : t.saveBox.addName" data-testid="menu-item-name-on-exports-change" @click="nameOnExportsOpen = true" />
     </div>
-    <button type="button" class="ui-control phone-sheet__menu-link phone-sheet__menu-shortcuts" data-testid="menu-item-shortcuts" @click="shortcutsHelpOpen = true">
+    <button type="button" class="ui-control phone-sheet__menu-link" data-testid="menu-item-shortcuts" @click="shortcutsHelpOpen = true">
       <AppIcon name="keyboard" :size="16" />
       {{ t.shortcutsHelp.title }}
     </button>
@@ -317,17 +317,6 @@ const deps = computed(() =>
   background: none;
   border: 0;
   cursor: pointer;
-}
-
-/* Keyboard shortcuts only helps a fine pointer or a keyboard (ticket 166; responsive.md "Input, not width"). */
-.phone-sheet__menu-shortcuts {
-  display: none;
-}
-
-@media (any-pointer: fine) {
-  .phone-sheet__menu-shortcuts {
-    display: flex;
-  }
 }
 
 .phone-sheet__bead-row {
