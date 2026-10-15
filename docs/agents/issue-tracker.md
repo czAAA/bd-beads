@@ -1,17 +1,17 @@
 # Issue tracker
 
-Issues are tracked as markdown files under `.scratch/`, one flat file per ticket, named `NN-slug.md` (e.g. `52-vocabulary-alignment.md`). `.scratch/` is a symlink into the private docs repo `bd-beads-docs`, cloned next to this one and linked by `scripts/link-docs.sh` (README, "Where the docs live"); the code repo never tracks it:
+Issues are tracked as markdown files under `.scratch/`, one flat file per ticket, named `NNNN-slug.md`, the number zero-padded to four digits so file lists sort in order (e.g. `0052-vocabulary-alignment.md`). `.scratch/` is a symlink into the private docs repo `bd-beads-docs`, cloned next to this one and linked by `scripts/link-docs.sh` (README, "Where the docs live"); the code repo never tracks it:
 
 ```
 .scratch/
-  52-vocabulary-alignment.md
-  53-ci-gate.md
+  0052-vocabulary-alignment.md
+  0053-ci-gate.md
   .archive/
-    51-move-new-pattern-cta-and-zoom-controls.md
+    0051-move-new-pattern-cta-and-zoom-controls.md
 ```
 
 - `.archive/` holds resolved tickets, moved there once closed.
-- Tickets stay flat: every open ticket is `.scratch/NN-slug.md`, never in a per-feature or per-epic folder. The slug is a few lowercase words, hyphenated.
+- Tickets stay flat: every open ticket is `.scratch/NNNN-slug.md`, never in a per-feature or per-epic folder. The slug is a few lowercase words, hyphenated.
 
 ## Ticket numbers
 
@@ -21,22 +21,24 @@ A new ticket takes the highest number in use plus one, counted across `.scratch/
 ls .scratch .scratch/.archive | grep -oE '^[0-9]+-' | grep -oE '[0-9]+' | sort -n | tail -1
 ```
 
+Write the next number with four digits (`printf '%04d'`). Numbers in text ("ticket 0071", "Blocked by: 0071") are padded the same way.
+
 Pull the docs repo first (`git -C ../bd-beads-docs pull`).
 
 A number is never reused, and a ticket keeps its number when it moves to `.archive/`.
 
-Specs are not tickets: a spec is kept in `docs/specs/` (`NN-<slug>.md`, same number as when it was written), never in `.scratch/` or its archive, so it is not archived with the tickets that implement it.
+Specs are not tickets: a spec is kept in `docs/specs/` (`NNNN-<slug>.md`, same number as when it was written), never in `.scratch/` or its archive, so it is not archived with the tickets that implement it.
 
 ## Ticket format
 
 ```markdown
-# NN: Title, saying the outcome in the user's words
+# NNNN: Title, saying the outcome in the user's words
 
 **What to build:** what changes for the person using the app, and why. Cause and known limits, if found, follow as paragraphs.
 
-**Spec:** NN (the spec this one implements, a file `docs/specs/NN-*.md`), if any
+**Spec:** NNNN (the spec this one implements, a file `docs/specs/NNNN-*.md`), if any
 
-**Blocked by:** None (can start immediately) | NN, NN (what each one brings)
+**Blocked by:** None (can start immediately) | NNNN, NNNN (what each one brings)
 
 **Status:** needs-triage
 
@@ -53,7 +55,7 @@ Tickets are English-only; the app's own language switcher (see CONTEXT.md's Lang
 
 ## Workflow
 
-- **Creating an issue**: `to-tickets` skill writes a new `.scratch/NN-slug.md`, then commits it to `bd-beads-docs` `main` and pushes at once (`git -C ../bd-beads-docs add -A && git -C ../bd-beads-docs commit -m "ticket NN: ..." && git -C ../bd-beads-docs push`)
+- **Creating an issue**: `to-tickets` skill writes a new `.scratch/NNNN-slug.md`, then commits it to `bd-beads-docs` `main` and pushes at once (`git -C ../bd-beads-docs add -A && git -C ../bd-beads-docs commit -m "ticket NN: ..." && git -C ../bd-beads-docs push`)
 - **Triaging**: `triage` skill reads and updates a ticket's `**Status:**` line, set to one of the triage labels
 - **Resolving**: close the issue by moving it to `.scratch/.archive/`, then commit and push in the docs repo, once the PR that completes it is ready for review. The archive is part of the work, but it is not part of the code PR
 
