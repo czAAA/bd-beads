@@ -1,11 +1,12 @@
 import { normalizeMakerName } from '../domain/makerName'
+import { readKey, removeKey } from './storageKeys'
 
 /**
  * The maker's name (CONTEXT.md, ticket 161): who made a Project, printed on its PDF and PNG exports. It belongs to the
  * person using this device, not to a Project, so it is kept on the device like the theme and never sent anywhere
  * (ADR 0001). Empty means the exports leave it out.
  */
-export const MAKER_NAME_KEY = 'bd-beads:maker-name'
+export const MAKER_NAME_KEY = 'openbeads:maker-name'
 
 /** Where the maker's name is kept (ADR 0020). */
 export interface MakerNameStore {
@@ -18,7 +19,7 @@ export function createMakerNameStore(storage: Pick<Storage, 'getItem' | 'setItem
   return {
     load() {
       try {
-        return normalizeMakerName(storage.getItem(MAKER_NAME_KEY) ?? '')
+        return normalizeMakerName(readKey(storage, MAKER_NAME_KEY) ?? '')
       } catch {
         // Storage can be blocked (private mode, site data off): the exports just carry no name.
         return ''
@@ -28,7 +29,7 @@ export function createMakerNameStore(storage: Pick<Storage, 'getItem' | 'setItem
       const kept = normalizeMakerName(name)
       try {
         if (kept) storage.setItem(MAKER_NAME_KEY, kept)
-        else storage.removeItem(MAKER_NAME_KEY)
+        else removeKey(storage, MAKER_NAME_KEY)
       } catch {
         // Blocked storage: the name still holds for this visit.
       }

@@ -8,7 +8,7 @@ vi.mock('./features', () => ({ TOUR_ENABLED: false, MIRROR_ENABLED: true }))
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 async function pressKey(init: KeyboardEventInit) {

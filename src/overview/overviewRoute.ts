@@ -4,7 +4,7 @@ import type { TourStatus } from '../services/tourStore'
 const OVERVIEW_PATH = 'overview/'
 
 /** Set for this tab once the visitor has chosen the editor, so the main address doesn't send them straight back. */
-const EDITOR_CHOSEN_KEY = 'bd-beads:editor-chosen'
+const EDITOR_CHOSEN_KEY = 'openbeads:editor-chosen'
 
 /**
  * Whether the main address sends the visitor to the Overview instead of the editor (ticket 77): only when this

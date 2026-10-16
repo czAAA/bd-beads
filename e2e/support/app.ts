@@ -16,7 +16,7 @@ export async function openApp(
   options: { storageNote?: boolean } = {},
 ): Promise<void> {
   if (!options.storageNote) {
-    await page.addInitScript(() => localStorage.setItem('bd-beads:storage-note-seen', 'yes'))
+    await page.addInitScript(() => localStorage.setItem('openbeads:storage-note-seen', 'yes'))
   }
   if (projects.length > 0) {
     const stored = storedLibrary(projects)
@@ -31,7 +31,7 @@ export async function openApp(
     )
   }
   // An empty library would otherwise send a new visitor to the Overview (ticket 77); these checks are about the editor.
-  await page.addInitScript(() => sessionStorage.setItem('bd-beads:editor-chosen', '1'))
+  await page.addInitScript(() => sessionStorage.setItem('openbeads:editor-chosen', '1'))
   // Text is set from the font files' own measurements, not the operating system's: no hinting, fractional advances,
   // kerning on, and no synthesized bold or italic, so a Mac, a Linux box and CI break lines in the same places.
   // Added on every load, so it survives the navigations some checks make.

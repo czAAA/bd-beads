@@ -124,8 +124,8 @@ describe("index.html's pre-paint script", () => {
   })
 
   it('agrees with resolveTheme on a saved pick and sets the language', () => {
-    localStorage.setItem('bd-beads:theme', 'light')
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:theme', 'light')
+    localStorage.setItem('openbeads:locale', 'en')
     runWith({ dark: true, moreContrast: true })
     expect(root.dataset.theme).toBe('light')
     expect(root.lang).toBe('en')

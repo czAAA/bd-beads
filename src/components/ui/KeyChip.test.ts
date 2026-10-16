@@ -18,7 +18,7 @@ function onDevice(keyboardLikely: boolean) {
 describe('hotkey chips follow the device (ticket 438)', () => {
   beforeEach(() => {
     localStorage.clear()
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
   afterEach(() => {
     vi.unstubAllGlobals()

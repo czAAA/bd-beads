@@ -16,7 +16,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 describe('OverviewPage', () => {
@@ -115,7 +115,7 @@ describe('OverviewPage', () => {
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первый проект')
     expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
-    expect(localStorage.getItem('bd-beads:locale')).toBe('ru')
+    expect(localStorage.getItem('openbeads:locale')).toBe('ru')
   })
 
   it('starts in English on a device with no saved language', () => {

@@ -4,7 +4,7 @@ import ShortcutsHelp from './ShortcutsHelp.vue'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 function mountHelp() {
@@ -102,7 +102,7 @@ describe('ShortcutsHelp', () => {
     expect(row.get('[aria-checked="true"]').text()).toBe(ru.shortcutsHelp.keyHintsOn)
 
     await row.get('[data-value="off"]').trigger('click')
-    expect(localStorage.getItem('bd-beads:key-hints')).toBe('off')
+    expect(localStorage.getItem('openbeads:key-hints')).toBe('off')
     expect(wrapper.findAll('.shortcuts-help__kbd').length).toBeGreaterThan(0) // the help's own chips stay
   })
 })

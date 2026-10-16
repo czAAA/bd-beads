@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { settleImport } from '../../testUtils/settleImport'
 import { gzipJson } from '../../testUtils/gzipJson'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import ProjectImport from './ProjectImport.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, paintCells, type Project, frameGrid } from '../../domain/project'
@@ -74,7 +74,7 @@ describe('ProjectImport import', () => {
 
 describe('ProjectImport toastResults and testidPrefix (ticket 168: the iPad mini tier\'s More menu)', () => {
   beforeEach(() => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
 
   it('emits import-result instead of drawing the inline result, and prefixes its testids', async () => {
