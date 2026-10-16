@@ -69,39 +69,39 @@ describe('single-Project roundtrip', () => {
   it('writes Row progress without its flag, and reads an old file that has one with the Frame deciding (ticket 426)', () => {
     const project = decoratedProject()
     const file = JSON.parse(serializeProject(project))
-    expect(file.patterns[0].rowProgress).not.toHaveProperty('enabled')
+    expect(file.projects[0].rowProgress).not.toHaveProperty('enabled')
 
-    file.patterns[0].rowProgress.enabled = false
-    file.patterns[0].rowProgress.decided = true
+    file.projects[0].rowProgress.enabled = false
+    file.projects[0].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('stays readable version-3 JSON with a color per bead, not the compact stored form (ADR 0009)', () => {
+  it('writes version 3 with the compact encoding and the openbeads kind (ADR 0048)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
-    // A Project file exists to move work between devices and to be read; compactness belongs to localStorage only, so
-    // export/import is an encode/decode boundary rather than a passthrough of whatever is stored.
+    expect(file.kind).toBe('openbeads/project')
     expect(file.version).toBe(3)
-    expect(file.patterns[0].encodedBeads).toBeUndefined()
-    expect(file.patterns[0].beads[2][3]).toBe('#e63746')
-    expect(file.patterns[0].frame).toBeDefined()
+    expect(file.patterns).toBeUndefined()
+    expect(file.projects[0].beads).toBeUndefined()
+    expect(file.projects[0].encodedBeads).toBeDefined()
+    expect(file.projects[0].frame).toBeDefined()
+    expect(JSON.parse(serializeLibrary([decoratedProject()])).kind).toBe('openbeads/library')
   })
 
-  it('keeps Piece names through a file, and still reads a version-2 file that has none (ticket 406)', () => {
+  it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
     const named = { ...decoratedProject(), pieceNames: [{ row: 2, column: 3, name: 'Fox' }] }
     const file = JSON.parse(serializeProject(named))
 
     expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
 
-    file.version = 2
-    delete file.patterns[0].pieceNames
+    delete file.projects[0].pieceNames
     expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toBeUndefined()
   })
 
   it('drops Piece names that are not well formed', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.patterns[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
+    file.projects[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
 
     expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 0, column: 0, name: 'Ok' }])
   })
@@ -110,17 +110,18 @@ describe('single-Project roundtrip', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.colorBeadDefaults).toBeUndefined()
-    expect(file.patterns[0].colorBeadOverrides).toBeUndefined()
+    expect(file.projects[0].colorBeadOverrides).toBeUndefined()
   })
 
   it('names the file after the Project, without characters a filesystem would choke on', () => {
-    expect(projectFileName(makeProject('Fox'))).toBe('openbeads-fox.json')
-    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('openbeads-toho-cube-1-5mm.json')
-    expect(projectFileName(makeProject('a/b:c*?'))).toBe('openbeads-a-b-c.json')
+    expect(projectFileName(makeProject('Fox'))).toBe('fox_pr.openbeads')
+    expect(projectFileName(makeProject('TOHO Cube 1.5mm'))).toBe('toho-cube-1-5mm_pr.openbeads')
+    expect(projectFileName(makeProject('a/b:c*?'))).toBe('a-b-c_pr.openbeads')
+    expect(projectFileName(makeProject('Лиса'))).toBe('лиса_pr.openbeads')
   })
 
   it('falls back to a generic name for a Project whose name has nothing filename-safe in it', () => {
-    expect(projectFileName(makeProject('???'))).toBe('openbeads-project.json')
+    expect(projectFileName(makeProject('???'))).toBe('openbeads_pr.openbeads')
   })
 })
 
@@ -132,7 +133,7 @@ describe('whole-library roundtrip', () => {
   })
 
   it('exports to one predictable file name', () => {
-    expect(libraryFileName()).toBe('openbeads-library.json')
+    expect(libraryFileName()).toBe('openbeads_lib.openbeads')
   })
 
   it('reads a single-Project file too, so one import button handles both', () => {
@@ -147,8 +148,9 @@ describe('parseProjectsFile', () => {
     expect(() => parseProjectsFile('not json')).toThrow()
   })
 
-  it('rejects JSON that is not an openbeads file', () => {
+  it('rejects JSON that is not an openbeads file, including the old kinds', () => {
     expect(() => parseProjectsFile('{"kind":"something-else","projects":[]}')).toThrow()
+    expect(() => parseProjectsFile('{"kind":"bd-beads/library","version":3,"patterns":[]}')).toThrow()
   })
 
   it('rejects a file written by a newer, unknown version of the format', () => {
@@ -160,13 +162,13 @@ describe('parseProjectsFile', () => {
 
   it('rejects a file whose projects are not Projects', () => {
     expect(() =>
-      parseProjectsFile('{"kind":"bd-beads/library","version":1,"projects":[{"id":"x"}]}'),
+      parseProjectsFile('{"kind":"openbeads/library","version":3,"projects":[{"id":"x"}]}'),
     ).toThrow()
   })
 
   it('backfills fields a Project exported by an older version would be missing', () => {
     const file = JSON.parse(serializeProject(makeProject()))
-    delete file.patterns[0].rowProgress
+    delete file.projects[0].rowProgress
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
@@ -180,8 +182,8 @@ describe('parseProjectsFile', () => {
   it('still imports a file exported before ADR 0026, ignoring the millimetre size it stored and keeping the grid', () => {
     const original = makeProject()
     const file = JSON.parse(serializeProject(original))
-    file.patterns[0].widthMm = 15
-    file.patterns[0].heightMm = 15
+    file.projects[0].widthMm = 15
+    file.projects[0].heightMm = 15
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
@@ -193,7 +195,7 @@ describe('parseProjectsFile', () => {
   })
 
   it('writes no millimetre size into a file (ADR 0026)', () => {
-    const [project] = JSON.parse(serializeProject(makeProject())).patterns
+    const [project] = JSON.parse(serializeProject(makeProject())).projects
 
     expect(project).not.toHaveProperty('widthMm')
     expect(project).not.toHaveProperty('heightMm')
@@ -202,11 +204,11 @@ describe('parseProjectsFile', () => {
   it('still imports a file exported before this change, ignoring its color-to-bead defaults and overrides', () => {
     const file = JSON.parse(serializeProject(makeProject()))
     file.colorBeadDefaults = { red: 'toho-cube-1.5mm' }
-    file.patterns[0].colorBeadOverrides = { red: 'miyuki-delica-11-0' }
+    file.projects[0].colorBeadOverrides = { red: 'miyuki-delica-11-0' }
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(projects[0]!.id).toBe(file.patterns[0].id)
+    expect(projects[0]!.id).toBe(file.projects[0].id)
     expect((projects[0] as unknown as { colorBeadOverrides?: unknown }).colorBeadOverrides).toBeUndefined()
   })
 })

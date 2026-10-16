@@ -5,7 +5,7 @@ import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 
-const STORAGE_KEY = 'bd-beads:patterns'
+const STORAGE_KEY = 'openbeads:patterns'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -86,7 +86,7 @@ describe('projectStorage', () => {
   })
 
   it('ignores corrupted data in storage instead of throwing', () => {
-    localStorage.setItem('bd-beads:patterns', 'not json')
+    localStorage.setItem('openbeads:patterns', 'not json')
 
     expect(loadProjects()).toEqual([])
   })
@@ -101,7 +101,7 @@ describe('projectStorage', () => {
 
   it('backfills a name from the bead label for projects saved before names existed', () => {
     const { name: _name, ...legacyProject } = makeProject()
-    localStorage.setItem('bd-beads:patterns', JSON.stringify([legacyProject]))
+    localStorage.setItem('openbeads:patterns', JSON.stringify([legacyProject]))
 
     expect(loadProjects()[0]!.name).toBe('TOHO Cube 1.5mm')
   })
@@ -183,7 +183,24 @@ describe('projectStorage', () => {
       loadProjects()
       saveProjects([]) // what an edit made on the empty library the app started from would write
 
-      expect(localStorage.getItem('bd-beads:patterns:unreadable')).toBe(unreadable)
+      expect(localStorage.getItem('openbeads:patterns:unreadable')).toBe(unreadable)
+    })
+
+    it('finds a library saved under the old bd-beads: key, copies it forward and keeps its unreadable safeguard (ticket 392)', () => {
+      const project = makeProject()
+      saveProjects([project])
+      const saved = localStorage.getItem(STORAGE_KEY)!
+      localStorage.clear()
+      localStorage.setItem('bd-beads:patterns', saved)
+
+      expect(loadProjects()).toEqual([project])
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(saved)
+      expect(localStorage.getItem('bd-beads:patterns')).toBe(saved)
+
+      localStorage.clear()
+      localStorage.setItem('bd-beads:patterns', '{"version":99}')
+      expect(loadProjects()).toEqual([])
+      expect(localStorage.getItem('openbeads:patterns:unreadable')).toBe('{"version":99}')
     })
 
     it('opens a Project whose runs do not add up to its grid, rather than refusing it', () => {
@@ -221,13 +238,13 @@ describe('projectStorage', () => {
       expect(frameGrid(loaded!).every((row) => row.length === 10)).toBe(true)
     })
 
-    it('hands exported Project files plain Projects, so a file stays readable JSON', () => {
+    it('hands exported Project files plain Projects, which the file then encodes itself', () => {
       const project = paintedOrdinaryProject()
       saveProjects([project])
 
       const exported = serializeLibrary(loadProjects())
 
-      expect(JSON.parse(exported).patterns[0].encodedBeads).toBeUndefined()
+      expect(JSON.parse(exported).projects[0].encodedBeads).toBeDefined()
       expect(parseProjectsFile(exported).projects).toEqual([project])
     })
 

@@ -54,19 +54,19 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
 
 describe('useExportFlow', () => {
   describe('Project file', () => {
-    it('hands over the whole library as one file', () => {
-      setup().onExportLibraryFile()
-      expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(String))
+    it('hands over the whole library as one gzipped file', async () => {
+      await setup().onExportLibraryFile()
+      expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(Uint8Array), 'application/json')
     })
 
-    it('hands over the open Project as a Project file', () => {
-      setup().onExportProjectFile()
-      expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(String))
+    it('hands over the open Project as a Project file', async () => {
+      await setup().onExportProjectFile()
+      expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
     })
 
-    it('hands over the whole library when no Project is open', () => {
-      setup({ open: false }).onExportProjectFile()
-      expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(String))
+    it('hands over the whole library when no Project is open', async () => {
+      await setup({ open: false }).onExportProjectFile()
+      expect(downloadFile).toHaveBeenCalledWith(libraryFileName(), expect.any(Uint8Array), 'application/json')
     })
   })
 
@@ -176,12 +176,13 @@ describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
     expect(toasts).toEqual([])
   })
 
-  it('leaves the Project file and library exports alone', () => {
+  it('hands the Project file over only from the toast action too, as packing it takes the tap', async () => {
     const { flow, toasts } = setupShare(true)
-    flow.onExportProjectFile()
-    flow.onExportLibraryFile()
+    await flow.onExportProjectFile()
 
-    expect(downloadFile).toHaveBeenCalledTimes(2)
-    expect(toasts).toEqual([])
+    expect(downloadFile).not.toHaveBeenCalled()
+    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyFile])
+    toasts[0]!.action!.run()
+    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
   })
 })

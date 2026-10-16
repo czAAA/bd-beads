@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import CoffeeTile from './CoffeeTile.vue'
 
 function tile(locale: 'en' | 'ru' = 'en') {
-  localStorage.setItem('bd-beads:locale', locale)
+  localStorage.setItem('openbeads:locale', locale)
   return mount(CoffeeTile)
 }
 

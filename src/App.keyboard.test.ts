@@ -15,7 +15,7 @@ import { openSheet, pickColor } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 async function openProject(columns = 6, rows = 4) {

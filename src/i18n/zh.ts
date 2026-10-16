@@ -359,6 +359,7 @@ export const zh: Translations = {
     makingPdf: '正在生成 PDF · {name}',
     readyPng: 'PNG 已就绪',
     readyPdf: 'PDF 已就绪',
+    readyFile: '文件已就绪',
     readySave: '保存',
     exportProjectFile: '导出项目',
     nameOnExports: '导出文件上的姓名',

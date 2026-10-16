@@ -17,7 +17,7 @@ function open() {
 }
 
 beforeEach(() => {
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
   localStorage.removeItem(PREFERENCES.canvasBackground.key)
   setTheme('light')
   useCanvasBackground().setChoice(1)

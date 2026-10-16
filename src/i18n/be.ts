@@ -362,6 +362,7 @@ export const be: Translations = {
     makingPdf: 'Рыхтуем PDF · {name}',
     readyPng: 'PNG гатовы',
     readyPdf: 'PDF гатовы',
+    readyFile: 'Файл гатовы',
     readySave: 'Захаваць',
     exportProjectFile: 'Экспартаваць праект',
     nameOnExports: 'Імя на экспарце',

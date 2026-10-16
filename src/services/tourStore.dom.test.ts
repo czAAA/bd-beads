@@ -14,7 +14,7 @@ describe('tourStore', () => {
   })
 
   it('reads anything else as untouched', () => {
-    localStorage.setItem('bd-beads:tour', 'nonsense')
+    localStorage.setItem('openbeads:tour', 'nonsense')
     expect(loadTourStatus()).toBe('untouched')
   })
 })
@@ -32,9 +32,9 @@ describe('tour progress', () => {
   })
 
   it('ignores steps it does not know and anything unreadable', () => {
-    localStorage.setItem('bd-beads:tour-progress', JSON.stringify({ done: ['create', 'nonsense', 7], projectId: 5 }))
+    localStorage.setItem('openbeads:tour-progress', JSON.stringify({ done: ['create', 'nonsense', 7], projectId: 5 }))
     expect(loadTourProgress()).toEqual({ done: ['create'] })
-    localStorage.setItem('bd-beads:tour-progress', '{')
+    localStorage.setItem('openbeads:tour-progress', '{')
     expect(loadTourProgress()).toEqual({ done: [] })
   })
 })

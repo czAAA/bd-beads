@@ -5,7 +5,7 @@ import type { Project } from '../../domain/project'
 import CanvasStrip from './CanvasStrip.vue'
 
 beforeEach(() => {
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 describe('CanvasStrip', () => {

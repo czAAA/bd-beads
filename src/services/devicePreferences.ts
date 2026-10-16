@@ -6,6 +6,7 @@ import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
+import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
 interface Preference<T> {
@@ -36,10 +37,10 @@ function onUntilOff(key: string): Preference<boolean> {
  */
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
-  rulers: onUntilOff('bd-beads:rulers'),
+  rulers: onUntilOff('openbeads:rulers'),
   /** The Canvas color (ticket 252): a number, 1 to 6, so it survives a change of theme. */
   canvasBackground: preference({
-    key: 'bd-beads:canvas-background',
+    key: 'openbeads:canvas-background',
     fallback: 1,
     parse: (raw) => {
       const choice = Number(raw)
@@ -49,56 +50,56 @@ export const PREFERENCES = {
   }),
   /** How the Canvas draws its Position marks (ticket 348): Dots until Squares is chosen. Never saved with a Project. */
   positionMarks: preference<PositionMarkStyle>({
-    key: 'bd-beads:position-marks',
+    key: 'openbeads:position-marks',
     fallback: 'dots',
     parse: (raw) => (raw === 'dots' || raw === 'squares' ? raw : undefined),
     write: (style) => (style === 'dots' ? null : style),
   }),
   /** The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a pen can pick Pen mode. */
   inputMode: preference<InputMode | undefined>({
-    key: 'bd-beads:input-mode',
+    key: 'openbeads:input-mode',
     fallback: undefined,
     parse: (raw) => (raw === 'pen' || raw === 'mouse' ? raw : undefined),
     write: (mode) => mode ?? null,
   }),
   /** Whether a pen has touched this device (ticket 326): the input mode toggle is offered once it has. */
   penSeen: preference<boolean>({
-    key: 'bd-beads:pen-seen',
+    key: 'openbeads:pen-seen',
     fallback: false,
     parse: (raw) => raw === 'yes',
     write: (seen) => (seen ? 'yes' : null),
   }),
   /** Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never again. */
   storageNoteSeen: preference<boolean>({
-    key: 'bd-beads:storage-note-seen',
+    key: 'openbeads:storage-note-seen',
     fallback: false,
     parse: (raw) => raw === 'yes',
     write: (asked) => (asked ? 'yes' : null),
   }),
   /** The theme pick (ticket 139). Match device is no pick at all, so it is not kept. */
   theme: preference<ThemePick>({
-    key: 'bd-beads:theme',
+    key: 'openbeads:theme',
     fallback: 'device',
     parse: (raw) => (raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : undefined),
     write: (pick) => (pick === 'device' ? null : pick),
   }),
   /** The unit the Frame section states the Schema size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
   sizeUnit: preference<SchemaSizeUnit>({
-    key: 'bd-beads:size-unit',
+    key: 'openbeads:size-unit',
     fallback: 'beads',
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
     write: (unit) => (unit === 'beads' ? null : unit),
   }),
   /** Whether hotkey chips show (ticket 438): unset (auto, by the device) until the Keyboard shortcuts switch is flipped. */
   keyHints: preference<boolean | undefined>({
-    key: 'bd-beads:key-hints',
+    key: 'openbeads:key-hints',
     fallback: undefined,
     parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : undefined),
     write: (on) => (on === undefined ? null : on ? 'on' : 'off'),
   }),
   /** The app's language. */
   locale: preference<Locale>({
-    key: 'bd-beads:locale',
+    key: 'openbeads:locale',
     fallback: 'en',
     parse: (raw) => LOCALES.find((locale) => locale === raw),
     write: (locale) => locale,
@@ -123,7 +124,7 @@ export function createDevicePreferences(storage: PreferenceStorage): DevicePrefe
   function open<T>(spec: Preference<T>): Ref<T> {
     let value = spec.fallback
     try {
-      const saved = storage.getItem(spec.key)
+      const saved = readKey(storage, spec.key)
       if (saved !== null) value = spec.parse(saved) ?? spec.fallback
     } catch {
       // Storage can be blocked (private mode, site data off): the preference starts at its default.
@@ -137,7 +138,7 @@ export function createDevicePreferences(storage: PreferenceStorage): DevicePrefe
         value = next
         try {
           const kept = spec.write(next)
-          if (kept === null) storage.removeItem(spec.key)
+          if (kept === null) removeKey(storage, spec.key)
           else storage.setItem(spec.key, kept)
         } catch {
           // Storage can be blocked or full; the choice still holds for this visit.

@@ -1,6 +1,7 @@
 import type { Project } from '../../domain/project'
-import { projectFileName, serializeProject } from '../../domain/projectFile'
+import { projectFileName } from '../../domain/projectFile'
 import type { Translations } from '../../i18n/translations'
+import { packProjectFile } from '../../services/projectFileCodec'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 
 /** What saving needs from the app shell: the open Project, the library's write, the language and the toasts. */
@@ -46,7 +47,7 @@ export function useSaveFlow(deps: SaveFlowDeps) {
     const saveSucceeded = deps.saveNow()
     // Read again: the write stamps the Project's savedAt, and the file carries it.
     const project = deps.currentProject()!
-    downloadFile(projectFileName(project), serializeProject(project))
+    void packProjectFile(project).then((bytes) => downloadFile(projectFileName(project), bytes))
     if (!saveSucceeded) {
       return
     }

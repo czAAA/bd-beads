@@ -1,24 +1,21 @@
 import { normalizeProject, type GridProject, type Project } from './project'
+import { decodeProject, encodeProject, type EncodedProject } from './projectEncoding'
 
 /**
- * The export file format. There is no backend to migrate a Project for us (ADR 0001), so a file carries the kind it
- * is and the format version that wrote it, and the reader refuses anything it doesn't understand rather than
- * silently importing half a Project.
+ * The export file format (ADR 0048). There is no backend to migrate a Project for us (ADR 0001), so a file carries the
+ * kind it is and the format version that wrote it, and the reader refuses anything it doesn't understand rather than
+ * silently importing half a Project. This is the JSON inside a `.openbeads` file; the gzip around it is the service's
+ * (`projectFileCodec`). Files written before ADR 0048 are plain JSON and read by `legacyProjectFile`.
  */
-const PROJECT_FILE_KIND = 'bd-beads/pattern'
-const LIBRARY_FILE_KIND = 'bd-beads/library'
-/**
- * Version 1 held a fixed grid of cells per Project; version 2 holds beads by position and a Frame (ADR 0026); version 3
- * adds Piece names, by an anchor bead's position (ticket 406). All are read, only 3 is written.
- */
+const PROJECT_FILE_KIND = 'openbeads/project'
+const LIBRARY_FILE_KIND = 'openbeads/library'
+/** Version 3 is the first gzipped one: `projects`, each with its beads in the compact encoding (ADR 0009). */
 const FILE_VERSION = 3
-const FILE_VERSIONS: readonly number[] = [1, 2, 3]
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
-  // The key stays `patterns` on disk (ADR 0028): files already written and shared use it.
-  patterns: (Project | GridProject)[]
+  projects: EncodedProject[]
 }
 
 /** What an exported file holds once read back. */
@@ -27,44 +24,44 @@ export interface ProjectFileContents {
 }
 
 function serialize(kind: ProjectFile['kind'], projects: Project[]): string {
-  const file: ProjectFile = { kind, version: FILE_VERSION, patterns: projects }
-  return JSON.stringify(file, null, 2)
+  const file: ProjectFile = { kind, version: FILE_VERSION, projects: projects.map(encodeProject) }
+  return JSON.stringify(file)
 }
 
-/** The open Project on its own, for sharing or backing it up (ticket 12). */
+/** The open Project on its own, for sharing or backing it up (ticket 12), as the JSON a file wraps. */
 export function serializeProject(project: Project): string {
   return serialize(PROJECT_FILE_KIND, [project])
 }
 
-/** Every saved Project in one file, for moving a whole library to another device (ticket 15). */
+/** Every saved Project in one file, for moving a whole library to another device (ticket 15), as the JSON a file wraps. */
 export function serializeLibrary(projects: Project[]): string {
   return serialize(LIBRARY_FILE_KIND, projects)
 }
 
 /** Project names are free text (and may be Russian), so keep the letters that survive a filename and drop the rest. */
 function fileNameSlug(name: string): string {
-  const slug = name
+  return name
     .toLowerCase()
     .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
     .replace(/^-+|-+$/g, '')
-
-  return slug || 'project'
 }
 
+/** `my-scarf_pr.openbeads`, or `openbeads_pr.openbeads` when the name leaves nothing to write (ticket 392). */
 export function projectFileName(project: Project): string {
-  return `openbeads-${fileNameSlug(project.name)}.json`
+  return `${fileNameSlug(project.name) || 'openbeads'}_pr.openbeads`
 }
 
 /** The name a picture or document of the Project is saved under (ticket 73, 74), e.g. `openbeads-my-scarf.png`. */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  return `openbeads-${fileNameSlug(project.name)}.${extension}`
+  return `openbeads-${fileNameSlug(project.name) || 'project'}.${extension}`
 }
 
 export function libraryFileName(): string {
-  return 'openbeads-library.json'
+  return 'openbeads_lib.openbeads'
 }
 
-function looksLikeProject(value: unknown): value is Project | GridProject {
+/** Whether a parsed value has the fields of a Project, in either the beads shape or the older grid shape. */
+export function looksLikeProject(value: unknown): value is Project | GridProject {
   const project = value as Partial<Project & GridProject> | null
   const hasBeads = typeof project?.beads === 'object' && project.beads !== null
   const hasGrid = typeof project?.columns === 'number' && typeof project.rows === 'number' && Array.isArray(project.grid)
@@ -78,10 +75,22 @@ function looksLikeProject(value: unknown): value is Project | GridProject {
   )
 }
 
+function looksLikeEncodedProject(value: unknown): value is EncodedProject {
+  const project = value as Partial<EncodedProject> | null
+  return (
+    typeof project === 'object' &&
+    project !== null &&
+    typeof project.encodedBeads === 'object' &&
+    project.encodedBeads !== null &&
+    // The rest of the shape is a Project's; its beads are the encoded ones, so stand a placeholder in for them.
+    looksLikeProject({ ...project, beads: {} })
+  )
+}
+
 /**
- * Reads the Projects out of an exported file, whether it holds one Project or a whole library, so a single import
- * action handles both. Throws when the file isn't one openbeads wrote, or was written by a format version this build
- * doesn't know.
+ * Reads the Projects out of the JSON of a version 3 file, whether it holds one Project or a whole library, so a single
+ * import action handles both. Throws when the JSON isn't one openbeads wrote, or was written by a format version this
+ * build doesn't know.
  */
 export function parseProjectsFile(text: string): ProjectFileContents {
   let parsed: unknown
@@ -100,16 +109,16 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error('Not an openbeads file')
   }
 
-  if (typeof file.version !== 'number' || !FILE_VERSIONS.includes(file.version)) {
+  if (file.version !== FILE_VERSION) {
     throw new Error(`Unsupported openbeads file version: ${String(file.version)}`)
   }
 
-  if (!Array.isArray(file.patterns) || !file.patterns.every(looksLikeProject)) {
+  if (!Array.isArray(file.projects) || !file.projects.every(looksLikeEncodedProject)) {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
   return {
-    projects: file.patterns.map(normalizeProject),
+    projects: file.projects.map((project) => normalizeProject(decodeProject(project))),
   }
 }
 

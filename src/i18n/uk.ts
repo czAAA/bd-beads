@@ -361,6 +361,7 @@ export const uk: Translations = {
     makingPdf: 'Готуємо PDF · {name}',
     readyPng: 'PNG готовий',
     readyPdf: 'PDF готовий',
+    readyFile: 'Файл готовий',
     readySave: 'Зберегти',
     exportProjectFile: 'Експортувати проєкт',
     nameOnExports: 'Ім’я на експорті',

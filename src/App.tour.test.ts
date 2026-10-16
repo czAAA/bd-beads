@@ -13,8 +13,8 @@ vi.mock('./features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
-  localStorage.setItem('bd-beads:tour', 'running')
+  localStorage.setItem('openbeads:locale', 'en')
+  localStorage.setItem('openbeads:tour', 'running')
 })
 
 function mountApp() {
@@ -40,7 +40,7 @@ describe('App Tour (ticket 80)', () => {
   })
 
   it('stays away from a device that has not started it', async () => {
-    localStorage.removeItem('bd-beads:tour')
+    localStorage.removeItem('openbeads:tour')
     const wrapper = mountApp()
     await flushPromises()
     expect(card(wrapper).exists()).toBe(false)
@@ -72,7 +72,7 @@ describe('App Tour (ticket 80)', () => {
 
     expect(card(wrapper).attributes('aria-label')).toBe(en.tour.final.title)
     expect(wrapper.find('[data-testid="tour-export"]').exists()).toBe(true)
-    expect(localStorage.getItem('bd-beads:tour')).toBe('finished')
+    expect(localStorage.getItem('openbeads:tour')).toBe('finished')
 
     const [project] = loadProjects()
     expect(project).toMatchObject({ technique: 'loom', frame: { columns: 10, rows: 75 } })
@@ -88,7 +88,7 @@ describe('App Tour (ticket 80)', () => {
     await wrapper.find('[data-testid="tour-skip"]').trigger('click')
 
     expect(card(wrapper).exists()).toBe(false)
-    expect(localStorage.getItem('bd-beads:tour')).toBe('off')
+    expect(localStorage.getItem('openbeads:tour')).toBe('off')
     expect(wrapper.find('[data-testid="tour-off"]').text()).toBe(en.tour.skipToast)
   })
 
@@ -99,11 +99,11 @@ describe('App Tour (ticket 80)', () => {
     await flushPromises()
 
     expect(card(wrapper).exists()).toBe(false)
-    expect(localStorage.getItem('bd-beads:tour')).toBe('off')
+    expect(localStorage.getItem('openbeads:tour')).toBe('off')
   })
 
   it('Take the tour in the menu starts it again from step 1', async () => {
-    localStorage.setItem('bd-beads:tour', 'off')
+    localStorage.setItem('openbeads:tour', 'off')
     const wrapper = mountApp()
     await flushPromises()
     expect(card(wrapper).exists()).toBe(false)
@@ -113,11 +113,11 @@ describe('App Tour (ticket 80)', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="tour-progress"]').text()).toBe('1 of 11')
-    expect(localStorage.getItem('bd-beads:tour')).toBe('running')
+    expect(localStorage.getItem('openbeads:tour')).toBe('running')
   })
 
   it('speaks Russian', async () => {
-    localStorage.setItem('bd-beads:locale', 'ru')
+    localStorage.setItem('openbeads:locale', 'ru')
     const wrapper = mountApp()
     await flushPromises()
 
