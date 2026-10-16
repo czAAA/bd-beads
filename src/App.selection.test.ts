@@ -9,7 +9,7 @@ import { ru } from './i18n/ru'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 describe('App select, copy and paste', () => {

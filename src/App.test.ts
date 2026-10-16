@@ -15,7 +15,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 describe('App', () => {
@@ -264,7 +264,7 @@ describe('App', () => {
 
   it('offers exactly the three built-in Beads when creating a Project, even with custom-bead data left over from before ticket 38', async () => {
     localStorage.setItem(
-      'bd-beads:custom-beads',
+      'openbeads:custom-beads',
       JSON.stringify([
         {
           id: 'acme-fancy-8-0',
@@ -362,7 +362,7 @@ describe('App', () => {
 describe('App storage writes', () => {
   /** The Project library's own key: the counting and refusing below are scoped to it, so the saved language's writes
    *  (a click on the language switcher) neither show up as noise nor get refused along with it. */
-  const PROJECTS_KEY = 'bd-beads:patterns'
+  const PROJECTS_KEY = 'openbeads:patterns'
 
   afterEach(() => {
     vi.restoreAllMocks()

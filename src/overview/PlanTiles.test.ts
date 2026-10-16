@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import PlanTiles from './PlanTiles.vue'
 
 function tiles(locale: 'en' | 'ru' = 'en') {
-  localStorage.setItem('bd-beads:locale', locale)
+  localStorage.setItem('openbeads:locale', locale)
   return mount(PlanTiles)
 }
 

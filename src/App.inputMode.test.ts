@@ -10,7 +10,7 @@ import { en } from './i18n/en'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => {
@@ -19,8 +19,8 @@ afterEach(() => {
 
 /** A device a pen has touched before, with the mode the person chose (none: the pen picked Pen mode). */
 function penDevice(mode?: 'pen' | 'mouse') {
-  localStorage.setItem('bd-beads:pen-seen', 'yes')
-  if (mode) localStorage.setItem('bd-beads:input-mode', mode)
+  localStorage.setItem('openbeads:pen-seen', 'yes')
+  if (mode) localStorage.setItem('openbeads:input-mode', mode)
 }
 
 async function mountOpen() {
@@ -43,7 +43,7 @@ describe('the input mode toggle', () => {
     await toggle(wrapper).trigger('click')
     expect(toggle(wrapper).attributes('aria-label')).toBe(en.inputMode.penLabel)
     expect(toggle(wrapper).attributes('aria-pressed')).toBe('true')
-    expect(localStorage.getItem('bd-beads:input-mode')).toBe('pen')
+    expect(localStorage.getItem('openbeads:input-mode')).toBe('pen')
 
     wrapper.unmount()
     const again = await mountOpen()
@@ -63,7 +63,7 @@ describe('a pen appearing', () => {
     expect(beadColor(wrapper, bead(1, 1))).not.toBeNull()
     expect(beadColor(wrapper, bead(2, 2))).not.toBeNull()
     expect(wrapper.find('[data-testid="input-mode-toggle"]').exists()).toBe(false)
-    expect(localStorage.getItem('bd-beads:pen-seen')).toBeNull()
+    expect(localStorage.getItem('openbeads:pen-seen')).toBeNull()
   })
 
   it('is shown the toggle, in Pen mode, by the first pen stroke, which still draws', async () => {

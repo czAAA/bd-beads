@@ -14,7 +14,7 @@ const RED = '#e63746'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => {

@@ -6,7 +6,7 @@ import { en } from '../../i18n/en'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 const cube = findBead('toho-cube-1.5mm')!
@@ -77,7 +77,7 @@ describe('ConvertImageSizeDialog (ticket 342)', () => {
     const wrapper = open()
     await unit(wrapper, 'mm')
 
-    expect(localStorage.getItem('bd-beads:size-unit')).toBe('mm')
+    expect(localStorage.getItem('openbeads:size-unit')).toBe('mm')
   })
 
   it('warns that framing may be slow at a big size, naming the Technique', async () => {

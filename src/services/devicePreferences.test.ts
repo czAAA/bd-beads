@@ -19,14 +19,14 @@ const blocked: PreferenceStorage = {
 
 /** Each preference: its long-standing key, a saved value that must still read, one that is not valid, and what it is by default. */
 const CASES = [
-  { name: 'rulers', key: 'bd-beads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
-  { name: 'canvasBackground', key: 'bd-beads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
-  { name: 'inputMode', key: 'bd-beads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
-  { name: 'penSeen', key: 'bd-beads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },
-  { name: 'theme', key: 'bd-beads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
-  { name: 'toolPillPosition', key: 'bd-beads:tool-pill-position', saved: 'left', read: 'left', other: 'right', stored: 'right', invalid: 'middle', fallback: 'bottom' },
-  { name: 'pillColors', key: 'bd-beads:pill-colors', saved: 'recent', read: 'recent', other: 'recent', stored: 'recent', invalid: 'many', fallback: 'one' },
-  { name: 'locale', key: 'bd-beads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
+  { name: 'rulers', key: 'openbeads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
+  { name: 'canvasBackground', key: 'openbeads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
+  { name: 'inputMode', key: 'openbeads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
+  { name: 'penSeen', key: 'openbeads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },
+  { name: 'theme', key: 'openbeads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
+  { name: 'toolPillPosition', key: 'openbeads:tool-pill-position', saved: 'left', read: 'left', other: 'right', stored: 'right', invalid: 'middle', fallback: 'bottom' },
+  { name: 'pillColors', key: 'openbeads:pill-colors', saved: 'recent', read: 'recent', other: 'recent', stored: 'recent', invalid: 'many', fallback: 'one' },
+  { name: 'locale', key: 'openbeads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
 ] as const satisfies readonly { name: PreferenceName; [k: string]: unknown }[]
 
 describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, stored, invalid, fallback }) => {
@@ -70,7 +70,7 @@ describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, s
 describe('the recent colors preference (ticket 439)', () => {
   it('reads only valid colours, newest first, at most eight', () => {
     const saved = '#111111,red,#222222,#333333,#444444,#555555,#666666,#777777,#888888,#999999'
-    expect(createDevicePreferences(memory({ 'bd-beads:recent-colors': saved })).get('recentColors').value).toEqual([
+    expect(createDevicePreferences(memory({ 'openbeads:recent-colors': saved })).get('recentColors').value).toEqual([
       '#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777', '#888888',
     ])
   })
@@ -79,9 +79,9 @@ describe('the recent colors preference (ticket 439)', () => {
     const storage = memory()
     const recents = createDevicePreferences(storage).get('recentColors')
     recents.value = ['#111111', '#222222']
-    expect(storage.data.get('bd-beads:recent-colors')).toBe('#111111,#222222')
+    expect(storage.data.get('openbeads:recent-colors')).toBe('#111111,#222222')
     recents.value = []
-    expect(storage.data.has('bd-beads:recent-colors')).toBe(false)
+    expect(storage.data.has('openbeads:recent-colors')).toBe(false)
   })
 })
 
@@ -93,8 +93,8 @@ describe('the device preferences', () => {
   })
 
   it('forgets the saved theme for Match device', () => {
-    const storage = memory({ 'bd-beads:theme': 'dark' })
+    const storage = memory({ 'openbeads:theme': 'dark' })
     createDevicePreferences(storage).get('theme').value = 'device'
-    expect(storage.data.has('bd-beads:theme')).toBe(false)
+    expect(storage.data.has('openbeads:theme')).toBe(false)
   })
 })

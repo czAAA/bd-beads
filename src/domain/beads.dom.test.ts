@@ -32,7 +32,7 @@ describe('findBead', () => {
 
   it('ignores custom-bead data left over in storage from before ticket 38', () => {
     localStorage.setItem(
-      'bd-beads:custom-beads',
+      'openbeads:custom-beads',
       JSON.stringify([
         {
           id: 'custom-1',

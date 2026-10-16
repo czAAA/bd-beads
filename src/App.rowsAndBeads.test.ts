@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { settleImport } from './testUtils/settleImport'
+import { gzipJson } from './testUtils/gzipJson'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
@@ -13,7 +15,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 /** The Project sheet's Replace bead select, which opens the sheet for it and leaves it open. */
@@ -282,7 +284,7 @@ describe('App bead quantities', () => {
 
 describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
     const wrapper = await mountWithProject(15, 30)
     expect((await sheetRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
 
@@ -321,10 +323,10 @@ describe('App project transfer', () => {
     const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
-      value: [new File([contents], 'library.json', { type: 'application/json' })],
+      value: [new File([await gzipJson(contents)], 'library.openbeads', { type: 'application/json' })],
     })
     await input.trigger('change')
-    await flushPromises()
+    await settleImport()
   }
 
   it('takes in a library exported on another device and saves every Project in it', async () => {

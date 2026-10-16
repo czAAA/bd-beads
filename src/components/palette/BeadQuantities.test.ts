@@ -5,7 +5,7 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, paintCells, type Project } from '../../domain/project'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -113,7 +113,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   })
 
   it('shows the average weight per bead with the Russian decimal comma too (ticket 178)', () => {
-    localStorage.setItem('bd-beads:locale', 'ru')
+    localStorage.setItem('openbeads:locale', 'ru')
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
     expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0,0108г')

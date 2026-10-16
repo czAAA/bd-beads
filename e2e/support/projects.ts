@@ -6,7 +6,7 @@ import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by writing it directly. */
-const STORAGE_KEY = 'bd-beads:patterns'
+const STORAGE_KEY = 'openbeads:patterns'
 const STORED_VERSION = 3
 
 export interface FixtureOptions {

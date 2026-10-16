@@ -1,5 +1,6 @@
 import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
+import { gunzipSync } from 'node:zlib'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
@@ -83,7 +84,8 @@ for (const { columns, rows } of SIZES) {
       await page.getByTestId('project-list').getByTestId('panel-expand').click()
       const download = page.waitForEvent('download')
       await page.getByTestId('export-project').click()
-      const file = readFileSync((await (await download).path())!, 'utf8')
+      // A .openbeads file is gzip around the JSON (ADR 0048).
+      const file = gunzipSync(readFileSync((await (await download).path())!)).toString('utf8')
       const exported = parseProjectsFile(file).projects[0]!
       expect([exported.frame!.columns, exported.frame!.rows]).toEqual([columns, rows])
       expect(frameGrid(exported)[2]![3]!.color).toBe(RED)

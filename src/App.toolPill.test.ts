@@ -10,7 +10,7 @@ import App from './App.vue'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 describe('App shell, the Tool pill layout (tickets 383, 439, ADR 0046, ADR 0059)', () => {
@@ -66,12 +66,12 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
   })
 
   it('docks to the stored edge when it is one of the four', async () => {
-    localStorage.setItem('bd-beads:tool-pill-position', 'left')
+    localStorage.setItem('openbeads:tool-pill-position', 'left')
     expect(pillOf(await mountWithProject(15, 30)).attributes('data-position')).toBe('left')
   })
 
   it('falls back to the bottom when the stored value is not an edge', async () => {
-    localStorage.setItem('bd-beads:tool-pill-position', 'diagonal')
+    localStorage.setItem('openbeads:tool-pill-position', 'diagonal')
     expect(pillOf(await mountWithProject(15, 30)).attributes('data-position')).toBe('bottom')
   })
 
@@ -84,9 +84,9 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     await position.get('[data-value="right"]').trigger('click')
 
     expect(pillOf(wrapper).attributes('data-position')).toBe('right')
-    expect(localStorage.getItem('bd-beads:tool-pill-position')).toBe('right')
+    expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('right')
     await position.get('[data-value="bottom"]').trigger('click')
-    expect(localStorage.getItem('bd-beads:tool-pill-position')).toBeNull()
+    expect(localStorage.getItem('openbeads:tool-pill-position')).toBeNull()
   })
 
   it('moves with the grip\'s arrow keys', async () => {
@@ -152,13 +152,13 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     await wrapper.get('[data-testid="color-popover-mode"] [data-value="recent"]').trigger('click')
     await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
 
-    expect(localStorage.getItem('bd-beads:pill-colors')).toBe('recent')
+    expect(localStorage.getItem('openbeads:pill-colors')).toBe('recent')
     const recents = wrapper.findAll('[data-testid="pill-recent"]')
     expect(recents).toHaveLength(3)
-    expect(localStorage.getItem('bd-beads:recent-colors')!.split(',')).toHaveLength(4) // red, blue, green, yellow
+    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')).toHaveLength(4) // red, blue, green, yellow
     await recents[0]!.trigger('click') // green: used just before yellow
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Green')
-    expect(localStorage.getItem('bd-beads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
+    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
   })
 
   it('has no standalone Select all: it is on Ctrl+A and, once a Selection exists, the Selection bar (ticket 439)', async () => {

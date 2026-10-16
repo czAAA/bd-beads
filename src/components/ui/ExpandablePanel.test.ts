@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ExpandablePanel from './ExpandablePanel.vue'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
 function mountPanel(props: Record<string, unknown> = {}) {
   return mount(ExpandablePanel, {

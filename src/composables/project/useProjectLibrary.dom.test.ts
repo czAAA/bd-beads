@@ -36,7 +36,7 @@ describe('useProjectLibrary', () => {
   it('starts from what was saved, with the most recently updated Project open', () => {
     const older = makeProject({ updatedAt: 1000 })
     const newer = makeProject({ updatedAt: 2000 })
-    localStorage.setItem('bd-beads:patterns', JSON.stringify([older, newer]))
+    localStorage.setItem('openbeads:patterns', JSON.stringify([older, newer]))
 
     const library = useProjectLibrary()
 
@@ -284,7 +284,7 @@ describe('useProjectLibrary', () => {
     const ids = (library: ReturnType<typeof useProjectLibrary>) => library.projects.value.map((project) => project.id)
 
     function storedLibrary(...projects: Project[]) {
-      localStorage.setItem('bd-beads:patterns', JSON.stringify(projects))
+      localStorage.setItem('openbeads:patterns', JSON.stringify(projects))
     }
 
     it('gives a library saved before the order existed a stable order, newest edit first, loading every Project unchanged', () => {

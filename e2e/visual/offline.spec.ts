@@ -161,7 +161,7 @@ test.describe('the splash', () => {
   test.use({ serviceWorkers: 'block', reducedMotion: 'no-preference' })
 
   async function openSlowly(page: Page): Promise<void> {
-    await page.addInitScript(() => sessionStorage.setItem('bd-beads:editor-chosen', '1'))
+    await page.addInitScript(() => sessionStorage.setItem('openbeads:editor-chosen', '1'))
     await page.goto(host.url, { waitUntil: 'commit' })
   }
 
