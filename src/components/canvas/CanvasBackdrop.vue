@@ -48,7 +48,7 @@ defineProps<{ word: string }>()
   font: var(--type-word);
   letter-spacing: var(--tracking-word);
   color: var(--word);
-  opacity: 0.5;
+  opacity: var(--word-opacity);
   white-space: nowrap;
 }
 </style>

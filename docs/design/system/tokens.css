@@ -248,6 +248,7 @@
   --print-line-width: 0.5mm; /* The background accent line, at print-line-opacity. */
   --print-line-opacity: 0.38; /* Accent line strength on paper. */
   --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. */
+  --word-opacity: 0.5; /* The Technique word behind the board, painted over it so zooming never crops or hides it. */
   --print-name-opacity: 0.14; /* The maker's name set large under the canvas. */
   --print-png-bead: 30px; /* Bead size in the PNG, fewer pixels when the picture would pass 16 megapixels. */
   --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
