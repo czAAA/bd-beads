@@ -39,6 +39,16 @@ describe('CustomColorPicker', () => {
     expect(wrapper.emitted('select')).toEqual([['#333333']])
   })
 
+  it('commits the last color when a press lands elsewhere on the page', async () => {
+    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
+    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    input.element.value = '#444444'
+    await input.trigger('input')
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+    expect(wrapper.emitted('select')).toEqual([['#444444']])
+  })
+
   it('marks itself pressed only once it is the active paint color', () => {
     const unselected = mount(CustomColorPicker, { props: { color: '#123456', selected: false } })
     const selected = mount(CustomColorPicker, { props: { color: '#123456', selected: true } })

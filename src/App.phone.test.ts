@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
+import { chooseCustomColor } from './testUtils/pill'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
 
@@ -110,10 +111,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="pill-color"]').trigger('click')
-    const input = wrapper.get('[data-testid="color-popover"] [data-testid="custom-color-input"]')
-    ;(input.element as HTMLInputElement).value = '#123456'
-    await input.trigger('change')
-    await input.trigger('blur')
+    await chooseCustomColor(wrapper, '#123456')
     // The committed pick is the answer (tickets 398, 444): it selects, joins the Palette and closes the popover.
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
 
