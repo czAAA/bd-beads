@@ -57,6 +57,9 @@ describe('ContextBar', () => {
     expect(ids.slice(0, 3)).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-paste'])
     await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
     expect(wrapper.emitted('paste')).toHaveLength(1)
+
+    await wrapper.setProps({ hasClipboard: false })
+    expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
   })
 
   it('disables Fill, with its reason, until a color is chosen (ticket 415)', async () => {
