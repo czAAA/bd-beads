@@ -32,8 +32,9 @@ const TOGGLE_PX = 34
 const toggleSize = computed(() => (touch.value ? TOUCH_TARGET_PX : TOGGLE_PX))
 const toggleStyle = computed(() => {
   const { x, y } = frameEditToggleCentre(props.anchor, toggleSize.value)
-  return { left: `${x}px`, top: `${y}px`, width: `${toggleSize.value}px`, height: `${toggleSize.value}px` }
+  return { left: `${x}px`, top: `${y}px` }
 })
+const toggleButtonStyle = computed(() => ({ width: `${toggleSize.value}px`, height: `${toggleSize.value}px` }))
 const moveStyle = computed(() => {
   const { x, y, size } = frameMoveHandle(props.anchor, touch.value)
   return { left: `${x}px`, top: `${y}px`, width: `${size}px`, height: `${size}px` }
@@ -43,16 +44,17 @@ const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 
 <template>
   <div class="frame-chrome" data-testid="frame-chrome">
-    <IconButton
-      class="frame-chrome__toggle"
-      variant="box"
-      :action="toggleAction"
-      :deps="deps"
-      :pressed="editing && enabled"
-      :style="toggleStyle"
-      data-testid="frame-edit-toggle"
-      @click="emit('toggle')"
-    />
+    <div class="frame-chrome__toggle" :style="toggleStyle">
+      <IconButton
+        variant="box"
+        :action="toggleAction"
+        :deps="deps"
+        :pressed="editing && enabled"
+        :style="toggleButtonStyle"
+        data-testid="frame-edit-toggle"
+        @click="emit('toggle')"
+      />
+    </div>
     <button
       type="button"
       class="frame-chrome__move"
