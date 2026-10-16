@@ -102,8 +102,35 @@ function measure(): PillRect | undefined {
   const layer = layerEl.value?.getBoundingClientRect()
   return pill && layer && pill.width > 0 ? { left: pill.left - layer.left, top: pill.top - layer.top, width: pill.width, height: pill.height } : undefined
 }
+
+/**
+ * Recent colors shows the recents only while the whole pill fits along its edge (ticket 439: "when there is space on
+ * the screen"); otherwise it shrinks to the one swatch and the palette tile rather than scroll. Whether it fits is
+ * probed by drawing the recents and asking the pill if it overflows, before the browser paints.
+ */
+const recentsRoom = ref(true)
+const probing = ref(false)
+const showRecents = computed(() => props.colorMode === 'recent' && (recentsRoom.value || probing.value))
+let latestProbe = 0
+async function probeRoom() {
+  if (props.colorMode !== 'recent' || drag.dragging.value) return
+  const probe = ++latestProbe
+  probing.value = true
+  await nextTick()
+  if (probe !== latestProbe) return // a newer probe owns the measuring now
+  const el = pillEl.value
+  // One pixel of slack: sub-pixel rounding must not read a pill that just fits as overflowing.
+  if (el) recentsRoom.value = vertical.value ? el.scrollHeight <= el.clientHeight + 1 : el.scrollWidth <= el.clientWidth + 1
+  probing.value = false
+}
 const pillSize = useElementSize(pillEl)
 const layerSize = useElementSize(layerEl)
+// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether the Pen toggle and a chosen colour exist, and a drag ending.
+watch(
+  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.inputMode, () => props.colorHex === undefined, drag.dragging],
+  () => void probeRoom(),
+  { immediate: true, flush: 'post' },
+)
 watch(
   [pillSize.width, pillSize.height, layerSize.width, layerSize.height, () => props.position],
   () => void nextTick(() => emit('rect', measure())),
@@ -185,7 +212,7 @@ watch(
         <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
       </IconButton>
 
-      <template v-if="colorMode === 'recent'">
+      <template v-if="showRecents">
         <button
           v-for="hex in recentsInPill"
           :key="hex"
