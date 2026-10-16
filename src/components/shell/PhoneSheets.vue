@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
-import AppSelect from '../ui/AppSelect.vue'
+import AppMenuItem from '../ui/AppMenuItem.vue'
+import MenuButton from '../ui/MenuButton.vue'
 import BeadPill from '../palette/BeadPill.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import BottomSheet from './BottomSheet.vue'
@@ -41,7 +42,7 @@ const {
   onFitFrame,
   onRemoveFrame,
   replaceBeadCandidates,
-  onPickReplaceBead,
+  onRequestReplaceBead,
   onImportProjects,
   decodeImage,
   makerName,
@@ -126,18 +127,17 @@ const deps = computed(() =>
       </p>
       <p class="phone-sheet__bead-row">
         <BeadPill data-testid="phone-sheet-bead">{{ activeBeadLabel }}</BeadPill>
-        <AppSelect
-          variant="primary"
-          data-testid="phone-replace-bead-select"
-          :aria-label="t.replaceBead.selectLabel"
-          :value="''"
-          @change="onPickReplaceBead($event.target as HTMLSelectElement)"
-        >
-          <option value="" disabled>{{ t.replaceBead.selectLabel }}</option>
-          <option v-for="bead in replaceBeadCandidates" :key="bead.id" :value="bead.id">
+        <!-- A menu, not a native select (ticket 442): the iPad's picker swallowed the pick, and the menu works the same everywhere. -->
+        <MenuButton variant="primary" :label="t.replaceBead.selectLabel" data-testid="phone-replace-bead-select">
+          <AppMenuItem
+            v-for="bead in replaceBeadCandidates"
+            :key="bead.id"
+            :data-testid="`phone-replace-bead-${bead.id}`"
+            @select="onRequestReplaceBead(bead.id)"
+          >
             {{ beadLabel(bead) }}
-          </option>
-        </AppSelect>
+          </AppMenuItem>
+        </MenuButton>
       </p>
       <!-- The Frame's Technique, Edit Frame, Fit and Remove (ticket 417): the Frame sheet is gone with the Dock's Frame slot. -->
       <FrameControls
@@ -315,6 +315,7 @@ const deps = computed(() =>
 
 .phone-sheet__bead-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
   margin: 0 0 var(--space-16);

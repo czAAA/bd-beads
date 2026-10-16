@@ -4,7 +4,6 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
-import AppSelect from './AppSelect.vue'
 import AppTooltip from './AppTooltip.vue'
 import IconButton from './IconButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
@@ -324,26 +323,8 @@ describe('AppTooltip', () => {
   })
 })
 
-describe('AppSelect', () => {
-  it('passes its attributes and listeners to the native select and draws its own chevron', async () => {
-    let changed = ''
-    const wrapper = mount(AppSelect, {
-      props: { variant: 'primary' },
-      attrs: { 'aria-label': 'Replace bead', onChange: (event: Event) => (changed = (event.target as HTMLSelectElement).value) },
-      slots: { default: '<option value="a">A</option><option value="b">B</option>' },
-    })
-    const select = wrapper.get('select')
-    expect(select.attributes('aria-label')).toBe('Replace bead')
-    expect(wrapper.classes()).toContain('app-select--primary')
-    expect(wrapper.get('svg').attributes('data-icon')).toBe('chevron-down')
-
-    await select.setValue('b')
-    expect(changed).toBe('b')
-  })
-})
-
 describe('the controls follow the interaction rules and use only tokens', () => {
-  const files = ['AppButton', 'IconButton', 'AppSelect', 'AppTooltip']
+  const files = ['AppButton', 'IconButton', 'AppTooltip']
   const styleOf = (name: string) => {
     const source = readFileSync(resolve(__dirname, `${name}.vue`), 'utf8')
     return /<style scoped>([\s\S]*)<\/style>/.exec(source)![1].replace(/\/\*[\s\S]*?\*\//g, '')
@@ -371,7 +352,7 @@ describe('the controls follow the interaction rules and use only tokens', () => 
     expect(style).not.toMatch(/:focus(?!-visible)/)
   })
 
-  it.each(files.filter((name) => name !== 'AppTooltip' && name !== 'AppSelect'))(
+  it.each(files.filter((name) => name !== 'AppTooltip'))(
     '%s drops the pressed shrink under reduced motion',
     (name) => {
       expect(styleOf(name)).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*transform: none/)
