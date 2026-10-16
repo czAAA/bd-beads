@@ -125,13 +125,13 @@ export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exi
   return read
 }
 
-/** Sets the colour popover's Custom color the way the native picker does: an `input` event carrying the hex. */
+/** Sets the colour popover's Custom color the way a person does: opens the picker, types the hex and presses Enter, which takes it. */
 export async function chooseCustomColor(wrapper: Wrapper, hex: string): Promise<void> {
-  if (!wrapper.find('[data-testid="custom-color-input"]').exists()) {
+  if (!wrapper.find('[data-testid="custom-color-button"]').exists()) {
     await openColorPopover(wrapper)
   }
-  const input = wrapper.get<HTMLInputElement>('[data-testid="custom-color-input"]')
-  input.element.value = hex
-  await input.trigger('change')
-  await input.trigger('blur')
+  await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+  const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
+  await field.setValue(hex)
+  await field.trigger('keydown', { key: 'Enter' })
 }

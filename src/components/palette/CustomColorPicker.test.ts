@@ -2,67 +2,30 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import CustomColorPicker from './CustomColorPicker.vue'
 
-describe('CustomColorPicker', () => {
-  it('renders a native color input', () => {
-    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
+describe('CustomColorPicker, the Custom color button', () => {
+  it('draws no native color input and asks to toggle the picker when pressed', async () => {
+    const wrapper = mount(CustomColorPicker, { props: { selected: false, expanded: false } })
 
-    expect(wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]').element.type).toBe('color')
+    expect(wrapper.find('input').exists()).toBe(false)
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+
+    expect(wrapper.emitted('toggle')).toHaveLength(1)
   })
 
-  it('emits select once, when the native picker commits, not while the color is dragged', async () => {
-    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
+  it('says whether the picker is open, and marks itself pressed only once it is the active paint color', () => {
+    const closed = mount(CustomColorPicker, { props: { selected: false, expanded: false } })
+    const open = mount(CustomColorPicker, { props: { selected: true, expanded: true } })
 
-    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    for (const hex of ['#111111', '#222222', '#123456']) {
-      input.element.value = hex
-      await input.trigger('input')
-    }
-    expect(wrapper.emitted('select')).toBeUndefined()
-
-    await input.trigger('change')
-    await input.trigger('blur')
-
-    expect(wrapper.emitted('select')).toEqual([['#123456']])
-  })
-
-  it('does not commit while the picker keeps reporting colors, only when it is left', async () => {
-    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
-    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    for (const hex of ['#111111', '#222222', '#333333']) {
-      input.element.value = hex
-      await input.trigger('input')
-      await input.trigger('change')
-    }
-    expect(wrapper.emitted('select')).toBeUndefined()
-
-    await input.trigger('blur')
-    expect(wrapper.emitted('select')).toEqual([['#333333']])
-  })
-
-  it('commits the last color when a press lands elsewhere on the page', async () => {
-    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
-    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    input.element.value = '#444444'
-    await input.trigger('input')
-    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-
-    expect(wrapper.emitted('select')).toEqual([['#444444']])
-  })
-
-  it('marks itself pressed only once it is the active paint color', () => {
-    const unselected = mount(CustomColorPicker, { props: { color: '#123456', selected: false } })
-    const selected = mount(CustomColorPicker, { props: { color: '#123456', selected: true } })
-
-    expect(unselected.find('[data-testid="custom-color-input"]').attributes('aria-pressed')).toBe('false')
-    expect(selected.find('[data-testid="custom-color-input"]').attributes('aria-pressed')).toBe('true')
-    expect(selected.get('.custom-color-picker').classes()).toContain('custom-color-picker--selected')
+    expect(closed.get('button').attributes('aria-expanded')).toBe('false')
+    expect(closed.get('button').attributes('aria-pressed')).toBe('false')
+    expect(open.get('button').attributes('aria-expanded')).toBe('true')
+    expect(open.get('button').attributes('aria-pressed')).toBe('true')
+    expect(open.get('.custom-color-picker').classes()).toContain('custom-color-picker--selected')
   })
 
   it('always shows the hatched glyph, never a fill of the chosen color (v18 card)', () => {
-    for (const color of [undefined, '#123456']) {
-      const glyph = mount(CustomColorPicker, { props: { color, selected: false } }).get('.custom-color-picker__swatch')
+    const glyph = mount(CustomColorPicker, { props: { selected: false, expanded: false } }).get('.custom-color-picker__swatch')
 
-      expect(glyph.attributes('style')).toBeFalsy()
-    }
+    expect(glyph.attributes('style')).toBeFalsy()
   })
 })

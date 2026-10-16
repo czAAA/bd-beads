@@ -55,14 +55,15 @@ describe('ConfirmModal', () => {
     expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 
-  it('emits cancel on a backdrop click, but not on a click inside the dialog', async () => {
+  it('swallows a press on the backdrop and does not cancel, as a click inside the dialog does not (ADR 0061)', async () => {
     const wrapper = mountModal()
 
-    await wrapper.find('[data-testid="confirm-modal-dialog"]').trigger('click')
-    expect(wrapper.emitted('cancel')).toBeUndefined()
+    await wrapper.find('[data-testid="confirm-modal-dialog"]').trigger('pointerdown')
+    const press = new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    wrapper.find('[data-testid="modal-scrim"]').element.dispatchEvent(press)
 
-    await wrapper.find('[data-testid="modal-scrim"]').trigger('click')
-    expect(wrapper.emitted('cancel')).toHaveLength(1)
+    expect(press.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('cancel')).toBeUndefined()
   })
 
   it('marks itself as an alert dialog naming its own title and message for assistive tech', () => {
