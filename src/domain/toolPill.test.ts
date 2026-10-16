@@ -63,4 +63,13 @@ describe('popoverPlacement', () => {
     expect(popoverPlacement(tile, pill, size, 'bottom', screen, 6, 6).left).toBe(6)
     expect(popoverPlacement({ ...tile, left: 790 }, pill, size, 'top', screen, 6, 6).left).toBe(800 - 288 - 6)
   })
+
+  it('stays inside the screen across the pill when the popover grows tall (Custom color picker open)', () => {
+    const tall = { width: 288, height: 580 }
+    const bottom = { left: 300, top: 540, width: 200, height: 48 }
+    const tile = { left: 400, top: 544, width: 40, height: 40 }
+    expect(popoverPlacement(tile, bottom, tall, 'bottom', screen, 6, 6).top).toBe(6)
+    const top = { left: 300, top: 6, width: 200, height: 48 }
+    expect(popoverPlacement({ ...tile, top: 10 }, top, tall, 'top', screen, 6, 6).top).toBe(600 - 580 - 6)
+  })
 })

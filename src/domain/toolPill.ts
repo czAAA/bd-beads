@@ -80,9 +80,9 @@ export function popoverPlacement(
   const centredY = tile.top + tile.height / 2 - size.height / 2
   switch (position) {
     case 'bottom':
-      return { left: clamp(centredX, size.width, screen.width), top: pill.top - gap - size.height }
+      return { left: clamp(centredX, size.width, screen.width), top: clamp(pill.top - gap - size.height, size.height, screen.height) }
     case 'top':
-      return { left: clamp(centredX, size.width, screen.width), top: pill.top + pill.height + gap }
+      return { left: clamp(centredX, size.width, screen.width), top: clamp(pill.top + pill.height + gap, size.height, screen.height) }
     case 'left':
       return { left: pill.left + pill.width + gap, top: clamp(centredY, size.height, screen.height) }
     case 'right':
