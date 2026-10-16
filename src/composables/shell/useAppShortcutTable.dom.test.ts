@@ -25,8 +25,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onClearSelection: vi.fn(),
     onToggleRulers: vi.fn(),
     onEditFrame: vi.fn(),
-    settingFrame: () => false,
-    finishFrame: vi.fn(),
     onCopy: vi.fn(),
     onCut: vi.fn(),
     onPasteMode: vi.fn(),
@@ -109,15 +107,6 @@ describe('useAppShortcutTable', () => {
     expect(deps.onSelectAll).not.toHaveBeenCalled()
     press({ key: 'a', ctrlKey: true })
     expect(deps.onSelectAll).toHaveBeenCalledOnce()
-    wrapper.unmount()
-  })
-
-  it('Escape finishes Set Frame before Select or the default tool take it', () => {
-    const { deps, wrapper } = mountTable({ settingFrame: () => true, activeTool: () => 'erase' })
-    press({ key: 'Escape' })
-    expect(deps.finishFrame).toHaveBeenCalledOnce()
-    expect(deps.backOutOfSelect).not.toHaveBeenCalled()
-    expect(deps.onSelectTool).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 

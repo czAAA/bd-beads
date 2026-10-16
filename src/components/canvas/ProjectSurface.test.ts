@@ -7,6 +7,7 @@ import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
+import { frameMoveHandle, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 
 /** A Project of this many beads, with any of its fields changed. */
 function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
@@ -634,7 +635,7 @@ describe('ProjectSurface', () => {
     })
 
     it('moves the canvas with a finger or mouse, and draws with the pen, in Pen mode (ticket 325)', async () => {
-      const project = projectOf(20, 10)
+      const project = projectOf(20, 10, { frame: undefined })
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { inputMode: 'pen' })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
@@ -652,7 +653,7 @@ describe('ProjectSurface', () => {
     })
 
     it('moves the canvas with the pen, and draws with a finger or mouse, in Mouse mode (ticket 325)', async () => {
-      const project = projectOf(20, 10)
+      const project = projectOf(20, 10, { frame: undefined })
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { inputMode: 'mouse' })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
@@ -681,7 +682,7 @@ describe('ProjectSurface', () => {
     })
 
     it('draws with every pointer when no input mode is given', async () => {
-      const project = projectOf(20, 10)
+      const project = projectOf(20, 10, { frame: undefined })
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
 
@@ -711,12 +712,8 @@ describe('ProjectSurface', () => {
         expect(surface.classes()).not.toContain('project-surface--refused')
       })
 
-      it('draws the margin outline while the Frame is being edited, and not otherwise (ticket 417)', async () => {
-        const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 })
-        await nextTick()
-        expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(false)
-
-        await wrapper.setProps({ settingFrame: true })
+      it('always draws the margin outline with a Frame (ticket 452)', async () => {
+        await mountSurface(framed(), 1, { x: 0, y: 0 })
         await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
       })
 
@@ -798,7 +795,7 @@ describe('ProjectSurface', () => {
     })
 
     it('drags a touch or pen stroke across beads the same way a held mouse button does (ticket 60)', async () => {
-      const project = projectOf(20, 10)
+      const project = projectOf(20, 10, { frame: undefined })
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
 
@@ -836,20 +833,6 @@ describe('ProjectSurface', () => {
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[-40, -25]])
       expect(events(wrapper)['cell-primary-move']).toEqual([[400, 9000]])
-    })
-
-    it('ends the hover and forgets the bead when Set Frame starts, so the same bead hovers again after it (ticket 354)', async () => {
-      const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
-
-      await surface.trigger('pointermove', { ...centreOf(project, 0, 0), buttons: 0 })
-      await wrapper.setProps({ settingFrame: true })
-      expect(events(wrapper)['hover-end']).toHaveLength(1)
-      await wrapper.setProps({ settingFrame: false })
-      await surface.trigger('pointermove', { ...centreOf(project, 0, 0), buttons: 0 })
-
-      expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 0]])
     })
 
     it('says the hover is over when the pointer leaves', async () => {
@@ -1127,7 +1110,9 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
   })
 })
 
-describe('ProjectSurface while setting the Frame', () => {
+describe('ProjectSurface with a Frame', () => {
+  const framed = () => projectOf(8, 6, { frame: { row: 0, column: 0, columns: 8, rows: 6 } })
+
   /** A press at a point of the viewport, then moves and a release. */
   async function gesture(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], from: [number, number], to: [number, number]) {
     const surface = wrapper.find('[data-testid="project-surface"]')
@@ -1136,60 +1121,68 @@ describe('ProjectSurface while setting the Frame', () => {
     await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
   }
 
-  it('reports a press on the Canvas, the drag and the release, and draws no bead', async () => {
-    const project = { ...projectOf(4, 3), frame: undefined }
-    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { settingFrame: true })
-    await gesture(wrapper, [65, 45], [165, 85])
+  /** Where the Move handle is, from the anchor the surface reports. */
+  function moveHandleAt(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], touch = false): [number, number] {
+    const anchors = wrapper.emitted('frame-anchor')!
+    const { x, y } = frameMoveHandle(anchors.at(-1)![0] as FrameAnchor, touch)
+    return [x, y]
+  }
 
-    expect(wrapper.emitted('frame-press')).toEqual([[{ kind: 'outside' }, { row: 2, column: 3 }]])
-    expect(wrapper.emitted('frame-drag')).toEqual([[{ row: 4, column: 8 }]])
+  it('reports the Frame\'s place always, with edit on or off', async () => {
+    const { wrapper } = await mountSurface(framed(), 1)
+    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toMatchObject({ box: { left: expect.any(Number) }, outer: { left: expect.any(Number) } })
+  })
+
+  it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
+    // The bottom-right handle stands on the corner of the Frame's line, 7px outside its beads (8 × 6 beads of 20px).
+    await gesture(wrapper, [167, 127], [180, 140])
+
+    expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['bottom', 'right'] }])
+    expect(wrapper.emitted('frame-drag')).toHaveLength(1)
     expect(wrapper.emitted('frame-release')).toHaveLength(1)
     expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
-    expect(wrapper.emitted('cell-hover')).toBeUndefined()
   })
 
-  it('tells a press inside the Frame from one on its handle and one outside it', async () => {
-    const project = { ...projectOf(4, 3), frame: { row: 0, column: 0, columns: 4, rows: 3 } }
-    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { settingFrame: true })
-    const surface = wrapper.find('[data-testid="project-surface"]')
-
-    await surface.trigger('pointerdown', { button: 0, clientX: 40, clientY: 30, pointerId: 1 })
-    await surface.trigger('pointerup', { pointerId: 1 })
-    await surface.trigger('pointerdown', { button: 0, clientX: 500, clientY: 500, pointerId: 1 })
-    await surface.trigger('pointerup', { pointerId: 1 })
-    // The bottom-right handle stands on the corner of the Frame's line, 7px outside its beads.
-    await surface.trigger('pointerdown', { button: 0, clientX: 87, clientY: 67, pointerId: 1 })
-    await surface.trigger('pointerup', { pointerId: 1 })
-
-    expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'inside' }, { kind: 'outside' }, { kind: 'handle', edges: ['bottom', 'right'] }])
-  })
-
-  it('draws beads as usual when the Frame is not being set', async () => {
-    const { wrapper } = await mountSurface(projectOf(4, 3), 1)
-    await gesture(wrapper, [25, 15], [25, 15])
+  it('leaves a press inside the Frame, or away from it, to the tool', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
+    await gesture(wrapper, [60, 50], [60, 50])
+    await gesture(wrapper, [500, 500], [500, 500])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
     expect(wrapper.emitted('cell-primary-down')).toBeDefined()
   })
 
-  it('lets the Frame take the drag while the Hand tool is on, and moves the canvas again once it is not being set', async () => {
-    const project = { ...projectOf(4, 3), frame: undefined }
-    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { settingFrame: true, moving: true })
-    await gesture(wrapper, [25, 15], [45, 35])
-    expect(wrapper.emitted('frame-press')).toHaveLength(1)
-    expect(wrapper.emitted('pan')).toBeUndefined()
+  it('has no resize handle to grab when edit is off, but the Move handle always works (ticket 452)', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    await gesture(wrapper, [167, 127], [167, 127])
+    expect(wrapper.emitted('frame-press')).toBeUndefined()
 
-    await wrapper.setProps({ settingFrame: false })
-    await gesture(wrapper, [25, 15], [45, 35])
-    expect(wrapper.emitted('frame-press')).toHaveLength(1)
+    await gesture(wrapper, moveHandleAt(wrapper), [60, 60])
+    expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'move' }])
+    expect(wrapper.emitted('frame-drag')).toHaveLength(1)
+  })
+
+  it('draws beads as usual with no Frame', async () => {
+    const { wrapper } = await mountSurface(projectOf(4, 3, { frame: undefined }), 1)
+    await gesture(wrapper, [25, 15], [25, 15])
+    expect(wrapper.emitted('frame-press')).toBeUndefined()
+    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
+    expect(wrapper.emitted('cell-primary-down')).toBeDefined()
+  })
+
+  it('moves the canvas with the Hand tool inside the Frame, since only the handles take a drag', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true, moving: true })
+    await gesture(wrapper, [40, 30], [60, 50])
+    expect(wrapper.emitted('frame-press')).toBeUndefined()
     expect(wrapper.emitted('pan')).toBeDefined()
   })
 
   it('drops a Frame drag when a second finger lands, and does not start another press with it', async () => {
-    const project = { ...projectOf(4, 3), frame: undefined }
-    const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
     const surface = wrapper.find('[data-testid="project-surface"]')
+    const [x, y] = moveHandleAt(wrapper, true)
 
-    await surface.trigger('pointerdown', { button: 0, clientX: 25, clientY: 15, pointerId: 1, pointerType: 'touch', isPrimary: true })
+    await surface.trigger('pointerdown', { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: 'touch', isPrimary: true })
     await surface.trigger('pointerdown', { button: 0, clientX: 105, clientY: 75, pointerId: 2, pointerType: 'touch', isPrimary: false })
 
     expect(wrapper.emitted('frame-press')).toHaveLength(1)

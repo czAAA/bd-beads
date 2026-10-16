@@ -194,11 +194,6 @@ describe('App select, copy and paste', () => {
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
-    // Edit Frame starts on the new Frame (ticket 417); Esc hands the canvas back to the Selection.
-    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="project-surface"]').trigger('keydown', { key: 'Escape' })
-    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
-
     // A Frame already set takes Frame again (ticket 407). The second Piece cannot be framed from here: a 6-bead margin (ADR 0056)
     // fills this small Project, and a Selection cannot start in it.
     await tap({ row: 1, column: 1 })

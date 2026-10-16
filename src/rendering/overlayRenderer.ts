@@ -7,7 +7,7 @@ import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { inSpace, spaceOf, type Space } from './space'
-import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
+import { drawBoxHandles, drawFrameEditing, drawMoveHandle, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
@@ -90,6 +90,8 @@ export interface OverlayInput {
   rulers?: { layout: RulerLayout; surface: SurfaceView }
   /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
+  /** The Frame's Move handle (ticket 452), always drawn with a Frame: its centre and side in the viewport's px. */
+  moveHandle?: { x: number; y: number; size: number }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
   marginOutline?: number
 }
@@ -427,7 +429,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, moveHandle, selectionHandles, marginOutline = 0, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -437,7 +439,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !moveHandle && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -498,6 +500,9 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       // A size is a number too: the Rulers toggle hides it with the rest.
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
+  }
+  if (space.open && moveHandle && project.frame) {
+    drawMoveHandle(context, moveHandle, pixelRatio, theme)
   }
   if (selection && selectionHandles && space.open && hasGuides(selection)) {
     drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection)), pixelRatio, theme, selectionHandles.touch)

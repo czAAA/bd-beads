@@ -73,12 +73,17 @@ export interface FrameAnchor extends SelectionAnchor {
   numbers: { across: number; down: number }
   /** How much the steppers shrink at this zoom, 0.5 to 1 (ticket 427). */
   scale: number
+  /** True when the margin steppers have no room at this zoom (the rulers show fewer than every 5th number, ticket 452). */
+  steppersHidden?: boolean
 }
 
 /** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` (2px) apart. */
 const STEPPER_PX = 28
 const TOUCH_STEPPER_PX = 36
 const STEPPER_PAIR_GAP_PX = 2
+
+/** A centre kept `BAR_EDGE_PX` clear of the canvas box's edges for a control `extent` long. */
+const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
 
 /** The centre of each edge's stepper pair, in the canvas box's pixels. */
 export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
@@ -91,7 +96,6 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
   const { box, outer, numbers, viewport } = anchor
   const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
   const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
-  const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
   const midX = box.left + box.width / 2
   const midY = box.top + box.height / 2
   const topY = (box.top - numbers.down + outer.top) / 2
@@ -106,4 +110,21 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
     left: { x: across(leftX), y: clamp(midY, pair, viewport.height) },
     right: { x: across(rightX), y: clamp(midY, pair, viewport.height) },
   }
+}
+
+/** The Move handle's side (ticket 452): the stepper's size, 28px or 36px on touch, shrinking with the zoom like the steppers. */
+export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: number; y: number; size: number } {
+  const { box, outer, numbers, viewport } = anchor
+  const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
+  const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
+  // On the top margin's band, just left of the top stepper pair so the two never overlap.
+  const x = box.left + box.width / 2 - pair / 2 - BAR_GAP_PX - size / 2
+  const y = (box.top - numbers.down + outer.top) / 2
+  return { x: clamp(x, size, viewport.width), y: clamp(y, size, viewport.height), size }
+}
+
+/** The edit toggle's centre (ticket 452): the margin outline's top-right corner, clamped inside the canvas box. */
+export function frameEditToggleCentre(anchor: FrameAnchor, size: number): { x: number; y: number } {
+  const { outer, viewport } = anchor
+  return { x: clamp(outer.left + outer.width, size, viewport.width), y: clamp(outer.top, size, viewport.height) }
 }

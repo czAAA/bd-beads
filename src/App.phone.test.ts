@@ -78,17 +78,17 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
   })
 
-  it('has no Frame slot in the Tool pill; Edit Frame starts from the Progress bar, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
+  it('has no Frame slot in the Tool pill; the edit toggle sits on the Frame, with steppers on and no sheet or ContextBar (tickets 417, 452)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="pill-frame"]').exists()).toBe(false)
-
-    await wrapper.find('[data-testid="progress-bar-edit-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
 
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
 
-    await wrapper.find('[data-testid="project-surface"]').trigger('keydown', { key: 'Escape' })
+    await wrapper.find('[data-testid="frame-edit-toggle"]').trigger('click')
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
   })
 

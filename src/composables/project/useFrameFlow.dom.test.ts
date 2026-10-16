@@ -28,12 +28,32 @@ function lastFrame(deps: ReturnType<typeof setup>['deps']) {
 }
 
 describe('useFrameFlow', () => {
-  it('moves the Frame by dragging inside it', () => {
+  it('moves the Frame with its beads by dragging the Move handle (ticket 452)', () => {
+    const drawn = { ...sized, beads: withColors(sized.beads, [{ row: 0, column: 0, color: '#ff0000' }]) }
+    const { deps, press, drag, release } = setup(drawn)
+    press({ kind: 'move' }, { row: 1, column: 1 })
+    drag({ row: 2, column: 3 })
+    release()
+    expect(lastFrame(deps)).toEqual({ ...sized.frame, row: 1, column: 2 })
+    expect(deps.harness.project.beads).toEqual({ 1: { 2: '#ff0000' } })
+    expect(deps.announce).toHaveBeenCalledWith('Frame moved with its beads')
+  })
+
+  it('does not move the Frame by a press inside it, so the tool gets it (ticket 452)', () => {
     const { deps, press, drag, release } = setup()
     press({ kind: 'inside' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
     release()
-    expect(lastFrame(deps)).toEqual({ ...sized.frame, row: 1, column: 2 })
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+  })
+
+  it('moves the Frame after Row progress has started, the pointer staying with it (ticket 452)', () => {
+    const { deps, press, drag, release } = setup(moveToRow(sized, 1))
+    press({ kind: 'move' }, { row: 0, column: 0 })
+    drag({ row: 0, column: 2 })
+    release()
+    expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 2 })
+    expect(deps.harness.project.rowProgress.currentRow).toBe(1)
   })
 
   it('resizes the Frame by the edges of the handle it grabbed', () => {
@@ -46,22 +66,22 @@ describe('useFrameFlow', () => {
 
   it('changes no bead and is no step when the Frame did not change', () => {
     const { deps, press, drag, release } = setup()
-    press({ kind: 'inside' }, { row: 1, column: 1 })
+    press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 1, column: 1 })
     release()
     expect(deps.harness.history.canUndo.value).toBe(false)
     expect(deps.replaceProject).not.toHaveBeenCalled()
   })
 
-  it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
+  it('resizing is refused once Row progress is on and a pass is done (ticket 411)', () => {
     const locked = moveToRow(sized, 1)
-    const { deps, frameLocked, start, settingFrame, press, drag, release, stepEdge, remove } = setup(locked)
+    const { deps, frameLocked, settingFrame, press, drag, release, stepEdge, toggleEdit, remove } = setup(locked)
     expect(frameLocked.value).toBe(true)
-    press({ kind: 'inside' }, { row: 0, column: 0 })
+    press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 0, column: 0 })
     drag({ row: 1, column: 1 })
     release()
     stepEdge('right', 1)
-    start()
+    toggleEdit()
     expect(settingFrame.value).toBe(false)
     expect(deps.replaceProject).not.toHaveBeenCalled()
     // Remove Frame is the way out: it asks first, and does nothing until confirmed (ticket 426).
@@ -97,14 +117,6 @@ describe('useFrameFlow', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame removed')
   })
 
-  it('ends Edit Frame with Remove Frame, since there is no Frame left to edit', () => {
-    const { settingFrame, start, remove } = setup()
-    start()
-    expect(settingFrame.value).toBe(true)
-    remove()
-    expect(settingFrame.value).toBe(false)
-  })
-
   it('fits the Frame to what is drawn, or says there is nothing to fit', () => {
     const empty = setup(open)
     empty.fit()
@@ -117,7 +129,7 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 4, column: 5, rows: 4, columns: 4 })
   })
 
-  it('sets the Frame to a Selection\'s rectangle as one undo step, and enters Edit Frame on it (tickets 415, 417)', () => {
+  it('sets the Frame to a Selection\'s rectangle as one undo step, with edit on for it (tickets 415, 452)', () => {
     const { deps, settingFrame, setTo } = setup(open)
     setTo({ row: 2, column: 3, rows: 4, columns: 5 })
     expect(lastFrame(deps)).toEqual({ row: 2, column: 3, rows: 4, columns: 5 })
@@ -136,40 +148,19 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
   })
 
-  it('starts and finishes Edit Frame', () => {
-    const { settingFrame, start, done } = setup()
-    start()
+  it('has edit on by default, toggles it, and keeps it off the Project (ticket 452)', () => {
+    const { settingFrame, toggleEdit } = setup()
     expect(settingFrame.value).toBe(true)
-    done()
+    toggleEdit()
     expect(settingFrame.value).toBe(false)
+    toggleEdit()
+    expect(settingFrame.value).toBe(true)
   })
 
-  it('ends Edit Frame on a tap outside the Frame, not on a press inside it or a cancelled one (ticket 427)', () => {
-    const { settingFrame, start, press, drag, release, cancel } = setup()
-    start()
-    press({ kind: 'inside' }, { row: 1, column: 1 })
-    release()
-    expect(settingFrame.value).toBe(true)
-
-    press({ kind: 'outside' }, { row: 9, column: 9 })
-    cancel()
-    release()
-    expect(settingFrame.value).toBe(true)
-
-    press({ kind: 'outside' }, { row: 9, column: 9 })
-    drag({ row: 9, column: 8 })
-    release()
-    expect(settingFrame.value).toBe(true)
-
-    press({ kind: 'outside' }, { row: 9, column: 9 })
-    release()
-    expect(settingFrame.value).toBe(false)
-  })
-
-  it('does not start with no Project open, with no Frame, or once Row progress holds the Frame (ticket 411)', () => {
+  it('has no edit with no Project open, with no Frame, or once Row progress holds the Frame; it is on again when the passes are reset (tickets 411, 452)', () => {
     for (const project of [null, open, moveToRow(sized, 1)]) {
-      const { settingFrame, start } = setup(project)
-      start()
+      const { settingFrame, toggleEdit } = setup(project)
+      toggleEdit()
       expect(settingFrame.value).toBe(false)
     }
   })
@@ -177,29 +168,27 @@ describe('useFrameFlow', () => {
   describe('from the keyboard', () => {
     const key = (name: string, init: KeyboardEventInit = {}) => new KeyboardEvent('keydown', { key: name, ...init })
 
-    it('ignores keys while not editing the Frame', () => {
+    it('ignores other keys', () => {
       const { deps, onKey } = setup()
-      expect(onKey(key('ArrowRight'))).toBe(false)
+      expect(onKey(key('a'))).toBe(false)
+      expect(onKey(key('Enter'))).toBe(false)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
     it('moves the Frame with the arrows and resizes it from the bottom-right with Shift', () => {
-      const { deps, start, onKey } = setup()
-      start()
+      const { deps, onKey } = setup()
       expect(onKey(key('ArrowRight'))).toBe(true)
       expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1 })
       expect(onKey(key('ArrowDown', { shiftKey: true }))).toBe(true)
       expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1, rows: 4 })
     })
 
-    it('finishes on Enter or Escape', () => {
-      const { settingFrame, start, onKey } = setup()
-      start()
-      expect(onKey(key('Enter'))).toBe(true)
-      expect(settingFrame.value).toBe(false)
-      start()
-      expect(onKey(key('Escape'))).toBe(true)
-      expect(settingFrame.value).toBe(false)
+    it('still moves the Frame with the arrows once Row progress has started, but does not resize it', () => {
+      const { deps, onKey } = setup(moveToRow(sized, 1))
+      expect(onKey(key('ArrowDown', { shiftKey: true }))).toBe(true)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(onKey(key('ArrowRight'))).toBe(true)
+      expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1 })
     })
   })
 
@@ -239,8 +228,7 @@ describe('useFrameFlow', () => {
 
   it('leaves beads the new Frame would crowd where they are, in the one undo step (ticket 261)', () => {
     const crowded = { ...sized, beads: withColors(sized.beads, [{ row: 5, column: 5, color: '#ff0000' }]) }
-    const { deps, start, press, drag, release } = setup(crowded)
-    start()
+    const { deps, press, drag, release } = setup(crowded)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
     drag({ row: 4, column: 4 })
     release()

@@ -23,7 +23,6 @@ const emit = defineEmits<{
   /** Remove frame, which asks first once a pass is done (ticket 426). */
   'remove-frame': []
   /** Edit Frame, the Frame's one way in now that Project no longer has it (ticket 443); it is only offered with a Frame. */
-  'edit-frame': []
   'toggle-row-direction': []
   /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
   'fit-frame': []
@@ -34,7 +33,6 @@ const { t } = useI18n()
 /** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR 0035). */
 const actions = {
   removeFrame: controlAction('remove-frame'),
-  editFrame: controlAction('edit-frame'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
   notDone: controlAction('row-not-done'),
@@ -67,7 +65,6 @@ const directionLabel = computed(() =>
 <template>
   <div class="progress-bar no-page-pan" data-testid="progress-bar">
     <AppButton variant="box" :action="actions.removeFrame" :deps="deps" data-testid="progress-bar-remove-frame" @click="emit('remove-frame')" />
-    <IconButton v-if="hasFrame" variant="box" :action="actions.editFrame" :deps="deps" data-testid="progress-bar-edit-frame" @click="emit('edit-frame')" />
 
     <template v-if="!hasFrame">
       <!-- Styled like the CanvasHint: Select, then Set Frame to start, each with its icon. -->

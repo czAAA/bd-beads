@@ -507,6 +507,7 @@ export interface Translations {
   frame: {
     title: string
     editFrame: string
+    moveHandle: string
     /** The margin steppers' names, by the edge they move (ticket 417): a bead out, a bead in. */
     edgeOut: Record<'top' | 'bottom' | 'left' | 'right', string>
     edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
@@ -523,6 +524,7 @@ export interface Translations {
     sizeTooltip: string
     announceSet: string
     announceRemoved: string
+    announceMoved: string
     /** Fit to drawing with nothing drawn: there is nothing to wrap. */
     announceNothingToFit: string
     /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
@@ -676,6 +678,7 @@ export interface Translations {
     selectAll: string
     hand: string
     editFrame: string
+    editFrameLocked: string
     /** The margin steppers' Tooltips (ticket 417), and why Shrink is off at one bead. */
     frameEdgeOut: string
     frameEdgeIn: string
