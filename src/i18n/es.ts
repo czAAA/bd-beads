@@ -94,7 +94,7 @@ export const es: Translations = {
       version: 'Versión',
       deleteAll: 'Eliminar todos los proyectos',
       tooltipDeleteAll: 'Quita todos los proyectos de este dispositivo.',
-      deleteAllTitle: '¿Eliminar todos los proyectos?',
+      deleteAllTitle: '¿Eliminar proyectos?',
       deleteAllMessage: 'Todos los proyectos se quitan de este dispositivo. No se puede deshacer. Antes, pulsa «Exportar todo» si quieres conservar copias.',
       deleteAllConfirm: 'Eliminar todos los proyectos',
     },
