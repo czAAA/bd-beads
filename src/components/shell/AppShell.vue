@@ -124,13 +124,15 @@ const {
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   position: relative;
-  padding: max(var(--screen-edge), env(safe-area-inset-top)) max(var(--screen-edge), env(safe-area-inset-right)) max(var(--screen-edge), env(safe-area-inset-bottom)) max(var(--screen-edge), env(safe-area-inset-left));
+  --body-inset: max(var(--screen-edge), env(safe-area-inset-top)) max(var(--screen-edge), env(safe-area-inset-right)) max(var(--screen-edge), env(safe-area-inset-bottom)) max(var(--screen-edge), env(safe-area-inset-left));
+  padding: var(--body-inset);
 }
 
 /*
  * Ticket 450: the gap is a transparent frame over the body's padding that takes `touch-action: none`, so a drag or swipe
  * that starts there pans nothing. It is a frame, not `touch-action` on the body, because that would also reach the canvas box
- * (touch-action intersects down to the nearest scroll container).
+ * (touch-action intersects down to the nearest scroll container). It covers the whole body box, so the positioned canvas box
+ * must paint after it (it does, in tree order); keep it positioned.
  */
 .app-shell__body::before {
   content: '';
@@ -138,8 +140,7 @@ const {
   inset: 0;
   border-style: solid;
   border-color: transparent;
-  border-width: max(var(--screen-edge), env(safe-area-inset-top)) max(var(--screen-edge), env(safe-area-inset-right)) max(var(--screen-edge), env(safe-area-inset-bottom)) max(var(--screen-edge), env(safe-area-inset-left));
-  pointer-events: auto;
+  border-width: var(--body-inset);
   touch-action: none;
 }
 </style>
