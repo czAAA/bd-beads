@@ -253,6 +253,42 @@ describe('AppTooltip', () => {
     vi.useRealTimers()
   })
 
+  it('shows a disabled trigger\'s reason on a click or tap, though the click is swallowed, and hides on Escape (ticket 453)', async () => {
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { name: 'Undo', disabled: true, disabledBody: 'Nothing to undo.' },
+      slots: { default: '<button type="button" aria-disabled="true" @click.capture.stop>x</button>' },
+    })
+    await wrapper.get('button').trigger('pointerdown', { pointerType: 'touch' })
+    await wrapper.get('button').trigger('pointerup', { pointerType: 'touch' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+    expect(wrapper.get('.app-tooltip__body').text()).toBe('Nothing to undo.')
+
+    await wrapper.trigger('keydown', { key: 'Escape' })
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('closes a click-shown tip on a press elsewhere, and shows nothing on a click of an enabled trigger', async () => {
+    const wrapper = mount(AppTooltip, {
+      attachTo: document.body,
+      props: { name: 'Undo', disabled: true, disabledBody: 'Nothing to undo.' },
+      slots: { default: '<button type="button" aria-disabled="true">x</button>' },
+    })
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch', isPrimary: true }))
+    await nextTick()
+    expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
+    wrapper.unmount()
+
+    const enabled = tooltip()
+    await enabled.get('button').trigger('click')
+    expect(enabled.get('[role="tooltip"]').isVisible()).toBe(false)
+  })
+
   it('does not show for a touch', async () => {
     const wrapper = tooltip()
     await wrapper.trigger('pointerenter', { pointerType: 'touch' })
