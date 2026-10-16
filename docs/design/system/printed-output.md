@@ -35,8 +35,8 @@ The PDF and PNG exports: the chart is the main thing on every page, large and re
 
 ## The maker's name
 
-- **Where the name comes from**: a new optional field, **Your name**, set from the last row of the Export ▾ menu (More on the phone), kept on the device like the theme ("Printed on your PDF and PNG exports. Stays on this device."). The app has no accounts, so nothing leaves the device.
-- Set once, it goes on every export: in the header, as "Made by" on page 1, as "by …" on the PNG, and large and pale in the background.
+- **Where the name comes from**: the Project's own optional field, **Your name** (ADR 0060; "Printed on this Project's PDF and PNG exports.").
+- Set on a Project, it goes on every export of that Project: in the header, as "Made by" on page 1, as "by …" on the PNG, and large and pale in the background.
 - Empty: the exports simply leave it out, background included. Names longer than 32 characters are cut with an ellipsis in the header; the background name is never cut, it runs off the page.
 
 ## Wide and long Patterns

@@ -27,6 +27,7 @@ import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { hasOpenLayer } from '../ui/useEscapeLayer'
 import { useExportFlow } from '../export/useExportFlow'
+import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useMirrorState } from '../tools/useMirrorState'
@@ -70,6 +71,9 @@ function wireAppShell(services: Services) {
     persistentStorage: services.persistentStorage,
     devicePreferences: services.devicePreferences,
   })
+
+  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes it.
+  migrateLegacyMakerName(services.libraryStore)
 
   /**
    * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
@@ -606,7 +610,7 @@ function wireAppShell(services: Services) {
     messages,
     locale: currentLocale,
     downloadFile: services.downloadFile,
-    makerNameStore: services.makerNameStore,
+    replaceProject,
     showToast,
   })
 

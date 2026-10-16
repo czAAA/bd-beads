@@ -91,9 +91,8 @@ export interface Project {
    */
   imageColors?: string[]
   /**
-   * This Project's own maker's name (ticket 182), overriding the device-wide one (domain/makerName.ts) on its exports
-   * and its background watermark. Absent by default: a Project set no override keeps whatever the device says, even
-   * as that changes later, the same way an imported Project with no override picks up the importing device's name.
+   * This Project's maker's name (ADR 0060), printed on its exports and its background watermark. Absent when none is
+   * set: the exports then print no name (domain/makerName.ts).
    */
   makerName?: string
   /**

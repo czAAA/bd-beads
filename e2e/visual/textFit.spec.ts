@@ -192,11 +192,9 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'export menu: Name on exports',
+    name: 'Name on exports',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'export-menu-button'))) return false
-      await click(page, 'export-menu-button')
-      if (!(await shown(page, 'name-on-exports-change'))) return false
+      if (!(await reveal(page, 'name-on-exports-change'))) return false
       await click(page, 'name-on-exports-change')
       await measure()
     },

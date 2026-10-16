@@ -256,13 +256,13 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
-  it('opens the Menu from the Canvas strip with language, theme, Name on exports, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
+  it('opens the Menu from the Canvas strip with language, theme, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
     expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
     expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
     expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
     expect(sheet.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
