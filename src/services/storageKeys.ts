@@ -30,8 +30,8 @@ export function readKey(storage: KeyStorage, key: string): string | null {
     return null
   }
   try {
-    storage.setItem(doneMarker(key), '1')
     storage.setItem(key, old)
+    storage.setItem(doneMarker(key), '1')
   } catch {
     // No room to copy: the old value still answers this read, and the next read tries again.
   }

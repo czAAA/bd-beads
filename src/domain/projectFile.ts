@@ -82,6 +82,7 @@ function looksLikeEncodedProject(value: unknown): value is EncodedProject {
     project !== null &&
     typeof project.encodedBeads === 'object' &&
     project.encodedBeads !== null &&
+    // The rest of the shape is a Project's; its beads are the encoded ones, so stand a placeholder in for them.
     looksLikeProject({ ...project, beads: {} })
   )
 }
