@@ -15,7 +15,7 @@ export interface ReplaceBeadFlowDeps {
 
 /** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0023). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
-  /** The Bead id picked from the Replace bead select, awaiting confirmation (ticket 48); undefined when its modal is closed. */
+  /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is closed. */
   const pendingId = ref<string | undefined>()
 
   /** The other built-in catalog Beads the open Project could switch to (ticket 48) — everything but its current one. */
@@ -53,23 +53,11 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
       .replace('{old}', () => estimateWith(resolveProjectBead(project)))
   })
 
-  /** Opens the confirmation modal (ticket 48) for the picked Bead id; does nothing with no Project open or an empty pick (the select's placeholder option). */
+  /** Opens the confirmation modal (ticket 48) for the picked Bead id; does nothing with no Project open or an empty id. */
   function onRequestReplaceBead(beadId: string) {
     if (beadId && deps.currentProject()) {
       pendingId.value = beadId
     }
-  }
-
-  /**
-   * Reads the pick off the Replace bead select and puts the select back on its placeholder straight away (ticket
-   * 113): its bound value is a constant '', which Vue never re-applies, so left alone the select would keep showing the
-   * picked Bead — after a Cancel that reads as though the declined Bead were the current one, and picking it again
-   * would not fire a change.
-   */
-  function onPickReplaceBead(select: HTMLSelectElement) {
-    const beadId = select.value
-    select.value = ''
-    onRequestReplaceBead(beadId)
   }
 
   function onCancelReplaceBead() {
@@ -93,7 +81,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     replaceBeadCandidates: candidates,
     replaceBeadPendingBead: pendingBead,
     replaceBeadConfirmMessage: confirmMessage,
-    onPickReplaceBead,
+    onRequestReplaceBead,
     onCancelReplaceBead,
     onConfirmReplaceBead,
   }
