@@ -94,7 +94,7 @@ export const pl: Translations = {
       version: 'Wersja',
       deleteAll: 'Usuń wszystkie projekty',
       tooltipDeleteAll: 'Usuń wszystkie projekty z tego urządzenia.',
-      deleteAllTitle: 'Usunąć wszystkie projekty?',
+      deleteAllTitle: 'Usunąć projekty?',
       deleteAllMessage: 'Wszystkie projekty zostaną usunięte z tego urządzenia. Nie można tego cofnąć. Najpierw kliknij „Eksportuj całość”, jeśli chcesz zachować kopie.',
       deleteAllConfirm: 'Usuń wszystkie projekty',
     },
