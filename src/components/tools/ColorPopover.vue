@@ -146,6 +146,8 @@ onBeforeUnmount(() => {
 .color-popover {
   position: fixed;
   z-index: var(--z-popover);
+  /* It lives in the pill's layer, which takes no pointer events so the canvas under it stays usable; the popover takes its own. */
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-12);

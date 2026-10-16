@@ -23,8 +23,8 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 
 ## Colour control (One color or Recent colors)
 
-- **One color (the default):** one 40px tile with the chosen colour as a 22px round swatch, ringed (`ring`, 2px gap in the pill's fill). Tap: opens the colour popover. The pill's length never changes.
-- **Recent colors:** the same swatch tile, then the three colours used before it as 18px swatches on 30px-long tiles (30px tall when vertical), then a 40px `palette` tile. A recent swatch picks that colour at once; the palette tile opens the popover. A pick moves the colour to the front of the recents (eight kept, on the device).
+- **One color:** one 40px tile with the chosen colour as a 22px round swatch, ringed (`ring`, 2px gap in the pill's fill). Tap: opens the colour popover. The pill's length never changes.
+- **Recent colors (the default):** the same swatch tile, then the three colours used before it as 18px swatches on 30px-long tiles (30px tall when vertical), then a 40px `palette` tile. A recent swatch picks that colour at once; the palette tile opens the popover. A pick moves the colour to the front of the recents (eight kept, on the device). Only while there is room: if the whole pill would be longer than its edge (a phone upright, a short window), the recents and the palette tile drop away and the pill is as in One color, and they return when there is room again.
 - **Which one shows** is a setting at the top of the popover, "In the pill": One color | Recent colors (SegmentedControl, small, pill-shaped), remembered on this device like the theme.
 - No key opens the colour control; the swatch tile's accessible name is "Color, <colour name>" with `aria-expanded`.
 
