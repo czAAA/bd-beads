@@ -64,7 +64,6 @@ export const be: Translations = {
     recentColors: 'Нядаўнія колеры',
     recent: 'Нядаўнія',
     palette: 'Палітра',
-    paletteTile: 'Колеры',
     close: 'Закрыць',
     useColor: 'Маляваць колерам {color}',
   },

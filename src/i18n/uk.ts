@@ -63,7 +63,6 @@ export const uk: Translations = {
     recentColors: 'Нещодавні кольори',
     recent: 'Нещодавні',
     palette: 'Палітра',
-    paletteTile: 'Кольори',
     close: 'Закрити',
     useColor: 'Малювати кольором {color}',
   },

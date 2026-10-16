@@ -63,7 +63,6 @@ export const ru: Translations = {
     recentColors: 'Недавние цвета',
     recent: 'Недавние',
     palette: 'Палитра',
-    paletteTile: 'Цвета',
     close: 'Закрыть',
     useColor: 'Рисовать цветом {color}',
   },

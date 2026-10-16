@@ -63,7 +63,6 @@ export const zh: Translations = {
     recentColors: '最近用过的颜色',
     recent: '最近',
     palette: '调色板',
-    paletteTile: '颜色',
     close: '关闭',
     useColor: '用 {color} 绘制',
   },
