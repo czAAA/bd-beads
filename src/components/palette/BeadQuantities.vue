@@ -200,6 +200,18 @@ const expanded = ref(false)
   color: var(--muted);
 }
 
+/* Ticket 450: the canvas box is 12px narrower each side, so on a phone the weight column gives up its reserved width (a table column is as wide as its widest cell anyway). */
+@media (max-width: 30rem) {
+  .bead-quantities__grams {
+    min-width: 0;
+    padding-left: var(--space-4);
+  }
+
+  .bead-quantities__swatch {
+    margin-right: var(--space-6);
+  }
+}
+
 .bead-quantities__note {
   margin-top: var(--space-10);
 }
