@@ -8,4 +8,5 @@ export interface PanelContext {
   close: () => void
 }
 
+/** What the panel shell shares with the Menu and Project panels below it (ticket 443). */
 export const PANEL_CONTEXT: InjectionKey<PanelContext> = Symbol('panelContext')
