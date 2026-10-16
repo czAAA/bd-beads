@@ -62,11 +62,10 @@ describe('the Surface view maps beads and points both ways', () => {
     expect(view.pointToBead({ x: 15, y: view.beadToPoint({ row: 1, column: 0 }).y })).toEqual({ row: 1, column: 0 })
   })
 
-  it('finds no bead on the 1px seam between two brick stitch rows', () => {
+  it('stacks brick stitch rows a bead apart, with no seam between them', () => {
     const view = surfaceView({ space: OPEN_SPACE, technique: 'brick', rotation: 0, zoom: 1 })
     expect(view.pointToBead({ x: 5, y: CELL_SIZE_PX - 0.5 })).toEqual({ row: 0, column: 0 })
-    expect(view.pointToBead({ x: 5, y: CELL_SIZE_PX + 0.5 })).toBeUndefined()
-    expect(view.pointToBead({ x: 5, y: CELL_SIZE_PX + 1.5 })).toEqual({ row: 1, column: -1 })
+    expect(view.pointToBead({ x: 5, y: CELL_SIZE_PX + 0.5 })).toEqual({ row: 1, column: -1 })
   })
 
   it('gives the overlap of two nested peyote rows to the one drawn later, but not in its rounded corner', () => {
@@ -109,7 +108,7 @@ describe('the Surface view lays out a block of beads', () => {
 
   it('says how far a step along a row and one down are on screen', () => {
     expect(open('loom', 0, 2).beadStep()).toEqual({ column: { x: 40, y: 0 }, row: { x: 0, y: 40 } })
-    expect(open('brick', 0).beadStep().row).toEqual({ x: 0, y: 21 })
+    expect(open('brick', 0).beadStep().row).toEqual({ x: 0, y: 20 })
     expect(open('peyote', 90).beadStep().column).toEqual({ x: 0, y: 20 })
   })
 

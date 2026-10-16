@@ -10,10 +10,9 @@ import type { Space } from './space'
  * a viewport, where it is looking. Rotation, the row shift and the row pitch are private to it: what leaves is a point,
  * a box, a bead or a step on screen.
  *
- * Two row geometries exist on purpose (ADR 0010, amended). Physical geometry, in `domain/grid.ts`, is the real piece in
- * millimetres: brick rows sit one bead apart with no gap, and Convert image samples and frames the picture with it.
- * Drawn geometry, here, adds brick stitch's 1px seam between rows, which is a drawing choice only and never reaches
- * the piece. Nothing here knows about millimetres.
+ * Drawn geometry, here, follows the physical geometry in `domain/grid.ts` (ADR 0010, amended by ticket 0448): brick rows
+ * sit one bead apart with no seam, and the gap between two rows is the gap between two columns. Nothing here knows about
+ * millimetres.
  *
  * Coordinates. "Grid space" is px at zoom 1 with a bead CELL_SIZE_PX square. "Displayed space" is grid space zoomed and
  * turned clockwise by the rotation, about the box round the beads in a space of its own (an export, the Convert image
@@ -23,9 +22,6 @@ import type { Space } from './space'
 
 /** The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so every layer lines up with what is drawn. */
 export const CELL_SIZE_PX = 20
-
-/** Brick stitch's seam between rows, in grid px: a rule the full width of the row that takes 1px of height of its own. */
-export const SEAM_PX = 1
 
 export interface Scroll {
   x: number
@@ -48,13 +44,13 @@ export interface Region {
 
 /**
  * The distance from one row's top to the next, in grid px (drawn geometry). Peyote rows nest into each other, so they
- * sit closer than a bead is tall; brick stitch rows are a full bead apart plus their seam; loom rows stack.
+ * sit closer than a bead is tall; brick stitch and loom rows stack, a full bead apart.
  */
 export function rowPitchPx(technique: Technique): number {
   if (technique === 'peyote') {
     return CELL_SIZE_PX * 0.75
   }
-  return technique === 'brick' ? CELL_SIZE_PX + SEAM_PX : CELL_SIZE_PX
+  return CELL_SIZE_PX
 }
 
 /** Where a row's beads start from the top of the Project, in grid px. */
