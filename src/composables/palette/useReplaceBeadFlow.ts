@@ -53,9 +53,9 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
       .replace('{old}', () => estimateWith(resolveProjectBead(project)))
   })
 
-  /** Opens the confirmation modal (ticket 48) for the picked Bead id; does nothing with no Project open or an empty id. */
+  /** Opens the confirmation modal (ticket 48) for the picked Bead id; does nothing with no Project open. */
   function onRequestReplaceBead(beadId: string) {
-    if (beadId && deps.currentProject()) {
+    if (deps.currentProject()) {
       pendingId.value = beadId
     }
   }
