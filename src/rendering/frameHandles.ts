@@ -81,8 +81,8 @@ export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
   return sides.map((side) => GRID_SIDE[rotation][side])
 }
 
-/** What a press while setting the Frame grabbed: one of its handles (with the edges it drags), its inside, or the Canvas. */
-export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'inside' } | { kind: 'outside' }
+/** What a press grabbed: one of the Frame's handles (with the edges it drags), its Move handle (ticket 452), its inside, or the Canvas. */
+export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'move' } | { kind: 'inside' } | { kind: 'outside' }
 
 /** What a press at a point of the viewport grabs of a rectangle on screen: a handle first, then its inside, then the canvas round it. */
 export function boxPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {

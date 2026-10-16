@@ -26,35 +26,44 @@ type Gesture =
   | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
 
 /**
- * Edit Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the mode in which dragging moves and resizes the Frame, its margin steppers move one
- * edge a bead, and Technique, Fit to drawing and Remove Frame are at hand. It exists only with a Frame and while Row
- * progress has not been used (ticket 411), and ends by itself when either stops being true. A Frame is made from a
- * Selection (ticket 415), which enters Edit Frame, or by Fit to drawing. Every change is one Undo step that never touches
- * a bead, and is announced.
+ * Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle on the Frame switches its handles and margin
+ * steppers on and off; it is on whenever a Frame is made or a Project opens, kept for the session only, and off while Row
+ * progress has started (ticket 411), which still lets the Move handle carry the Frame with its beads (ticket 452). Every
+ * resize is one Undo step that never touches a bead, and is announced.
  */
 export function useFrameFlow(deps: FrameFlowDeps) {
-  const settingFrame = ref(false)
+  /** The weaver's choice on the edit toggle; true until they turn it off. Never saved. */
+  const editOn = ref(true)
   /** The Frame as it looks mid-drag, before it is committed. */
   const draft = ref<Frame | undefined>()
   let gesture: Gesture | undefined
+  /** How far the Move handle has been dragged, in whole beads. */
+  let moved = { rows: 0, columns: 0 }
   /** Whether the pointer has moved since the press: a click that drew nothing is not a Frame. */
   let dragged = false
-  /** A press landed outside the Frame: letting go ends Edit Frame (ticket 427). */
-  let leavesOnRelease = false
 
   const locked = computed(() => {
     const project = deps.currentProject()
     return !!project && rowProgressStarted(project)
   })
 
-  // Edit Frame needs a Frame it may change: it ends when the Frame goes (Remove Frame, Undo, another Project) or Row progress locks it.
+  /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
+  const settingFrame = computed(() => !!deps.currentProject()?.frame && editOn.value && !locked.value)
+
+  // Edit is on again whenever a Frame is made or a Project opens, and when Row progress is reset after having locked it.
   watch(
-    () => !!deps.currentProject()?.frame && !locked.value,
-    (editable) => {
-      if (!editable) done()
+    [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked],
+    () => {
+      editOn.value = true
+      cancel()
     },
     { flush: 'sync' },
   )
+
+  /** The edit toggle: nothing happens without a Frame, or once Row progress has started. */
+  function toggleEdit(): void {
+    if (deps.currentProject()?.frame && !locked.value) editOn.value = !editOn.value
+  }
 
   function describe(frame: Frame): string {
     const t = deps.messages()
@@ -86,58 +95,51 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
   }
 
-  /** Enters Edit Frame; nothing happens without a Frame, or while Row progress holds it still. */
-  function start(): void {
-    if (deps.currentProject()?.frame && !locked.value) settingFrame.value = true
-  }
-  function done(): void {
-    settingFrame.value = false
-    draft.value = undefined
-    gesture = undefined
-  }
-
   function press(target: FramePress, cell: GridPosition): void {
     const project = deps.currentProject()
-    if (!project || locked.value) return
-    const frame = project.frame
+    const frame = project?.frame
     dragged = false
-    leavesOnRelease = target.kind === 'outside'
+    moved = { rows: 0, columns: 0 }
     if (!frame) return
-    if (target.kind === 'handle') gesture = { kind: 'resize', edges: target.edges, start: frame }
-    else if (target.kind === 'inside') gesture = { kind: 'move', origin: cell, start: frame }
+    // The Move handle always works; a resize handle only while the edit toggle is on.
+    if (target.kind === 'move') gesture = { kind: 'move', origin: cell, start: frame }
+    else if (target.kind === 'handle' && settingFrame.value) gesture = { kind: 'resize', edges: target.edges, start: frame }
   }
 
   function drag(cell: GridPosition): void {
     const project = deps.currentProject()
-    if (!project) return
-    // A drag that starts outside the Frame is not a tap, so it no longer ends Edit Frame.
-    if (!gesture) {
-      leavesOnRelease = false
-      return
-    }
+    if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
       draft.value = frameWithEdges(project.technique, gesture.start, gesture.edges, cell)
     } else {
-      draft.value = movedFrame(project.technique, gesture.start, cell.row - gesture.origin.row, cell.column - gesture.origin.column)
+      moved = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
+      draft.value = movedFrame(project.technique, gesture.start, moved.rows, moved.columns)
     }
   }
 
   function release(): void {
     const result = draft.value
+    const wasMove = gesture?.kind === 'move'
     gesture = undefined
     draft.value = undefined
-    if (result && dragged) commit(result)
-    // A tap outside the Frame ends Edit Frame (ticket 427, ADR 0055); a press there that became a pinch is cancelled first.
-    else if (leavesOnRelease) done()
-    leavesOnRelease = false
+    if (!result || !dragged) return
+    if (wasMove) moveBy(moved.rows, moved.columns)
+    else commit(result)
   }
 
   /** Lets go of a drag without committing it: a second finger arrived, so it was a pinch. */
   function cancel(): void {
-    leavesOnRelease = false
     gesture = undefined
     draft.value = undefined
+  }
+
+  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo step; clamped to the beads' reach by the domain. */
+  function moveBy(rows: number, columns: number): boolean {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }))
+    if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
+    deps.announce(deps.messages().frame.announceMoved)
+    return true
   }
 
   /** A margin stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would empty the Frame is none. */
@@ -149,14 +151,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /**
-   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step, and Edit Frame
-   * starts on it (ticket 417). A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
+   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step, (edit is on for the new Frame, ticket 452). A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
    * it, and where rows alternate starts on an even row. With a Frame already set it moves the Frame there.
    */
   function setTo(frame: Frame): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project.technique, frame.row) : frame.row
-    if (commit({ ...frame, row: top, rows: frame.rows + frame.row - top })) start()
+    commit({ ...frame, row: top, rows: frame.rows + frame.row - top })
   }
 
   function fit(): void {
@@ -170,7 +171,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Remove frame confirmation is open: shown only when a pass is done, as removing the Frame throws the passes away (ticket 426). */
   const removeConfirmOpen = ref(false)
 
-  /** Remove Frame; with no Frame there is nothing to edit, so Edit Frame ends. Once a pass is done it asks first. */
+  /** Remove Frame; once a pass is done it asks first. */
   function remove(): void {
     const project = deps.currentProject()
     if (!project?.frame) return
@@ -178,7 +179,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       removeConfirmOpen.value = true
       return
     }
-    if (commit(undefined)) done()
+    commit(undefined)
   }
 
   /** The Remove frame question answered No: nothing changes. */
@@ -189,25 +190,19 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Remove Frame after the question: one Undo step restores the Frame and the passes together. */
   function confirmRemove(): void {
     removeConfirmOpen.value = false
-    if (commit(undefined)) done()
+    commit(undefined)
   }
 
-  /** The keyboard's Edit Frame: arrows move the Frame, Shift + arrows resize it from its bottom-right, Enter or Escape is done. Whether the key was used. */
+  /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it from its bottom-right. Whether the key was used. */
   function onKey(event: KeyboardEvent): boolean {
-    if (!settingFrame.value || !deps.currentProject()) return false
-    if (event.key === 'Enter' || event.key === 'Escape') {
-      done()
-      return true
-    }
     const steps: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
     const step = steps[event.key]
-    if (!step) return false
     const project = deps.currentProject()
-    if (!project?.frame) return false
+    if (!step || !project?.frame) return false
     if (event.shiftKey) {
-      commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
+      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
     } else {
-      commit(movedFrame(project.technique, project.frame, step[0], step[1]))
+      moveBy(step[0], step[1])
     }
     return true
   }
@@ -222,8 +217,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     /** What the canvas draws as the Frame while a drag has not committed it. */
     draft,
     frameLocked: locked,
-    start,
-    done,
+    editOn,
+    toggleEdit,
     press,
     drag,
     release,

@@ -13,7 +13,7 @@ import { useI18n } from '../../i18n/useI18n'
  * margin between the ruler numbers and its outer edge, clamped inside the canvas box,
  * shrinking with the zoom and gone once the rulers drop below every 5th number. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
  * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
- * pixels), so they track pan and zoom. Rendered only while the Frame is being edited, never for a Selection.
+ * pixels), so they track pan and zoom. Rendered only while the edit toggle is on (ticket 452), never for a Selection; arrow keys on a focused stepper move or resize the Frame.
  */
 const props = defineProps<{
   project: Project
@@ -21,7 +21,7 @@ const props = defineProps<{
   anchor: FrameAnchor
 }>()
 
-const emit = defineEmits<{ step: [edge: FrameEdge, step: 1 | -1] }>()
+const emit = defineEmits<{ step: [edge: FrameEdge, step: 1 | -1]; key: [event: KeyboardEvent] }>()
 
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
@@ -38,7 +38,7 @@ function pairStyle(edge: FrameEdge) {
 </script>
 
 <template>
-  <div class="edit-frame-steppers" data-testid="edit-frame-steppers">
+  <div class="edit-frame-steppers" data-testid="edit-frame-steppers" @keydown="emit('key', $event)">
     <div v-for="pair in pairs" :key="pair.edge" class="edit-frame-steppers__pair" :class="`edit-frame-steppers__pair--${pair.edge}`" :style="pairStyle(pair.edge)">
       <AppButton
         class="edit-frame-steppers__button"

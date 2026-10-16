@@ -46,8 +46,6 @@ export interface ControlDeps {
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
   /** Whether the Frame is being edited, and the way out of it. */
-  settingFrame: () => boolean
-  finishFrame: () => void
   onCopy: () => void
   pasteAtPointer: (event: KeyboardEvent) => void
   onSave: () => void
@@ -263,11 +261,7 @@ export const CONTROLS: readonly ControlAction[] = [
     run: (deps) => {
       // Picking a color from the canvas (ticket 398) is the first thing Escape ends.
       if (deps.cancelColorPick()) return
-      // Then Edit Frame, the paste preview, the Selection.
-      if (deps.settingFrame()) {
-        deps.finishFrame()
-        return
-      }
+      // Then the paste preview, the Selection.
       if (deps.backOutOfSelect()) return
       // Ticket 214: with nothing left to dismiss, Escape falls through to Paint.
       if (deps.activeTool() !== 'paint') deps.onSelectTool('paint')
@@ -285,15 +279,25 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'edit-frame',
-    icon: 'frame',
+    icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
     enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.setFrameFirst),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.editFrameLocked : t.tooltips.setFrameFirst),
     group: 'canvas',
     chords: [],
     needsProject: true,
     run: (deps) => deps.onEditFrame(),
+  },
+  {
+    id: 'frame-move',
+    icon: 'frame',
+    name: (t) => t.frame.moveHandle,
+    body: (t) => t.tooltips.moveHandle,
+    group: 'canvas',
+    chords: [],
+    needsProject: true,
+    run: () => {},
   },
   ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {
