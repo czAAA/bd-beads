@@ -78,12 +78,18 @@ function place() {
   style.value = { left: `${left}px`, top: `${top}px` }
 }
 
+let resizeObserver: ResizeObserver | undefined
+
 onMounted(async () => {
   await nextTick()
   place()
   window.addEventListener('resize', place)
+  // The Custom color picker opens inside the popover and grows it: place it again so it stays whole on screen.
+  resizeObserver = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(place)
+  if (rootEl.value) resizeObserver?.observe(rootEl.value)
 })
 onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
   window.removeEventListener('resize', place)
 })
 </script>
