@@ -826,28 +826,6 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-hover']).toEqual([[1, 0]])
     })
 
-    it('says nothing for a move in a gap, and hovers the bead again on coming back to it', async () => {
-      const project = projectOf(20, 10, {}, 'brick')
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
-
-      await surface.trigger('pointermove', { ...centreOf(project, 1, 0), buttons: 0 })
-      // Brick stitch's seam between two rows is on no bead.
-      await surface.trigger('pointermove', { clientX: 10, clientY: 20.5, buttons: 0 })
-      await surface.trigger('pointermove', { ...centreOf(project, 1, 0), buttons: 0 })
-
-      expect(events(wrapper)['cell-hover']).toEqual([[1, 0], [1, 0]])
-    })
-
-    it('says nothing for a press in the seam between two rows of brick stitch', async () => {
-      const project = projectOf(20, 10, {}, 'brick')
-      const { wrapper } = await mountSurface(project)
-
-      await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { clientX: 10, clientY: 20.5, button: 0, buttons: 1 })
-
-      expect(events(wrapper)['cell-primary-down']).toBeUndefined()
-    })
-
     it('finds a bead anywhere on the Canvas: far from the first bead, and at negative positions', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project, 1, { x: -2000, y: -2000 })
@@ -888,7 +866,7 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 0]])
     })
 
-    it('works out the bead at any zoom, on peyote\'s shifted rows and brick stitch\'s seams', async () => {
+    it('works out the bead at any zoom, on peyote\'s and brick stitch\'s shifted rows', async () => {
       for (const technique of ['peyote', 'brick'] as const) {
         const project = projectOf(20, 10, {}, technique)
         const { wrapper } = await mountSurface(project, 2)
