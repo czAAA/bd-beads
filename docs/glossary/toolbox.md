@@ -19,7 +19,7 @@ The modal sheet of app-wide settings and links (language, theme, Name on exports
 _Avoid_: More, header menu
 
 **Project sheet**:
-The modal sheet the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique and Edit Frame, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
+The modal sheet the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
 _Avoid_: Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
