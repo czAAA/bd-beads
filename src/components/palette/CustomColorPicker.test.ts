@@ -20,8 +20,23 @@ describe('CustomColorPicker', () => {
     expect(wrapper.emitted('select')).toBeUndefined()
 
     await input.trigger('change')
+    await input.trigger('blur')
 
     expect(wrapper.emitted('select')).toEqual([['#123456']])
+  })
+
+  it('does not commit while the picker keeps reporting colors, only when it is left', async () => {
+    const wrapper = mount(CustomColorPicker, { props: { selected: false } })
+    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
+    for (const hex of ['#111111', '#222222', '#333333']) {
+      input.element.value = hex
+      await input.trigger('input')
+      await input.trigger('change')
+    }
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    await input.trigger('blur')
+    expect(wrapper.emitted('select')).toEqual([['#333333']])
   })
 
   it('marks itself pressed only once it is the active paint color', () => {
