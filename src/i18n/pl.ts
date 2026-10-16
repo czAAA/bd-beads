@@ -63,7 +63,6 @@ export const pl: Translations = {
     recentColors: 'Ostatnie kolory',
     recent: 'Ostatnie',
     palette: 'Paleta',
-    paletteTile: 'Kolory',
     close: 'Zamknij',
     useColor: 'Maluj kolorem {color}',
   },
