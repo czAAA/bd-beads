@@ -756,6 +756,7 @@ function framePress(event: PointerEvent): FramePress | undefined {
 function pressMoveHandle(event: PointerEvent): void {
   if (!props.project.frame || event.button !== 0) return
   touchInput.value = event.pointerType === 'touch'
+  onPress(event)
   framing.value = true
   hideMarker()
   rootEl.value?.setPointerCapture?.(event.pointerId)

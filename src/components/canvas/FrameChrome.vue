@@ -20,7 +20,12 @@ const props = defineProps<{
   editing: boolean
 }>()
 
-const emit = defineEmits<{ toggle: []; remove: []; 'move-press': [event: PointerEvent]; key: [event: KeyboardEvent] }>()
+const emit = defineEmits<{
+  toggle: []
+  remove: []
+  'move-press': [event: PointerEvent]
+  key: [event: KeyboardEvent]
+}>()
 
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const toggleAction = controlAction('edit-frame')
@@ -31,8 +36,8 @@ const touch = useMediaQuery('(pointer: coarse)')
 const controls = computed(() => frameCornerControls(props.anchor, touch.value))
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
 const sized = computed(() => ({ width: `${controls.value.size}px`, height: `${controls.value.size}px` }))
-const moveButtonStyle = computed(() => ({ ...sized.value, background: 'transparent', border: '0' }))
-const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
+
+const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </script>
 
 <template>
@@ -41,7 +46,8 @@ const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
       <IconButton
         variant="plain"
         :action="moveAction"
-        :style="moveButtonStyle"
+        class="frame-chrome__move"
+        :style="sized"
         data-testid="frame-move-handle"
         @pointerdown="emit('move-press', $event)"
         @keydown="emit('key', $event)"
@@ -52,14 +58,21 @@ const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
         variant="box"
         :action="toggleAction"
         :deps="deps"
-        :pressed="editing && enabled"
+        :pressed="editing && editEnabled"
         :style="sized"
         data-testid="frame-edit-toggle"
         @click="emit('toggle')"
       />
     </div>
     <div class="frame-chrome__control" :style="place(controls.remove)">
-      <IconButton variant="box" :action="removeAction" :deps="deps" :style="sized" data-testid="frame-chrome-remove" @click="emit('remove')" />
+      <IconButton
+        variant="box"
+        :action="removeAction"
+        :deps="deps"
+        :style="sized"
+        data-testid="frame-chrome-remove"
+        @click="emit('remove')"
+      />
     </div>
   </div>
 </template>
@@ -77,5 +90,13 @@ const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
   position: absolute;
   transform: translate(-50%, -50%);
   pointer-events: auto;
+}
+
+/* The Move handle is drawn on the canvas: its button only carries the Tooltip, the focus ring and the press. */
+.frame-chrome__control :deep(.frame-chrome__move) {
+  background: transparent;
+  border: 0;
+  cursor: grab;
+  touch-action: none;
 }
 </style>
