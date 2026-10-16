@@ -38,6 +38,7 @@ const customColorSelected = computed(() => !props.selectedColorId && !props.sele
 const palette = usePalette()
 const closeSheet = useCloseSheetOnPick()
 const pickerOpen = ref(false)
+const panel = ref<InstanceType<typeof CustomColorPanel>>()
 const customButton = ref<InstanceType<typeof CustomColorPicker>>()
 const paintHex = computed(() => props.selectedImageColor ?? palette.value.find((color) => color.id === props.selectedColorId)?.hex)
 
@@ -51,6 +52,11 @@ function leave() {
   closeSheet()
 }
 
+function toggle() {
+  if (pickerOpen.value) panel.value?.take()
+  else pickerOpen.value = true
+}
+
 async function cancel() {
   pickerOpen.value = false
   await nextTick()
@@ -61,10 +67,10 @@ async function cancel() {
 <template>
   <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
   <div class="tool-color-controls__buttons">
-    <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" @toggle="pickerOpen ? cancel() : (pickerOpen = true)" />
+    <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" @toggle="toggle" />
     <ImageColorsButton :colors="imageColors" :selected-color="selectedImageColor" @select="(hex) => emit('select-image-color', hex)" />
   </div>
-  <CustomColorPanel v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
+  <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
 </template>
 
 <style scoped>
