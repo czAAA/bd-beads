@@ -76,8 +76,9 @@ function onClick(event: Event) {
 
 .panel-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-10);
+  gap: var(--space-2) var(--space-10);
   box-sizing: border-box;
   width: 100%;
   min-height: var(--panel-item-height);
@@ -95,11 +96,12 @@ function onClick(event: Event) {
 
 .panel-item__label {
   flex: 1 1 auto;
-  min-width: 0;
+  min-width: min-content;
 }
 
 .panel-item__value {
   flex: none;
+  margin-left: auto;
   font: var(--type-meta);
   color: var(--muted);
 }

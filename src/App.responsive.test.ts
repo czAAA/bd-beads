@@ -35,12 +35,15 @@ describe('one layout at every width (ticket 412, ADR 0046)', () => {
     }
   })
 
-  it('puts the canvas box screen-edge (6px) from every screen edge, the safe-area inset winning where larger', () => {
-    expect(layoutPx('screen-edge')).toBe(6)
+  it('puts the canvas box screen-edge (12px) from every screen edge, the safe-area inset winning where larger', () => {
+    expect(layoutPx('screen-edge')).toBe(12)
     const rule = shell.match(/\.app-shell__body \{[^}]*\}/)?.[0] ?? ''
     for (const side of ['top', 'right', 'bottom', 'left']) {
       expect(rule).toContain(`max(var(--screen-edge), env(safe-area-inset-${side}))`)
     }
+    const gap = shell.match(/\.app-shell__body::before \{[^}]*\}/)?.[0] ?? ''
+    expect(gap).toContain('touch-action: none;')
+    expect(rule).not.toContain('touch-action')
     expect(shell).toContain('grid-template-columns: minmax(0, 1fr);')
     expect(shell).not.toContain('AppBottomBar')
   })

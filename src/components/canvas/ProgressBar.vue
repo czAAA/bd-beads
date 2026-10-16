@@ -248,9 +248,9 @@ const directionLabel = computed(() =>
   .progress-bar {
     flex-wrap: wrap;
     align-content: center;
-    /* Remove frame, Edit Frame and Turn row direction share the first row with the counter and the track (ticket 443): 8px between them keeps it one row at 320px. */
-    gap: var(--space-8);
-    padding-inline: var(--space-8) var(--space-8);
+    /* Remove frame, Edit Frame and Turn row direction share the first row with the counter and the track (ticket 443): 4px between them keeps it one row at 320px, inside the 12px screen edge (ticket 450). */
+    gap: var(--space-4);
+    padding-inline: var(--space-4);
   }
 
   .progress-bar__track {
@@ -272,7 +272,7 @@ const directionLabel = computed(() =>
   .progress-bar__steps :deep(.app-button) {
     width: 100%;
     min-width: 0;
-    padding-inline: var(--space-8);
+    padding-inline: var(--space-6);
     justify-content: center;
     font: var(--type-small);
   }
