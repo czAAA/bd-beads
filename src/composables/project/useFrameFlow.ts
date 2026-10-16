@@ -162,7 +162,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function fit(): void {
     const project = deps.currentProject()
     if (!project) return
-    const frame = fitToDrawing(project.technique, project.beads)
+    const frame = fitToDrawing(project.technique, project.beads, project.frame)
     if (frame) commit(frame)
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
