@@ -32,6 +32,34 @@ export default tseslint.config(
       'vue/no-restricted-syntax': ['error', { selector: "VElement[name='kbd']", message: 'Draw a key chip with <KeyChip> (ticket 438).' }],
     },
   },
+  // One overlay registry (ticket 449, ADR 0061): a press outside an overlay is handled by useOverlayLayer alone, so no
+  // other code listens to raw document/window pointerdown, mousedown or click. The canvas gestures (pan, pinch,
+  // page-zoom lock, pen mode) and the click swallowers are the exceptions.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: [
+      '**/*.test.ts',
+      'src/testSetup.ts',
+      'src/testUtils/**',
+      'src/composables/ui/useOverlayLayer.ts',
+      'src/composables/ui/swallowNextClick.ts',
+      'src/composables/canvas/useSpaceDragPan.ts',
+      'src/composables/canvas/usePinchPan.ts',
+      'src/composables/shell/usePageZoomLock.ts',
+      'src/composables/shell/usePenInputMode.ts',
+      'src/composables/tools/useToolPillDrag.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(add|remove)EventListener$/][callee.object.name=/^(document|window)$/][arguments.0.value=/^(pointerdown|mousedown|click)$/]",
+          message: 'A press outside an overlay goes through useOverlayLayer (ticket 449, ADR 0061); only canvas gesture code listens to raw presses.',
+        },
+      ],
+    },
+  },
   // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by
   // import. Placed before the folder rules below, which replace it for their files.
   {

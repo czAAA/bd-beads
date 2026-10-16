@@ -48,3 +48,6 @@ _Avoid_: info tip, (i) popup, hint
 ## Key chip
 
 A hotkey drawn as a small key beside a control: in a Tooltip, as the badge on a Tool pill tile, in the Canvas hint. Chips are shown only where a keyboard is likely (ticket 438): by default when the device has a fine pointer that can hover, or, on a touch-only device, once a real keyboard key (Tab, Escape, an arrow, or any key with Ctrl or Cmd) has been seen in the session. The switch at the top of Keyboard shortcuts overrides this on the device: its first flip stores on or off, and the UI has no way back to automatic. The chips inside Keyboard shortcuts itself are never hidden. Every chip is drawn by the shared `KeyChip`, so a new control inherits the behaviour.
+
+**Outside press**:
+A press (mouse, touch or pen) that lands outside the top-most open overlay (a sheet, panel, popover, dropdown, the colour popover with its Custom color picker, or a dialog). It only closes that overlay: it never draws, selects or presses what is under it, and the click that follows is swallowed. A second press closes the overlay beneath. The overlay's own opener, a dialog raised from it and the Tour card are not outside; a confirmation that demands an answer swallows the press and stays. One registry, `useOverlayLayer`, applies this to every overlay. See ADR 0061.
