@@ -69,7 +69,7 @@ export { STORAGE_KEY }
  * Where a bead's centre is on screen, given the surface's bounding box and where the view is scrolled to (the surface's
  * `data-scroll-x` and `data-scroll-y`, which are 0 until the canvas has been moved). The surface is the Canvas
  * itself (ADR 0026): a bead is at its own displayed position, turned and zoomed, less the scroll, from the surface's
- * corner. Worked out from the Technique's geometry (the renderer's, brick stitch's seam pixel included).
+ * corner. Worked out from the Technique's geometry (the renderer's).
  */
 export function beadCentre(
   project: Pick<Project, 'technique' | 'rotation'>,

@@ -83,8 +83,7 @@ export const CANVAS_MAX_PX = 900
 
 /**
  * Physical geometry (ADR 0010, amended): the real piece, in whatever unit the bead size is given (millimetres for a
- * Bead's own footprint). Brick rows sit one bead apart with no gap; the 1px seam brick stitch is drawn with belongs to
- * the Surface view's drawn geometry and is not here.
+ * Bead's own footprint). Brick rows sit one bead apart with no gap, as drawn.
  */
 
 /** Horizontal offset for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half a cell so beads interlock instead of stacking in a straight grid. */
