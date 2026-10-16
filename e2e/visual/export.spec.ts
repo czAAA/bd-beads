@@ -4,7 +4,6 @@ import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { PALETTE } from '../../src/domain/palette'
-import { MAKER_NAME_KEY } from '../../src/services/makerNameStore'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp, openDockSheet } from '../support/app'
@@ -103,8 +102,7 @@ test('a Project with no maker name leaves it out of the PNG (printed-output.md, 
 })
 
 test('a Project with a maker name prints it in the PNG, large and pale under the board, never cut off (tickets 182, 183)', async ({ page }) => {
-  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [MAKER_NAME_KEY, 'Ada'])
-  const project = fixtureProject({ technique: 'loom', columns: 10, rows: 10 })
+  const project = { ...fixtureProject({ technique: 'loom', columns: 10, rows: 10 }), makerName: 'Ada' }
   await openApp(page, [project])
 
   const { bytes } = await downloadOf(page, 'export-png')
@@ -119,8 +117,7 @@ test('a Project with a maker name prints it in the PNG, large and pale under the
 })
 
 test('a wide Project with a maker name shows the watermark under its board too, not painted over by the chart (ticket 183)', async ({ page }) => {
-  await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [MAKER_NAME_KEY, 'Ada'])
-  const project = fixtureProject({ technique: 'loom', columns: 60, rows: 12 })
+  const project = { ...fixtureProject({ technique: 'loom', columns: 60, rows: 12 }), makerName: 'Ada' }
   await openApp(page, [project])
 
   const { bytes } = await downloadOf(page, 'export-png')

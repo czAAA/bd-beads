@@ -66,8 +66,7 @@ describe('SaveBox (ticket 148)', () => {
     await openMenu(wrapper)
 
     const items = wrapper.findAll('[role="menuitem"]').map((item) => item.text())
-    // Then the name on exports row (ticket 161).
-    expect(items).toEqual([en.saveBox.menuPng, en.saveBox.menuPdf, en.saveBox.addName])
+    expect(items).toEqual([en.saveBox.menuPng, en.saveBox.menuPdf])
   })
 
   it.each([

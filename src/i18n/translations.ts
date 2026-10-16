@@ -401,7 +401,6 @@ export interface Translations {
     exportProjectFile: string
     /** The Export menu's last row and its modal (NameOnExports card). */
     nameOnExports: string
-    nameNotSet: string
     changeName: string
     addName: string
     yourName: string

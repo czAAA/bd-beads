@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProject } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { useExportFlow } from './useExportFlow'
@@ -22,10 +22,14 @@ beforeEach(() => {
   localStorage.clear()
 })
 
-function setup(options: { open?: boolean } = {}) {
+function setup(options: { open?: boolean; project?: Project } = {}) {
+  let current = options.project ?? project
   const deps = {
-    currentProject: () => (options.open === false ? undefined : project),
-    projects: () => [project],
+    currentProject: () => (options.open === false ? undefined : current),
+    projects: () => [current],
+    replaceProject: (next: Project) => {
+      current = next
+    },
     messages: () => en,
     locale: () => 'en' as const,
     downloadFile,
@@ -41,6 +45,7 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
       projects: () => [open],
       messages: () => en,
       locale: () => 'en' as const,
+      replaceProject: () => {},
       downloadFile,
     })
     await flow.onExportPng()
@@ -72,8 +77,7 @@ describe('useExportFlow', () => {
 
   describe('PNG and PDF', () => {
     it('draws the open Project as a PNG, printing the maker’s name, and hands it over named for the Project', async () => {
-      const flow = setup()
-      flow.onSaveMakerName('Ada')
+      const flow = setup({ project: { ...project, makerName: 'Ada' } })
       await flow.onExportPng()
 
       expect(exportProjectPng).toHaveBeenCalledWith(
@@ -117,14 +121,22 @@ describe('useExportFlow', () => {
   })
 
   describe('the maker’s name', () => {
-    it('is kept on this device and closes its modal', () => {
+    it('is saved on the open Project, trimmed, and closes its modal', () => {
       const flow = setup()
       flow.nameOnExportsOpen.value = true
       flow.onSaveMakerName('  Ada ')
 
       expect(flow.makerName.value).toBe('Ada')
       expect(flow.nameOnExportsOpen.value).toBe(false)
-      expect(setup().makerName.value).toBe('Ada')
+    })
+
+    it('prints none on an export once cleared', async () => {
+      const flow = setup({ project: { ...project, makerName: 'Ada' } })
+      flow.onSaveMakerName('')
+      await flow.onExportPdf()
+
+      expect(flow.makerName.value).toBe('')
+      expect(exportProjectPdf).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ maker: '' }))
     })
   })
 })
@@ -137,6 +149,7 @@ describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
       projects: () => [project],
       messages: () => en,
       locale: () => 'en' as const,
+      replaceProject: () => {},
       downloadFile,
       sharesFromTap: () => sharesFromTap,
       showToast: (id, text, _tone, action) => toasts.push({ id, text, action }),

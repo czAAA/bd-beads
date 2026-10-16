@@ -23,16 +23,12 @@ const props = withDefaults(defineProps<{
   exporting?: 'png' | 'pdf'
   /** The open Project's name, for what the wait says it is doing. */
   projectName?: string
-  /** The maker's name printed on the exports (ticket 161); empty when not set. */
-  makerName?: string
 }>(), { hasFrame: true })
 
 const emit = defineEmits<{
   save: []
   'export-png': []
   'export-pdf': []
-  /** Change or Add the maker's name, from the Export menu's last row (ticket 161). */
-  'edit-maker-name': []
   /** The Export prompt's way out: frame every bead drawn (a Frame can also be made from a Selection, ticket 417). */
   'fit-frame': []
 }>()
@@ -87,21 +83,6 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
           <AppMenuItem v-if="framed" icon="pdf" :disabled="!!exporting" data-testid="export-pdf" @select="emit('export-pdf')">
             {{ t.saveBox.menuPdf }}
           </AppMenuItem>
-          <!-- The Export menu ends with the name on exports (NameOnExports card). -->
-          <template v-if="framed" #footer>
-            <div class="save-box__name" data-testid="name-on-exports">
-              <span class="save-box__name-text">
-                <span class="save-box__name-label">{{ t.saveBox.nameOnExports }}</span>
-                <span v-if="makerName" class="save-box__name-value" data-testid="name-on-exports-value">{{ makerName }}</span>
-                <span v-else class="save-box__name-value save-box__name-value--none" data-testid="name-on-exports-value">
-                  {{ t.saveBox.nameNotSet }}
-                </span>
-              </span>
-              <AppMenuItem class="save-box__name-change" data-testid="name-on-exports-change" @select="emit('edit-maker-name')">
-                {{ makerName ? t.saveBox.changeName : t.saveBox.addName }}
-              </AppMenuItem>
-            </div>
-          </template>
         </AppMenu>
         <span class="save-box__hint" data-testid="export-formats">{{ t.saveBox.formatsHint }}</span>
       </div>
@@ -193,44 +174,6 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
   flex-direction: column;
   align-items: flex-end;
   gap: var(--space-6);
-}
-
-.save-box__name {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  padding: var(--space-4) 0 0 var(--space-10);
-}
-
-.save-box__name-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.save-box__name-label {
-  font: var(--type-meta-small);
-  color: var(--muted);
-  text-transform: lowercase;
-}
-
-.save-box__name-value {
-  overflow: hidden;
-  font: var(--type-control);
-  color: var(--ink);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.save-box__name-value--none {
-  color: var(--muted);
-}
-
-.save-box .save-box__name-change {
-  flex: none;
-  width: auto;
-  color: var(--accent-strong);
 }
 
 .save-box__loading {
