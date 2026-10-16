@@ -79,10 +79,10 @@ describe('ShortcutsHelp', () => {
   it('emits close on a backdrop click, but not on a click inside the dialog', async () => {
     const wrapper = mountHelp()
 
-    await wrapper.find('[data-testid="shortcuts-help-dialog"]').trigger('click')
+    await wrapper.find('[data-testid="shortcuts-help-dialog"]').trigger('pointerdown')
     expect(wrapper.emitted('close')).toBeUndefined()
 
-    await wrapper.find('[data-testid="shortcuts-help-backdrop"]').trigger('click')
+    await wrapper.find('[data-testid="shortcuts-help-backdrop"]').trigger('pointerdown')
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 

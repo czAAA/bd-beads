@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { inTourCard } from '../../composables/ui/tourDom'
 import { nextTick, onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
-import { swallowNextClick } from '../../composables/ui/swallowNextClick'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
@@ -31,7 +30,15 @@ const bodyEl = ref<HTMLElement>()
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
 
-useEscapeLayer(() => true, () => emit('close'))
+useOverlayLayer({
+  isOpen: () => true,
+  root: () => sheetEl.value,
+  close: () => emit('close'),
+  onOutsidePress: () => {
+    pressClosed.markPressClosed()
+    emit('close')
+  },
+})
 
 const FOCUSABLE =
   'button:not(:disabled), [href], input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
@@ -77,25 +84,6 @@ function onFocusIn(event: FocusEvent) {
   ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
 }
 
-/**
- * A sheet, light or modal, closes on a press anywhere outside it, and only closes: the press and its click are
- * swallowed so nothing under them acts (no stroke, fill or Frame start; a strip button doesn't re-open the sheet it
- * just closed). A press inside another dialog (a stacked sheet, a confirmation) is not "outside", and only the
- * topmost sheet reacts.
- */
-function onPointerDownOutside(event: PointerEvent) {
-  const sheet = sheetEl.value
-  const target = event.target
-  if (!sheet || !(target instanceof Node) || sheet.contains(target) || inTourCard(target)) return
-  if (target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"]')) return
-  if ([...document.querySelectorAll('.bottom-sheet')].at(-1) !== sheet) return
-  event.stopPropagation()
-  event.preventDefault()
-  swallowNextClick()
-  pressClosed.markPressClosed()
-  emit('close')
-}
-
 /** The handle: a tap closes the sheet, a drag down follows the finger and closes past the threshold, else springs back. */
 const DRAG_CLOSE_PX = 80
 let dragStartY: number | null = null
@@ -129,12 +117,10 @@ onMounted(() => {
   // sheet's own content instead, the same way AppModal's own initial focus skips past its header.
   void nextTick(() => (initialFocusable(bodyEl.value) ?? initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus())
   document.addEventListener('focusin', onFocusIn)
-  document.addEventListener('pointerdown', onPointerDownOutside, true)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('focusin', onFocusIn)
-  document.removeEventListener('pointerdown', onPointerDownOutside, true)
   if (pressClosed.wasPressClosed()) return
   const target = opener
   if (target?.isConnected) {

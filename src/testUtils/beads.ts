@@ -68,6 +68,7 @@ export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { button
     ...beadPoint(wrapper, at),
     button,
     buttons: button === 2 ? 2 : 1,
+    isPrimary: true,
     ...(options.pointerType ? { pointerType: options.pointerType } : {}),
   })
 }

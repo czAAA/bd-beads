@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { inTourCard } from '../../composables/ui/tourDom'
 
 /**
  * The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420px for a
  * confirmation or 560px for a panel (Keyboard shortcuts). The parent mounts it with `v-if` and decides what
- * cancelling means; Escape and the scrim both cancel. While open, focus stays inside: it starts on the control marked
+ * cancelling means; Escape cancels, and so does a press on the scrim unless `backdrop` is `swallow`. While open, focus stays inside: it starts on the control marked
  * `data-autofocus`, or the first one, Tab wraps around, and closing hands focus back to whatever opened it.
  */
 defineOptions({ inheritAttrs: false })
@@ -23,8 +23,10 @@ const props = withDefaults(
      * is read rather than answered (Tab then reaches its controls), so its first button's tooltip doesn't pop up.
      */
     initialFocus?: 'control' | 'dialog'
+    /** A press on the scrim behind: `close` cancels, `swallow` only eats it (a question that demands an answer, ADR 0061). */
+    backdrop?: 'close' | 'swallow'
   }>(),
-  { size: 'confirm', role: 'dialog', describedby: undefined, scrimTestid: 'modal-scrim', initialFocus: 'control' },
+  { size: 'confirm', role: 'dialog', describedby: undefined, scrimTestid: 'modal-scrim', initialFocus: 'control', backdrop: 'close' },
 )
 
 const emit = defineEmits<{ cancel: [] }>()
@@ -33,7 +35,12 @@ const titleId = useId()
 const dialogEl = ref<HTMLElement>()
 let opener: HTMLElement | null = null
 
-useEscapeLayer(() => true, () => emit('cancel'))
+useOverlayLayer({
+  isOpen: () => true,
+  root: () => dialogEl.value,
+  close: () => emit('cancel'),
+  outside: props.backdrop,
+})
 
 const FOCUSABLE =
   'button:not(:disabled), [href], input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
@@ -91,7 +98,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="app-modal-scrim" :data-testid="scrimTestid" @click.self="emit('cancel')">
+  <div class="app-modal-scrim" :data-testid="scrimTestid">
     <div
       ref="dialogEl"
       class="app-modal"

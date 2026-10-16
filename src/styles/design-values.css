@@ -89,6 +89,9 @@
   --selbar-divider-margin: 3px;
   --pill-popover-radius: 24px;
   --swatch-remove-size: 10px;
+  --color-wheel-size: 200px;
+  --color-slider-height: 20px;
+  --color-thumb-size: 18px;
   --swatch-remove-stroke: 3;
   --swatch-mark-halo: 1px;
   --swatch-mark-dark: #000000;
