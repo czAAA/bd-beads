@@ -38,6 +38,7 @@ async function choose(wrapper: ReturnType<typeof mount>, hex: string) {
   const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
   input.element.value = hex
   await input.trigger('change')
+  await input.trigger('blur')
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, at = 0) {
