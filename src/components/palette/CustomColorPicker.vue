@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { usePalette } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
@@ -41,21 +41,35 @@ const tooltip = computed(() => {
 })
 
 /**
- * The color the picker commits is the answer (tickets 398, 444): it becomes the paint color and joins the Palette, and
- * the sheet holding this control closes. `input` fires on every step of a drag in the spectrum or a slider, so only
- * `change` (the picker committing a color) counts. The input is mounted afresh (`generation`), which closes any
- * dialog still open.
+ * The color the picker ends on is the answer (tickets 398, 444): it becomes the paint color and joins the Palette, and
+ * the sheet holding this control closes. A touch picker (iPad's spectrum and sliders) fires both `input` and `change`
+ * on every step of a drag, so neither can commit: each only remembers the latest color. It is taken when the picker is
+ * left: the input loses focus, or the next press lands on the page. The input is mounted afresh (`generation`), which
+ * closes any dialog still open.
  */
 const generation = ref(0)
 const inputEl = ref<HTMLInputElement>()
-async function onChange(event: Event) {
-  emit('select', (event.target as HTMLInputElement).value)
+let pending: string | undefined
+
+function remember(event: Event) {
+  pending = (event.target as HTMLInputElement).value
+  document.addEventListener('pointerdown', commit, { capture: true, once: true })
+}
+
+async function commit() {
+  document.removeEventListener('pointerdown', commit, true)
+  if (pending === undefined) return
+  const hex = pending
+  pending = undefined
+  emit('select', hex)
   generation.value += 1
   closeSheet()
   // Outside a sheet the control stays, and keyboard focus comes back to it rather than falling to the page.
   await nextTick()
   inputEl.value?.focus()
 }
+
+onBeforeUnmount(() => document.removeEventListener('pointerdown', commit, true))
 </script>
 
 <template>
@@ -70,7 +84,9 @@ async function onChange(event: Event) {
       :aria-pressed="selected"
       :key="generation"
       ref="inputEl"
-      @change="onChange"
+      @input="remember"
+      @change="remember"
+      @blur="commit"
     />
     <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>

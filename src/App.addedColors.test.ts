@@ -8,7 +8,7 @@ import { en } from './i18n/en'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY } from './services/addedColorsStore'
 import { saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
-import { openColorPopover } from './testUtils/pill'
+import { chooseCustomColor, openColorPopover } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -35,9 +35,7 @@ async function removeButton(wrapper: ReturnType<typeof mount>) {
 
 async function choose(wrapper: ReturnType<typeof mount>, hex: string) {
   await palette(wrapper)
-  const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-  input.element.value = hex
-  await input.trigger('change')
+  await chooseCustomColor(wrapper, hex)
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, at = 0) {
