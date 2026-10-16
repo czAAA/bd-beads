@@ -126,7 +126,6 @@ describe('an added swatch can be removed (ticket 228)', () => {
 
   it.each([
     ['Cancel', (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-cancel"]').trigger('click')],
-    ['the backdrop', (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="modal-scrim"]').trigger('click')],
   ])('%s leaves the swatch alone', async (_name, dismiss) => {
     seed(['#123456'])
     const wrapper = mount(App)

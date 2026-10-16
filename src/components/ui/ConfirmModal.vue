@@ -37,6 +37,7 @@ const messageId = useId()
   <AppModal
     :title="title"
     role="alertdialog"
+    backdrop="swallow"
     :describedby="messageId"
     data-testid="confirm-modal-dialog"
     @cancel="emit('cancel')"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
-import { hasOpenLayer } from '../../composables/ui/useEscapeLayer'
+import { hasOpenLayer } from '../../composables/ui/useOverlayLayer'
 import { TOUR_CARD_ATTRIBUTE } from '../../composables/ui/tourDom'
 import {
   HOLE_PADDING,
