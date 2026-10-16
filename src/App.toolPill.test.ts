@@ -142,23 +142,25 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Blue')
   })
 
-  it('shows the recents beside the swatch in Recent colors mode, newest first, with the colour chosen last at the front', async () => {
+  it('shows the recents beside the swatch by default, newest first, with the colour chosen last at the front, until One color is chosen', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'blue')
     await pickColor(wrapper, 'green')
     await pickColor(wrapper, 'yellow')
 
-    await wrapper.get('[data-testid="pill-color"]').trigger('click')
-    await wrapper.get('[data-testid="color-popover-mode"] [data-value="recent"]').trigger('click')
-    await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
-
-    expect(localStorage.getItem('openbeads:pill-colors')).toBe('recent')
+    expect(localStorage.getItem('openbeads:pill-colors')).toBeNull()
     const recents = wrapper.findAll('[data-testid="pill-recent"]')
     expect(recents).toHaveLength(3)
     expect(localStorage.getItem('openbeads:recent-colors')!.split(',')).toHaveLength(4) // red, blue, green, yellow
     await recents[0]!.trigger('click') // green: used just before yellow
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Green')
     expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
+
+    await wrapper.get('[data-testid="pill-color"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover-mode"] [data-value="one"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
+    expect(localStorage.getItem('openbeads:pill-colors')).toBe('one')
+    expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
   })
 
   it('has no standalone Select all: it is on Ctrl+A and, once a Selection exists, the Selection bar (ticket 439)', async () => {

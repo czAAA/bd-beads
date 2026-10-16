@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import ToolPill from './ToolPill.vue'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
@@ -75,6 +75,23 @@ describe('ToolPill (ticket 439)', () => {
     await wrapper.setProps({ colorMode: 'one' })
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
+  })
+
+  it('drops the recents and the palette tile while the pill would overflow its edge, and brings them back with room', async () => {
+    let scrollWidth = 600
+    const spy = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth)
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400)
+    const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
+    await flushPromises()
+    expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
+
+    scrollWidth = 400
+    await wrapper.setProps({ position: 'top' })
+    await flushPromises()
+    expect(wrapper.findAll('[data-testid="pill-recent"]')).toHaveLength(3)
+    spy.mockRestore()
+    client.mockRestore()
   })
 
   it('ends with a divider and the Pen/Mouse toggle once an input mode is given', async () => {
