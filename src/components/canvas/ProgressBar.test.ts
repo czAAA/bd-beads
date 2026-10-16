@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
@@ -22,6 +24,11 @@ function makeProject(): Project {
 }
 
 describe('ProgressBar', () => {
+  it('keeps the page from panning under a touch drag on the bar', () => {
+    const source = readFileSync(resolve(__dirname, 'ProgressBar.vue'), 'utf8')
+    expect(source).toMatch(/\n\.progress-bar \{[^}]*touch-action: none/)
+  })
+
   it('shows the current row and total, 1-based', () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
