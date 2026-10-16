@@ -619,6 +619,7 @@ export const es: Translations = {
     fillSelection: 'Rellena la selección con el color actual.',
     frameFromSelection: 'Convierte la selección en el marco.',
     pasteDisabled: 'Copia primero una zona.',
+    pasteTool: 'Pasa el cursor para ver la pieza copiada y haz clic para estamparla.',
     rotate: 'Gira la selección un cuarto de vuelta.',
     setFrameFirst: 'Define primero un marco.',
     fitToDrawing: 'Ajusta el marco a todas las cuentas.',
