@@ -42,6 +42,15 @@ body {
 }
 
 /*
+ * Shell chrome that scrolls nothing vertically (Canvas strip, Progress bar): a vertical drag on it must not pan the page
+ * and carry the canvas out of view on a phone. Sideways stays allowed for a bar's own horizontal scroll. Out-ranks the
+ * zero-specificity `:where(*)` rule above.
+ */
+.no-page-pan {
+  touch-action: pan-x;
+}
+
+/*
  * The app is a tool, not a document: text in the Dock, Canvas strip, Progress rows, sheets and dialogs is chrome, so a
  * drag or long-press must not select it (as in any drawing or editor app). Fields keep selection so typing, caret moves
  * and copy still work; Safari needs the -webkit- form on them.
