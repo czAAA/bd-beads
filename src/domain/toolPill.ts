@@ -2,8 +2,10 @@ import { normalizeHex } from './palette'
 
 /** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0059). */
 export const PILL_POSITIONS = ['left', 'top', 'right', 'bottom'] as const
+/** One of the four edges the pill docks to. */
 export type PillPosition = (typeof PILL_POSITIONS)[number]
 
+/** Where the pill is until it is moved (ADR 0059). */
 export const DEFAULT_PILL_POSITION: PillPosition = 'bottom'
 
 /** Whether the pill runs top to bottom: docked left or right. */
@@ -16,8 +18,11 @@ export const PILL_COLOR_MODES = ['one', 'recent'] as const
 export type PillColorMode = (typeof PILL_COLOR_MODES)[number]
 
 /** How many recent colours the device keeps, and how many the pill and the popover show beside the chosen one. */
+/** Recent colours kept on the device. */
 export const RECENT_COLORS_KEPT = 8
+/** Recents the pill shows beside the chosen colour. */
 export const RECENTS_IN_PILL = 3
+/** Recents the colour popover offers. */
 export const RECENTS_IN_POPOVER = 6
 
 /** The recent colours with `hex` moved to the front (added when new), capped at what the device keeps. */
@@ -49,7 +54,7 @@ export function nearestPillEdge(point: { x: number; y: number }, area: PillRect)
     top: point.y - area.top,
     bottom: area.top + area.height - point.y,
   }
-  return PILL_POSITIONS.reduce((best, edge) => (distances[edge] < distances[best] ? edge : best), 'bottom' as PillPosition)
+  return PILL_POSITIONS.reduce((best, edge) => (distances[edge] < distances[best] ? edge : best), DEFAULT_PILL_POSITION)
 }
 
 /** The position an arrow key sends the pill to, or undefined for any other key. */

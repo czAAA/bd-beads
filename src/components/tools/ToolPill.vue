@@ -202,6 +202,7 @@ watch(
           type="button"
           class="ui-control tool-pill__stop tool-pill__palette"
           :aria-label="t.toolPill.paletteTile"
+          :aria-expanded="popoverOpen"
           :tabindex="-1"
           data-testid="pill-palette"
           @click="toggleColor"
