@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
-import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, finishedColor, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
@@ -49,11 +49,11 @@ describe('Technique geometry', () => {
     expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 90, height: 50 })
   })
 
-  it('puts a seam between brick stitch rows, which makes each row a pixel further from the last', () => {
-    expect(rowPitchPx('brick')).toBe(21)
-    expect(rowTopPx('brick', 2)).toBe(42)
+  it('stacks brick stitch rows a bead apart, with no seam between them', () => {
+    expect(rowPitchPx('brick')).toBe(20)
+    expect(rowTopPx('brick', 2)).toBe(40)
     expect([0, 1, 2, 3].map((row) => rowShiftPx('brick', row))).toEqual([0, 10, 0, 10])
-    expect(projectExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 62 })
+    expect(projectExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 60 })
   })
 
   it('swaps the displayed width and height at a quarter turn either way, and scales them by the zoom', () => {
@@ -86,20 +86,18 @@ describe('renderProject', () => {
     expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
   })
 
-  it('places brick stitch beads with the stagger and a seam between rows, square', () => {
+  it('places brick stitch beads with the stagger and no seam between rows, square', () => {
     const project = projectOf('brick', 2, 3)
     const { context, named } = recordingContext()
 
     renderProject(context, { project, region: whole(project), zoom: 1, drawBead: noBead })
 
-    // One seam above each row after the first, as wide as the row's own beads and shifted with them.
-    const seams = named('fillRect').slice(1).map((call) => call.args)
-    expect(seams).toEqual([[10, 20, 40, 1], [0, 41, 40, 1]])
-    expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 21], [30, 21], [0, 42], [20, 42]])
+    expect(named('fillRect')).toHaveLength(1) // just the background
+    expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 20], [30, 20], [0, 40], [20, 40]])
   })
 
-  it('draws no seams for the other Techniques', () => {
-    for (const technique of ['loom', 'peyote'] as const) {
+  it('draws no seams in any Technique', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
       const project = projectOf(technique, 2, 3)
       const { context, named } = recordingContext()
 
@@ -343,14 +341,6 @@ describe('renderProject', () => {
       expect(beads.some(({ dimmed }) => dimmed)).toBe(false)
     })
 
-    it('leaves a finished brick seam unfaded while finished rows are shown', () => {
-      const project = projectOf('brick', 2, 3, { rowProgress: { ...progress('rows'), currentRow: 2, currentColumn: 0 } })
-      const { context, named } = recordingContext()
-
-      renderProject(context, { project, region: whole(project), zoom: 1, showFinished: true, rowMarks: true, drawBead: noBead })
-
-      expect(named('fillRect').slice(1).map((call) => call.fillStyle)).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
-    })
 
     /** Every cell of a Frame at the origin holds a red bead. */
     const filled = (project: Project): Project => {
@@ -398,22 +388,9 @@ describe('renderProject', () => {
       expect(beadsDrawn(project, whole(project)).some(({ dimmed }) => dimmed)).toBe(false)
     })
 
-    it('fades a finished row\'s brick seam with the row, but not a column-wise one\'s', () => {
-      const seamAlpha = (direction: 'rows' | 'columns') => {
-        const project = projectOf('brick', 2, 3, { rowProgress: { ...progress(direction), currentRow: 2, currentColumn: 0 } })
-        const { context, named } = recordingContext()
-        renderProject(context, { project, region: whole(project), zoom: 1, rowMarks: true, drawBead: noBead })
-        return named('fillRect').slice(1).map((call) => call.fillStyle)
-      }
-
-      // Rows 1 and 2 have seams above them; only row 1 is before the current row (2): faded toward the board, opaque.
-      const faded = finishedColor(DEFAULT_THEME.seam, DEFAULT_THEME)
-      expect(seamAlpha('rows')).toEqual([faded, DEFAULT_THEME.seam])
-      expect(seamAlpha('columns')).toEqual([DEFAULT_THEME.seam, DEFAULT_THEME.seam])
-    })
   })
 
-  it('leaves what a bead looks like to the bead drawer, and draws nothing of its own but the background and seams', () => {
+  it('leaves what a bead looks like to the bead drawer, and draws nothing of its own but the background', () => {
     const project = projectOf('loom', 2, 2)
     const drawBead = vi.fn()
     const { context, calls } = recordingContext()
@@ -476,14 +453,14 @@ describe('drawing only some rows again', () => {
     expect(some.map(key)).toEqual(all.filter(({ y }) => y >= 15 && y < 60 + 15).map(key))
   })
 
-  it('includes brick stitch\'s seam above the first row of the band, and no more of the rows above', () => {
+  it('starts a brick stitch band at the top of its first row, and no more of the rows above', () => {
     const project = projectOf('brick', 4, 6)
     const { context, named } = recordingContext()
 
     renderProject(context, { project, region: whole(project), zoom: 1, rows: { first: 2, last: 2 } })
 
-    // Row 2 is y 42 to 62, with its seam at 41.
-    expect(named('rect')[0]!.args).toEqual([0, 41, 90, 21])
+    // Row 2 is y 40 to 60.
+    expect(named('rect')[0]!.args).toEqual([0, 40, 90, 20])
   })
 
   it('turns the band with the Project: rows are columns of the surface when it is rotated', () => {

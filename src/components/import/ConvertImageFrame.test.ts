@@ -120,14 +120,14 @@ describe('ConvertImageFrame', () => {
     expect(beads.every(({ cornerRadius }) => Math.abs(cornerRadius - 4.4) < 1e-9)).toBe(true)
   })
 
-  it('draws brick stitch a seam apart, where the frame outline follows the rows it draws', () => {
+  it('draws brick stitch a bead apart, where the frame outline follows the rows it draws', () => {
     // A picture that hangs over the frame, so the frame sits below the first lattice rows and must land on a bead row.
     const wrapper = mountFrame({ technique: 'brick', image: twoBlocks(8, 24) })
 
     const beads = canvas.latest()
     const { rows } = latticeSize(wrapper)
     const rowTops = [...new Set(beads.map(({ y }) => y))]
-    expect(rowTops).toEqual(Array.from({ length: rows }, (_row, row) => row * (CELL_SIZE_PX + 1)))
+    expect(rowTops).toEqual(Array.from({ length: rows }, (_row, row) => row * CELL_SIZE_PX))
 
     const top = Number.parseFloat(
       /top: ([\d.]+)px/.exec(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')!)![1]!,
@@ -233,7 +233,7 @@ describe('ConvertImageFrame', () => {
 
   describe('a vertical drag follows the pointer (ticket 308)', () => {
     // The picture is drawn by the Project renderer, so a screen pixel down the page is 1/rowPitchPx of a row.
-    const drawnRowPitch = { loom: 20, brick: 21, peyote: 15 } as const
+    const drawnRowPitch = { loom: 20, brick: 20, peyote: 15 } as const
 
     it.each(['loom', 'brick', 'peyote'] as const)('moves the picture by the millimetres the pointer covered, in %s', async (technique) => {
       const image = twoBlocks(8, 32)
