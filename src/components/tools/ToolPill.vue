@@ -9,6 +9,7 @@ import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
+import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { MIRROR_ENABLED } from '../../features'
@@ -108,7 +109,7 @@ function measure(): PillRect | undefined {
 
 /**
  * Recent colors shows the recents only while the whole pill fits along its edge (ticket 439: "when there is space on
- * the screen"); otherwise it shrinks to the one swatch and the palette tile rather than scroll. Whether it fits is
+ * the screen"); otherwise it shrinks to the one swatch rather than scroll. Whether it fits is
  * probed by drawing the recents and asking the pill if it overflows, before the browser paints.
  */
 const recentsRoom = ref(true)
@@ -227,7 +228,9 @@ watch(
         data-tour="dock-color"
         @click="toggleColor"
       >
-        <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
+        <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }">
+          <AppIcon name="palette" :size="14" :class="['tool-pill__swatch-mark', colorHex && `tool-pill__swatch-mark--${markOn(colorHex)}`]" />
+        </span>
       </IconButton>
 
       <template v-if="showRecents">
@@ -242,17 +245,6 @@ watch(
           @click="emit('pick-recent', hex)"
         >
           <span class="tool-pill__recent-swatch" :style="{ backgroundColor: hex }" />
-        </button>
-        <button
-          type="button"
-          class="ui-control tool-pill__stop tool-pill__palette"
-          :aria-label="t.toolPill.paletteTile"
-          :aria-expanded="popoverOpen"
-          :tabindex="-1"
-          data-testid="pill-palette"
-          @click="toggleColor"
-        >
-          <AppIcon name="palette" :size="22" />
         </button>
       </template>
 
@@ -433,6 +425,9 @@ watch(
 
 /* The chosen colour: a 22px round swatch, ringed with a 2px gap in the pill's fill. */
 .tool-pill__swatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
   width: var(--pill-icon);
   height: var(--pill-icon);
@@ -440,9 +435,21 @@ watch(
   box-shadow: 0 0 0 var(--space-2) var(--elevated), 0 0 0 calc(2 * var(--space-2)) var(--ring);
 }
 
-/* Recent colors: 18px swatches on tiles 30px long and 40px across (30px tall when vertical), then a 40px palette tile. */
-.tool-pill__recent,
-.tool-pill__palette {
+/* The palette icon sits inside the swatch, in the mark that reads on the chosen colour (or the muted ink while none is chosen). */
+.tool-pill__swatch-mark {
+  color: var(--muted);
+}
+
+.tool-pill__swatch-mark--dark {
+  color: var(--swatch-mark-dark);
+}
+
+.tool-pill__swatch-mark--light {
+  color: var(--swatch-mark-light);
+}
+
+/* Recent colors: 18px swatches on tiles 30px long and 40px across (30px tall when vertical). */
+.tool-pill__recent {
   display: flex;
   flex: none;
   align-items: center;
@@ -464,11 +471,6 @@ watch(
   height: calc(var(--space-32) - var(--space-2));
 }
 
-.tool-pill__palette {
-  width: var(--pill-tile);
-  height: var(--pill-tile);
-}
-
 .tool-pill__recent-swatch {
   width: calc(var(--space-16) + var(--space-2));
   height: calc(var(--space-16) + var(--space-2));
@@ -477,20 +479,17 @@ watch(
 }
 
 @media (hover: hover) {
-  .tool-pill__recent:hover,
-  .tool-pill__palette:hover {
+  .tool-pill__recent:hover {
     color: var(--ink);
     background: var(--hover-fill);
   }
 }
 
-.tool-pill__recent:active,
-.tool-pill__palette:active {
+.tool-pill__recent:active {
   background: var(--press-fill);
 }
 
-.tool-pill__recent:focus-visible,
-.tool-pill__palette:focus-visible {
+.tool-pill__recent:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }

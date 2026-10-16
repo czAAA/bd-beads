@@ -84,28 +84,26 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(true)
   })
 
-  it('shows three recents and a palette tile in Recent colors mode, and a recent picks its colour at once', async () => {
+  it('shows three recents in Recent colors mode, and a recent picks its colour at once', async () => {
     const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
     const recents = wrapper.findAll('[data-testid="pill-recent"]')
     expect(recents).toHaveLength(3)
     await recents[1]!.trigger('click')
     expect(wrapper.emitted('pick-recent')).toEqual([['#222222']])
-    await wrapper.get('[data-testid="pill-palette"]').trigger('click')
-    expect(wrapper.emitted('update:popoverOpen')).toEqual([[true]])
+    expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-color"] .tool-pill__swatch-mark').exists()).toBe(true)
 
     await wrapper.setProps({ colorMode: 'one' })
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
   })
 
-  it('drops the recents and the palette tile while the pill would overflow its edge, and brings them back with room', async () => {
+  it('drops the recents while the pill would overflow its edge, and brings them back with room', async () => {
     let scrollWidth = 600
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth)
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400)
     const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
 
     scrollWidth = 400
     await wrapper.setProps({ position: 'top' })

@@ -94,7 +94,6 @@ export interface Translations {
     recent: string
     palette: string
     /** The Recent colors mode's tile that opens the popover. */
-    paletteTile: string
     close: string
     /** A recent colour's name. */
     useColor: string
