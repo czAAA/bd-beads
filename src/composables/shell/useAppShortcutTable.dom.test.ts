@@ -29,6 +29,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     finishFrame: vi.fn(),
     onCopy: vi.fn(),
     onCut: vi.fn(),
+    onPasteMode: vi.fn(),
     onFillSelection: vi.fn(),
     onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),

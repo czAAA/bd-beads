@@ -620,6 +620,7 @@ export const pl: Translations = {
     fillSelection: 'Wypełnia zaznaczenie bieżącym kolorem.',
     frameFromSelection: 'Zamienia zaznaczenie w ramkę.',
     pasteDisabled: 'Najpierw skopiuj obszar.',
+    pasteTool: 'Najedź, aby zobaczyć skopiowany fragment, i kliknij, aby go odcisnąć.',
     rotate: 'Obraca zaznaczenie o ćwierć obrotu.',
     setFrameFirst: 'Najpierw ustaw ramkę.',
     fitToDrawing: 'Dopasuj ramkę do wszystkich koralików.',

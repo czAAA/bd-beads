@@ -150,14 +150,11 @@ describe('the numbers of a ruled box', () => {
     expect(topOne.x - topOne.width / 2).toBeCloseTo(0 + 200 + 7 + 3, 5)
   })
 
-  it('leave out the numbers far off screen, and pick the one under a point', () => {
+  it('leave out the numbers far off screen', () => {
     const layout = layoutOf(project([...block(0, 0), ...block(900, 900)]), { viewport: { width: 1000, height: 800 } })
 
     expect(layout.labels.some((l) => l.text === '1' && l.axis === 'row')).toBe(true)
     expect(layout.labels.length).toBeLessThan(10)
-    const first = layout.labels[0]!
-    expect(layout.pick({ x: first.x, y: first.y })).toEqual(first.selection)
-    expect(layout.pick({ x: 5000, y: 5000 })).toBeUndefined()
   })
 })
 
@@ -240,37 +237,6 @@ describe('the Ruler dots', () => {
   })
 })
 
-describe('picking by the nearest bead on a ruler', () => {
-  const frame = { row: 0, column: 0, rows: 4, columns: 999 }
-
-  it('lands on the bead under the pointer at 10%, where a bead is 2px', () => {
-    const layout = framed(frame, { zoom: 0.1, viewport: { width: 400, height: 300 } })
-    const bead = layout.dots.find((d) => d.axis === 'column' && d.index === 44 && d.y < 0)!
-    expect(layout.pick({ x: bead.x + 0.4, y: bead.y })).toEqual({ top: 0, left: 44, rows: 4, columns: 1 })
-  })
-
-  it('selects a row from a dot beside the left ruler, and nothing away from the rulers', () => {
-    const layout = framed(frame, { zoom: 0.7, viewport: { width: 1000, height: 800 } })
-    const dot = layout.dots.find((d) => d.axis === 'row' && d.index === 2 && d.x < 0)!
-    expect(layout.pick({ x: dot.x, y: dot.y })).toEqual({ top: 2, left: 0, rows: 1, columns: 999 })
-    expect(layout.pick({ x: 300, y: 300 })).toBeUndefined()
-  })
-
-  it('lets a number under the pointer pick its own bead', () => {
-    const layout = framed(frame, { zoom: 0.1, viewport: { width: 2400, height: 300 } })
-    const label = layout.labels.find((l) => l.axis === 'column' && l.y < 0)!
-    expect(layout.pick({ x: label.x, y: label.y })).toEqual(label.selection)
-  })
-
-  it('still picks through a number with the numbers hidden', () => {
-    const shown = framed(frame, { zoom: 0.7 })
-    const hidden = framed(frame, { zoom: 0.7, numbers: false })
-    const label = shown.labels.find((l) => l.axis === 'column' && l.y < 0)!
-    expect(hidden.labels).toEqual([])
-    expect(hidden.pick({ x: label.x, y: label.y })).toEqual(label.selection)
-  })
-})
-
 describe('the numbers below 50% zoom (ticket 303)', () => {
   const wide = { row: 0, column: 0, rows: 13, columns: 100 }
   const texts = (zoom: number, side: (l: RulerLabel) => boolean) => framed(wide, { zoom }).labels.filter(side).map((l) => l.text)
@@ -298,7 +264,7 @@ describe('the numbers below 50% zoom (ticket 303)', () => {
   })
 })
 
-describe('drawing and picking agree', () => {
+describe('numbers and dots lay out at every technique, turn and zoom', () => {
   const techniques: Technique[] = ['loom', 'peyote', 'brick']
   const rotations: Rotation[] = [0, 90, 180, 270]
   // Above 50%, below it, and with a bead pitch of 5px, under the 6px where only every 5th bead keeps its dot.
@@ -307,32 +273,11 @@ describe('drawing and picking agree', () => {
 
   it.each(cases)('$technique turned $rotation° at zoom $zoom', ({ technique, rotation, zoom }) => {
     const frame = { row: 1, column: 2, rows: 14, columns: 60 }
-    const { labels, dots, pick } = framed(frame, { technique, rotation, zoom, centred: frame })
-    const labelOf = (point: { x: number; y: number }) => labels.find((l) => Math.abs(point.x - l.x) <= l.width / 2 + 1 && Math.abs(point.y - l.y) <= l.height / 2 + 1)
+    const { labels, dots } = framed(frame, { technique, rotation, zoom, centred: frame })
 
     expect(labels.length).toBeGreaterThan(0)
     if (zoom < 1) {
       expect(dots.length).toBeGreaterThan(0)
-    }
-    // The centre of every drawn number picks that number's row or column.
-    for (const label of labels) {
-      expect(pick({ x: label.x, y: label.y })).toEqual(label.selection)
-    }
-    // Every drawn dot picks its own bead's line, unless a number is drawn over it.
-    for (const dot of dots) {
-      if (!labelOf(dot)) {
-        expect(pick({ x: dot.x, y: dot.y })).toEqual(dot.selection)
-      }
-    }
-    // A point midway between two neighbouring dots picks one of the two.
-    for (const [index, dot] of dots.entries()) {
-      const next = dots[index + 1]
-      if (next && next.axis === dot.axis && next.index === dot.index + 1 && next.normal.join() === dot.normal.join()) {
-        const midway = { x: (dot.x + next.x) / 2, y: (dot.y + next.y) / 2 }
-        if (!labelOf(midway)) {
-          expect([dot.selection, next.selection]).toContainEqual(pick(midway))
-        }
-      }
     }
   })
 })

@@ -1,13 +1,12 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt, type CreateProjectInput } from '../../domain/project'
-import { lineWithinFrame } from '../../domain/margin'
 import { provideI18n } from '../../i18n/useI18n'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
-import { selectionFrame, selectionHoldsAllBeads, type Selection } from '../../domain/selection'
+import { selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { rotationSwapsAxes } from '../../domain/grid'
@@ -235,10 +234,10 @@ function wireAppShell(services: Services) {
     copy: copySelected,
     pasteAt: pasteAtGesture,
     deleteSelection: onEmptySelection,
-    cut: onCut,
+    cut: cutSelected,
+    armPaste,
     dismissPaste: leavePasteMode,
     fill: fillSelection,
-    selectLine,
     tapPiece,
     selectAll: selectAllBeads,
     beginAdjust,
@@ -347,6 +346,16 @@ function wireAppShell(services: Services) {
     else showToast('copy-nothing', t.value.tools.copyNothingMessage, 'info')
   }
 
+  /** Cut (tickets 415, 447): copies and empties the Selection, then, as Copy does, arms paste mode under Select. */
+  function onCut() {
+    if (cutSelected()) selectTool('select')
+  }
+
+  /** The Paste tool and the Selection bar's Paste button (ticket 447): paste mode under Select, nothing stamped. */
+  function onPasteMode() {
+    if (armPaste()) selectTool('select')
+  }
+
   /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0057). */
   function pasteAtCell(cell: GridPosition | undefined): boolean {
     if (!pasteAtGesture(cell)) return false
@@ -364,14 +373,6 @@ function wireAppShell(services: Services) {
   /** The Selection's handles or inside were pressed (ticket 414): the active tool decides what a tap inside does. */
   function onSelectionPress(target: FramePress, cell: GridPosition) {
     beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
-  }
-
-  /** A ruler number was pressed (ticket 313): selecting a line is the Select tool's job, so it becomes the active tool. */
-  function onSelectLine(newSelection: Selection) {
-    // A number for a row or column outside the Frame does nothing (ticket 433), not even a change of tool.
-    if (!lineWithinFrame(currentProject()?.frame, newSelection)) return
-    selectTool('select')
-    selectLine(newSelection)
   }
 
   /**
@@ -729,6 +730,7 @@ function wireAppShell(services: Services) {
     onSelectColor,
     onClearSelection,
     onCut,
+    onPasteMode,
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
@@ -861,11 +863,11 @@ function wireAppShell(services: Services) {
     hasClipboard,
     onCopy,
     onCut,
+    onPasteMode,
     onClearSelection,
     onFillSelection,
     hasPaintColor,
     onFrameFromSelection,
-    onSelectLine,
     selectionRefusals,
     backOutOfSelect,
     previewCells,
