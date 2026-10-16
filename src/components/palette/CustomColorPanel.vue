@@ -75,7 +75,10 @@ useOverlayLayer({
   root: () => rootEl.value,
   close: () => emit('cancel'),
   onOutsidePress: take,
+  // The Custom button toggles the picker itself (a press on it while open takes the color, like leaving it).
+  isOpener: (target) => target.closest('[data-testid="custom-color-button"]') !== null,
 })
+defineExpose({ take })
 
 /** A drag begun on the wheel or slider keeps tracking outside it (pointer capture) and ends on release. */
 function dragOn(el: () => HTMLElement | undefined, apply: (event: PointerEvent, rect: DOMRect) => void) {
@@ -111,7 +114,7 @@ function step(event: KeyboardEvent) {
   return event.shiftKey ? 10 : 1
 }
 
-function onEnter(event: KeyboardEvent) {
+function takeOnEnter(event: KeyboardEvent) {
   if (event.key !== 'Enter') return false
   event.preventDefault()
   take()
@@ -119,7 +122,7 @@ function onEnter(event: KeyboardEvent) {
 }
 
 function onWheelKey(event: KeyboardEvent) {
-  if (onEnter(event)) return
+  if (takeOnEnter(event)) return
   const by = step(event)
   const { h, s } = hsv.value
   const moves: Record<string, Hsv> = {
@@ -135,7 +138,7 @@ function onWheelKey(event: KeyboardEvent) {
 }
 
 function onSliderKey(event: KeyboardEvent) {
-  if (onEnter(event)) return
+  if (takeOnEnter(event)) return
   const by = step(event) / 100
   const direction = { ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[event.key]
   if (!direction) return
@@ -197,6 +200,7 @@ onMounted(async () => {
       aria-valuemin="0"
       aria-valuemax="100"
       :aria-valuenow="Math.round(hsv.v * 100)"
+      :aria-valuetext="`${Math.round(hsv.v * 100)}%`"
       :aria-label="t.palette.brightnessLabel"
       data-testid="custom-color-brightness"
       @pointerdown.prevent="sliderDrag.down"
@@ -219,7 +223,7 @@ onMounted(async () => {
         spellcheck="false"
         data-testid="custom-color-hex"
         @update:model-value="onHexInput"
-        @keydown="onEnter"
+        @keydown="takeOnEnter"
         @blur="onHexBlur"
       />
     </div>

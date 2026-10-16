@@ -9,7 +9,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 /**
  * The Custom color button (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
  * ("pick any color"; v18 card), then the label; the ring, like a Palette swatch, while it is the paint color. It opens
- * the app's own color picker (CustomColorPanel) under the buttons, and a second press closes it again.
+ * the app's own color picker (CustomColorPanel) under the buttons, and a second press takes its color and closes it.
  */
 defineProps<{
   /** Whether Custom color is the active paint color right now, as opposed to just remembered on this slot. */
