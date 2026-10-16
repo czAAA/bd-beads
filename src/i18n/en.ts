@@ -61,7 +61,6 @@ export const en: Translations = {
     recentColors: 'Recent colors',
     recent: 'Recent',
     palette: 'Palette',
-    paletteTile: 'Colors',
     close: 'Close',
     useColor: 'Paint with {color}',
   },
