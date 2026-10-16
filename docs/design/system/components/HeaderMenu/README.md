@@ -1,6 +1,6 @@
 # HeaderMenu
 
-The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15).
+**Replaced in v20 by the MenuPanel card; do not use for the editor.** (The Overview page keeps its own header and header menu, as below.) The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15).
 
 - **Button:** the `menu` icon, right after the wordmark (after the mark on the phone), 10px gap. 34px ghost icon button from 744 (18px icon), 40px on the phone (20px icon). Hover `--hover-fill`, open `--press-fill`, focus the 2px `focus-ring` (3px in high contrast).
 - **Phone (0–743):** Theme (opens the four-way theme sheet), Language, Name on exports, Keyboard shortcuts when a keyboard is attached; a rule; Overview, Take the tour, Source code. The imports stay in the Pattern sheet.
