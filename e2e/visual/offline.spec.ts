@@ -38,8 +38,8 @@ async function reloadsIntoTheApp(page: Page): Promise<void> {
 /** Creates a Project through the New Project form, paints a bead, saves, and checks it is stored. New Project and Save
  * both sit in the Dock's Project sheet, which creating the Project closes. */
 async function createEditAndSave(page: Page, name: string): Promise<void> {
-  await openDockSheet(page, 'strip-project')
-  await page.getByTestId('phone-new-project-button').click()
+  await openDockSheet(page, 'strip-menu')
+  await page.getByTestId('menu-new-project').click()
   await page.getByTestId('name-input').fill(name)
   await page.locator('form.new-project-form button[type=submit]').click()
   await expect(page.getByTestId('project-surface')).toBeVisible()
@@ -101,8 +101,8 @@ test('asks the browser to keep the library at the first save, after the note, an
   await openAndInstall(page, true)
   expect(await asked()).toBe(0)
 
-  await openDockSheet(page, 'strip-project')
-  await page.getByTestId('phone-new-project-button').click()
+  await openDockSheet(page, 'strip-menu')
+  await page.getByTestId('menu-new-project').click()
   await page.getByTestId('name-input').fill('First save')
   await page.locator('form.new-project-form button[type=submit]').click()
   await expect(page.getByTestId('keep-note-modal')).toBeVisible()

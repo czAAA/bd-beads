@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import vue from '@vitejs/plugin-vue'
 import { configDefaults, defineConfig } from 'vitest/config'
@@ -7,6 +8,8 @@ import { offlineShell } from './vite.pwa.ts'
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
 const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/overview/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
 
+const APP_VERSION = (JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
   // Production builds (build and preview alike) resolve assets relative to the path the app is served from.
@@ -15,6 +18,8 @@ export default defineConfig(({ mode }) => ({
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   plugins: [vue(), offlineShell()],
+  // The version the Menu's About section shows (ticket 443).
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   build: {
     // Two pages: the editor and the Overview (ticket 77), which is a folder with its own index.html so a static host
     // serves /overview/ with no rewrite rules (ADR 0014).

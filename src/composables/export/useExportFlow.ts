@@ -35,7 +35,6 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
   const makerName = computed(() => deps.currentProject()?.makerName ?? '')
-  const nameOnExportsOpen = ref(false)
 
   /** Saves the name on the open Project at once; it is not part of Undo (NameOnExports card). */
   function onSaveMakerName(name: string) {
@@ -43,7 +42,6 @@ export function useExportFlow(deps: ExportFlowDeps) {
     if (project) {
       deps.replaceProject(withMakerName(project, name))
     }
-    nameOnExportsOpen.value = false
   }
 
   /** Which export is being drawn, if any: the save box says so while it takes a while (ticket 158). Drawing a large Project takes a moment, so the buttons wait until it is done. */
@@ -127,5 +125,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { makerName, nameOnExportsOpen, onSaveMakerName, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
+  return { makerName, onSaveMakerName, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
 }

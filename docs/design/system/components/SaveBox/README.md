@@ -1,6 +1,6 @@
 # SaveBox
 
-The second box of the left column: the library's save state, Save Pattern and the Export menu.
+The second box of the left column: the library's save state, Save Pattern and the Export menu. In the Menu and Project redesign (spec 0440) Save Project, the save state and the three exports (PNG, PDF, Project file) also live in Project (ProjectPanel card), and the Export menu loses its name footer.
 
 - Elevation 1 (`elevation-1`), padding 16 20.
 - **Label row:** a 14px check in `accent` and "saved · this device" (`label`). When a save fails the icon becomes a `danger` warning and the text says so (Derived).

@@ -33,10 +33,10 @@ const click = async (wrapper: Wrapper, testId: string) => {
   }
   await wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 }
-/** The open Project's summary line, in the Project sheet (PhoneSheets card). */
+/** The open Project's summary line, in the Project panel. */
 const openName = async (wrapper: Wrapper) => {
   await openSheet(wrapper, 'strip-project')
-  return wrapper.find('[data-testid="phone-project-summary"]').text()
+  return wrapper.find('[data-testid="project-name"]').text()
 }
 const names = () => loadProjects().map((project) => project.name).sort()
 

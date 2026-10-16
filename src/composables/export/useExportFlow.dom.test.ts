@@ -121,13 +121,11 @@ describe('useExportFlow', () => {
   })
 
   describe('the maker’s name', () => {
-    it('is saved on the open Project, trimmed, and closes its modal', () => {
+    it('is saved on the open Project, trimmed', () => {
       const flow = setup()
-      flow.nameOnExportsOpen.value = true
       flow.onSaveMakerName('  Ada ')
 
       expect(flow.makerName.value).toBe('Ada')
-      expect(flow.nameOnExportsOpen.value).toBe(false)
     })
 
     it('prints none on an export once cleared', async () => {

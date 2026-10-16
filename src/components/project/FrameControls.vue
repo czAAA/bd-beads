@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { TECHNIQUES, type Technique } from '../../domain/grid'
@@ -12,20 +11,14 @@ import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 /**
- * The Frame's part of the Project sheet (MirrorSizeControls card, ticket 233): the Technique choice, Edit Frame, Fit to
- * drawing and Remove Frame, and the Frame's Estimated size with its warning as a Note (ticket 328). The Frame's size is
- * changed on the canvas, in Edit Frame (ticket 417), so there are no size steppers here. With no Frame it says what a
- * Frame is: one is made from a Selection or by Fit to drawing. Once a Row progress pass is done the Frame is locked and the
- * reason is written under the controls.
+ * The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443): the Technique choice, and the
+ * Frame's Estimated size with its warning as a Note (ticket 328). Edit Frame, Fit to drawing and Remove Frame are not here
+ * any more: they stay on the Selection and Progress bars (spec 0440). Once a Row progress pass is done the Technique is
+ * locked and the reason is written under it.
  */
 const props = defineProps<{ project: Project }>()
 
-const emit = defineEmits<{
-  'set-technique': [technique: Technique]
-  fit: []
-  remove: []
-  'edit-frame': []
-}>()
+const emit = defineEmits<{ 'set-technique': [technique: Technique] }>()
 
 const { t, locale } = useI18n()
 
@@ -61,16 +54,11 @@ const techniqueOptions = computed(() => {
 
 const lockedNoteId = useId()
 
-const editAction = controlAction('edit-frame')
-const fitAction = controlAction('fit-to-drawing')
-const removeAction = controlAction('remove-frame')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 </script>
 
 <template>
   <div class="frame-controls" data-testid="frame-controls">
-    <p v-if="!frame" class="frame-controls__note" data-testid="frame-explainer">{{ t.frame.explainer }}</p>
-
     <div class="frame-controls__technique" data-testid="frame-technique-row">
       <span :id="techniqueLabelId">{{ t.form.techniqueLabel }}</span>
       <SegmentedControl
@@ -83,12 +71,6 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
       />
     </div>
 
-    <!-- While Row progress is on the buttons stay hoverable and say why they are locked, and the reason is written below. -->
-    <div class="frame-controls__actions">
-      <AppButton v-if="frame" variant="primary" :action="editAction" :deps="deps" data-testid="frame-edit" @click="emit('edit-frame')" />
-      <AppButton variant="toolbox" :action="fitAction" :deps="deps" data-testid="frame-fit" @click="emit('fit')" />
-      <AppButton v-if="frame" variant="toolbox" :action="removeAction" :deps="deps" data-testid="frame-remove" @click="emit('remove')" />
-    </div>
     <p v-if="locked" :id="lockedNoteId" class="frame-controls__note" data-testid="frame-locked">{{ t.size.lockedReason }}</p>
 
     <div v-if="estimate" class="frame-controls__estimate" data-testid="size-estimate-row">
@@ -115,12 +97,6 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
   flex-direction: column;
   gap: var(--space-6);
   font: var(--type-control);
-}
-
-.frame-controls__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
 }
 
 .frame-controls__estimate {

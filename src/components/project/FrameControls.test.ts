@@ -48,42 +48,18 @@ describe('FrameControls', () => {
     expect(wrapper.find('[data-testid="size-estimate-info"]').exists()).toBe(false)
   })
 
-  it('states the Estimated size in mm for a Frame, and offers Edit Frame, Fit and Remove Frame, not the size steppers (ticket 417)', () => {
+  it('states the Estimated size in mm for a Frame, with no Frame buttons and no size steppers (ticket 443)', () => {
     const wrapper = mount(FrameControls, { props: { project: framed() } })
 
     expect(wrapper.find('[data-testid="size-estimate"]').text()).toBe('≈ 1.5 × 3.0 cm')
-    expect(wrapper.find('[data-testid="frame-edit"]').text()).toBe(en.frame.editFrame)
-    expect(wrapper.find('[data-testid="frame-fit"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="frame-remove"]').exists()).toBe(true)
-    for (const gone of ['frame-columns', 'frame-rows', 'frame-unit', 'frame-width-side', 'frame-height-side']) {
+    for (const gone of ['frame-edit', 'frame-fit', 'frame-remove', 'frame-explainer', 'frame-columns', 'frame-rows', 'frame-unit']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     }
   })
 
-  it('emits edit-frame, fit and remove from its buttons', async () => {
-    const wrapper = mount(FrameControls, { props: { project: framed() } })
-    await wrapper.find('[data-testid="frame-edit"]').trigger('click')
-    await wrapper.find('[data-testid="frame-fit"]').trigger('click')
-    await wrapper.find('[data-testid="frame-remove"]').trigger('click')
-    expect(wrapper.emitted('edit-frame')).toHaveLength(1)
-    expect(wrapper.emitted('remove')).toHaveLength(1)
-  })
-
-  it('with no Frame says what a Frame is and offers Fit alone', () => {
-    const wrapper = mount(FrameControls, { props: { project: { ...framed(), frame: undefined } } })
-    expect(wrapper.find('[data-testid="frame-explainer"]').text()).toBe(en.frame.explainer)
-    expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="frame-remove"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="frame-fit"]').exists()).toBe(true)
-  })
-
-  it('does not run Edit Frame once Row progress is on and a pass is done, and says why (ticket 411)', async () => {
+  it('says why the Technique is locked once Row progress is on and a pass is done (ticket 411)', () => {
     const project = { ...framed(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
     const wrapper = mount(FrameControls, { props: { project } })
-    const edit = wrapper.find('[data-testid="frame-edit"]')
-    expect(edit.attributes('aria-disabled')).toBe('true')
-    await edit.trigger('click')
-    expect(wrapper.emitted('edit-frame')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-locked"]').text()).toBe(en.size.lockedReason)
   })
 })
