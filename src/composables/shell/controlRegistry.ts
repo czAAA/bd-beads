@@ -45,7 +45,6 @@ export interface ControlDeps {
   onEditFrame: () => void
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
-  /** Whether the Frame is being edited, and the way out of it. */
   onCopy: () => void
   pasteAtPointer: (event: KeyboardEvent) => void
   onSave: () => void
@@ -288,16 +287,6 @@ export const CONTROLS: readonly ControlAction[] = [
     chords: [],
     needsProject: true,
     run: (deps) => deps.onEditFrame(),
-  },
-  {
-    id: 'frame-move',
-    icon: 'frame',
-    name: (t) => t.frame.moveHandle,
-    body: (t) => t.tooltips.moveHandle,
-    group: 'canvas',
-    chords: [],
-    needsProject: true,
-    run: () => {},
   },
   ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {

@@ -592,7 +592,6 @@ export const zh: Translations = {
     hand: '拖动以在画布上移动。',
     editFrame: '显示或隐藏边框的控点和大小按钮。',
     editFrameLocked: '已开始标记行，因此边框只能移动。',
-    moveHandle: '拖动即可连同珠子一起移动边框。',
     frameEdgeOut: '在这一侧把边框扩大一颗珠子。',
     frameEdgeIn: '在这一侧把边框缩小一颗珠子。',
     frameEdgeInDisabled: '这一侧的边框已无法再缩小。',

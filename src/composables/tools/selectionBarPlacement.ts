@@ -82,6 +82,9 @@ const STEPPER_PX = 28
 const TOUCH_STEPPER_PX = 36
 const STEPPER_PAIR_GAP_PX = 2
 
+/** A centre kept `BAR_EDGE_PX` clear of the canvas box's edges for a control `extent` long. */
+const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
+
 /** The centre of each edge's stepper pair, in the canvas box's pixels. */
 export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
 
@@ -93,7 +96,6 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
   const { box, outer, numbers, viewport } = anchor
   const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
   const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
-  const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
   const midX = box.left + box.width / 2
   const midY = box.top + box.height / 2
   const topY = (box.top - numbers.down + outer.top) / 2
@@ -115,7 +117,6 @@ export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: numbe
   const { box, outer, numbers, viewport } = anchor
   const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
   const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
-  const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
   // On the top margin's band, just left of the top stepper pair so the two never overlap.
   const x = box.left + box.width / 2 - pair / 2 - BAR_GAP_PX - size / 2
   const y = (box.top - numbers.down + outer.top) / 2
@@ -125,6 +126,5 @@ export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: numbe
 /** The edit toggle's centre (ticket 452): the margin outline's top-right corner, clamped inside the canvas box. */
 export function frameEditToggleCentre(anchor: FrameAnchor, size: number): { x: number; y: number } {
   const { outer, viewport } = anchor
-  const clamp = (value: number, limit: number) => Math.max(BAR_EDGE_PX + size / 2, Math.min(value, limit - BAR_EDGE_PX - size / 2))
-  return { x: clamp(outer.left + outer.width, viewport.width), y: clamp(outer.top, viewport.height) }
+  return { x: clamp(outer.left + outer.width, size, viewport.width), y: clamp(outer.top, size, viewport.height) }
 }

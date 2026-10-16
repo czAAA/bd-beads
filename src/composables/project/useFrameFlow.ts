@@ -134,12 +134,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     draft.value = undefined
   }
 
-  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo step; clamped to the beads' reach by the domain. */
-  function moveBy(rows: number, columns: number): boolean {
+  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo step. */
+  function moveBy(rows: number, columns: number): void {
     const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }))
-    if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
-    deps.announce(deps.messages().frame.announceMoved)
-    return true
+    if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
   /** A margin stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would empty the Frame is none. */
@@ -151,7 +149,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /**
-   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step, (edit is on for the new Frame, ticket 452). A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
+   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step, and edit is on for it (ticket 452).
+   * A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
    * it, and where rows alternate starts on an even row. With a Frame already set it moves the Frame there.
    */
   function setTo(frame: Frame): void {
