@@ -94,7 +94,7 @@ The references are made on Linux, the platform CI runs. Commit the new images in
 
 Places known to overflow are listed in `e2e/support/textFitPending.ts`, each deleted by the ticket that fixes it; an entry that stops overflowing fails the check until it is removed. To add a screen, add a `Screen` to `SCREENS` in the spec (its `visit` drives the app by its own controls and calls `measure()`, or returns false where the state can't be reached); to add a language, list it in `LOCALES` (the type check reminds you). `TEXTFIT_DEBUG=1` prints every misfit and skipped screen.
 
-**It also covers hover text** (ticket 264): on every screen it visits it finds every Tooltip trigger from the page (`.app-tooltip`, no list of triggers), opens each by mouse hover, keyboard focus and a touch long press, and measures the bubble against the screen, every ancestor that clips it and its own box (`e2e/support/hoverText.ts`); a failure names the screen, trigger, Tooltip text, pixels cut, language and width. Cut-off Tooltips known today are in `e2e/support/hoverPending.ts` (deleted by ticket 265, an entry that stops failing fails the check).
+**It also covers hover text** (ticket 264): on every screen it visits it finds every Tooltip trigger from the page (`.app-tooltip`, no list of triggers), opens each by mouse hover, keyboard focus and a touch long press (a disabled one also by a click), and measures the bubble against the screen, every ancestor that clips it and its own box (`e2e/support/hoverText.ts`); a failure names the screen, trigger, Tooltip text, pixels cut, language and width. Cut-off Tooltips known today are in `e2e/support/hoverPending.ts` (deleted by ticket 265, an entry that stops failing fails the check).
 
 Three guards keep it exhaustive:
 
