@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 import type { Project } from '../../domain/project'
-import { importProjects, parseProjectsFile } from '../../domain/projectFile'
+import { importProjects } from '../../domain/projectFile'
+import { readImportedFile } from '../../composables/import/readImportedFile'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -59,7 +60,7 @@ async function onImportFile(event: Event): Promise<void> {
   importFailed.value = false
 
   try {
-    const contents = parseProjectsFile(await file.text())
+    const contents = await readImportedFile(file)
     const added = importProjects(contents.projects, props.projects)
     importedCount.value = added.length
     emit('import', added)
@@ -88,7 +89,7 @@ async function onImportFile(event: Event): Promise<void> {
         :id="fileInputId"
         type="file"
         class="project-import__input"
-        accept="application/json,.json"
+        accept=".openbeads,.json,application/json"
         :data-testid="`${testidPrefix}import-file`"
         :aria-label="t.transfer.importLabel"
         @change="onImportFile"
@@ -102,7 +103,7 @@ async function onImportFile(event: Event): Promise<void> {
         :id="fileInputId"
         type="file"
         class="project-import__input"
-        accept="application/json,.json"
+        accept=".openbeads,.json,application/json"
         :data-testid="`${testidPrefix}import-file`"
         @change="onImportFile"
       />

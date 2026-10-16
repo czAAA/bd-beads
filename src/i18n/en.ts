@@ -388,6 +388,7 @@ export const en: Translations = {
     makingPdf: 'Making the PDF · {name}',
     readyPng: 'PNG ready',
     readyPdf: 'PDF ready',
+    readyFile: 'File ready',
     readySave: 'Save',
     exportProjectFile: 'Export Project',
     nameOnExports: 'Name on exports',

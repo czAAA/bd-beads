@@ -395,6 +395,7 @@ export interface Translations {
     /** The toast once a PNG or PDF is made where sharing needs a fresh tap (iPhone, iPad; ticket 306), and its action. */
     readyPng: string
     readyPdf: string
+    readyFile: string
     readySave: string
     /** The way out when a save fails: the Project as a file. */
     exportProjectFile: string

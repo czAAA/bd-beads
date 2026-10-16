@@ -29,11 +29,11 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
 describe('useSaveFlow', () => {
   beforeEach(() => downloadFile.mockClear())
 
-  it('writes, hands over the Project file and confirms once the write landed', () => {
+  it('writes, hands over the Project file and confirms once the write landed', async () => {
     const { deps, onSave } = setup()
     onSave()
     expect(deps.saveNow).toHaveBeenCalled()
-    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(String))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array)))
     expect(deps.showToast).toHaveBeenCalledWith('save-confirmation', en.tools.savedConfirmation)
   })
 
@@ -46,10 +46,10 @@ describe('useSaveFlow', () => {
     expect(deps.showToast).toHaveBeenCalledTimes(2)
   })
 
-  it('still hands over the file but does not claim "Saved" when the device refused the write', () => {
+  it('still hands over the file but does not claim "Saved" when the device refused the write', async () => {
     const { deps, onSave } = setup({ saved: false })
     onSave()
-    expect(downloadFile).toHaveBeenCalled()
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalled())
     expect(deps.showToast).not.toHaveBeenCalled()
   })
 

@@ -37,7 +37,7 @@ describe('useStorageAskFlow', () => {
     flow.onConfirmStorageNote()
     expect(persistentStorage.persist).toHaveBeenCalledOnce()
     expect(flow.storageNoteOpen.value).toBe(false)
-    expect(kept['bd-beads:storage-note-seen']).toBe('yes')
+    expect(kept['openbeads:storage-note-seen']).toBe('yes')
   })
 
   it('does not repeat: not on later saves, and not on a later visit', async () => {
@@ -61,7 +61,7 @@ describe('useStorageAskFlow', () => {
     await settle()
     flow.onCancelStorageNote()
     expect(persistentStorage.persist).not.toHaveBeenCalled()
-    expect(kept['bd-beads:storage-note-seen']).toBe('yes')
+    expect(kept['openbeads:storage-note-seen']).toBe('yes')
   })
 
   it('shows no note when the browser already keeps the library', async () => {

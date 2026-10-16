@@ -1,14 +1,15 @@
 import { MAX_ADDED_COLORS, normalizeHex } from '../domain/palette'
+import { readKey } from './storageKeys'
 
 /**
  * The Custom colors that joined the Palette (CONTEXT.md, ticket 227): they belong to the person using this device, not
  * to a Project, so they are kept on the device like the theme and the maker name and never sent anywhere (ADR 0001).
  * Cells store the hex, so a Project painted with them opens fine on a device that lacks them.
  */
-export const ADDED_COLORS_KEY = 'bd-beads:added-colors'
+export const ADDED_COLORS_KEY = 'openbeads:added-colors'
 
 /** The ids of the Palette's swatches in the order their slots were arranged (ticket 398), built-in ones included. */
-export const PALETTE_ORDER_KEY = 'bd-beads:palette-order'
+export const PALETTE_ORDER_KEY = 'openbeads:palette-order'
 
 /** Where the added colors and the slot order are kept (ADR 0020). */
 export interface AddedColorsStore {
@@ -18,11 +19,11 @@ export interface AddedColorsStore {
   saveOrder: (ids: readonly string[]) => void
 }
 
-function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): AddedColorsStore {
+function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>): AddedColorsStore {
   return {
     load() {
       try {
-        const parsed: unknown = JSON.parse(storage.getItem(ADDED_COLORS_KEY) ?? '[]')
+        const parsed: unknown = JSON.parse(readKey(storage, ADDED_COLORS_KEY) ?? '[]')
         if (!Array.isArray(parsed)) return []
         const kept: string[] = []
         for (const entry of parsed) {
@@ -44,7 +45,7 @@ function createAddedColorsStore(storage: Pick<Storage, 'getItem' | 'setItem'>): 
     },
     loadOrder() {
       try {
-        const parsed: unknown = JSON.parse(storage.getItem(PALETTE_ORDER_KEY) ?? '[]')
+        const parsed: unknown = JSON.parse(readKey(storage, PALETTE_ORDER_KEY) ?? '[]')
         return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
       } catch {
         return []

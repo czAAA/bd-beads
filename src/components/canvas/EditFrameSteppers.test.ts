@@ -6,7 +6,7 @@ import { en } from '../../i18n/en'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 const anchor = {

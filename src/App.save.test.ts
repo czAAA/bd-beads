@@ -13,7 +13,7 @@ import { openSheet, pickColor } from './testUtils/pill'
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
 
-const PROJECTS_KEY = 'bd-beads:patterns'
+const PROJECTS_KEY = 'openbeads:patterns'
 
 /** Tests here dispatch keydowns on window, so every mounted App is torn down to keep one test's listener off the next's events. */
 const mounted: ReturnType<typeof mount>[] = []
@@ -26,7 +26,7 @@ function mountApp() {
 beforeEach(() => {
   vi.mocked(downloadFile).mockClear()
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => {

@@ -152,7 +152,7 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ key: 'r' })
 
     expect(wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')).toBe('false')
-    expect(localStorage.getItem('bd-beads:rulers')).toBe('off')
+    expect(localStorage.getItem('openbeads:rulers')).toBe('off')
   })
 
   it('Enter moves to the next row, and Shift+Enter to the previous', async () => {

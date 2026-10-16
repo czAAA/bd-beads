@@ -7,7 +7,7 @@ import { MIRROR_ENABLED, TOUR_ENABLED } from './features'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 describe('the Tour is switched off (ticket 247)', () => {
@@ -16,7 +16,7 @@ describe('the Tour is switched off (ticket 247)', () => {
   })
 
   it('does not resume a running Tour or offer one in the editor menu', async () => {
-    localStorage.setItem('bd-beads:tour', 'running')
+    localStorage.setItem('openbeads:tour', 'running')
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     expect(wrapper.find('[data-testid="tour-card"]').exists()).toBe(false)

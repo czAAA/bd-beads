@@ -13,7 +13,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
   vi.mocked(downloadFile).mockClear()
 })
 
@@ -217,11 +217,11 @@ describe('App at the phone tier (ticket 79)', () => {
     await savedProjectsSheet.find('[data-testid="panel-expand"]').trigger('click')
 
     await savedProjectsSheet.find('[data-testid="export-project"]').trigger('click')
-    expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.json$/), expect.any(String))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
 
     vi.mocked(downloadFile).mockClear()
     await savedProjectsSheet.find('[data-testid="export-library"]').trigger('click')
-    expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.json$/), expect.any(String))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 
   it('closes both the Saved Projects drawer and Project sheet on project select', async () => {

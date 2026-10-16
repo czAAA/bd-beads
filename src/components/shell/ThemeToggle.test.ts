@@ -10,7 +10,7 @@ const root = document.documentElement
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => {

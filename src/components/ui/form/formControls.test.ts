@@ -8,7 +8,7 @@ import SegmentedControl from './SegmentedControl.vue'
 import AppStepper from './AppStepper.vue'
 import TextField from './TextField.vue'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
 describe('FormField', () => {
   it('labels its control, with the note at the right, a hint and an error saying what to enter', () => {

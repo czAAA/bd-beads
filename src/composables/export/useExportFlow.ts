@@ -1,10 +1,11 @@
 import { ref, toRaw } from 'vue'
 import type { Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, serializeLibrary, serializeProject } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, sharesFromTap as browserSharesFromTap, type DownloadFile } from '../../services/fileDownload'
+import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
 import { browserMakerNameStore, type MakerNameStore } from '../../services/makerNameStore'
 import type { MessageTone, Toast } from '../ui/useToasts'
 
@@ -47,6 +48,19 @@ export function useExportFlow(deps: ExportFlowDeps) {
   /** Which export is being drawn, if any: the save box says so while it takes a while (ticket 158). Drawing a large Project takes a moment, so the buttons wait until it is done. */
   const exporting = ref<'png' | 'pdf' | undefined>()
 
+  /**
+   * Makes a file and hands it over. Making takes the tap that began the export, and Safari shares only from a tap, so
+   * where sharing needs one the toast's action is the new tap (ticket 306).
+   */
+  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string) {
+    const contents = await make()
+    if (deps.showToast && sharesFromTap(fileName, type)) {
+      deps.showToast(toastId, ready, 'success', { label: deps.messages().saveBox.readySave, run: () => downloadFile(fileName, contents, type) })
+    } else {
+      downloadFile(fileName, contents, type)
+    }
+  }
+
   async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
@@ -56,21 +70,24 @@ export function useExportFlow(deps: ExportFlowDeps) {
     exporting.value = extension
     try {
       // Read as the Project itself: drawing reads every bead.
-      const fileName = projectExportFileName(project, extension)
-      const blob = await make(toRaw(project))
-      if (deps.showToast && sharesFromTap(fileName, type)) {
-        // Drawing took the tap that began the export, and Safari shares only from a tap: so the toast's action is the new tap.
-        const { saveBox } = deps.messages()
-        deps.showToast(`export-${extension}`, extension === 'png' ? saveBox.readyPng : saveBox.readyPdf, 'success', {
-          label: saveBox.readySave,
-          run: () => downloadFile(fileName, blob, type),
-        })
-      } else {
-        downloadFile(fileName, blob, type)
-      }
+      const { saveBox } = deps.messages()
+      await makeAndHandOver(
+        projectExportFileName(project, extension),
+        () => make(toRaw(project)),
+        type,
+        `export-${extension}`,
+        extension === 'png' ? saveBox.readyPng : saveBox.readyPdf,
+      )
     } finally {
       exporting.value = undefined
     }
+  }
+
+  /** The blob type stays JSON though the bytes are gzip: pickers and in-app browsers may grey out an unknown type (ADR 0048). */
+  const FILE_TYPE = 'application/json'
+
+  function handOverFile(fileName: string, make: () => Promise<BlobPart>) {
+    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile)
   }
 
   /**
@@ -80,15 +97,15 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportProjectFile() {
     const project = deps.currentProject()
     if (project) {
-      downloadFile(projectFileName(project), serializeProject(project))
-    } else {
-      downloadFile(libraryFileName(), serializeLibrary(deps.projects()))
+      return handOverFile(projectFileName(project), () => packProjectFile(project))
     }
+    return onExportLibraryFile()
   }
 
   /** Export library: every saved Project in one file. */
   function onExportLibraryFile() {
-    downloadFile(libraryFileName(), serializeLibrary(deps.projects()))
+    const projects = deps.projects()
+    return handOverFile(libraryFileName(), () => packLibraryFile(projects))
   }
 
   function onExportPng() {

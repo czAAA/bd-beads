@@ -8,7 +8,7 @@ const base = { activeTool: 'paint', position: 'bottom', colorMode: 'one', recent
 
 describe('ToolPill (ticket 439)', () => {
   beforeEach(() => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
 
   it('is a toolbar named Tools with the grip first, then the six tools, a divider and the colour control', () => {
