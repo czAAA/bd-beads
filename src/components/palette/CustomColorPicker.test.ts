@@ -9,12 +9,17 @@ describe('CustomColorPicker', () => {
     expect(wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]').element.type).toBe('color')
   })
 
-  it('emits select with the chosen hex as soon as the native input reports one', async () => {
+  it('emits select once, when the native picker commits, not while the color is dragged', async () => {
     const wrapper = mount(CustomColorPicker, { props: { selected: false } })
 
     const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    input.element.value = '#123456'
-    await input.trigger('input')
+    for (const hex of ['#111111', '#222222', '#123456']) {
+      input.element.value = hex
+      await input.trigger('input')
+    }
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    await input.trigger('change')
 
     expect(wrapper.emitted('select')).toEqual([['#123456']])
   })

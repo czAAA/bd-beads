@@ -37,7 +37,7 @@ async function choose(wrapper: ReturnType<typeof mount>, hex: string) {
   await palette(wrapper)
   const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
   input.element.value = hex
-  await input.trigger('input')
+  await input.trigger('change')
 }
 
 async function paint(wrapper: ReturnType<typeof mount>, at = 0) {
@@ -47,7 +47,7 @@ async function paint(wrapper: ReturnType<typeof mount>, at = 0) {
 }
 
 describe('a Custom color joins the Palette on first use (ticket 227)', () => {
-  it('adds a swatch and selects it at the first pick (ticket 398), and keeps it across a reload', async () => {
+  it('adds a swatch and selects it when the picker commits (tickets 398, 444), and keeps it across a reload', async () => {
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
