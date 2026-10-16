@@ -7,7 +7,7 @@ Devices (CSS px) the layout is checked on: iPhone 16e 390×844, iPhone 17 · 17 
 The `bp-*` tokens in `tokens.json` stay for the `bead-min-*` and Ruler step rules; no layout rule is written against them any more.
 
 - The screen belongs to the Pattern and the Progress bar. **No header and no left column**: the canvas starts at the top edge, padded by `env(safe-area-inset-top)`. What the header and the column held lives in the Dock's Project and Menu sheets (the open Pattern's name, size, bead and save state, Save and Export, Beads needed and Saved Patterns in the Project sheet; language, theme, Name on exports, Keyboard shortcuts when a keyboard is attached, Overview and the source link in the Menu). Undo, Redo, Rulers and zoom are in the Canvas strip (ticket 425).
-- A slim Canvas strip stays above the canvas at every width: Rulers, Undo, Redo, zoom out, level, zoom in, Fit and the Canvas color picker, the cluster scrolling sideways on a phone (ticket 425).
+- A slim Canvas strip stays above the canvas at every width: Rulers, Undo, Redo, zoom out, level, zoom in and Fit, the cluster scrolling sideways on a phone (ticket 425).
 - Pinch to zoom and pan; the Canvas strip has the same zoom buttons for a fit or an exact step.
 - The Progress bar is the largest control on the screen: 48px (ticket 411), or 88px at 30rem and under, where Row not done/Row done take a second row -- the switch with Turn row direction beside it, a "1/222" counter, the track, and Row not done/Row done as large text buttons whose label and arrow follow Row direction. It is shown at every width, whether or not Row progress is on, and its switch is the only way to turn Row progress on or off.
 - **The Tool pill (ToolPill card, ticket 0439) replaces the Dock:** the canvas box fills the screen 6px from each edge and the tools float as a pill over the drawing area, docked to any edge; the Colour sheet becomes a popover beside the pill. The Dock lines below describe the app until that ships.
@@ -47,7 +47,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Header menu, Overview and the Tour (v15)
 
-- **Menu:** the Dock's Menu sheet holds Overview and Take the tour with language, theme, Name on exports and Keyboard shortcuts. They are links, with no check on the current page. (The Overview page keeps its own header and header menu; see the HeaderMenu card.)
+- **Menu and Project (spec 0440):** under 1024px both open as a Top sheet sliding down from under the Canvas strip, with a scrim; the strip's two buttons stay visible and lit. Choices are one per line (Language, Theme, Tools position, Input). Rows grow with their content and never have a fixed height. From 1024px they are dropdowns under their buttons. See the TopSheet, MenuPanel and ProjectPanel cards.
 - **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
 - **Tour placement:** docked above the Dock, reaching sheet controls through their Dock button. When a control can't be brought on screen, the card is centred with no pointer. See the TourStep card.
 

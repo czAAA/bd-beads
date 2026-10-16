@@ -7,3 +7,5 @@ Which layer sits above which: the twelve `zIndex` tokens, from the canvas overla
 - One modal at a time; a confirmation opened from a sheet stacks above it and returns focus to it. Nothing inside the canvas box goes above `z-canvas-overlay`.
 
 Hand-written from the Phase C sign-off.
+
+- **Menu and Project (spec 0440):** the dropdown is a popover at `z-popover`; the Top sheet and its scrim are at `z-sheet` (the scrim from under the strip down, so the strip's buttons stay clear of it); Duplicate and Delete open at `z-modal` after the panel has closed.

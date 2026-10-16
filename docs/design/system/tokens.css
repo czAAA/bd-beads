@@ -214,6 +214,9 @@
   --screen-edge: 6px; /* Screen edge to the canvas box on every side (ToolPill layout); a larger env(safe-area-inset-*) wins on that side. */
   --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
+  --panel-width: 340px; /* The Menu and Project dropdown on a wide screen (1024px and up). Under 1024px the same panel is the Top sheet and takes the canvas box's width. */
+  --top-sheet-radius: 18px; /* The bottom corners of the Top sheet that Menu and Project open as under 1024px; the same 18px as the ToolSheet's top corners. */
+  --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) in the Top sheet and on a coarse pointer. */
   --progress-height-phone: 88px; /* Progress bar on a phone (30rem and under), where Row not done and Row done take a second row. */
   --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */

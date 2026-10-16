@@ -32,13 +32,14 @@
     "components/Loading/README.md",
     "components/LongerText/README.md",
     "components/Menu/README.md",
+    "components/MenuPanel/README.md",
     "components/Message/README.md",
-    "components/Note/README.md",
     "components/MirrorSizeControls/README.md",
     "components/Modal/README.md",
     "components/Motion/README.md",
     "components/NameOnExports/README.md",
     "components/NewPatternForm/README.md",
+    "components/Note/README.md",
     "components/NumberField/README.md",
     "components/NumbersAndUnits/README.md",
     "components/OverflowMenu/README.md",
@@ -51,6 +52,7 @@
     "components/PrintStrips/README.md",
     "components/PrintWide/README.md",
     "components/ProgressBar/README.md",
+    "components/ProjectPanel/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
     "components/SaveStates/README.md",
@@ -69,6 +71,7 @@
     "components/ToolSheet/README.md",
     "components/ToolTabs/README.md",
     "components/Toolbox/README.md",
+    "components/TopSheet/README.md",
     "components/TourPattern/README.md",
     "components/TourPattern/tour-pattern.json",
     "components/TourStep/README.md",
@@ -87,11 +90,6 @@
       "name": "BeadBoard",
       "group": "Canvas",
       "summary": "How a Pattern is drawn: beads on a rounded board, with rulers, the current-row marker, and the technique word and curve behind."
-    },
-    {
-      "name": "Rulers",
-      "group": "Canvas",
-      "summary": "The row and column numbers along the Pattern: every number shown, every 5th bold, column numbers from 100 turned, and the smallest bead that keeps them readable."
     },
     {
       "name": "BeadCursor",
@@ -181,7 +179,7 @@
     {
       "name": "HeaderMenu",
       "group": "Header",
-      "summary": "The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15)."
+      "summary": "Replaced by MenuPanel; do not use for the editor. Still the Overview page's header menu."
     },
     {
       "name": "HighContrastTheme",
@@ -219,14 +217,14 @@
       "summary": "A popup list anchored under its button (Export ▾), and the Tooltip."
     },
     {
+      "name": "MenuPanel",
+      "group": "Overlays",
+      "summary": "The Menu: Projects, Preferences, Help and About, as a dropdown on wide screens and in the Top sheet under 1024px; setting rows and choice lists."
+    },
+    {
       "name": "Message",
       "group": "Feedback",
       "summary": "A notice or toast: \"couldn't save\", import results and errors, confirmations of an action."
-    },
-    {
-      "name": "Note",
-      "group": "Feedback",
-      "summary": "A thin, always-visible gray block of helper text under a control or panel; replaces the (i) popups."
     },
     {
       "name": "MirrorSizeControls",
@@ -246,12 +244,17 @@
     {
       "name": "NameOnExports",
       "group": "Screens",
-      "summary": "Where the maker's name for the PDF and PNG exports is set: the last row of the Export ▾ menu, and More on the phone."
+      "summary": "Where a Project's Maker's name is set: a pencil row in Project, per Project (ADR 0060)."
     },
     {
       "name": "NewPatternForm",
       "group": "Screens",
       "summary": "The form that makes a new Pattern, in the left column while no Pattern is open."
+    },
+    {
+      "name": "Note",
+      "group": "Feedback",
+      "summary": "A thin, always-visible gray block of helper text under a control or panel; replaces the (i) popups."
     },
     {
       "name": "NumberField",
@@ -312,6 +315,16 @@
       "name": "ProgressBar",
       "group": "Canvas",
       "summary": "The 56px bar along the canvas box's bottom edge holding every Row progress control."
+    },
+    {
+      "name": "ProjectPanel",
+      "group": "Overlays",
+      "summary": "The Project panel: name with a pencil, save state, Technique, Bead, Canvas, Save, exports, Name on exports, Duplicate and Delete this Project."
+    },
+    {
+      "name": "Rulers",
+      "group": "Canvas",
+      "summary": "The row and column numbers along the Pattern: every number shown, every 5th bold, column numbers from 100 turned, and the smallest bead that keeps them readable."
     },
     {
       "name": "SaveBox",
@@ -397,6 +410,11 @@
       "name": "Toolbox",
       "group": "Toolbox",
       "summary": "The first box of the left column: Tool groups Tools, Colors and Edit, then the Mirror and Size disclosure rows."
+    },
+    {
+      "name": "TopSheet",
+      "group": "Overlays",
+      "summary": "The sheet Menu and Project open in under 1024px, sliding down from under the Canvas strip with a scrim, a bottom handle and rows that grow with their content."
     },
     {
       "name": "TourPattern",
