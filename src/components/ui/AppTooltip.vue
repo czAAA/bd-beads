@@ -48,6 +48,8 @@ const id = useId()
 /** For the hover text check (ticket 264): the components this Tooltip comes from. */
 const owners = tooltipOwners(getCurrentInstance())
 const open = ref(false)
+/** Whether the open tip was opened by a click (ticket 453). */
+const pinned = ref(false)
 const bubbleEl = ref<HTMLElement>()
 const triggerEl = ref<HTMLElement>()
 /** Whether this browser has popovers (a test DOM may not). */
@@ -154,6 +156,7 @@ function onFocusIn(event: FocusEvent) {
 
 function hide() {
   clearLongPress()
+  pinned.value = false
   if (!open.value) return
   open.value = false
   follow(false)
@@ -163,10 +166,13 @@ function hide() {
 /** A click or tap on a disabled control with a reason (ticket 453): the pointer's release has just hidden any tip, so
  * it is shown again, and stays until leave, blur, Escape or a press elsewhere. */
 function onClick() {
-  if (props.disabled) show()
+  if (!props.disabled) return
+  show()
+  pinned.value = true
 }
 
-useOverlayLayer({ isOpen: () => open.value, root: () => triggerEl.value, close: hide })
+/** Only a tip a click opened is a layer: a hover or focus tip must not take Escape or a press from the menu behind it. */
+useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide })
 
 function onFocusOut() {
   pressing = false
