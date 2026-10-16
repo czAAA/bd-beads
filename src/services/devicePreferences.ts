@@ -106,12 +106,12 @@ export const PREFERENCES = {
     parse: (raw) => PILL_POSITIONS.find((position) => position === raw),
     write: (position) => (position === DEFAULT_PILL_POSITION ? null : position),
   }),
-  /** What the pill's colour control shows (ticket 439): one colour until Recent colors is chosen. */
+  /** What the pill's colour control shows (ticket 439): the recents beside the swatch while they fit, until One color is chosen. */
   pillColors: preference<PillColorMode>({
     key: 'openbeads:pill-colors',
-    fallback: 'one',
+    fallback: 'recent',
     parse: (raw) => PILL_COLOR_MODES.find((mode) => mode === raw),
-    write: (mode) => (mode === 'one' ? null : mode),
+    write: (mode) => (mode === 'recent' ? null : mode),
   }),
   /** The colours painted with lately, newest first, as `#rrggbb` (ticket 439): at most eight, anything else in storage is dropped. */
   recentColors: preference<readonly string[]>({
