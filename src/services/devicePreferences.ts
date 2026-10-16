@@ -6,6 +6,8 @@ import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
+import { PILL_COLOR_MODES, PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillColorMode, type PillPosition } from '../domain/toolPill'
+import { normalizeHex } from '../domain/palette'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -96,6 +98,27 @@ export const PREFERENCES = {
     fallback: undefined,
     parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : undefined),
     write: (on) => (on === undefined ? null : on ? 'on' : 'off'),
+  }),
+  /** Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an edge is bottom too. */
+  toolPillPosition: preference<PillPosition>({
+    key: 'openbeads:tool-pill-position',
+    fallback: DEFAULT_PILL_POSITION,
+    parse: (raw) => PILL_POSITIONS.find((position) => position === raw),
+    write: (position) => (position === DEFAULT_PILL_POSITION ? null : position),
+  }),
+  /** What the pill's colour control shows (ticket 439): one colour until Recent colors is chosen. */
+  pillColors: preference<PillColorMode>({
+    key: 'openbeads:pill-colors',
+    fallback: 'one',
+    parse: (raw) => PILL_COLOR_MODES.find((mode) => mode === raw),
+    write: (mode) => (mode === 'one' ? null : mode),
+  }),
+  /** The colours painted with lately, newest first, as `#rrggbb` (ticket 439): at most eight, anything else in storage is dropped. */
+  recentColors: preference<readonly string[]>({
+    key: 'openbeads:recent-colors',
+    fallback: [],
+    parse: (raw) => raw.split(',').flatMap((hex) => normalizeHex(hex) ?? []).slice(0, RECENT_COLORS_KEPT),
+    write: (colors) => (colors.length ? colors.join(',') : null),
   }),
   /** The app's language. */
   locale: preference<Locale>({

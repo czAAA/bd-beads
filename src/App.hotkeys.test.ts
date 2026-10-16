@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { pickColor, pickTool, toolState } from './testUtils/dock'
+import { pickColor, pickTool, toolState } from './testUtils/pill'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'

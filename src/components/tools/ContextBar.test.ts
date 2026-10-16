@@ -17,13 +17,16 @@ describe('ContextBar', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('shows Select all alone with the Select tool and no Selection, and it emits (ticket 428)', async () => {
+  it('has no standalone Select all with the Select tool and no Selection (ticket 439)', () => {
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, selectActive: true } })
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+  })
 
-    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
-    expect(ids).toEqual(['context-bar-select-all'])
-    expect(wrapper.get('[data-testid="context-bar-select-all"]').attributes('aria-label')).toBe('Select all')
-    await wrapper.get('[data-testid="context-bar-select-all"]').trigger('click')
+  it('offers Select all first once there is a Selection, and it emits', async () => {
+    const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, selectActive: true, selectionSummary: '2×2' } })
+    const first = wrapper.findAll('button[data-testid]')[0]!
+    expect(first.attributes('data-testid')).toBe('context-bar-select-all')
+    await first.trigger('click')
     expect(wrapper.emitted('select-all')).toHaveLength(1)
   })
 

@@ -10,7 +10,7 @@ import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openSheet, pickColor } from './testUtils/dock'
+import { openSheet, pickColor } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()

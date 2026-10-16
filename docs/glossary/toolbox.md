@@ -1,18 +1,18 @@
-# Glossary: Dock and controls
+# Glossary: Tool pill and controls
 
-The Dock and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Dock, the Context bar, the Project and Menu sheets and the Canvas strip (the Zoom pill is gone, ticket 425).
+The Tool pill and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Tool pill, the Context bar, the Project and Menu sheets and the Canvas strip (the Zoom pill is gone, ticket 425).
 
 **Tool group**:
-A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, Hand; Select all is a button on the Context bar, not a Tool, tickets 414, 428), Colors, Edit, Mirror, Row progress. The Dock, the sheets and the keyboard shortcuts help gather the same controls under the same names.
+A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, Hand; Select all is not a Tool: it is the Selection bar's first item and Ctrl/⌘+A, tickets 414, 428, 439), Colors, Edit, Mirror, Row progress. The Tool pill, the sheets and the keyboard shortcuts help gather the same controls under the same names.
 _Avoid_: subbox, card, section, panel
 
-**Dock layout**:
-The main layout at every width (ADR 0046): the canvas first, the Dock below it (about 480px wide, centred), sheets for the controls, the slim Canvas strip always visible; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag).
-_Avoid_: phone layout, mobile layout, touch layout
+**Tool pill layout** (formerly **Dock layout**):
+The main layout at every width (ADR 0046, ADR 0059): the canvas box is the screen, 6px from every screen edge, with the Canvas strip on top, the drawing area and the Progress bar as its footer, and the Tool pill floating over the drawing area; sheets for the controls; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag; ticket 439 removed the Dock).
+_Avoid_: phone layout, mobile layout, touch layout, Dock layout
 
-**Dock**:
-The bottom bar of the Dock layout, at every width (phones, iPads and desktops alike, portrait and landscape; ADR 0032, 0046, 0055), with no header above the canvas. Six tool tiles (Paint, Fill, Select, Piece, Eraser, Hand), a divider, the colour button (it shows the chosen colour and opens the Colour sheet) and, where the device needs it, a second divider and the Pen/Mouse toggle. A tile picks its tool at once; there is no Tool sheet. Icon-only with no labels, 48px tall plus the safe-area inset; at most about 480px wide, centred; on a phone under 400px the tiles are 44px with the digit badges hidden. With no Project open, a New Project / Import bar takes its place (Menu is in the Canvas strip).
-_Avoid_: toolbar, rail, tab bar
+**Tool pill** (replaces the retired **Dock**):
+The tools as a pill floating over the drawing area (ticket 439, ADR 0059; ToolPill card), 6px in from the edge it is docked to and centred along it, outside the canvas's zoom so it never zooms. Order, from its leading end: the grip ("Move tools"), six tool tiles (Paint, Fill, Select, Piece, Eraser, Hand), a divider, the colour control and, where the device needs it, a second divider and the Pen/Mouse toggle. A tile picks its tool at once; there is no Tool sheet. Icon-only, 48px across, 40px tiles, a `toolbar` named "Tools". It docks to the left, top, right or bottom (default bottom, vertical on the sides): dragged (after 8px, with four drop zones, the nearest edge snaps), moved with the grip's arrow keys, or set in the Menu sheet's "Tools position"; the choice is kept on the device. Longer than its edge (a phone), it scrolls along its length. The colour control is one swatch tile (One color, the default) or the swatch, three recents and a palette tile (Recent colors; eight recents are kept on the device, a pick moves to the front), set under "In the pill" in the colour popover; it opens the **colour popover** (288px, beside the pill; Palette, Pick color from canvas, Custom and Image colors), which replaced the Colour sheet on every device. The drawing runs behind the pill: Fit and pan ignore it, and the Selection bar steers clear of it; the Canvas hint, toasts and Frame steppers may be covered by it. With no Project open there is no pill, and the New Project / Import bar takes the Progress bar's place.
+_Avoid_: Dock (retired), toolbar, rail, tab bar
 
 **Menu**:
 The modal sheet of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project sheet instead.
@@ -27,15 +27,15 @@ The slim row along the top of the canvas box, at every width (tickets 425, 431, 
 _Avoid_: Zoom pill, Canvas header
 
 **Canvas hint**:
-The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers") at the top-centre of the drawing area, under the strip. Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429, ADR 0055).
+The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers") at the top-centre of the drawing area, under the strip (the Tool pill may cover it when docked at the top). Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429, ADR 0055).
 _Avoid_: tip, tutorial
 
 **Message**:
-A notice or toast. A toast (a short-lived result) shows at the top-right of the canvas box under the strip, stacking downward, on the toast layer: above sheets, below modals and Tooltips (ticket 429, ADR 0055).
+A notice or toast. A toast (a short-lived result) shows at the top-right of the canvas box under the strip, stacking downward, on the toast layer: above sheets, below modals and Tooltips (ticket 429, ADR 0055). The Tool pill may cover a toast when docked at the right or top.
 _Avoid_: snackbar, alert
 
 **Tool button**:
-A Tools-group tool shown as an icon-only tile in the Dock, selected by an accent underline, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Piece (7 is free again; tickets 292, 431), shown as a small badge beside the icon on every device but a phone under 400px. The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
+A Tools-group tool shown as an icon-only tile in the Tool pill, the active one on the panel fill with an accent icon, with no text label: its name, its shortcut and, where the tool needs one, a one-line description appear in its Tooltip. Every tool has a digit key, 1 to 6 in the order Paint, Fill, Select, Eraser, Hand, Piece (7 is free again; tickets 292, 431), shown as a small badge in the tile's top-right corner where a keyboard is likely (ticket 438). The letters E, H and F no longer pick tools. The name stays as the button's accessible name.
 _Avoid_: tab, tool tab
 
 **Tooltip**:
@@ -47,4 +47,4 @@ _Avoid_: info tip, (i) popup, hint
 
 ## Key chip
 
-A hotkey drawn as a small key beside a control: in a Tooltip, as the badge on a Dock tool, in the Canvas hint. Chips are shown only where a keyboard is likely (ticket 438): by default when the device has a fine pointer that can hover, or, on a touch-only device, once a real keyboard key (Tab, Escape, an arrow, or any key with Ctrl or Cmd) has been seen in the session. The switch at the top of Keyboard shortcuts overrides this on the device: its first flip stores on or off, and the UI has no way back to automatic. The chips inside Keyboard shortcuts itself are never hidden. Every chip is drawn by the shared `KeyChip`, so a new control inherits the behaviour.
+A hotkey drawn as a small key beside a control: in a Tooltip, as the badge on a Tool pill tile, in the Canvas hint. Chips are shown only where a keyboard is likely (ticket 438): by default when the device has a fine pointer that can hover, or, on a touch-only device, once a real keyboard key (Tab, Escape, an arrow, or any key with Ctrl or Cmd) has been seen in the session. The switch at the top of Keyboard shortcuts overrides this on the device: its first flip stores on or off, and the UI has no way back to automatic. The chips inside Keyboard shortcuts itself are never hidden. Every chip is drawn by the shared `KeyChip`, so a new control inherits the behaviour.

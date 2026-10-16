@@ -53,10 +53,10 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
-/** One of the Dock's four sheets (Dock card). */
-type DockSheetButton = 'dock-color' | 'strip-project' | 'strip-menu'
+/** One of the Canvas strip's sheets (CanvasStrip card). */
+type DockSheetButton = 'strip-project' | 'strip-menu'
 
-/** Opens a Dock sheet (Dock card), closing whichever one is already open first — its Dock button toggles, so clicking
+/** Opens a strip sheet (CanvasStrip card), closing whichever one is already open first — its button toggles, so clicking
  * it while open would close it instead. Does nothing if the right one is already open. */
 export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<void> {
   if ((await page.getByTestId('bottom-sheet').count()) > 0) {
@@ -66,7 +66,7 @@ export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<
   await settle(page)
 }
 
-/** Closes whichever Dock sheet is open, the way its own Close button does; does nothing with none open. */
+/** Closes whichever sheet is open, the way its own Close button does; does nothing with none open. */
 export async function closeSheet(page: Page): Promise<void> {
   const close = page.getByTestId('sheet-close')
   if ((await close.count()) > 0) {
@@ -75,10 +75,18 @@ export async function closeSheet(page: Page): Promise<void> {
   }
 }
 
-/** Picks a Tool with its Dock tile (Dock card; ticket 431: no sheet in between). */
+/** Picks a Tool with its Tool pill tile (ToolPill card; ticket 439). */
 export async function selectTool(page: Page, tool: Tool): Promise<void> {
-  await page.getByTestId(`dock-tool-${tool}`).click()
+  await page.getByTestId(`pill-tool-${tool}`).click()
   await settle(page)
+}
+
+/** Opens the colour popover from the pill's colour tile, unless it is already up (ToolPill card). */
+export async function openColorPopover(page: Page): Promise<void> {
+  if ((await page.getByTestId('color-popover').count()) === 0) {
+    await page.getByTestId('pill-color').click()
+    await settle(page)
+  }
 }
 
 /** Copies the Selection by its keyboard chord, which clears the Selection and arms paste mode (ticket 437). */
@@ -87,7 +95,7 @@ export async function copySelection(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** Opens the New Project form (modal sheet): with no Project open the Dock layout shows the project bar in the Dock's
+/** Opens the New Project form (modal sheet): with no Project open the layout shows the project bar in the Progress bar's
  * place (AppBottomBar card) instead of the Toolbox layout's inline form. */
 export async function openNewProjectForm(page: Page): Promise<void> {
   await page.getByTestId('phone-bar-new-project').click()

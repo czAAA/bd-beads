@@ -14,7 +14,7 @@ describe('useOverlayVisibility', () => {
     expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })
 
-  it('opens a phone sheet from its Dock button, and closes it on the same button again', () => {
+  it('opens a phone sheet from its strip button, and closes it on the same button again', () => {
     const { openPhoneSheet, onSelectPhoneSheet } = setup()
     onSelectPhoneSheet('menu')
     expect(openPhoneSheet.value).toBe('menu')
@@ -22,11 +22,11 @@ describe('useOverlayVisibility', () => {
     expect(openPhoneSheet.value).toBeNull()
   })
 
-  it('switches straight to another phone sheet from a different Dock button', () => {
+  it('switches straight to another phone sheet from a different strip button', () => {
     const { openPhoneSheet, onSelectPhoneSheet } = setup()
+    onSelectPhoneSheet('project')
     onSelectPhoneSheet('menu')
-    onSelectPhoneSheet('color')
-    expect(openPhoneSheet.value).toBe('color')
+    expect(openPhoneSheet.value).toBe('menu')
   })
 
   it('opens the picked Project and closes both the Saved Projects sheet and the Project sheet', () => {

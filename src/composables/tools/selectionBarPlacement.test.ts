@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frameStepperCentres, selectionBarPlacement } from './selectionBarPlacement'
+import { frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -58,5 +58,35 @@ describe('frameStepperCentres (ticket 427)', () => {
     const corner = { ...anchor, box: { left: -40, top: -30, width: 100, height: 60 }, outer: { left: -90, top: -80, width: 200, height: 160 } }
     expect(frameStepperCentres({ ...corner, scale: 0.5 }, false).top.y).toBe(8 + 7)
     expect(frameStepperCentres({ ...corner, scale: 1 }, false).top.y).toBe(8 + 14)
+  })
+})
+
+describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
+  const viewport = { width: 400, height: 300 }
+  const bar = { width: 200, height: 28 }
+  const overlaps = (placement: { left: number; top: number }, box: BarBox) =>
+    placement.left < box.left + box.width && box.left < placement.left + bar.width && placement.top < box.top + box.height && box.top < placement.top + bar.height
+
+  it('is unchanged while the pill is not in the way', () => {
+    const selection = { left: 100, top: 120, width: 100, height: 60 }
+    const pill = { left: 60, top: 246, width: 280, height: 48 }
+    expect(selectionBarPlacement(selection, bar, viewport, pill)).toEqual(selectionBarPlacement(selection, bar, viewport))
+  })
+
+  it('flips to the other side of the Selection when the pill covers the spot above it', () => {
+    const selection = { left: 100, top: 100, width: 100, height: 60 }
+    const pill = { left: 60, top: 60, width: 280, height: 30 }
+    const placed = selectionBarPlacement(selection, bar, viewport, pill)
+    expect(placed.below).toBe(true)
+    expect(overlaps(placed, pill)).toBe(false)
+  })
+
+  it('slides clear of the pill when neither side of the Selection is free', () => {
+    const selection = { left: 100, top: 100, width: 100, height: 60 }
+    const pill = { left: 90, top: 40, width: 220, height: 200 }
+    const placed = selectionBarPlacement(selection, bar, viewport, pill)
+    expect(overlaps(placed, pill)).toBe(false)
+    expect(placed.left).toBeGreaterThanOrEqual(8)
+    expect(placed.left + bar.width).toBeLessThanOrEqual(viewport.width - 8)
   })
 })

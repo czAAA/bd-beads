@@ -49,6 +49,7 @@ import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
 import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
+import { useToolPill } from '../tools/useToolPill'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
 import { useUndoHistory } from '../project/useUndoHistory'
@@ -275,6 +276,17 @@ function wireAppShell(services: Services) {
     onSelectImageColor,
     resetImageColor,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value, onToolChosen: () => frameFlow.done() })
+
+  /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0059). */
+  const toolPill = useToolPill({
+    preferences: services.devicePreferences,
+    selectedColorHex,
+    palette: () => palette.value,
+    imageColors: () => currentProject()?.imageColors,
+    onSelectColor,
+    onSelectCustomColor: (hex) => onSelectCustomColor(hex),
+    onSelectImageColor,
+  })
 
   /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
   const pickingColor = ref(false)
@@ -816,6 +828,8 @@ function wireAppShell(services: Services) {
     onSelectColor,
     onSelectCustomColor,
     onSelectImageColor,
+    ...toolPill,
+    selectedColorHex,
     selection,
     onSelectionPress,
     onSelectionDrag: dragAdjust,

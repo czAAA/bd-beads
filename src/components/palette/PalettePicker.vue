@@ -58,7 +58,7 @@ async function nudge(slot: number, by: number) {
   gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
 }
 
-/** Choosing a swatch is the end of the visit to a Dock sheet: it closes (nothing, in the Toolbox). */
+/** Choosing a swatch is the end of the visit to the colour popover (or a sheet): it closes. */
 function pick(colorId: string) {
   if (drag.consumeDrag()) return
   emit('select', colorId)

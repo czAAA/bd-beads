@@ -8,7 +8,7 @@ import { projectExportFileName } from './domain/projectFile'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
-import { openSheet } from './testUtils/dock'
+import { openSheet } from './testUtils/pill'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))

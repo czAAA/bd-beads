@@ -8,7 +8,7 @@ import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openSheet, pickColor } from './testUtils/dock'
+import { openSheet, pickColor } from './testUtils/pill'
 
 /** Save hands the browser a file (ticket 119); jsdom can't download one, so the hand-over is observed instead. */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
