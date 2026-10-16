@@ -316,6 +316,7 @@ const deps = computed(() =>
 
 .phone-sheet__bead-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-8);
   margin: 0 0 var(--space-16);
