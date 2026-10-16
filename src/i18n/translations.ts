@@ -377,6 +377,10 @@ export interface Translations {
   rowProgress: {
     enabledLabel: string
     directionButton: string
+    resetButton: string
+    resetConfirmTitle: string
+    resetConfirmMessage: string
+    resetConfirmCancel: string
     positionLabel: string
     previousButton: string
     nextButton: string
@@ -685,6 +689,9 @@ export interface Translations {
     frameEdgeInDisabled: string
     removeFrame: string
     noFrameToRemove: string
+    resetProgress: string
+    noProgressToReset: string
+    moveFrame: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
     fillNeedsColor: string

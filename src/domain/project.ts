@@ -408,6 +408,11 @@ export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame
   return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0)
 }
 
+/** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is untouched. */
+export function resetRowProgress(project: Project): Project {
+  return touch(project, { rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 } })
+}
+
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
 export function toggleRowDirection(project: Project): Project {
   const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
