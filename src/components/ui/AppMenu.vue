@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, provide, ref, useId } from 'vue'
+import { nextTick, provide, ref, useId } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import AppButton from './AppButton.vue'
 import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
@@ -42,13 +42,8 @@ function items(): HTMLElement[] {
   return [...(menuEl.value?.querySelectorAll<HTMLElement>(selector) ?? [])]
 }
 
-function onPointerDownOutside(event: PointerEvent) {
-  if (rootEl.value && !rootEl.value.contains(event.target as Node)) close(false)
-}
-
 async function show(focus?: 'first' | 'last') {
   open.value = true
-  document.addEventListener('pointerdown', onPointerDownOutside)
   await nextTick()
   buttonEl.value = rootEl.value?.querySelector<HTMLElement>('[aria-haspopup]') ?? undefined
   anchored.follow()
@@ -58,14 +53,12 @@ async function show(focus?: 'first' | 'last') {
 function close(returnFocus = true) {
   if (!open.value) return
   open.value = false
-  document.removeEventListener('pointerdown', onPointerDownOutside)
   anchored.stop()
   if (returnFocus) rootEl.value?.querySelector<HTMLElement>('[aria-haspopup]')?.focus()
 }
 
 provide(MENU_CLOSE, () => close())
-useEscapeLayer(() => open.value, () => close())
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownOutside))
+useOverlayLayer({ isOpen: () => open.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })
 
 function onButtonClick(event: MouseEvent) {
   if (open.value) {

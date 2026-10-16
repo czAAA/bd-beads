@@ -19,7 +19,7 @@ export interface ControlDeps {
   addedColorCount: () => number
   /** The Palette color standing in a slot (ticket 398): Shift+1 is slot 1, wherever its color was moved to. */
   paletteColorIdAt: (slot: number) => string | undefined
-  /** A menu or popover layer is open (useEscapeLayer). */
+  /** A menu or popover layer is open (useOverlayLayer). */
   hasOpenLayer: () => boolean
   /** A confirmation modal or the shortcuts help overlay is open. */
   anyDialogOpen: () => boolean

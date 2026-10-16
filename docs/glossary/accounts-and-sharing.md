@@ -35,5 +35,5 @@ The state of a synced Project that has changes the server doesn't have yet, for 
 _Avoid_: unsynced, offline, not synced yet
 
 **Surface view**:
-How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch. It measures the drawing, not the piece: brick stitch's 1px seam between rows exists only in the drawing, so a Surface view's rows are a pixel further apart than the physical geometry Convert image samples with (ADR 0010, amended).
+How a bead and a point on screen map onto each other, in both directions: where a bead or a block of beads is drawn, which bead is under a point, where to scroll to centre or fit a block, and how far one step along a row and one down are. Built from a Space, the Technique, the rotation, the zoom and the scroll, and the one place that knows about turning, the row shift and the row pitch.
 _Avoid_: hit test, canvas view, grid geometry

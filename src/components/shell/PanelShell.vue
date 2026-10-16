@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId, watch } from 'vue'
-import { inTourCard } from '../../composables/ui/tourDom'
-import { swallowNextClick } from '../../composables/ui/swallowNextClick'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
@@ -74,7 +72,17 @@ function onEscape() {
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
   else emit('close')
 }
-useEscapeLayer(() => true, onEscape)
+useOverlayLayer({
+  isOpen: () => true,
+  root: () => panelEl.value,
+  close: onEscape,
+  // The strip's own buttons are left alone, since their click swaps or closes the panel.
+  isOpener: (target) => target.closest(STRIP_BUTTONS) !== null,
+  onOutsidePress: () => {
+    pressClosed.markPressClosed()
+    emit('close')
+  },
+})
 
 const FOCUSABLE = 'button:not(:disabled):not([aria-disabled="true"]), [href], input:not(:disabled):not([type="hidden"]), [tabindex]:not([tabindex="-1"])'
 
@@ -106,19 +114,6 @@ function onKeydown(event: KeyboardEvent) {
   const index = list.indexOf(target)
   const next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1 : event.key === 'ArrowDown' ? Math.min(list.length - 1, index + 1) : Math.max(0, index - 1)
   list[next]?.focus()
-}
-
-/** A press outside closes the panel and nothing else; the strip's own buttons are left alone, since their click swaps or closes it. */
-function onPointerDownOutside(event: PointerEvent) {
-  const target = event.target
-  const panel = panelEl.value
-  if (!panel || !(target instanceof Element) || panel.contains(target) || inTourCard(target)) return
-  if (target.closest(STRIP_BUTTONS) || target.closest('[role="alertdialog"], .app-modal, .bottom-sheet')) return
-  event.stopPropagation()
-  event.preventDefault()
-  swallowNextClick()
-  pressClosed.markPressClosed()
-  emit('close')
 }
 
 /** The Dropdown closes when focus leaves it with Tab. */
@@ -156,12 +151,10 @@ const pressClosed = usePressClosed()
 onMounted(() => {
   opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
   place()
-  document.addEventListener('pointerdown', onPointerDownOutside, true)
   window.addEventListener('resize', measureSheet)
   void nextTick(() => (focusables()[0] ?? panelEl.value)?.focus())
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onPointerDownOutside, true)
   window.removeEventListener('resize', measureSheet)
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener

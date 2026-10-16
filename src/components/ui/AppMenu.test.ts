@@ -120,6 +120,8 @@ describe('AppMenu', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
 
+    // The press that closed it swallowed its click; a fresh press on the button opens it again.
+    await button.trigger('pointerdown')
     await button.trigger('click')
     key(wrapper.find('[data-testid="project"]').element, 'Tab')
     await wrapper.vm.$nextTick()
