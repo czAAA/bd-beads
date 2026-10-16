@@ -8,7 +8,6 @@ import {
   CURRENT_ROW_BRIGHTNESS,
   DEFAULT_THEME,
   drawFlatBead,
-  finishedColor,
   type BeadDrawer,
   type DrawingContext,
   type ProjectTheme,
@@ -22,7 +21,6 @@ import {
   rowPitchPx,
   rowShiftPx,
   rowTopPx,
-  SEAM_PX,
   setGridTransform,
   shiftOf,
   type Region,
@@ -59,9 +57,9 @@ export function visibleBeads(
   firstRow = 0,
 ): { firstRow: number; lastRow: number; columnsOf: (row: number) => { first: number; last: number } } {
   const pitch = rowPitchPx(technique)
-  // A bead reaches CELL_SIZE_PX below its row's top, and a seam a pixel above it, so ask for a little more either side.
+  // A bead reaches CELL_SIZE_PX below its row's top, so ask for a little more below.
   const topRow = Math.max(0, Math.ceil((area.top - CELL_SIZE_PX) / pitch))
-  const bottomRow = Math.min(rows - 1, Math.floor((area.bottom + SEAM_PX) / pitch))
+  const bottomRow = Math.min(rows - 1, Math.floor(area.bottom / pitch))
 
   return {
     firstRow: topRow,
@@ -87,7 +85,7 @@ function visibleBeadsOpen(
   const pitch = rowPitchPx(technique)
   return {
     firstRow: Math.ceil((area.top - CELL_SIZE_PX) / pitch),
-    lastRow: Math.floor((area.bottom + SEAM_PX) / pitch),
+    lastRow: Math.floor(area.bottom / pitch),
     columnsOf: (row) => {
       const shift = rowShiftPx(technique, row)
       return {
@@ -180,14 +178,9 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
-/** Whether a brick seam runs above this row of the space: between two rows of the Frame, so never on a Canvas with no Frame. */
-function seamAbove(technique: Technique, space: Space, row: number): boolean {
-  return technique === 'brick' && space.hasFrame && row > space.origin.row && row < space.origin.row + space.rows
-}
-
 /**
- * The band of the surface, in its device pixels and on whole pixels, that rows `first` to `last` occupy: from a brick
- * seam above the first to the bottom of the last, across the whole Project, or the whole viewport on the Canvas.
+ * The band of the surface, in its device pixels and on whole pixels, that rows `first` to `last` occupy: from the top
+ * of the first to the bottom of the last, across the whole Project, or the whole viewport on the Canvas.
  */
 function bandOnSurface(
   space: Space,
@@ -198,7 +191,7 @@ function bandOnSurface(
   technique: Technique,
   rows: { first: number; last: number },
 ): Region {
-  const top = rowTopPx(technique, rows.first) - (seamAbove(technique, space, rows.first) ? SEAM_PX : 0)
+  const top = rowTopPx(technique, rows.first)
   const bottom = rowTopPx(technique, rows.last) + CELL_SIZE_PX
   const area = regionInGridSpace(space.extent, region, zoom, rotation)
   const [left, right] = space.open ? [area.left, area.right] : [0, space.extent.width]
@@ -287,11 +280,6 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
 
   for (let row = Math.max(firstRow, frameRows.first); inFrame && row <= Math.min(lastRow, frameRows.last); row += 1) {
-    if (seamAbove(technique, space, row)) {
-      // Whether the seam is faded is asked of a position inside the Frame: the row-wise Row progress fades rows, the column-wise one fades beads down a column and leaves seams alone.
-      const inside = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + origin.column }
-      drawSeam(context, shiftOf(space, technique, row) + origin.column * CELL_SIZE_PX, rowTopPx(technique, row) - SEAM_PX, space.columns * CELL_SIZE_PX, rowMarks && !showFinished && project.rowProgress.direction === 'rows' && isInFinishedRow(project, inside), look)
-    }
     const { first, last } = visible.columnsOf(row)
     for (let column = Math.max(first, frameColumns.first); column <= Math.min(last, frameColumns.last); column += 1) {
       drawAt(row, column, null)
@@ -316,9 +304,4 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   if (band) {
     context.restore()
   }
-}
-
-function drawSeam(context: DrawingContext, x: number, y: number, width: number, dimmed: boolean, theme: ProjectTheme): void {
-  context.fillStyle = dimmed ? finishedColor(theme.seam, theme) : theme.seam
-  context.fillRect(x, y, width, SEAM_PX)
 }

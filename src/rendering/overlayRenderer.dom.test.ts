@@ -7,7 +7,7 @@ import { beadRoundness, blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { spaceOf } from './space'
-import { CELL_SIZE_PX, displayedExtentPx, SEAM_PX, surfaceView } from './surfaceView'
+import { CELL_SIZE_PX, displayedExtentPx, surfaceView } from './surfaceView'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -105,7 +105,7 @@ describe('renderOverlay', () => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project: brick, region: whole(brick), zoom: 1 })
 
-      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([11, 22])
+      expect(ringRects(calls)[0]!.args.slice(0, 2)).toEqual([11, 21])
     })
 
     it('rings each peyote bead with its own corner radius, less the half stroke', () => {
@@ -297,7 +297,7 @@ describe('renderOverlay', () => {
 
       // Row 1 is half a bead across, row 2 is back at the left: the box runs from 0 to 10 + 40.
       const [top] = named('fillRect')
-      expect(top!.args).toEqual([0, 21, 50, 2])
+      expect(top!.args).toEqual([0, 20, 50, 2])
     })
 
     it('is one border on peyote too, with no per-bead work however big the Selection is', () => {
@@ -409,7 +409,7 @@ describe('renderOverlay', () => {
       expect(named('fillRect').map((call) => call.args)).toEqual([[104, 0, 2, 95], [0, 46.5, 210, 2]])
     })
 
-    it('measures brick stitch by its rows a seam apart, and draws the same number of lines in every Technique', () => {
+    it('measures brick stitch by its rows a bead apart, and draws the same number of lines in every Technique', () => {
       for (const technique of ['loom', 'peyote', 'brick'] as const) {
         const project = projectOf(technique, 10, 6, noProgress)
         const { context, named } = recordingContext()
@@ -419,7 +419,7 @@ describe('renderOverlay', () => {
         const lines = named('fillRect')
         expect(lines).toHaveLength(3)
         // Two lines run the Project's whole height, and one its whole width.
-        const height = technique === 'loom' ? 120 : technique === 'peyote' ? 95 : 125
+        const height = technique === 'loom' ? 120 : technique === 'peyote' ? 95 : 120
         expect(lines.filter((call) => call.args[3] === height)).toHaveLength(2)
       }
     })
@@ -623,7 +623,7 @@ describe('the bead cursor (ticket 159)', () => {
     it.each([
       ['loom', (rows: number, columns: number) => ({ width: columns * 20, height: rows * 20 })],
       ['peyote', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 15 })], // rows nest at three quarters of a bead; shifted rows add half a bead across
-      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * (20 + SEAM_PX) })], // rows sit a seam apart
+      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 20 })], // rows sit a bead apart
     ] as const)('wraps the %s margin as drawn, not as a full-bead grid', (technique, sizeOf) => {
       const { width, height, outer } = outline(technique, frame)
 

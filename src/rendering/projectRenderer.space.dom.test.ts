@@ -3,7 +3,7 @@ import { withColors } from '../domain/canvas'
 import { type Rotation, type Technique } from '../domain/grid'
 import { createProject, type Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
-import { DEFAULT_THEME, finishedColor, type BeadShape } from './beadLook'
+import { DEFAULT_THEME, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
@@ -114,46 +114,21 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
       expect([openX, openWidth]).toEqual([0, view.width])
     })
 
-    it('starts a brick stitch band a pixel higher for a seam only below the Frame\'s first row', () => {
-      const seam = technique === 'brick' ? 1 : 0
-
-      expect(topOf(false, 2)[1]).toBe(rowTopPx(technique, 2) - seam)
+    it('starts a band at the top of its first row, with no seam above it', () => {
+      expect(topOf(false, 2)[1]).toBe(rowTopPx(technique, 2))
       expect(topOf(false, 0)[1]).toBe(rowTopPx(technique, 0))
-      expect(topOf(true, 8)[1]).toBe(rowTopPx(technique, 8) - seam)
-      // The Frame's own first row has no seam above it, on the Canvas either.
-      expect(topOf(true, 6)[1]).toBe(rowTopPx(technique, 6))
+      expect(topOf(true, 8)[1]).toBe(rowTopPx(technique, 8))
     })
   })
 })
 
-describe('brick seams', () => {
-  const seams = (project: Project, open: boolean) =>
-    render(project, open).named('fillRect').filter((call) => call.args[3] === 1)
-
-  it('run between two rows of the Frame, across the Frame, in either space', () => {
+describe('brick stitch inside a Frame', () => {
+  it('draws no seam line between two rows, in either space', () => {
     const project = framedProject('brick')
 
-    const onItsOwn = seams(project, false).map((call) => call.args)
-    const open = seams(project, true).map((call) => call.args)
-
-    expect(onItsOwn).toEqual([1, 2, 3].map((row) => [rowShiftPx('brick', row), rowTopPx('brick', row) - 1, 60, 1]))
-    expect(open).toEqual([7, 8, 9].map((row) => [rowShiftPx('brick', row) + 5 * CELL_SIZE_PX, rowTopPx('brick', row) - 1, 60, 1]))
-  })
-
-  it('are not drawn on a Canvas with no Frame', () => {
-    const project: Project = { ...framedProject('brick'), frame: undefined }
-
-    expect(seams(project, true)).toEqual([])
-  })
-
-  it('fade with a finished row even when the Frame does not start at column 0 (regression)', () => {
-    const project = framedProject('brick')
-    const faded = finishedColor(DEFAULT_THEME.seam, DEFAULT_THEME)
-    const fadedOpen = finishedColor(DEFAULT_THEME.seam, { ...DEFAULT_THEME, background: DEFAULT_THEME.canvas })
-
-    // Row progress is at the Frame's row 2: the seam above row 1 is faded, the ones above rows 2 and 3 are not.
-    expect(seams(project, false).map((call) => call.fillStyle)).toEqual([faded, DEFAULT_THEME.seam, DEFAULT_THEME.seam])
-    expect(seams(project, true).map((call) => call.fillStyle)).toEqual([fadedOpen, DEFAULT_THEME.seam, DEFAULT_THEME.seam])
+    for (const open of [false, true]) {
+      expect(render(project, open).named('fillRect').filter((call) => call.args[3] === 1)).toEqual([])
+    }
   })
 })
 

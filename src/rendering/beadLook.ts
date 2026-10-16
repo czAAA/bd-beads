@@ -78,8 +78,6 @@ export interface ProjectTheme {
   rim: string | null
   /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
-  /** Brick stitch's seam between rows (`bead-seam`). */
-  seam: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
@@ -110,7 +108,6 @@ export const LIGHT_THEME: ProjectTheme = {
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
   emptyBead: '#d8d2cc',
-  seam: '#1f1f1f',
   marker: '#1d4ed8',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
@@ -130,7 +127,6 @@ export const DARK_THEME: ProjectTheme = {
   background: '#202020',
   rim: null,
   emptyBead: '#3c3c3c',
-  seam: '#888888',
   marker: '#faff69',
   outline: '#ffffff',
   finished: { grey: false, opacity: FINISHED_OPACITY },
@@ -150,7 +146,6 @@ const CONTRAST_THEME: ProjectTheme = {
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
-  seam: '#000000',
   marker: '#000000',
   outline: '#000000',
   finished: { grey: false, opacity: FINISHED_OPACITY },
@@ -316,7 +311,7 @@ function blendUncached(color: string, backdrop: string): string {
 }
 
 /** A finished row's bead: its color, or its grey, faded toward the board (or the backdrop it is drawn over). */
-export function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.background): string {
+function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.background): string {
   return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
 }
 
