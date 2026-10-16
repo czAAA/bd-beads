@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame } from './canvas'
-import { clampOutOfMargin, inMargin, keepAllowedEdits, lineWithinFrame, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { clampOutOfMargin, inMargin, keepAllowedEdits, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -83,14 +83,6 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(selectionAllowed(frame, { top: 5, left: 4, rows: 16, columns: 18 })).toBe(false)
     expect(selectionAllowed(frame, { top: 0, left: 0, rows: 40, columns: 15 })).toBe(false)
     expect(selectionAllowed(undefined, { top: 8, left: 8, rows: 1, columns: 1 })).toBe(true)
-  })
-
-  it('cuts a ruler line to the Frame, and none for a line outside it', () => {
-    expect(lineWithinFrame(frame, { top: 11, left: 0, rows: 1, columns: 100 })).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
-    expect(lineWithinFrame(frame, { top: 0, left: 12, rows: 100, columns: 1 })).toEqual({ top: 10, left: 12, rows: 4, columns: 1 })
-    expect(lineWithinFrame(frame, { top: 8, left: 0, rows: 1, columns: 100 })).toBeUndefined()
-    expect(lineWithinFrame(frame, { top: 0, left: 0, rows: 1, columns: 100 })).toBeUndefined()
-    expect(lineWithinFrame(undefined, { top: 8, left: 0, rows: 1, columns: 100 })).toEqual({ top: 8, left: 0, rows: 1, columns: 100 })
   })
 
   it('trims a rectangle to the side of the anchor, and refuses an anchor in the margin', () => {

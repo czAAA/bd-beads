@@ -13,7 +13,7 @@ import { rowProgressStarted, type Project } from '../../domain/project'
 /**
  * The design system's ContextBar (tickets 168, 415; ContextBar card): a thin icon-only bar anchored above the
  * Selection's top edge, centred on it, clamped inside the canvas box and flipped below when there is no room above. It
- * offers what a Selection can do: its size, Copy, Cut, Fill, Frame, Rotate and, after a divider, Clear selection; only
+ * offers what a Selection can do: its size, Copy, Cut, Paste (while the clipboard holds something), Fill, Frame, Rotate and, after a divider, Clear selection; only
  * what applies is rendered (Rotate until a Row progress pass is done, Remove line with a line selected). When the
  * canvas box is too narrow for all of it, the last actions fold into a "…" menu. While paste mode is on (ticket 437,
  * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. The standalone Select all button of the no-selection state is gone (ticket 439). It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
@@ -29,6 +29,8 @@ const props = withDefaults(defineProps<{
   sizeOnly?: boolean
   /** Whether paste mode is on (useSelectionGesture's pasteProjectionActive): the bar then hides, Select all with it. */
   pasteArmed: boolean
+  /** Whether the clipboard holds something (ticket 447): the bar then offers Paste, which enters paste mode and stamps nothing. */
+  hasClipboard?: boolean
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
   project: Project
   canRemoveLine: boolean
@@ -45,6 +47,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   copy: []
   cut: []
+  paste: []
   fill: []
   frame: []
   'clear-selection': []
@@ -60,6 +63,7 @@ const actions = {
   selectAll: controlAction('select-all'),
   copy: controlAction('copy'),
   cut: controlAction('cut'),
+  paste: controlAction('tool-paste'),
   fill: controlAction('fill-selection'),
   frame: controlAction('frame-from-selection'),
   rotate: controlAction('rotate'),
@@ -72,6 +76,7 @@ const deps = computed(() =>
   controlDeps({
     activeProject: () => props.project,
     hasSelection: () => props.selectionSummary !== undefined,
+    hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
@@ -98,6 +103,7 @@ const items = computed<BarItem[]>(() => {
     ...(showSelectAll ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
     { id: 'copy', action: actions.copy, group: 1, run: () => emit('copy') },
     { id: 'cut', action: actions.cut, group: 1, run: () => emit('cut') },
+    ...(props.hasClipboard ? [{ id: 'paste', action: actions.paste, group: 1, run: () => emit('paste') }] : []),
   ]
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).

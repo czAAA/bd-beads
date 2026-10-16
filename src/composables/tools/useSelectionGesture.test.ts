@@ -122,17 +122,34 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeDefined()
     })
 
-    it('Cut copies without arming paste mode and keeps the Selection', () => {
+    it('Cut copies, clears the Selection and arms paste mode, as Copy does (ticket 447)', () => {
       const { gesture } = setup(paintedProject())
       gesture.beginPress(0, 0)
       gesture.extendPress(0, 0)
       gesture.endPress()
 
-      gesture.cut()
+      expect(gesture.cut()).toBe(true)
 
       expect(gesture.hasClipboard()).toBe(true)
+      expect(gesture.pasteProjectionActive.value).toBe(true)
+      expect(gesture.selection.value).toBeUndefined()
+    })
+
+    it('armPaste turns paste mode back on without stamping, and refuses with an empty clipboard (ticket 447)', () => {
+      const { gesture, harness } = setup(paintedProject())
+      expect(gesture.armPaste()).toBe(false)
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 0)
+      gesture.endPress()
+      gesture.copy()
+      gesture.dismissPaste()
       expect(gesture.pasteProjectionActive.value).toBe(false)
-      expect(gesture.selection.value).toBeDefined()
+      const before = harness.project
+
+      expect(gesture.armPaste()).toBe(true)
+
+      expect(gesture.pasteProjectionActive.value).toBe(true)
+      expect(harness.project).toBe(before)
     })
 
     it('Copy with no Selection does nothing', () => {
@@ -235,7 +252,7 @@ describe('useSelectionGesture', () => {
   })
 
   describe('Cut and Fill (ticket 415)', () => {
-    it('Cut copies the Selection and empties it as one Undo step, keeping the Selection', () => {
+    it('Cut copies the Selection and empties it as one Undo step, then clears the Selection', () => {
       const { gesture, harness } = setup(paintedProject())
       gesture.beginPress(0, 0)
       gesture.extendPress(0, 0)
@@ -244,7 +261,7 @@ describe('useSelectionGesture', () => {
       gesture.cut()
 
       expect(gesture.hasClipboard()).toBe(true)
-      expect(gesture.selection.value).toBeDefined()
+      expect(gesture.selection.value).toBeUndefined()
       expect(frameGrid(harness.project)[0]![0]!.color).toBeNull()
 
       harness.history.onUndo()
@@ -421,20 +438,6 @@ describe('useSelectionGesture', () => {
     })
   })
 
-  describe('selectLine (ruler click)', () => {
-    it('sets the Selection and drops a copied block, the same as a new drag would', () => {
-      const project = paintedProject()
-      const { gesture } = setup(project)
-      copyTopLeft(gesture)
-
-      gesture.selectLine({ top: 2, left: 0, rows: 1, columns: 4 })
-
-      expect(gesture.selection.value).toEqual({ top: 2, left: 0, rows: 1, columns: 4 })
-      expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
-      expect(gesture.pasteAt({ row: 0, column: 0 })).toBe(false)
-    })
-  })
-
   describe('clearSelection', () => {
     it('clears the Selection but leaves the clipboard armed, as on a Project switch (ADR 0016)', () => {
       const project = paintedProject()
@@ -544,14 +547,6 @@ describe('useSelectionGesture', () => {
       expect(gesture.extendPress(8, 12)).toBe(false)
     })
 
-    it('a ruler number selects the Frame\'s part of the line, and nothing outside the Frame', () => {
-      const { gesture } = framed()
-      expect(gesture.selectLine({ top: 11, left: 0, rows: 1, columns: 100 })).toBe(true)
-      expect(gesture.selection.value).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
-      expect(gesture.selectLine({ top: 8, left: 0, rows: 1, columns: 100 })).toBe(false)
-      expect(gesture.selection.value).toEqual({ top: 11, left: 10, rows: 1, columns: 6 })
-    })
-
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue', () => {
       const beads = [{ row: 11, column: 11 }, { row: 11, column: 12 }, { row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
       const { gesture } = setup(paintCells(withFrame(makeProject(), frame), beads, RED, NO_MIRROR_AXES))
@@ -573,14 +568,12 @@ describe('useSelectionGesture', () => {
       return setup({ ...project, beads: { 8: { 11: RED }, 11: { 11: RED } } })
     }
 
-    it('no path can select a margin bead: drag, ruler, key and Piece tap all keep out', () => {
+    it('no path can select a margin bead: drag, key and Piece tap all keep out', () => {
       const { gesture } = legacy()
       gesture.beginPress(8, 11)
       expect(gesture.extendPress(8, 11)).toBe(false)
       expect(gesture.selection.value).toBeUndefined()
       gesture.tapPiece(8, 11)
-      expect(gesture.selection.value).toBeUndefined()
-      expect(gesture.selectLine({ top: 8, left: 0, rows: 1, columns: 100 })).toBe(false)
       expect(gesture.selection.value).toBeUndefined()
     })
 

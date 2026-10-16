@@ -91,8 +91,6 @@ const emit = defineEmits<{
   scroll: [dx: number, dy: number]
   /** Ctrl/⌘ + wheel (or a trackpad pinch) asked to change the zoom by this factor about a point of the viewport. */
   'zoom-by': [factor: number, anchor: Scroll]
-  /** A ruler number was pressed: the whole row or column it numbers is to be selected. */
-  'select-line': [selection: Selection]
   /** Edit Frame: a press grabbed a handle, the inside of the Frame or the Canvas, at this bead position. */
   'frame-press': [target: FramePress, cell: GridPosition]
   /** Edit Frame: the pointer moved with the press held, over this bead position. */
@@ -777,16 +775,7 @@ function onPointerDown(event: PointerEvent): void {
     return
   }
 
-  // A ruler number or dot selects its whole row or column, from any tool, instead of reaching the beads under it.
-  // A second finger of a pinch is not a press on a ruler.
-  if (event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary)) {
-    const picked = props.showRulers !== false ? rulers.value.pick(pointInSurface(event)) : undefined
-    if (picked) {
-      emit('select-line', picked)
-      return
-    }
-  }
-
+  // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
   overRefusedMargin.value = refusesMargin(bead)
