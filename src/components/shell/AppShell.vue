@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
-import AppBottomBar from './AppBottomBar.vue'
 import AppDialogs from './AppDialogs.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
 import PhoneSheets from './PhoneSheets.vue'
@@ -50,8 +49,6 @@ const {
     <div class="app-shell__body">
       <CanvasPanel />
     </div>
-
-    <AppBottomBar />
 
     <PhoneSheets />
 
@@ -116,8 +113,9 @@ const {
 }
 
 /*
- * The body (ticket 383, ADR 0046): the canvas box takes the whole row at every width and starts at the top edge, padded
- * only by the notch's safe-area inset. The Dock sits below it. minmax(0, 1fr) lets the canvas box shrink below its
+ * The body (ticket 383, ADR 0046, ticket 439): the canvas box is the screen, `screen-edge` (6px) from every edge, or the
+ * safe-area inset where that is larger. Nothing sits below it: the Progress bar is its footer, and the Tool pill floats
+ * over its drawing area. minmax(0, 1fr) lets the canvas box shrink below its
  * content instead of pushing the page wider.
  */
 .app-shell__body {
@@ -125,6 +123,6 @@ const {
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
-  padding: env(safe-area-inset-top) max(var(--space-8), env(safe-area-inset-right)) var(--space-8) max(var(--space-8), env(safe-area-inset-left));
+  padding: max(var(--screen-edge), env(safe-area-inset-top)) max(var(--screen-edge), env(safe-area-inset-right)) max(var(--screen-edge), env(safe-area-inset-bottom)) max(var(--screen-edge), env(safe-area-inset-left));
 }
 </style>

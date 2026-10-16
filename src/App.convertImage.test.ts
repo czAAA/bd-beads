@@ -7,7 +7,7 @@ import { projectExtentPx } from './rendering/surfaceView'
 import type { PixelData } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
-import { openNewProject } from './testUtils/dock'
+import { openNewProject } from './testUtils/pill'
 
 /**
  * Convert image end to end through the app shell (ticket 58): the New Project form's file input, the framing step

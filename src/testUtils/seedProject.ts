@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import App from '../App.vue'
 import { createProject } from '../domain/project'
 import { saveProjects } from '../services/libraryStore'
-import { openNewProject } from './dock'
+import { openNewProject } from './pill'
 
 /**
  * Saves a Loom Project of Toho Cube 1.5mm beads, sized in mm like the New Project form's

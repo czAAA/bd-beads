@@ -15,7 +15,7 @@ import SaveBox from '../export/SaveBox.vue'
 import FrameControls from '../project/FrameControls.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import ThemeToggle from './ThemeToggle.vue'
-import ToolColorControls from '../tools/ToolColorControls.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { beadLabel } from '../../domain/beads'
 import { summarizeProject } from '../../domain/project'
@@ -35,12 +35,6 @@ const {
   onNewProjectDraft,
   onCreateProject,
   startConvertImage,
-  selectedColorId,
-  customColor,
-  selectedImageColor,
-  onSelectColor,
-  onSelectCustomColor,
-  onSelectImageColor,
   onRequestDeleteAll,
   onEditFrame,
   onSetTechnique,
@@ -65,6 +59,7 @@ const {
   onMirrorCurrent,
   onMirrorCurrentHover,
   openPhoneSheet,
+  toolPillPosition,
   shortcutsHelpOpen,
   tour,
   phoneNewProjectOpen,
@@ -75,6 +70,14 @@ const {
 /** The Menu's Overview link and the repository's AGPL-3.0 source link (ADR 0031, ticket 269): the same two the wide header's menu holds. */
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
+
+/** The Menu's Tools position (ticket 439): the same four edges the pill is dragged to. */
+const pillPositionOptions = computed(() => [
+  { value: 'left' as const, label: t.value.toolPill.left },
+  { value: 'top' as const, label: t.value.toolPill.top },
+  { value: 'right' as const, label: t.value.toolPill.right },
+  { value: 'bottom' as const, label: t.value.toolPill.bottom },
+])
 
 const sheetActions = {
   clear: controlAction('clear'),
@@ -92,18 +95,6 @@ const deps = computed(() =>
 </script>
 
 <template>
-  <BottomSheet v-if="openPhoneSheet === 'color' && activeProject" :title="t.toolbox.groups.colors" @close="openPhoneSheet = null">
-    <ToolColorControls
-      :selected-color-id="selectedColorId"
-      :custom-color="customColor"
-      :selected-image-color="selectedImageColor"
-      :image-colors="activeProject.imageColors"
-      @select-color="onSelectColor"
-      @select-custom-color="onSelectCustomColor"
-      @select-image-color="onSelectImageColor"
-    />
-  </BottomSheet>
-
   <BottomSheet
     v-if="MIRROR_ENABLED && openPhoneSheet === 'mirror' && activeProject"
     :title="t.toolbox.groups.mirror"
@@ -212,7 +203,7 @@ const deps = computed(() =>
   </BottomSheet>
 
   <!--
-    The Menu sheet (ticket 295; Dock card): the Dock's last slot and the header's whole remaining job -- language, theme, Name
+    The Menu sheet (ticket 295; Dock card): the header's whole remaining job -- language, theme, Tools position (ticket 439), Name
     on exports, Keyboard shortcuts (only with a keyboard or mouse attached), Overview and the source link. Modal, like the
     Project sheet. Everything about the open Project stays in the Project sheet; nothing is repeated here.
   -->
@@ -224,6 +215,10 @@ const deps = computed(() =>
     <div class="phone-sheet__menu-row phone-sheet__menu-row--wrap">
       <span class="phone-sheet__menu-label">{{ t.theme.groupLabel }}</span>
       <ThemeToggle />
+    </div>
+    <div v-if="activeProject" class="phone-sheet__menu-row phone-sheet__menu-row--wrap" data-testid="menu-item-tools-position">
+      <span id="menu-tools-position" class="phone-sheet__menu-label">{{ t.toolPill.position }}</span>
+      <SegmentedControl v-model="toolPillPosition" :options="pillPositionOptions" labelledby="menu-tools-position" small data-testid="menu-tools-position" />
     </div>
     <div class="phone-sheet__menu-row" data-testid="menu-item-name-on-exports">
       <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>

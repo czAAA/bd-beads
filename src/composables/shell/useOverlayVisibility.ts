@@ -2,12 +2,12 @@ import { ref } from 'vue'
 import type { PhoneSheet } from './phoneSheet'
 
 /**
- * The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the phone layout's Dock sheets, and
+ * The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project sheets, and
  * its New Project and Saved Projects sheets. The Shortcuts-help boolean stays in the app
  * shell: a single boolean with no logic isn't worth extracting.
  */
 export function useOverlayVisibility(deps: { selectProject: (id: string, opened?: () => void) => void }) {
-  /** Which of the Dock's five sheets is open (ticket 79, 295; Dock card), or none. Tapping the Dock button of the open sheet closes it, same as pressing it again. */
+  /** Which bottom sheet is open (ticket 79, 295, 439), or none. Tapping the strip button of the open sheet closes it, same as pressing it again. */
   const openPhoneSheet = ref<PhoneSheet | null>(null)
 
   function onSelectPhoneSheet(sheet: PhoneSheet) {

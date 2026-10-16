@@ -8,7 +8,7 @@ import { en } from './i18n/en'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY } from './services/addedColorsStore'
 import { saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
-import { openSheet } from './testUtils/dock'
+import { openColorPopover } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -23,7 +23,7 @@ const swatches = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-t
 /** The Palette's swatches, in the Color sheet: picking a color closes the sheet, so it opens again when it is gone. */
 async function palette(wrapper: ReturnType<typeof mount>) {
   if (swatches(wrapper).length === 0) {
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
   }
   return swatches(wrapper)
 }
@@ -50,7 +50,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
   it('adds a swatch and selects it at the first pick (ticket 398), and keeps it across a reload', async () => {
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await choose(wrapper, '#123456')
     const all = (await palette(wrapper))
     expect(all).toHaveLength(PALETTE.length + 1)
@@ -62,14 +62,14 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await paint(wrapper, 0)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
     const reloaded = mount(App, { attachTo: document.body })
-    await openSheet(reloaded, 'dock-color')
+    await openColorPopover(reloaded)
     expect((await palette(reloaded))).toHaveLength(PALETTE.length + 1)
   })
 
   it('selects the matching swatch for a built-in hex and adds nothing', async () => {
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await choose(wrapper, PALETTE[3]!.hex)
     await paint(wrapper)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length)
@@ -81,7 +81,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(full))
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await choose(wrapper, '#fedcba')
     await paint(wrapper)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + MAX_ADDED_COLORS)
@@ -104,7 +104,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await (await palette(wrapper))[0]!.trigger('click')
     expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
     await selectAdded(wrapper, 1)
@@ -116,7 +116,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await selectAdded(wrapper)
     await (await removeButton(wrapper)).trigger('click')
     expect(modal(wrapper).exists()).toBe(true)
@@ -133,7 +133,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await selectAdded(wrapper)
     await (await removeButton(wrapper)).trigger('click')
     await dismiss(wrapper)
@@ -146,7 +146,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await (await palette(wrapper))[PALETTE.length]!.trigger('click')
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
@@ -156,7 +156,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#abcdef'])
     expect(wrapper.text()).toContain(en.palette.removed)
     const reloaded = mount(App)
-    await openSheet(reloaded, 'dock-color')
+    await openColorPopover(reloaded)
     expect((await palette(reloaded))).toHaveLength(PALETTE.length + 1)
   })
 
@@ -164,7 +164,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await (await palette(wrapper))[PALETTE.length]!.trigger('keydown', { key: 'Backspace' })
     expect(modal(wrapper).exists()).toBe(true)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
@@ -176,7 +176,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await (await palette(wrapper))[PALETTE.length]!.trigger('click')
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
@@ -190,7 +190,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     seed(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await (await palette(wrapper))[PALETTE.length]!.trigger('click')
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
@@ -207,13 +207,13 @@ describe('the Palette is slots (ticket 398)', () => {
   it('moves a swatch to another slot, and Shift+1 follows the slot', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     const first = (await palette(wrapper))[0]!
     await first.trigger('keydown', { key: 'ArrowRight', altKey: true })
     await flushPromises()
     expect((await ids(wrapper)).slice(0, 3)).toEqual(['white', 'black', 'red'])
     expect(JSON.parse(localStorage.getItem(PALETTE_ORDER_KEY)!).slice(0, 2)).toEqual(['white', 'black'])
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click') // a shortcut waits while a sheet is open
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click') // a shortcut waits while a sheet is open
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '!', shiftKey: true, bubbles: true }))
     await flushPromises()
     expect((await palette(wrapper))[0]!.attributes('aria-pressed')).toBe('true')
@@ -225,7 +225,7 @@ describe('the Palette is slots (ticket 398)', () => {
     localStorage.setItem(PALETTE_ORDER_KEY, JSON.stringify(['red', 'added-123456', 'black']))
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     expect((await ids(wrapper)).slice(0, 4)).toEqual(['red', 'added-123456', 'black', 'white'])
     await (await palette(wrapper))[1]!.trigger('click')
     await (await removeButton(wrapper)).trigger('click')
@@ -238,7 +238,7 @@ describe('Pick color from canvas (ticket 398)', () => {
   it('takes the pressed bead\'s color, adds it to the Palette and ends the pick', async () => {
     const wrapper = mount(App)
     await flushPromises()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     await choose(wrapper, '#123456')
     await paint(wrapper, 0)
     await (await palette(wrapper))[0]!.trigger('click') // red again
@@ -247,7 +247,7 @@ describe('Pick color from canvas (ticket 398)', () => {
     await palette(wrapper)
     const button = wrapper.get('[data-testid="pick-color-button"]')
     expect(button.attributes('aria-pressed')).toBe('true')
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
     await flushPromises()

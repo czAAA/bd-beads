@@ -6,7 +6,7 @@ import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import App from './App.vue'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { openSheet, pickColor } from './testUtils/dock'
+import { openColorPopover, pickColor } from './testUtils/pill'
 
 /*
  * Painting with the keyboard, landmarks and announcements (ticket 159; `accessibility.md`, BeadCursor and ScreenReaders
@@ -75,10 +75,10 @@ describe('the Project from the keyboard (ticket 159)', () => {
 })
 
 describe('landmarks and the skip link (ticket 159)', () => {
-  it('has the Dock\'s Tools landmark and main, and Skip to Project first, which moves focus onto the Project', async () => {
+  it('has the Tool pill\'s Tools landmark and main, and Skip to Project first, which moves focus onto the Project', async () => {
     const wrapper = await openProject()
 
-    expect(wrapper.find('nav').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
+    expect(wrapper.find('[data-testid="tool-pill"]').attributes('aria-label')).toBe(en.a11y.toolsLandmark)
     expect(wrapper.find('main').find('[data-testid="project-surface"]').exists()).toBe(true)
 
     const skip = wrapper.find('[data-testid="skip-to-project"]')
@@ -91,7 +91,7 @@ describe('landmarks and the skip link (ticket 159)', () => {
 describe('one Tab stop per group (ticket 159)', () => {
   it('makes the selected swatch the Palette\'s only stop', async () => {
     const wrapper = await openProject()
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     const stops = wrapper.findAll('[data-testid="palette-swatch"]').filter((swatch) => swatch.attributes('tabindex') === '0')
 
     expect(stops).toHaveLength(1)

@@ -28,10 +28,10 @@ async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>) {
 }
 
 describe('App at the phone tier (ticket 79)', () => {
-  it('shows the project-management bar (not the Dock) when no Project is open', async () => {
+  it('shows the project-management bar (not the Tool pill) when no Project is open', async () => {
     const wrapper = mount(App)
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="dock"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
@@ -52,16 +52,15 @@ describe('App at the phone tier (ticket 79)', () => {
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
     expect(drawnProject(wrapper).frame).toBeUndefined() // a Canvas: its size is set in the Frame section (ticket 342)
-    // After creation the Dock replaces the project-management bar.
-    expect(wrapper.find('[data-testid="dock"]').exists()).toBe(true)
+    // After creation the Tool pill appears and the project-management bar goes.
+    expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(false)
   })
 
-  it('toggles each ToolSheet from the Dock, closing on a second press of the same button', async () => {
+  it('toggles each ToolSheet from the Canvas strip, closing on a second press of the same button', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     for (const [dockId, expectFound] of [
-      ['dock-color', () => wrapper.find('[data-testid="bottom-sheet"] [data-testid="palette-picker"]').exists()],
       ['strip-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
       ['strip-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
     ] as const) {
@@ -72,9 +71,9 @@ describe('App at the phone tier (ticket 79)', () => {
     }
   })
 
-  it('has no Frame slot in the Dock; Edit Frame starts from the Project sheet, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
+  it('has no Frame slot in the Tool pill; Edit Frame starts from the Project sheet, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-frame"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
     await wrapper.find('[data-testid="frame-edit"]').trigger('click')
@@ -87,32 +86,32 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
   })
 
-  it('picks a tool straight from the Dock, with no sheet in between (tickets 397, 431)', async () => {
+  it('picks a tool straight from the Tool pill, with no sheet in between (tickets 397, 431)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    await wrapper.find('[data-testid="dock-tool-erase"]').trigger('click')
+    await wrapper.find('[data-testid="pill-tool-erase"]').trigger('click')
 
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-tool-erase"]').classes()).toContain('icon-btn--selected')
-    expect(wrapper.find('[data-testid="dock-tool"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-tool-erase"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="pill-tool"]').exists()).toBe(false)
   })
 
-  it('closes the Colour sheet on a Palette color and on the first Custom color picked, and leaves Fill active (ticket 397)', async () => {
+  it('closes the colour popover on a Palette color and on the first Custom color picked, and leaves Fill active (tickets 397, 439)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-tool-fill"]').trigger('click')
+    await wrapper.find('[data-testid="pill-tool-fill"]').trigger('click')
 
-    await wrapper.find('[data-testid="dock-color"]').trigger('click')
-    await wrapper.get('[data-testid="bottom-sheet"] [data-color-id="blue"]').trigger('click')
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="pill-color"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover"] [data-color-id="blue"]').trigger('click')
+    expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="dock-color"]').trigger('click')
-    const input = wrapper.get('[data-testid="bottom-sheet"] [data-testid="custom-color-input"]')
+    await wrapper.find('[data-testid="pill-color"]').trigger('click')
+    const input = wrapper.get('[data-testid="color-popover"] [data-testid="custom-color-input"]')
     ;(input.element as HTMLInputElement).value = '#123456'
     await input.trigger('input')
-    // The first pick is the answer (ticket 398): it selects, joins the Palette and closes the sheet.
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    // The first pick is the answer (ticket 398): it selects, joins the Palette and closes the popover.
+    expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
 
-    expect(wrapper.find('[data-testid="dock-tool-fill"]').classes()).toContain('icon-btn--selected')
+    expect(wrapper.find('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
   it('keeps Rotate, Copy and Paste off the Project sheet: they are on the Selection bar (tickets 415, 416)', async () => {
@@ -137,11 +136,11 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(drawnProject(wrapper).technique).toBe('loom')
   })
 
-  it('picks a Palette color from the Colour sheet and paints with it', async () => {
+  it('picks a Palette color from the colour popover and paints with it', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="dock-color"]').trigger('click')
+    await wrapper.find('[data-testid="pill-color"]').trigger('click')
 
-    await wrapper.get('[data-testid="bottom-sheet"] [data-color-id="red"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover"] [data-color-id="red"]').trigger('click')
 
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
@@ -257,7 +256,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
-  it('opens the Menu from the Dock with language, theme, Name on exports, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
+  it('opens the Menu from the Canvas strip with language, theme, Name on exports, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
