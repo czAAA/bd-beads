@@ -1,9 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import SaveBox from './SaveBox.vue'
 import { en } from '../../i18n/en'
+import { browserDevicePreferences } from '../../services/devicePreferences'
 
-beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
+/** Hotkey chips follow the device (ticket 438); the test pins them on rather than lean on whichever device state an earlier file left in the shared page. */
+const keyHints = browserDevicePreferences.get('keyHints')
+
+beforeEach(() => {
+  localStorage.setItem('openbeads:locale', 'en')
+  keyHints.value = true
+})
+afterEach(() => {
+  keyHints.value = undefined
+})
 
 function mountBox(props: Record<string, unknown> = {}) {
   return mount(SaveBox, { props: { saveFailed: false, ...props }, attachTo: document.body })
