@@ -24,7 +24,7 @@ describe('ToolColorControls (pulled out of Toolbox.vue for ticket 384, shared wi
     const wrapper = mountControls()
     const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
     input.element.value = '#123456'
-    await input.trigger('input')
+    await input.trigger('change')
     expect(wrapper.emitted('select-custom-color')).toEqual([['#123456']])
   })
 

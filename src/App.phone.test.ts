@@ -107,7 +107,7 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="pill-color"]').trigger('click')
     const input = wrapper.get('[data-testid="color-popover"] [data-testid="custom-color-input"]')
     ;(input.element as HTMLInputElement).value = '#123456'
-    await input.trigger('input')
+    await input.trigger('change')
     // The first pick is the answer (ticket 398): it selects, joins the Palette and closes the popover.
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false)
 
