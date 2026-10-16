@@ -112,19 +112,32 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
   }
 }
 
-/** The Move handle's side (ticket 452): the stepper's size, 28px or 36px on touch, shrinking with the zoom like the steppers. */
-export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: number; y: number; size: number } {
-  const { box, outer, numbers, viewport } = anchor
-  const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
-  const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
-  // On the top margin's band, just left of the top stepper pair so the two never overlap.
-  const x = box.left + box.width / 2 - pair / 2 - BAR_GAP_PX - size / 2
-  const y = (box.top - numbers.down + outer.top) / 2
-  return { x: clamp(x, size, viewport.width), y: clamp(y, size, viewport.height), size }
+/** A corner control is 34px square, 44px on touch; the three sit 4px apart, 4px inside the margin outline's corner. */
+const CORNER_PX = 34
+const TOUCH_CORNER_PX = 44
+const CORNER_GAP_PX = 4
+const CORNER_INSET_PX = 4
+
+/** Where one corner control goes, in the canvas box's pixels: its centre. */
+export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & { size: number }
+
+/**
+ * The Frame's three corner controls (ticket 455, after 452): Move handle, Edit Frame and Remove Frame in one row, like a
+ * window's buttons, just inside the margin outline's top-right corner, the row kept inside the canvas box.
+ */
+export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
+  const { outer, viewport } = anchor
+  const size = touch ? TOUCH_CORNER_PX : CORNER_PX
+  const row = 3 * size + 2 * CORNER_GAP_PX
+  const right = Math.max(BAR_EDGE_PX + row, Math.min(outer.left + outer.width - CORNER_INSET_PX, viewport.width - BAR_EDGE_PX))
+  const top = Math.max(BAR_EDGE_PX, Math.min(outer.top + CORNER_INSET_PX, viewport.height - BAR_EDGE_PX - size))
+  const y = top + size / 2
+  const at = (slot: number) => ({ x: right - size / 2 - slot * (size + CORNER_GAP_PX), y })
+  return { size, remove: at(0), edit: at(1), move: at(2) }
 }
 
-/** The edit toggle's centre (ticket 452): the margin outline's top-right corner, clamped inside the canvas box. */
-export function frameEditToggleCentre(anchor: FrameAnchor, size: number): { x: number; y: number } {
-  const { outer, viewport } = anchor
-  return { x: clamp(outer.left + outer.width, size, viewport.width), y: clamp(outer.top, size, viewport.height) }
+/** The Move handle's square (ticket 452, 455): the leftmost of the corner controls. */
+export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: number; y: number; size: number } {
+  const { move, size } = frameCornerControls(anchor, touch)
+  return { ...move, size }
 }

@@ -22,6 +22,7 @@ import {
   snapshotOf,
   rowProgressPosition,
   summarizeProject,
+  resetRowProgress,
   toggleRowDirection,
   type Cell,
   type Project,
@@ -1391,5 +1392,17 @@ describe('peyote passes (ticket 347)', () => {
   it('does the same along the rows', () => {
     expect(finished(peyote('rows', 1))).toHaveLength(3)
     expect(finished(peyote('rows', 2)).filter((bead) => bead.startsWith('1,'))).toEqual(['1,0', '1,2'])
+  })
+})
+
+describe('resetRowProgress (ticket 455)', () => {
+  it('takes both pointers back to the first row, keeping the direction and the beads', () => {
+    const project = toggleRowDirection({ ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), frame: { row: 0, column: 0, rows: 3, columns: 3 } })
+    const woven = moveToRow(project, 2)
+    expect(rowProgressStarted(woven)).toBe(true)
+    const reset = resetRowProgress(woven)
+    expect(reset.rowProgress).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+    expect(reset.beads).toBe(woven.beads)
+    expect(rowProgressStarted(reset)).toBe(false)
   })
 })

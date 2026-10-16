@@ -52,6 +52,7 @@ export const ICON_NAMES = [
   'position-dots',
   'position-squares',
   'redo',
+  'reset',
   'remove-line',
   'rotate',
   'ruler',

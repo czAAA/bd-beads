@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { frameCornerControls, frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -88,5 +88,33 @@ describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
     expect(overlaps(placed, pill)).toBe(false)
     expect(placed.left).toBeGreaterThanOrEqual(8)
     expect(placed.left + bar.width).toBeLessThanOrEqual(viewport.width - 8)
+  })
+})
+
+describe('frameCornerControls (ticket 455)', () => {
+  const anchor = {
+    box: { left: 150, top: 100, width: 100, height: 60 },
+    outer: { left: 100, top: 50, width: 200, height: 160 },
+    numbers: { across: 20, down: 14 },
+    scale: 1,
+    viewport,
+  }
+
+  it('puts Move, Edit and Remove in a row just inside the margin outline\'s top-right corner', () => {
+    // 34px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
+    expect(frameCornerControls(anchor, false)).toEqual({
+      size: 34,
+      remove: { x: 279, y: 71 },
+      edit: { x: 241, y: 71 },
+      move: { x: 203, y: 71 },
+    })
+  })
+
+  it('keeps the whole row inside the canvas box when the margin runs off it', () => {
+    const off = { ...anchor, outer: { left: -400, top: -60, width: 2000, height: 160 } }
+    const { remove, move, size } = frameCornerControls(off, false)
+    expect(remove.x + size / 2).toBeLessThanOrEqual(viewport.width - 8)
+    expect(move.x - size / 2).toBeGreaterThanOrEqual(8)
+    expect(move.y - size / 2).toBeGreaterThanOrEqual(8)
   })
 })
