@@ -72,15 +72,15 @@ function wireAppShell(services: Services) {
     devicePreferences: services.devicePreferences,
   })
 
+  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes it.
+  migrateLegacyMakerName(services.libraryStore)
+
   /**
    * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
    * one of these mutators, and nothing here touches storage directly. replaceProject is the single commit point for a
    * change to the open Project, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
    * save to be deferred per cell and writing once when the stroke ends (see usePaintStroke).
    */
-  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 0391 removes it.
-  migrateLegacyMakerName(services.libraryStore)
-
   const {
     projects,
     activeProjectId,
