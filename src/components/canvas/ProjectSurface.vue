@@ -14,6 +14,7 @@ import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -120,7 +121,8 @@ const eyedropperShown = computed(() => props.picking === true && !props.markerHi
 
 /**
  * Set by a press on the surface: a press focuses it too, but the bead cursor shows only for focus that didn't come from
- * a pointer (Tab, or Skip to Project).
+ * a pointer (Tab, or Skip to Project). Cleared by blur and by an arrow key, which is keyboard use again. While it is set,
+ * Space pans the canvas instead of using the tool (ticket 424).
  */
 let pressed = false
 
@@ -164,6 +166,16 @@ function onFocus() {
 function onBlur() {
   pressed = false
   emit('keyboard-focus', false)
+}
+
+/**
+ * Space after a pointer press passes on to the window's Space-drag pan (ticket 424) rather than using the tool at the bead
+ * cursor, which a stroke would paint through. An arrow key ends the pointer's hold on Space: keyboard use again.
+ */
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key.startsWith('Arrow')) pressed = false
+  if (isSpaceKey(event) && pressed) return
+  emit('cursor-key', event)
 }
 
 /** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both layers. */
@@ -962,7 +974,7 @@ onBeforeUnmount(() => {
     :aria-label="label"
     @focus="onFocus"
     @blur="onBlur"
-    @keydown="emit('cursor-key', $event)"
+    @keydown="onKeydown"
     @pointerdown.capture="onPress"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
