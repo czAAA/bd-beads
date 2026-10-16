@@ -9,6 +9,12 @@ beforeEach(() => {
 })
 
 describe('CanvasStrip', () => {
+  it('is shielded from the page panning under a vertical touch drag', () => {
+    const wrapper = mount(CanvasStrip, { props: { project } })
+
+    expect(wrapper.find('[data-testid="canvas-strip"]').classes()).toContain('no-page-pan')
+  })
+
   const project = { frame: undefined, beads: {}, technique: 'loom' } as unknown as Project
 
   it('holds Menu, Project, Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (tickets 425, 431)', async () => {

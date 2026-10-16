@@ -65,7 +65,7 @@ const directionLabel = computed(() =>
 </script>
 
 <template>
-  <div class="progress-bar" data-testid="progress-bar">
+  <div class="progress-bar no-page-pan" data-testid="progress-bar">
     <AppButton variant="box" :action="actions.removeFrame" :deps="deps" data-testid="progress-bar-remove-frame" @click="emit('remove-frame')" />
     <IconButton v-if="hasFrame" variant="box" :action="actions.editFrame" :deps="deps" data-testid="progress-bar-edit-frame" @click="emit('edit-frame')" />
 

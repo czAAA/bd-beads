@@ -56,7 +56,7 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 </script>
 
 <template>
-  <div class="canvas-strip" data-testid="canvas-strip">
+  <div class="canvas-strip no-page-pan" data-testid="canvas-strip">
     <div class="canvas-strip__sheets">
       <AppButton
         variant="text"

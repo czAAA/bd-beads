@@ -22,6 +22,12 @@ function makeProject(): Project {
 }
 
 describe('ProgressBar', () => {
+  it('is shielded from the page panning under a vertical touch drag', () => {
+    const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
+
+    expect(wrapper.find('[data-testid="progress-bar"]').classes()).toContain('no-page-pan')
+  })
+
   it('shows the current row and total, 1-based', () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
