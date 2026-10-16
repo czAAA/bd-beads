@@ -65,6 +65,7 @@
     "components/SwitchAndFileButton/README.md",
     "components/TextField/README.md",
     "components/ThemeToggle/README.md",
+    "components/ToolPill/README.md",
     "components/ToolSheet/README.md",
     "components/ToolTabs/README.md",
     "components/Toolbox/README.md",
@@ -376,6 +377,11 @@
       "name": "ThemeToggle",
       "group": "Header",
       "summary": "The four-way theme control in the header (Match device, Light, Dark, High contrast); the EN / RU language button sits beside it."
+    },
+    {
+      "name": "ToolPill",
+      "group": "Responsive",
+      "summary": "The tools as a draggable pill floating over the drawing area, docked to any edge, with the colour popover."
     },
     {
       "name": "ToolSheet",
