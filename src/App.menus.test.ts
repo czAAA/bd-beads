@@ -88,7 +88,7 @@ describe('Menu and Project open as a dropdown from 1024px and a Top sheet under 
 })
 
 describe('Menu', () => {
-  it('holds Projects, Preferences, Help and About in that order, with Delete all last in Projects', async () => {
+  it('holds Projects, Preferences, Help and About in that order, with Delete all Projects last in Projects', async () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
 
@@ -126,6 +126,30 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
     await wrapper.get('[data-testid="menu-input-mode"] [data-value="mouse"]').trigger('click')
     expect(localStorage.getItem('openbeads:input-mode')).toBe('mouse')
+  })
+
+  it('deletes every Project after a confirmation, and lands on the empty state; Cancel keeps them', async () => {
+    saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-menu')
+    expect(text(wrapper, 'menu-delete-all')).toBe(en.panels.menu.deleteAll)
+
+    await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(text(wrapper, 'delete-all-projects-modal')).toContain(en.panels.menu.deleteAllTitle)
+    await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
+    expect(loadProjects()).toHaveLength(2)
+
+    await openSheet(wrapper, 'strip-menu')
+    await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(loadProjects()).toEqual([])
+    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
   it('opens New Project from its first item', async () => {
@@ -228,6 +252,21 @@ describe('Project', () => {
     expect(copy.rowProgress.currentRow).toBe(2)
     await openSheet(wrapper, 'strip-project')
     expect(text(wrapper, 'project-name')).toBe('Moth 2')
+  })
+
+  it('clears this Project from its own item, after the usual confirmation, and keeps the Project', async () => {
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-project')
+    expect(text(wrapper, 'project-clear')).toBe(en.panels.project.clear)
+
+    await wrapper.get('[data-testid="project-clear"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+
+    expect(loadProjects()).toHaveLength(1)
+    expect(Object.keys(loadProjects()[0]!.beads)).toHaveLength(0)
   })
 
   it('deletes after a confirmation naming the Project, and lands on the empty state', async () => {

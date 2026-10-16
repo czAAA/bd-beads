@@ -558,6 +558,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('rename-project', (t) => t.panels.project.renameAction, 'edit', { icon: 'pencil', body: (t) => t.panels.project.tooltipRename }),
   unkeyed('duplicate-project', (t) => t.panels.project.duplicate, 'edit', { icon: 'copy', body: (t) => t.panels.project.tooltipDuplicate }),
   unkeyed('delete-project', (t) => t.panels.project.deleteThis, 'edit', { icon: 'delete', body: (t) => t.panels.project.tooltipDelete }),
+  unkeyed('delete-all-projects', (t) => t.panels.menu.deleteAll, 'edit', { icon: 'delete', body: (t) => t.panels.menu.tooltipDeleteAll }),
+  unkeyed('clear-project', (t) => t.panels.project.clear, 'edit', { icon: 'erase', body: (t) => t.panels.project.tooltipClear }),
   unkeyed('export-all', (t) => t.transfer.exportLibraryButton, 'edit', { icon: 'export' }),
   unkeyed('export-png', (t) => t.panels.project.exportPng, 'edit', { icon: 'image' }),
   unkeyed('export-pdf', (t) => t.panels.project.exportPdf, 'edit', { icon: 'pdf' }),

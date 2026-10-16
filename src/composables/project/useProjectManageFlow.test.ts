@@ -12,6 +12,7 @@ function setup(projects: Project[]) {
     replaceProject: vi.fn((project: Project) => void (library.projects = library.projects.map((p) => (p.id === project.id ? project : p)))),
     addProject: vi.fn((project: Project) => void (library.projects = [project, ...library.projects])),
     removeProject: vi.fn((id: string) => void (library.projects = library.projects.filter((p) => p.id !== id))),
+    removeAllProjects: vi.fn(() => void (library.projects = [])),
     closeProject: vi.fn(() => void (library.open = undefined)),
   }
   return { flow: useProjectManageFlow(deps), deps, library }
@@ -55,5 +56,24 @@ describe('useProjectManageFlow', () => {
     expect(library.projects.map((p) => p.name)).toEqual(['Owl'])
     expect(library.open).toBeUndefined()
     expect(flow.deleting.value).toBe(false)
+  })
+
+  it('deletes every Project only after being asked, and leaves none open', () => {
+    const { flow, deps, library } = setup([make('Moth'), make('Owl')])
+    flow.onRequestDeleteAllProjects()
+    expect(flow.deletingAll.value).toBe(true)
+    flow.onCancelDeleteAllProjects()
+    expect(deps.removeAllProjects).not.toHaveBeenCalled()
+
+    flow.onRequestDeleteAllProjects()
+    flow.onConfirmDeleteAllProjects()
+    expect(library.projects).toEqual([])
+    expect(flow.deletingAll.value).toBe(false)
+  })
+
+  it('does not ask to delete all with no Project saved', () => {
+    const { flow } = setup([])
+    flow.onRequestDeleteAllProjects()
+    expect(flow.deletingAll.value).toBe(false)
   })
 })

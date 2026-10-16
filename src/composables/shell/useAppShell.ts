@@ -92,6 +92,7 @@ function wireAppShell(services: Services) {
     addProjects,
     replaceProject,
     removeProject,
+    removeAllProjects,
     flushPendingSave,
     saveNow,
   } = useProjectLibrary(services.libraryStore, storageAsk.onLibrarySaved)
@@ -646,6 +647,7 @@ function wireAppShell(services: Services) {
     replaceProject,
     addProject,
     removeProject,
+    removeAllProjects,
     closeProject: onNewProject,
   })
 
@@ -716,6 +718,7 @@ function wireAppShell(services: Services) {
       !!savedProjectConfirms.pendingSwitch.value ||
       manageProject.duplicating.value !== undefined ||
       manageProject.deleting.value ||
+      manageProject.deletingAll.value ||
       storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
     backOutOfSelect,

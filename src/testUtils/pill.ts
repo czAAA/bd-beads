@@ -83,12 +83,12 @@ export async function rotate(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
 }
 
-/** Presses Delete all, last in Menu's Projects section, which opens first; the confirmation it raises is the caller's. */
+/** Presses Clear this Project in the Project panel, which opens first; the confirmation it raises is the caller's. */
 export async function deleteAll(wrapper: Wrapper): Promise<void> {
-  if (!wrapper.find('[data-testid="menu-delete-all"]').exists()) {
-    await openSheet(wrapper, 'strip-menu')
+  if (!wrapper.find('[data-testid="project-clear"]').exists()) {
+    await openSheet(wrapper, 'strip-project')
   }
-  await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
+  await wrapper.get('[data-testid="project-clear"]').trigger('click')
 }
 
 /** Picks a language in Menu (tickets 368, 443): the panel opens first; the Top sheet lists every language, the dropdown has the switcher. */

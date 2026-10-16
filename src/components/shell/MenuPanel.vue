@@ -29,8 +29,6 @@ import { PANEL_CONTEXT } from './panelContext'
  */
 defineProps<{
   projects: Project[]
-  /** A Project is open, so Delete all has something to clear. */
-  hasProject: boolean
   toolsPosition: PillPosition
   inputMode: InputMode
   /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
@@ -61,7 +59,7 @@ const actions = {
   newProject: controlAction('new-project'),
   exportAll: controlAction('export-all'),
   savedProjects: controlAction('saved-projects'),
-  clear: controlAction('clear'),
+  deleteAll: controlAction('delete-all-projects'),
   shortcuts: controlAction('shortcuts-help'),
 }
 const version = __APP_VERSION__
@@ -109,13 +107,13 @@ const sheet = computed(() => context?.sheet.value ?? false)
       <PanelItem
         icon="delete"
         danger
-        :disabled="!hasProject"
-        :name="actions.clear.name(t)"
-        :disabled-body="t.shell.canvasPlaceholder"
+        :disabled="projects.length === 0"
+        :name="actions.deleteAll.name(t)"
+        :disabled-body="t.projects.noSavedProjectsMessage"
         data-testid="menu-delete-all"
         @select="emit('delete-all')"
       >
-        {{ t.panels.menu.deleteAll }}
+        {{ actions.deleteAll.name(t) }}
       </PanelItem>
     </PanelSection>
 

@@ -22,7 +22,7 @@ import NameOnExportsRow from './NameOnExportsRow.vue'
 /**
  * The body of Project (spec 0440, ticket 443; ProjectPanel card): everything about the open Project and nothing a tool
  * already does. The head (the name with a pencil to rename, and the save state), Technique, the Bead line with Replace
- * bead, the Canvas, Save and the exports, the "Name on exports" row, then Duplicate and Delete this Project. The Frame's
+ * bead, the Canvas, Save and the exports, the "Name on exports" row, then Duplicate, Clear this Project and Delete this Project. The Frame's
  * Edit, Fit and Remove are not here. It only asks; the app shell does the work.
  */
 const props = defineProps<{
@@ -46,6 +46,7 @@ const emit = defineEmits<{
   'fit-frame': []
   'save-maker-name': [name: string]
   duplicate: []
+  clear: []
   delete: []
 }>()
 
@@ -59,6 +60,7 @@ const errorId = useId()
 const rename = controlAction('rename-project')
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
+const clear = controlAction('clear-project')
 const renameLabel = computed(() => t.value.panels.project.rename.replace('{name}', props.project.name))
 
 function startRename() {
@@ -166,6 +168,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
 
     <div class="project-panel__manage" role="group" :aria-label="t.panels.project.deleteThis">
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
+      <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>
     </div>
   </div>

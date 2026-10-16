@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const base = { projects: [project], hasProject: true, toolsPosition: 'bottom' as const, inputMode: 'pen' as const, penSeen: false }
+const base = { projects: [project], toolsPosition: 'bottom' as const, inputMode: 'pen' as const, penSeen: false }
 
 /** The panel inside a shell's context: `sheet` is the Top sheet's, with one option per line. */
 function mountIn(sheet: boolean, props: Record<string, unknown> = {}) {
@@ -32,7 +32,7 @@ describe('MenuPanel (ticket 443)', () => {
     expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
   })
 
-  it('lists New Project, Import, Export all, Saved Projects with its count and Delete all last and danger', () => {
+  it('lists New Project, Import, Export all, Saved Projects with its count and Delete all Projects last and danger', () => {
     const wrapper = mountIn(false)
     const projects = wrapper.get('[data-testid="menu-panel"] section')
     const rows = projects.findAll('.panel-item, .project-import__button').map((row) => row.text())
@@ -40,8 +40,8 @@ describe('MenuPanel (ticket 443)', () => {
     expect(wrapper.get('[data-testid="menu-delete-all"]').classes()).toContain('panel-item--danger')
   })
 
-  it('disables Delete all with no Project open, and Saved Projects with none saved, each with its reason', () => {
-    const wrapper = mountIn(false, { hasProject: false, projects: [] })
+  it('disables Delete all Projects and Saved Projects with none saved, each with its reason', () => {
+    const wrapper = mountIn(false, { projects: [] })
     expect(wrapper.get('[data-testid="menu-delete-all"]').attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="menu-saved-projects"]').attributes('aria-disabled')).toBe('true')
   })

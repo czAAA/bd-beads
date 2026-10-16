@@ -42,6 +42,9 @@ const {
   onCancelDuplicate,
   onConfirmDelete,
   onCancelDelete,
+  deletingAll,
+  onConfirmDeleteAllProjects,
+  onCancelDeleteAllProjects,
   naming,
   onSavePieceName,
   onCancelPieceName,
@@ -184,6 +187,17 @@ const {
     :cancel-label="t.panels.project.cancel"
     @confirm="onConfirmDelete"
     @cancel="onCancelDelete"
+  />
+
+  <ConfirmModal
+    v-if="deletingAll"
+    data-testid="delete-all-projects-modal"
+    :title="t.panels.menu.deleteAllTitle"
+    :message="t.panels.menu.deleteAllMessage"
+    :confirm-label="t.panels.menu.deleteAllConfirm"
+    :cancel-label="t.panels.project.cancel"
+    @confirm="onConfirmDeleteAllProjects"
+    @cancel="onCancelDeleteAllProjects"
   />
 
   <NamePieceModal v-if="naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />
