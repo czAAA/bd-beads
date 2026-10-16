@@ -48,7 +48,7 @@ describe('AppModal', () => {
     await wrapper.find('[role="dialog"]').trigger('click')
     expect(wrapper.emitted('cancel')).toBeUndefined()
 
-    await wrapper.find('[data-testid="modal-scrim"]').trigger('click')
+    await wrapper.find('[data-testid="modal-scrim"]').trigger('pointerdown')
     expect(wrapper.emitted('cancel')).toHaveLength(1)
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))

@@ -19,7 +19,6 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'finished' | 'cursorWid
   ruler: 'ruler',
   rulerStrong: 'body',
   emptyBead: 'bead-empty',
-  seam: 'bead-seam',
   marker: 'marker',
   outline: 'bead-outline',
   cursor: 'focus-ring',

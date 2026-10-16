@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, provide, ref, useId, useSlots, watch } from 'vue'
+import { computed, nextTick, provide, ref, useId, useSlots, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import AppButton from './AppButton.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
@@ -86,15 +86,9 @@ function focusTargets(): HTMLElement[] {
   return [...(listEl.value?.querySelectorAll<HTMLElement>(selector) ?? [])]
 }
 
-function onPointerDownOutside(event: PointerEvent) {
-  if (rootEl.value && !rootEl.value.contains(event.target as Node)) close(false)
-}
-
 async function show(focus?: 'first' | 'last') {
   if (props.disabled) return
   open.value = true
-  // A sheet closes itself on a press outside it; its content may sit outside this button's own element.
-  if (!showsSheet.value) document.addEventListener('pointerdown', onPointerDownOutside)
   await nextTick()
   buttonEl.value = trigger() ?? undefined
   anchored.follow()
@@ -105,7 +99,6 @@ async function show(focus?: 'first' | 'last') {
 function close(returnFocus = true) {
   if (!open.value) return
   open.value = false
-  document.removeEventListener('pointerdown', onPointerDownOutside)
   anchored.stop()
   if (returnFocus) trigger()?.focus()
 }
@@ -116,8 +109,8 @@ watch(showsSheet, () => close(false))
 provide(MENU_CLOSE, () => close())
 /** ImageColorsButton closes the menu from its own swatch handler. */
 defineExpose({ close })
-useEscapeLayer(() => open.value && !showsSheet.value, () => close())
-onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDownOutside))
+// A sheet is its own layer; its content may sit outside this button's element.
+useOverlayLayer({ isOpen: () => open.value && !showsSheet.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })
 
 function onButtonClick(event: MouseEvent) {
   if (props.disabled) return

@@ -82,6 +82,8 @@ describe('MenuButton', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
 
+    // The press that closed it swallowed its click; a fresh press on the button opens it again.
+    await button.trigger('pointerdown')
     await button.trigger('click')
     await wrapper.find('[data-testid="pdf"]').trigger('click')
     expect(onSelect).toHaveBeenCalledWith('pdf')

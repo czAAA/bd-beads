@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { swallowNextClick } from '../../composables/ui/swallowNextClick'
-import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { popoverPlacement, type PillColorMode, type PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
@@ -47,7 +46,12 @@ const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
 
 provide(SHEET_CLOSE, () => emit('close'))
-useEscapeLayer(() => true, () => emit('close'))
+useOverlayLayer({
+  isOpen: () => true,
+  root: () => rootEl.value,
+  close: () => emit('close'),
+  isOpener: (target) => props.tile?.contains(target) ?? false,
+})
 
 const modeOptions = computed(() => [
   { value: 'one' as const, label: t.value.toolPill.one },
@@ -74,25 +78,12 @@ function place() {
   style.value = { left: `${left}px`, top: `${top}px` }
 }
 
-function onPointerDownOutside(event: PointerEvent) {
-  const target = event.target
-  if (!(target instanceof Node) || rootEl.value?.contains(target) || props.tile?.contains(target)) return
-  // A press inside another dialog (a confirmation raised from here) is not "outside".
-  if (target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"]')) return
-  event.stopPropagation()
-  event.preventDefault()
-  swallowNextClick()
-  emit('close')
-}
-
 onMounted(async () => {
   await nextTick()
   place()
-  document.addEventListener('pointerdown', onPointerDownOutside, true)
   window.addEventListener('resize', place)
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', onPointerDownOutside, true)
   window.removeEventListener('resize', place)
 })
 </script>
