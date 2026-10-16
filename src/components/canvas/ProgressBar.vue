@@ -82,7 +82,13 @@ const directionLabel = computed(() =>
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
       />
-      <IconButton variant="box" :action="actions.reset" :deps="deps" data-testid="progress-bar-reset" @click="emit('reset-progress')" />
+      <IconButton
+        variant="box"
+        :action="actions.reset"
+        :deps="deps"
+        data-testid="progress-bar-reset"
+        @click="emit('reset-progress')"
+      />
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
         <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ shownRow }}</span>
         {{ ' ' }}

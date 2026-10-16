@@ -167,7 +167,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
-  /** Whether the Remove frame confirmation is open: always asked first, as the corner cross is easy to hit and the passes go with the Frame (tickets 426, 455). */
+  /** Whether the Remove frame confirmation is open: always asked first: the passes go with the Frame (tickets 426, 455). */
   const removeConfirmOpen = ref(false)
 
   /** Remove Frame: asks first (ticket 455). */

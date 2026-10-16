@@ -51,11 +51,13 @@ export function useRowOps(deps: RowOpsDeps) {
   /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so it asks first. */
   const resetProgressConfirmOpen = ref(false)
 
+  /** Asks whether to reset; nothing to ask about until a row is done. */
   function onResetProgress() {
     const project = deps.currentProject()
     if (project && rowProgressStarted(project)) resetProgressConfirmOpen.value = true
   }
 
+  /** The Reset progress question answered No: nothing changes. */
   function onCancelResetProgress() {
     resetProgressConfirmOpen.value = false
   }

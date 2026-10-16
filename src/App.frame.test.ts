@@ -103,6 +103,15 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 3, column: 4, rows: 2, columns: 4 })
   })
 
+  it('drags the Frame from the Move handle\'s button, which hands its press to the canvas (ticket 455)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await wrapper.get('[data-testid="frame-move-handle"]').trigger('pointerdown', { button: 0, buttons: 1, isPrimary: true, pointerId: 1 })
+    await hoverBead(wrapper, { row: 2, column: 4 }, { buttons: 1 })
+    await surface(wrapper).trigger('pointerup')
+    await flushPromises()
+    expect(savedFrame()).not.toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+
   it('carries the Frame\'s beads when it is moved, in one Undo step (ticket 452)', async () => {
     const wrapper = await mountOpen(framedProject())
     await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
