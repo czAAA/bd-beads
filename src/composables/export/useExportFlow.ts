@@ -110,7 +110,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   }
 
   function onExportPng() {
-    // The words the picture prints (ticket 164), in the app's language, with the maker's name (ticket 161).
+    // The words the picture prints (ticket 164), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
       (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), new Date())),
       'png',
@@ -119,7 +119,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   }
 
   function onExportPdf() {
-    // The words the pages print (ticket 162), in the app's language, with the maker's name (ticket 161).
+    // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
       (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date())),
       'pdf',

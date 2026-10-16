@@ -175,4 +175,13 @@ const saveIconOnly = useFitByPriority(buttonsEl, [() => locale.value])
   align-items: flex-end;
   gap: var(--space-6);
 }
+
+.save-box__loading {
+  margin-top: var(--space-12);
+}
+
+.save-box__hint {
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
 </style>
