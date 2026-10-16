@@ -13,7 +13,7 @@ for (const [scheme, choice, name] of [
   test(`canvas color picker open on ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: scheme, viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await page.addInitScript((value) => localStorage.setItem('bd-beads:canvas-background', value), String(choice))
+    await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background', value), String(choice))
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await page.getByTestId('canvas-color-button').click()
@@ -29,7 +29,7 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
   test(`position marks as squares, ${technique}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await page.addInitScript(() => localStorage.setItem('bd-beads:position-marks', 'squares'))
+    await page.addInitScript(() => localStorage.setItem('openbeads:position-marks', 'squares'))
     await openApp(page, [fixtureProject({ technique })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await page.mouse.move(5, 5)

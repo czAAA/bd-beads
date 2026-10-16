@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import ImageColorsButton from './ImageColorsButton.vue'
 import { en } from '../../i18n/en'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 afterEach(() => {
   document.body.innerHTML = ''
 })

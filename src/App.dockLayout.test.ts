@@ -5,7 +5,7 @@ import App from './App.vue'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 describe('App shell, the Dock layout (ticket 383, ADR 0046; the only layout since ticket 412)', () => {

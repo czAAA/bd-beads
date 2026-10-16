@@ -57,17 +57,17 @@ describe('useKeyHints (ticket 438)', () => {
     onDevice(false)
     useKeyHints().setShown(true)
     expect(useKeyHints().shown.value).toBe(true)
-    expect(localStorage.getItem('bd-beads:key-hints')).toBe('on')
+    expect(localStorage.getItem('openbeads:key-hints')).toBe('on')
 
     useKeyHints().setShown(false)
     press({ key: 'Tab' })
     expect(useKeyHints().shown.value).toBe(false)
-    expect(localStorage.getItem('bd-beads:key-hints')).toBe('off')
+    expect(localStorage.getItem('openbeads:key-hints')).toBe('off')
   })
 
   it('reads the stored choice after a reload', () => {
     onDevice(true)
-    localStorage.setItem('bd-beads:key-hints', 'off')
+    localStorage.setItem('openbeads:key-hints', 'off')
     browserDevicePreferences.forget()
     expect(useKeyHints().shown.value).toBe(false)
   })

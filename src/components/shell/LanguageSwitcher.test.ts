@@ -33,7 +33,7 @@ describe('LanguageSwitcher', () => {
     await wrapper.find('button').trigger('click')
     await wrapper.find('[data-testid="language-pl"]').trigger('click')
 
-    expect(localStorage.getItem('bd-beads:locale')).toBe('pl')
+    expect(localStorage.getItem('openbeads:locale')).toBe('pl')
     expect(wrapper.find('button').text()).toBe('PL')
     expect(items(wrapper)).toHaveLength(0)
   })
@@ -43,7 +43,7 @@ describe('LanguageSwitcher', () => {
   })
 
   it('names the button in the current language', () => {
-    localStorage.setItem('bd-beads:locale', 'ru')
+    localStorage.setItem('openbeads:locale', 'ru')
     expect(mount(LanguageSwitcher).find('button').attributes('aria-label')).toBe('Язык интерфейса: Русский')
   })
 })

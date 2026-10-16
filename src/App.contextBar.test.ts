@@ -7,7 +7,7 @@ import { pickColor, pickTool } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 /** A drag across the grid, released on the shell (a real drag can end anywhere), which is what commits it to undo history. */

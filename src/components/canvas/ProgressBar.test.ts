@@ -6,7 +6,7 @@ import { createProject, moveToRow, toggleRowDirection, type Project } from '../.
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!

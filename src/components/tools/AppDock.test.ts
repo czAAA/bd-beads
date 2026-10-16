@@ -7,7 +7,7 @@ const TOOL_IDS = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
 
 describe('AppDock', () => {
   beforeEach(() => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
 
   it('holds the six tool tiles, the colour button and nothing else without an input mode (ticket 431)', () => {

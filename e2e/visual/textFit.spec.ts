@@ -302,7 +302,7 @@ for (const locale of LOCALES) {
       test.setTimeout(240_000)
       page.setDefaultTimeout(4000)
       await page.setViewportSize({ width, height: HEIGHTS[width] })
-      await page.addInitScript((value) => localStorage.setItem('bd-beads:locale', value), locale)
+      await page.addInitScript((value) => localStorage.setItem('openbeads:locale', value), locale)
       await openApp(page, [fixtureProject({ technique: 'loom' })])
       const found: Found[] = []
       const seen = new Set<string>()

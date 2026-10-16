@@ -1,4 +1,5 @@
 import { TOUR_STEPS, type TourStepId } from '../domain/tour'
+import { readKey } from './storageKeys'
 
 /**
  * Where the Tour's status is kept on this device (ticket 77 reads it, ticket 80 builds the Tour on it). `untouched` is
@@ -6,11 +7,11 @@ import { TOUR_STEPS, type TourStepId } from '../domain/tour'
  */
 export type TourStatus = 'untouched' | 'running' | 'finished' | 'off'
 
-const STORAGE_KEY = 'bd-beads:tour'
+const STORAGE_KEY = 'openbeads:tour'
 
 export function loadTourStatus(): TourStatus {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readKey(localStorage, STORAGE_KEY)
     return raw === 'running' || raw === 'finished' || raw === 'off' ? raw : 'untouched'
   } catch {
     return 'untouched'
@@ -25,7 +26,7 @@ export function saveTourStatus(status: TourStatus): void {
   }
 }
 
-const PROGRESS_KEY = 'bd-beads:tour-progress'
+const PROGRESS_KEY = 'openbeads:tour-progress'
 
 /** Which steps of the Tour are done on this device, and which Project the Tour is building (ticket 80). */
 export interface TourProgress {
@@ -35,7 +36,7 @@ export interface TourProgress {
 
 export function loadTourProgress(): TourProgress {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? 'null')
+    const parsed: unknown = JSON.parse(readKey(localStorage, PROGRESS_KEY) ?? 'null')
     if (typeof parsed !== 'object' || parsed === null) {
       return { done: [] }
     }

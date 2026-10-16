@@ -372,6 +372,7 @@ export const ru: Translations = {
     makingPdf: 'Готовим PDF · {name}',
     readyPng: 'PNG готов',
     readyPdf: 'PDF готов',
+    readyFile: 'Файл готов',
     readySave: 'Сохранить',
     exportProjectFile: 'Экспортировать проект',
     nameOnExports: 'Имя на экспорте',
