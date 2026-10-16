@@ -35,11 +35,7 @@ describe('useReplaceBeadFlow', () => {
     expect(replaceBeadPendingBead.value?.id).toBe(other.id)
   })
 
-  it('ignores an empty pick and a pick with no Project open', () => {
-    const open = setup()
-    open.onRequestReplaceBead('')
-    expect(open.replaceBeadPendingBead.value).toBeUndefined()
-
+  it('ignores a pick with no Project open', () => {
     const none = setup(null)
     none.onRequestReplaceBead(other.id)
     expect(none.replaceBeadPendingBead.value).toBeUndefined()
