@@ -4,7 +4,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 
 ## Layout
 
-- **The canvas box is the screen.** It sits `screen-edge` (6px) from every screen edge; where `env(safe-area-inset-*)` is larger, the inset wins on that side. Inside it, top to bottom: the Canvas strip, the drawing area, the Progress bar as a footer. The Progress bar and the Canvas strip keep their specs; nothing sits below the canvas box any more.
+- **The canvas box is the screen.** It sits `screen-edge` (12px) from every screen edge; where `env(safe-area-inset-*)` is larger, the inset wins on that side. Inside it, top to bottom: the Canvas strip, the drawing area, the Progress bar as a footer. The Progress bar and the Canvas strip keep their specs; nothing sits below the canvas box any more.
 - **The pill floats over the drawing area**, `pill-gap` (6px) in from the drawing area's edge on the side it is docked to, centred along that edge. The drawing runs behind it: the pill takes no width or height from the canvas. It never covers the Canvas strip or the Progress bar.
 - **Four positions:** left, top, right, bottom (default: bottom, just above the Progress bar). On left or right the pill is vertical and its contents run top to bottom.
 - **Length:** as long as its content. If that is longer than the edge (a phone, top or bottom, with recents), the pill scrolls along its length with no scrollbar, like the Canvas strip.
