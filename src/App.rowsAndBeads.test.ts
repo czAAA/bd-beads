@@ -18,10 +18,11 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
-/** The Project sheet's Replace bead select, which opens the sheet for it and leaves it open. */
-async function replaceSelect(wrapper: ReturnType<typeof mount>) {
+/** Picks a Bead from the Project sheet's Replace bead menu, which opens the sheet for it and leaves it open. */
+async function pickReplacement(wrapper: ReturnType<typeof mount>, beadId: string) {
   await openSheet(wrapper, 'strip-project')
-  return wrapper.get<HTMLSelectElement>('[data-testid="phone-replace-bead-select"]')
+  await wrapper.get('[data-testid="phone-replace-bead-select"]').trigger('click')
+  await wrapper.get(`[data-testid="phone-replace-bead-${beadId}"]`).trigger('click')
 }
 
 describe('App row progress', () => {
@@ -182,6 +183,22 @@ describe('App header bead', () => {
 })
 
 describe('App replace bead', () => {
+  it('is picked from an app-drawn menu, not a native select, whose picker swallowed the pick on an iPad mini (ticket 442)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await openSheet(wrapper, 'strip-project')
+
+    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="phone-replace-bead-select"]').element.tagName).toBe('BUTTON')
+  })
+
+  it('opens the confirmation with Cancel focused first from the Project sheet', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await pickReplacement(wrapper, 'toho-round-11-0')
+
+    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="confirm-modal-cancel"]').attributes()).toHaveProperty('data-autofocus')
+  })
+
   function loadedProject() {
     return loadProjects()[0]!
   }
@@ -190,7 +207,7 @@ describe('App replace bead', () => {
     const wrapper = await mountWithProject(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
 
     await chooseAppLanguage(wrapper, 'en')
-    await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
+    await pickReplacement(wrapper, 'toho-round-11-0')
 
     const modal = wrapper.find('[data-testid="replace-bead-modal"]')
     expect(modal.exists()).toBe(true)
@@ -208,7 +225,7 @@ describe('App replace bead', () => {
     await flushPromises()
     await chooseAppLanguage(wrapper, 'en')
 
-    await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
+    await pickReplacement(wrapper, 'toho-round-11-0')
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').text()).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
@@ -216,7 +233,7 @@ describe('App replace bead', () => {
   it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
     const wrapper = await mountWithProject(15, 30) // 10x20 at Cube
 
-    await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
+    await pickReplacement(wrapper, 'toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(loadedProject().beadId).toBe('toho-round-11-0')
@@ -233,7 +250,7 @@ describe('App replace bead', () => {
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
+    await pickReplacement(wrapper, 'toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="strip-undo"]').attributes('aria-disabled') === 'true').toBe(false)
 
@@ -293,7 +310,7 @@ describe('App estimated weight (ticket 155)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     expect((await sheetRead(wrapper, 'quantity-weight-red')).text).toBe('0.01 g')
 
-    await (await replaceSelect(wrapper)).setValue('toho-round-11-0')
+    await pickReplacement(wrapper, 'toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect((await sheetRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
     expect((await sheetRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
