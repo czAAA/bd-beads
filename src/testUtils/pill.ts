@@ -8,15 +8,21 @@ type Wrapper = ReturnType<typeof mount>
 type Sheet = 'strip-project' | 'strip-menu'
 
 /**
- * Opens one of the sheets (CanvasStrip card): the strip's Menu or Project button toggles, so a sheet that is already
- * open is left alone and a different open one is replaced by the press.
+ * Opens Menu or Project (CanvasStrip and TopSheet cards, ticket 443): the strip's button toggles, so a panel that is already
+ * open is left alone and the other one open is swapped for it by the press. Under 1024px, as every test starts, it is the Top sheet.
  */
 export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
-  const sheetOpen = wrapper.find('[data-testid="bottom-sheet"]').exists()
-  if (!sheetOpen || button.attributes('aria-pressed') !== 'true') {
+  const panelOpen = wrapper.find('[data-testid="panel-body"]').exists()
+  if (!panelOpen || button.attributes('aria-pressed') !== 'true') {
     await button.trigger('click')
   }
+}
+
+/** Puts the open Menu or Project away with the strip button that lit it. */
+export async function closeSheet(wrapper: Wrapper): Promise<void> {
+  const lit = wrapper.find('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
+  if (lit.exists()) await lit.trigger('click')
 }
 
 /** Picks a Tool with its Tool pill tile. */
@@ -51,7 +57,7 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
 }
 
 /**
- * Raises the New Project form (a modal sheet): the project bar's button with no Project open, otherwise the Project sheet's.
+ * Raises the New Project form (a modal sheet): the project bar's button with no Project open, otherwise Menu's.
  * Does nothing when the form is already up.
  */
 export async function openNewProject(wrapper: Wrapper): Promise<void> {
@@ -63,8 +69,8 @@ export async function openNewProject(wrapper: Wrapper): Promise<void> {
     await bar.trigger('click')
     return
   }
-  await openSheet(wrapper, 'strip-project')
-  await wrapper.get('[data-testid="phone-new-project-button"]').trigger('click')
+  await openSheet(wrapper, 'strip-menu')
+  await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 }
 
 /** Copies the Selection with the Selection bar's Copy, which clears the Selection and arms paste mode (ticket 437). */
@@ -77,29 +83,28 @@ export async function rotate(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
 }
 
-/** Presses Delete all at the bottom of the Project sheet, which opens first; the confirmation it raises is the caller's. */
+/** Presses Delete all, last in Menu's Projects section, which opens first; the confirmation it raises is the caller's. */
 export async function deleteAll(wrapper: Wrapper): Promise<void> {
-  if (!wrapper.find('[data-testid="sheet-delete-all"]').exists()) {
-    await openSheet(wrapper, 'strip-project')
-  }
-  await wrapper.get('[data-testid="sheet-delete-all"]').trigger('click')
-}
-
-/** Picks a language from the Menu sheet's switcher (ticket 368): the sheet opens first, from the strip's Menu button. */
-export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
-  if (!wrapper.find('[data-testid="language-switcher"]').exists()) {
+  if (!wrapper.find('[data-testid="menu-delete-all"]').exists()) {
     await openSheet(wrapper, 'strip-menu')
   }
-  await chooseLanguage(wrapper, locale)
+  await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
 }
 
-/** Opens Saved Projects, the sheet the Project sheet's icon raises (PhoneSheets card), unless it is already up. */
+/** Picks a language in Menu (tickets 368, 443): the panel opens first; the Top sheet lists every language, the dropdown has the switcher. */
+export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
+  await openSheet(wrapper, 'strip-menu')
+  if (wrapper.find('[data-testid="language-switcher"]').exists()) await chooseLanguage(wrapper, locale)
+  else await wrapper.get(`[data-testid="language-${locale}"]`).trigger('click')
+}
+
+/** Opens Saved Projects, the sheet Menu's item raises, unless it is already up. */
 export async function openSavedProjects(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="project-list"]').exists()) {
     return
   }
-  await openSheet(wrapper, 'strip-project')
-  await wrapper.get('[data-testid="phone-saved-projects-button"]').trigger('click')
+  await openSheet(wrapper, 'strip-menu')
+  await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
 }
 
 /** Whether a Tool's pill tile shows lit. */
@@ -109,14 +114,14 @@ export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; sel
 }
 
 /**
- * Reads one element of the Project sheet (PhoneSheets card): the sheet opens for it and closes again, so a press on
+ * Reads one element of the Project panel (ProjectPanel card): the panel opens for it and closes again, so a press on
  * the canvas that follows is not swallowed by it.
  */
 export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
   await openSheet(wrapper, 'strip-project')
   const element = wrapper.find(`[data-testid="${testId}"]`)
   const read = { exists: element.exists(), text: element.exists() ? element.text() : '' }
-  await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+  await closeSheet(wrapper)
   return read
 }
 

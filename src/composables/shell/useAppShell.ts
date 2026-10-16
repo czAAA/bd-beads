@@ -15,6 +15,7 @@ import { gridAxisOfDirection } from '../../domain/mirror'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
 import { usePenInputMode } from './usePenInputMode'
+import { useProjectManageFlow } from '../project/useProjectManageFlow'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
@@ -86,6 +87,7 @@ function wireAppShell(services: Services) {
     activeProjectId,
     activeProject,
     saveFailed,
+    unsaved,
     addProject,
     addProjects,
     replaceProject,
@@ -149,7 +151,7 @@ function wireAppShell(services: Services) {
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
 
   /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
-  const { inputMode, inputModeAvailable, toggleInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
+  const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripZoomPercent } =
@@ -637,6 +639,16 @@ function wireAppShell(services: Services) {
     saveNow,
   })
 
+  /** Rename, Duplicate and Delete for the open Project, from the Project panel (spec 0440, ticket 443). */
+  const manageProject = useProjectManageFlow({
+    currentProject,
+    projects: () => projects.value,
+    replaceProject,
+    addProject,
+    removeProject,
+    closeProject: onNewProject,
+  })
+
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch })
 
@@ -702,6 +714,8 @@ function wireAppShell(services: Services) {
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
       !!savedProjectConfirms.pendingSwitch.value ||
+      manageProject.duplicating.value !== undefined ||
+      manageProject.deleting.value ||
       storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
     backOutOfSelect,
@@ -769,7 +783,9 @@ function wireAppShell(services: Services) {
     activeProjectId,
     activeProject,
     saveFailed,
+    unsaved,
     ...savedProjectConfirms,
+    ...manageProject,
     onNewProject,
     activeBeadLabel,
     projectLabel,
@@ -803,7 +819,7 @@ function wireAppShell(services: Services) {
     showRulers,
     toggleRulers,
     inputMode,
-    toggleInputMode,
+    setInputMode,
     inputModeAvailable,
     surfaceInputMode,
     panBy,

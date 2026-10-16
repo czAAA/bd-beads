@@ -10,10 +10,11 @@ The panel shell (width, edge, radius, motion, closing, focus) is the MenuPanel c
 2. **Technique:** a SegmentedControl, full width (the techniques, as today), then the existing Note explaining what changes, `body` 13/18.
 3. **Bead:** one line, "bead:" in the `label` style, the Bead's name in Inter 500, then **Replace bead** as a small secondary button (30px; 40px in the sheet). No color dot or pill. Left aligned in one row, so on a phone `bead: Delica 11/0 [Replace bead]` fits at 334px.
 4. **Canvas:** see below.
-5. **Save and export:** Save Project (primary, `save` icon, full width, the one accent in the panel), then the Export label and three equal buttons, PNG | PDF | Project file (secondary, 34px, 44px in the sheet, 8px apart), then the Name on exports row.
-6. **Manage:** Duplicate and Delete this Project (`danger`), as panel items.
+5. **Save and export:** Save Project (primary, `save` icon, full width, the one accent in the panel), then the Export label and three buttons, PNG | PDF | Project file (the `in-box` look so they show on `overlay-fill` in dark too, 34px, 44px in the sheet, 8px apart, sharing the row equally; a word that needs more room wraps the last button to a second row instead of squeezing or breaking), then the Name on exports row.
+6. **Beads needed** (the existing expandable panel, ticket 146) stays above Manage: no card or mockup placed it, and the panel is the only place it has. A design decision may move it.
+7. **Manage:** Duplicate and Delete this Project (`danger`), as panel items.
 
-The Frame's Edit, Fit and Remove are not here (they stay on the Selection and Progress bars). With no Frame, PNG and PDF open the existing "Set Frame to export" popover (SaveBox card); nothing is duplicated.
+The Frame's Edit, Fit and Remove are not here (Fit and Remove stay on the Progress bar and the Selection bar; Edit Frame, which had no other way in, becomes an icon button on the Progress bar, ProgressBar card). With a Frame, the Frame's Estimated size line and its Note stay under Technique (Frame card). With no Frame, PNG and PDF open the existing "Set Frame to export" popover (SaveBox card); nothing is duplicated.
 
 ## Head and save state
 
@@ -43,7 +44,7 @@ Per Project, not per device (ADR 0060). It is the only place the Maker's name is
 
 ## Keyboard and screen readers
 
-- Arrows move through the items and buttons; Tab leaves the panel; focus returns to the Project button.
+- Arrows move through the items and buttons; Tab leaves the panel; focus returns to the Project button. Escape first ends a rename or an edit of a set Name on exports, and only then closes the panel.
 - The pencils are named for what they edit ("Rename Moth", "Edit Name on exports"); each section is a named group; the save state is a polite live region, so "Not saved" is announced.
 
 ## Copy

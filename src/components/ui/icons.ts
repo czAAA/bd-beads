@@ -42,6 +42,7 @@ export const ICON_NAMES = [
   'paint',
   'palette',
   'paste',
+  'pencil',
   'pattern',
   'pdf',
   'pen-mode',

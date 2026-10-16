@@ -20,6 +20,8 @@ export interface ProjectLibrary {
   activeProject: ComputedRef<Project | undefined>
   /** Whether the last attempted write to storage failed, so the UI can say so rather than losing the edit silently. */
   saveFailed: Ref<boolean>
+  /** Whether the library in memory has changes storage hasn't taken yet (a deferred stroke or a refused write): the Project panel's "unsaved". */
+  unsaved: Ref<boolean>
   addProject: (project: Project) => void
   addProjects: (projects: Project[]) => void
   replaceProject: (project: Project, options?: ReplaceOptions) => void
@@ -58,18 +60,18 @@ export function useProjectLibrary(
 
   const saveFailed = ref(false)
   /** Whether the library in memory has changes storage hasn't taken yet — a deferred stroke, or a write that threw. */
-  let savePending = false
+  const savePending = ref(false)
 
   function save(announce = true): void {
     try {
       store.save(projects.value)
-      savePending = false
+      savePending.value = false
       saveFailed.value = false
       if (announce && projects.value.length > 0) onSaved?.()
     } catch {
       // Out of quota, or storage refused outright (a private window can). The edit itself stands in memory; leaving
       // it pending means the next save retries it, and saveFailed tells the user it isn't safe yet.
-      savePending = true
+      savePending.value = true
       saveFailed.value = true
     }
   }
@@ -81,7 +83,7 @@ export function useProjectLibrary(
   }
 
   function commit(options?: ReplaceOptions, announce = true): void {
-    savePending = true
+    savePending.value = true
     if (!options?.deferSave) {
       save(announce)
     }
@@ -92,6 +94,7 @@ export function useProjectLibrary(
     activeProjectId,
     activeProject,
     saveFailed,
+    unsaved: savePending,
 
     /** Adds a newly created Project and opens it. */
     addProject(project: Project) {
@@ -129,7 +132,7 @@ export function useProjectLibrary(
 
     /** Writes whatever a deferred change (or a failed save) left pending; a no-op when storage is already up to date. */
     flushPendingSave() {
-      if (savePending) {
+      if (savePending.value) {
         save()
       }
     },

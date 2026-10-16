@@ -29,7 +29,7 @@ describe('App shell, the Tool pill layout (tickets 383, 439, ADR 0046, ADR 0059)
     expect(wrapper.find('[data-testid="app-main-panel"]').exists()).toBe(false)
   })
 
-  it('holds Rulers, Undo, Redo, zoom out, level, zoom in, Fit and Canvas color in that order, with no title, size line or hint (ticket 425)', async () => {
+  it('holds Rulers, Undo, Redo, zoom out, level, zoom in and Fit in that order, with no Canvas color, title, size line or hint (tickets 425, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const strip = wrapper.get('[data-testid="canvas-strip"]')
     const order = strip.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
@@ -43,18 +43,19 @@ describe('App shell, the Tool pill layout (tickets 383, 439, ADR 0046, ADR 0059)
       'zoom-level',
       'zoom-in',
       'zoom-reset',
-      'canvas-color-button',
     ])
     for (const gone of ['canvas-strip-title', 'canvas-strip-size', 'canvas-strip-hint']) expect(strip.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     expect(strip.find('svg[data-icon="grid"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="zoom-pill"]').exists()).toBe(false)
   })
 
-  it('leaves the Canvas color picker out of the Project sheet header', async () => {
+  it('has no Canvas color button: the swatches and Position marks are in Project (ticket 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
+    expect(wrapper.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
-    expect(sheet.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
+    const sheet = wrapper.get('[data-testid="top-sheet"]')
+    expect(sheet.find('[data-testid="canvas-color-picker"]').exists()).toBe(true)
+    expect(sheet.find('[data-testid="position-marks"]').exists()).toBe(true)
   })
 })
 

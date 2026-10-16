@@ -94,21 +94,6 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('[data-testid="pill-recent"]')).toHaveLength(3)
   })
 
-  it('ends with a divider and the Pen/Mouse toggle once an input mode is given', async () => {
-    const wrapper = mount(ToolPill, { props: { ...base, inputMode: 'pen' } })
-    const buttons = wrapper.findAll('button')
-    const last = buttons[buttons.length - 1]!
-    expect(last.attributes('data-testid')).toBe('pill-input-mode')
-    expect(last.attributes('aria-label')).toBe('Pen mode')
-    expect(last.attributes('aria-pressed')).toBe('true')
-    expect(wrapper.findAll('.tool-pill__divider')).toHaveLength(2)
-    await last.trigger('click')
-    expect(wrapper.emitted('toggle-input-mode')).toHaveLength(1)
-
-    await wrapper.setProps({ inputMode: 'mouse' })
-    expect(wrapper.get('[data-testid="pill-input-mode"]').attributes('aria-pressed')).toBe('false')
-  })
-
   it('moves to the edge an arrow key on the "Move tools" grip names', async () => {
     const wrapper = mount(ToolPill, { props: base })
     const grip = wrapper.get('[data-testid="tool-pill-grip"]')
@@ -119,7 +104,7 @@ describe('ToolPill (ticket 439)', () => {
   })
 
   it('has one Tab stop among its tools: the active one', () => {
-    const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'hand', inputMode: 'mouse' } })
+    const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'hand' } })
     const stops = wrapper.findAll('.tool-pill__stop').filter((button) => button.attributes('tabindex') === '0')
     expect(stops.map((button) => button.attributes('data-testid'))).toEqual(['pill-tool-hand'])
   })

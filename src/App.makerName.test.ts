@@ -22,81 +22,73 @@ function mountApp() {
   return mount(App, { attachTo: document.body })
 }
 
-async function openNameModal(wrapper: ReturnType<typeof mountApp>) {
+async function openProject(wrapper: ReturnType<typeof mountApp>) {
   await openSheet(wrapper, 'strip-project')
-  await wrapper.find('[data-testid="name-on-exports-change"]').trigger('click')
   await flushPromises()
 }
 
 const savedName = () => loadProjects()[0]?.makerName
+const field = (wrapper: ReturnType<typeof mountApp>) => wrapper.find<HTMLInputElement>('[data-testid="maker-name-input"]')
 
-describe("App name on exports: the Project's own Maker's name (ADR 0060)", () => {
-  it('has no name on the Export menu any more, and offers Add on the Project sheet until one is set', async () => {
+describe("App name on exports: the Project's own Maker's name (ADR 0060, ticket 443)", () => {
+  it('has no name on the Export menu, and shows an open field with the hint and counter until one is set', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openProject(wrapper)
 
-    expect(wrapper.find('[data-testid="project-name-on-exports"]').text()).toContain(en.saveBox.nameOnExports)
-    expect(wrapper.find('[data-testid="name-on-exports-change"]').text()).toBe(en.saveBox.addName)
-    await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
+    const row = wrapper.find('[data-testid="project-name-on-exports"]')
+    expect(row.text()).toContain(en.saveBox.nameOnExports)
+    expect(row.text()).toContain(en.saveBox.nameHint)
+    expect(row.text()).toContain('0/40')
+    expect(field(wrapper).attributes('maxlength')).toBe('40')
+    expect(wrapper.find('[data-testid="name-on-exports-change"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="name-on-exports"]').exists()).toBe(false)
-  })
-
-  it('sets the name from its modal onto this Project, which has the field, the hint, Cancel and Save', async () => {
-    const wrapper = mountApp()
-    await openNameModal(wrapper)
-
-    const modal = wrapper.find('[data-testid="name-on-exports-modal"]')
-    expect(modal.text()).toContain(en.saveBox.yourName)
-    expect(modal.text()).toContain(en.saveBox.nameHint)
-    const input = wrapper.find<HTMLInputElement>('[data-testid="maker-name-input"]')
-    expect(input.attributes('maxlength')).toBe('40')
-    expect(document.activeElement).toBe(input.element)
-
-    await input.setValue('Maria Kovaleva')
-    await wrapper.find('[data-testid="maker-name-save"]').trigger('click')
-
     expect(wrapper.find('[data-testid="name-on-exports-modal"]').exists()).toBe(false)
-    expect(savedName()).toBe('Maria Kovaleva')
-    expect(localStorage.getItem(LEGACY_MAKER_NAME_KEY)).toBeNull()
-    await openSheet(wrapper, 'strip-project')
-    expect(wrapper.find('[data-testid="name-on-exports-change"]').text()).toBe(en.saveBox.changeName)
   })
 
-  it("saves on Enter, keeps the name across a reload, and changes it", async () => {
-    saveProjects([{ ...fox(), makerName: 'Maria' }])
+  it('sets the name on this Project from the field on Enter, trimmed, and then shows the name with a pencil', async () => {
     const wrapper = mountApp()
-    await openNameModal(wrapper)
-    expect(wrapper.find<HTMLInputElement>('[data-testid="maker-name-input"]').element.value).toBe('Maria')
+    await openProject(wrapper)
 
-    await wrapper.find('[data-testid="maker-name-input"]').setValue('Anna')
-    await wrapper.find('#name-on-exports-form').trigger('submit')
-    wrapper.unmount()
-
-    expect(savedName()).toBe('Anna')
-  })
-
-  it('clears the name when the field is saved empty', async () => {
-    saveProjects([{ ...fox(), makerName: 'Maria' }])
-    const wrapper = mountApp()
-    await openNameModal(wrapper)
-
-    await wrapper.find('[data-testid="maker-name-input"]').setValue('')
-    await wrapper.find('#name-on-exports-form').trigger('submit')
-
-    expect(savedName()).toBeUndefined()
-  })
-
-  it('leaves the name as it was on Escape', async () => {
-    saveProjects([{ ...fox(), makerName: 'Maria' }])
-    const wrapper = mountApp()
-    await openNameModal(wrapper)
-
-    await wrapper.find('[data-testid="maker-name-input"]').setValue('Anna')
-    document.activeElement!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await field(wrapper).setValue('  Maria Kovaleva ')
+    await field(wrapper).trigger('keydown', { key: 'Enter' })
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="name-on-exports-modal"]').exists()).toBe(false)
-    expect(savedName()).toBe('Maria')
+    expect(savedName()).toBe('Maria Kovaleva')
+    expect(localStorage.getItem(LEGACY_MAKER_NAME_KEY)).toBeNull()
+    expect(wrapper.find('[data-testid="name-on-exports-value"]').text()).toBe('Maria Kovaleva')
+    expect(wrapper.find('[data-testid="name-on-exports-change"]').attributes('aria-label')).toBe(en.panels.project.editNameOnExports)
+  })
+
+  it('saves when the field is left, and the pencil swaps the name for the field to change it', async () => {
+    saveProjects([{ ...fox(), makerName: 'Maria' }])
+    const wrapper = mountApp()
+    await openProject(wrapper)
+    expect(wrapper.find('[data-testid="name-on-exports-value"]').text()).toBe('Maria')
+
+    await wrapper.find('[data-testid="name-on-exports-change"]').trigger('click')
+    await flushPromises()
+    expect(field(wrapper).element.value).toBe('Maria')
+    await field(wrapper).setValue('Anna')
+    await field(wrapper).trigger('blur')
+    await flushPromises()
+
+    expect(savedName()).toBe('Anna')
+    expect(wrapper.find('[data-testid="name-on-exports-value"]').text()).toBe('Anna')
+  })
+
+  it('clears the name when the field is saved empty, returning the row to unset', async () => {
+    saveProjects([{ ...fox(), makerName: 'Maria' }])
+    const wrapper = mountApp()
+    await openProject(wrapper)
+
+    await wrapper.find('[data-testid="name-on-exports-change"]').trigger('click')
+    await flushPromises()
+    await field(wrapper).setValue('')
+    await field(wrapper).trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(savedName()).toBeUndefined()
+    expect(field(wrapper).element.value).toBe('')
   })
 
   it("copies a saved device-wide name into a Project with none on the first load, then clears the device value (temporary)", () => {

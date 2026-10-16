@@ -7,14 +7,13 @@ import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
-import CanvasColorPicker from './CanvasColorPicker.vue'
 
 /**
  * The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (icon + text, ticket 431),
- * then the canvas's own controls, Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit, and the Canvas color picker
- * last (ticket 425). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
+ * then the canvas's own controls, Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit (the Canvas color moved into
+ * Project, ticket 443). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
  * hint. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. At phone width
- * Menu, Project and Canvas color stay put and the middle scrolls sideways, with touch-sized buttons.
+ * Menu and Project stay put and the middle scrolls sideways, with touch-sized buttons.
  */
 const props = defineProps<{
   project?: Project
@@ -27,8 +26,6 @@ const props = defineProps<{
   /** The zoom range the buttons stop at, when it isn't the Project canvas's (the framing step has its own). */
   zoomMinPercent?: number
   zoomMaxPercent?: number
-  /** Whether the Canvas color button shows (ticket 252): with a Project open on the drawing area. Shown in high contrast too, where it opens the Position marks choice alone. */
-  canvasColor?: boolean
 }>()
 const emit = defineEmits<{
   'select-sheet': [sheet: 'menu' | 'project']
@@ -90,7 +87,6 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
       </template>
     </div>
-    <div v-if="canvasColor" class="canvas-strip__color"><CanvasColorPicker /></div>
   </div>
 </template>
 
@@ -116,8 +112,7 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 }
 
 /*
- * The canvas controls sit to the right of them. On a phone, too narrow for the cluster, it scrolls sideways with
- * Canvas color pinned beside it.
+ * The canvas controls sit to the right of them. On a phone, too narrow for the cluster, it scrolls sideways.
  */
 .canvas-strip__controls {
   display: flex;
@@ -145,11 +140,6 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   font: var(--type-meta);
   color: var(--ink);
   text-align: center;
-}
-
-.canvas-strip__color {
-  display: flex;
-  flex: none;
 }
 
 /* A finger needs a bigger target than the pointer's 30px (responsive.md "Input, not width"). */

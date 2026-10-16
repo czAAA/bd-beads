@@ -19,7 +19,6 @@ import { displayedExtentPx } from '../../src/rendering/surfaceView'
 /** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. Save box sits in the Dock's Project sheet. */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
   await openDockSheet(page, 'strip-project')
-  await page.getByTestId('export-menu-button').click()
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
   return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) }
 }

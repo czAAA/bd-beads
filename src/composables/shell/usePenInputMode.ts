@@ -3,8 +3,8 @@ import { DEFAULT_INPUT_MODE, type InputMode } from '../../domain/inputMode'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
 /**
- * The input mode toggle (tickets 325, 326): which pointer draws and which one moves the canvas. A browser cannot say
- * whether a pen exists until it touches the screen, so the toggle is offered only once a pen event has been seen, and
+ * The input mode (tickets 325, 326, 443): which pointer draws and which one moves the canvas. A browser cannot say
+ * whether a pen exists until it touches the screen, so the Menu's Input row is offered only once a pen event has been seen, and
  * that first pen switches to Pen mode unless the person already chose a mode. "A pen has been seen" is kept on the device.
  */
 export function usePenInputMode(preferences: DevicePreferences) {
@@ -12,7 +12,8 @@ export function usePenInputMode(preferences: DevicePreferences) {
   const penSeen = preferences.get('penSeen')
 
   const inputMode = computed<InputMode>(() => chosen.value ?? (penSeen.value ? 'pen' : DEFAULT_INPUT_MODE))
-  const toggleInputMode = () => void (chosen.value = inputMode.value === 'pen' ? 'mouse' : 'pen')
+  /** The Menu's Input row picks one of the two; the choice is kept on the device. */
+  const setInputMode = (mode: InputMode) => void (chosen.value = mode)
   /** Until a pen is seen every pointer draws, so the stroke that reveals the toggle still draws. */
   const surfaceInputMode = computed(() => (penSeen.value ? inputMode.value : undefined))
 
@@ -28,5 +29,5 @@ export function usePenInputMode(preferences: DevicePreferences) {
     window.removeEventListener('pointermove', onPointer, true)
   })
 
-  return { inputMode, inputModeAvailable: penSeen, toggleInputMode, surfaceInputMode }
+  return { inputMode, inputModeAvailable: penSeen, setInputMode, surfaceInputMode }
 }

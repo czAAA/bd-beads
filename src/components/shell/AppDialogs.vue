@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAppShell } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
-import NameOnExportsModal from '../export/NameOnExportsModal.vue'
+import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 
@@ -36,12 +36,15 @@ const {
   onKeepCurrentAfterImport,
   onSwitchToImported,
   onSaveBeforeImportSwitch,
-  makerName,
-  nameOnExportsOpen,
+  duplicating,
+  deleting,
+  onConfirmDuplicate,
+  onCancelDuplicate,
+  onConfirmDelete,
+  onCancelDelete,
   naming,
   onSavePieceName,
   onCancelPieceName,
-  onSaveMakerName,
   shortcutsHelpOpen,
   storageNoteOpen,
   onConfirmStorageNote,
@@ -169,14 +172,22 @@ const {
 
   <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
 
+  <!-- Duplicate and Delete this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
+  <DuplicateProjectModal v-if="duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />
+
+  <ConfirmModal
+    v-if="deleting && activeProject"
+    data-testid="delete-project-modal"
+    :title="t.panels.project.deleteTitle.replace('{name}', () => activeProject!.name)"
+    :message="t.panels.project.deleteMessage.replaceAll('{name}', () => activeProject!.name)"
+    :confirm-label="t.panels.project.deleteConfirm"
+    :cancel-label="t.panels.project.cancel"
+    @confirm="onConfirmDelete"
+    @cancel="onCancelDelete"
+  />
+
   <NamePieceModal v-if="naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />
 
-  <NameOnExportsModal
-    v-if="nameOnExportsOpen"
-    :name="makerName"
-    @save="onSaveMakerName"
-    @cancel="nameOnExportsOpen = false"
-  />
 </template>
 
 <style scoped>

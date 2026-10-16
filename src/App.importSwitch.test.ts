@@ -25,12 +25,12 @@ function makeProject(name: string): Project {
   return createProject({ name, technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
 }
 
-/** Picks a file for the import control: the project bar's with no Project open, the Project sheet's otherwise. */
+/** Picks a file for the import control: the project bar's with no Project open, Menu's otherwise. */
 async function pick(wrapper: Wrapper, contents: string) {
   if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-    await openSheet(wrapper, 'strip-project')
+    await openSheet(wrapper, 'strip-menu')
   }
-  const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
+  const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="menu-import-file"]')
   Object.defineProperty(input.element, 'files', {
     configurable: true,
     value: [new File([await gzipJson(contents)], 'import.openbeads', { type: 'application/json' })],
@@ -40,10 +40,10 @@ async function pick(wrapper: Wrapper, contents: string) {
 }
 
 const modal = (wrapper: Wrapper) => wrapper.find('[data-testid="import-switch-modal"]')
-/** The open Project's summary line, in the Project sheet (PhoneSheets card). */
+/** The open Project's summary line, in the Project panel. */
 const openName = async (wrapper: Wrapper) => {
   await openSheet(wrapper, 'strip-project')
-  return wrapper.find('[data-testid="phone-project-summary"]').text()
+  return wrapper.find('[data-testid="project-name"]').text()
 }
 const libraryNames = () => loadProjects().map((project) => project.name).sort()
 const click = (wrapper: Wrapper, testId: string) => wrapper.find(`[data-testid="${testId}"]`).trigger('click')
