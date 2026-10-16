@@ -37,7 +37,7 @@ function setup(initial: { status?: TourStatus; progress?: TourProgress; projects
     edit: (_kind, command) => {
       const project = current()
       if (project) replace(command(project) as Project)
-      return { kind: 'applied', moved: 0 }
+      return { kind: 'applied' }
     },
     replaceProject: replace,
     undo,

@@ -435,12 +435,6 @@ export const es: Translations = {
       many: 'Se cubrieron {count} de cuentas.',
       other: 'Se cubrieron {count} cuentas.',
     },
-    marginLead: { set: 'Marco definido.', moved: 'Marco movido.', resized: 'Marco redimensionado.' },
-    marginClearedMessage: {
-      one: '{count} trozo estaba en el margen y se movió fuera de él.',
-      many: '{count} de trozos estaban en el margen y se movieron fuera de él.',
-      other: '{count} trozos estaban en el margen y se movieron fuera de él.',
-    },
   },
   size: {
     estimateLabel: 'Tamaño estimado',

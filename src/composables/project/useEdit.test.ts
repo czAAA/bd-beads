@@ -21,7 +21,7 @@ describe('useEdit', () => {
       const ctx = editHarness(base)
       const outcome = ctx.edit('drawing', (project) => paint(project, inside(0, 0)))
 
-      expect(outcome).toEqual({ kind: 'applied', moved: 0 })
+      expect(outcome).toEqual({ kind: 'applied' })
       expect(colorAt(ctx.project.beads, inside(0, 0).row, inside(0, 0).column)).toBe('#ff0000')
 
       ctx.history.onUndo()
@@ -58,7 +58,7 @@ describe('useEdit', () => {
 
       const withMarginBead: Project = { ...base, beads: paint(base, marginCell).beads }
       const erasing = editHarness(withMarginBead)
-      expect(erasing.edit('drawing', (project) => paint(project, marginCell, null))).toEqual({ kind: 'applied', moved: 0 })
+      expect(erasing.edit('drawing', (project) => paint(project, marginCell, null))).toEqual({ kind: 'applied' })
       expect(colorAt(erasing.project.beads, marginCell.row, marginCell.column)).toBeNull()
     })
   })
@@ -69,7 +69,7 @@ describe('useEdit', () => {
       const ctx = editHarness(base, { mirrorAxisCounts: counts })
       const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }))
 
-      expect(outcome).toEqual({ kind: 'applied', moved: 0 })
+      expect(outcome).toEqual({ kind: 'applied' })
       expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(ctx.mirrorAxisCounts.current).toEqual(NO_MIRROR_AXES)
@@ -89,7 +89,7 @@ describe('useEdit', () => {
     it('Remove Frame with passes done is one Undo step that brings back the Frame and the passes (ticket 426)', () => {
       const woven = moveToRow(base, 2)
       const ctx = editHarness(woven)
-      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied', moved: 0 })
+      expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied' })
       expect(ctx.project.frame).toBeUndefined()
       expect(rowProgressOn(ctx.project)).toBe(false)
       expect(ctx.project.rowProgress).toMatchObject({ currentRow: 0 })
@@ -112,7 +112,7 @@ describe('useEdit', () => {
       const painted = paint(moveToRow(base, 1), inside(1, 0))
       const woven: Project = { ...painted, beads: { ...painted.beads, ...paint(base, inside(0, 0)).beads } }
       const ctx = editHarness(woven)
-      expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied', moved: 0 })
+      expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied' })
       expect(ctx.project.beads).toEqual({})
       expect(ctx.project.rowProgress).toMatchObject({ currentRow: 0 })
 
