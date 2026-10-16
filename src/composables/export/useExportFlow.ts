@@ -1,4 +1,5 @@
-import { ref, toRaw } from 'vue'
+import { computed, ref, toRaw } from 'vue'
+import { withMakerName } from '../../domain/makerName'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -6,7 +7,6 @@ import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExpor
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, sharesFromTap as browserSharesFromTap, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
-import { browserMakerNameStore, type MakerNameStore } from '../../services/makerNameStore'
 import type { MessageTone, Toast } from '../ui/useToasts'
 
 /** What exporting needs from the app shell: the open Project and the library, and the app's language. */
@@ -15,9 +15,10 @@ export interface ExportFlowDeps {
   projects: () => Project[]
   messages: () => Translations
   locale: () => Locale
-  /** How a file is handed over, and where the maker's name is kept (ADR 0020); the browser's by default. */
+  /** Saves the open Project with its new maker's name; the name is not an undo step (ADR 0060). */
+  replaceProject: (project: Project) => void
+  /** How a file is handed over (ADR 0020); the browser's by default. */
   downloadFile?: DownloadFile
-  makerNameStore?: MakerNameStore
   /** Whether handing over this file opens a share sheet, which only a fresh tap may start (ticket 306); the browser's by default. */
   sharesFromTap?: (fileName: string, type: string) => boolean
   /** Shows a toast with an action (useToasts). */
@@ -26,22 +27,22 @@ export interface ExportFlowDeps {
 
 /**
  * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020): as a Project file, a PNG or a PDF, and
- * the maker's name the PNG and PDF print. Deps are read lazily.
+ * the Project's maker's name the PNG and PDF print (ADR 0060). Deps are read lazily.
  */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
   const sharesFromTap = deps.sharesFromTap ?? browserSharesFromTap
-  const makerNameStore = deps.makerNameStore ?? browserMakerNameStore
 
-  /**
-   * The maker's name for the PDF and PNG exports (ticket 161; CONTEXT.md): kept on this device like the theme, set from
-   * the Export menu's last row through its modal.
-   */
-  const makerName = ref(makerNameStore.load())
+  /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
+  const makerName = computed(() => deps.currentProject()?.makerName ?? '')
   const nameOnExportsOpen = ref(false)
 
+  /** Saves the name on the open Project at once; it is not part of Undo (NameOnExports card). */
   function onSaveMakerName(name: string) {
-    makerName.value = makerNameStore.save(name)
+    const project = deps.currentProject()
+    if (project) {
+      deps.replaceProject(withMakerName(project, name))
+    }
     nameOnExportsOpen.value = false
   }
 
@@ -111,7 +112,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPng() {
     // The words the picture prints (ticket 164), in the app's language, with the maker's name (ticket 161).
     return runExport(
-      (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), makerName.value, new Date())),
+      (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), new Date())),
       'png',
       'image/png',
     )
@@ -120,7 +121,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf() {
     // The words the pages print (ticket 162), in the app's language, with the maker's name (ticket 161).
     return runExport(
-      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), makerName.value, new Date())),
+      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date())),
       'pdf',
       'application/pdf',
     )

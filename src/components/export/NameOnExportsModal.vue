@@ -8,8 +8,8 @@ import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
 /**
- * Name on exports (ticket 161; NameOnExports card): the maker's name for the PDF and PNG exports, optional and up to 40
- * characters, kept on this device. Enter saves, Escape cancels, and saving an empty field clears the name.
+ * Name on exports (ticket 161, ADR 0060; NameOnExports card): the open Project's maker's name for its PDF and PNG
+ * exports, optional and up to 40 characters. Enter saves, Escape cancels, and saving an empty field clears the name.
  */
 const props = defineProps<{ name: string }>()
 const emit = defineEmits<{ save: [name: string]; cancel: [] }>()
@@ -27,6 +27,7 @@ const draft = ref(props.name)
           v-model="draft"
           type="text"
           autocomplete="name"
+          :placeholder="t.saveBox.yourName"
           :maxlength="MAX_MAKER_NAME"
           data-autofocus
           data-testid="maker-name-input"

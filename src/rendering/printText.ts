@@ -50,14 +50,10 @@ export function headerMaker(maker: string): string {
   return maker.length > 32 ? `${maker.slice(0, 31).trimEnd()}…` : maker
 }
 
-/**
- * `deviceMaker` is the name kept on this device (domain/makerName.ts); a Project with its own maker's name (ticket
- * 182) overrides it here, so every caller downstream reads one already-resolved `maker` and need not know which one
- * applied.
- */
-export function printText(project: Project, t: Translations, locale: Locale, deviceMaker: string, at: Date): PrintText {
+/** The words an export prints; the maker's name is the Project's own, and empty prints none (ADR 0060). */
+export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
   const bead = resolveProjectBead(project)
-  const maker = (project.makerName || deviceMaker).trim()
+  const maker = (project.makerName ?? '').trim()
   const { columns, rows } = projectDimensions(project)
   const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
@@ -80,7 +76,7 @@ export function printText(project: Project, t: Translations, locale: Locale, dev
     name: project.name,
     techniqueWord: technique,
     maker,
-    background: project.makerName ? `${project.name} · ${maker}` : maker,
+    background: maker ? `${project.name} · ${maker}` : '',
     exportedAt: `${date} · ${time}`,
     metaLine: t.print.metaLine
       .replace('{size}', size)
