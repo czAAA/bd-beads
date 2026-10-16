@@ -206,11 +206,19 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'Clear project',
+    name: 'Clear this Project',
     visit: async (page, measure) => {
-      const id = (await reveal(page, 'menu-delete-all')) ? 'menu-delete-all' : null
+      const id = (await reveal(page, 'project-clear')) ? 'project-clear' : null
       if (!id) return false
       await click(page, id)
+      await measure()
+    },
+  },
+  {
+    name: 'Delete all Projects',
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'menu-delete-all'))) return false
+      await click(page, 'menu-delete-all')
       await measure()
     },
   },

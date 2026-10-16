@@ -33,6 +33,18 @@ afterEach(() => {
 })
 
 describe('useProjectLibrary', () => {
+  it('removes every Project at once, opens none, and saves the empty library', () => {
+    const library = useProjectLibrary()
+    library.addProject(makeProject())
+    library.addProject(makeProject())
+
+    library.removeAllProjects()
+
+    expect(library.projects.value).toEqual([])
+    expect(library.activeProjectId.value).toBeUndefined()
+    expect(loadProjects()).toEqual([])
+  })
+
   it('starts from what was saved, with the most recently updated Project open', () => {
     const older = makeProject({ updatedAt: 1000 })
     const newer = makeProject({ updatedAt: 2000 })

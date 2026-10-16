@@ -26,11 +26,6 @@
   border-top-width: 2px;
 }
 
-/* The Bead pill is white on white here: it keeps its shape with an edge. */
-:root[data-theme='contrast'] .app-header__pill {
-  box-shadow: inset 0 0 0 2px var(--line);
-}
-
 /*
  * Windows high contrast (forced-colors): system colors win; edges, focus and selected states stay visible. Bead colors
  * are the Project itself, so everything that shows one keeps its own colors; the background word and curve are

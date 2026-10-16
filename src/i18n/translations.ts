@@ -113,10 +113,16 @@ export interface Translations {
       about: string
       version: string
       deleteAll: string
+      tooltipDeleteAll: string
+      deleteAllTitle: string
+      deleteAllMessage: string
+      deleteAllConfirm: string
     }
     project: {
       rename: string
       renameAction: string
+      clear: string
+      tooltipClear: string
       nameRequired: string
       unsaved: string
       notSaved: string

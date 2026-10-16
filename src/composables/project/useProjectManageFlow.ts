@@ -11,12 +11,13 @@ export interface ProjectManageDeps {
   /** Adds the copy and opens it. */
   addProject: (project: Project) => void
   removeProject: (id: string) => void
+  removeAllProjects: () => void
   /** Leaves no Project open, so the empty state shows. */
   closeProject: () => void
 }
 
 /**
- * Rename, Duplicate and Delete for the open Project (spec 0440, ticket 443): each acts at once, saved with the library
+ * Rename, Duplicate and Delete for the open Project, and Delete all Projects for the library (spec 0440, ticket 443): each acts at once, saved with the library
  * and independent of Undo. Duplicate and Delete ask first, in the dialogs AppDialogs draws from `duplicating` and
  * `deleting`. Deps are read lazily.
  */
@@ -24,6 +25,7 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
   /** The suggested name while the Duplicate dialog is open. */
   const duplicating = ref<string | undefined>()
   const deleting = ref(false)
+  const deletingAll = ref(false)
 
   /** Renames the open Project; false (nothing changes) when the name is empty. */
   function onRenameProject(name: string): boolean {
@@ -69,5 +71,19 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     deps.closeProject()
   }
 
-  return { duplicating, deleting, onRenameProject, onRequestDuplicate, onCancelDuplicate, onConfirmDuplicate, onRequestDelete, onCancelDelete, onConfirmDelete }
+  function onRequestDeleteAllProjects() {
+    if (deps.projects().length > 0) deletingAll.value = true
+  }
+
+  function onCancelDeleteAllProjects() {
+    deletingAll.value = false
+  }
+
+  /** Removes every Project from this device and leaves the empty state. */
+  function onConfirmDeleteAllProjects() {
+    deletingAll.value = false
+    deps.removeAllProjects()
+  }
+
+  return { duplicating, deleting, deletingAll, onRequestDeleteAllProjects, onCancelDeleteAllProjects, onConfirmDeleteAllProjects, onRenameProject, onRequestDuplicate, onCancelDuplicate, onConfirmDuplicate, onRequestDelete, onCancelDelete, onConfirmDelete }
 }

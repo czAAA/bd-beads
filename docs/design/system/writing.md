@@ -285,7 +285,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 
 | English | Русский |
 |---|---|
-| Menu · Project · Projects · New Project · Import · Export all · Saved Projects · Delete all | Меню · Проект · Проекты · Новый проект · Импорт · Экспортировать все · Сохранённые проекты · Удалить все |
+| Menu · Project · Projects · New Project · Import · Export all · Saved Projects · Delete all Projects | Меню · Проект · Проекты · Новый проект · Импорт · Экспортировать все · Сохранённые проекты · Удалить все проекты |
 | Preferences · Language · Theme · Tools position · Input · Pen · Mouse | Настройки · Язык · Тема · Положение инструментов · Ввод · Перо · Мышь |
 | Left · Top · Right · Bottom · Light · Dark · System · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как в системе · Высокий контраст |
 | Help · Keyboard shortcuts · Overview · About · Source code · Version | Справка · Сочетания клавиш · Обзор · О приложении · Исходный код · Версия |
@@ -294,6 +294,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |
 | Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
 | Duplicate · Duplicate Project · Name · Everything is copied, including Row progress, so the copy works as a snapshot. · Suggested: the current name and the next free number. | Дублировать · Дублировать проект · Название · Копируется всё, включая прогресс по рядам, так что копия работает как снимок. · Предложено: текущее название и следующий свободный номер. |
+| Delete all Projects? · Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
 | Delete this Project · Delete {name}? · {name} and its Row progress are removed from this device. This can't be undone. Export it first if you want to keep a copy. · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены с этого устройства. Это нельзя отменить. Сначала экспортируйте проект, если хотите сохранить копию. · Удалить проект |
 | A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
 | The canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |

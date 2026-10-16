@@ -26,6 +26,8 @@ export interface ProjectLibrary {
   addProjects: (projects: Project[]) => void
   replaceProject: (project: Project, options?: ReplaceOptions) => void
   removeProject: (id: string) => void
+  /** Removes every Project from this device and leaves none open (Menu's Delete all Projects, ticket 443). */
+  removeAllProjects: () => void
   flushPendingSave: () => void
   /** Writes the library now, pending change or not, and says whether storage took it (ticket 115's Save). */
   saveNow: () => boolean
@@ -127,6 +129,13 @@ export function useProjectLibrary(
         activeProjectId.value = mostRecentlyUpdated(projects.value)?.id
       }
       // Removing isn't the Project's first save, so it never opens the storage note (ticket 399).
+      commit(undefined, false)
+    },
+
+    /** Removes every Project; none is open afterwards. Like any removal it isn't a first save, so it never opens the storage note. */
+    removeAllProjects() {
+      projects.value = []
+      activeProjectId.value = undefined
       commit(undefined, false)
     },
 

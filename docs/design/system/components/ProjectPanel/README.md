@@ -12,7 +12,7 @@ The panel shell (width, edge, radius, motion, closing, focus) is the MenuPanel c
 4. **Canvas:** see below.
 5. **Save and export:** Save Project (primary, `save` icon, full width, the one accent in the panel), then the Export label and three buttons, PNG | PDF | Project file (the `in-box` look so they show on `overlay-fill` in dark too, 34px, 44px in the sheet, 8px apart, sharing the row equally; a word that needs more room wraps the last button to a second row instead of squeezing or breaking), then the Name on exports row.
 6. **Beads needed** (the existing expandable panel, ticket 146) stays above Manage: no card or mockup placed it, and the panel is the only place it has. A design decision may move it.
-7. **Manage:** Duplicate and Delete this Project (`danger`), as panel items.
+7. **Manage:** Duplicate, Clear this Project and Delete this Project, as panel items; the last two are `danger`. Clear this Project is the app's existing Clear: every bead of this canvas emptied and Row progress off, behind its usual confirmation, one Undo step; the Project stays.
 
 The Frame's Edit, Fit and Remove are not here (Fit and Remove stay on the Progress bar and the Selection bar; Edit Frame, which had no other way in, becomes an icon button on the Progress bar, ProgressBar card). With a Frame, the Frame's Estimated size line and its Note stay under Technique (Frame card). With no Frame, PNG and PDF open the existing "Set Frame to export" popover (SaveBox card); nothing is duplicated.
 

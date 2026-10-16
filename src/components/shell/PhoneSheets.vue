@@ -27,6 +27,7 @@ const {
   onCreateProject,
   startConvertImage,
   onRequestDeleteAll,
+  onRequestDeleteAllProjects,
   onSetTechnique,
   onFitFrame,
   replaceBeadCandidates,
@@ -96,7 +97,6 @@ const {
       v-if="openPhoneSheet === 'menu'"
       v-model:tools-position="toolPillPosition"
       :projects="projects"
-      :has-project="!!activeProject"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       @new-project="phoneNewProjectOpen = true"
@@ -104,7 +104,7 @@ const {
       @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPhoneSheet = null }"
       @export-all="onExportLibraryFile"
       @saved-projects="phoneSavedProjectsOpen = true"
-      @delete-all="onRequestDeleteAll"
+      @delete-all="onRequestDeleteAllProjects"
       @update:input-mode="setInputMode"
       @shortcuts="shortcutsHelpOpen = true"
       @tour="tour.start()"
@@ -128,6 +128,7 @@ const {
       @fit-frame="onFitFrame(); openPhoneSheet = null"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
+      @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />
   </PanelShell>
