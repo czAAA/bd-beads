@@ -64,16 +64,6 @@ export function selectionAllowed(frame: Frame | undefined, selection: Selection)
   return !overlaps || inside || encloses
 }
 
-/** A row or column Selection (a ruler number, ticket 433) cut to the Frame's inside; none when it lies outside the Frame. With no Frame it is unchanged. */
-export function lineWithinFrame(frame: Frame | undefined, line: Selection): Selection | undefined {
-  if (!frame) return line
-  const top = Math.max(line.top, frame.row)
-  const left = Math.max(line.left, frame.column)
-  const bottom = Math.min(line.top + line.rows, frame.row + frame.rows)
-  const right = Math.min(line.left + line.columns, frame.column + frame.columns)
-  return bottom > top && right > left ? { top, left, rows: bottom - top, columns: right - left } : undefined
-}
-
 /**
  * `selection` cut down to the largest rectangle that holds `anchor` and is allowed (ticket 433): the cut that takes the
  * band out on whichever axis keeps more. Unchanged when it is allowed already; none when `anchor` is in the margin or

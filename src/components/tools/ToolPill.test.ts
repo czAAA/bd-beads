@@ -26,6 +26,25 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('.tool-pill__divider')).toHaveLength(1)
   })
 
+  it('shows a Paste tile right after Hand only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
+    expect(mount(ToolPill, { props: base }).find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
+
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
+    const ids = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
+    expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-hand') + 1)
+    const paste = wrapper.get('[data-testid="pill-tool-paste"]')
+    expect(paste.attributes('aria-label')).toBe('Paste')
+    expect(paste.get('.icon-btn__key').text()).toBe('7')
+    expect(paste.attributes('aria-pressed')).toBe('false')
+    await paste.trigger('click')
+    expect(wrapper.emitted('paste-mode')).toHaveLength(1)
+    expect(wrapper.emitted('select-tool')).toBeUndefined()
+
+    await wrapper.setProps({ activeTool: 'select', pasteArmed: true })
+    expect(wrapper.get('[data-testid="pill-tool-paste"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('false')
+  })
+
   it('shows each tool\'s name and hotkey, lights the active one in the accent and emits the tool picked', async () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'fill' } })
     const fill = wrapper.get('[data-testid="pill-tool-fill"]')

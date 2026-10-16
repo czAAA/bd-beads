@@ -50,6 +50,15 @@ describe('ContextBar', () => {
     }
   })
 
+  it('offers Paste after Cut only while the clipboard holds something; it emits paste (ticket 447)', async () => {
+    const wrapper = mount(ContextBar, { props: { project: noFrame, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false, hasClipboard: true } })
+
+    const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
+    expect(ids.slice(0, 3)).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-paste'])
+    await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
+    expect(wrapper.emitted('paste')).toHaveLength(1)
+  })
+
   it('disables Fill, with its reason, until a color is chosen (ticket 415)', async () => {
     const wrapper = mount(ContextBar, { props: { project, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false, hasPaintColor: false } })
 

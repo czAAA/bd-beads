@@ -11,7 +11,7 @@ import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceV
  * rectangle, counted from 1 at its top-left bead.
  *
  * The Ruler layout is plain geometry in viewport px, worked out once per view: the numbers and dots that are drawn are
- * the ones a press is tested against, and a test can find a number the way a pointer does (ADR 0033).
+ * the ones a test can find the way a pointer would (ADR 0033). Ruler numbers are display-only (ticket 447): a press on one reaches the active tool.
  */
 
 /** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
@@ -107,9 +107,6 @@ function labelBox(text: string, turned: boolean, fontPx: number): { width: numbe
 /** How far outside the viewport a box still counts as near it. */
 const NEAR_VIEWPORT_PX = 40
 
-/** How far past the band of a ruler's numbers a press still counts as on the ruler, and a quarter of it along the ruler. */
-const PICK_SLACK_PX = 2
-
 /** Below this bead pitch (px) a dot per bead would run together into a line, so only every 5th bead keeps its dot (ADR 0033). */
 const DOT_EVERY_BEAD_FROM_PX = 6
 
@@ -153,13 +150,6 @@ export interface RulerLayout {
   labels: RulerLabel[]
   /** The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch; none while `numbers` is off. */
   dots: RulerDot[]
-  /**
-   * The row or column a press selects, by the nearest bead on a ruler: the point is on a ruler when it is within the
-   * band of its dots (the width of a number) and no further than half a bead pitch from a bead's mark. A number under
-   * the point wins, so a press on it picks its own bead; everywhere else on the ruler, at 2px of pitch too, the
-   * nearest bead is picked. Works whether or not the numbers are drawn.
-   */
-  pick(point: { x: number; y: number }): Selection | undefined
 }
 
 interface BoxLayout {
@@ -269,17 +259,6 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
   return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 
-/** The label under a point of the viewport, if any: the last drawn wins where two boxes crowd. */
-function labelAt(labels: readonly RulerLabel[], point: { x: number; y: number }): RulerLabel | undefined {
-  for (let i = labels.length - 1; i >= 0; i -= 1) {
-    const label = labels[i]!
-    if (Math.abs(point.x - label.x) <= label.width / 2 + 1 && Math.abs(point.y - label.y) <= label.height / 2 + 1) {
-      return label
-    }
-  }
-  return undefined
-}
-
 /**
  * The rulers of one view of the Canvas (`surface` must be one): the boxes near the viewport that carry them, their
  * numbers and dots, and what a press selects. Drawing and picking read this one value, so they cannot disagree.
@@ -305,23 +284,5 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     step: Math.max(1, ...laid.map((box) => box.step)),
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
-    pick: (point) => {
-      const label = labelAt(everyLabel, point)
-      if (label) {
-        return label.selection
-      }
-      let best: { along: number; selection: Selection } | undefined
-      for (const dot of everyBead) {
-        const dx = point.x - dot.x
-        const dy = point.y - dot.y
-        const [nx, ny] = dot.normal
-        const across = Math.abs(dx * nx + dy * ny)
-        const alongRuler = Math.abs(-dx * ny + dy * nx)
-        if (across <= dot.half + scale.gap + PICK_SLACK_PX && alongRuler <= dot.pitch / 2 + PICK_SLACK_PX / 4 && (!best || alongRuler < best.along)) {
-          best = { along: alongRuler, selection: dot.selection }
-        }
-      }
-      return best?.selection
-    },
   }
 }
