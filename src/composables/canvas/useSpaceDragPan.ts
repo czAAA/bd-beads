@@ -1,6 +1,11 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
 
+/** The Space key, by its physical code, so it means the same whatever the keyboard layout. */
+export function isSpaceKey(event: KeyboardEvent): boolean {
+  return event.code === 'Space'
+}
+
 /**
  * Whether Space has a native meaning at `target` that panning must not steal -- a focused button (every sheet
  * control) activates on Space in every browser, so hijacking the key there would silently break keyboard-only use
@@ -35,7 +40,7 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   let pointerIsDown = false
 
   function onKeyDown(event: KeyboardEvent) {
-    if (event.code !== 'Space' || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
+    if (!isSpaceKey(event) || isTypingInFormField(event.target) || activatesOnSpace(event.target)) {
       return
     }
     // Without this, holding Space also triggers the browser's own page-down scroll wherever focus happens to be.
@@ -49,7 +54,7 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
   }
 
   function onKeyUp(event: KeyboardEvent) {
-    if (event.code !== 'Space') {
+    if (!isSpaceKey(event)) {
       return
     }
     spaceHeld.value = false

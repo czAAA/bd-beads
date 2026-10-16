@@ -698,6 +698,7 @@ export interface Translations {
     fillSelection: string
     frameFromSelection: string
     pasteDisabled: string
+    pasteTool: string
     rotate: string
     setFrameFirst: string
     fitToDrawing: string

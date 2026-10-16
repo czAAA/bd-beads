@@ -54,7 +54,6 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
-  onSelectLine,
   selectionRefusals,
   activeTool,
   showRulers,
@@ -78,6 +77,8 @@ const {
   pasteProjectionActive,
   onCopy,
   onCut,
+  onPasteMode,
+  hasClipboard,
   onClearSelection,
   onFillSelection,
   onFrameFromSelection,
@@ -260,6 +261,7 @@ function techniqueWord(technique: Technique): string {
           :gesturing="surfacePressing"
           :size-only="selectionGuided"
           :paste-armed="pasteProjectionActive"
+          :has-clipboard="hasClipboard()"
           :project="activeProject"
           :can-remove-line="canRemoveSelectedLine"
           :can-name-piece="canNamePiece"
@@ -268,6 +270,7 @@ function techniqueWord(technique: Technique): string {
           :obstacle="pillRect"
           @copy="onCopy"
           @cut="onCut"
+          @paste="onPasteMode"
           @fill="onFillSelection"
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
@@ -343,7 +346,6 @@ function techniqueWord(technique: Technique): string {
               @pan="panBy"
               @scroll="scrollBy"
               @zoom-by="(factor, anchor) => setZoom(zoom * factor, anchor)"
-              @select-line="onSelectLine"
               @frame-press="onFramePress"
               @frame-drag="onFrameDrag"
               @frame-release="onFrameRelease"
@@ -367,6 +369,8 @@ function techniqueWord(technique: Technique): string {
           v-model:color-mode="pillColorMode"
           v-model:popover-open="toolPillPopoverOpen"
           :active-tool="activeTool"
+          :has-clipboard="hasClipboard()"
+          :paste-armed="pasteProjectionActive"
           :color-hex="colorHex"
           :color-name="colorName"
           :recents-in-pill="recentsInPill"
@@ -378,6 +382,7 @@ function techniqueWord(technique: Technique): string {
           :open-sheet="openPhoneSheet"
           @select-sheet="onSelectPhoneSheet"
           @select-tool="onSelectTool"
+          @paste-mode="onPasteMode"
           @pick-recent="pickRecent"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"

@@ -14,7 +14,7 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
-import { clampOutOfMargin, inMargin, lineWithinFrame, selectionAllowed } from '../../domain/margin'
+import { clampOutOfMargin, inMargin, selectionAllowed } from '../../domain/margin'
 import { colorAt } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
@@ -286,11 +286,28 @@ export function useSelectionGesture(
     return true
   }
 
-  /** Cut (ticket 415, Ctrl+X): copies the drawn beads without arming paste mode, then empties the Selection as one Undo step; the Selection is kept. */
-  function cut() {
-    if (!selection.value) return
-    if (snapshotSelection()) pasteDismissed.value = true
+  /**
+   * Cut (tickets 415, 447, Ctrl+X): copies the drawn beads, empties the Selection as one Undo step and then, as Copy does,
+   * clears the Selection and arms paste mode. A Selection with no drawn bead copies nothing, is still emptied (a no-op
+   * edit) and stays; returns whether anything was cut, which the app shell turns into the tool change.
+   */
+  function cut(): boolean {
+    if (!selection.value) return false
+    const copied = snapshotSelection()
     deleteSelection()
+    if (copied) {
+      selection.value = undefined
+      pasteDismissed.value = false
+    }
+    return copied
+  }
+
+  /** Paste mode on again without stamping (ticket 447): the Selection bar's Paste button and the Paste tool. False with an empty clipboard. */
+  function armPaste(): boolean {
+    if (!copiedBlock.value) return false
+    selection.value = undefined
+    pasteDismissed.value = false
+    return true
   }
 
   /**
@@ -339,20 +356,6 @@ export function useSelectionGesture(
   }
 
   /**
-   * A row or column ruler number was clicked (ticket 123): selects that whole line, the same Selection a
-   * Select-tool drag across it would leave -- so it works from whichever tool is active, and clears whatever was
-   * copied, the same as a new drag-marked Selection does (see extendPress). With a Frame it is the line's part inside the
-   * Frame (ticket 433), and a line outside the Frame selects nothing. Returns whether a Selection was made.
-   */
-  function selectLine(newSelection: Selection): boolean {
-    const line = lineWithinFrame(currentProject()?.frame, newSelection)
-    if (!line) return false
-    dropClipboard()
-    selection.value = line
-    return true
-  }
-
-  /**
    * The block Paste would stamp under the cursor, Mirror-projected (tickets 31/50): what the app shell's own hover
    * preview shows while Select is active -- empty with no active (undismissed) projection, since there's then
    * nothing a click would put down.
@@ -385,11 +388,11 @@ export function useSelectionGesture(
     leaveSelectTool,
     copy,
     cut,
+    armPaste,
     dismissPaste,
     fill,
     pasteAt,
     deleteSelection,
-    selectLine,
     tapPiece,
     selectAll,
     beginAdjust,

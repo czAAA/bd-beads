@@ -10,7 +10,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import ColorPopover from './ColorPopover.vue'
-import { PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
+import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { MIRROR_ENABLED } from '../../features'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
@@ -23,6 +23,10 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
  */
 const props = defineProps<{
   activeTool: Tool
+  /** Whether the clipboard holds something: the Paste tile follows Hand then (ticket 447). */
+  hasClipboard?: boolean
+  /** Whether paste mode is on: the Paste tile then shows as the active tool. */
+  pasteArmed?: boolean
   position: PillPosition
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
@@ -43,6 +47,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'select-tool': [tool: Tool]
+  /** The Paste tile was pressed: enter paste mode, stamp nothing (ticket 447). */
+  'paste-mode': []
   'update:position': [position: PillPosition]
   'update:colorMode': [mode: PillColorMode]
   'update:popoverOpen': [open: boolean]
@@ -63,6 +69,9 @@ const colorTileEl = ref<HTMLElement>()
 
 const vertical = computed(() => isVerticalPill(props.position))
 const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
+const pasteAction = controlAction('tool-paste')
+/** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
+const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
 const colorAction = controlAction('pill-colors')
 const mirrorAction = MIRROR_ENABLED ? controlAction('pill-mirror') : undefined
 const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
@@ -177,12 +186,27 @@ watch(
         :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
         :hotkey="tile.key"
         show-hotkey
-        :selected="activeTool === tile.tool"
-        :accent="activeTool === tile.tool"
-        :tabindex="roving.tabIndexFor(activeTool === tile.tool)"
+        :selected="isActive(tile.tool)"
+        :accent="isActive(tile.tool)"
+        :tabindex="roving.tabIndexFor(isActive(tile.tool))"
         :data-testid="`pill-tool-${tile.tool}`"
         :data-tour="`tool-${tile.tool}`"
         @click="emit('select-tool', tile.tool)"
+      />
+
+      <IconButton
+        v-if="hasClipboard"
+        class="tool-pill__stop"
+        variant="pill"
+        :action="pasteAction"
+        :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
+        :hotkey="PASTE_TILE_HOTKEY"
+        show-hotkey
+        :selected="!!pasteArmed"
+        :accent="!!pasteArmed"
+        :tabindex="roving.tabIndexFor(!!pasteArmed)"
+        data-testid="pill-tool-paste"
+        @click="emit('paste-mode')"
       />
 
       <span class="tool-pill__divider" role="presentation" />

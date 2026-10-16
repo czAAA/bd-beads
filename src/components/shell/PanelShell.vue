@@ -6,6 +6,7 @@ import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
+import { usePressClosed } from '../../composables/shell/usePressClosed'
 
 /**
  * The shell Menu and Project open in (spec 0440, ticket 443; MenuPanel and TopSheet cards): a dropdown 4px under its
@@ -116,6 +117,7 @@ function onPointerDownOutside(event: PointerEvent) {
   event.stopPropagation()
   event.preventDefault()
   swallowNextClick()
+  pressClosed.markPressClosed()
   emit('close')
 }
 
@@ -150,6 +152,7 @@ function onHandleUp() {
 }
 
 let opener: HTMLElement | null = null
+const pressClosed = usePressClosed()
 onMounted(() => {
   opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
   place()
@@ -163,7 +166,7 @@ onBeforeUnmount(() => {
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
-  if (!document.querySelector('.app-modal')) void nextTick(() => target?.isConnected && target.focus())
+  if (!pressClosed.wasPressClosed() && !document.querySelector('.app-modal')) void nextTick(() => target?.isConnected && target.focus())
 })
 </script>
 

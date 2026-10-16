@@ -134,8 +134,10 @@ describe('App keyboard shortcuts', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('Ctrl+X cuts the Selection: copies it, empties it and keeps it (ticket 415)', async () => {
+  it('Ctrl+X cuts the Selection, clears it and arms paste mode: hover previews, a click stamps (ticket 447)', async () => {
     const wrapper = await mountApp(6, 6)
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0)
     await pickTool(wrapper, 'select')
     await pressBead(wrapper, 0)
     await hoverBead(wrapper, 1, { buttons: 1 })
@@ -143,7 +145,50 @@ describe('App keyboard shortcuts', () => {
 
     await pressKey({ key: 'x', ctrlKey: true })
 
-    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
+    expect(selectedBeadCount(wrapper)).toBe(0)
+    expect(firstCellColor()).toBeNull()
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
+    await click(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1) // still armed: repeatable
+    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(true)
+  })
+
+  it('the Paste tool follows Hand only while the clipboard holds something, and enters paste mode without stamping (ticket 447)', async () => {
+    const wrapper = await mountApp(6, 6)
+    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0)
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
+    await pressKey({ key: 'c', ctrlKey: true })
+    await pressKey({ key: 'Escape' }) // leaves paste mode; the clipboard stays
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(0)
+
+    await wrapper.get('[data-testid="pill-tool-paste"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="pill-tool-paste"]').attributes('aria-pressed')).toBe('true')
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
+    expect(frameGrid(loadProjects()[0]!).flat().filter((cell) => cell.color).length).toBe(1) // nothing stamped
+  })
+
+  it('7 enters paste mode when the clipboard holds something (ticket 447)', async () => {
+    const wrapper = await mountApp(6, 6)
+    await pickColor(wrapper, 'red')
+    await click(wrapper, 0)
+    await pickTool(wrapper, 'select')
+    await pressBead(wrapper, 0)
+    await wrapper.trigger('mouseup')
+    await pressKey({ key: 'c', ctrlKey: true })
+    await pressKey({ key: 'Escape' })
+
+    await pressKey({ key: '7' })
+
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
   })
 
   it('R shows and hides the rulers, and the choice is kept on the device', async () => {
