@@ -71,6 +71,12 @@ describe('fitToDrawing', () => {
     expect(fitToDrawing('loom', beads)).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
+  it('leaves out beads the current Frame\'s margin covers', () => {
+    const current = { row: 20, column: 20, rows: 3, columns: 3 }
+    const withHidden = withColors(beads, [{ row: 18, column: 20, color: '#f00' }])
+    expect(fitToDrawing('loom', withHidden, current)).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+  })
+
   it('starts on an even row where rows alternate, keeping the last row where it is', () => {
     expect(fitToDrawing('peyote', beads)).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
   })
