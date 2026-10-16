@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { settleImport } from './testUtils/settleImport'
+import { gzipJson } from './testUtils/gzipJson'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead } from './testUtils/beads'
@@ -31,10 +33,10 @@ async function pick(wrapper: Wrapper, contents: string) {
   const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
   Object.defineProperty(input.element, 'files', {
     configurable: true,
-    value: [new File([contents], 'import.json', { type: 'application/json' })],
+    value: [new File([await gzipJson(contents)], 'import.openbeads', { type: 'application/json' })],
   })
   await input.trigger('change')
-  await flushPromises()
+  await settleImport()
 }
 
 const modal = (wrapper: Wrapper) => wrapper.find('[data-testid="import-switch-modal"]')

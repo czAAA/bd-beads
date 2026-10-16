@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { framedGrid, type Grid, type Project, type RowProgress } from './project'
-import { parseProjectsFile } from './projectFile'
+import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
+import { readProjectsFile } from '../services/projectFileCodec'
+import { gzipJson } from '../testUtils/gzipJson'
 import { loadProjects, saveProjects } from '../services/libraryStore'
 import libraryFile from './fixtures/library-file.json?raw'
 import libraryV1 from './fixtures/library-v1.json?raw'
 import libraryV2 from './fixtures/library-v2.json?raw'
 import libraryV2OverCap from './fixtures/library-v2-over-cap.json?raw'
+import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
+import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 
 /**
@@ -199,12 +203,19 @@ describe('stored-data compatibility', () => {
   })
 
   describe('Project files', () => {
-    it('opens a single-Project file as the Project it held', () => {
-      expect(parseProjectsFile(projectFile).projects).toEqual([fileProjects.peyote])
+    it('opens a single-Project file as the Project it held (plain JSON, before ADR 0048)', () => {
+      expect(parseLegacyProjectsFile(projectFile).projects).toEqual([fileProjects.peyote])
     })
 
-    it('opens a whole-library file as every Project it held, in order', () => {
-      expect(parseProjectsFile(libraryFile).projects).toEqual([fileProjects.loom, fileProjects.brick])
+    it('opens a whole-library file as every Project it held, in order (plain JSON, before ADR 0048)', () => {
+      expect(parseLegacyProjectsFile(libraryFile).projects).toEqual([fileProjects.loom, fileProjects.brick])
+    })
+
+    it('opens a gzipped .openbeads Project file and library file (ADR 0048)', async () => {
+      const one = new File([await gzipJson(projectFileV3)], 'a.openbeads')
+      const many = new File([await gzipJson(libraryFileV3)], 'b.openbeads')
+      expect((await readProjectsFile(one)).projects).toEqual([fileProjects.peyote])
+      expect((await readProjectsFile(many)).projects).toEqual([fileProjects.loom, fileProjects.brick])
     })
   })
 })
