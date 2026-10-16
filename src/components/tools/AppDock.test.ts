@@ -37,6 +37,12 @@ describe('AppDock', () => {
     expect(wrapper.emitted('select-tool')).toEqual(TOOL_IDS.map((id) => [id]))
   })
 
+  it('uses the accent color only for the active tool', () => {
+    const wrapper = mount(AppDock, { props: { activeTool: 'fill', openSheet: null } })
+    expect(wrapper.find('[data-testid="dock-tool-fill"]').classes()).toContain('icon-btn--accent')
+    expect(wrapper.find('[data-testid="dock-tool-paint"]').classes()).not.toContain('icon-btn--accent')
+  })
+
   it('has no key on the colour button, marks it while its sheet is open, and emits select-sheet for it', async () => {
     const wrapper = mount(AppDock, { props: { activeTool: 'paint', openSheet: 'color' } })
     const color = wrapper.get('[data-testid="dock-color"]')

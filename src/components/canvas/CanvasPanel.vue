@@ -16,6 +16,7 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import { hasBeads } from '../../domain/canvas'
+import { hasGuides } from '../../domain/selection'
 import { resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -68,15 +69,12 @@ const {
   pasteProjectionActive,
   onCopy,
   onCut,
-  onPasteSelection,
   onClearSelection,
   onFillSelection,
   onFrameFromSelection,
-  hasClipboard,
   canNamePiece,
   hasPaintColor,
   onNamePiece,
-  backOutOfSelect,
   previewCells,
   previewedMirrorAxisCounts,
   mirrorCurrentDimmedCells,
@@ -122,7 +120,7 @@ const selecting = computed(() => activeTool.value === 'select' || activeTool.val
 
 const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
 
-/** The Frame's size tooltip while it is set: beads and measured size, "13×13 · 2.1 × 2.1 cm" (Frame card). */
+/** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
   const project = shownProject.value
   const frame = project?.frame
@@ -132,7 +130,10 @@ const frameTooltip = computed(() => {
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
 
-/** The Selection's size for the bar's readout: "12×8 · 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
+/** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar then shrinks to the size instead of hiding. */
+const selectionGuided = computed(() => !!selection.value && hasGuides(selection.value) && showRulers.value !== false)
+
+/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
 const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
@@ -214,16 +215,16 @@ function techniqueWord(technique: Technique): string {
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box; "Tap to paste" sits at its top-centre.
+          inside the canvas box; Select all sits at its top-centre.
         -->
         <ContextBar
           v-if="activeProject && !framing && !settingFrame"
-          :class="{ 'app-shell__context-bar--top': pasteProjectionActive || (activeTool === 'select' && !selectionSummary) }"
+          :class="{ 'app-shell__context-bar--top': (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
+          :size-only="selectionGuided"
           :paste-armed="pasteProjectionActive"
-          :has-clipboard="hasClipboard()"
           :project="activeProject"
           :can-remove-line="canRemoveSelectedLine"
           :can-name-piece="canNamePiece"
@@ -231,7 +232,6 @@ function techniqueWord(technique: Technique): string {
           :select-active="activeTool === 'select'"
           @copy="onCopy"
           @cut="onCut"
-          @paste="onPasteSelection"
           @fill="onFillSelection"
           @frame="onFrameFromSelection"
           @clear-selection="onClearSelection"
@@ -239,7 +239,6 @@ function techniqueWord(technique: Technique): string {
           @select-all="onSelectAll"
           @remove-line="onRemoveSelectedLine"
           @name-piece="onNamePiece"
-          @dismiss="backOutOfSelect"
         />
 
         <EditFrameSteppers
@@ -353,7 +352,7 @@ function techniqueWord(technique: Technique): string {
 
 <style scoped>
 /*
- * "Tap to paste" and the Frame bar (tickets 295, 415; ContextBar card): the same bar, floating at the top-centre of the
+ * Select all and the Frame bar (tickets 295, 415, 437; ContextBar card): the same bar, floating at the top-centre of the
  * drawing area over the beads, so it never takes a row and never reaches the Dock. The Selection bar is placed by its own
  * component, against the Selection.
  */

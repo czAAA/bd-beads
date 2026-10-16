@@ -164,7 +164,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     await remove.trigger('click')
     expect(wrapper.emitted('remove-frame')).toBeUndefined()
     expect(wrapper.text()).toContain(ru.tooltips.noFrameToRemove)
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(ru.frame.progressNeedsFrame)
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(`${ru.tools.selectLabel}·${ru.frame.progressNeedsFrame}`)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
 

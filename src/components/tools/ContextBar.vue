@@ -5,7 +5,6 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { BAR_EDGE_PX, selectionBarPlacement, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
-import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
@@ -14,22 +13,22 @@ import { rowProgressStarted, type Project } from '../../domain/project'
 /**
  * The design system's ContextBar (tickets 168, 415; ContextBar card): a thin icon-only bar anchored above the
  * Selection's top edge, centred on it, clamped inside the canvas box and flipped below when there is no room above. It
- * offers what a Selection can do: its size, Copy, Cut, Paste, Fill, Frame, Rotate and, after a divider, Clear selection; only
- * what applies is rendered (Paste with a clipboard, Rotate until a Row progress pass is done, Remove line with a line selected). When the
- * canvas box is too narrow for all of it, the last actions fold into a "…" menu. Once Paste is armed it is "Tap to paste"
- * and Cancel at the canvas box's top-centre. It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
+ * offers what a Selection can do: its size, Copy, Cut, Fill, Frame, Rotate and, after a divider, Clear selection; only
+ * what applies is rendered (Rotate until a Row progress pass is done, Remove line with a line selected). When the
+ * canvas box is too narrow for all of it, the last actions fold into a "…" menu. While paste mode is on (ticket 437,
+ * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
  */
 const props = withDefaults(defineProps<{
-  /** The Selection's size, "12×8 · 4.2 × 2.6 cm"; absent when there is no Selection. */
+  /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
   /** The Selection's rectangle and the canvas box it is in, in the box's own pixels: where the bar anchors. */
   anchor?: SelectionAnchor
   /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
   gesturing?: boolean
-  /** Whether a copied block is armed to paste (useSelectionGesture's pasteProjectionActive). */
+  /** While `gesturing`, shrink to the size readout alone, in place, instead of hiding; the buttons return when the gesture ends. */
+  sizeOnly?: boolean
+  /** Whether paste mode is on (useSelectionGesture's pasteProjectionActive): the bar then hides, Select all with it. */
   pasteArmed: boolean
-  /** Whether something has been copied, so Paste applies. */
-  hasClipboard?: boolean
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
   project: Project
   canRemoveLine: boolean
@@ -44,7 +43,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   copy: []
   cut: []
-  paste: []
   fill: []
   frame: []
   'clear-selection': []
@@ -52,8 +50,6 @@ const emit = defineEmits<{
   'select-all': []
   'remove-line': []
   'name-piece': []
-  /** The armed paste's Cancel backs out one step (App.vue's backOutOfSelect). */
-  dismiss: []
 }>()
 
 const { t } = useI18n()
@@ -62,21 +58,18 @@ const actions = {
   selectAll: controlAction('select-all'),
   copy: controlAction('copy'),
   cut: controlAction('cut'),
-  paste: controlAction('paste'),
   fill: controlAction('fill-selection'),
   frame: controlAction('frame-from-selection'),
   rotate: controlAction('rotate'),
   removeLine: controlAction('remove-line'),
   namePiece: controlAction('name-piece'),
   clear: controlAction('empty-selection'),
-  cancel: controlAction('cancel-paste'),
 }
 
 const deps = computed(() =>
   controlDeps({
     activeProject: () => props.project,
     hasSelection: () => props.selectionSummary !== undefined,
-    hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
@@ -98,12 +91,12 @@ interface BarItem {
 
 /** What applies to this Selection, in order, Select all first while the Select tool is active (ContextBar card). */
 const items = computed<BarItem[]>(() => {
+  const showSelectAll = props.selectActive && !props.pasteArmed
   const list: BarItem[] = [
-    ...(props.selectActive ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
+    ...(showSelectAll ? [{ id: 'select-all', action: actions.selectAll, group: 0, run: () => emit('select-all') }] : []),
     { id: 'copy', action: actions.copy, group: 1, run: () => emit('copy') },
     { id: 'cut', action: actions.cut, group: 1, run: () => emit('cut') },
   ]
-  if (props.hasClipboard) list.push({ id: 'paste', action: actions.paste, group: 1, run: () => emit('paste') })
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).
   list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
@@ -142,7 +135,7 @@ const folded = computed(() => (overflowing.value ? items.value.slice(shown.value
 
 const placement = computed(() => {
   const anchor = props.anchor
-  if (!anchor || props.pasteArmed) return undefined
+  if (!anchor) return undefined
   return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport)
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
@@ -151,15 +144,17 @@ const placedStyle = computed(() => (placement.value ? { left: `${placement.value
 const isDisabled = (item: BarItem) => (item.action.enabled ? !item.action.enabled(deps.value) : false)
 const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
-const showing = computed(() => props.selectionSummary !== undefined || props.pasteArmed || !!props.selectActive)
-const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary === undefined ? 'select-all' : 'selection'))
+/** Gesturing with a size to show: only the readout, no buttons. */
+const compact = computed(() => !!props.gesturing && !!props.sizeOnly && props.selectionSummary !== undefined)
+const showing = computed(() => props.selectionSummary !== undefined || (!!props.selectActive && !props.pasteArmed))
+const mode = computed(() => (props.selectionSummary === undefined ? 'select-all' : 'selection'))
 </script>
 
 <template>
   <div
     v-if="showing"
     ref="rootEl"
-    v-show="!gesturing"
+    v-show="!gesturing || (sizeOnly && selectionSummary !== undefined)"
     class="context-bar"
     :class="[`context-bar--${mode}`, { 'context-bar--placed': placement, 'context-bar--below': placement?.below }]"
     :style="placedStyle"
@@ -167,7 +162,7 @@ const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary
     :aria-label="t.contextBar.label"
     data-testid="context-bar"
   >
-    <template v-if="!pasteArmed && selectionSummary === undefined">
+    <template v-if="selectionSummary === undefined">
       <IconButton
         class="context-bar__button context-bar__select-all"
         :icon-size="iconSize"
@@ -177,11 +172,12 @@ const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary
         @click="emit('select-all')"
       />
     </template>
-    <template v-else-if="!pasteArmed">
+    <template v-else>
       <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
       <template v-for="(item, index) in shown" :key="item.id">
-        <span v-if="index === 0 || shown[index - 1].group !== item.group" class="context-bar__divider" aria-hidden="true" />
+        <span v-if="index === 0 || shown[index - 1].group !== item.group" v-show="!compact" class="context-bar__divider" aria-hidden="true" />
         <IconButton
+          v-show="!compact"
           class="context-bar__button"
           :class="{ 'context-bar__button--danger': item.danger }"
           :icon-size="iconSize"
@@ -193,8 +189,8 @@ const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary
         />
       </template>
       <template v-if="folded.length">
-        <span class="context-bar__divider" aria-hidden="true" />
-        <MenuButton class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
+        <span v-show="!compact" class="context-bar__divider" aria-hidden="true" />
+        <MenuButton v-show="!compact" class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
           <AppMenuItem
             v-for="item in folded"
             :key="item.id"
@@ -209,11 +205,6 @@ const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary
           </AppMenuItem>
         </MenuButton>
       </template>
-    </template>
-    <template v-else>
-      <AppIcon class="context-bar__hint" name="paste" :size="iconSize" :label="t.contextBar.pasteHint" data-testid="context-bar-hint" />
-      <span class="context-bar__divider" aria-hidden="true" />
-      <IconButton class="context-bar__button" :icon-size="iconSize" icon="close" :action="actions.cancel" :deps="deps" data-testid="context-bar-cancel" @click="emit('dismiss')" />
     </template>
   </div>
 </template>
@@ -249,12 +240,6 @@ const mode = computed(() => (props.pasteArmed ? 'armed' : props.selectionSummary
   position: absolute;
   z-index: var(--z-context-bar);
   max-width: calc(100% - 2 * var(--space-8));
-}
-
-.context-bar__hint {
-  flex: none;
-  margin: 0 var(--space-6);
-  color: color-mix(in srgb, var(--canvas) 74%, transparent);
 }
 
 .context-bar__size {

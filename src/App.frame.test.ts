@@ -245,7 +245,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
 
   it('has Fit to drawing in the Progress bar with no Frame, and Beads needed asks for one', async () => {
     const wrapper = await mountOpen()
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(en.frame.progressNeedsFrame)
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toContain(en.frame.progressNeedsFrame)
     await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe(en.frame.countNeedsFrame)
 

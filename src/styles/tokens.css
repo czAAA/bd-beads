@@ -250,6 +250,9 @@
   --header-height-phone: 3.25rem;
   --dock-height: 3rem;
   --dock-max-width: 30rem;
+  --screen-edge: 0.375rem;
+  --pill-gap: 0.375rem;
+  --pill-thickness: 3rem;
   --progress-height-phone: 5.5rem;
   --bead-min-phone: 1rem;
   --bead-min-tablet: 0.9375rem;

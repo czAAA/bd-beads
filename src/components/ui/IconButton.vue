@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
+import KeyChip from './KeyChip.vue'
 import AppTooltip from './AppTooltip.vue'
 import { actionKey, type ControlActionLike } from './controlAction'
 import type { IconName, IconSize } from './icons'
@@ -124,7 +125,7 @@ function swallowClick(event: MouseEvent) {
       @click.capture="swallowClick"
     >
       <slot><AppIcon v-if="iconName" :name="iconName" :size="size" /></slot>
-      <span v-if="keyed && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</span>
+      <KeyChip v-if="keyed && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</KeyChip>
     </button>
   </component>
 </template>
