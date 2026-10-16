@@ -233,8 +233,6 @@ export interface Translations {
     clearButton: string
     /** The "…" overflow of the Selection bar when its controls do not fit (ticket 415). */
     moreLabel: string
-    pasteHint: string
-    cancelButton: string
   }
   palette: {
     pickerLabel: string
@@ -267,12 +265,9 @@ export interface Translations {
     /** The Piece tool and the Select all tile (ticket 414). */
     pieceLabel: string
     selectAllLabel: string
-    /** The one-line descriptions in the Tool buttons' Tooltips (ticket 251); Eraser needs none. */
-    paintHint: string
-    fillHint: string
-    selectHint: string
-    handHint: string
     copyButton: string
+    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
+    copyNothingMessage: string
     cutButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
     saveButton: string
@@ -284,7 +279,6 @@ export interface Translations {
     removeLineButton: string
     /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
     removeLineShort: string
-    removeLineName: string
     /** The selection bar's Name button (ticket 406): gives the selected Piece a name, which makes it a Schema. */
     namePieceButton: string
   }
@@ -431,10 +425,6 @@ export interface Translations {
     /** The margin steppers' names, by the edge they move (ticket 417): a bead out, a bead in. */
     edgeOut: Record<'top' | 'bottom' | 'left' | 'right', string>
     edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
-    notSet: string
-    /** The number chip's accessible name: pressing it brings the Frame into view. */
-    numberLabel: string
-    numberName: string
     fitToDrawing: string
     removeFrame: string
     /** The question before Remove frame throws away finished rows (ticket 426). */
@@ -444,7 +434,7 @@ export interface Translations {
     removeConfirmCancel: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
-    /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 · 2.1 × 2.1 cm". */
+    /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 ≈ 2.1 × 2.1 cm". */
     sizeTooltip: string
     announceSet: string
     announceRemoved: string
@@ -549,8 +539,6 @@ export interface Translations {
     /** Names the Image colors swatches in the Colors group (CONTEXT.md's Image colors). */
     imageColorsLabel: string
     imageColorsShort: string
-    /** Why Image colors is off: the Project wasn't made from a picture (ColorPickers card). */
-    noImageColors: string
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
       heic: string
@@ -588,6 +576,10 @@ export interface Translations {
     zoomCanvas: string
     /** Ticket 88's whole Colors group, summarized as one row rather than one per swatch. */
     paletteColors: string
+    /** The switch at the top of Keyboard shortcuts (ticket 438) and its two choices. */
+    keyHints: string
+    keyHintsOn: string
+    keyHintsOff: string
   }
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One imperative sentence ending in a full stop; keys never appear (they are the key chip). */
   tooltips: {
@@ -641,7 +633,6 @@ export interface Translations {
     saveProject: string
     changeName: string
     convertImage: string
-    frameChip: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

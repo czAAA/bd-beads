@@ -3,7 +3,7 @@
 The bottom sheet a Dock button or the Canvas strip's Menu or Project button opens, holding every option of that kind.
 
 - **Tools (gone, ticket 431):** the Tool sheet and its tiles are removed; the six tool tiles are in the Dock (Dock card). Remove line and Name piece are on the Context bar only; Select all is its button. **Delete all** (`danger`) moved to the bottom of the Project sheet, with its usual confirmation.
-- **Colour:** the Palette as 5-column swatches (selected: `ring`), Image colors, Custom colour.
+- **Colour:** replaced by the colour popover anchored to the Tool pill (ToolPill card); until that ships, the Palette as 5-column swatches (selected: `ring`), Image colors, Custom colour.
 - **Edit:** Undo, Redo, Copy, and Paste (enabled after Copy). Rotate is on the Selection bar (ticket 416).
 - **Frame (v16, in Size's place):** Set Frame, Fit to drawing, the beads | mm switch, Width and Height steppers, Remove Frame, and the measured size with its info. The preview still draws the v15 Size sheet.
 - **Pattern:** Save Pattern and Export (PNG, PDF), the Bead pill and Replace bead, Beads needed, Saved Patterns, New Pattern, Import file, and last Delete all (ticket 431). The sheet opens from the Canvas strip's Project button.

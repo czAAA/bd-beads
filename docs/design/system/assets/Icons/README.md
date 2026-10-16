@@ -1,6 +1,6 @@
 # Icons
 
-Icons v2: 61 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
+Icons v2: 62 single-ink SVGs on a 24-unit grid, stroke 1.75, round caps and joins, no fill, drawn in `ink` #1f1f1f because `<img>` cannot inherit colour; inline them in UI with `stroke: currentColor`. The bead (a zero-length stroke at 2.6) is the signature. Which icon goes where is in the brand book's Iconography section. Phase E added `device` (Match device) and `contrast` (High contrast) for the theme control; ticket 188 added `bead` (the app's own compact-header mark), `library` (Saved Patterns) and `paste` (the phone Edit sheet's Paste, no longer reusing import).
 
 v15 added `menu` (three lines, the same 1.75 stroke, round caps and 4–20 span as `row-progress`): the HeaderMenu button next to the logo.
 v15 also added `pattern` (a 12×17 board, radius 3.5, with two columns of three beads at stroke 2.6): the Dock's Pattern button, so it no longer reads as Save.
@@ -12,3 +12,5 @@ Ticket 324 added `pen-mode` (a tablet, a stylus and three square bead pixels und
 `more` (three dots) is reserved: no card places it yet, so the app does not draw it. `pattern` is the Dock's Project button; `delete` is Clear.
 
 Ticket 413 added five for the Selection work. `piece` (the Piece tool) is a polygon of five bead corners, drawn at 3.2 so they read as the points you tap, joined by dashed bead edges (2.4, `0 4.09`), like Select's. `select-all` is Select's dashed bead square with the word "all" inside, drawn in strokes at 1.5 (a circle for the a and two stems), so it needs no font; the letters are small, so check them at 14 to 16px. `cut` is scissors: two ring handles and two crossing blades. `fill-selection` is Select's dashed bead square with a drop inside, the Selection bar's Fill, distinct from `fill`, the tool's bucket. `share` is an arrow leaving a rounded square; no card places it yet. Frame (from Selection) reuses `frame` and Save keeps `save`.
+
+One later addition: `name-piece` (a tag with a bead for its string hole, one closed stroke plus the bead at 2.6) is the Selection bar's Name button, so Name no longer shares `piece` with the Piece tool.

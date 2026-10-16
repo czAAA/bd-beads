@@ -14,7 +14,7 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
  * The design system's Dock (ticket 79, 295, 336, 431; Dock card): the six tool tiles, a divider, the colour button and,
  * where the device needs it, a second divider and the Pen/Mouse toggle (ADR 0055). A tile picks its tool at once; the
  * colour button shows the chosen colour and opens the Colour sheet. Menu and Project live in the Canvas strip. 48px plus
- * the bottom safe-area inset, at most 480px wide and centred, in portrait and landscape alike (ADR 0032). Each is an
+ * the bottom safe-area inset (at most 4px), at most 480px wide and centred, in portrait and landscape alike (ADR 0032). Each is an
  * IconButton showing a registry action, so its name, Tooltip and key come from there; there are no text labels.
  */
 const props = defineProps<{
@@ -52,7 +52,7 @@ const mirrorAction = MIRROR_ENABLED ? controlAction('dock-mirror') : undefined
       :hotkey="tile.key"
       show-hotkey
       :selected="activeTool === tile.tool"
-      accent
+      :accent="activeTool === tile.tool"
       :marked="activeTool === tile.tool"
       :data-testid="`dock-tool-${tile.tool}`"
       :data-tour="`tool-${tile.tool}`"
@@ -105,7 +105,8 @@ const mirrorAction = MIRROR_ENABLED ? controlAction('dock-mirror') : undefined
   max-width: var(--dock-max-width);
   height: var(--dock-height);
   margin: 0 auto;
-  padding-bottom: env(safe-area-inset-bottom);
+  /* Capped at 4px: the home indicator's full inset (34px on an iPhone) is a wide empty band under 48px tiles. */
+  padding-bottom: min(env(safe-area-inset-bottom), var(--space-4));
   background: var(--canvas);
   border-top: 1px solid var(--line-soft);
 }

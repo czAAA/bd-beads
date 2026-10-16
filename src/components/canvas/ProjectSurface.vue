@@ -58,7 +58,7 @@ const props = defineProps<{
   showRulers?: boolean
   /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing beads, and its handles, margin outline and size tooltip show. */
   settingFrame?: boolean
-  /** The size tooltip's text at the Frame's corner while it is being set ("13×13 · 2.1 × 2.1 cm"). */
+  /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
   frameTooltip?: string
   /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
   markerHidden?: boolean

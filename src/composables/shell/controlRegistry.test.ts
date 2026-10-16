@@ -77,11 +77,6 @@ describe('the control registry', () => {
     }
   })
 
-  it('shows Back out\'s Esc on Cancel without claiming the key twice', () => {
-    expect(actionKey(controlAction('cancel-paste'))).toBe('Esc')
-    expect(controlAction('cancel-paste').chords).toEqual([])
-  })
-
   it('writes the zoom chords without a separator before the sign: Ctrl/Cmd+ and Ctrl/Cmd−', () => {
     expect(actionKey(controlAction('zoom-in'))).toBe('Ctrl/Cmd+')
     expect(actionKey(controlAction('zoom-out'))).toBe('Ctrl/Cmd−')

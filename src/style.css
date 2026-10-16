@@ -42,6 +42,24 @@ body {
 }
 
 /*
+ * The app is a tool, not a document: text in the Dock, Canvas strip, Progress rows, sheets and dialogs is chrome, so a
+ * drag or long-press must not select it (as in any drawing or editor app). Fields keep selection so typing, caret moves
+ * and copy still work; Safari needs the -webkit- form on them.
+ */
+/* `auto` follows the parent, so the root is enough. */
+:root:has(.app-shell) {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* A field's `auto` would follow the root's none, so it asks for text. */
+:root:has(.app-shell) :is(input, textarea, [contenteditable]) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/*
  * The app shell fills the screen and scrolls nothing itself (ticket 141), so the document under it must not scroll
  * either (ticket 320): on a phone the page otherwise drags past the Dock into the empty band below it. The Overview
  * page has no shell and scrolls as a document, so it is left alone. overscroll-behavior is ticket 316's.

@@ -6,6 +6,7 @@ import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
+import { useMediaQuery } from '../ui/useMediaQuery'
 import { selectionFrame, selectionHoldsAllBeads, type Selection } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
@@ -159,7 +160,7 @@ function wireAppShell(services: Services) {
     canRedo,
     record: recordHistory,
     reset: resetHistory,
-    onUndo,
+    onUndo: undoStep,
     onRedo,
   } = useUndoHistory({
     currentProject,
@@ -223,11 +224,11 @@ function wireAppShell(services: Services) {
     endPress: endSelectPress,
     cancel: backOutOfSelect,
     leaveSelectTool,
-    copy: onCopy,
-    pasteAt: pasteAtCell,
+    copy: copySelected,
+    pasteAt: pasteAtGesture,
     deleteSelection: onEmptySelection,
     cut: onCut,
-    armPaste: onPasteSelection,
+    dismissPaste: leavePasteMode,
     fill: fillSelection,
     selectLine,
     tapPiece,
@@ -240,6 +241,15 @@ function wireAppShell(services: Services) {
     pasteProjectionActive,
     hasClipboard,
   } = useSelectionGesture(currentProject, edit, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
+
+  /** Touch has no Escape or right-click, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR 0057). */
+  const touch = useMediaQuery('(pointer: coarse)')
+
+  /** Undo, which on touch also leaves paste mode. */
+  function onUndo() {
+    if (touch.value) leavePasteMode()
+    undoStep()
+  }
 
   /** A Selection (or hover) that no longer fits after a step or a size change changed the grid. */
   function clearSelectionAndHover() {
@@ -276,6 +286,8 @@ function wireAppShell(services: Services) {
    */
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
+    // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on touch.
+    if (tool !== 'select' || (touch.value && activeTool.value === 'select')) leavePasteMode()
     if (tool === 'erase' && selection.value) {
       onClearSelection()
     }
@@ -308,6 +320,19 @@ function wireAppShell(services: Services) {
   /** Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle. */
   function onFrameFromSelection() {
     if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
+  }
+
+  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; a Selection with no drawn bead says so. */
+  function onCopy() {
+    if (copySelected()) selectTool('select')
+    else showToast('copy-nothing', t.value.tools.copyNothingMessage, 'info')
+  }
+
+  /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0057). */
+  function pasteAtCell(cell: GridPosition | undefined): boolean {
+    if (!pasteAtGesture(cell)) return false
+    selectTool('select')
+    return true
   }
 
   /** Select all (ticket 414): selects the rectangle round every bead and makes Select the active tool, so the Selection can be copied, cut or resized at once. Nothing on an empty canvas. */
@@ -480,6 +505,7 @@ function wireAppShell(services: Services) {
     pressCell: onCellPrimaryDown,
     endStroke,
     beginSelectPress,
+    leavePasteMode,
     extendSelection,
     refuseSelection,
     announce,
@@ -798,7 +824,6 @@ function wireAppShell(services: Services) {
     hasClipboard,
     onCopy,
     onCut,
-    onPasteSelection,
     onClearSelection,
     onFillSelection,
     hasPaintColor,

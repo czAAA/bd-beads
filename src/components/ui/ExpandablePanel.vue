@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
+import KeyChip from './KeyChip.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 
@@ -59,7 +60,7 @@ function onKeydown(event: KeyboardEvent) {
       </h2>
       <span class="expandable-panel__meta">
         <slot name="meta" />
-        <kbd v-if="expanded && expandable" class="expandable-panel__kbd" aria-hidden="true">esc</kbd>
+        <KeyChip v-if="expanded && expandable" class="expandable-panel__kbd" aria-hidden="true">esc</KeyChip>
         <IconButton
           v-if="expandable && !empty"
           class="expandable-panel__expand"

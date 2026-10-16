@@ -456,7 +456,7 @@ export const CONTROLS: readonly ControlAction[] = [
   },
   {
     id: 'name-piece',
-    icon: 'piece',
+    icon: 'name-piece',
     name: (t) => t.tools.namePieceButton,
     body: (t) => t.tooltips.namePiece,
     enabled: (deps) => deps.canNamePiece(),
@@ -521,7 +521,6 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps) && Object.keys(deps.activeProject()?.beads ?? {}).length > 0,
     disabledBody: (t: Translations, deps: ControlDeps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.noBeadsToFit),
   }),
-  unkeyed('cancel-paste', (t) => t.contextBar.cancelButton, 'tools', { shownKey: 'Esc' }),
   unkeyed('position-marks-dots', (t) => t.canvas.canvasColor.positionMarks.dots, 'canvas', { icon: 'position-dots', body: (t) => t.canvas.canvasColor.positionMarks.dotsBody }),
   unkeyed('position-marks-squares', (t) => t.canvas.canvasColor.positionMarks.squares, 'canvas', { icon: 'position-squares', body: (t) => t.canvas.canvasColor.positionMarks.squaresBody }),
   unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),

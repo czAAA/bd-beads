@@ -128,12 +128,12 @@ describe('drawFrameEditing', () => {
 
   it('puts eight 9px handles round the Frame and the size tooltip at its corner', () => {
     const { context, strokes, fills, texts } = fakeContext()
-    drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 · 0.5 × 0.5 cm' })
+    drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 ≈ 0.5 × 0.5 cm' })
 
     expect(strokes).toHaveLength(8)
     expect(strokes.every((stroke) => stroke.rect[2] === 9 && stroke.rect[3] === 9)).toBe(true)
     expect(fills).toHaveLength(9)
-    expect(texts).toEqual(['3×3 · 0.5 × 0.5 cm'])
+    expect(texts).toEqual(['3×3 ≈ 0.5 × 0.5 cm'])
   })
 
   it('draws no size tooltip when it is empty (the Rulers toggle is off)', () => {
