@@ -23,6 +23,20 @@ async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomP
   return beadCentre({ technique, rotation: rotated ? 90 : 0 }, await gridBox(page), zoomPercent / 100, { row, column })
 }
 
+/** The grab cursor shows over the Canvas while Space is held (ticket 424's pan). */
+const cursorOfSurface = (page: Page) => page.getByTestId('project-surface-overlay').evaluate((element) => getComputedStyle(element).cursor)
+
+/** A single press-and-release on the bead at row, column, with the paint tool (the ticket 424 tests draw this way). */
+async function drawAt(page: Page, row: number, column: number) {
+  const at = await pointOn(page, 'loom', false, 100, row, column)
+  await page.mouse.move(at.x, at.y)
+  await page.mouse.down()
+  await page.mouse.up()
+  await settle(page)
+}
+
+const paintedCells = (project: Project) => frameGrid(project).flat().filter((cell) => cell.color !== null)
+
 const colorAt = (project: Project, row: number, column: number) => frameGrid(project)[row]![column]!.color
 
 test.describe('the hover preview', () => {
@@ -183,6 +197,108 @@ test.describe('the pointer tools', () => {
     await page.keyboard.up('Space')
 
     expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
+  })
+
+  test('Space pans right after a stroke, without Esc, and paints only that stroke (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await selectTool(page, 'paint')
+    const at = await pointOn(page, 'loom', false, 100, 3, 4)
+    await page.mouse.move(at.x, at.y)
+    await page.mouse.down()
+    await page.mouse.up()
+    await settle(page)
+
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).toBe('grab')
+    await page.keyboard.up('Space')
+    await settle(page)
+    // Read last: savedProject opens and closes the Project sheet, which hands focus back to its button.
+    expect(paintedCells(await savedProject(page))).toHaveLength(1)
+  })
+
+  test('Space pans after a press on the canvas closes the Project sheet, and that press paints nothing (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await selectTool(page, 'paint')
+    await page.getByTestId('strip-project').click()
+    await settle(page)
+    await drawAt(page, 3, 4)
+
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).toBe('grab')
+    await page.keyboard.up('Space')
+    await settle(page)
+    expect(paintedCells(await savedProject(page))).toHaveLength(0)
+  })
+
+  test('Space pans after a press on the canvas closes the Menu panel (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await selectTool(page, 'paint')
+    await page.getByTestId('strip-menu').click()
+    await settle(page)
+    await drawAt(page, 3, 4)
+
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).toBe('grab')
+    await page.keyboard.up('Space')
+  })
+
+  test('Space mid-stroke arms no pan and paints nothing more (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await selectTool(page, 'paint')
+    const at = await pointOn(page, 'loom', false, 100, 3, 4)
+    await page.mouse.move(at.x, at.y)
+    await page.mouse.down()
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).not.toBe('grab')
+    await page.keyboard.up('Space')
+    await page.mouse.up()
+    await settle(page)
+    expect(paintedCells(await savedProject(page))).toHaveLength(1)
+  })
+
+  test('Space on a button reached with Tab still activates it and does not pan (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await page.getByTestId('pill-tool-paint').focus()
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).not.toBe('grab')
+    await page.keyboard.up('Space')
+  })
+
+  test('Space on the Project reached with Tab still uses the tool, not a pan (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await page.getByTestId('project-surface').focus()
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).not.toBe('grab')
+    await page.keyboard.up('Space')
+  })
+
+  test('an arrow key after a press hands Space back to the tool (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await selectTool(page, 'paint')
+    await drawAt(page, 3, 4)
+    await page.keyboard.press('ArrowRight')
+    await settle(page)
+    await page.keyboard.down('Space')
+    await settle(page)
+    expect(await cursorOfSurface(page)).not.toBe('grab')
+    await page.keyboard.up('Space')
+  })
+
+  test('Space while typing in a form field is unchanged (ticket 424)', async ({ page }) => {
+    await openBlank(page)
+    await page.getByTestId('strip-project').click()
+    await settle(page)
+    const field = page.getByRole('textbox').first()
+    await field.fill('a')
+    await field.focus()
+    await page.keyboard.press('Space')
+    expect(await field.inputValue()).toBe('a ')
   })
 })
 

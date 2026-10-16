@@ -5,6 +5,7 @@ import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
 import { swallowNextClick } from '../../composables/ui/swallowNextClick'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
+import { usePressClosed } from '../../composables/shell/usePressClosed'
 import { SHEET_CLOSE } from './sheetContext'
 
 /**
@@ -28,6 +29,7 @@ const titleId = useId()
 const sheetEl = ref<HTMLElement>()
 const bodyEl = ref<HTMLElement>()
 let opener: HTMLElement | null = null
+const pressClosed = usePressClosed()
 
 useEscapeLayer(() => true, () => emit('close'))
 
@@ -90,6 +92,7 @@ function onPointerDownOutside(event: PointerEvent) {
   event.stopPropagation()
   event.preventDefault()
   swallowNextClick()
+  pressClosed.markPressClosed()
   emit('close')
 }
 
@@ -132,6 +135,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('focusin', onFocusIn)
   document.removeEventListener('pointerdown', onPointerDownOutside, true)
+  if (pressClosed.wasPressClosed()) return
   const target = opener
   if (target?.isConnected) {
     target.focus()
