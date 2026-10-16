@@ -5,9 +5,8 @@ import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { rowProgressStarted, type Project } from '../../domain/project'
-import { plural } from '../../i18n/plural'
 import { techniqueName } from '../../i18n/techniqueName'
-import type { Locale, Translations } from '../../i18n/translations'
+import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
@@ -17,15 +16,10 @@ export interface FrameFlowDeps {
   edit: EditFn
   announce: (message: string) => void
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
-  onUndo: () => void
   messages: () => Translations
-  locale: () => Locale
   /** Brings a block of beads into the middle of the view. */
   centreOn: (frame: Frame) => void
 }
-
-/** What the user did to the Frame, for the margin Message's lead. */
-type FrameAction = 'set' | 'moved' | 'resized'
 
 type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Frame }
@@ -69,9 +63,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       .replace('{height}', String(frame.rows))
   }
 
-  /** Commits a new Frame (or none) as one undo step; a no-change is no step. The action names what happened in the margin Message. */
-  function commit(frame: Frame | undefined, action: FrameAction = 'set', announce = true): boolean {
-    // Pieces in the new Frame's margin move clear (ticket 261); the one Undo step restores them with the Frame.
+  /** Commits a new Frame (or none) as one undo step; a no-change is no step. */
+  function commit(frame: Frame | undefined): boolean {
     const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? { set: frame } : { remove: true }))
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
@@ -81,16 +74,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       return false
     }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
-    if (outcome.moved > 0) {
-      const t = deps.messages()
-      const text = `${t.frame.marginLead[action]} ${plural(deps.locale(), outcome.moved, t.frame.marginClearedMessage)}`
-      deps.showToast('frame-margin-cleared', text, 'info', {
-        label: t.palette.undoButton,
-        run: deps.onUndo,
-      })
-    } else if (announce) {
-      deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
-    }
+    deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
     return true
   }
 
@@ -141,10 +125,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function release(): void {
     const result = draft.value
-    const kind = gesture?.kind
     gesture = undefined
     draft.value = undefined
-    if (result && dragged) commit(result, kind === 'move' ? 'moved' : 'resized')
+    if (result && dragged) commit(result)
     // A tap outside the Frame ends Edit Frame (ticket 427, ADR 0055); a press there that became a pinch is cancelled first.
     else if (leavesOnRelease) done()
     leavesOnRelease = false
@@ -162,7 +145,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
     const next = frameWithEdgeStep(project.technique, project.frame, edge, step)
-    if (next !== project.frame) commit(next, 'resized')
+    if (next !== project.frame) commit(next)
   }
 
   /**
@@ -222,9 +205,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!project?.frame) return false
     if (event.shiftKey) {
-      commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]), 'resized')
+      commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
     } else {
-      commit(movedFrame(project.technique, project.frame, step[0], step[1]), 'moved')
+      commit(movedFrame(project.technique, project.frame, step[0], step[1]))
     }
     return true
   }

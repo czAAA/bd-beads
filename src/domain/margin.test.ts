@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { colorAt, withColors, type BeadMap, type Frame } from './canvas'
-import { clampOutOfMargin, clearMargin, inMargin, keepAllowedEdits, lineWithinFrame, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { colorAt, withColors, type Frame } from './canvas'
+import { clampOutOfMargin, inMargin, keepAllowedEdits, lineWithinFrame, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const framed = withFrame(open, frame)
 const none = { columns: 0, rows: 0 }
-
-function count(beads: BeadMap): number {
-  return Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
-}
 
 describe('the keep-out margin', () => {
   it('is the 6 positions all round the Frame, outside its line', () => {
@@ -49,41 +45,6 @@ describe('the keep-out margin', () => {
   it('does nothing with no Frame', () => {
     const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000', none)
     expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
-  })
-
-  it('moves a Piece in the margin clear whole, losing no bead', () => {
-    const beads = withColors(framed.beads, [
-      { row: 12, column: 11, color: '#00ff00' },
-      { row: 8, column: 10, color: '#ff0000' },
-      { row: 8, column: 11, color: '#ff0000' },
-    ])
-    const { project, moved } = clearMargin({ ...framed, beads })
-    expect(moved).toBe(1)
-    expect(count(project.beads)).toBe(3)
-    expect(colorAt(project.beads, 12, 11)).toBe('#00ff00')
-    for (let row = 0; row < 30; row += 1) {
-      for (let column = 0; column < 30; column += 1) {
-        expect(inMargin(frame, { row, column }) && colorAt(project.beads, row, column) !== null).toBe(false)
-      }
-    }
-  })
-
-  it('leaves the same Project when nothing is in the margin', () => {
-    expect(clearMargin(framed)).toEqual({ project: framed, moved: 0 })
-  })
-
-  it('moves a big drawing clear without freezing the page: a fresh Frame in the middle of a 150x150 drawing', () => {
-    // Each shift tried reads every bead of the Piece, so trying them all on the first ring that clears took tens of seconds at 250x250.
-    const beads: BeadMap = {}
-    for (let row = 0; row < 150; row += 1) {
-      beads[row] = {}
-      for (let column = 0; column < 150; column += 1) beads[row][column] = '#ff0000'
-    }
-    const started = performance.now()
-    const { project, moved } = clearMargin(withFrame({ ...open, beads }, { row: 72, column: 72, rows: 6, columns: 6 }))
-    expect(performance.now() - started).toBeLessThan(2000)
-    expect(moved).toBe(1)
-    expect(count(project.beads)).toBe(150 * 150)
   })
 })
 

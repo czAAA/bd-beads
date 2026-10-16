@@ -509,9 +509,7 @@ function wireAppShell(services: Services) {
     edit,
     announce,
     showToast,
-    onUndo,
     messages,
-    locale: currentLocale,
     centreOn,
   })
   // Switching Edit Frame on or off leaves no keyboard cursor on a bead nobody moved to (ticket 354).

@@ -1,6 +1,6 @@
 import type { GridPosition, Rotation, Technique } from '../domain/grid'
 import { colorAt, frameContains } from '../domain/canvas'
-import { withMargin } from '../domain/margin'
+import { inMargin, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
   beadRoundness,
@@ -305,7 +305,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       const { first, last } = visible.columnsOf(row)
       const stored = beads[row]!
       for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
-        if (!(frame && frameContains(frame, { row, column }))) {
+        // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
+        if (!(frame && (frameContains(frame, { row, column }) || inMargin(frame, { row, column })))) {
           drawAt(row, column, stored[column]!)
         }
       }

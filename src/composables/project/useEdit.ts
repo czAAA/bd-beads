@@ -22,11 +22,11 @@ export interface EditCommands {
   exempt: (project: Project) => Project
 }
 
-/** What an Edit came to. `moved` is how many Pieces a Frame change moved clear of the margin. */
+/** What an Edit came to. */
 type EditOutcome =
   | { kind: 'unchanged' }
   | { kind: 'refused'; reason: FrameChangeRefusal }
-  | { kind: 'applied'; moved: number }
+  | { kind: 'applied' }
 
 /** `edit(kind, project => result)`: the one way an undoable change reaches the open Project. */
 export type EditFn = <K extends EditKind>(kind: K, command: EditCommands[K]) => EditOutcome
@@ -76,7 +76,7 @@ export function useEdit(deps: EditDeps) {
       record(project)
       deps.replaceProject(result.project)
       deps.resetAfterFrameChange()
-      return { kind: 'applied', moved: result.moved }
+      return { kind: 'applied' }
     }
 
     const made = (command as EditCommands['drawing'])(project)
@@ -86,7 +86,7 @@ export function useEdit(deps: EditDeps) {
     }
     record(project)
     deps.replaceProject(updated)
-    return { kind: 'applied', moved: 0 }
+    return { kind: 'applied' }
   }
 
   /** Starts a Paint/Eraser stroke: the baseline its one Undo step will go back to (ticket 55). */

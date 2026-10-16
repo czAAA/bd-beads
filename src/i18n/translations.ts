@@ -462,10 +462,6 @@ export interface Translations {
     progressNeedsFrame: string
     /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and plural of the sentence. */
     rotateCoveredMessage: PluralForms
-    /** The lead of the margin Message, by what was done to the Frame. */
-    marginLead: Record<'set' | 'moved' | 'resized', string>
-    /** The rest of the margin Message, after the lead: how many beads were in the margin. */
-    marginClearedMessage: PluralForms
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */

@@ -1,7 +1,6 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { sameFrame } from './frame'
 import type { GridPosition, Technique } from './grid'
-import { clearMargin } from './margin'
 import { carryNames, namedPieceCutBy } from './pieceNames'
 import { rowProgressStarted, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
@@ -10,8 +9,8 @@ import type { AreaLine } from './removeLine'
  * The one operation behind every change of the Frame (ticket 361): Set Frame, moving and resizing it, Fit to drawing,
  * Remove Frame and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
  * Row progress's lock (once a pass is done; only Remove Frame passes it, clearing the passes), Row progress following the
- * Frame, its pointers ending inside the new Frame, and the keep-out margin left empty with each
- * Piece it reached moved clear, whole (ADR 0027).
+ * Frame and its pointers ending inside the new Frame. Beads that end up in the keep-out margin stay where they are,
+ * covered by it.
  */
 export type FrameChange =
   /** Set Frame, moving it, resizing it and Fit to drawing all reduce to this. */
@@ -39,8 +38,7 @@ export type FrameChangeResult =
   | { kind: 'refused'; reason: FrameChangeRefusal }
   /** Nothing differs; `project` is the same instance that came in. */
   | { kind: 'unchanged'; project: Project }
-  /** `moved` is how many Pieces moved clear of the Frame's margin. */
-  | { kind: 'changed'; project: Project; moved: number }
+  | { kind: 'changed'; project: Project }
 
 /**
  * Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the Frame
@@ -88,27 +86,21 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
     const beads = beadsWithoutLine(project.beads, frame, change.removeLine)
     const shifted = carryNames(project, { ...withFrame(project, smaller), beads }, (at) => shiftedByLine(frame, change.removeLine, at))
-    return settled(shifted)
+    return { kind: 'changed', project: shifted }
   }
 
   if ('technique' in change) {
     if (change.technique === project.technique) {
       return { kind: 'unchanged', project }
     }
-    return settled(carryNames(project, withTechnique(project, change.technique)))
+    return { kind: 'changed', project: carryNames(project, withTechnique(project, change.technique)) }
   }
 
   const next = 'set' in change ? change.set : undefined
   if (sameFrame(project.frame, next)) {
     return { kind: 'unchanged', project }
   }
-  return settled(withFrame(project, next))
-}
-
-/** The framed Project with its margin cleared, as the changed result. */
-function settled(framed: Project): FrameChangeResult {
-  const { project, moved } = clearMargin(framed)
-  return { kind: 'changed', project, moved }
+  return { kind: 'changed', project: withFrame(project, next) }
 }
 
 /** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined for a position on the removed line. */
