@@ -29,6 +29,15 @@ if (typeof PointerEvent !== 'undefined') {
 }
 
 /**
+ * A press swallowed by an overlay (swallowNextClick) waits on `document` for its click and drops away at the next press.
+ * A test that presses outside an overlay without clicking would leave it to eat a click in a later test, or a later
+ * file on this shared page, so every test ends with a press that lets it go.
+ * Registered before the unmount below, so it runs after it (afterEach hooks run last-in first).
+ */
+afterEach(() => {
+  document.dispatchEvent(new Event('pointerdown'))
+})
+/**
  * Unmount every wrapper after each test. A leaked App keeps its window keydown listeners and reactive watchers
  * alive, so each later test in the same file pays for every earlier one (App.test.ts went from ~26s to a fraction).
  */
