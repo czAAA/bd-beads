@@ -73,6 +73,32 @@ export interface Translations {
     expandPanel: string
     collapsePanel: string
   }
+  /** The Tool pill and its colour popover (ticket 439). */
+  toolPill: {
+    /** The grip button's name: it moves the pill with the arrow keys. */
+    move: string
+    /** The Menu sheet's setting and its group name. */
+    position: string
+    left: string
+    top: string
+    right: string
+    bottom: string
+    /** The colour control's name; {name} is the chosen colour's name. */
+    color: string
+    popover: string
+    /** The popover's setting for what the pill shows. */
+    inPill: string
+    one: string
+    recentColors: string
+    /** The popover's section of recent colours. */
+    recent: string
+    palette: string
+    /** The Recent colors mode's tile that opens the popover. */
+    paletteTile: string
+    close: string
+    /** A recent colour's name. */
+    useColor: string
+  }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
   /** The header's theme control (ticket 139). */

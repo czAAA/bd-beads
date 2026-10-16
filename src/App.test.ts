@@ -9,7 +9,7 @@ import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject, createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
-import { chooseAppLanguage, chooseCustomColor, openNewProject, openSavedProjects, openSheet, pickColor, pickTool, rotate } from './testUtils/dock'
+import { chooseAppLanguage, chooseCustomColor, openColorPopover, openNewProject, openSavedProjects, pickColor, pickTool, rotate } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -168,9 +168,9 @@ describe('App', () => {
   it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
 
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')

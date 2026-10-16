@@ -9,7 +9,7 @@ import { createProject, type Project, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
-import { chooseAppLanguage, deleteAll, openSavedProjects, openSheet, pickColor, sheetRead } from './testUtils/dock'
+import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openSheet, pickColor, sheetRead } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -29,7 +29,7 @@ describe('App row progress', () => {
     const wrapper = await mountWithProject(15, 30)
 
     expect(rowProgressView(wrapper).markerShown).toBe(true)
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
     expect(wrapper.find('[data-testid="palette-picker"]').exists()).toBe(true)
   })
 

@@ -30,7 +30,7 @@ async function mountOpen() {
   return wrapper
 }
 
-const toggle = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.get('[data-testid="dock-input-mode"]')
+const toggle = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.get('[data-testid="pill-input-mode"]')
 const bead = (row: number, column: number) => ({ row, column })
 
 describe('the input mode toggle', () => {
@@ -56,7 +56,7 @@ describe('a pen appearing', () => {
   it('shows no toggle before a pen is seen, and a finger and a mouse draw as before', async () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="input-mode-toggle"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-input-mode"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-input-mode"]').exists()).toBe(false)
 
     await pressBead(wrapper, bead(1, 1), { pointerType: 'touch' })
     await pressBead(wrapper, bead(2, 2), { pointerType: 'mouse' })

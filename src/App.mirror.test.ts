@@ -26,7 +26,7 @@ describe('App Mirror, switched on (ticket 365)', () => {
   it('adds a Mirror button to the Dock, which opens its controls in a sheet', async () => {
     const wrapper = await mountApp()
 
-    await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="pill-mirror"]').trigger('click')
 
     const sheet = wrapper.get('[data-testid="bottom-sheet"]')
     expect(sheet.text()).toContain(en.toolbox.groups.mirror)
@@ -38,7 +38,7 @@ describe('App Mirror, switched on (ticket 365)', () => {
   it('steps the Left–right count with = and − and the Top–bottom count with ] and [', async () => {
     const wrapper = await mountApp()
     const counts = async () => {
-      await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
+      await wrapper.get('[data-testid="pill-mirror"]').trigger('click')
       const read = [
         wrapper.get('[data-testid="mirror-left-right-value"]').text(),
         wrapper.get('[data-testid="mirror-top-bottom-value"]').text(),
@@ -62,7 +62,7 @@ describe('App Mirror, switched on (ticket 365)', () => {
 
     await pressKey({ key: '=', ctrlKey: true })
 
-    await wrapper.get('[data-testid="dock-mirror"]').trigger('click')
+    await wrapper.get('[data-testid="pill-mirror"]').trigger('click')
     expect(wrapper.get('[data-testid="mirror-left-right-value"]').text()).toBe(`${en.mirror.leftRightLabel}: 0`)
     wrapper.unmount()
   })

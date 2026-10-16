@@ -6,7 +6,7 @@ import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { beadColor, hoverBead, pressBead } from './testUtils/beads'
-import { openNewProject, openSavedProjects, openSheet, pickTool, rotate } from './testUtils/dock'
+import { openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
 
 /** Edit Frame (tickets 233, 417, ADRs 0026, 0046, 0054) as the app shows it: moving and resizing the Frame, its margin steppers, the Project sheet's Frame controls and the keys. */
 
@@ -93,7 +93,7 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
 
     await key({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="dock-tool-hand"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="pill-tool-hand"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('is left by Escape, Enter, Done and by choosing a tool', async () => {
@@ -169,7 +169,7 @@ describe('Edit Frame', () => {
 
   it('is left when Undo takes the Frame away (the Frame made from a Selection)', async () => {
     const wrapper = await mountOpen()
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
@@ -324,7 +324,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
 
   it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -333,7 +333,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
   })
 

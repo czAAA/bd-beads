@@ -1,7 +1,7 @@
 import type { Tool } from '../../domain/tool'
 
-/** The Dock's six tool tiles, in their fixed order (Dock card; ticket 431). */
-export const DOCK_TOOLS: readonly Tool[] = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
+/** The Tool pill's six tool tiles, in their fixed order (ToolPill card; ticket 439). */
+export const PILL_TOOLS: readonly Tool[] = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
 
 /** Each tool's single-key shortcut, shown as a badge on its Tool button (ticket 250). Eraser's `Del` is not one. */
 export const TOOL_HOTKEYS: Record<Tool, string | undefined> = {

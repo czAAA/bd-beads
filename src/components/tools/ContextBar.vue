@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { BAR_EDGE_PX, selectionBarPlacement, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { BAR_EDGE_PX, selectionBarPlacement, type BarBox, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
@@ -16,7 +16,7 @@ import { rowProgressStarted, type Project } from '../../domain/project'
  * offers what a Selection can do: its size, Copy, Cut, Fill, Frame, Rotate and, after a divider, Clear selection; only
  * what applies is rendered (Rotate until a Row progress pass is done, Remove line with a line selected). When the
  * canvas box is too narrow for all of it, the last actions fold into a "…" menu. While paste mode is on (ticket 437,
- * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
+ * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. The standalone Select all button of the no-selection state is gone (ticket 439). It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
  */
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
@@ -36,8 +36,10 @@ const props = withDefaults(defineProps<{
   canNamePiece?: boolean
   /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told otherwise. */
   hasPaintColor?: boolean
-  /** Whether the Select tool is active: the bar then offers Select all, even with no Selection (ticket 428, ADR 0055). */
+  /** Whether the Select tool is active: the bar then offers Select all as its first item (ticket 428, ADR 0055). */
   selectActive?: boolean
+  /** The Tool pill's rectangle in the same pixels: the bar keeps clear of it (ticket 439). */
+  obstacle?: BarBox
 }>(), { hasPaintColor: true })
 
 const emit = defineEmits<{
@@ -136,7 +138,7 @@ const folded = computed(() => (overflowing.value ? items.value.slice(shown.value
 const placement = computed(() => {
   const anchor = props.anchor
   if (!anchor) return undefined
-  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport)
+  return selectionBarPlacement(anchor.box, { width: bar.width.value, height: bar.height.value }, anchor.viewport, props.obstacle)
 })
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
 
@@ -146,8 +148,7 @@ const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabl
 
 /** Gesturing with a size to show: only the readout, no buttons. */
 const compact = computed(() => !!props.gesturing && !!props.sizeOnly && props.selectionSummary !== undefined)
-const showing = computed(() => props.selectionSummary !== undefined || (!!props.selectActive && !props.pasteArmed))
-const mode = computed(() => (props.selectionSummary === undefined ? 'select-all' : 'selection'))
+const showing = computed(() => props.selectionSummary !== undefined)
 </script>
 
 <template>
@@ -156,55 +157,43 @@ const mode = computed(() => (props.selectionSummary === undefined ? 'select-all'
     ref="rootEl"
     v-show="!gesturing || (sizeOnly && selectionSummary !== undefined)"
     class="context-bar"
-    :class="[`context-bar--${mode}`, { 'context-bar--placed': placement, 'context-bar--below': placement?.below }]"
+    :class="{ 'context-bar--placed': placement, 'context-bar--below': placement?.below }"
     :style="placedStyle"
     role="toolbar"
     :aria-label="t.contextBar.label"
     data-testid="context-bar"
   >
-    <template v-if="selectionSummary === undefined">
+    <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
+    <template v-for="(item, index) in shown" :key="item.id">
+      <span v-if="index === 0 || shown[index - 1].group !== item.group" v-show="!compact" class="context-bar__divider" aria-hidden="true" />
       <IconButton
-        class="context-bar__button context-bar__select-all"
+        v-show="!compact"
+        class="context-bar__button"
+        :class="{ 'context-bar__button--danger': item.danger }"
         :icon-size="iconSize"
-        :action="actions.selectAll"
+        :action="item.action"
         :deps="deps"
-        data-testid="context-bar-select-all"
-        @click="emit('select-all')"
+        :data-testid="`context-bar-${item.id}`"
+        :data-tour="item.id === 'copy' || item.id === 'remove-line' ? item.id : undefined"
+        @click="item.run()"
       />
     </template>
-    <template v-else>
-      <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
-      <template v-for="(item, index) in shown" :key="item.id">
-        <span v-if="index === 0 || shown[index - 1].group !== item.group" v-show="!compact" class="context-bar__divider" aria-hidden="true" />
-        <IconButton
-          v-show="!compact"
-          class="context-bar__button"
-          :class="{ 'context-bar__button--danger': item.danger }"
-          :icon-size="iconSize"
-          :action="item.action"
-          :deps="deps"
-          :data-testid="`context-bar-${item.id}`"
-          :data-tour="item.id === 'copy' || item.id === 'remove-line' ? item.id : undefined"
-          @click="item.run()"
-        />
-      </template>
-      <template v-if="folded.length">
-        <span v-show="!compact" class="context-bar__divider" aria-hidden="true" />
-        <MenuButton v-show="!compact" class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
-          <AppMenuItem
-            v-for="item in folded"
-            :key="item.id"
-            :icon="item.action.icon"
-            :disabled="isDisabled(item)"
-            :name="item.action.name(t)"
-            :disabled-body="disabledReason(item)"
-            :data-testid="`context-bar-more-${item.id}`"
-            @select="item.run()"
-          >
-            {{ item.action.name(t) }}
-          </AppMenuItem>
-        </MenuButton>
-      </template>
+    <template v-if="folded.length">
+      <span v-show="!compact" class="context-bar__divider" aria-hidden="true" />
+      <MenuButton v-show="!compact" class="context-bar__button" icon="more" icon-only :label="t.contextBar.moreLabel" align="end" data-testid="context-bar-more">
+        <AppMenuItem
+          v-for="item in folded"
+          :key="item.id"
+          :icon="item.action.icon"
+          :disabled="isDisabled(item)"
+          :name="item.action.name(t)"
+          :disabled-body="disabledReason(item)"
+          :data-testid="`context-bar-more-${item.id}`"
+          @select="item.run()"
+        >
+          {{ item.action.name(t) }}
+        </AppMenuItem>
+      </MenuButton>
     </template>
   </div>
 </template>

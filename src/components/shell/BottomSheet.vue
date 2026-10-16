@@ -2,6 +2,7 @@
 import { inTourCard } from '../../composables/ui/tourDom'
 import { nextTick, onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
 import { useEscapeLayer } from '../../composables/ui/useEscapeLayer'
+import { swallowNextClick } from '../../composables/ui/swallowNextClick'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { SHEET_CLOSE } from './sheetContext'
@@ -74,24 +75,9 @@ function onFocusIn(event: FocusEvent) {
   ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
 }
 
-/** Eats the click that follows a press the sheet swallowed. It outlives the sheet (which unmounts before the click lands) and drops away at the next press, so a press that never clicks (a drag, a cancel) leaves nothing behind. */
-function swallowNextClick() {
-  const stop = (event: Event) => {
-    event.stopPropagation()
-    event.preventDefault()
-    release()
-  }
-  const release = () => {
-    document.removeEventListener('click', stop, true)
-    document.removeEventListener('pointerdown', release, true)
-  }
-  document.addEventListener('click', stop, true)
-  document.addEventListener('pointerdown', release, true)
-}
-
 /**
  * A sheet, light or modal, closes on a press anywhere outside it, and only closes: the press and its click are
- * swallowed so nothing under them acts (no stroke, fill or Frame start; a Dock button doesn't re-open the sheet it
+ * swallowed so nothing under them acts (no stroke, fill or Frame start; a strip button doesn't re-open the sheet it
  * just closed). A press inside another dialog (a stacked sheet, a confirmation) is not "outside", and only the
  * topmost sheet reacts.
  */

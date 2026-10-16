@@ -5,7 +5,7 @@ import { pressBead } from './testUtils/beads'
 import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openSavedProjects, openSheet, pickColor } from './testUtils/dock'
+import { openSavedProjects, openSheet, pickColor } from './testUtils/pill'
 import { createProjectViaForm } from './testUtils/seedProject'
 
 beforeEach(() => {

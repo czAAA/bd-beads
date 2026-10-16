@@ -1,5 +1,5 @@
 import { test } from '@playwright/test'
-import { currentZoomPercent, openApp, openDockSheet, projectBox, selectTool } from '../support/app'
+import { currentZoomPercent, openApp, openColorPopover, projectBox, selectTool } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 
 /**
@@ -33,7 +33,7 @@ test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   await selectTool(page, 'fill')
   const colors = ['red', 'blue', 'green', 'orange']
   for (let fill = 0; fill < 40; fill += 1) {
-    await openDockSheet(page, 'dock-color')
+    await openColorPopover(page)
     await page.locator(`[data-color-id="${colors[fill % 4]}"]`).click()
     const point = at(100, 100)
     await page.mouse.click(point.x, point.y)

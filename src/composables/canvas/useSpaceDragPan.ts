@@ -64,7 +64,8 @@ export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
     if (active instanceof HTMLElement && activatesOnSpace(active) && !activatesOnSpace(closestButton(event.target))) {
       active.blur()
     }
-    if (!spaceHeld.value) {
+    // A press that starts on the Tool pill never moves the canvas (ticket 439).
+    if (!spaceHeld.value || (event.target instanceof Element && event.target.closest('[data-tool-pill]'))) {
       return
     }
     panning.value = true

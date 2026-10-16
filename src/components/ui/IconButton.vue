@@ -10,7 +10,7 @@ import type { IconName, IconSize } from './icons'
 /**
  * The one icon-only button (tickets 157, 330; Button card): `square` (34 × 34, radius 8: Turn row direction) or `round`
  * (radius full: Keyboard shortcuts), in the secondary, in-box, toolbox or canvas-box (`box`) look, `plain` (30px, no fill:
- * the canvas strip's zoom buttons) or `dock` (one of the phone Dock's five slots: a 22px icon filling its share of the bar, `selected` while its sheet is open, `accent` and `marked` for the active tool) or `tool` (a Tool tab: a 34px icon in a 56 × 72 cell, selected by a 2px accent
+ * the canvas strip's zoom buttons) or `pill` (one 40px tile of the Tool pill, ticket 439: a 22px icon, `selected` and `accent` for the active tool) or `tool` (a Tool tab: a 34px icon in a 56 × 72 cell, selected by a 2px accent
  * underline). Its accessible name is `label`. Attributes and listeners (data-testid, @click) go to the <button> itself,
  * not the tooltip around it.
  *
@@ -32,16 +32,14 @@ const props = withDefaults(
     action?: ControlActionLike
     deps?: unknown
     shape?: 'square' | 'round'
-    variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool' | 'dock'
+    variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool' | 'pill'
     size?: 'md' | 'lg'
     iconSize?: IconSize
     selected?: boolean
-    /** A `dock` slot's or `tool` tab's accent color (the active tool, the input mode toggle). */
+    /** A `pill` tile's or `tool` tab's accent color (the active tool, the input mode toggle). */
     accent?: boolean
     /** A toggle, not a tab or a selection: `aria-pressed` follows this, with no underline (the input mode toggle). */
     pressed?: boolean
-    /** A `dock` slot's 2px accent underline (the active tool, Set Frame). */
-    marked?: boolean
     disabled?: boolean
     /** The Tooltip's key chip (ticket 251): the control's shortcut, as the shortcuts help writes it. */
     shortcut?: string
@@ -65,7 +63,6 @@ const props = withDefaults(
     selected: undefined,
     accent: false,
     pressed: undefined,
-    marked: false,
     disabled: undefined,
     shortcut: undefined,
     disabledBody: undefined,
@@ -99,9 +96,9 @@ const tooltipProps = computed(() => {
 })
 
 const isTool = computed(() => props.variant === 'tool')
-const isDock = computed(() => props.variant === 'dock')
-const keyed = computed(() => isTool.value || isDock.value)
-const size = computed(() => (isTool.value ? 34 : isDock.value ? 22 : props.iconSize))
+const isPill = computed(() => props.variant === 'pill')
+const keyed = computed(() => isTool.value || isPill.value)
+const size = computed(() => (isTool.value ? 34 : isPill.value ? 22 : props.iconSize))
 
 /** A disabled button swallows the click before any listener the parent attached sees it. */
 function swallowClick(event: MouseEvent) {
@@ -112,10 +109,10 @@ function swallowClick(event: MouseEvent) {
 </script>
 
 <template>
-  <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" :class="{ 'icon-btn-wrap': true, 'icon-btn-wrap--tool': isTool, 'icon-btn-wrap--dock': isDock }">
+  <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" :class="{ 'icon-btn-wrap': true, 'icon-btn-wrap--tool': isTool, 'icon-btn-wrap--pill': isPill }">
     <button
       class="ui-control icon-btn"
-      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent, 'icon-btn--marked': marked }]"
+      :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent }]"
       type="button"
       :aria-label="name"
       :aria-pressed="pressed ?? selected"
@@ -208,61 +205,41 @@ function swallowClick(event: MouseEvent) {
   outline-offset: var(--focus-offset);
 }
 
-.icon-btn-wrap--dock {
-  flex: 1 1 0;
-  min-width: 0;
+/* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; the active tool sits on `panel` with its icon in `accent`. */
+.icon-btn-wrap--pill {
+  flex: none;
 }
 
-/* A Dock slot (Dock card): the whole share of the bar, no fill; open, it sits on `panel`. */
-.icon-btn--dock {
+.icon-btn--pill {
   position: relative;
-  flex: 1 1 auto;
-  width: 100%;
-  height: 100%;
+  width: var(--pill-tile);
+  height: var(--pill-tile);
   color: var(--muted);
   background: none;
   border: 0;
-  border-radius: 0;
+  border-radius: var(--radius-lg);
 }
 
-.icon-btn--dock.icon-btn--selected {
+.icon-btn--pill.icon-btn--selected {
   color: var(--ink);
   background: var(--panel);
 }
 
-.icon-btn--dock.icon-btn--accent,
-.icon-btn--dock.icon-btn--accent.icon-btn--selected {
-  color: var(--accent-strong);
+.icon-btn--pill.icon-btn--accent,
+.icon-btn--pill.icon-btn--accent.icon-btn--selected {
+  color: var(--accent);
 }
 
-.icon-btn--dock.icon-btn--marked::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: var(--underline-width);
-  background: var(--accent-strong);
-}
-
-.icon-btn--dock:focus-visible {
-  outline-offset: calc(-1 * var(--focus-offset));
-}
-
-/* The hotkey corner (Dock card): DM Mono 12px, 3px from the top, 6px from the right. */
-.icon-btn--dock .icon-btn__key {
+/* The hotkey corner: the top-right of the tile, `meta-tiny`, `muted`, `accent-strong` on the active tile. */
+.icon-btn--pill .icon-btn__key {
   top: var(--key-corner-top);
-  right: var(--space-6);
+  right: var(--space-4);
   left: auto;
-  font: var(--type-meta-small);
-}
-
-.icon-btn--dock.icon-btn--selected .icon-btn__key {
+  font: var(--type-meta-tiny);
   color: var(--muted);
 }
 
-.icon-btn--dock.icon-btn--accent .icon-btn__key,
-.icon-btn--dock.icon-btn--accent.icon-btn--selected .icon-btn__key {
+.icon-btn--pill.icon-btn--accent .icon-btn__key {
   color: var(--accent-strong);
 }
 
@@ -340,11 +317,16 @@ function swallowClick(event: MouseEvent) {
     background: none;
   }
 
-  .icon-btn--dock:hover:not([aria-disabled='true']) {
-    background: none;
+  .icon-btn--pill:hover:not([aria-disabled='true']) {
+    color: var(--ink);
+    background: var(--hover-fill);
   }
 
-  .icon-btn--dock.icon-btn--selected:hover:not([aria-disabled='true']) {
+  .icon-btn--pill.icon-btn--accent:hover:not([aria-disabled='true']) {
+    color: var(--accent);
+  }
+
+  .icon-btn--pill.icon-btn--selected:hover:not([aria-disabled='true']) {
     background: var(--panel);
   }
 
@@ -362,8 +344,8 @@ function swallowClick(event: MouseEvent) {
   background: var(--ink);
 }
 
-.icon-btn--dock:active:not([aria-disabled='true']),
-.icon-btn--dock.icon-btn--selected:active:not([aria-disabled='true']) {
+.icon-btn--pill:active:not([aria-disabled='true']),
+.icon-btn--pill.icon-btn--selected:active:not([aria-disabled='true']) {
   background: var(--press-fill);
   transform: none;
 }
