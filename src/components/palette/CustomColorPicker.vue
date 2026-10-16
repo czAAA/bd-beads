@@ -1,31 +1,31 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { usePalette } from '../../composables/tools/usePalette'
 import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
-import { useCloseSheetOnPick } from '../shell/sheetContext'
 
 /**
- * The Custom color button (tickets 75, 151; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
+ * The Custom color button (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
  * ("pick any color"; v18 card), then the label; the ring, like a Palette swatch, while it is the paint color. It opens
- * the system color picker, which can't be styled: the native input covers the whole button, invisible.
+ * the app's own color picker (CustomColorPanel) under the buttons, and a second press closes it again.
  */
 defineProps<{
-  /** The last color chosen here (CONTEXT.md's Custom color), kept on the slot for the rest of the session even after
-   * a Palette swatch deselects it; undefined until one has ever been chosen. */
-  color?: string
   /** Whether Custom color is the active paint color right now, as opposed to just remembered on this slot. */
   selected: boolean
+  /** Whether the picker is open under the button. */
+  expanded: boolean
 }>()
 
 const emit = defineEmits<{
-  select: [hex: string]
+  toggle: []
 }>()
 
 const { t } = useI18n()
-const closeSheet = useCloseSheetOnPick()
+const buttonEl = ref<HTMLButtonElement>()
+
+defineExpose({ focus: () => buttonEl.value?.focus() })
 
 /**
  * Its Tooltip (ticket 335) comes from the registry's Custom color action: what it adds, and, once the Palette holds its
@@ -39,58 +39,23 @@ const tooltip = computed(() => {
     ? { name: action.name(t.value), disabled: true as const, disabledBody: action.disabledBody!(t.value, deps), announce: false }
     : { name: action.name(t.value), body: action.body?.(t.value), announce: false }
 })
-
-/**
- * The color the picker ends on is the answer (tickets 398, 444): it becomes the paint color and joins the Palette, and
- * the sheet holding this control closes. A touch picker (iPad's spectrum and sliders) fires both `input` and `change`
- * on every step of a drag, so neither can commit: each only remembers the latest color. It is taken when the picker is
- * left: the input loses focus, or the next press lands on the page. The input is mounted afresh (`generation`), which
- * closes any dialog still open.
- */
-const generation = ref(0)
-const inputEl = ref<HTMLInputElement>()
-let pending: string | undefined
-
-function remember(event: Event) {
-  pending = (event.target as HTMLInputElement).value
-  document.addEventListener('pointerdown', commit, { capture: true, once: true })
-}
-
-async function commit() {
-  document.removeEventListener('pointerdown', commit, true)
-  if (pending === undefined) return
-  const hex = pending
-  pending = undefined
-  emit('select', hex)
-  generation.value += 1
-  closeSheet()
-  // Outside a sheet the control stays, and keyboard focus comes back to it rather than falling to the page.
-  await nextTick()
-  inputEl.value?.focus()
-}
-
-onBeforeUnmount(() => document.removeEventListener('pointerdown', commit, true))
 </script>
 
 <template>
   <AppTooltip v-bind="tooltip" class="custom-color-picker-wrap">
-  <label class="custom-color-picker" :class="{ 'custom-color-picker--selected': selected }">
-    <input
-      type="color"
-      class="custom-color-picker__input"
-      data-testid="custom-color-input"
-      :value="color ?? '#000000'"
-      :aria-label="t.palette.customColorLabel"
+    <button
+      ref="buttonEl"
+      type="button"
+      class="custom-color-picker"
+      :class="{ 'custom-color-picker--selected': selected }"
       :aria-pressed="selected"
-      :key="generation"
-      ref="inputEl"
-      @input="remember"
-      @change="remember"
-      @blur="commit"
-    />
-    <span class="custom-color-picker__swatch" />
-    <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
-  </label>
+      :aria-expanded="expanded"
+      data-testid="custom-color-button"
+      @click="emit('toggle')"
+    >
+      <span class="custom-color-picker__swatch" />
+      <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
+    </button>
   </AppTooltip>
 </template>
 
@@ -104,7 +69,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', commit, true))
 
 /* A Toolbox button (Button card, `toolbox`) holding the swatch and the label. */
 .custom-color-picker {
-  position: relative;
   display: flex;
   flex: 1 1 auto;
   align-items: center;
@@ -143,19 +107,6 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', commit, true))
   box-shadow:
     0 0 0 2px var(--panel),
     0 0 0 4px var(--ring);
-}
-
-.custom-color-picker__input {
-  /* The real control: invisible but covering the whole button, so any click on it opens the native picker. */
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .custom-color-picker__swatch {

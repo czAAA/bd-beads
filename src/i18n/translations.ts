@@ -317,8 +317,17 @@ export interface Translations {
     undoButton: string
     redoButton: string
     rotateButton: string
-    /** CONTEXT.md's Custom color glossary entry: the native-picker slot at the end of the Colors group. */
+    /** CONTEXT.md's Custom color glossary entry: the button at the end of the Colors group that opens the color picker. */
     customColorLabel: string
+    /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in percent. */
+    wheelLabel: string
+    wheelValue: string
+    brightnessLabel: string
+    hexLabel: string
+    /** The short note under the hex field while what is typed is not a color. */
+    hexInvalid: string
+    /** The preview swatch's name: the color the picker would take. */
+    previewLabel: string
     pickFromCanvasLabel: string
     limitReached: string
     /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
