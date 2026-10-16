@@ -435,11 +435,6 @@ export const en: Translations = {
       one: '{count} bead covered.',
       other: '{count} beads covered.',
     },
-    marginLead: { set: 'Frame set.', moved: 'Frame moved.', resized: 'Frame resized.' },
-    marginClearedMessage: {
-      one: '{count} Piece was in the margin and moved outside it.',
-      other: '{count} Pieces were in the margin and moved outside it.',
-    },
   },
   size: {
     estimateLabel: 'Estimated size',

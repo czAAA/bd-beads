@@ -305,7 +305,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       const { first, last } = visible.columnsOf(row)
       const stored = beads[row]!
       for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
-        if (!(frame && frameContains(frame, { row, column }))) {
+        // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
+        if (!(frame && frameContains(withMargin(frame), { row, column }))) {
           drawAt(row, column, stored[column]!)
         }
       }

@@ -11,7 +11,7 @@ export interface Piece extends Frame {
 }
 
 /** The positions a bead touches: all eight around it on loom, whose rows stack; on peyote and brick stitch the six beads that nest against it (the neighbours of the Technique's own geometry). */
-export function touching(technique: Technique, position: GridPosition): GridPosition[] {
+function touching(technique: Technique, position: GridPosition): GridPosition[] {
   if (isOffsetTechnique(technique)) {
     return neighborsOf(technique, undefined, position)
   }

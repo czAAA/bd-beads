@@ -1,5 +1,6 @@
-import { beadBounds, type BeadMap, type Frame } from './canvas'
+import { beadBounds, forEachBead, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, type GridPosition, type Technique } from './grid'
+import { inMargin } from './margin'
 
 /**
  * The geometry of the Frame (CONTEXT.md, ADR 0026): drawing it, moving it, resizing it from its edges and fitting it to
@@ -75,14 +76,25 @@ export function frameWithEdgeStep(technique: Technique, frame: Frame, edge: Fram
   }
 }
 
-/** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. */
-export function fitToDrawing(technique: Technique, beads: BeadMap): Frame | undefined {
-  const bounds = beadBounds(beads)
+/** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. Beads the `current` Frame's margin covers are not drawn, so they are not wrapped. */
+export function fitToDrawing(technique: Technique, beads: BeadMap, current?: Frame): Frame | undefined {
+  const bounds = beadBounds(current ? withoutMargin(beads, current) : beads)
   if (!bounds) {
     return undefined
   }
   const top = snapRow(technique, bounds.row)
   return { row: top, column: bounds.column, rows: bounds.row + bounds.rows - top, columns: bounds.columns }
+}
+
+function withoutMargin(beads: BeadMap, frame: Frame): BeadMap {
+  const shown: BeadMap = {}
+  forEachBead(beads, (row, column, color) => {
+    if (!inMargin(frame, { row, column })) {
+      shown[row] ??= {}
+      shown[row][column] = color
+    }
+  })
+  return shown
 }
 
 export function sameFrame(a: Frame | undefined, b: Frame | undefined): boolean {
