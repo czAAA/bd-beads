@@ -280,7 +280,8 @@ const panRangeMm = computed(() => ({
 /**
  * Millimetres of picture per screen pixel dragged: how far a step is on screen (the Surface view's beadStep, at the fit
  * scale) against how far it is on the piece. Along a row, a step is the Bead's own width in millimetres; down the page,
- * the Technique's row spacing in millimetres, so the point under the pointer stays under it whichever Technique the rows are packed for.
+ * the Technique's row spacing in millimetres, so the point under the pointer stays under it whichever Technique the
+ * rows are packed for.
  */
 const mmPerScreenPx = computed(() => {
   const step = surfaceView({ space: latticeSpace.value, technique: props.technique, rotation: 0, zoom: fitScale.value }).beadStep()
