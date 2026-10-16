@@ -101,6 +101,8 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   padding: 0 var(--space-10) 0 var(--space-16);
   color: var(--ink);
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  /* Only the controls' own sideways scroll may pan here: a vertical drag must not move the page and carry the strip out of view. */
+  touch-action: pan-x;
 }
 
 /* Menu and Project stay at the left edge of the strip, even on a phone. */

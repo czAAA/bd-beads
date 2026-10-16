@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import CanvasBackdrop from './CanvasBackdrop.vue'
@@ -9,6 +11,11 @@ beforeEach(() => {
 })
 
 describe('CanvasStrip', () => {
+  it('keeps a vertical touch drag from panning the page', () => {
+    const source = readFileSync(resolve(__dirname, 'CanvasStrip.vue'), 'utf8')
+    expect(source).toMatch(/\n\.canvas-strip \{[^}]*touch-action: pan-x/)
+  })
+
   const project = { frame: undefined, beads: {}, technique: 'loom' } as unknown as Project
 
   it('holds Menu, Project, Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (tickets 425, 431)', async () => {
