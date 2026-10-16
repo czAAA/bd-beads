@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, onBeforeUnmount, ref, useId } from 'vue'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import KeyChip from './KeyChip.vue'
 import { tooltipOwners } from './tooltipOwner'
@@ -16,7 +17,9 @@ import type { TooltipProps } from './tooltipProps'
  *
  * What it says (ADR 0035): the `name` in bold, an optional `hotkey` as a key chip beside it and an optional `body`
  * under them. A control shows a Tooltip exactly when it is given one. A disabled control (`aria-disabled`, so it stays
- * hoverable and focusable) gives a `disabledBody` that replaces the body, in `muted`, with no key chip.
+ * hoverable and focusable) gives a `disabledBody` that replaces the body, in `muted`, with no key chip. A click or tap
+ * on such a control shows its tip too (ticket 453), so a finger, which has no hover, can learn why; the control's action
+ * still does not run. That tip is a layer in the overlay registry, so a press elsewhere closes it, as does Escape.
  *
  * The bubble is never clipped (ticket 265): while open it sits in the browser's top layer (a manual popover), outside
  * every ancestor's `overflow`, positioned in screen coordinates from its trigger. It opens on the side that has room
@@ -45,6 +48,8 @@ const id = useId()
 /** For the hover text check (ticket 264): the components this Tooltip comes from. */
 const owners = tooltipOwners(getCurrentInstance())
 const open = ref(false)
+/** Whether the open tip was opened by a click (ticket 453). */
+const pinned = ref(false)
 const bubbleEl = ref<HTMLElement>()
 const triggerEl = ref<HTMLElement>()
 /** Whether this browser has popovers (a test DOM may not). */
@@ -151,11 +156,23 @@ function onFocusIn(event: FocusEvent) {
 
 function hide() {
   clearLongPress()
+  pinned.value = false
   if (!open.value) return
   open.value = false
   follow(false)
   setTopLayer(false)
 }
+
+/** A click or tap on a disabled control with a reason (ticket 453): the pointer's release has just hidden any tip, so
+ * it is shown again, and stays until leave, blur, Escape or a press elsewhere. */
+function onClick() {
+  if (!props.disabled) return
+  show()
+  pinned.value = true
+}
+
+/** Only a tip a click opened is a layer: a hover or focus tip must not take Escape or a press from the menu behind it. */
+useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide })
 
 function onFocusOut() {
   pressing = false
@@ -179,6 +196,7 @@ onBeforeUnmount(hide)
     @focusin="onFocusIn"
     @pointerdown="onPointerDown"
     @pointerup="hide"
+    @click.capture="onClick"
     @pointercancel="hide"
     @focusout="onFocusOut"
     @keydown="onKeydown"

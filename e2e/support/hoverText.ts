@@ -148,8 +148,8 @@ async function measureTrigger(page: Page, index: number) {
 }
 
 /**
- * Opens every Tooltip on the page that this run has not opened in the same place before, by hover, by focus and by
- * long press, and measures each. `seen` is kept by the caller for the whole run at one language and width.
+ * Opens every Tooltip on the page that this run has not opened in the same place before, by hover, by focus, by
+ * long press and (a disabled one) by click, and measures each. `seen` is kept by the caller for the whole run at one language and width.
  */
 export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<HoverResult> {
   const result: HoverResult = { opened: [], misfits: [], silent: [] }
@@ -213,6 +213,16 @@ export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<H
       wrapper.dispatchEvent(new FocusEvent('focusout', { bubbles: false }))
     }
   })
+
+  // A click or tap on a disabled control shows its reason too (ticket 453): one at a time, each closed by Escape.
+  for (const trigger of triggers) {
+    const disabled = await page.evaluate((i) => !!document.querySelector(`[data-hover-probe="${i}"] [aria-disabled="true"]`), trigger.index)
+    if (!disabled) continue
+    await scrollTo(page, trigger.index)
+    await page.evaluate((i) => document.querySelector<HTMLElement>(`[data-hover-probe="${i}"] [aria-disabled="true"]`)?.click(), trigger.index)
+    if (record(trigger, await measureTrigger(page, trigger.index))) opened.add(trigger.index)
+    await page.keyboard.press('Escape')
+  }
 
   for (const trigger of triggers) if (!opened.has(trigger.index)) result.silent.push(trigger.name)
   return result
