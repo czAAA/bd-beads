@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
  * The background highlight behind the board (ticket 143; BeadBoard card): the open Project's Technique as one large,
- * faint Instrument Serif word, anchored bottom-right and partly covered by the board, and one soft curve sweeping from
- * the lower left up to the upper right. Decoration only: hidden from assistive tech, never interactive, and not part of
- * any export (the exports draw the Project alone).
+ * faint Instrument Serif word, anchored bottom-right, and one soft curve sweeping from the lower left up to the upper
+ * right. The curve sits behind the board; the word is painted over it (faint, so the beads show through) at one fixed
+ * size, wholly inside the drawing area, so zooming the board in or out neither crops nor shrinks it. Decoration only:
+ * hidden from assistive tech, never interactive, and not part of any export (the exports draw the Project alone).
  */
 defineProps<{ word: string }>()
 </script>
@@ -41,11 +42,13 @@ defineProps<{ word: string }>()
 
 .canvas-backdrop__word {
   position: absolute;
-  right: calc(var(--space-8) * -1);
-  bottom: calc((var(--space-32) + var(--space-8)) * -1);
+  right: var(--space-8);
+  bottom: 0;
+  z-index: calc(var(--z-canvas-overlay) - 1);
   font: var(--type-word);
   letter-spacing: var(--tracking-word);
   color: var(--word);
+  opacity: 0.5;
   white-space: nowrap;
 }
 </style>
