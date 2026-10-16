@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ToolColorControls from './ToolColorControls.vue'
+import { chooseCustomColor } from '../../testUtils/pill'
 
 function mountControls(overrides: Partial<InstanceType<typeof ToolColorControls>['$props']> = {}) {
   return mount(ToolColorControls, { props: { ...overrides } })
@@ -22,10 +23,7 @@ describe('ToolColorControls (pulled out of Toolbox.vue for ticket 384, shared wi
 
   it('emits select-custom-color with the hex the native color input reports', async () => {
     const wrapper = mountControls()
-    const input = wrapper.find<HTMLInputElement>('[data-testid="custom-color-input"]')
-    input.element.value = '#123456'
-    await input.trigger('change')
-    await input.trigger('blur')
+    await chooseCustomColor(wrapper, '#123456')
     expect(wrapper.emitted('select-custom-color')).toEqual([['#123456']])
   })
 
