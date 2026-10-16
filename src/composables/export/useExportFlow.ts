@@ -83,16 +83,17 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
   }
 
+  /** The blob type stays JSON though the bytes are gzip: pickers and in-app browsers may grey out an unknown type (ADR 0048). */
   const FILE_TYPE = 'application/json'
+
+  function handOverFile(fileName: string, make: () => Promise<BlobPart>) {
+    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile)
+  }
 
   /**
    * Export Project as the way out (ticket 158; forms-and-states.md): the open Project as a Project file, offered when a
    * save fails. With none open, a failed save offers the whole library.
    */
-  function handOverFile(fileName: string, make: () => Promise<BlobPart>) {
-    return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile)
-  }
-
   function onExportProjectFile() {
     const project = deps.currentProject()
     if (project) {
