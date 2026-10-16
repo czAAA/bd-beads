@@ -13,11 +13,11 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 ## The pill
 
 - **Material:** `elevated` fill, 1px `line` border, `elevation-2`, `radius-full`; `pill-thickness` (48px) across: 40px tiles in 4px padding, 2px between tiles.
-- **Order, leading end first:** the grip, `Paint | Fill | Select | Piece | Eraser | Hand`, a divider, the colour control, then (once a pen has been seen, ticket 326) a divider and the Pen/Mouse toggle. On left or right the leading end is the top.
+- **Order, leading end first:** the grip, `Paint | Fill | Select | Piece | Eraser | Hand`, a divider, then the colour control. Nothing follows it: the pill holds only tools and the colour control (ticket 0443). On left or right the leading end is the top.
 - **Grip:** an 18 × 40px handle (40 × 18px when vertical) drawing a 4 × 22px `line-strong` bar, `radius-full`. It says "this moves" without a hint. The whole pill can be dragged; the grip is where the cursor is `grab`.
 - **Tool tiles:** 40px, `radius-lg`, 22px icon in `muted`; hover `hover-fill` and `ink`, pressed `press-fill`. The active tool sits on `panel` with its icon in `accent`. Each tile keeps its hotkey digit (1, 2, 3, 6, 4, 5) in the top-right corner, `meta-tiny`, `muted`, `accent-strong` on the active tile; the digits follow the hotkey-chip rule (ticket 438), so a touch-only device hides them.
 - **Dividers:** 1px `line-soft`, 24px long, 4px margin, across the pill's length.
-- **Pen/Mouse toggle:** unchanged from the Dock: `pen-mode` / `pen-mode-off` in `accent`, `aria-pressed`, no key.
+- **Pen/Mouse is not on the pill (ticket 0443, spec 0440).** It is the Input row in Menu, shown once a pen has been seen (MenuPanel card). The `pen-mode` / `pen-mode-off` icons stay in the set.
 - **Phones under 400px**, top or bottom: tiles stay 40px and the pill scrolls rather than shrinking.
 - **No Project open:** the New Project / Import bar takes the Progress bar's place and there is no pill.
 
@@ -40,7 +40,7 @@ Replaces the Colour sheet on every device, phones included.
 ## Moving the pill
 
 - **Drag:** after 8px of movement the pill lifts (`elevation-3`-like shadow), follows the pointer, and four dashed `line-strong` drop zones show inside the drawing area; the nearest edge's zone turns `accent` with a 14% `accent` wash. Let go and the pill snaps there (`duration-slow`, `ease-standard`). Open popovers close when a drag starts. A drag never paints.
-- **Keyboard and screen readers:** the grip is a focusable button, "Move tools", whose arrow keys move the pill to that edge; the Menu sheet also has "Tools position": Left | Top | Right | Bottom.
+- **Keyboard and screen readers:** the grip is a focusable button, "Move tools", whose arrow keys move the pill to that edge; Menu also has "Tools position": Left | Top | Right | Bottom, under Preferences (MenuPanel card).
 - The position is remembered on this device, like the theme (ADR 0020).
 
 ## Accessibility

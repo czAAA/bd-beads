@@ -1,10 +1,11 @@
 # NameOnExports
 
-Where the maker's name for the PDF and PNG exports is set: the last row of the Export ▾ menu, and More on the phone.
+Where the Maker's name for a Project's PDF and PNG exports is set: the last row of Project (ProjectPanel card). It belongs to the Project, not the device (ADR 0060, ticket 0441).
 
-- The Export ▾ menu ends with a row "name on exports" (`meta` label, the name in `control`) and **Change**; with no name, "Not set" in `muted` and **Add**.
-- Change or Add opens a modal "Name on exports": TextField **Your name** (optional, up to 40 characters), hint "Printed on this Project's PDF and PNG exports.", Cancel and Save. Enter saves, Escape cancels, an empty field clears the name.
-- Under 1024px: a row in the Dock's Menu sheet under Theme and Language, opening the same field as a sheet.
-- Stored on the device like the theme; never sent anywhere. The exports leave the name out when it is empty.
+- **Unset:** an open TextField, label "Name on exports", placeholder "Your name", counter "0/40", hint "Printed on this Project's PDF and PNG exports." Enter or leaving the field saves; empty prints no name.
+- **Set:** one row, the label in `label` style, the name in Inter 500 and a pencil ("Edit Name on exports"). The pencil swaps the name for the field; clearing it returns the row to unset.
+- Up to 40 characters, optional. Saved at once and not part of Undo.
+- It applies to that Project only, so Projects made for others carry their own name. The exports leave the name out when it is empty, and set it in Instrument Serif italic (printed-output.md).
+- **Gone:** the row in the Export ▾ menu, the modal with Cancel and Save, the Dock Menu sheet row, and the device-wide name. A name saved on a device before the update is copied into each Project that has none (a temporary migration, removed by ticket 0391), then cleared.
 
-Hand-written from the Phase E sign-off.
+Rewritten for spec 0440; the earlier card (a device-wide name in the Export menu and a modal) is in git history.

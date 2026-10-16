@@ -53,24 +53,27 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
-/** One of the Canvas strip's sheets (CanvasStrip card). */
+/** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown from 1024px and a Top sheet under it. */
 type DockSheetButton = 'strip-project' | 'strip-menu'
 
-/** Opens a strip sheet (CanvasStrip card), closing whichever one is already open first — its button toggles, so clicking
- * it while open would close it instead. Does nothing if the right one is already open. */
+/** Opens Menu or Project (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
+ * while its panel is open would close it instead. */
 export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<void> {
-  if ((await page.getByTestId('bottom-sheet').count()) > 0) {
-    await closeSheet(page)
-  }
+  await closeSheet(page)
   await page.getByTestId(dock).click()
   await settle(page)
 }
 
-/** Closes whichever sheet is open, the way its own Close button does; does nothing with none open. */
+/** Closes whatever is open: a bottom sheet (New Project, Saved Projects) with its Close button, then Menu or Project with the strip button that lit it; does nothing with none open. */
 export async function closeSheet(page: Page): Promise<void> {
   const close = page.getByTestId('sheet-close')
-  if ((await close.count()) > 0) {
-    await close.click()
+  while ((await close.count()) > 0) {
+    await close.last().click()
+    await settle(page)
+  }
+  const lit = page.locator('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
+  if ((await lit.count()) > 0) {
+    await lit.first().click()
     await settle(page)
   }
 }

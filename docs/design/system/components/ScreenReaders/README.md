@@ -8,3 +8,5 @@ Landmarks, the accessible name of the Pattern, a name for every icon-only button
 - Results are `role="status"` (polite): "Row 13 of 30", "Saved", "Patterns imported: 3". Errors are `role="alert"`. One announcement per action.
 
 Hand-written from the Phase C sign-off.
+
+- **Menu and Project (spec 0440):** each section is a named group; each pencil is named for what it edits ("Rename Moth", "Edit Name on exports"); choice lists are `radiogroup`s with `aria-checked`; the save state is a polite live region, so a failed save is announced.

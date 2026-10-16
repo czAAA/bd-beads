@@ -181,7 +181,7 @@ The Canvas color button (Russian "Цвет полотна") offers five backgrou
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
 | No. · Custom | № · Свой цвет |
 | Match device · Light · Dark · High contrast | Как на устройстве · Светлая · Тёмная · Высокий контраст |
-| Name on exports · Change · Add | Имя на экспорте · Изменить · Добавить |
+| Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
 | arrows move · space paints · esc leaves | стрелки двигают · пробел рисует · esc выход |
 | Row {r}, column {c}, {color} · Painted {color} | Ряд {r}, столбец {c}, {color} · Закрашено: {color} |
 | Your name | Ваше имя |
@@ -278,3 +278,25 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | Frame (optional) | Рамка (необязательно) |
 | Leave it empty to draw anywhere. Set Frame later, before you export. | Оставьте пустым, чтобы рисовать где угодно. Рамку можно задать позже, перед экспортом. |
 | A picture needs a Frame size. It becomes the first piece, and you can still draw outside it. | Для картинки нужен размер рамки. Она станет первым фрагментом, а рисовать можно и за рамкой. |
+
+## Menu and Project (spec 0440)
+
+Product nouns are capitalized in English ("New Project", "Saved Projects", "Delete this Project"); the Russian is lowercase.
+
+| English | Русский |
+|---|---|
+| Menu · Project · Projects · New Project · Import · Export all · Saved Projects · Delete all Projects | Меню · Проект · Проекты · Новый проект · Импорт · Экспортировать все · Сохранённые проекты · Удалить все проекты |
+| Preferences · Language · Theme · Tools position · Input · Pen · Mouse | Настройки · Язык · Тема · Положение инструментов · Ввод · Перо · Мышь |
+| Left · Top · Right · Bottom · Light · Dark · System · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как в системе · Высокий контраст |
+| Help · Keyboard shortcuts · Overview · About · Source code · Version | Справка · Сочетания клавиш · Обзор · О приложении · Исходный код · Версия |
+| Rename {name} · Technique · Bead: · Replace bead · Canvas · Position marks · Dots · Squares | Переименовать «{name}» · Техника · Бисер: · Заменить бисер · Холст · Метки позиций · Точки · Клетки |
+| saved · this device · unsaved changes · Not saved. {reason} · Try again | сохранено · на этом устройстве · есть несохранённые изменения · Не сохранено. {reason} · Повторить |
+| Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |
+| Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |
+| Duplicate · Duplicate Project · Name · Everything is copied, including Row progress, so the copy works as a snapshot. · Suggested: the current name and the next free number. | Дублировать · Дублировать проект · Название · Копируется всё, включая прогресс по рядам, так что копия работает как снимок. · Предложено: текущее название и следующий свободный номер. |
+| Delete all Projects? · Every Project is removed from this device. This can't be undone. Export all first if you want to keep copies. · Clear this Project | Удалить все проекты? · Все проекты будут удалены с этого устройства. Это нельзя отменить. Сначала нажмите «Экспортировать все», если хотите сохранить копии. · Очистить этот проект |
+| Delete this Project · Delete {name}? · {name} and its Row progress are removed from this device. This can't be undone. Export it first if you want to keep a copy. · Delete Project | Удалить этот проект · Удалить «{name}»? · «{name}» и прогресс по рядам будут удалены с этого устройства. Это нельзя отменить. Сначала экспортируйте проект, если хотите сохранить копию. · Удалить проект |
+| A Project needs a name. · Enter saves · Escape cancels | У проекта должно быть название. · Enter сохраняет · Esc отменяет |
+| The canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
+
+Russian here is a proposal for review. The Technique explanation in Project is the app's existing note.

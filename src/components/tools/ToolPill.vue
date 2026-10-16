@@ -5,7 +5,6 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
 import { PILL_POSITIONS, isVerticalPill, pillPositionForKey, type PillColorMode, type PillPosition, type PillRect } from '../../domain/toolPill'
-import type { InputMode } from '../../domain/inputMode'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -17,9 +16,8 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
  * The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock.
- * From its leading end: the grip, the six tool tiles, a divider, the colour control and, where the device needs it, a
- * second divider and the Pen/Mouse toggle (ADR 0055). It docks to one of four edges, `pill-gap` in and centred, and
- * is dragged (or moved with the grip's arrow keys) to another. This component is the layer over the drawing area, which
+ * From its leading end: the grip, the six tool tiles, a divider and the colour control (Pen/Mouse is in the Menu, ticket
+ * 443). It docks to one of four edges, `pill-gap` in and centred, and is dragged (or moved with the grip's arrow keys) to another. This component is the layer over the drawing area, which
  * takes no pointer events itself, so the canvas under it stays fully usable. It is outside the canvas's zoom
  * transform and never scales with it (ADR 0034).
  */
@@ -39,8 +37,6 @@ const props = defineProps<{
   customColor?: string
   selectedImageColor?: string
   imageColors?: readonly string[]
-  /** Pen mode or Mouse mode (ticket 325): its toggle ends the pill; absent, the device has no use for it and there is none. */
-  inputMode?: InputMode
   /** Which bottom sheet is open: the dormant Mirror button (MIRROR_ENABLED, ticket 174) shows lit while its sheet is. */
   openSheet?: PhoneSheet | null
 }>()
@@ -54,7 +50,6 @@ const emit = defineEmits<{
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
   'select-image-color': [hex: string]
-  'toggle-input-mode': []
   'select-sheet': [sheet: PhoneSheet]
   /** Where the pill is in the drawing area's pixels (undefined when it cannot be measured): the Selection bar keeps clear of it. */
   rect: [rect: PillRect | undefined]
@@ -70,10 +65,9 @@ const vertical = computed(() => isVerticalPill(props.position))
 const tiles = PILL_TOOLS.map((tool) => ({ tool, action: controlAction(`tool-${tool}`), key: TOOL_HOTKEYS[tool] }))
 const colorAction = controlAction('pill-colors')
 const mirrorAction = MIRROR_ENABLED ? controlAction('pill-mirror') : undefined
-const inputModeAction = computed(() => (props.inputMode ? controlAction(props.inputMode === 'pen' ? 'pen-mode' : 'mouse-mode') : undefined))
 const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
 
-/** The tool tiles, the colour control and the Pen/Mouse toggle are one Tab stop (the active tool); the arrows move along them. */
+/** The tool tiles and the colour control are one Tab stop (the active tool); the arrows move along them. */
 const roving = useRovingFocus(pillEl, '.tool-pill__stop')
 
 const drag = useToolPillDrag(pillEl, layerEl, {
@@ -125,9 +119,9 @@ async function probeRoom() {
 }
 const pillSize = useElementSize(pillEl)
 const layerSize = useElementSize(layerEl)
-// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether the Pen toggle and a chosen colour exist, and a drag ending.
+// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether a chosen colour exists, and a drag ending.
 watch(
-  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.inputMode, () => props.colorHex === undefined, drag.dragging],
+  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.colorHex === undefined, drag.dragging],
   () => void probeRoom(),
   { immediate: true, flush: 'post' },
 )
@@ -250,20 +244,6 @@ watch(
         @click="emit('select-sheet', 'mirror')"
       />
 
-      <template v-if="inputMode && inputModeAction">
-        <span class="tool-pill__divider" role="presentation" />
-        <IconButton
-          class="tool-pill__stop"
-          variant="pill"
-          :action="inputModeAction"
-          :tooltip="{ placement: vertical ? undefined : position === 'top' ? 'bottom' : 'top' }"
-          accent
-          :aria-pressed="inputMode === 'pen'"
-          :tabindex="-1"
-          data-testid="pill-input-mode"
-          @click="emit('toggle-input-mode')"
-        />
-      </template>
     </div>
 
     <ColorPopover
