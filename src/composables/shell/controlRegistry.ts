@@ -545,7 +545,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',
-    body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.saveBox.nameOnExports, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
+    body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
   }),
   unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),

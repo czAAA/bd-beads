@@ -15,17 +15,17 @@ function delicaProject(painted: number) {
 
 describe('printText (tickets 162, 164)', () => {
   it('says what the pages print about the Project: technique word, size, bead, estimate, date and time', () => {
-    const text = printText(delicaProject(10), en, 'en', 'Maria Kovaleva', at)
+    const text = printText(delicaProject(10), en, 'en', at)
 
     expect(text.techniqueWord).toBe('Loom')
     expect(text.size).toBe('80×60')
     expect(text.metaLine).toMatch(/^80×60 · Miyuki Delica 11\/0 · ≈ .+ cm$/)
     expect(text.exportedAt).toBe('Sep 26, 2026 · 14:32')
-    expect(text.maker).toBe('Maria Kovaleva')
+    expect(text.maker).toBe('')
   })
 
   it('writes Beads needed in beads and grams, the Total from the total count, with the note', () => {
-    const text = printText(delicaProject(4800), en, 'en', '', at)
+    const text = printText(delicaProject(4800), en, 'en', at)
 
     expect(text.colors).toEqual([{ hex: '#e63746', name: 'Red', beads: '4 800', grams: '24 g' }])
     expect(text.totalBeads).toBe('4 800 beads')
@@ -34,7 +34,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('shows no grams and no note for a Bead with no weight', () => {
-    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had' }, en, 'en', '', at)
+    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had' }, en, 'en', at)
 
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()
@@ -43,7 +43,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('speaks Russian: the date, the plural, the decimal comma', () => {
-    const text = printText(delicaProject(761), ru, 'ru', '', at)
+    const text = printText(delicaProject(761), ru, 'ru', at)
 
     expect(text.exportedAt).toBe('26 сент. 2026 г. · 14:32')
     expect(text.totalBeads).toBe('761 бисеринка')
@@ -57,18 +57,18 @@ describe('printText (tickets 162, 164)', () => {
     expect(headerMaker('x'.repeat(40)).endsWith('…')).toBe(true)
   })
 
-  it("keeps the device-wide maker's name, and the background is just that name, when the Project has no override (ticket 182)", () => {
-    const text = printText(delicaProject(10), en, 'en', 'Maria Kovaleva', at)
-
-    expect(text.maker).toBe('Maria Kovaleva')
-    expect(text.background).toBe('Maria Kovaleva')
-  })
-
-  it("overrides the device-wide maker's name with the Project's own, and joins it with the Project's name in the background (ticket 182)", () => {
+  it("prints the Project's own maker's name, and joins it with the Project's name in the background (ADR 0060)", () => {
     const project = { ...delicaProject(10), makerName: 'Bead Master' }
-    const text = printText(project, en, 'en', 'Maria Kovaleva', at)
+    const text = printText(project, en, 'en', at)
 
     expect(text.maker).toBe('Bead Master')
     expect(text.background).toBe('Logo panel · Bead Master')
+  })
+
+  it('prints no name, in the header or the background, when the Project has none (ADR 0060)', () => {
+    const text = printText(delicaProject(10), en, 'en', at)
+
+    expect(text.maker).toBe('')
+    expect(text.background).toBe('')
   })
 })

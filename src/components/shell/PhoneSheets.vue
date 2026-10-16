@@ -152,13 +152,16 @@ const deps = computed(() =>
         :save-failed="saveFailed"
         :exporting="exporting"
         :project-name="activeProject.name"
-        :maker-name="makerName"
-        @edit-maker-name="nameOnExportsOpen = true"
         @save="onSave"
         @export-png="onExportPng"
         @export-pdf="onExportPdf"
         @fit-frame="onFitFrame(); openPhoneSheet = null"
       />
+      <!-- The Project's own Maker's name (ADR 0060, ticket 441); ticket 443 replaces this row with the Project menu's own. -->
+      <div class="phone-sheet__menu-row" data-testid="project-name-on-exports">
+        <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>
+        <AppButton variant="in-box" size="sm" :action="sheetActions.changeMakerName" :label="makerName ? undefined : t.saveBox.addName" data-testid="name-on-exports-change" @click="nameOnExportsOpen = true" />
+      </div>
       <BeadQuantities :project="settledProject" />
     </template>
     <div class="phone-sheet__project-actions">
@@ -203,8 +206,8 @@ const deps = computed(() =>
   </BottomSheet>
 
   <!--
-    The Menu sheet (ticket 295; Dock card): the header's whole remaining job -- language, theme, Tools position (ticket 439), Name
-    on exports, Keyboard shortcuts (only with a keyboard or mouse attached), Overview and the source link. Modal, like the
+    The Menu sheet (ticket 295; Dock card): the header's whole remaining job -- language, theme, Tools position (ticket 439),
+    Keyboard shortcuts (only with a keyboard or mouse attached), Overview and the source link. Modal, like the
     Project sheet. Everything about the open Project stays in the Project sheet; nothing is repeated here.
   -->
   <BottomSheet v-if="openPhoneSheet === 'menu'" modal :title="t.header.menuButton" @close="openPhoneSheet = null">
@@ -219,10 +222,6 @@ const deps = computed(() =>
     <div v-if="activeProject" class="phone-sheet__menu-row phone-sheet__menu-row--wrap" data-testid="menu-item-tools-position">
       <span id="menu-tools-position" class="phone-sheet__menu-label">{{ t.toolPill.position }}</span>
       <SegmentedControl v-model="toolPillPosition" :options="pillPositionOptions" labelledby="menu-tools-position" small data-testid="menu-tools-position" />
-    </div>
-    <div class="phone-sheet__menu-row" data-testid="menu-item-name-on-exports">
-      <span class="phone-sheet__menu-label">{{ t.saveBox.nameOnExports }}</span>
-      <AppButton variant="in-box" size="sm" :action="sheetActions.changeMakerName" :label="makerName ? undefined : t.saveBox.addName" data-testid="menu-item-name-on-exports-change" @click="nameOnExportsOpen = true" />
     </div>
     <button type="button" class="ui-control phone-sheet__menu-link" data-testid="menu-item-shortcuts" @click="shortcutsHelpOpen = true">
       <AppIcon name="keyboard" :size="16" />

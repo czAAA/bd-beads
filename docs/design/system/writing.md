@@ -181,7 +181,7 @@ The Canvas color button (Russian "Цвет полотна") offers five backgrou
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
 | No. · Custom | № · Свой цвет |
 | Match device · Light · Dark · High contrast | Как на устройстве · Светлая · Тёмная · Высокий контраст |
-| Name on exports · Not set · Change · Add | Имя на экспорте · Не указано · Изменить · Добавить |
+| Name on exports · Change · Add | Имя на экспорте · Изменить · Добавить |
 | arrows move · space paints · esc leaves | стрелки двигают · пробел рисует · esc выход |
 | Row {r}, column {c}, {color} · Painted {color} | Ряд {r}, столбец {c}, {color} · Закрашено: {color} |
 | Your name | Ваше имя |
@@ -189,7 +189,7 @@ The Canvas color button (Russian "Цвет полотна") offers five backgrou
 | {n} beads · ≈ {g} | {n} бисеринок · ≈ {g} |
 | ≈ {n} {bead} a gram, rounded up. | ≈ {n} {bead} в грамме, с округлением вверх. |
 | Buy about 10% more for spares. | Возьмите примерно на 10 % больше про запас. |
-| Printed on your PDF and PNG exports. Stays on this device. | Печатается на PDF и PNG. Хранится только на этом устройстве. |
+| Printed on this Project's PDF and PNG exports. | Печатается на PDF и PNG этого проекта. |
 | made by · by {maker} | автор · автор: {maker} |
 
 ## Copy added in v15
