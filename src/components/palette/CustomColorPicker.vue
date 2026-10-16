@@ -43,7 +43,7 @@ const tooltip = computed(() => {
 /**
  * The color the picker commits is the answer (tickets 398, 444): it becomes the paint color and joins the Palette, and
  * the sheet holding this control closes. `input` fires on every step of a drag in the spectrum or a slider, so only
- * `change` (the dialog's confirm or dismiss) counts. The input is mounted afresh (`generation`), which closes any
+ * `change` (the picker committing a color) counts. The input is mounted afresh (`generation`), which closes any
  * dialog still open.
  */
 const generation = ref(0)
