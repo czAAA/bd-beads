@@ -680,7 +680,6 @@ export interface Translations {
     hand: string
     editFrame: string
     editFrameLocked: string
-    moveHandle: string
     /** The margin steppers' Tooltips (ticket 417), and why Shrink is off at one bead. */
     frameEdgeOut: string
     frameEdgeIn: string

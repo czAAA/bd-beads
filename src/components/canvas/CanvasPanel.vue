@@ -291,7 +291,7 @@ function techniqueWord(technique: Technique): string {
         />
 
         <FrameChrome
-          v-if="activeProject && frameAnchor && !selection"
+          v-if="activeProject && frameAnchor"
           :project="activeProject"
           :anchor="frameAnchor"
           :editing="settingFrame"

@@ -25,11 +25,11 @@ const emit = defineEmits<{ toggle: []; key: [event: KeyboardEvent] }>()
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const toggleAction = controlAction('edit-frame')
-const moveAction = controlAction('frame-move')
 
 const touch = useMediaQuery('(pointer: coarse)')
 const TOUCH_TARGET_PX = 44
-const toggleSize = computed(() => (touch.value ? TOUCH_TARGET_PX : 34))
+const TOGGLE_PX = 34
+const toggleSize = computed(() => (touch.value ? TOUCH_TARGET_PX : TOGGLE_PX))
 const toggleStyle = computed(() => {
   const { x, y } = frameEditToggleCentre(props.anchor, toggleSize.value)
   return { left: `${x}px`, top: `${y}px`, width: `${toggleSize.value}px`, height: `${toggleSize.value}px` }
@@ -57,7 +57,7 @@ const enabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
       type="button"
       class="frame-chrome__move"
       :style="moveStyle"
-      :aria-label="moveAction.name(t)"
+      :aria-label="t.frame.moveHandle"
       data-testid="frame-move-handle"
       @keydown="emit('key', $event)"
     />

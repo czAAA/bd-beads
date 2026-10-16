@@ -600,7 +600,6 @@ export const es: Translations = {
     hand: 'Arrastra para moverte por el lienzo.',
     editFrame: 'Muestra u oculta los tiradores y los botones de tamaño del marco.',
     editFrameLocked: 'El progreso de filas ya empezó, así que el marco solo se puede mover.',
-    moveHandle: 'Arrastra para mover el marco con sus cuentas.',
     frameEdgeOut: 'Amplía el marco una cuenta por este lado.',
     frameEdgeIn: 'Reduce el marco una cuenta por este lado.',
     frameEdgeInDisabled: 'El marco ya no se puede reducir más por este lado.',
