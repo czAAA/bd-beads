@@ -17,8 +17,7 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 /**
  * The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock.
  * From its leading end: the grip, the six tool tiles, a divider and the colour control (Pen/Mouse is in the Menu, ticket
- * 443). It docks to one of four edges, `pill-gap` in and centred, and
- * is dragged (or moved with the grip's arrow keys) to another. This component is the layer over the drawing area, which
+ * 443). It docks to one of four edges, `pill-gap` in and centred, and is dragged (or moved with the grip's arrow keys) to another. This component is the layer over the drawing area, which
  * takes no pointer events itself, so the canvas under it stays fully usable. It is outside the canvas's zoom
  * transform and never scales with it (ADR 0034).
  */
@@ -68,7 +67,7 @@ const colorAction = controlAction('pill-colors')
 const mirrorAction = MIRROR_ENABLED ? controlAction('pill-mirror') : undefined
 const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
 
-/** The tool tiles, and the colour control are one Tab stop (the active tool); the arrows move along them. */
+/** The tool tiles and the colour control are one Tab stop (the active tool); the arrows move along them. */
 const roving = useRovingFocus(pillEl, '.tool-pill__stop')
 
 const drag = useToolPillDrag(pillEl, layerEl, {
