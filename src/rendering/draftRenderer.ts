@@ -9,7 +9,7 @@ import type { ProjectTheme } from './beadLook'
  * floor of 30 fps in peyote and at 250 × 250. This costs the same however many beads there are.
  *
  * It keeps where the beads are (the half-bead shift of peyote and brick stitch rows included) and what color each is;
- * it gives up the rim, the rounding and brick stitch's seam. It is only ever the look while the picture is moving:
+ * it gives up the rim and the rounding. It is only ever the look while the picture is moving:
  * at rest the beads are drawn by the Project renderer, so the Project the frame holds is seen exactly as created.
  */
 
