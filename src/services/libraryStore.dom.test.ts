@@ -221,13 +221,13 @@ describe('projectStorage', () => {
       expect(frameGrid(loaded!).every((row) => row.length === 10)).toBe(true)
     })
 
-    it('hands exported Project files plain Projects, so a file stays readable JSON', () => {
+    it('hands exported Project files plain Projects, which the file then encodes itself', () => {
       const project = paintedOrdinaryProject()
       saveProjects([project])
 
       const exported = serializeLibrary(loadProjects())
 
-      expect(JSON.parse(exported).patterns[0].encodedBeads).toBeUndefined()
+      expect(JSON.parse(exported).projects[0].encodedBeads).toBeDefined()
       expect(parseProjectsFile(exported).projects).toEqual([project])
     })
 

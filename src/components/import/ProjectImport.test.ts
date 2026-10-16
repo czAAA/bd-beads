@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { settleImport } from '../../testUtils/settleImport'
+import { gzipJson } from '../../testUtils/gzipJson'
 import { flushPromises, mount } from '@vue/test-utils'
 import ProjectImport from './ProjectImport.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
@@ -20,11 +22,11 @@ async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
   const input = wrapper.find<HTMLInputElement>('[data-testid="import-file"]')
   Object.defineProperty(input.element, 'files', {
     configurable: true,
-    value: [new File([contents], 'import.json', { type: 'application/json' })],
+    value: [new File([await gzipJson(contents)], 'import.openbeads', { type: 'application/json' })],
   })
 
   await input.trigger('change')
-  await flushPromises()
+  await settleImport()
 }
 
 describe('ProjectImport import', () => {
@@ -80,10 +82,10 @@ describe('ProjectImport toastResults and testidPrefix (ticket 168: the iPad mini
     const input = wrapper.find<HTMLInputElement>('[data-testid="menu-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
-      value: [new File([serializeProject(makeProject('Fox'))], 'import.json', { type: 'application/json' })],
+      value: [new File([await gzipJson(serializeProject(makeProject('Fox')))], 'import.openbeads', { type: 'application/json' })],
     })
     await input.trigger('change')
-    await flushPromises()
+    await settleImport()
 
     expect(wrapper.find('[data-testid="import-result"]').exists()).toBe(false)
     expect(wrapper.emitted('import-result')).toEqual([['import-file', 'Projects imported: 1', 'success']])

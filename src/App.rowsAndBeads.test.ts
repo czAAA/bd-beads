@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { settleImport } from './testUtils/settleImport'
+import { gzipJson } from './testUtils/gzipJson'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
@@ -321,10 +323,10 @@ describe('App project transfer', () => {
     const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
-      value: [new File([contents], 'library.json', { type: 'application/json' })],
+      value: [new File([await gzipJson(contents)], 'library.openbeads', { type: 'application/json' })],
     })
     await input.trigger('change')
-    await flushPromises()
+    await settleImport()
   }
 
   it('takes in a library exported on another device and saves every Project in it', async () => {
