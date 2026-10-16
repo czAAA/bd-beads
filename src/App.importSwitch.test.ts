@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { settleImport } from './testUtils/settleImport'
 import { gzipJson } from './testUtils/gzipJson'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead } from './testUtils/beads'
 import { createProject, type Project } from './domain/project'
@@ -14,7 +14,7 @@ import { openSheet, pickColor } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => vi.restoreAllMocks())
@@ -98,7 +98,7 @@ describe('App import asks before switching (ticket 154)', () => {
     async function unsavedApp() {
       const wrapper = mount(App)
       await createProjectViaForm(wrapper, 'Current')
-      const spy = refuseStorageWrites('bd-beads:patterns')
+      const spy = refuseStorageWrites('openbeads:patterns')
       await pickColor(wrapper, 'red')
       await pressBead(wrapper, { row: 0, column: 0 })
       await wrapper.find('.app-shell').trigger('mouseup')

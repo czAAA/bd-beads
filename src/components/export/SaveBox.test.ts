@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import SaveBox from './SaveBox.vue'
 import { en } from '../../i18n/en'
 
-beforeEach(() => localStorage.setItem('bd-beads:locale', 'en'))
+beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
 function mountBox(props: Record<string, unknown> = {}) {
   return mount(SaveBox, { props: { saveFailed: false, ...props }, attachTo: document.body })

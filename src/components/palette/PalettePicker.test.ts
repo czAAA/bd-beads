@@ -5,7 +5,7 @@ import { PALETTE } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 describe('PalettePicker', () => {

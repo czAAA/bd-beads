@@ -27,7 +27,7 @@ beforeEach(() => {
   vi.mocked(exportProjectPng).mockClear()
   vi.mocked(exportProjectPdf).mockClear()
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
   saveProjects([project])
 })
 
@@ -94,6 +94,6 @@ describe('App empty, loading and failed states (ticket 158)', () => {
 
     await wrapper.find('[data-testid="save-failed-export"]').trigger('click')
 
-    expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.json', expect.any(String))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith('my-scarf_pr.openbeads', expect.any(Uint8Array), 'application/json'))
   })
 })

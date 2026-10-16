@@ -19,7 +19,7 @@ import projectFile from './fixtures/project-file.json?raw'
  * test, so a change to an encoder or decoder can't quietly rewrite what "unchanged" means here.
  */
 
-const STORAGE_KEY = 'bd-beads:patterns'
+const STORAGE_KEY = 'openbeads:patterns'
 
 /** The most cells a Project could be created with before ADR 0019 took the limit away: the fixture below is past it. */
 const FORMER_CELL_CAP = 10_000
@@ -175,7 +175,7 @@ describe('stored-data compatibility', () => {
         loadProjects()
       }
 
-      expect(localStorage.getItem('bd-beads:patterns:unreadable')).toBeNull()
+      expect(localStorage.getItem('openbeads:patterns:unreadable')).toBeNull()
     })
 
     it.each([

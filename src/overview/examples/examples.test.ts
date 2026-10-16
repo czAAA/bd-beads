@@ -9,7 +9,7 @@ import { CHECKS, GOLD_STRIP, HEART, HILLS, POPPY, POPPY_PAINTING, STRIPES } from
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects'] as const
 
 function example(feature: (typeof FEATURES)[number], locale = 'en') {
-  localStorage.setItem('bd-beads:locale', locale)
+  localStorage.setItem('openbeads:locale', locale)
   const Host = defineComponent({
     setup() {
       provideI18n()

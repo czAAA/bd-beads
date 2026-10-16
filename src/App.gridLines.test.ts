@@ -15,7 +15,7 @@ import { pickColor } from './testUtils/dock'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 const RED = '#e63746'

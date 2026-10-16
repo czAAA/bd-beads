@@ -1,8 +1,9 @@
 import { beadLabel, findBead } from '../domain/beads'
 import { normalizeProject, type GridProject, type Project } from '../domain/project'
 import { decodeProject, encodeProject, type EncodedGridProject, type EncodedProject } from '../domain/projectEncoding'
+import { readKey } from './storageKeys'
 
-const STORAGE_KEY = 'bd-beads:patterns'
+const STORAGE_KEY = 'openbeads:patterns'
 
 /**
  * Where loadProjects keeps a stored value it can't read, rather than leaving it to be overwritten. A save always writes
@@ -11,7 +12,7 @@ const STORAGE_KEY = 'bd-beads:patterns'
  * predating a format can't read what a newer one wrote (this app is served from a cache, ADR 0045) — so the bytes are
  * kept aside for whichever build does understand them.
  */
-const UNREADABLE_KEY = 'bd-beads:patterns:unreadable'
+const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
 /**
  * The stored format saveProjects writes (ADR 0009). Version 1 is the original: a bare JSON array of Projects, each
@@ -86,7 +87,7 @@ function keepUnreadable(raw: string): void {
  * app carrying on from an empty library is only safe if the bytes it couldn't read survive it (see UNREADABLE_KEY).
  */
 export function loadProjects(): Project[] {
-  const raw = localStorage.getItem(STORAGE_KEY)
+  const raw = readKey(localStorage, STORAGE_KEY)
   if (raw === null) {
     return []
   }

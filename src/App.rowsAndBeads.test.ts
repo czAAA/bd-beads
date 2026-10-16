@@ -15,7 +15,7 @@ const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'ru') // these tests read the Russian dictionary
+  localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
 /** The Project sheet's Replace bead select, which opens the sheet for it and leaves it open. */
@@ -284,7 +284,7 @@ describe('App bead quantities', () => {
 
 describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
     const wrapper = await mountWithProject(15, 30)
     expect((await sheetRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
 

@@ -9,7 +9,7 @@ const noFrame = withFrame(project, undefined)
 
 describe('ContextBar', () => {
   beforeEach(() => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
 
   it('is absent with neither a Selection nor an armed paste', () => {

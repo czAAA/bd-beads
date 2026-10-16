@@ -20,8 +20,9 @@
         var pick = null
         var locale = null
         try {
-          pick = localStorage.getItem('bd-beads:theme')
-          locale = localStorage.getItem('bd-beads:locale')
+          // Ticket 392: the old bd-beads: key until the app has copied it forward.
+          pick = localStorage.getItem('openbeads:theme') || localStorage.getItem('bd-beads:theme')
+          locale = localStorage.getItem('openbeads:locale') || localStorage.getItem('bd-beads:locale')
         } catch (e) {}
         var theme =
           pick === 'light' || pick === 'dark' || pick === 'contrast'

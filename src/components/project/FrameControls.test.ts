@@ -6,7 +6,7 @@ import { en } from '../../i18n/en'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 /** A 10 × 20 bead Frame of Toho Cube 1.5 mm beads: 15 × 30 mm. */

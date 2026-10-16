@@ -10,7 +10,7 @@ import { createProjectViaForm } from './testUtils/seedProject'
 
 beforeEach(() => {
   localStorage.clear()
-  localStorage.setItem('bd-beads:locale', 'en')
+  localStorage.setItem('openbeads:locale', 'en')
 })
 
 afterEach(() => vi.restoreAllMocks())
@@ -75,7 +75,7 @@ describe('Saved Projects confirms switching (ticket 232)', () => {
 
   it('offers Save first and Switch anyway when the current Project is not saved', async () => {
     const { wrapper, otherId } = await twoProjects()
-    refuseStorageWrites('bd-beads:patterns')
+    refuseStorageWrites('openbeads:patterns')
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, { row: 0, column: 0 })
     await wrapper.find('.app-shell').trigger('mouseup')

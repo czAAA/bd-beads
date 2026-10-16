@@ -4,7 +4,7 @@ import AppMessage from './AppMessage.vue'
 
 describe('AppMessage', () => {
   beforeEach(() => {
-    localStorage.setItem('bd-beads:locale', 'en')
+    localStorage.setItem('openbeads:locale', 'en')
   })
 
   afterEach(() => {
