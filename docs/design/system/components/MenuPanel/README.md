@@ -12,12 +12,12 @@ The body of the Menu: what is about the app and the device. It renders as a drop
 
 Each is a `role="group"` named by its label. Sections are split by a 1px `line-soft` rule and 8px of air above and 6px below. The section label is the `label` style (DM Mono, lowercase by style), padding 4 12 6.
 
-1. **Projects:** New Project, Import, Export all (value `.openbeads`), Saved Projects (value: how many), Delete all. Delete all is last and `danger`. Nothing is accented: New Project is not a primary button here.
+1. **Projects:** New Project, Import, Export all (value `.openbeads`), Saved Projects (value: how many), Delete all. Delete all is last and `danger`; it is the app's existing "Clear" of the open Project (every bead emptied, Row progress off, one Undo step, behind its usual confirmation), so it is disabled with no Project open, its Tooltip saying so. Import keeps the panel open until its file is read, then the result is a toast and the panel closes. Nothing is accented: New Project is not a primary button here.
 2. **Preferences:** Language, Theme, Tools position, Input.
 3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Overview.
 4. **About:** Source code (the external-link icon at the right; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269) and Version (a non-interactive row, the number in `meta`).
 
-There is no Tour item (the Tour is off, `TOUR_ENABLED`). Nothing repeats a tool: Rulers, Undo, Redo and zoom live on the Canvas strip, Mirror in the pill and its sheet.
+There is no Tour item while the Tour is off (`TOUR_ENABLED`); turning it back on adds "Take the tour" after Overview in Help. Nothing repeats a tool: Rulers, Undo, Redo and zoom live on the Canvas strip, Mirror in the pill and its sheet.
 
 ## Items
 
@@ -29,8 +29,8 @@ There is no Tour item (the Tour is off, `TOUR_ENABLED`). Nothing repeats a tool:
 
 A preference that is always visible as its choices, in a SegmentedControl (small, 30px).
 
-- **Two choices sit on the row:** icon, label, the control at the right. Language (EN | RU) and Input (Pen | Mouse).
-- **Three or more stack under their label,** the control taking the full width, 8px below the label. Theme (four icon-only segments: Light, Dark, System, High contrast; each has an accessible name) and Tools position (Left | Top | Right | Bottom).
+- **Two choices sit on the row:** icon, label, the control at the right. Input (Pen | Mouse). Language has seven choices, so on the dropdown it is the existing language button (its code, "EN", opening the list) on the row, and in the Top sheet it is the list, one language per line in its own name.
+- **Three or more stack under their label,** the control taking the full width, 8px below the label. Theme (four icon-only segments: Light, Dark, System, High contrast; each has an accessible name; the one word is "System" in both places) and Tools position (Left | Top | Right | Bottom).
 - The selected segment sits on `elevated` with a `line-strong` edge; in high contrast it is the `ink` fill with white text. Not `accent`: the one accent is for the next action.
 - **Input** shows only once a pen has been seen (ticket 326), and is absent otherwise, not disabled. Pen draws with the tip and pans with touch; Mouse treats the pen as a mouse. It replaces the pill's Pen/Mouse toggle.
 - **Tools position** replaces the Menu sheet's "Tools position" row and is the keyboard route to the pill's four edges (ToolPill card). It follows the device, like Theme.
@@ -39,7 +39,7 @@ A preference that is always visible as its choices, in a SegmentedControl (small
 ## Keyboard and screen readers
 
 - The strip button is "Menu" / «Меню», `aria-haspopup="menu"`, `aria-expanded`. Enter, Space or Down opens on the first item, Up on the last. Arrows, Home and End move; Enter chooses; Escape or Tab closes.
-- The dropdown is `role="menu"` named "Menu"; items are `menuitem`; rules are `separator`. The segmented rows are inside the menu as `role="group"` with the setting's name, the rest of the panel's keys unchanged. Under 1024px the sheet is a modal dialog (TopSheet card).
+- The dropdown is `role="menu"` named "Menu" (the Project dropdown holds fields, so it is a plain `dialog`); items are `menuitem`; rules are `separator`. The segmented rows are inside the menu as `role="group"` with the setting's name, the rest of the panel's keys unchanged. Under 1024px the sheet is a modal dialog (TopSheet card).
 - Each section is named by its label; a Version row is read as text.
 
 ## Copy

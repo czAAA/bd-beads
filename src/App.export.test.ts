@@ -43,10 +43,9 @@ function mountApp() {
   return wrapper
 }
 
-/** The exports are items of the save box's Export menu (ticket 148). */
+/** The exports are buttons of the Project panel (ticket 443). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
   await openSheet(wrapper, 'strip-project')
-  await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
 }
 
 describe('App PNG and PDF export (tickets 73, 74)', () => {

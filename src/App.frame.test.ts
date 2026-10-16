@@ -6,7 +6,7 @@ import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { beadColor, hoverBead, pressBead } from './testUtils/beads'
-import { openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
+import { closeSheet, openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
 
 /** Edit Frame (tickets 233, 417, ADRs 0026, 0046, 0054) as the app shows it: moving and resizing the Frame, its margin steppers, the Project sheet's Frame controls and the keys. */
 
@@ -46,10 +46,9 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-/** Starts Edit Frame from the Project sheet's Edit Frame button (the Dock has no Frame slot, ticket 417). */
+/** Starts Edit Frame from the Progress bar's Edit Frame button (Project no longer has one, ticket 443). */
 async function startEditFrame(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
-  await openSheet(wrapper, 'strip-project')
-  await wrapper.get('[data-testid="frame-edit"]').trigger('click')
+  await wrapper.get('[data-testid="progress-bar-edit-frame"]').trigger('click')
   await flushPromises()
 }
 
@@ -69,12 +68,13 @@ const framedProject = (): Project => ({ ...unframedProject(), frame: { row: 2, c
 const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="edit-frame-steppers"]').exists()
 
 describe('Edit Frame', () => {
-  it('is entered from the Project sheet and only with a Frame', async () => {
+  it('is entered from the Progress bar and only with a Frame, and is not in Project (ticket 443)', async () => {
     const wrapper = await mountOpen()
+    expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
     await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+    await closeSheet(wrapper)
 
     const framed = await mountOpen(framedProject())
     expect(editing(framed)).toBe(false)
@@ -181,28 +181,25 @@ describe('Edit Frame', () => {
   })
 })
 
-describe('the Project sheet\'s Frame controls', () => {
+describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 443)', () => {
   it('fits to the drawing and removes the Frame, each as an Undo step', async () => {
     const wrapper = await mountOpen()
-    await openSheet(wrapper, 'strip-project')
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
 
-    await sheet.find('[data-testid="frame-fit"]').trigger('click')
+    await wrapper.get('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
-    await sheet.find('[data-testid="frame-remove"]').trigger('click')
+    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
 
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(beadColor(wrapper, { row: 3, column: 5 })).toBe(RED)
   })
 
-  it('has no size steppers, unit switch or side choice: the size is changed in Edit Frame', async () => {
+  it('has no Edit, Fit or Remove in Project, and no size steppers, unit switch or side choice', async () => {
     const wrapper = await mountOpen(framedProject())
     await openSheet(wrapper, 'strip-project')
-    for (const gone of ['frame-columns', 'frame-rows', 'frame-unit', 'frame-width-side', 'frame-height-side']) {
+    for (const gone of ['frame-edit', 'frame-fit', 'frame-remove', 'frame-columns', 'frame-rows', 'frame-unit', 'frame-width-side', 'frame-height-side']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     }
   })
@@ -235,7 +232,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
     const wrapper = await mountOpen()
     await openSheet(wrapper, 'strip-project')
-    await wrapper.find('[data-testid="export-menu-button"]').trigger('click')
+    await wrapper.find('[data-testid="export-png-needs-frame"]').trigger('click')
     expect(wrapper.find('[data-testid="export-needs-frame"]').text()).toContain(en.frame.exportPromptTitle)
 
     await wrapper.find('[data-testid="export-fit-frame"]').trigger('click')
@@ -249,7 +246,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe(en.frame.countNeedsFrame)
 
-    await wrapper.get('[data-testid="sheet-close"]').trigger('click')
+    await closeSheet(wrapper)
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
   })

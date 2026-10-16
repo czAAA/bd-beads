@@ -57,28 +57,33 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="phone-project-bar"]').exists()).toBe(false)
   })
 
-  it('toggles each ToolSheet from the Canvas strip, closing on a second press of the same button', async () => {
+  it('toggles Menu and Project from the Canvas strip, closing on a second press of the same button, and swaps them (ticket 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     for (const [dockId, expectFound] of [
-      ['strip-project', () => wrapper.find('[data-testid="phone-project-info"]').exists()],
+      ['strip-project', () => wrapper.find('[data-testid="project-panel"]').exists()],
       ['strip-menu', () => wrapper.find('[data-testid="menu-item-overview"]').exists()],
     ] as const) {
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
       expect(expectFound()).toBe(true)
       await wrapper.find(`[data-testid="${dockId}"]`).trigger('click')
-      expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     }
+
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="panel-body"]')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
   })
 
-  it('has no Frame slot in the Tool pill; Edit Frame starts from the Project sheet, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
+  it('has no Frame slot in the Tool pill; Edit Frame starts from the Progress bar, with the ContextBar holding its size, Fit to drawing and Done (ticket 417)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="pill-frame"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    await wrapper.find('[data-testid="frame-edit"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-edit-frame"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
 
@@ -164,7 +169,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).not.toBeNull()
 
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    expect(wrapper.find('[data-testid="bottom-sheet"] [aria-label="Undo"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-body"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
   it('always shows the Progress bar, whose Remove frame replaces the Row progress switch (tickets 411, 426)', async () => {
@@ -185,31 +190,33 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.find('[data-testid="bottom-sheet"]')
+    const sheet = wrapper.find('[data-testid="top-sheet"]')
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(true)
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
 
   it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
-    const btn = wrapper.find('[data-testid="phone-saved-projects-button"]')
-    expect(btn.attributes('disabled')).toBeUndefined()
+    const btn = wrapper.find('[data-testid="menu-saved-projects"]')
+    expect(btn.attributes('aria-disabled')).toBeUndefined()
     // Its own library icon (ticket 188), not the unrelated Save Project icon it used to reuse.
     expect(btn.find('svg').attributes('data-icon')).toBe('library')
+    expect(btn.text()).toContain('1')
 
     await btn.trigger('click')
-    // A second bottom sheet opens with the project list.
+    // Menu closes and a bottom sheet opens with the project list.
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
-    expect(sheets.length).toBeGreaterThan(1)
+    expect(sheets.length).toBeGreaterThan(0)
     expect(sheets[sheets.length - 1]!.find('[data-testid="project-list"]').exists()).toBe(true)
   })
 
   it('exports a Project file and the whole library from the Saved Projects sheet (ticket 385)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
     // Scoped to the Saved Projects sheet, the last one rendered: another ProjectList has its own panel-expand too.
     const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
@@ -224,16 +231,16 @@ describe('App at the phone tier (ticket 79)', () => {
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 
-  it('closes both the Saved Projects drawer and Project sheet on project select', async () => {
+  it('closes the Saved Projects drawer on project select', async () => {
     const wrapper = mount(App)
     // Create two projects so a second one can be selected.
     await createProjectViaForm(wrapper)
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    await wrapper.find('[data-testid="phone-new-project-button"]').trigger('click')
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.find('[data-testid="menu-new-project"]').trigger('click')
     await createProjectViaPhoneSheet(wrapper)
-    // Now two projects saved; open the project sheet and the saved-projects drawer.
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    await wrapper.find('[data-testid="phone-saved-projects-button"]').trigger('click')
+    // Now two projects saved; open Menu and the saved-projects drawer.
+    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
     // The saved-projects sheet is the last bottom-sheet rendered; scope the click to it so
     // we avoid the always-mounted (but hidden) AppDrawer ProjectList in the DOM.
@@ -244,29 +251,34 @@ describe('App at the phone tier (ticket 79)', () => {
 
     // Both sheets should be gone.
     expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('shows the open Project\'s name, size and save state in the Project sheet (ticket 295)', async () => {
+  it('shows the open Project\'s name, save state and Bead at the top of Project (tickets 295, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
-    expect(sheet.get('[data-testid="phone-project-summary"]').text()).not.toBe('')
-    expect(sheet.find('[data-testid="phone-project-info"] svg').exists()).toBe(true)
-    expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
+    const sheet = wrapper.get('[data-testid="top-sheet"]')
+    expect(sheet.get('[data-testid="project-name"]').text()).not.toBe('')
+    expect(sheet.get('[data-testid="save-state"]').text()).toBe('saved · this device')
+    expect(sheet.find('[data-testid="save-state"] svg').exists()).toBe(true)
+    expect(sheet.get('[data-testid="phone-sheet-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
-  it('opens the Menu from the Canvas strip with language, theme, Overview and the source link, and nothing about the Project (ticket 295)', async () => {
+  it('opens the Menu from the Canvas strip as a Top sheet with language, theme, Overview and the source link, and nothing about the Project (tickets 295, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="bottom-sheet"]')
-    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)
+    const sheet = wrapper.get('[data-testid="top-sheet"]')
+    expect(wrapper.find('[data-testid="top-sheet-scrim"]').exists()).toBe(true)
+    // Under 1024px the choices are one option per line, not the dropdown's switcher.
+    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(false)
+    expect(sheet.findAll('[role="radiogroup"]').length).toBeGreaterThanOrEqual(3)
     expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
     expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
     expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
     expect(sheet.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(false)
-    expect(sheet.find('[data-testid="phone-project-info"]').exists()).toBe(false)
+    expect(sheet.find('[data-testid="project-panel"]').exists()).toBe(false)
   })
 })

@@ -114,9 +114,6 @@ const {
   onSelectColor,
   onSelectCustomColor,
   onSelectImageColor,
-  inputMode,
-  inputModeAvailable,
-  toggleInputMode,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
@@ -125,6 +122,7 @@ const {
   settingFrame,
   surfaceInputMode,
   onFitFrame,
+  onEditFrame,
   onStepFrameEdge,
   onRemoveFrame,
   frameDraft,
@@ -234,7 +232,6 @@ function techniqueWord(technique: Technique): string {
         :zoom-percent="stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
-        :canvas-color="activeProject && !framing"
         @select-sheet="onSelectPhoneSheet"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
@@ -378,7 +375,6 @@ function techniqueWord(technique: Technique): string {
           :custom-color="customColor"
           :selected-image-color="selectedImageColor"
           :image-colors="activeProject.imageColors"
-          :input-mode="inputModeAvailable ? inputMode : undefined"
           :open-sheet="openPhoneSheet"
           @select-sheet="onSelectPhoneSheet"
           @select-tool="onSelectTool"
@@ -386,7 +382,6 @@ function techniqueWord(technique: Technique): string {
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
           @select-image-color="onSelectImageColor"
-          @toggle-input-mode="toggleInputMode"
           @rect="pillRect = $event"
         />
       </div>
@@ -418,6 +413,7 @@ function techniqueWord(technique: Technique): string {
         :project="activeProject"
         @move-row="onMoveRow"
         @remove-frame="onRemoveFrame"
+        @edit-frame="onEditFrame"
         @toggle-row-direction="onToggleRowDirection"
         @fit-frame="onFitFrame"
       />

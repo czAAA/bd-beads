@@ -41,13 +41,14 @@ async function reveal(page: Page, testid: string): Promise<boolean> {
     await page.getByTestId(dock).click()
     await settle(page)
     if (await shown(page, testid)) return true
-    // Saved Projects is a sheet of its own, opened from the Project sheet's own button (PhoneSheets card).
-    if (testid === 'project-list' && (await shown(page, 'phone-saved-projects-button'))) {
-      await page.getByTestId('phone-saved-projects-button').click()
+    // Saved Projects is a sheet of its own, opened from Menu's own item (PhoneSheets card).
+    if (testid === 'project-list' && (await shown(page, 'menu-saved-projects'))) {
+      await page.getByTestId('menu-saved-projects').click()
       await settle(page)
       if (await shown(page, testid)) return true
     }
     await page.getByTestId('sheet-close').click().catch(() => {})
+    if (await shown(page, dock)) await page.getByTestId(dock).click().catch(() => {})
   }
   return false
 }
@@ -153,8 +154,8 @@ const SCREENS: Screen[] = [
       if (!(await shown(page, 'tool-pill'))) return false
       for (const dock of PHONE_SHEETS) {
         await click(page, dock)
-        await measure(dock.replace('dock-', ''))
-        await click(page, 'sheet-close')
+        await measure(dock.replace('strip-', ''))
+        await click(page, dock)
       }
     },
   },
@@ -184,35 +185,46 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'export menu',
+    name: 'Save and export',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'export-menu-button'))) return false
-      await click(page, 'export-menu-button')
+      if (!(await reveal(page, 'export-project-file'))) return false
       await measure()
     },
   },
   {
     name: 'Name on exports',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'name-on-exports-change'))) return false
-      await click(page, 'name-on-exports-change')
+      if (!(await reveal(page, 'project-name-on-exports'))) return false
       await measure()
     },
   },
   {
     name: 'Frame',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'frame-fit'))) return false
+      if (!(await reveal(page, 'frame-technique'))) return false
       await measure()
     },
   },
   {
     name: 'Clear project',
     visit: async (page, measure) => {
-      const id = (await reveal(page, 'delete-all-button')) ? 'delete-all-button' : (await reveal(page, 'sheet-delete-all')) ? 'sheet-delete-all' : null
+      const id = (await reveal(page, 'menu-delete-all')) ? 'menu-delete-all' : null
       if (!id) return false
       await click(page, id)
       await measure()
+    },
+  },
+  {
+    // The Duplicate and Delete dialogs (ticket 443): opened from the Project panel, which closes.
+    name: 'Duplicate and Delete Project',
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'project-duplicate'))) return false
+      await click(page, 'project-duplicate')
+      await measure('duplicate')
+      await click(page, 'duplicate-cancel')
+      if (!(await reveal(page, 'project-delete'))) return false
+      await click(page, 'project-delete')
+      await measure('delete')
     },
   },
   {

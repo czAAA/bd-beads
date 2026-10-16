@@ -541,11 +541,11 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-project', (t) => t.header.projectSheetLabel, 'edit', {
     icon: 'pattern',
-    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading]),
+    body: (t) => t.tooltips.list([t.form.techniqueLabel, t.saveBox.saveButton, t.panels.project.exportHeading, t.panels.project.duplicate]),
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',
-    body: (t) => t.tooltips.list([t.languageSwitcher.ariaLabel, t.theme.groupLabel, t.shortcutsHelp.title, t.header.overviewItem, t.header.sourceItem]),
+    body: (t) => t.tooltips.list([t.projects.newProjectButton, t.transfer.importLabel, t.projects.heading, t.languageSwitcher.ariaLabel, t.theme.groupLabel]),
   }),
   unkeyed('pen-mode', (t) => t.inputMode.penLabel, 'canvas', { icon: 'pen-mode', body: (t) => t.inputMode.penHint }),
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
@@ -555,6 +555,15 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),
   unkeyed('change-maker-name', (t) => t.saveBox.changeName, 'edit', { body: (t) => t.tooltips.changeName }),
+  unkeyed('rename-project', (t) => t.panels.project.renameAction, 'edit', { icon: 'pencil', body: (t) => t.panels.project.tooltipRename }),
+  unkeyed('duplicate-project', (t) => t.panels.project.duplicate, 'edit', { icon: 'copy', body: (t) => t.panels.project.tooltipDuplicate }),
+  unkeyed('delete-project', (t) => t.panels.project.deleteThis, 'edit', { icon: 'delete', body: (t) => t.panels.project.tooltipDelete }),
+  unkeyed('export-all', (t) => t.transfer.exportLibraryButton, 'edit', { icon: 'export' }),
+  unkeyed('export-png', (t) => t.panels.project.exportPng, 'edit', { icon: 'image' }),
+  unkeyed('export-pdf', (t) => t.panels.project.exportPdf, 'edit', { icon: 'pdf' }),
+  unkeyed('export-project-file', (t) => t.panels.project.exportFile, 'edit', { icon: 'export' }),
+  unkeyed('tools-position', (t) => t.toolPill.position, 'canvas'),
+  unkeyed('input-mode', (t) => t.panels.menu.input, 'canvas', { icon: 'pen-mode' }),
   unkeyed('convert-image', (t) => t.convertImage.fileLabel, 'edit', { body: (t) => t.tooltips.convertImage }),
 ]
 

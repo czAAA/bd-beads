@@ -332,12 +332,12 @@ describe('App project transfer', () => {
     })
   }
 
-  /** Picks the file in the import control the person has in reach: the project bar's with no Project open, the Project sheet's otherwise. */
+  /** Picks the file in the import control the person has in reach: the project bar's with no Project open, Menu's otherwise. */
   async function importFile(wrapper: ReturnType<typeof mount>, contents: string) {
     if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-      await openSheet(wrapper, 'strip-project')
+      await openSheet(wrapper, 'strip-menu')
     }
-    const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="project-sheet-import-file"]')
+    const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="menu-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
       value: [new File([await gzipJson(contents)], 'library.openbeads', { type: 'application/json' })],
@@ -362,7 +362,7 @@ describe('App project transfer', () => {
 
     await importFile(wrapper, serializeLibrary([makeProject('Fox')]))
 
-    expect((await sheetRead(wrapper, 'phone-project-summary')).text).toContain('Fox')
+    expect((await sheetRead(wrapper, 'project-name')).text).toContain('Fox')
     await openSavedProjects(wrapper)
     expect(wrapper.find('[data-testid="project-list-empty"]').exists()).toBe(false)
   })

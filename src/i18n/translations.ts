@@ -101,6 +101,51 @@ export interface Translations {
   }
   /** The Palette's color names (`writing.md`, Color names). */
   colorNames: Record<string, string>
+  /** The Menu and Project panels (spec 0440, ticket 443). */
+  panels: {
+    menu: {
+      projects: string
+      preferences: string
+      input: string
+      pen: string
+      mouse: string
+      help: string
+      about: string
+      version: string
+      deleteAll: string
+    }
+    project: {
+      rename: string
+      renameAction: string
+      nameRequired: string
+      unsaved: string
+      notSaved: string
+      saveRefused: string
+      tryAgain: string
+      bead: string
+      canvas: string
+      whiteInContrast: string
+      exportHeading: string
+      exportPng: string
+      exportPdf: string
+      exportFile: string
+      editNameOnExports: string
+      duplicate: string
+      duplicateTitle: string
+      duplicateNote: string
+      nameField: string
+      duplicateHint: string
+      deleteThis: string
+      deleteTitle: string
+      deleteMessage: string
+      deleteConfirm: string
+      cancel: string
+      save: string
+      tooltipRename: string
+      tooltipDuplicate: string
+      tooltipDelete: string
+    }
+  }
   /** The header's theme control (ticket 139). */
   theme: {
     groupLabel: string
