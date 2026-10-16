@@ -13,7 +13,7 @@ import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
-import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { frameMoveHandle, type FrameAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
@@ -114,10 +114,10 @@ const emit = defineEmits<{
   pressing: [pressing: boolean]
 }>()
 
-/** Whether the chosen Tool moves the canvas right now: the Hand tool, but not while the Frame is being set, which takes every drag so the Frame can be edited whichever Tool was chosen. */
-const handMoves = computed(() => props.moving === true && !props.settingFrame)
-/** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space) or the Frame set. */
-const eyedropperShown = computed(() => props.picking === true && !props.markerHidden && !handMoves.value && !props.settingFrame)
+/** Whether the chosen Tool moves the canvas right now: the Hand tool. */
+const handMoves = computed(() => props.moving === true)
+/** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
+const eyedropperShown = computed(() => props.picking === true && !props.markerHidden && !handMoves.value)
 
 /**
  * Set by a press on the surface: a press focuses it too, but the bead cursor shows only for focus that didn't come from
@@ -295,38 +295,32 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** The coarsest Ruler step at which Edit Frame's steppers still show, and the least they shrink to (ticket 427). */
+/** The coarsest Ruler step at which the Frame's steppers still show, and the least they shrink to (ticket 427). */
 const STEPPER_MAX_RULER_STEP = 5
 const STEPPER_MIN_SCALE = 0.5
 
-/** Where the Frame is on screen while it is being edited, told to Edit Frame's margin steppers (tickets 417, 427). */
-watch(
-  [surface, () => props.settingFrame, () => props.project.frame, size],
-  () => {
-    const frame = props.project.frame
-    if (!props.settingFrame || !frame || size.value.width === 0) {
-      emit('frame-anchor', undefined)
-      return
-    }
-    const box = surface.value.frameBox(frame)
-    const outer = surface.value.beadBox(withMargin(frame))
-    const { fontPx, gap } = rulers.value.scale
+/** Where the Frame is on screen (ticket 417, 427, 452): told to the margin steppers, the Move handle's key stop and the edit toggle. */
+const frameAnchor = computed<FrameAnchor | undefined>(() => {
+  const frame = props.project.frame
+  if (!frame || size.value.width === 0) return undefined
+  const box = surface.value.frameBox(frame)
+  const outer = surface.value.beadBox(withMargin(frame))
+  const { fontPx, gap } = rulers.value.scale
+  return {
+    box: { left: box.x, top: box.y, width: box.width, height: box.height },
+    outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
+    // Three digits across, one line down, past the Frame's line (Rulers card).
+    numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
+    scale: Math.min(1, Math.max(STEPPER_MIN_SCALE, surface.value.zoom)),
     // The steppers go once the rulers show fewer than every 5th number (or the Rulers are off); until then they shrink with the zoom (ticket 427).
-    if (props.showRulers === false || rulers.value.step > STEPPER_MAX_RULER_STEP) {
-      emit('frame-anchor', undefined)
-      return
-    }
-    emit('frame-anchor', {
-      box: { left: box.x, top: box.y, width: box.width, height: box.height },
-      outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
-      // Three digits across, one line down, past the Frame's line (Rulers card).
-      numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
-      scale: Math.min(1, Math.max(STEPPER_MIN_SCALE, surface.value.zoom)),
-      viewport: { ...size.value },
-    })
-  },
-  { immediate: true, flush: 'post' },
-)
+    ...(props.showRulers === false || rulers.value.step > STEPPER_MAX_RULER_STEP ? { steppersHidden: true } : {}),
+    viewport: { ...size.value },
+  }
+})
+watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
+
+/** The Move handle on the top margin (ticket 452), in the surface's pixels; always there with a Frame. */
+const moveHandle = computed(() => (frameAnchor.value ? frameMoveHandle(frameAnchor.value, touchInput.value) : undefined))
 
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers })
@@ -499,7 +493,23 @@ function hideMarker(): void {
 }
 
 /** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
-const marginOpacity = ref(0)
+/** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
+const framing = ref(false)
+/** Whether a Frame gesture is in progress or a stepper has just changed the size: the size tooltip shows only then (ticket 452). */
+const sizeFlash = ref(false)
+let sizeTimer: ReturnType<typeof setTimeout> | undefined
+const sizeShown = computed(() => framing.value || sizeFlash.value)
+/** The Frame's size tooltip follows a size change that did not come from a drag (a margin stepper, a key) for a moment. */
+watch(
+  () => [props.project.frame?.columns, props.project.frame?.rows],
+  () => {
+    if (!props.settingFrame || framing.value) return
+    sizeFlash.value = true
+    clearTimeout(sizeTimer)
+    sizeTimer = setTimeout(() => (sizeFlash.value = false), SIZE_FLASH_MS)
+  },
+)
+const marginOpacity = ref(props.project.frame ? 1 : 0)
 
 /** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
 function drawOverlay(): void {
@@ -521,15 +531,16 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       cursor: props.cursor,
-      pointer: markerAt.value && !handMoves.value && !props.settingFrame && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
+      pointer: markerAt.value && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
-      frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: props.frameTooltip ?? '' } : undefined,
-      selectionHandles: props.selecting && !props.settingFrame ? { surface: surface.value, touch: touchInput.value } : undefined,
+      frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
+      moveHandle: moveHandle.value,
+      selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
     })
   }
@@ -562,6 +573,8 @@ watch(
     () => props.tourMarks,
     () => props.showRulers,
     () => props.settingFrame,
+    sizeShown,
+    moveHandle,
     handMoves,
     () => props.markerHidden,
     () => props.selecting,
@@ -585,31 +598,17 @@ const overBead = ref(false)
 /** Whether the pointer is over the Frame's margin with a tool that cannot place beads there. */
 const overRefusedMargin = ref(false)
 const dragging = ref(false)
-/** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
-const framing = ref(false)
 /** Whether the Selection's handles or inside are held (ticket 414). */
 const adjusting = ref(false)
 /** The resize cursor over one of the Selection's handles, while the pointer hovers one. */
 const handleCursor = ref<string>()
 let lastBead: GridPosition | undefined
 
-// Starting Edit Frame ends the hover preview and forgets the bead, so leaving it hovers the bead under the pointer afresh (ticket 354).
-watch(
-  () => props.settingFrame,
-  (on) => {
-    if (!on) return
-    lastBead = undefined
-    overBead.value = false
-    overRefusedMargin.value = false
-    emit('hover-end')
-  },
-)
-
 /**
- * The Frame margin's outline (ticket 276, Frame card): shown while a Frame gesture is going on or a size is pending
- * (ticket 410) and for 1s after a press in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
+ * The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and for 1s after a press in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
  * with reduced motion it is shown and hidden at once.
  */
+const SIZE_FLASH_MS = 1200
 const MARGIN_FADE_MS = 120
 const REFUSED_PRESS_MS = 1000
 const refusedPress = ref(false)
@@ -617,7 +616,7 @@ let refusedTimer: ReturnType<typeof setTimeout> | undefined
 let fadeFrame: number | undefined
 
 const marginOutlineWanted = computed(
-  () => props.project.frame !== undefined && (framing.value || refusedPress.value || props.settingFrame === true),
+  () => props.project.frame !== undefined || refusedPress.value,
 )
 
 function reducedMotion(): boolean {
@@ -743,9 +742,19 @@ function cellUnder(event: PointerEvent): GridPosition {
   return surface.value.pointToCell(pointInSurface(event))
 }
 
+/** What a press grabs of the Frame's chrome (ticket 452): the Move handle always, a resize handle only while edit is on; nothing otherwise, so the tool gets the press. */
+function framePress(event: PointerEvent): FramePress | undefined {
+  const point = pointInSurface(event)
+  const move = moveHandle.value
+  if (move && Math.abs(point.x - move.x) <= move.size / 2 + 4 && Math.abs(point.y - move.y) <= move.size / 2 + 4) return { kind: 'move' }
+  if (!props.settingFrame) return undefined
+  const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touchInput.value)
+  return target.kind === 'handle' ? target : undefined
+}
+
 function onPointerDown(event: PointerEvent): void {
   touchInput.value = event.pointerType === 'touch'
-  if (props.settingFrame && event.pointerType === 'touch' && !event.isPrimary) {
+  if (props.project.frame && event.pointerType === 'touch' && !event.isPrimary) {
     // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
     if (framing.value) {
       framing.value = false
@@ -753,14 +762,16 @@ function onPointerDown(event: PointerEvent): void {
     }
     return
   }
-  if (props.settingFrame && !startsDrag(event) && event.button === 0) {
-    framing.value = true
-    hideMarker()
-    rootEl.value?.setPointerCapture?.(event.pointerId)
-    const target = framePressAt(props.project.frame, surface.value, props.project.rotation, pointInSurface(event), touchInput.value)
-    emit('frame-press', target, cellUnder(event))
-    event.preventDefault()
-    return
+  if (props.project.frame && !startsDrag(event) && event.button === 0) {
+    const target = framePress(event)
+    if (target) {
+      framing.value = true
+      hideMarker()
+      rootEl.value?.setPointerCapture?.(event.pointerId)
+      emit('frame-press', target, cellUnder(event))
+      event.preventDefault()
+      return
+    }
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
     // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it.
@@ -831,6 +842,9 @@ function onPointerMove(event: PointerEvent): void {
   if (props.selecting && props.selection && event.pointerType !== 'touch' && hasGuides(props.selection)) {
     const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection)), pointInSurface(event), false)
     handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
+  } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
+    const target = framePress(event)
+    handleCursor.value = target?.kind === 'move' ? 'grab' : target?.kind === 'handle' ? HANDLE_CURSORS[handleIdAt(surface.value.frameBox(props.project.frame), pointInSurface(event), false)!] : undefined
   } else {
     handleCursor.value = undefined
   }
@@ -848,9 +862,8 @@ function onPointerMove(event: PointerEvent): void {
   hoverPoint = event.pointerType === 'touch' ? undefined : { clientX: event.clientX, clientY: event.clientY }
   hovered.value = hoverPoint !== undefined && hoversFinishedRow(bead)
   hoverDraws = hoversFor(event) && !movesCanvas(event)
-  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does setting the Frame, nor the
-  // pointer that only moves the canvas.
-  if (handMoves.value || props.settingFrame || movesCanvas(event)) {
+  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does the pointer that only moves the canvas.
+  if (handMoves.value || movesCanvas(event)) {
     overBead.value = false
     overRefusedMargin.value = false
     hideMarker()
@@ -941,6 +954,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTimeout(wheelTimer)
   clearTimeout(refusedTimer)
+  clearTimeout(sizeTimer)
   clearTimeout(settleTimer)
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
   pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
@@ -963,9 +977,8 @@ onBeforeUnmount(() => {
     :class="{
       'project-surface--over-bead': overBead && !handMoves && !picking && !selecting,
       'project-surface--picking': eyedropperShown,
-      'project-surface--refused': overRefusedMargin && !handMoves && !settingFrame,
+      'project-surface--refused': overRefusedMargin && !handMoves,
       'project-surface--moving': handMoves,
-      'project-surface--setting-frame': settingFrame && !handMoves,
       'project-surface--dragging': dragging,
     }"
     :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : handleCursor ? { cursor: handleCursor } : undefined"
@@ -1065,11 +1078,6 @@ onBeforeUnmount(() => {
   background: var(--pick-color);
   border-radius: var(--radius-sm);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
-}
-
-/* Edit Frame: the plain arrow, since a drag moves or resizes the Frame and draws nothing; the handles bring their resize cursors (Frame card). */
-.project-surface--setting-frame {
-  cursor: default;
 }
 
 .project-surface--dragging {

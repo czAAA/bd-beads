@@ -1,5 +1,5 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
-import { sameFrame } from './frame'
+import { movedFrame, sameFrame } from './frame'
 import type { GridPosition, Technique } from './grid'
 import { carryNames, namedPieceCutBy } from './pieceNames'
 import { rowProgressStarted, withFrame, withTechnique, type Project } from './project'
@@ -18,6 +18,8 @@ export type FrameChange =
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
+  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has started, which then travels with the Frame. */
+  | { move: { rows: number; columns: number } }
   /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and column. */
   | { technique: Technique }
 
@@ -51,7 +53,7 @@ export function frameChangeDiscardsProgress(project: Project, change: FrameChang
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
-  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change)) {
+  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change)) {
     return 'locked'
   }
   const frame = project.frame
@@ -67,6 +69,9 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     if (length <= 1) {
       return 'only-line'
     }
+  }
+  if ('move' in change && !frame) {
+    return 'no-frame'
   }
   if ('set' in change && namedPieceCutBy(project, change.set)) {
     return 'cuts-schema'
@@ -86,6 +91,18 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
     const beads = beadsWithoutLine(project.beads, frame, change.removeLine)
     const shifted = carryNames(project, { ...withFrame(project, smaller), beads }, (at) => shiftedByLine(frame, change.removeLine, at))
+    return { kind: 'changed', project: shifted }
+  }
+
+  if ('move' in change) {
+    const frame = project.frame!
+    const moved = movedFrame(project.technique, frame, change.move.rows, change.move.columns)
+    if (sameFrame(frame, moved)) {
+      return { kind: 'unchanged', project }
+    }
+    const shifted = carryNames(project, { ...withFrame(project, moved), beads: beadsWithFrameMoved(project.beads, frame, moved) }, (at) =>
+      frameContains(frame, at) ? { row: at.row + moved.row - frame.row, column: at.column + moved.column - frame.column } : at,
+    )
     return { kind: 'changed', project: shifted }
   }
 
@@ -131,6 +148,30 @@ export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): B
     }
     result[to.row] ??= {}
     result[to.row]![to.column] = color
+  })
+  return result
+}
+
+/**
+ * The beads after the Frame moves from `from` to `to`: its beads travel with it, overwriting everything under the
+ * destination (held margin beads included), and the cells it left are emptied. Beads in the margin elsewhere stay.
+ */
+function beadsWithFrameMoved(beads: BeadMap, from: Frame, to: Frame): BeadMap {
+  const result: BeadMap = {}
+  forEachBead(beads, (row, column, color) => {
+    if (frameContains(from, { row, column }) || frameContains(to, { row, column })) {
+      return
+    }
+    result[row] ??= {}
+    result[row]![column] = color
+  })
+  forEachBead(beads, (row, column, color) => {
+    if (!frameContains(from, { row, column })) {
+      return
+    }
+    const landing = { row: row + to.row - from.row, column: column + to.column - from.column }
+    result[landing.row] ??= {}
+    result[landing.row]![landing.column] = color
   })
   return result
 }
