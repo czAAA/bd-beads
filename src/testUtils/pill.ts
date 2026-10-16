@@ -132,5 +132,5 @@ export async function chooseCustomColor(wrapper: Wrapper, hex: string): Promise<
   }
   const input = wrapper.get<HTMLInputElement>('[data-testid="custom-color-input"]')
   input.element.value = hex
-  await input.trigger('input')
+  await input.trigger('change')
 }

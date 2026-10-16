@@ -41,13 +41,14 @@ const tooltip = computed(() => {
 })
 
 /**
- * The first color picked is the answer (ticket 398): it becomes the paint color and joins the Palette, and the sheet
- * holding this control closes. The native dialog stays open until it is dismissed, so the input is mounted afresh
- * (`generation`), which closes the dialog with it.
+ * The color the picker commits is the answer (tickets 398, 444): it becomes the paint color and joins the Palette, and
+ * the sheet holding this control closes. `input` fires on every step of a drag in the spectrum or a slider, so only
+ * `change` (the picker committing a color) counts. The input is mounted afresh (`generation`), which closes any
+ * dialog still open.
  */
 const generation = ref(0)
 const inputEl = ref<HTMLInputElement>()
-async function onInput(event: Event) {
+async function onChange(event: Event) {
   emit('select', (event.target as HTMLInputElement).value)
   generation.value += 1
   closeSheet()
@@ -69,7 +70,7 @@ async function onInput(event: Event) {
       :aria-pressed="selected"
       :key="generation"
       ref="inputEl"
-      @input="onInput"
+      @change="onChange"
     />
     <span class="custom-color-picker__swatch" />
     <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
