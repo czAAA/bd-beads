@@ -46,92 +46,76 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-/** Starts Edit Frame from the Progress bar's Edit Frame button (Project no longer has one, ticket 443). */
-async function startEditFrame(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
-  await wrapper.get('[data-testid="progress-bar-edit-frame"]').trigger('click')
+/** The edit toggle at the top-right corner of the margin outline (ticket 452). */
+async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+  await wrapper.get('[data-testid="frame-edit-toggle"]').trigger('click')
   await flushPromises()
 }
 
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
 const savedFrame = () => loadProjects()[0]!.frame
 
-/** Drags from one bead to another with the pointer, as one gesture. */
-async function drag(wrapper: Awaited<ReturnType<typeof mountOpen>>, from: { row: number; column: number }, to: { row: number; column: number }) {
-  await pressBead(wrapper, from)
-  await hoverBead(wrapper, to, { buttons: 1 })
-  await surface(wrapper).trigger('pointerup')
-  await flushPromises()
-}
-
 const framedProject = (): Project => ({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
-/** Whether Edit Frame is on: its margin steppers are up (it has no bar, ticket 427). */
+/** Whether edit is on: the margin steppers are up (ticket 452). */
 const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="edit-frame-steppers"]').exists()
 
 describe('Edit Frame', () => {
-  it('is entered from the Progress bar and only with a Frame, and is not in Project (ticket 443)', async () => {
+  it('is a toggle on the Frame, on by default, and only with a Frame; the Progress bar and Project have no Edit Frame button (tickets 443, 452)', async () => {
     const wrapper = await mountOpen()
+    expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-frame"]').exists()).toBe(false)
     await openSheet(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
     await closeSheet(wrapper)
 
     const framed = await mountOpen(framedProject())
-    expect(editing(framed)).toBe(false)
-    expect(framed.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
-    await startEditFrame(framed)
     expect(editing(framed)).toBe(true)
-    expect(framed.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
+    expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
+    await toggleEdit(framed)
+    expect(editing(framed)).toBe(false)
+    expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
+    await toggleEdit(framed)
+    expect(editing(framed)).toBe(true)
   })
 
-  it('moves a Frame by a drag, with the Hand tool chosen before, and goes back to the Hand tool after (ticket 294)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 1, column: 1, rows: 3, columns: 4 } })
-    await key({ key: '5' })
-    await startEditFrame(wrapper)
-
-    await drag(wrapper, { row: 2, column: 2 }, { row: 3, column: 4 })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 3, columns: 4 })
-
-    await key({ key: 'Escape' })
-    expect(wrapper.find('[data-testid="pill-tool-hand"]').attributes('aria-pressed')).toBe('true')
-  })
-
-  it('is left by Escape, Enter, Done and by choosing a tool', async () => {
+  it('is not left by Escape, Enter or choosing a tool, and the tools draw inside the Frame with edit on', async () => {
     const wrapper = await mountOpen(framedProject())
-
-    await startEditFrame(wrapper)
     await key({ key: 'Escape' })
-    expect(editing(wrapper)).toBe(false)
-
-    await startEditFrame(wrapper)
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
-    await flushPromises()
-    expect(editing(wrapper)).toBe(false)
-
-    await startEditFrame(wrapper)
-    await surface(wrapper).trigger('keydown', { key: 'Escape' })
-    await flushPromises()
-    expect(editing(wrapper)).toBe(false)
-
-    await startEditFrame(wrapper)
     await pickTool(wrapper, 'fill')
-    expect(editing(wrapper)).toBe(false)
+    expect(editing(wrapper)).toBe(true)
+
+    await pickTool(wrapper, 'paint')
+    await pressBead(wrapper, { row: 2, column: 4 })
+    await surface(wrapper).trigger('pointerup')
+    await flushPromises()
+    expect(beadColor(wrapper, { row: 2, column: 4 })).not.toBeNull()
   })
 
-  it('works from the keyboard: arrows move the Frame and Shift resizes it', async () => {
+  it('works from the keyboard on the Move handle: arrows move the Frame and Shift resizes it', async () => {
     const wrapper = await mountOpen(framedProject())
-    await startEditFrame(wrapper)
+    const handle = wrapper.get('[data-testid="frame-move-handle"]')
 
-    await surface(wrapper).trigger('keydown', { key: 'ArrowRight' })
+    await handle.trigger('keydown', { key: 'ArrowRight' })
     expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 2, columns: 3 })
-    await surface(wrapper).trigger('keydown', { key: 'ArrowRight', shiftKey: true })
-    await surface(wrapper).trigger('keydown', { key: 'ArrowDown' })
+    await handle.trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await handle.trigger('keydown', { key: 'ArrowDown' })
     expect(savedFrame()).toEqual({ row: 3, column: 4, rows: 2, columns: 4 })
+  })
+
+  it('carries the Frame\'s beads when it is moved, in one Undo step (ticket 452)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(beadColor(wrapper, { row: 2, column: 3 })).toBeNull()
+    expect(beadColor(wrapper, { row: 2, column: 4 })).toBe(RED)
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
   })
 
   it('has a mini − and + on each edge: a press moves that edge one bead and is one Undo step', async () => {
     const wrapper = await mountOpen(framedProject())
-    await startEditFrame(wrapper)
     const press = async (edge: string, direction: 'out' | 'in') => {
       await wrapper.get(`[data-testid="frame-edge-${edge}-${direction}"]`).trigger('click')
       await flushPromises()
@@ -154,30 +138,29 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
   })
 
-  it('is left when Remove Frame takes the Frame away, and does not return for the Undo', async () => {
+  it('goes with the Frame when Remove Frame takes it away, and is on again for a Frame brought back by Undo', async () => {
     const wrapper = await mountOpen(framedProject())
-    await startEditFrame(wrapper)
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
-    expect(editing(wrapper)).toBe(false)
+    expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
 
     await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(editing(wrapper)).toBe(false)
-  })
-
-  it('is left when Undo takes the Frame away (the Frame made from a Selection)', async () => {
-    const wrapper = await mountOpen()
-    await selectAll(wrapper)
-    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
-    await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(editing(wrapper)).toBe(true)
+  })
 
-    await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toBeUndefined()
+  it('is disabled once Row progress has started, and the Move handle still moves the Frame (ticket 452)', async () => {
+    const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     expect(editing(wrapper)).toBe(false)
+    expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-disabled')).toBe('true')
+    await toggleEdit(wrapper)
+    expect(editing(wrapper)).toBe(false)
+
+    await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
+    expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 2, columns: 3 })
+    expect(loadProjects()[0]!.rowProgress.currentRow).toBe(1)
   })
 })
 

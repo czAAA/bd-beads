@@ -281,7 +281,7 @@ function wireAppShell(services: Services) {
     onCustomColorAdded,
     onSelectImageColor,
     resetImageColor,
-  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value, onToolChosen: () => frameFlow.done() })
+  } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
 
   /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0059). */
   const toolPill = useToolPill({
@@ -532,7 +532,7 @@ function wireAppShell(services: Services) {
     colorWords,
   })
 
-  const { beadCursor, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp, hideCursor } = useKeyboardCursor({
+  const { beadCursor, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
     currentProject,
     reveal,
     hasSelection: () => !!selection.value,
@@ -542,8 +542,6 @@ function wireAppShell(services: Services) {
     invokeToolAt,
     extendSelectionTo,
     finishExtending,
-    onFrameKey: (event) => frameFlow.onKey(event),
-    settingFrame: () => frameFlow.settingFrame.value,
   })
 
   /** Delete all and its confirmation (tickets 42, 198). */
@@ -558,14 +556,8 @@ function wireAppShell(services: Services) {
     messages,
     centreOn,
   })
-  // Switching Edit Frame on or off leaves no keyboard cursor on a bead nobody moved to (ticket 354).
-  watch(frameFlow.settingFrame, hideCursor, { flush: 'sync' })
-
-  /** Edit Frame from the Project sheet or the registry; the keyboard's Edit Frame works from the Project, so focus goes there. */
-  function editFrame(): void {
-    frameFlow.start()
-    if (frameFlow.settingFrame.value) focusProject()
-  }
+  /** The edit toggle on the Frame's margin outline (ticket 452, ADR 0062). */
+  const editFrame = frameFlow.toggleEdit
 
   /** Rotate: the Selection a quarter turn, with a Message saying how many beads it covered (ticket 416, ADR 0052). */
   const rotateFlow = useRotateSelectionFlow({
@@ -735,8 +727,6 @@ function wireAppShell(services: Services) {
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
     onEditFrame: editFrame,
-    settingFrame: () => frameFlow.settingFrame.value,
-    finishFrame: frameFlow.done,
     onCopy,
     pasteAtPointer,
     onSave,
@@ -903,6 +893,9 @@ function wireAppShell(services: Services) {
     frameDraft: frameFlow.draft,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
+    onFrameKey: (event: KeyboardEvent) => {
+      if (frameFlow.onKey(event)) event.preventDefault()
+    },
     onFramePress: frameFlow.press,
     onFrameDrag: frameFlow.drag,
     onFrameRelease: frameFlow.release,

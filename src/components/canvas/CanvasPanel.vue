@@ -9,6 +9,7 @@ import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
 import EditFrameSteppers from './EditFrameSteppers.vue'
+import FrameChrome from './FrameChrome.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
@@ -124,6 +125,7 @@ const {
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
+  onFrameKey,
   onStepFrameEdge,
   onRemoveFrame,
   frameDraft,
@@ -255,7 +257,7 @@ function techniqueWord(technique: Technique): string {
           inside the canvas box, clear of the Tool pill; Select all is its first item.
         -->
         <ContextBar
-          v-if="activeProject && !framing && !settingFrame"
+          v-if="activeProject && !framing"
           :selection-summary="selectionSummary"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
@@ -281,10 +283,20 @@ function techniqueWord(technique: Technique): string {
         />
 
         <EditFrameSteppers
-          v-if="activeProject && settingFrame && frameAnchor"
+          v-if="activeProject && settingFrame && frameAnchor && !frameAnchor.steppersHidden && !selection"
           :project="activeProject"
           :anchor="frameAnchor"
           @step="onStepFrameEdge"
+          @key="onFrameKey"
+        />
+
+        <FrameChrome
+          v-if="activeProject && frameAnchor"
+          :project="activeProject"
+          :anchor="frameAnchor"
+          :editing="settingFrame"
+          @toggle="onEditFrame"
+          @key="onFrameKey"
         />
 
         <div class="app-shell__canvas-row">
@@ -418,7 +430,6 @@ function techniqueWord(technique: Technique): string {
         :project="activeProject"
         @move-row="onMoveRow"
         @remove-frame="onRemoveFrame"
-        @edit-frame="onEditFrame"
         @toggle-row-direction="onToggleRowDirection"
         @fit-frame="onFitFrame"
       />

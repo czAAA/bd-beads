@@ -200,4 +200,40 @@ describe('changeFrame', () => {
       expect(colorAt(result.project.beads, 10, 10)).toBe('#222222')
     })
   })
+
+  describe('move (ticket 452)', () => {
+    const beads = withColors({}, [
+      { row: 10, column: 10, color: '#111111' },
+      { row: 4, column: 4, color: '#999999' },
+      { row: 10, column: 12, color: '#222222' },
+    ])
+
+    it('carries the Frame\'s beads, empties what it left and overwrites the destination', () => {
+      const project = framed({ beads: withColors(beads, [{ row: 10, column: 13, color: '#333333' }]) })
+      const result = changeFrame(project, { move: { rows: 0, columns: 3 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.frame).toMatchObject({ row: 10, column: 13 })
+      expect(colorAt(result.project.beads, 10, 13)).toBe('#111111')
+      expect(colorAt(result.project.beads, 10, 10)).toBeNull()
+      expect(colorAt(result.project.beads, 10, 15)).toBe('#222222')
+      expect(colorAt(result.project.beads, 4, 4)).toBe('#999999')
+    })
+
+    it('is allowed after Row progress has started, and the pointer stays with the Frame', () => {
+      const project = framed({ beads, rowProgress: woven('rows') })
+      const result = changeFrame(project, { move: { rows: 2, columns: 0 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.rowProgress).toMatchObject({ currentRow: 5, currentColumn: 3 })
+    })
+
+    it('moves by pairs of rows on peyote', () => {
+      const project = framed({ technique: 'peyote' })
+      const result = changeFrame(project, { move: { rows: 1, columns: 0 } })
+      expect(result.kind === 'changed' && result.project.frame?.row).toBe(12)
+    })
+
+    it('is no change for no distance', () => {
+      expect(changeFrame(framed(), { move: { rows: 0, columns: 0 } }).kind).toBe('unchanged')
+    })
+  })
 })
