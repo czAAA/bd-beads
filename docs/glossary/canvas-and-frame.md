@@ -70,7 +70,7 @@ How many beads apart the rulers show a number, chosen from 5, 10, 50, 100 and so
 _Avoid_: label interval, tick spacing
 
 **Ruler dot**:
-The small mark a ruler draws for a bead that has no number at the current Ruler step; every 5th is a bolder dot, and a dot, like a number, selects its whole row or column when clicked. At a bead pitch too small for a dot per bead, only the 5th-bead dots remain.
+The small mark a ruler draws for a bead that has no number at the current Ruler step; every 5th is a bolder dot, and, a dot, like a number, is display-only (ticket 447). At a bead pitch too small for a dot per bead, only the 5th-bead dots remain.
 _Avoid_: tick, marker
 
 **Ruler layout**:
