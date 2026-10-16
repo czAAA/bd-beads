@@ -74,7 +74,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
 
 /**
  * The name of the first named Piece (an unframed Schema) that `frame` would cut: some of its beads inside, some outside
- * (ticket 407). A Frame frames a Schema whole or not at all, like the keep-out margin keeps a Piece whole.
+ * (ticket 407). A Frame frames a Schema whole or not at all, as the keep-out margin is kept clear of new beads.
  */
 export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>, frame: Frame): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {

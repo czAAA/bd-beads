@@ -219,7 +219,7 @@ describe('Position marks cost one pattern fill, however far out', () => {
     (['loom', 'peyote', 'brick'] as const).flatMap((technique) => ([0, 90, 180, 270] as const).map((rotation) => ({ technique, rotation }))),
   )('draws the Frame\'s cells and the beads outside it once each: $technique at $rotation°', ({ technique, rotation }) => {
     const base = framedProject(technique, rotation)
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 30, column: 30, color: '#00f' }, { row: 20, column: 2, color: '#00f' }]) }
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
@@ -254,5 +254,15 @@ describe('Position marks tile styles', () => {
 
     const peyote = tileCalls('squares', 'peyote')
     expect(peyote.named('arcTo').some((call) => (call.args[4] as number) > 0)).toBe(true)
+  })
+
+  it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
+    const base = framedProject('loom')
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
+
+    const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
+
+    expect(beads).toHaveLength(12)
+    expect(project.beads[0]?.[0]).toBe('#00f')
   })
 })

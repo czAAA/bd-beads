@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { colorAt, forEachBead, withColors, type Frame } from './canvas'
+import { colorAt, withColors, type Frame } from './canvas'
 import { changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { inMargin } from './margin'
 import { createProject, rowProgressOn, withFrame, type Project } from './project'
@@ -13,12 +13,6 @@ function framed(overrides: Partial<Project> = {}): Project {
 }
 
 const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
-
-const beadCount = (project: Project) => {
-  let count = 0
-  forEachBead(project.beads, () => (count += 1))
-  return count
-}
 
 describe('changeFrame', () => {
   describe('refusals', () => {
@@ -131,7 +125,7 @@ describe('changeFrame', () => {
   })
 
   describe('margin', () => {
-    it('moves a Piece the new Frame reaches clear, whole, and counts Pieces', () => {
+    it('leaves beads the new Frame reaches where they are, covered by the margin', () => {
       const open = framed()
       delete open.frame
       const beads = withColors(open.beads, [
@@ -142,17 +136,8 @@ describe('changeFrame', () => {
       ])
       const result = changeFrame({ ...open, beads }, { set: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(result.moved).toBe(2)
-      expect(beadCount(result.project)).toBe(4)
-      forEachBead(result.project.beads, (row, column) => {
-        expect(inMargin(frame, { row, column })).toBe(false)
-      })
-      expect(colorAt(result.project.beads, 40, 40)).toBe('#0000ff')
-    })
-
-    it('reports no Pieces moved when the margin was already clear', () => {
-      const result = changeFrame(framed(), { set: { ...frame, rows: 7 } })
-      expect(result).toMatchObject({ kind: 'changed', moved: 0 })
+      expect(result.project.beads).toEqual(beads)
+      expect(inMargin(frame, { row: 8, column: 10 })).toBe(true)
     })
   })
 
@@ -164,7 +149,6 @@ describe('changeFrame', () => {
       expect(result.project.technique).toBe('peyote')
       expect(result.project.frame).toEqual(frame)
       expect(result.project.beads).toEqual(project.beads)
-      expect(result.moved).toBe(0)
     })
 
     it('is no change to the Technique it already has', () => {
@@ -192,7 +176,6 @@ describe('changeFrame', () => {
       const odd = framed({ frame: { row: 11, column: 10, rows: 6, columns: 4 }, beads: withColors({}, [{ row: 10, column: 11, color: '#111111' }]) })
       const result = changeFrame(odd, { technique: 'peyote' })
       if (result.kind !== 'changed') throw new Error('expected a change')
-      expect(result.moved).toBe(0)
       expect(colorAt(result.project.beads, 10, 11)).toBe('#111111')
     })
 
@@ -200,7 +183,6 @@ describe('changeFrame', () => {
       const beads = withColors({}, [{ row: 10, column: 10, color: '#111111' }, { row: 15, column: 13, color: '#222222' }])
       const result = changeFrame(framed({ beads }), { technique: 'brick' })
       expect(result.kind === 'changed' && result.project.beads).toEqual(beads)
-      expect(result).toMatchObject({ moved: 0 })
     })
   })
 

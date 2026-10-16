@@ -423,10 +423,6 @@ export const zh: Translations = {
     rotateCoveredMessage: {
       other: '{count} 颗珠子被覆盖。',
     },
-    marginLead: { set: '边框已设置。', moved: '边框已移动。', resized: '边框已调整大小。' },
-    marginClearedMessage: {
-      other: '{count} 个小块位于边距内，已移到边距之外。',
-    },
   },
   size: {
     estimateLabel: '估算尺寸',

@@ -237,7 +237,7 @@ describe('useFrameFlow', () => {
     expect(deps.centreOn).toHaveBeenCalledWith(sized.frame)
   })
 
-  it('moves beads the new Frame would crowd clear, with a Message and the one undo step (ticket 261)', () => {
+  it('leaves beads the new Frame would crowd where they are, in the one undo step (ticket 261)', () => {
     const crowded = { ...sized, beads: withColors(sized.beads, [{ row: 5, column: 5, color: '#ff0000' }]) }
     const { deps, start, press, drag, release } = setup(crowded)
     start()
@@ -246,13 +246,11 @@ describe('useFrameFlow', () => {
     release()
 
     const updated = deps.replaceProject.mock.calls.at(-1)![0]
-    expect(updated.beads[5]?.[5]).toBeUndefined()
-    expect(Object.values<Record<number, string>>(updated.beads).flatMap((row) => Object.values(row))).toEqual(['#ff0000'])
+    expect(updated.beads).toEqual(crowded.beads)
     deps.harness.history.onUndo()
     expect(deps.harness.project.beads).toEqual(crowded.beads)
     expect(deps.harness.history.canUndo.value).toBe(false)
-    expect(deps.showToast).toHaveBeenCalledWith('frame-margin-cleared', 'Frame resized. 1 Piece was in the margin and moved outside it.', 'info', expect.anything())
-    expect(deps.announce).not.toHaveBeenCalled()
+    expect(deps.showToast).not.toHaveBeenCalled()
   })
 
   describe('the margin steppers (ticket 417)', () => {
@@ -301,28 +299,6 @@ describe('useFrameFlow', () => {
       stepEdge('left', -1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
       expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.stringContaining('Fox'), 'info')
-    })
-  })
-
-  describe('the margin Message names what was done to the Frame', () => {
-    function crowdedBelow() {
-      const frame = sized.frame!
-      const bead = { row: frame.row + frame.rows + 3, column: frame.column, color: '#ff0000' }
-      return { ...sized, beads: withColors(sized.beads, [bead]) }
-    }
-    const key = (name: string, shiftKey = false) => ({ key: name, shiftKey }) as KeyboardEvent
-
-    it('says "Frame moved." for a move', () => {
-      const { deps, start, onKey } = setup(crowdedBelow())
-      start()
-      onKey(key('ArrowDown'))
-      expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame moved. 1 Piece was in the margin and moved outside it.')
-    })
-
-    it('says "Frame resized." for a resize', () => {
-      const { deps, stepEdge } = setup(crowdedBelow())
-      stepEdge('bottom', 1)
-      expect(deps.showToast.mock.calls[0]?.[1]).toBe('Frame resized. 1 Piece was in the margin and moved outside it.')
     })
   })
 })

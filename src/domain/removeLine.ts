@@ -97,5 +97,5 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
     return { kind: 'refused', reason: 'locked' }
   }
   const shifted = { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
-  return { kind: 'changed', project: carryNames(project, shifted, (at) => shiftedByLine(line.area, line, at)), moved: 0 }
+  return { kind: 'changed', project: carryNames(project, shifted, (at) => shiftedByLine(line.area, line, at)) }
 }

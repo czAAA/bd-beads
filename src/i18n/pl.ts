@@ -428,13 +428,6 @@ export const pl: Translations = {
       many: 'Zakryto {count} koralików.',
       other: 'Zakryto {count} koralika.',
     },
-    marginLead: { set: 'Ustawiono ramkę.', moved: 'Przesunięto ramkę.', resized: 'Zmieniono rozmiar ramki.' },
-    marginClearedMessage: {
-      one: '{count} kawałek był w marginesie i został przeniesiony poza niego.',
-      few: '{count} kawałki były w marginesie i zostały przeniesione poza niego.',
-      many: '{count} kawałków było w marginesie i zostało przeniesionych poza niego.',
-      other: '{count} kawałka było w marginesie i zostało przeniesionych poza niego.',
-    },
   },
   size: {
     estimateLabel: 'Szacunkowy rozmiar',
