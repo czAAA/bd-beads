@@ -4,6 +4,9 @@ import CanvasBackdrop from './CanvasBackdrop.vue'
 import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
+import AppButton from '../ui/AppButton.vue'
+import ProjectImport from '../import/ProjectImport.vue'
+import ToolPill from '../tools/ToolPill.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
 import EditFrameSteppers from './EditFrameSteppers.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
@@ -12,9 +15,11 @@ import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
+import type { PillRect } from '../../domain/toolPill'
 import { hasBeads } from '../../domain/canvas'
 import { hasGuides } from '../../domain/selection'
 import { resolveProjectBead } from '../../domain/project'
@@ -25,6 +30,10 @@ const {
   t,
   openPhoneSheet,
   onSelectPhoneSheet,
+  projects,
+  onImportProjects,
+  onImportToast,
+  phoneNewProjectOpen,
   activeProject,
   projectLabel,
   toasts,
@@ -91,6 +100,23 @@ const {
   onProjectKeyUp,
   onRotate,
   onSelectAll,
+  toolPillPosition,
+  pillColorMode,
+  toolPillPopoverOpen,
+  recentsInPill,
+  recentsInPopover,
+  pickRecent,
+  selectedColorHex,
+  selectedColorId,
+  customColor,
+  selectedImageColor,
+  onSelectTool,
+  onSelectColor,
+  onSelectCustomColor,
+  onSelectImageColor,
+  inputMode,
+  inputModeAvailable,
+  toggleInputMode,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
@@ -110,6 +136,19 @@ const {
   onSelectionDrag,
   onSelectionRelease,
 } = useAppShell()
+
+const newProjectAction = controlAction('new-project')
+
+/** The chosen colour as the pill's colour control shows it: its hex and its name (a Palette colour's own, "Custom" for a one-off). */
+const colorHex = computed(() => selectedColorHex() ?? undefined)
+const colorName = computed(() => {
+  const id = selectedColorId.value
+  if (id) return t.value.colorNames[id] ?? colorHex.value
+  return selectedImageColor.value || customColor.value ? t.value.colorNames.custom : undefined
+})
+
+/** Where the Tool pill is in the drawing area, so the Selection bar keeps clear of it (ticket 439). */
+const pillRect = ref<PillRect>()
 
 /** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
 const colorPick = useColorPick()
@@ -215,11 +254,10 @@ function techniqueWord(technique: Technique): string {
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box; Select all sits at its top-centre.
+          inside the canvas box, clear of the Tool pill; Select all is its first item.
         -->
         <ContextBar
           v-if="activeProject && !framing && !settingFrame"
-          :class="{ 'app-shell__context-bar--top': (activeTool === 'select' && !selectionSummary) }"
           :selection-summary="selectionSummary"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
@@ -230,6 +268,7 @@ function techniqueWord(technique: Technique): string {
           :can-name-piece="canNamePiece"
           :has-paint-color="hasPaintColor()"
           :select-active="activeTool === 'select'"
+          :obstacle="pillRect"
           @copy="onCopy"
           @cut="onCut"
           @fill="onFillSelection"
@@ -323,6 +362,33 @@ function techniqueWord(technique: Technique): string {
           </div>
 
         </div>
+
+        <!-- The Tool pill (ticket 439, ADR 0059): floats over the drawing, outside the zoom transform. -->
+        <ToolPill
+          v-if="activeProject && !framing"
+          v-model:position="toolPillPosition"
+          v-model:color-mode="pillColorMode"
+          v-model:popover-open="toolPillPopoverOpen"
+          :active-tool="activeTool"
+          :color-hex="colorHex"
+          :color-name="colorName"
+          :recents-in-pill="recentsInPill"
+          :recents-in-popover="recentsInPopover"
+          :selected-color-id="selectedColorId"
+          :custom-color="customColor"
+          :selected-image-color="selectedImageColor"
+          :image-colors="activeProject.imageColors"
+          :input-mode="inputModeAvailable ? inputMode : undefined"
+          :open-sheet="openPhoneSheet"
+          @select-sheet="onSelectPhoneSheet"
+          @select-tool="onSelectTool"
+          @pick-recent="pickRecent"
+          @select-color="onSelectColor"
+          @select-custom-color="onSelectCustomColor"
+          @select-image-color="onSelectImageColor"
+          @toggle-input-mode="toggleInputMode"
+          @rect="pillRect = $event"
+        />
       </div>
 
       <!-- Short-lived results (ticket 76, 429): top-right of the canvas box, under the strip, stacking downward. -->
@@ -330,6 +396,15 @@ function techniqueWord(technique: Technique): string {
         :toasts="toasts"
         @dismiss="dismissToast"
       />
+
+      <!--
+        With no Project open, a focused project-management bar (New Project + Import) takes the Progress bar's place
+        (ticket 439); Menu, for language and theme, is in the Canvas strip (ticket 431).
+      -->
+      <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
+        <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true" />
+        <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
+      </div>
 
       <!-- The framing step's controls, in the Progress bar's place (ticket 150; ConvertImage card). -->
       <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
@@ -351,18 +426,21 @@ function techniqueWord(technique: Technique): string {
 </template>
 
 <style scoped>
-/*
- * Select all and the Frame bar (tickets 295, 415, 437; ContextBar card): the same bar, floating at the top-centre of the
- * drawing area over the beads, so it never takes a row and never reaches the Dock. The Selection bar is placed by its own
- * component, against the Selection.
- */
-.app-shell__context-bar--top {
-  position: absolute;
-  top: var(--space-10);
-  left: 50%;
-  z-index: var(--z-context-bar);
-  max-width: calc(100% - 2 * var(--space-10));
-  transform: translateX(-50%);
+/* The New Project / Import bar: in the Progress bar's place while no Project is open (ticket 439). */
+.app-shell__phone-project-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-4);
+  height: var(--dock-height);
+  /* Tight enough that New Project and both imports fit a 320px screen in Russian. */
+  padding: 0 var(--space-12);
+  border-top: 1px solid var(--line-soft);
+}
+
+/* New Project grows to take the remaining width; the import icons sit at a fixed square size beside it. */
+.app-shell__phone-project-bar :deep(.app-button) {
+  flex: 1 1 0;
 }
 
 /* With the bar gone (while a picture is framed), the toasts and the Selection bar sit where it was. */
@@ -417,8 +495,8 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so is the context bar, which floats over the beads. */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which float over the beads. */
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
   position: relative;
 }
 

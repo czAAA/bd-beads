@@ -6,7 +6,7 @@ import { MAKER_NAME_KEY } from './services/makerNameStore'
 import { createProject } from './domain/project'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { openSheet } from './testUtils/dock'
+import { openSheet } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 

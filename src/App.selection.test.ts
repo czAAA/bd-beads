@@ -4,7 +4,7 @@ import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
-import { copySelection, pickColor, pickTool } from './testUtils/dock'
+import { copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 import { ru } from './i18n/ru'
 
 beforeEach(() => {
@@ -46,8 +46,8 @@ describe('App select, copy and paste', () => {
 
     await pickTool(wrapper, 'select')
 
-    expect(wrapper.find('[data-testid="dock-tool-select"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.find('[data-testid="dock-tool-paint"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.find('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="pill-tool-paint"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('Piece selects the rectangle round the tapped bead\'s Piece, and a tap on empty space clears it (ticket 414)', async () => {
@@ -64,20 +64,20 @@ describe('App select, copy and paste', () => {
 
   it('Select all selects the Frame\'s inside, beads or not, and leaves Select active (tickets 414, 428)', async () => {
     const wrapper = await mountWithProject(6, 6) // a 4x4 Frame
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
     expect(selectedCount(wrapper)).toBe(16)
 
     await projectWithMotif(wrapper)
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
 
     expect(selectedCount(wrapper)).toBe(16)
-    expect(wrapper.find('[data-testid="dock-tool-select"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('keeps the Selection across Select and Piece, and drops it for any other tool (ticket 414)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
 
     await pickTool(wrapper, 'piece')
     expect(selectedCount(wrapper)).toBe(16)
@@ -160,7 +160,7 @@ describe('App select, copy and paste', () => {
   it('Select all then Clear selection asks before wiping the drawing (ticket 415)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
 
     await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
 
@@ -171,7 +171,7 @@ describe('App select, copy and paste', () => {
   it('Select all then the Eraser asks before wiping the drawing too (ticket 415)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await projectWithMotif(wrapper)
-    await pickTool(wrapper, 'select-all')
+    await selectAll(wrapper)
 
     await pickTool(wrapper, 'erase')
 

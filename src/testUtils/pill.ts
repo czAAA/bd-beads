@@ -5,13 +5,13 @@ import { chooseLanguage } from './chooseLanguage'
 
 type Wrapper = ReturnType<typeof mount>
 
-type DockSheet = 'dock-color' | 'strip-project' | 'strip-menu'
+type Sheet = 'strip-project' | 'strip-menu'
 
 /**
- * Opens one of the sheets (Dock, CanvasStrip cards): the Dock's Colour button or the strip's Menu or Project button
- * toggles, so a sheet that is already open is left alone and a different open one is replaced by the press.
+ * Opens one of the sheets (CanvasStrip card): the strip's Menu or Project button toggles, so a sheet that is already
+ * open is left alone and a different open one is replaced by the press.
  */
-export async function openSheet(wrapper: Wrapper, dock: DockSheet): Promise<void> {
+export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const sheetOpen = wrapper.find('[data-testid="bottom-sheet"]').exists()
   if (!sheetOpen || button.attributes('aria-pressed') !== 'true') {
@@ -19,23 +19,33 @@ export async function openSheet(wrapper: Wrapper, dock: DockSheet): Promise<void
   }
 }
 
-/**
- * Picks a Tool with its Dock tile, or presses the Context bar's Select all (ticket 431: neither is behind a sheet).
- * Select all shows only with the Select tool, so that is picked first when its button is not up.
- */
-export async function pickTool(wrapper: Wrapper, tool: Tool | 'select-all'): Promise<void> {
-  if (tool === 'select-all' && !wrapper.find('[data-testid="context-bar-select-all"]').exists()) {
-    await pickTool(wrapper, 'select')
-  }
-  const testid = tool === 'select-all' ? 'context-bar-select-all' : `dock-tool-${tool}`
-  await wrapper.get(`[data-testid="${testid}"]`).trigger('click')
+/** Picks a Tool with its Tool pill tile. */
+export async function pickTool(wrapper: Wrapper, tool: Tool): Promise<void> {
+  await wrapper.get(`[data-testid="pill-tool-${tool}"]`).trigger('click')
 }
 
-/** Picks a palette color through the Dock's Color sheet (PalettePicker card), opening the sheet first when it is not showing. */
+/**
+ * Selects everything inside the Frame with Ctrl+A, with the Select tool in hand (ticket 439: the standalone Select all
+ * button is gone, and the Selection bar offers it only once a Selection exists).
+ */
+export async function selectAll(wrapper: Wrapper): Promise<void> {
+  await pickTool(wrapper, 'select')
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
+  await wrapper.vm.$nextTick()
+}
+
+/** Opens the colour popover from the pill's colour tile, unless it is already up. */
+export async function openColorPopover(wrapper: Wrapper): Promise<void> {
+  if (!wrapper.find('[data-testid="color-popover"]').exists()) {
+    await wrapper.get('[data-testid="pill-color"]').trigger('click')
+  }
+}
+
+/** Picks a palette color through the colour popover (PalettePicker card), opening it first when it is not showing. */
 export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void> {
   const swatch = () => wrapper.find(`[data-color-id="${colorId}"]`)
   if (!swatch().exists()) {
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
   }
   await swatch().trigger('click')
 }
@@ -92,9 +102,9 @@ export async function openSavedProjects(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="phone-saved-projects-button"]').trigger('click')
 }
 
-/** Whether a Tool's Dock tile shows lit. */
+/** Whether a Tool's pill tile shows lit. */
 export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; selected: boolean } {
-  const tile = wrapper.get(`[data-testid="dock-tool-${tool}"]`)
+  const tile = wrapper.get(`[data-testid="pill-tool-${tool}"]`)
   return { pressed: tile.attributes('aria-pressed') === 'true', selected: tile.classes().includes('icon-btn--selected') }
 }
 
@@ -110,10 +120,10 @@ export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exi
   return read
 }
 
-/** Sets the Color sheet's Custom color the way the native picker does: an `input` event carrying the hex. */
+/** Sets the colour popover's Custom color the way the native picker does: an `input` event carrying the hex. */
 export async function chooseCustomColor(wrapper: Wrapper, hex: string): Promise<void> {
   if (!wrapper.find('[data-testid="custom-color-input"]').exists()) {
-    await openSheet(wrapper, 'dock-color')
+    await openColorPopover(wrapper)
   }
   const input = wrapper.get<HTMLInputElement>('[data-testid="custom-color-input"]')
   input.element.value = hex

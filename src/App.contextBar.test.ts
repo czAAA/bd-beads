@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
-import { pickColor, pickTool } from './testUtils/dock'
+import { pickColor, pickTool } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()
@@ -35,11 +35,11 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
 
-    // Escape leaves paste mode; Select is still active, so the bar is back with Select all alone (ticket 428).
+    // Escape leaves paste mode; with no Selection there is no bar, and no standalone Select all either (ticket 439).
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
-    expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="context-bar-select-all"]').exists()).toBe(false)
   })
 
   it('removes the selected line through the registry\'s Remove line command', async () => {

@@ -18,7 +18,7 @@ import CanvasColorPicker from './CanvasColorPicker.vue'
  */
 const props = defineProps<{
   project?: Project
-  /** The open Dock sheet, so Menu and Project show lit while theirs is open. */
+  /** The open sheet, so Menu and Project show lit while theirs is open. */
   openSheet?: PhoneSheet | null
   rulers?: boolean
   canUndo?: boolean

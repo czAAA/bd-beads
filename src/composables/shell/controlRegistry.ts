@@ -216,7 +216,7 @@ const MIRROR_CONTROLS: readonly ControlAction[] = [
     needsProject: true,
     run: (deps) => deps.onMirrorCurrent('vertical'),
   },
-  unkeyed('dock-mirror', (t) => t.toolbox.groups.mirror, 'mirror', { icon: 'mirror-horizontal' }),
+  unkeyed('pill-mirror', (t) => t.toolbox.groups.mirror, 'mirror', { icon: 'mirror-horizontal' }),
 ]
 
 /**
@@ -551,7 +551,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
   unkeyed('saved-projects', (t) => t.projects.heading, 'edit', { icon: 'library' }),
   unkeyed('close', (t) => t.a11y.closeMessage, 'edit', { icon: 'close' }),
-  unkeyed('dock-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
+  unkeyed('pill-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),
   unkeyed('change-maker-name', (t) => t.saveBox.changeName, 'edit', { body: (t) => t.tooltips.changeName }),

@@ -23,18 +23,46 @@ export interface BarPlacement {
 const BAR_GAP_PX = 6
 export const BAR_EDGE_PX = 8
 
+const overlaps = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
+
 /**
  * Where the Selection bar sits (ticket 415): centred above the Selection's top edge, clamped inside the canvas box on
  * every side, and flipped below the Selection when there is no room above. `selection` is the Selection's rectangle in
- * the canvas box's pixels, `bar` the bar's own size, `viewport` the canvas box's size.
+ * the canvas box's pixels, `bar` the bar's own size, `viewport` the canvas box's size. The Tool pill's rectangle
+ * (`obstacle`, ticket 439) is treated like a canvas edge: the bar flips to the other side of the Selection or, failing
+ * that, slides clear of the pill along the way it overlaps least.
  */
-export function selectionBarPlacement(selection: BarBox, bar: { width: number; height: number }, viewport: { width: number; height: number }): BarPlacement {
+export function selectionBarPlacement(
+  selection: BarBox,
+  bar: { width: number; height: number },
+  viewport: { width: number; height: number },
+  obstacle?: BarBox,
+): BarPlacement {
   const clamp = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
   const left = clamp(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width)
   const above = selection.top - BAR_GAP_PX - bar.height
   const below = above < BAR_EDGE_PX
-  const top = clamp(below ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height)
-  return { left, top, below }
+  const at = (isBelow: boolean): BarPlacement => ({
+    left,
+    top: clamp(isBelow ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height),
+    below: isBelow,
+  })
+  const preferred = at(below)
+  const hits = (placement: BarPlacement) => !!obstacle && overlaps({ ...placement, ...bar }, obstacle)
+  if (!hits(preferred)) return preferred
+  const flipped = at(!below)
+  if (!hits(flipped)) return flipped
+  // Neither side is clear: slide the preferred spot off the pill, the shorter way, and keep it inside the box.
+  const pill = obstacle!
+  const slides: BarPlacement[] = [
+    { ...preferred, left: clamp(pill.left - BAR_GAP_PX - bar.width, bar.width, viewport.width) },
+    { ...preferred, left: clamp(pill.left + pill.width + BAR_GAP_PX, bar.width, viewport.width) },
+    { ...preferred, top: clamp(pill.top - BAR_GAP_PX - bar.height, bar.height, viewport.height) },
+    { ...preferred, top: clamp(pill.top + pill.height + BAR_GAP_PX, bar.height, viewport.height) },
+  ]
+  const clear = slides.filter((placement) => !hits(placement))
+  const distance = (placement: BarPlacement) => Math.abs(placement.left - preferred.left) + Math.abs(placement.top - preferred.top)
+  return clear.sort((a, b) => distance(a) - distance(b))[0] ?? preferred
 }
 
 /** Where the Frame is while it is edited (ticket 427): its line's box, the margin's outer edge and how far the ruler numbers reach past the line. */

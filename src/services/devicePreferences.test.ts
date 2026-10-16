@@ -24,6 +24,8 @@ const CASES = [
   { name: 'inputMode', key: 'bd-beads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
   { name: 'penSeen', key: 'bd-beads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },
   { name: 'theme', key: 'bd-beads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
+  { name: 'toolPillPosition', key: 'bd-beads:tool-pill-position', saved: 'left', read: 'left', other: 'right', stored: 'right', invalid: 'middle', fallback: 'bottom' },
+  { name: 'pillColors', key: 'bd-beads:pill-colors', saved: 'recent', read: 'recent', other: 'recent', stored: 'recent', invalid: 'many', fallback: 'one' },
   { name: 'locale', key: 'bd-beads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
 ] as const satisfies readonly { name: PreferenceName; [k: string]: unknown }[]
 
@@ -62,6 +64,24 @@ describe.each(CASES)('the $name preference', ({ name, key, saved, read, other, s
     preference.value = other
     expect(storage.data.get(key)).toBe(stored)
     expect(createDevicePreferences(storage).get(name).value).toEqual(other)
+  })
+})
+
+describe('the recent colors preference (ticket 439)', () => {
+  it('reads only valid colours, newest first, at most eight', () => {
+    const saved = '#111111,red,#222222,#333333,#444444,#555555,#666666,#777777,#888888,#999999'
+    expect(createDevicePreferences(memory({ 'bd-beads:recent-colors': saved })).get('recentColors').value).toEqual([
+      '#111111', '#222222', '#333333', '#444444', '#555555', '#666666', '#777777', '#888888',
+    ])
+  })
+
+  it('is forgotten when emptied, and saved as a comma list otherwise', () => {
+    const storage = memory()
+    const recents = createDevicePreferences(storage).get('recentColors')
+    recents.value = ['#111111', '#222222']
+    expect(storage.data.get('bd-beads:recent-colors')).toBe('#111111,#222222')
+    recents.value = []
+    expect(storage.data.has('bd-beads:recent-colors')).toBe(false)
   })
 })
 

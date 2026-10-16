@@ -11,7 +11,7 @@ import { findTextMisfits } from '../support/textFit'
 import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-const PHONE_SHEETS = ['dock-color', 'strip-project', 'strip-menu']
+const PHONE_SHEETS = ['strip-project', 'strip-menu']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -88,8 +88,8 @@ const SCREENS: Screen[] = [
     // Selection (ADR 0042, pen mode decides per pointer), so this has to run first.
     name: 'selection',
     visit: async (page, measure) => {
-      if (!(await shown(page, 'dock-tool-select'))) return false
-      await click(page, 'dock-tool-select')
+      if (!(await shown(page, 'pill-tool-select'))) return false
+      await click(page, 'pill-tool-select')
       const box = await vis(page, 'project-surface').boundingBox()
       if (!box) return false
       await page.mouse.move(box.x + 40, box.y + 40)
@@ -150,12 +150,24 @@ const SCREENS: Screen[] = [
   {
     name: 'phone sheets',
     visit: async (page, measure) => {
-      if (!(await shown(page, 'dock'))) return false
+      if (!(await shown(page, 'tool-pill'))) return false
       for (const dock of PHONE_SHEETS) {
         await click(page, dock)
         await measure(dock.replace('dock-', ''))
         await click(page, 'sheet-close')
       }
+    },
+  },
+  {
+    // The colour popover and the Tool pill's Recent colors mode (ticket 439): both must fit whole at every width.
+    name: 'colour popover',
+    visit: async (page, measure) => {
+      if (!(await shown(page, 'pill-color'))) return false
+      await measure()
+      await click(page, 'pill-color')
+      await measure('color-popover')
+      // The hover check's touch long press lands outside the popover, which closes it: close it only if it is still up.
+      if (await shown(page, 'color-popover-close')) await click(page, 'color-popover-close')
     },
   },
   {

@@ -5,7 +5,7 @@ import App from './App.vue'
 import { beadColors, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
 import { createProject, type Technique } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { pickColor } from './testUtils/dock'
+import { pickColor } from './testUtils/pill'
 
 /**
  * The ruler-click Selection and "remove selected row/column" Tool (ticket 123): clicking a ruler number selects

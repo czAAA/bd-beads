@@ -41,7 +41,7 @@ describe('Mirror is switched off (ticket 365)', () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     expect(wrapper.find('[data-testid="tool-group-mirror"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="dock-mirror"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="pill-mirror"]').exists()).toBe(false)
 
     for (const key of ['-', '=', '[', ']', 'm', 'h', 'v']) {
       window.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
