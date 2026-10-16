@@ -176,6 +176,8 @@ const directionLabel = computed(() =>
   height: var(--progress-height);
   padding: 0 var(--space-12) 0 var(--space-16);
   border-top: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  /* The bar scrolls nothing: a drag on it must not pan the page and push the canvas strip out of view. Buttons keep their taps. */
+  touch-action: none;
 }
 
 .progress-bar__position {
