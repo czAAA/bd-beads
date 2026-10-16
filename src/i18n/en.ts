@@ -627,6 +627,7 @@ export const en: Translations = {
     fillSelection: 'Fill the Selection with the current color.',
     frameFromSelection: 'Make the Selection the Frame.',
     pasteDisabled: 'Copy an area first.',
+    pasteTool: 'Hover to preview the copied piece, then stamp it with a click.',
     rotate: 'Turn the Selection a quarter turn.',
     setFrameFirst: 'Set a Frame first.',
     fitToDrawing: 'Fit the Frame around every bead.',

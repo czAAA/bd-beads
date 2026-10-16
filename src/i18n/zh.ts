@@ -611,6 +611,7 @@ export const zh: Translations = {
     fillSelection: '用当前颜色填充选区。',
     frameFromSelection: '将选区设为边框。',
     pasteDisabled: '请先复制一个区域。',
+    pasteTool: '悬停预览复制的图块，点击即可盖章。',
     rotate: '把选区转四分之一圈。',
     setFrameFirst: '请先设置边框。',
     fitToDrawing: '让边框贴合所有珠子。',
