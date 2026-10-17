@@ -131,7 +131,7 @@ const pillSize = useElementSize(pillEl)
 const layerSize = useElementSize(layerEl)
 // Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether a chosen colour exists, and a drag ending.
 watch(
-  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.colorHex === undefined, drag.dragging],
+  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.hasClipboard, () => props.colorHex === undefined, drag.dragging],
   () => void probeRoom(),
   { immediate: true, flush: 'post' },
 )
@@ -326,6 +326,8 @@ watch(
 .tool-pill--bottom,
 .tool-pill--top {
   left: 50%;
+  /* As long as its content, up to the edge gaps: a box placed at `left: 50%` would otherwise be sized to half its layer (ticket 461). */
+  width: max-content;
   max-width: calc(100% - 2 * var(--pill-gap));
   transform: translateX(-50%);
 }
@@ -341,6 +343,7 @@ watch(
 .tool-pill--vertical {
   flex-direction: column;
   top: 50%;
+  height: max-content;
   max-height: calc(100% - 2 * var(--pill-gap));
   touch-action: pan-y;
   transform: translateY(-50%);
@@ -359,6 +362,8 @@ watch(
   top: auto;
   right: auto;
   bottom: auto;
+  width: max-content;
+  height: auto;
   max-width: none;
   max-height: none;
   cursor: grabbing;
