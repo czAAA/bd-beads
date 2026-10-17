@@ -183,8 +183,8 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 
 /**
  * The hover preview on each bead it names, inside the bead's rim: its color at a faint opacity over whatever the bead
- * holds (a pasted block in each bead's own colors), or, with no color to show, a 2px outline in the dark ink. Square
- * inside a peyote bead's rounded corners, as the DOM grid drew it.
+ * holds (a pasted block in each bead's own colors), or, with no color to show, a 2px outline in the dark ink. A color
+ * fills the bead's own shape (rounded in peyote), less what the next row's beads lie over.
  */
 function drawPreview(context: DrawingContext, project: DrawnProject, space: Space, preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = project
@@ -238,6 +238,7 @@ function fillFaintly(context: DrawingContext, x: number, y: number, size: number
   if (coveredBy.length > 0) {
     context.save()
     context.beginPath()
+    // The even-odd clip needs an outer rectangle bigger than the bead; the covering beads are holes in it.
     context.rect(x - CELL_SIZE_PX, y - CELL_SIZE_PX, size + 2 * CELL_SIZE_PX, size + 2 * CELL_SIZE_PX)
     for (const over of coveredBy) {
       roundedRect(context, over.x, over.y, over.size, over.size, over.radius)
@@ -273,7 +274,7 @@ function outlineBead(context: DrawingContext, x: number, y: number, size: number
  * pen has no CSS cursor, so one drawn marker serves the mouse and the pen alike.
  */
 function drawPointer(context: DrawingContext, technique: Technique, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
-  const size = CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX
+  const size = Math.max(0, CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX)
   const x = pointer.x - size / 2
   const y = pointer.y - size / 2
   const radius = Math.max(0, beadRoundness(technique) * size)
