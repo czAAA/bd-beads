@@ -500,7 +500,8 @@ export const pl: Translations = {
     announceSelectionRotated: 'Obrócono zaznaczenie',
     exportPromptTitle: 'Ustaw ramkę, aby wyeksportować',
     countNeedsFrame: 'Ustaw ramkę, aby policzyć koraliki.',
-    progressNeedsFrame: 'Ustaw ramkę, aby zacząć',
+    progressSelectToSet: 'Zaznacz, aby ustawić',
+    progressFrameWord: 'ramkę',
     rotateCoveredMessage: {
       one: 'Zakryto {count} koralik.',
       few: 'Zakryto {count} koraliki.',

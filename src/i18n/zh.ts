@@ -498,7 +498,8 @@ export const zh: Translations = {
     announceSelectionRotated: '选区已旋转',
     exportPromptTitle: '设置边框后才能导出',
     countNeedsFrame: '设置边框后才能计数。',
-    progressNeedsFrame: '设置边框后开始',
+    progressSelectToSet: '选择以设置',
+    progressFrameWord: '边框',
     rotateCoveredMessage: {
       other: '{count} 颗珠子被覆盖。',
     },

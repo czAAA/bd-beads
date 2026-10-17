@@ -500,7 +500,8 @@ export const es: Translations = {
     announceSelectionRotated: 'Selección girada',
     exportPromptTitle: 'Define el marco para exportar',
     countNeedsFrame: 'Define el marco para contar las cuentas.',
-    progressNeedsFrame: 'Define el marco para empezar',
+    progressSelectToSet: 'Selecciona para definir el',
+    progressFrameWord: 'marco',
     rotateCoveredMessage: {
       one: 'Se cubrió {count} cuenta.',
       many: 'Se cubrieron {count} de cuentas.',

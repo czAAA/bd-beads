@@ -511,7 +511,8 @@ export const ru: Translations = {
     announceSelectionRotated: 'Выделение повёрнуто',
     exportPromptTitle: 'Задайте рамку для экспорта',
     countNeedsFrame: 'Задайте рамку, чтобы посчитать бисер.',
-    progressNeedsFrame: 'Задайте рамку, чтобы начать',
+    progressSelectToSet: 'Выделите, чтобы задать',
+    progressFrameWord: 'рамку',
     rotateCoveredMessage: {
       one: '{count} бусина перекрыта.',
       few: '{count} бусины перекрыты.',
