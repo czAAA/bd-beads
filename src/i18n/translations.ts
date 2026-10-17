@@ -540,6 +540,7 @@ export interface Translations {
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
     countNeedsFrame: string
+    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}. Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the accusative where the language has one). */
     progressSelectToSet: string
     progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and plural of the sentence. */

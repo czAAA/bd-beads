@@ -63,11 +63,11 @@ const directionLabel = computed(() =>
 <template>
   <div class="progress-bar no-page-pan" data-testid="progress-bar">
     <template v-if="!hasFrame">
-      <!-- Styled like the CanvasHint: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
+      <!-- Styled like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
-        <span class="progress-bar__chip"><AppIcon name="select" :size="14" /></span>
+        <span class="hint-chip"><AppIcon name="select" :size="14" /></span>
         {{ t.frame.progressSelectToSet }}
-        <span class="progress-bar__chip"><AppIcon name="frame" :size="14" /></span>
+        <span class="hint-chip"><AppIcon name="frame" :size="14" /></span>
         {{ t.frame.progressFrameWord }}
       </p>
       <span class="progress-bar__fit-frame">
@@ -151,22 +151,6 @@ const directionLabel = computed(() =>
   font: 400 0.75rem/1rem var(--font-sans);
   color: var(--muted);
   white-space: nowrap;
-}
-
-/* An icon chip, 20px like the CanvasHint's key chips. */
-.progress-bar__chip {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 var(--space-4);
-  color: var(--body);
-  background: var(--elevated);
-  border: 1px solid var(--line-strong);
-  border-bottom-width: 2px;
-  border-radius: var(--radius-xs);
 }
 
 .progress-bar__fit-frame {
