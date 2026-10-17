@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import AppButton from '../ui/AppButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { frameStepperCentres, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
@@ -10,7 +9,7 @@ import { useI18n } from '../../i18n/useI18n'
 
 /**
  * Edit Frame's margin steppers (ticket 417, ADR 0054, ticket 427): a mini −/+ on each of the Frame's four edges, in the
- * margin between the ruler numbers and its outer edge, clamped inside the canvas box,
+ * margin between the ruler numbers and its outer edge, pinned there (they move with the Frame when the canvas is panned),
  * shrinking with the zoom and staying whatever the Rulers show. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
  * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
  * pixels), so they track pan and zoom. Rendered only while the edit toggle is on (ticket 452), never for a Selection; arrow keys on a focused stepper move or resize the Frame.
@@ -28,8 +27,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 const pairs = FRAME_EDGES.map((edge) => ({ edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`) }))
 
-const touch = useMediaQuery('(pointer: coarse)')
-const centres = computed(() => frameStepperCentres(props.anchor, touch.value))
+const centres = computed(() => frameStepperCentres(props.anchor))
 
 function pairStyle(edge: FrameEdge) {
   const { x, y } = centres.value[edge]
