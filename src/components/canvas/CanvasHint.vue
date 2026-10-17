@@ -22,16 +22,16 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
 <template>
   <p v-if="shown" class="canvas-hint" data-testid="canvas-hint" aria-hidden="true">
     <span>{{ t.canvas.hint.scrollOr }}</span>
-    <KeyChip class="canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
+    <KeyChip class="hint-chip canvas-hint__key">{{ t.canvas.hint.spaceKey }}</KeyChip>
     <span>{{ t.canvas.hint.dragToMove }}</span>
     <span class="canvas-hint__dot">·</span>
-    <KeyChip class="canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</KeyChip>
+    <KeyChip class="hint-chip canvas-hint__key">{{ apple ? '⌘' : 'Ctrl' }}</KeyChip>
     <span>{{ t.canvas.hint.scrollToZoom }}</span>
     <span class="canvas-hint__dot">·</span>
-    <KeyChip class="canvas-hint__key">{{ TOOL_HOTKEYS.hand }}</KeyChip>
+    <KeyChip class="hint-chip canvas-hint__key">{{ TOOL_HOTKEYS.hand }}</KeyChip>
     <span>{{ t.canvas.hint.hand }}</span>
     <span class="canvas-hint__dot">·</span>
-    <KeyChip class="canvas-hint__key">R</KeyChip>
+    <KeyChip class="hint-chip canvas-hint__key">R</KeyChip>
     <span>{{ t.canvas.hint.rulers }}</span>
   </p>
 </template>
@@ -66,20 +66,8 @@ const apple = computed(() => typeof navigator !== 'undefined' && /Mac|iPhone|iPa
   margin: 0 var(--space-4);
 }
 
-/* A Kbd chip, 20px here (CanvasHint card): DM Mono, a 1px `line-strong` edge with a 2px bottom, on `elevated`. */
+/* A Kbd chip, 20px here (CanvasHint card): DM Mono on the shared `.hint-chip` box (controls.css). */
 .canvas-hint__key {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 var(--space-4);
   font: var(--type-meta-small);
-  color: var(--body);
-  background: var(--elevated);
-  border: 1px solid var(--line-strong);
-  border-bottom-width: 2px;
-  border-radius: var(--radius-xs);
 }
 </style>

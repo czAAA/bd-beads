@@ -98,3 +98,19 @@
     transform: translate(-50%, -50%);
   }
 }
+
+/* A 20px chip in a hint line (CanvasHint card): a 1px `line-strong` edge with a 2px bottom, on `elevated`. Holds a key (CanvasHint) or an icon (Progress bar). */
+.hint-chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-4);
+  color: var(--body);
+  background: var(--elevated);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+}
